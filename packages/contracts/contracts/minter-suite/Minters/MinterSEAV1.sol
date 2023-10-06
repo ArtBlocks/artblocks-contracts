@@ -136,29 +136,6 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     // mapping is declared here to ProjectConfig structs
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => IsEngineCache
-    mapping(address => SplitFundsLib.IsEngineCache) private _isEngineCaches;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MaxInvocationsLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => projectId => max invocations specific project config
-    mapping(address => mapping(uint256 => MaxInvocationsLib.MaxInvocationsProjectConfig))
-        private _maxInvocationsProjectConfigMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MaxInvocationsLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SEALib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -217,12 +194,6 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             _sender: msg.sender
         });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
-            _projectId,
-            _coreContract,
-            _maxInvocations,
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-        );
-        emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
             _coreContract,
             _maxInvocations
@@ -327,10 +298,6 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
             _coreContract
         ][_projectId];
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         require(
             _timestampStart == 0 || block.timestamp < _timestampStart,
             "Only future start times or 0"
@@ -364,7 +331,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // sync local max invocations if not initially populated
         if (
             MaxInvocationsLib.maxInvocationsIsUnconfigured(
-                _maxInvocationsProjectConfig
+                _projectId,
+                _coreContract
             )
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
@@ -547,7 +515,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         view
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
-        return _maxInvocationsProjectConfigMapping[_coreContract][_projectId];
+        return
+            MaxInvocationsLib.getMaxInvocationsProjectConfig(
+                _projectId,
+                _coreContract
+            );
     }
 
     /**
@@ -569,9 +541,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         address _coreContract
     ) external view returns (bool) {
         return
-            MaxInvocationsLib.getMaxHasBeenInvoked(
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
+            MaxInvocationsLib.getMaxHasBeenInvoked(_projectId, _coreContract);
     }
 
     /**
@@ -598,10 +568,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256) {
-        return
-            MaxInvocationsLib.getMaxInvocations(
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
+        return MaxInvocationsLib.getMaxInvocations(_projectId, _coreContract);
     }
 
     /**
@@ -617,9 +584,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
      * @return bool indicating if `_coreContract` is a valid engine contract.
      */
     function isEngineView(address _coreContract) external view returns (bool) {
-        SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
-            _coreContract
-        ];
+        SplitFundsLib.IsEngineCache storage isEngineCache = SplitFundsLib
+            .getIsEngineCacheConfig(_coreContract);
         if (isEngineCache.isCached) {
             return isEngineCache.isEngine;
         } else {
@@ -773,16 +739,9 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             _sender: msg.sender
         });
 
-        uint256 maxInvocations = MaxInvocationsLib
-            .syncProjectMaxInvocationsToCore(
-                _projectId,
-                _coreContract,
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
-        emit ProjectMaxInvocationsLimitUpdated(
+        MaxInvocationsLib.syncProjectMaxInvocationsToCore(
             _projectId,
-            _coreContract,
-            maxInvocations
+            _coreContract
         );
 
         // for convenience, try to mint and assign a token to the project's
@@ -883,15 +842,10 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             tokenId: _tokenId
         });
         // distribute revenues from auction
-        bool isEngine = SplitFundsLib.isEngine(
-            _coreContract,
-            _isEngineCaches[_coreContract]
-        );
         SplitFundsLib.splitRevenuesETHNoRefund({
             _projectId: _projectId,
             _valueInWei: currentBid,
-            _coreContract: _coreContract,
-            _isEngine: isEngine
+            _coreContract: _coreContract
         });
 
         emit AuctionSettled({
@@ -1131,10 +1085,6 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
             _coreContract
         ][_projectId];
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         if (_SEAProjectConfig.nextTokenNumberIsPopulated) {
             return;
         }
@@ -1145,13 +1095,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // and avoid revert if relying on core to limit invocations, therefore
         // use MaxInvocationsLib.invocationsRemain, which calls core contract
         // to get latest invocation data
-        if (
-            !MaxInvocationsLib.invocationsRemain(
-                _maxInvocationProjectConfig,
-                _projectId,
-                _coreContract
-            )
-        ) {
+        if (!MaxInvocationsLib.invocationsRemain(_projectId, _coreContract)) {
             // we have reached the max invocations, so we do not mint a new
             // token as the "next token", and leave the next token number as
             // not populated
@@ -1179,7 +1123,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // update local maxHasBeenInvoked value if necessary
         MaxInvocationsLib.validatePurchaseEffectsInvocations({
             _tokenId: nextTokenId,
-            maxInvocationsProjectConfig: _maxInvocationProjectConfig
+            _coreContract: _coreContract
         });
         emit ProjectNextTokenUpdated({
             projectId: _projectId,

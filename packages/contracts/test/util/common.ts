@@ -313,9 +313,18 @@ export async function deployCoreWithMinterFilter(
         adminACL.address, // _adminACLContract
         0, // _startingProjectId
         false, // _autoApproveArtistSplitProposals
-        engineRegistry.address, // _engineRegistryContract
       ]
     );
+    // register core on engine registry
+    const coreVersion = await genArt721Core.coreVersion();
+    const coreType = await genArt721Core.coreType();
+    await engineRegistry
+      .connect(config.accounts.deployer)
+      .registerContract(
+        genArt721Core.address,
+        ethers.utils.formatBytes32String(coreVersion),
+        ethers.utils.formatBytes32String(coreType)
+      );
     // assign core contract for randomizer to use
     randomizer
       .connect(config.accounts.deployer)
@@ -444,10 +453,16 @@ export async function deployCore(
         adminACL.address, // _adminACLContract
         config.projectZero, // starting project ID
         false, // _autoApproveArtistSplitProposals
-        CoreRegistryV1.address, // _engineRegistryContract
       ]
     );
-    // Engine contracts automatically register themselves on CoreRegistryV1 during deployment
+    // register core on core registry
+    const coreVersion = await genArt721Core.coreVersion();
+    const coreType = await genArt721Core.coreType();
+    await CoreRegistryV1.connect(config.accounts.deployer).registerContract(
+      genArt721Core.address,
+      ethers.utils.formatBytes32String(coreVersion),
+      ethers.utils.formatBytes32String(coreType)
+    );
   } else {
     throw new Error(
       `deployCore does not support core contract name: ${coreContractName}`

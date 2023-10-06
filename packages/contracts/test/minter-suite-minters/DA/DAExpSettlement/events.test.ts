@@ -474,7 +474,11 @@ runForEach.forEach((params) => {
               config.basePrice
             )
         )
-          .to.emit(config.minter, "ProjectMaxInvocationsLimitUpdated")
+          .to.emit(
+            // event is defined in MaxInvocationsLib
+            await ethers.getContractFactory("MaxInvocationsLib"),
+            "ProjectMaxInvocationsLimitUpdated"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -507,7 +511,11 @@ runForEach.forEach((params) => {
               config.startingPrice,
               config.basePrice
             )
-        ).to.not.emit(config.minter, "ProjectMaxInvocationsLimitUpdated");
+        ).to.not.emit(
+          // event is defined in MaxInvocationsLib
+          await ethers.getContractFactory("MaxInvocationsLib"),
+          "ProjectMaxInvocationsLimitUpdated"
+        );
       });
 
       // @dev don't think it is possible to test case where adminEmergencyReduceSelloutPrice ends up emitting event here
@@ -525,7 +533,11 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               targetNewSelloutPrice
             )
-        ).to.not.emit(config.minter, "ProjectMaxInvocationsLimitUpdated");
+        ).to.not.emit(
+          // event is defined in MaxInvocationsLib
+          await ethers.getContractFactory("MaxInvocationsLib"),
+          "ProjectMaxInvocationsLimitUpdated"
+        );
       });
 
       it("emits during withdrawArtistAndAdminRevenues when minter-local max invocations are updated", async function () {
@@ -551,7 +563,11 @@ runForEach.forEach((params) => {
               config.genArt721Core.address
             )
         )
-          .to.emit(config.minter, "ProjectMaxInvocationsLimitUpdated")
+          .to.emit(
+            // event is defined in MaxInvocationsLib
+            await ethers.getContractFactory("MaxInvocationsLib"),
+            "ProjectMaxInvocationsLimitUpdated"
+          )
           .withArgs(config.projectZero, config.genArt721Core.address, 1);
       });
 
@@ -567,7 +583,11 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address
             )
-        ).to.not.emit(config.minter, "ProjectMaxInvocationsLimitUpdated");
+        ).to.not.emit(
+          // event is defined in MaxInvocationsLib
+          await ethers.getContractFactory("MaxInvocationsLib"),
+          "ProjectMaxInvocationsLimitUpdated"
+        );
       });
     });
   });
