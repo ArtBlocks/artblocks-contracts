@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
+pragma solidity ^0.8.0;
+
 import "./MaxInvocationsLib.sol";
 import "./DAExpLib.sol";
 import "./SplitFundsLib.sol";
@@ -8,8 +10,6 @@ import "../AuthLib.sol";
 import {GenericMinterEventsLib} from "./GenericMinterEventsLib.sol";
 
 import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
-
-pragma solidity ^0.8.0;
 
 /**
  * @title Art Blocks Settlement Library for Exponential Auctions
