@@ -98,7 +98,14 @@ export interface BaseFormFieldSchema extends JSONSchema7 {
   dependsOn?: string;
 
   /** Optional property indicating how a field should be transformed before submitting. */
-  submissionProcessing?: "merkleRoot" | "tokenHolderAllowlist";
+  submissionProcessing?:
+    | "merkleRoot"
+    | "tokenHolderAllowlist"
+    | "ethToWei"
+    | "datetimeToUnixTimestamp";
+
+  /** Optional property indicating how a field should be transformed before being displayed. */
+  displayProcessing?: "weiToEth" | "unixTimestampToDatetime";
 
   validationDependency?: ValidationDependency;
 }

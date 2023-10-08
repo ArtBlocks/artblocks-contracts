@@ -5,6 +5,7 @@ import {
   ZodAny,
   ZodArray,
   ZodBigInt,
+  ZodDate,
   ZodEffects,
   ZodNumber,
   ZodObject,
@@ -70,6 +71,7 @@ export type SupportedZodSchema =
   | ZodString
   | ZodObject<any>
   | ZodArray<any>
+  | ZodDate
   | ZodAny
   | ZodEffects<ZodNumber, number, number>
   | ZodEffects<ZodString, string, string>
@@ -206,6 +208,11 @@ export function formFieldSchemaToZod(
 
         break;
       case "string":
+        if (prop.format === "date-time") {
+          zodProp = z.coerce.date();
+          break;
+        }
+
         zodProp = z.string();
         if (prop.pattern) {
           zodProp = zodProp.regex(new RegExp(prop.pattern));

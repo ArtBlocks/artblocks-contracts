@@ -21,6 +21,7 @@ import {
   textOrCsvAddressListToArray,
 } from "../utils/merkle";
 import { GenerateProjectMinterConfigurationFormsContext } from ".";
+import { formatEther, parseEther } from "viem";
 
 export async function pollForProjectMinterConfigurationUpdates(
   sdk: ArtBlocksSDK,
@@ -176,11 +177,19 @@ export function getInitialMinterConfigurationValuesForFormField(
     } else {
       // If the current schema is a leaf field (not an object), set the initial value
       // Use the value from the configuration if present, otherwise fall back to the default value
-      set(
-        initialValues,
+
+      const initialValue = get(
+        configuration,
         parentKey,
-        get(configuration, parentKey, schema.default ?? null)
+        schema.default ?? null
       );
+
+      const processedInitialValue = processValueForDisplay(
+        initialValue,
+        schema.displayProcessing
+      );
+
+      set(initialValues, parentKey, processedInitialValue);
     }
   }
 
@@ -189,6 +198,31 @@ export function getInitialMinterConfigurationValuesForFormField(
 
   // Return the populated initialValues object
   return initialValues;
+}
+
+/**
+ * Function to process display value based on the displayProcessing property
+ * @param displayProcessing - the displayProcessing property
+ * @param configuration - the configuration object
+ * @param key - the key of the property
+ * @param defaultValue - the default value of the property
+ * @returns processed value
+ */
+function processValueForDisplay(
+  value: any,
+  displayProcessing?: BaseFormFieldSchema["displayProcessing"]
+): any {
+  switch (displayProcessing) {
+    // TODO: This should be made more generic to handle arbitrary ERC-20 tokens
+    case "weiToEth":
+      return Number(formatEther(BigInt(value ?? 0)));
+    case "unixTimestampToDatetime":
+      return value
+        ? new Date(Number(value) * 1000).toISOString()
+        : new Date().toISOString();
+    default:
+      return value;
+  }
 }
 
 export function mapFormValuesToArgs(
@@ -222,12 +256,15 @@ export async function transformProjectMinterConfigurationFormValues(
 ) {
   const { formValues, schema } = args;
 
-  // Iterate through form values and look them up in the schema
+  // Flatten the formValues object to match the dot notation in schema
+  const flattenedFormValues = flattenObject(formValues);
+
+  // Iterate through flattened form values and look them up in the schema
   // to see if they have submissionTransformation set. If they
   // do, apply the relevant transformation.
   let transformedFormValues: Record<string, any> = {};
-  for (const [key, value] of Object.entries(formValues)) {
-    const fieldSchema = schema.properties?.[key];
+  for (const [key, value] of Object.entries(flattenedFormValues)) {
+    const fieldSchema = get(schema.properties, key);
     if (typeof fieldSchema === "object" && fieldSchema.submissionProcessing) {
       switch (fieldSchema.submissionProcessing) {
         case "merkleRoot": {
@@ -235,7 +272,7 @@ export async function transformProjectMinterConfigurationFormValues(
             value,
             args
           );
-          transformedFormValues[key] = merkleRoot;
+          set(transformedFormValues, key, merkleRoot);
           break;
         }
         case "tokenHolderAllowlist": {
@@ -244,18 +281,83 @@ export async function transformProjectMinterConfigurationFormValues(
             args
           );
 
-          transformedFormValues = {
-            ...transformedFormValues,
-            ...allowRemoveArgs,
-          };
+          transformedFormValues = mergeObjects(
+            transformedFormValues,
+            allowRemoveArgs
+          );
+          break;
+        }
+        case "ethToWei": {
+          const weiValue = parseEther(`${value}`);
+          set(transformedFormValues, key, weiValue);
+          break;
+        }
+        case "datetimeToUnixTimestamp": {
+          const unixTimestamp = Math.floor(
+            new Date(value as string).getTime() / 1000
+          );
+
+          set(transformedFormValues, key, unixTimestamp);
+          break;
         }
       }
     } else {
-      transformedFormValues[key] = value;
+      set(transformedFormValues, key, value);
     }
   }
 
-  return transformedFormValues;
+  // Unflatten the transformedFormValues to match the original formValues structure
+  return unflattenObject(transformedFormValues);
+}
+
+function flattenObject(
+  obj: any,
+  prefix = "",
+  res: Record<string, any> = {}
+): Record<string, any> {
+  for (const k in obj) {
+    const pre = prefix.length ? `${prefix}.` : "";
+    if (
+      typeof obj[k] === "object" &&
+      !(obj[k] instanceof Date) &&
+      !(obj[k] instanceof File) &&
+      !(obj[k] instanceof FileList)
+    )
+      flattenObject(obj[k], pre + k, res);
+    else res[pre + k] = obj[k];
+  }
+  return res;
+}
+
+function unflattenObject(data: Record<string, any>) {
+  const result: Record<string, any> = {};
+  for (const key in data) {
+    const keys = key.split(".");
+    keys.reduce((res: Record<string, any>, key, i) => {
+      if (i === keys.length - 1) {
+        res[key] = data[keys.join(".")];
+      } else {
+        res[key] = res[key] || {};
+      }
+      return res[key];
+    }, result);
+  }
+  return result;
+}
+
+function mergeObjects(obj1: any, obj2: any) {
+  for (const p in obj2) {
+    try {
+      if (obj2[p].constructor == Object) {
+        obj1[p] = mergeObjects(obj1[p], obj2[p]);
+      } else {
+        obj1[p] = obj2[p];
+      }
+    } catch (e) {
+      obj1[p] = obj2[p];
+    }
+  }
+  return obj1;
 }
 
 async function processAllowlistFileToMerkleRoot(
