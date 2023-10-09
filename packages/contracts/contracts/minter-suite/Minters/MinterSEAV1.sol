@@ -493,8 +493,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
      * possible because the V3 core contract only allows maximum invocations
      * to be reduced, not increased. Based on this rationale, we intentionally
      * do not do input validation in this method as to whether or not the input
-     * @param `projectId` is an existing project ID.
-     * @param `coreContract` is an existing core contract address.
+     * @param projectId is an existing project ID.
+     * @param coreContract is an existing core contract address.
      */
     function projectMaxHasBeenInvoked(
         uint256 projectId,
@@ -520,8 +520,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
      * the core contract to enforce the max invocations check. Based on this
      * rationale, we intentionally do not do input validation in this method as
      * to whether or not the input `projectId` is an existing project ID.
-     * @param `projectId` is an existing project ID.
-     * @param `coreContract` is an existing core contract address.
+     * @param projectId is an existing project ID.
+     * @param coreContract is an existing core contract address.
      */
     function projectMaxInvocations(
         uint256 projectId,

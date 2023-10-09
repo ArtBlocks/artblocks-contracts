@@ -591,8 +591,8 @@ contract MinterDALinHolderV5 is
      * the core contract to enforce the max invocations check. Based on this
      * rationale, we intentionally do not do input validation in this method as
      * to whether or not the input `projectId` is an existing project ID.
-     * @param `projectId` is an existing project ID.
-     * @param `coreContract` is an existing core contract address.
+     * @param projectId is an existing project ID.
+     * @param coreContract is an existing core contract address.
      */
     function projectMaxInvocations(
         uint256 projectId,
