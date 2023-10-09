@@ -824,7 +824,7 @@ contract MinterDAExpHolderV5 is
         );
 
         // INTERACTIONS
-        // require vault to own NFT used to redeem
+        // require vault_ to own NFT used to redeem
         /**
          * @dev Considered an interaction because calling ownerOf on an NFT
          * contract. Plan is to only integrate with AB/PBAB NFTs on the minter, but
@@ -834,7 +834,7 @@ contract MinterDAExpHolderV5 is
         TokenHolderLib.validateNFTOwnership({
             _ownedNFTAddress: ownedNFTAddress,
             _ownedNFTTokenId: ownedNFTTokenId,
-            _targetOwner: vault
+            _targetOwner: vault_
         });
         SplitFundsLib.splitFundsETHRefundSender({
             _projectId: projectId,

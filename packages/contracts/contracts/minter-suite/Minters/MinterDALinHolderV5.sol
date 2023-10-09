@@ -824,7 +824,7 @@ contract MinterDALinHolderV5 is
         TokenHolderLib.validateNFTOwnership({
             _ownedNFTAddress: ownedNFTAddress,
             _ownedNFTTokenId: ownedNFTTokenId,
-            _targetOwner: vault
+            _targetOwner: vault_
         });
 
         SplitFundsLib.splitFundsETHRefundSender({
