@@ -76,7 +76,7 @@ contract MinterDAExpV5 is
     address public immutable minterFilterAddress;
 
     /// Minter filter this minter may interact with.
-    IMinterFilterV1 private immutable minterFilter;
+    IMinterFilterV1 private immutable _minterFilter;
 
     /// minterType for this minter
     string public constant minterType = "MinterDAExpV5";
@@ -91,49 +91,49 @@ contract MinterDAExpV5 is
 
     /**
      * @notice Initializes contract to be a Filtered Minter for
-     * `_minterFilter` minter filter.
-     * @param _minterFilter Minter filter for which this will be a
+     * `minterFilter` minter filter.
+     * @param minterFilter Minter filter for which this will be a
      * filtered minter.
      */
-    constructor(address _minterFilter) ReentrancyGuard() {
-        minterFilterAddress = _minterFilter;
-        minterFilter = IMinterFilterV1(_minterFilter);
+    constructor(address minterFilter) ReentrancyGuard() {
+        minterFilterAddress = minterFilter;
+        _minterFilter = IMinterFilterV1(minterFilter);
         emit DAExpLib.AuctionMinHalfLifeSecondsUpdated(
             minimumPriceDecayHalfLifeSeconds
         );
     }
 
     /**
-     * @notice Manually sets the local maximum invocations of project `_projectId`
-     * with the provided `_maxInvocations`, checking that `_maxInvocations` is less
-     * than or equal to the value of project `_project_id`'s maximum invocations that is
+     * @notice Manually sets the local maximum invocations of project `projectId`
+     * with the provided `maxInvocations`, checking that `maxInvocations` is less
+     * than or equal to the value of project `project_id`'s maximum invocations that is
      * set on the core contract.
-     * @dev Note that a `_maxInvocations` of 0 can only be set if the current `invocations`
+     * @dev Note that a `maxInvocations` of 0 can only be set if the current `invocations`
      * value is also 0 and this would also set `maxHasBeenInvoked` to true, correctly short-circuiting
      * this minter's purchase function, avoiding extra gas costs from the core contract's maxInvocations check.
-     * @param _projectId Project ID to set the maximum invocations for.
-     * @param _coreContract Core contract address for the given project.
-     * @param _maxInvocations Maximum invocations to set for the project.
+     * @param projectId Project ID to set the maximum invocations for.
+     * @param coreContract Core contract address for the given project.
+     * @param maxInvocations Maximum invocations to set for the project.
      */
     function manuallyLimitProjectMaxInvocations(
-        uint256 _projectId,
-        address _coreContract,
-        uint24 _maxInvocations
+        uint256 projectId,
+        address coreContract,
+        uint24 maxInvocations
     ) external {
         AuthLib.onlyArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
+            _projectId: projectId,
+            _coreContract: coreContract,
             _sender: msg.sender
         });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _maxInvocations: _maxInvocations
+            _projectId: projectId,
+            _coreContract: coreContract,
+            _maxInvocations: maxInvocations
         });
     }
 
     /**
-     * @notice Sets auction details for project `_projectId`.
+     * @notice Sets auction details for project `projectId`.
      * Requires one of the following:
      * - The auction is unconfigured
      * - The auction has not yet started
@@ -142,47 +142,47 @@ contract MinterDAExpV5 is
      * max invocations effectively grants the artist the ability to set a new
      * auction at any point, since minter-local max invocations can be set by
      * the artist.
-     * @param _projectId Project ID to set auction details for.
-     * @param _coreContract Core contract address for the given project.
-     * @param _auctionTimestampStart Timestamp at which to start the auction.
-     * @param _priceDecayHalfLifeSeconds The half life with which to decay the
+     * @param projectId Project ID to set auction details for.
+     * @param coreContract Core contract address for the given project.
+     * @param auctionTimestampStart Timestamp at which to start the auction.
+     * @param priceDecayHalfLifeSeconds The half life with which to decay the
      *  price (in seconds).
-     * @param _startPrice Price at which to start the auction, in Wei.
-     * @param _basePrice Resting price of the auction, in Wei.
+     * @param startPrice Price at which to start the auction, in Wei.
+     * @param basePrice Resting price of the auction, in Wei.
      * @dev Note that it is intentionally supported here that the configured
      * price may be explicitly set to `0`.
      */
     function setAuctionDetails(
-        uint256 _projectId,
-        address _coreContract,
-        uint40 _auctionTimestampStart,
-        uint40 _priceDecayHalfLifeSeconds,
-        uint256 _startPrice,
-        uint256 _basePrice
+        uint256 projectId,
+        address coreContract,
+        uint40 auctionTimestampStart,
+        uint40 priceDecayHalfLifeSeconds,
+        uint256 startPrice,
+        uint256 basePrice
     ) external {
         AuthLib.onlyArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
+            _projectId: projectId,
+            _coreContract: coreContract,
             _sender: msg.sender
         });
         // CHECKS
         require(
-            (_priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds),
+            (priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds),
             "Price decay half life must be greater than min allowable value"
         );
 
         // EFFECTS
         bool maxHasBeenInvoked = MaxInvocationsLib.getMaxHasBeenInvoked(
-            _projectId,
-            _coreContract
+            projectId,
+            coreContract
         );
         DAExpLib.setAuctionDetailsExp({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _auctionTimestampStart: _auctionTimestampStart,
-            _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
-            _startPrice: _startPrice.toUint88(),
-            _basePrice: _basePrice.toUint88(),
+            _projectId: projectId,
+            _coreContract: coreContract,
+            _auctionTimestampStart: auctionTimestampStart,
+            _priceDecayHalfLifeSeconds: priceDecayHalfLifeSeconds,
+            _startPrice: startPrice.toUint88(),
+            _basePrice: basePrice.toUint88(),
             _allowReconfigureAfterStart: maxHasBeenInvoked
         });
 
@@ -191,22 +191,22 @@ contract MinterDAExpV5 is
         // initial values, we know they have not been populated.
         if (
             MaxInvocationsLib.maxInvocationsIsUnconfigured(
-                _projectId,
-                _coreContract
+                projectId,
+                coreContract
             )
         ) {
-            syncProjectMaxInvocationsToCore(_projectId, _coreContract);
+            syncProjectMaxInvocationsToCore(projectId, coreContract);
         }
     }
 
     /**
      * @notice Sets the minimum and maximum values that are settable for
-     * `_priceDecayHalfLifeSeconds` across all projects.
-     * @param _minimumPriceDecayHalfLifeSeconds Minimum price decay half life
+     * `priceDecayHalfLifeSeconds` across all projects.
+     * @param minimumPriceDecayHalfLifeSeconds_ Minimum price decay half life
      * (in seconds).
      */
     function setMinimumPriceDecayHalfLifeSeconds(
-        uint256 _minimumPriceDecayHalfLifeSeconds
+        uint256 minimumPriceDecayHalfLifeSeconds_
     ) external {
         AuthLib.onlyMinterFilterAdminACL({
             _minterFilterAddress: minterFilterAddress,
@@ -215,57 +215,57 @@ contract MinterDAExpV5 is
             _selector: this.setMinimumPriceDecayHalfLifeSeconds.selector
         });
         require(
-            _minimumPriceDecayHalfLifeSeconds > 0,
+            minimumPriceDecayHalfLifeSeconds_ > 0,
             "Half life of zero not allowed"
         );
-        minimumPriceDecayHalfLifeSeconds = _minimumPriceDecayHalfLifeSeconds;
+        minimumPriceDecayHalfLifeSeconds = minimumPriceDecayHalfLifeSeconds_;
 
         emit DAExpLib.AuctionMinHalfLifeSecondsUpdated(
-            _minimumPriceDecayHalfLifeSeconds
+            minimumPriceDecayHalfLifeSeconds_
         );
     }
 
     /**
-     * @notice Resets auction details for project `_projectId`, zero-ing out all
+     * @notice Resets auction details for project `projectId`, zero-ing out all
      * relevant auction fields. Not intended to be used in normal auction
      * operation, but rather only in case of the need to halt an auction.
-     * @param _projectId Project ID to set auction details for.
-     * @param _coreContract Core contract address for the given project.
+     * @param projectId Project ID to set auction details for.
+     * @param coreContract Core contract address for the given project.
      */
     function resetAuctionDetails(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external {
         AuthLib.onlyCoreAdminACL({
-            _coreContract: _coreContract,
+            _coreContract: coreContract,
             _sender: msg.sender,
             _contract: address(this),
             _selector: this.resetAuctionDetails.selector
         });
 
         DAExpLib.resetAuctionDetails({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            _projectId: projectId,
+            _coreContract: coreContract
         });
     }
 
     /**
-     * @notice Purchases a token from project `_projectId`.
+     * @notice Purchases a token from project `projectId`.
      * Note: Collectors should not send excessive value with their purchase
      * transaction, because the artist has the ability to change the auction
      * details at any time, including the price.
-     * @param _projectId Project ID to mint a token on.
-     * @param _coreContract Core contract address for the given project.
+     * @param projectId Project ID to mint a token on.
+     * @param coreContract Core contract address for the given project.
      * @return tokenId Token ID of minted token
      */
     function purchase(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo({
-            _to: msg.sender,
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            to: msg.sender,
+            projectId: projectId,
+            coreContract: coreContract
         });
 
         return tokenId;
@@ -274,14 +274,14 @@ contract MinterDAExpV5 is
     // public getter functions
     /**
      * @notice Gets the maximum invocations project configuration.
-     * @param _projectId The ID of the project whose data needs to be fetched.
-     * @param _coreContract The address of the core contract.
+     * @param projectId The ID of the project whose data needs to be fetched.
+     * @param coreContract The address of the core contract.
      * @return MaxInvocationsLib.MaxInvocationsProjectConfig instance with the
      * configuration data.
      */
     function maxInvocationsProjectConfig(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     )
         external
         view
@@ -289,15 +289,15 @@ contract MinterDAExpV5 is
     {
         return
             MaxInvocationsLib.getMaxInvocationsProjectConfig(
-                _projectId,
-                _coreContract
+                projectId,
+                coreContract
             );
     }
 
     /**
      * @notice Retrieves the auction parameters for a specific project.
-     * @param _projectId The unique identifier for the project.
-     * @param _coreContract The address of the core contract for the project.
+     * @param projectId The unique identifier for the project.
+     * @param coreContract The address of the core contract for the project.
      * @return timestampStart The start timestamp for the auction.
      * @return priceDecayHalfLifeSeconds The half-life for the price decay
      * during the auction, in seconds.
@@ -305,8 +305,8 @@ contract MinterDAExpV5 is
      * @return basePrice The base price of the auction.
      */
     function projectAuctionParameters(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     )
         external
         view
@@ -318,7 +318,7 @@ contract MinterDAExpV5 is
         )
     {
         DAExpLib.DAProjectConfig storage _auctionProjectConfig = DAExpLib
-            .getDAProjectConfig(_projectId, _coreContract);
+            .getDAProjectConfig(projectId, coreContract);
         timestampStart = _auctionProjectConfig.timestampStart;
         priceDecayHalfLifeSeconds = _auctionProjectConfig
             .priceDecayHalfLifeSeconds;
@@ -327,25 +327,25 @@ contract MinterDAExpV5 is
     }
 
     /**
-     * @notice Checks if the specified `_coreContract` is a valid engine contract.
-     * @dev This function retrieves the cached value of `_coreContract` from
+     * @notice Checks if the specified `coreContract` is a valid engine contract.
+     * @dev This function retrieves the cached value of `coreContract` from
      * the `isEngineCache` mapping. If the cached value is already set, it
      * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
-     * function from the `SplitFundsLib` library to check if `_coreContract`
+     * function from the `SplitFundsLib` library to check if `coreContract`
      * is a valid engine contract.
-     * @dev This function will revert if the provided `_coreContract` is not
+     * @dev This function will revert if the provided `coreContract` is not
      * a valid Engine or V3 Flagship contract.
-     * @param _coreContract The address of the contract to check.
-     * @return bool indicating if `_coreContract` is a valid engine contract.
+     * @param coreContract The address of the contract to check.
+     * @return bool indicating if `coreContract` is a valid engine contract.
      */
-    function isEngineView(address _coreContract) external view returns (bool) {
+    function isEngineView(address coreContract) external view returns (bool) {
         SplitFundsLib.IsEngineCache storage isEngineCache = SplitFundsLib
-            .getIsEngineCacheConfig(_coreContract);
+            .getIsEngineCacheConfig(coreContract);
         if (isEngineCache.isCached) {
             return isEngineCache.isEngine;
         } else {
             // @dev this calls the non-modifying variant of getV3CoreIsEngine
-            return SplitFundsLib.getV3CoreIsEngineView(_coreContract);
+            return SplitFundsLib.getV3CoreIsEngineView(coreContract);
         }
     }
 
@@ -360,15 +360,14 @@ contract MinterDAExpV5 is
      * possible because the V3 core contract only allows maximum invocations
      * to be reduced, not increased. Based on this rationale, we intentionally
      * do not do input validation in this method as to whether or not the input
-     * @param _projectId is an existing project ID.
-     * @param _coreContract is an existing core contract address.
+     * @param projectId is an existing project ID.
+     * @param coreContract is an existing core contract address.
      */
     function projectMaxHasBeenInvoked(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external view returns (bool) {
-        return
-            MaxInvocationsLib.getMaxHasBeenInvoked(_projectId, _coreContract);
+        return MaxInvocationsLib.getMaxHasBeenInvoked(projectId, coreContract);
     }
 
     /**
@@ -387,23 +386,23 @@ contract MinterDAExpV5 is
      * increased. When this happens, the minter will enable minting, allowing
      * the core contract to enforce the max invocations check. Based on this
      * rationale, we intentionally do not do input validation in this method as
-     * to whether or not the input `_projectId` is an existing project ID.
-     * @param _projectId is an existing project ID.
-     * @param _coreContract is an existing core contract address.
+     * to whether or not the input `projectId` is an existing project ID.
+     * @param projectId is an existing project ID.
+     * @param coreContract is an existing core contract address.
      */
     function projectMaxInvocations(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external view returns (uint256) {
-        return MaxInvocationsLib.getMaxInvocations(_projectId, _coreContract);
+        return MaxInvocationsLib.getMaxInvocations(projectId, coreContract);
     }
 
     /**
      * @notice Gets if price of token is configured, price of minting a
-     * token on project `_projectId`, and currency symbol and address to be
+     * token on project `projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.
-     * @param _projectId Project ID to get price information for
-     * @param _coreContract Contract address of the core contract
+     * @param projectId Project ID to get price information for
+     * @param coreContract Contract address of the core contract
      * @return isConfigured true only if token price has been configured on
      * this minter
      * @return tokenPriceInWei current price of token on this minter - invalid
@@ -414,8 +413,8 @@ contract MinterDAExpV5 is
      * this minter. This minter always returns null address, reserved for ether
      */
     function getPriceInfo(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     )
         external
         view
@@ -427,7 +426,7 @@ contract MinterDAExpV5 is
         )
     {
         DAExpLib.DAProjectConfig storage auctionProjectConfig = DAExpLib
-            .getDAProjectConfig(_projectId, _coreContract);
+            .getDAProjectConfig(projectId, coreContract);
         isConfigured = (auctionProjectConfig.startPrice > 0);
         if (!isConfigured) {
             // In the case of unconfigured auction, return price of zero when
@@ -440,8 +439,8 @@ contract MinterDAExpV5 is
             tokenPriceInWei = auctionProjectConfig.startPrice;
         } else {
             tokenPriceInWei = DAExpLib.getPriceExp({
-                _projectId: _projectId,
-                _coreContract: _coreContract
+                _projectId: projectId,
+                _coreContract: coreContract
             });
         }
         currencySymbol = "ETH";
@@ -449,80 +448,80 @@ contract MinterDAExpV5 is
     }
 
     /**
-     * @notice Syncs local maximum invocations of project `_projectId` based on
+     * @notice Syncs local maximum invocations of project `projectId` based on
      * the value currently defined in the core contract.
-     * @param _projectId Project ID to set the maximum invocations for.
-     * @param _coreContract Core contract address for the given project.
+     * @param projectId Project ID to set the maximum invocations for.
+     * @param coreContract Core contract address for the given project.
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
     function syncProjectMaxInvocationsToCore(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) public {
         AuthLib.onlyArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
+            _projectId: projectId,
+            _coreContract: coreContract,
             _sender: msg.sender
         });
 
         MaxInvocationsLib.syncProjectMaxInvocationsToCore({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            _projectId: projectId,
+            _coreContract: coreContract
         });
     }
 
     /**
-     * @notice Purchases a token from project `_projectId` and sets
-     * the token's owner to `_to`.
+     * @notice Purchases a token from project `projectId` and sets
+     * the token's owner to `to`.
      * Note: Collectors should not send excessive value with their purchase
      * transaction, because the artist has the ability to change the auction
      * details at any time, including the price.
-     * @param _to Address to be the new token's owner.
-     * @param _projectId Project ID to mint a token on.
-     * @param _coreContract Core contract address for the given project.
+     * @param to Address to be the new token's owner.
+     * @param projectId Project ID to mint a token on.
+     * @param coreContract Core contract address for the given project.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
-        address _to,
-        uint256 _projectId,
-        address _coreContract
+        address to,
+        uint256 projectId,
+        address coreContract
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         // pre-mint MaxInvocationsLib checks
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
-        // `_maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
+        // `maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
-        MaxInvocationsLib.preMintChecks(_projectId, _coreContract);
+        MaxInvocationsLib.preMintChecks(projectId, coreContract);
 
         // getPriceExp reverts if auction is unconfigured or has not started
         uint256 pricePerTokenInWei = DAExpLib.getPriceExp({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            _projectId: projectId,
+            _coreContract: coreContract
         });
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
         // EFFECTS
-        tokenId = minterFilter.mint_joo({
-            _to: _to,
-            _projectId: _projectId,
-            _coreContract: _coreContract,
+        tokenId = _minterFilter.mint_joo({
+            _to: to,
+            _projectId: projectId,
+            _coreContract: coreContract,
             _sender: msg.sender
         });
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
-            _coreContract
+            coreContract
         );
 
         // INTERACTIONS
         SplitFundsLib.splitFundsETHRefundSender({
-            _projectId: _projectId,
+            _projectId: projectId,
             _pricePerTokenInWei: pricePerTokenInWei,
-            _coreContract: _coreContract
+            _coreContract: coreContract
         });
 
         return tokenId;
