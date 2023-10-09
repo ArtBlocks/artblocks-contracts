@@ -801,7 +801,7 @@ runForEach.forEach((params) => {
           const minterConfigurationDetails =
             await config.minter.minterConfigurationDetails();
           expect(seaProjectConfig.activeAuction.endTime).to.equal(
-            bidTimestamp + minterConfigurationDetails.minterTimeBufferSeconds_
+            bidTimestamp + minterConfigurationDetails.minterTimeBufferSeconds
           );
         });
 
