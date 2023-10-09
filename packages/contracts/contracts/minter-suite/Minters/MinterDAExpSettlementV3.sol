@@ -96,7 +96,7 @@ contract MinterDAExpSettlementV3 is
     address public immutable minterFilterAddress;
 
     /// Minter filter this minter may interact with.
-    IMinterFilterV1 private immutable minterFilter;
+    IMinterFilterV1 private immutable _minterFilter;
 
     /// minterType for this minter
     string public constant minterType = "MinterDAExpSettlementV3";
@@ -110,13 +110,13 @@ contract MinterDAExpSettlementV3 is
 
     /**
      * @notice Initializes contract to be a Filtered Minter for
-     * `_minterFilter` minter filter.
-     * @param _minterFilter Minter filter for which this will be a
+     * `minterFilter` minter filter.
+     * @param minterFilter Minter filter for which this will be a
      * filtered minter.
      */
-    constructor(address _minterFilter) ReentrancyGuard() {
-        minterFilterAddress = _minterFilter;
-        minterFilter = IMinterFilterV1(_minterFilter);
+    constructor(address minterFilter) ReentrancyGuard() {
+        minterFilterAddress = minterFilter;
+        _minterFilter = IMinterFilterV1(minterFilter);
         emit DAExpLib.AuctionMinHalfLifeSecondsUpdated(
             minimumPriceDecayHalfLifeSeconds
         );
@@ -130,87 +130,87 @@ contract MinterDAExpSettlementV3 is
      * @dev Note that a `_maxInvocations` of 0 can only be set if the current `invocations`
      * value is also 0 and this would also set `maxHasBeenInvoked` to true, correctly short-circuiting
      * this minter's purchase function, avoiding extra gas costs from the core contract's maxInvocations check.
-     * @param _projectId Project ID to set the maximum invocations for.
-     * @param _coreContract Core contract address for the given project.
-     * @param _maxInvocations Maximum invocations to set for the project.
+     * @param projectId Project ID to set the maximum invocations for.
+     * @param coreContract Core contract address for the given project.
+     * @param maxInvocations Maximum invocations to set for the project.
      */
     function manuallyLimitProjectMaxInvocations(
-        uint256 _projectId,
-        address _coreContract,
-        uint24 _maxInvocations
+        uint256 projectId,
+        address coreContract,
+        uint24 maxInvocations
     ) external {
         AuthLib.onlyArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
+            _projectId: projectId,
+            _coreContract: coreContract,
             _sender: msg.sender
         });
         // @dev guard rail to prevent accidentally adjusting max invocations
         // after one or more purchases have been made
         require(
             SettlementExpLib.getNumPurchasesOnMinter({
-                _projectId: _projectId,
-                _coreContract: _coreContract
+                _projectId: projectId,
+                _coreContract: coreContract
             }) == 0,
             "Only before purchases"
         );
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _maxInvocations: _maxInvocations
+            _projectId: projectId,
+            _coreContract: coreContract,
+            _maxInvocations: maxInvocations
         });
     }
 
     /**
      * @notice Sets auction details for project `_projectId`.
-     * @param _projectId Project ID to set auction details for.
-     * @param _coreContract Core contract address for the given project.
-     * @param _auctionTimestampStart Timestamp at which to start the auction.
-     * @param _priceDecayHalfLifeSeconds The half life with which to decay the
+     * @param projectId Project ID to set auction details for.
+     * @param coreContract Core contract address for the given project.
+     * @param auctionTimestampStart Timestamp at which to start the auction.
+     * @param priceDecayHalfLifeSeconds The half life with which to decay the
      *  price (in seconds).
-     * @param _startPrice Price at which to start the auction, in Wei.
-     * @param _basePrice Resting price of the auction, in Wei.
+     * @param startPrice Price at which to start the auction, in Wei.
+     * @param basePrice Resting price of the auction, in Wei.
      * @dev Note that it is intentionally supported here that the configured
      * price may be explicitly set to `0`.
      */
     function setAuctionDetails(
-        uint256 _projectId,
-        address _coreContract,
-        uint40 _auctionTimestampStart,
-        uint40 _priceDecayHalfLifeSeconds,
-        uint256 _startPrice,
-        uint256 _basePrice
+        uint256 projectId,
+        address coreContract,
+        uint40 auctionTimestampStart,
+        uint40 priceDecayHalfLifeSeconds,
+        uint256 startPrice,
+        uint256 basePrice
     ) external {
         AuthLib.onlyArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
+            _projectId: projectId,
+            _coreContract: coreContract,
             _sender: msg.sender
         });
         // CHECKS
         // require valid start price on a settlement minter
         require(
             SettlementExpLib.isValidStartPrice({
-                _projectId: _projectId,
-                _coreContract: _coreContract,
-                _startPrice: _startPrice
+                _projectId: projectId,
+                _coreContract: coreContract,
+                _startPrice: startPrice
             }),
             "Only monotonic decreasing price"
         );
         // do not allow a base price of zero (to simplify logic on this minter)
-        require(_basePrice > 0, "Base price must be non-zero");
+        require(basePrice > 0, "Base price must be non-zero");
         // require valid half life for this minter
         require(
-            (_priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds),
+            (priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds),
             "Price decay half life must be greater than min allowable value"
         );
 
         // EFFECTS
         DAExpLib.setAuctionDetailsExp({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _auctionTimestampStart: _auctionTimestampStart,
-            _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
-            _startPrice: _startPrice.toUint88(),
-            _basePrice: _basePrice.toUint88(),
+            _projectId: projectId,
+            _coreContract: coreContract,
+            _auctionTimestampStart: auctionTimestampStart,
+            _priceDecayHalfLifeSeconds: priceDecayHalfLifeSeconds,
+            _startPrice: startPrice.toUint88(),
+            _basePrice: basePrice.toUint88(),
             // we set this to false so it prevents artist from altering auction
             // even after max has been invoked (require explicit auction reset
             // on settlement minter)
@@ -225,17 +225,17 @@ contract MinterDAExpSettlementV3 is
         // @dev this minter pays the higher gas cost of a full refresh here due
         // to the more severe ux degredation of a stale minter-local max
         // invocations state.
-        MaxInvocationsLib.refreshMaxInvocations(_projectId, _coreContract);
+        MaxInvocationsLib.refreshMaxInvocations(projectId, coreContract);
     }
 
     /**
      * @notice Sets the minimum and maximum values that are settable for
      * `_priceDecayHalfLifeSeconds` across all projects.
-     * @param _minimumPriceDecayHalfLifeSeconds Minimum price decay half life
+     * @param minimumPriceDecayHalfLifeSeconds_ Minimum price decay half life
      * (in seconds).
      */
     function setMinimumPriceDecayHalfLifeSeconds(
-        uint256 _minimumPriceDecayHalfLifeSeconds
+        uint256 minimumPriceDecayHalfLifeSeconds_
     ) external {
         AuthLib.onlyMinterFilterAdminACL({
             _minterFilterAddress: minterFilterAddress,
@@ -244,13 +244,13 @@ contract MinterDAExpSettlementV3 is
             _selector: this.setMinimumPriceDecayHalfLifeSeconds.selector
         });
         require(
-            _minimumPriceDecayHalfLifeSeconds > 0,
+            minimumPriceDecayHalfLifeSeconds_ > 0,
             "Half life of zero not allowed"
         );
-        minimumPriceDecayHalfLifeSeconds = _minimumPriceDecayHalfLifeSeconds;
+        minimumPriceDecayHalfLifeSeconds = minimumPriceDecayHalfLifeSeconds_;
 
         emit DAExpLib.AuctionMinHalfLifeSecondsUpdated(
-            _minimumPriceDecayHalfLifeSeconds
+            minimumPriceDecayHalfLifeSeconds_
         );
     }
 
@@ -258,34 +258,35 @@ contract MinterDAExpSettlementV3 is
      * @notice Resets auction details for project `_projectId`, zero-ing out all
      * relevant auction fields. Not intended to be used in normal auction
      * operation, but rather only in case of the need to halt an auction.
-     * @param _projectId Project ID to set auction details for.
+     * @param projectId Project ID to set auction details for.
+     * @param coreContract Core contract address for the given project.
      */
     function resetAuctionDetails(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external {
         AuthLib.onlyCoreAdminACL({
-            _coreContract: _coreContract,
+            _coreContract: coreContract,
             _sender: msg.sender,
             _contract: address(this),
             _selector: this.resetAuctionDetails.selector
         });
 
         SettlementExpLib.SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfig = SettlementExpLib
-                .getSettlementAuctionProjectConfig(_projectId, _coreContract);
+            storage settlementAuctionProjectConfig = SettlementExpLib
+                .getSettlementAuctionProjectConfig(projectId, coreContract);
 
         // no reset after revenues collected, since that solidifies amount due
         require(
-            !_settlementAuctionProjectConfig.auctionRevenuesCollected,
+            !settlementAuctionProjectConfig.auctionRevenuesCollected,
             "Only before revenues collected"
         );
 
         // EFFECTS
         // delete auction parameters
         DAExpLib.resetAuctionDetails({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            _projectId: projectId,
+            _coreContract: coreContract
         });
 
         // @dev do NOT delete settlement parameters, as they are used to
@@ -304,14 +305,16 @@ contract MinterDAExpSettlementV3 is
      * After revenues are collected, auction parameters will never be allowed
      * to be reset, and excess settlement funds will become immutable and fully
      * deterministic.
+     * @param projectId Project ID to withdraw revenues for.
+     * @param coreContract Core contract address for the given project.
      */
     function withdrawArtistAndAdminRevenues(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external nonReentrant {
         AuthLib.onlyCoreAdminACLOrArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
+            _projectId: projectId,
+            _coreContract: coreContract,
             _sender: msg.sender,
             _contract: address(this),
             _selector: this.withdrawArtistAndAdminRevenues.selector
@@ -324,8 +327,8 @@ contract MinterDAExpSettlementV3 is
         // revert if the project's balance is insufficient to cover the
         // settlement amount (which is expected to not be possible)
         SettlementExpLib.distributeArtistAndAdminRevenues({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            _projectId: projectId,
+            _coreContract: coreContract
         });
     }
 
@@ -340,17 +343,17 @@ contract MinterDAExpSettlementV3 is
      * has been purchased at base price. This minimizes the amount of gas
      * required to send all excess settlement funds to the sender.
      * Sends excess settlement funds to msg.sender.
-     * @param _projectId Project ID to reclaim excess settlement funds on.
-     * @param _coreContract Contract address of the core contract
+     * @param projectId Project ID to reclaim excess settlement funds on.
+     * @param coreContract Contract address of the core contract
      */
     function reclaimProjectExcessSettlementFunds(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external {
         reclaimProjectExcessSettlementFundsTo(
             payable(msg.sender),
-            _projectId,
-            _coreContract
+            projectId,
+            coreContract
         );
     }
 
@@ -366,37 +369,37 @@ contract MinterDAExpSettlementV3 is
      * Sends total of all excess settlement funds to msg.sender in a single
      * chunk. Entire transaction reverts if any excess settlement calculation
      * fails.
-     * @param _projectIds Array of project IDs to reclaim excess settlement
+     * @param projectIds Array of project IDs to reclaim excess settlement
      * funds on.
-     * @param _coreContracts Array of core contract addresses for the given
+     * @param coreContracts Array of core contract addresses for the given
      * projects. Must be in the same order as `_projectIds` (aligned by index).
      */
     function reclaimProjectsExcessSettlementFunds(
-        uint256[] calldata _projectIds,
-        address[] calldata _coreContracts
+        uint256[] calldata projectIds,
+        address[] calldata coreContracts
     ) external {
         // @dev input validation checks are performed in subcall
         reclaimProjectsExcessSettlementFundsTo(
             payable(msg.sender),
-            _projectIds,
-            _coreContracts
+            projectIds,
+            coreContracts
         );
     }
 
     /**
      * @notice Purchases a token from project `_projectId`.
-     * @param _projectId Project ID to mint a token on.
-     * @param _coreContract Core contract address for the given project.
+     * @param projectId Project ID to mint a token on.
+     * @param coreContract Core contract address for the given project.
      * @return tokenId Token ID of minted token
      */
     function purchase(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo({
-            _to: msg.sender,
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            to: msg.sender,
+            projectId: projectId,
+            coreContract: coreContract
         });
 
         return tokenId;
@@ -427,8 +430,8 @@ contract MinterDAExpSettlementV3 is
 
     /**
      * @notice Retrieves the auction parameters for a specific project.
-     * @param _projectId The unique identifier for the project.
-     * @param _coreContract The address of the core contract for the project.
+     * @param projectId The unique identifier for the project.
+     * @param coreContract The address of the core contract for the project.
      * @return timestampStart The start timestamp for the auction.
      * @return priceDecayHalfLifeSeconds The half-life for the price decay
      * during the auction, in seconds.
@@ -436,8 +439,8 @@ contract MinterDAExpSettlementV3 is
      * @return basePrice The base price of the auction.
      */
     function projectAuctionParameters(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     )
         external
         view
@@ -450,8 +453,8 @@ contract MinterDAExpSettlementV3 is
     {
         DAExpLib.DAProjectConfig storage _auctionProjectConfig = DAExpLib
             .getDAProjectConfig({
-                _projectId: _projectId,
-                _coreContract: _coreContract
+                _projectId: projectId,
+                _coreContract: coreContract
             });
         timestampStart = _auctionProjectConfig.timestampStart;
         priceDecayHalfLifeSeconds = _auctionProjectConfig
@@ -469,17 +472,17 @@ contract MinterDAExpSettlementV3 is
      * is a valid engine contract.
      * @dev This function will revert if the provided `_coreContract` is not
      * a valid Engine or V3 Flagship contract.
-     * @param _coreContract The address of the contract to check.
+     * @param coreContract The address of the contract to check.
      * @return bool indicating if `_coreContract` is a valid engine contract.
      */
-    function isEngineView(address _coreContract) external view returns (bool) {
+    function isEngineView(address coreContract) external view returns (bool) {
         SplitFundsLib.IsEngineCache storage isEngineCache = SplitFundsLib
-            .getIsEngineCacheConfig(_coreContract);
+            .getIsEngineCacheConfig(coreContract);
         if (isEngineCache.isCached) {
             return isEngineCache.isEngine;
         } else {
             // @dev this calls the non-modifying variant of getV3CoreIsEngine
-            return SplitFundsLib.getV3CoreIsEngineView(_coreContract);
+            return SplitFundsLib.getV3CoreIsEngineView(coreContract);
         }
     }
 
@@ -494,15 +497,14 @@ contract MinterDAExpSettlementV3 is
      * possible because the V3 core contract only allows maximum invocations
      * to be reduced, not increased. Based on this rationale, we intentionally
      * do not do input validation in this method as to whether or not the input
-     * @param `_projectId` is an existing project ID.
-     * @param `_coreContract` is an existing core contract address.
+     * @param projectId is an existing project ID.
+     * @param coreContract is an existing core contract address.
      */
     function projectMaxHasBeenInvoked(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external view returns (bool) {
-        return
-            MaxInvocationsLib.getMaxHasBeenInvoked(_projectId, _coreContract);
+        return MaxInvocationsLib.getMaxHasBeenInvoked(projectId, coreContract);
     }
 
     /**
@@ -522,44 +524,44 @@ contract MinterDAExpSettlementV3 is
      * the core contract to enforce the max invocations check. Based on this
      * rationale, we intentionally do not do input validation in this method as
      * to whether or not the input `_projectId` is an existing project ID.
-     * @param `_projectId` is an existing project ID.
-     * @param `_coreContract` is an existing core contract address.
+     * @param projectId is an existing project ID.
+     * @param coreContract is an existing core contract address.
      */
     function projectMaxInvocations(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external view returns (uint256) {
-        return MaxInvocationsLib.getMaxInvocations(_projectId, _coreContract);
+        return MaxInvocationsLib.getMaxInvocations(projectId, coreContract);
     }
 
     /**
      * @notice Gets the latest purchase price for project `_projectId`, or 0 if
      * no purchases have been made.
-     * @param _projectId Project ID to get latest purchase price for.
-     * @param _coreContract Contract address of the core contract
+     * @param projectId Project ID to get latest purchase price for.
+     * @param coreContract Contract address of the core contract
      */
     function getProjectLatestPurchasePrice(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external view returns (uint256 latestPurchasePrice) {
         SettlementExpLib.SettlementAuctionProjectConfig
             storage settlementAuctionProjectConfig = SettlementExpLib
-                .getSettlementAuctionProjectConfig(_projectId, _coreContract);
+                .getSettlementAuctionProjectConfig(projectId, coreContract);
         return settlementAuctionProjectConfig.latestPurchasePrice;
     }
 
     /**
      * @notice Gets the number of settleable invocations for project `_projectId`.
-     * @param _projectId Project ID to get number of settleable invocations for.
-     * @param _coreContract Contract address of the core contract
+     * @param projectId Project ID to get number of settleable invocations for.
+     * @param coreContract Contract address of the core contract
      */
     function getNumSettleableInvocations(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external view returns (uint256 numSettleableInvocations) {
         SettlementExpLib.SettlementAuctionProjectConfig
             storage settlementAuctionProjectConfig = SettlementExpLib
-                .getSettlementAuctionProjectConfig(_projectId, _coreContract);
+                .getSettlementAuctionProjectConfig(projectId, coreContract);
         return settlementAuctionProjectConfig.numSettleableInvocations;
     }
 
@@ -568,16 +570,16 @@ contract MinterDAExpSettlementV3 is
      * for project `_projectId`. This value is non-zero if not all purchasers
      * have reclaimed their excess settlement funds, or if an artist/admin has
      * not yet withdrawn their revenues.
-     * @param _projectId Project ID to get balance for.
-     * @param _coreContract Contract address of the core contract
+     * @param projectId Project ID to get balance for.
+     * @param coreContract Contract address of the core contract
      */
     function getProjectBalance(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external view returns (uint256 projectBalance) {
         SettlementExpLib.SettlementAuctionProjectConfig
             storage settlementAuctionProjectConfig = SettlementExpLib
-                .getSettlementAuctionProjectConfig(_projectId, _coreContract);
+                .getSettlementAuctionProjectConfig(projectId, coreContract);
         return settlementAuctionProjectConfig.projectBalance;
     }
 
@@ -585,8 +587,8 @@ contract MinterDAExpSettlementV3 is
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.
-     * @param _projectId Project ID to get price information for
-     * @param _coreContract Contract address of the core contract
+     * @param projectId Project ID to get price information for
+     * @param coreContract Contract address of the core contract
      * @return isConfigured true only if token price has been configured on
      * this minter
      * @return tokenPriceInWei current price of token on this minter - invalid
@@ -597,8 +599,8 @@ contract MinterDAExpSettlementV3 is
      * this minter. This minter always returns null address, reserved for ether
      */
     function getPriceInfo(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     )
         external
         view
@@ -611,8 +613,8 @@ contract MinterDAExpSettlementV3 is
     {
         DAExpLib.DAProjectConfig storage auctionProjectConfig = DAExpLib
             .getDAProjectConfig({
-                _projectId: _projectId,
-                _coreContract: _coreContract
+                _projectId: projectId,
+                _coreContract: coreContract
             });
 
         // take action based on configured state
@@ -632,8 +634,8 @@ contract MinterDAExpSettlementV3 is
             // function, and we prefer to use the extra gas to appropriately
             // correct for the case of a stale minter max invocation state.
             tokenPriceInWei = SettlementExpLib.getPriceSafe({
-                _projectId: _projectId,
-                _coreContract: _coreContract
+                _projectId: projectId,
+                _coreContract: coreContract
             });
         }
         currencySymbol = "ETH";
@@ -647,25 +649,26 @@ contract MinterDAExpSettlementV3 is
      * determining excess settlement funds.
      * A user may claim excess settlement funds by calling the function
      * `reclaimProjectExcessSettlementFunds(_projectId)`.
-     * @param _projectId Project ID to query.
-     * @param _walletAddress Account address for which the excess posted funds
+     * @param projectId Project ID to query.
+     * @param coreContract Contract address of the core contract
+     * @param walletAddress Account address for which the excess posted funds
      * is being queried.
      * @return excessSettlementFundsInWei Amount of excess settlement funds, in
      * wei
      */
     function getProjectExcessSettlementFunds(
-        uint256 _projectId,
-        address _coreContract,
-        address _walletAddress
+        uint256 projectId,
+        address coreContract,
+        address walletAddress
     ) external view returns (uint256 excessSettlementFundsInWei) {
         // input validation
-        require(_walletAddress != address(0), "No zero address");
+        require(walletAddress != address(0), "No zero address");
 
         (excessSettlementFundsInWei, ) = SettlementExpLib
             .getProjectExcessSettlementFunds({
-                _projectId: _projectId,
-                _coreContract: _coreContract,
-                _walletAddress: _walletAddress
+                _projectId: projectId,
+                _coreContract: coreContract,
+                _walletAddress: walletAddress
             });
         return excessSettlementFundsInWei;
     }
@@ -681,21 +684,21 @@ contract MinterDAExpSettlementV3 is
      * has been purchased at base price. This minimizes the amount of gas
      * required to send all excess settlement funds to the sender.
      * Sends excess settlement funds to address `_to`.
-     * @param _to Address to send excess settlement funds to.
-     * @param _projectId Project ID to reclaim excess settlement funds on.
-     * @param _coreContract Contract address of the core contract
+     * @param to Address to send excess settlement funds to.
+     * @param projectId Project ID to reclaim excess settlement funds on.
+     * @param coreContract Contract address of the core contract
      */
     function reclaimProjectExcessSettlementFundsTo(
-        address payable _to,
-        uint256 _projectId,
-        address _coreContract
+        address payable to,
+        uint256 projectId,
+        address coreContract
     ) public nonReentrant {
-        require(_to != address(0), "No claiming to the zero address");
+        require(to != address(0), "No claiming to the zero address");
 
         SettlementExpLib.reclaimProjectExcessSettlementFundsTo({
-            _to: _to,
-            _projectId: _projectId,
-            _coreContract: _coreContract,
+            _to: to,
+            _projectId: projectId,
+            _coreContract: coreContract,
             _purchaserAddress: msg.sender
         });
     }
@@ -712,23 +715,23 @@ contract MinterDAExpSettlementV3 is
      * Sends total of all excess settlement funds to `_to` in a single
      * chunk. Entire transaction reverts if any excess settlement calculation
      * fails.
-     * @param _to Address to send excess settlement funds to.
-     * @param _projectIds Array of project IDs to reclaim excess settlement
+     * @param to Address to send excess settlement funds to.
+     * @param projectIds Array of project IDs to reclaim excess settlement
      * funds on.
-     * @param _coreContracts Array of core contract addresses for the given
+     * @param coreContracts Array of core contract addresses for the given
      * projects. Must be in the same order as `_projectIds` (aligned by index).
      */
     function reclaimProjectsExcessSettlementFundsTo(
-        address payable _to,
-        uint256[] calldata _projectIds,
-        address[] calldata _coreContracts
+        address payable to,
+        uint256[] calldata projectIds,
+        address[] calldata coreContracts
     ) public nonReentrant {
         // CHECKS
         // input validation
-        require(_to != address(0), "No claiming to the zero address");
-        uint256 projectIdsLength = _projectIds.length;
+        require(to != address(0), "No claiming to the zero address");
+        uint256 projectIdsLength = projectIds.length;
         require(
-            projectIdsLength == _coreContracts.length,
+            projectIdsLength == coreContracts.length,
             "Array lengths must match"
         );
         // EFFECTS
@@ -737,9 +740,9 @@ contract MinterDAExpSettlementV3 is
         uint256 excessSettlementFunds;
         for (uint256 i; i < projectIdsLength; ) {
             SettlementExpLib.reclaimProjectExcessSettlementFundsTo({
-                _to: _to,
-                _projectId: _projectIds[i],
-                _coreContract: _coreContracts[i],
+                _to: to,
+                _projectId: projectIds[i],
+                _coreContract: coreContracts[i],
                 _purchaserAddress: msg.sender
             });
 
@@ -754,22 +757,22 @@ contract MinterDAExpSettlementV3 is
         // send excess settlement funds in a single chunk for all
         // projects
         bool success_;
-        (success_, ) = _to.call{value: excessSettlementFunds}("");
+        (success_, ) = to.call{value: excessSettlementFunds}("");
         require(success_, "Reclaiming failed");
     }
 
     /**
      * @notice Purchases a token from project `_projectId` and sets
      * the token's owner to `_to`.
-     * @param _to Address to be the new token's owner.
-     * @param _projectId Project ID to mint a token on.
-     * @param _coreContract Core contract address for the given project.
+     * @param to Address to be the new token's owner.
+     * @param projectId Project ID to mint a token on.
+     * @param coreContract Core contract address for the given project.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
-        address _to,
-        uint256 _projectId,
-        address _coreContract
+        address to,
+        uint256 projectId,
+        address coreContract
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         // pre-mint MaxInvocationsLib checks
@@ -779,7 +782,7 @@ contract MinterDAExpSettlementV3 is
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
-        MaxInvocationsLib.preMintChecks(_projectId, _coreContract);
+        MaxInvocationsLib.preMintChecks(projectId, coreContract);
 
         // _getPriceUnsafe reverts if auction has not yet started or auction is
         // unconfigured, and auction has not sold out or revenues have not been
@@ -791,8 +794,8 @@ contract MinterDAExpSettlementV3 is
         // call later on in this function, when the core contract's max
         // invocation check fails.
         uint256 currentPriceInWei = SettlementExpLib.getPriceUnsafe({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
+            _projectId: projectId,
+            _coreContract: coreContract,
             _maxHasBeenInvoked: false // always false due to MaxInvocationsLib.preMintChecks
         });
 
@@ -800,18 +803,18 @@ contract MinterDAExpSettlementV3 is
         // update and validate receipts, latest purchase price, overall project
         // balance, and number of tokens auctioned on this minter
         SettlementExpLib.preMintEffects({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
+            _projectId: projectId,
+            _coreContract: coreContract,
             _currentPriceInWei: currentPriceInWei,
             _msgValue: msg.value,
             _purchaserAddress: msg.sender
         });
 
         // INTERACTIONS
-        tokenId = minterFilter.mint_joo({
-            _to: _to,
-            _projectId: _projectId,
-            _coreContract: _coreContract,
+        tokenId = _minterFilter.mint_joo({
+            _to: to,
+            _projectId: projectId,
+            _coreContract: coreContract,
             _sender: msg.sender
         });
 
@@ -819,14 +822,14 @@ contract MinterDAExpSettlementV3 is
         // update local maxHasBeenInvoked
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
-            _coreContract
+            coreContract
         );
 
         // distribute payments if revenues have been collected, or increment
         // number of settleable invocations if revenues have not been collected
         SettlementExpLib.postMintInteractions({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
+            _projectId: projectId,
+            _coreContract: coreContract,
             _currentPriceInWei: currentPriceInWei
         });
 
@@ -839,16 +842,16 @@ contract MinterDAExpSettlementV3 is
      * function `manuallyLimitProjectMaxInvocations` should be used to manually
      * and explicitly limit the maximum invocations for a project to a value
      * other than the core contract's maximum invocations for a project.
-     * @param _coreContract Core contract address for the given project.
-     * @param _projectId Project ID to set the maximum invocations for.
+     * @param coreContract Core contract address for the given project.
+     * @param projectId Project ID to set the maximum invocations for.
      */
     function syncProjectMaxInvocationsToCore(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) public view {
         AuthLib.onlyArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
+            _projectId: projectId,
+            _coreContract: coreContract,
             _sender: msg.sender
         });
         revert("Not implemented");
