@@ -848,7 +848,7 @@ contract MinterSetPricePolyptychERC20V5 is
         // we need to store the new token ID before it is minted so the randomizer can query it
         // block scope to avoid stack too deep error
         {
-            bytes12 _targetHashSeed = PolyptychLib.getTokenHashSeed(
+            bytes12 targetHashSeed = PolyptychLib.getTokenHashSeed(
                 ownedNFTAddress,
                 ownedNFTTokenId
             );
@@ -856,14 +856,14 @@ contract MinterSetPricePolyptychERC20V5 is
             PolyptychLib.validatePolyptychEffects({
                 _projectId: projectId,
                 _coreContract: coreContract,
-                _tokenHashSeed: _targetHashSeed
+                _tokenHashSeed: targetHashSeed
             });
 
-            uint256 _newTokenId = (projectId * ONE_MILLION) + _invocations;
+            uint256 newTokenId = (projectId * ONE_MILLION) + _invocations;
             PolyptychLib.setPolyptychHashSeed({
                 _coreContract: coreContract,
-                _tokenId: _newTokenId, // new token ID
-                _hashSeed: _targetHashSeed
+                _tokenId: newTokenId, // new token ID
+                _hashSeed: targetHashSeed
             });
 
             // once mint() is called, the polyptych randomizer will either:
@@ -882,7 +882,7 @@ contract MinterSetPricePolyptychERC20V5 is
             PolyptychLib.validateAssignedHashSeed({
                 _coreContract: coreContract,
                 _tokenId: tokenId,
-                _targetHashSeed: _targetHashSeed
+                _targetHashSeed: targetHashSeed
             });
         }
 
