@@ -123,11 +123,11 @@ contract MinterDAExpSettlementV3 is
     }
 
     /**
-     * @notice Manually sets the local maximum invocations of project `_projectId`
-     * with the provided `_maxInvocations`, checking that `_maxInvocations` is less
-     * than or equal to the value of project `_project_id`'s maximum invocations that is
+     * @notice Manually sets the local maximum invocations of project `projectId`
+     * with the provided `maxInvocations`, checking that `maxInvocations` is less
+     * than or equal to the value of project `project_id`'s maximum invocations that is
      * set on the core contract.
-     * @dev Note that a `_maxInvocations` of 0 can only be set if the current `invocations`
+     * @dev Note that a `maxInvocations` of 0 can only be set if the current `invocations`
      * value is also 0 and this would also set `maxHasBeenInvoked` to true, correctly short-circuiting
      * this minter's purchase function, avoiding extra gas costs from the core contract's maxInvocations check.
      * @param projectId Project ID to set the maximum invocations for.
@@ -161,7 +161,7 @@ contract MinterDAExpSettlementV3 is
     }
 
     /**
-     * @notice Sets auction details for project `_projectId`.
+     * @notice Sets auction details for project `projectId`.
      * @param projectId Project ID to set auction details for.
      * @param coreContract Core contract address for the given project.
      * @param auctionTimestampStart Timestamp at which to start the auction.
@@ -230,7 +230,7 @@ contract MinterDAExpSettlementV3 is
 
     /**
      * @notice Sets the minimum and maximum values that are settable for
-     * `_priceDecayHalfLifeSeconds` across all projects.
+     * `priceDecayHalfLifeSeconds` across all projects.
      * @param minimumPriceDecayHalfLifeSeconds_ Minimum price decay half life
      * (in seconds).
      */
@@ -255,7 +255,7 @@ contract MinterDAExpSettlementV3 is
     }
 
     /**
-     * @notice Resets auction details for project `_projectId`, zero-ing out all
+     * @notice Resets auction details for project `projectId`, zero-ing out all
      * relevant auction fields. Not intended to be used in normal auction
      * operation, but rather only in case of the need to halt an auction.
      * @param projectId Project ID to set auction details for.
@@ -334,7 +334,7 @@ contract MinterDAExpSettlementV3 is
 
     /**
      * @notice Reclaims the sender's payment above current settled price for
-     * project `_projectId` on core contract `_coreContract`.
+     * project `projectId` on core contract `coreContract`.
      * The current settled price is the the price paid for the most recently
      * purchased token, or the base price if the artist has withdrawn revenues
      * after the auction reached base price.
@@ -359,7 +359,7 @@ contract MinterDAExpSettlementV3 is
 
     /**
      * @notice Reclaims the sender's payment above current settled price for
-     * projects in `_projectIds`. The current settled price is the the price
+     * projects in `projectIds`. The current settled price is the the price
      * paid for the most recently purchased token, or the base price if the
      * artist has withdrawn revenues after the auction reached base price.
      * This function is callable at any point, but is expected to typically be
@@ -372,7 +372,7 @@ contract MinterDAExpSettlementV3 is
      * @param projectIds Array of project IDs to reclaim excess settlement
      * funds on.
      * @param coreContracts Array of core contract addresses for the given
-     * projects. Must be in the same order as `_projectIds` (aligned by index).
+     * projects. Must be in the same order as `projectIds` (aligned by index).
      */
     function reclaimProjectsExcessSettlementFunds(
         uint256[] calldata projectIds,
@@ -387,7 +387,7 @@ contract MinterDAExpSettlementV3 is
     }
 
     /**
-     * @notice Purchases a token from project `_projectId`.
+     * @notice Purchases a token from project `projectId`.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
      * @return tokenId Token ID of minted token
@@ -464,16 +464,16 @@ contract MinterDAExpSettlementV3 is
     }
 
     /**
-     * @notice Checks if the specified `_coreContract` is a valid engine contract.
-     * @dev This function retrieves the cached value of `_coreContract` from
+     * @notice Checks if the specified `coreContract` is a valid engine contract.
+     * @dev This function retrieves the cached value of `coreContract` from
      * the `isEngineCache` mapping. If the cached value is already set, it
      * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
-     * function from the `SplitFundsLib` library to check if `_coreContract`
+     * function from the `SplitFundsLib` library to check if `coreContract`
      * is a valid engine contract.
-     * @dev This function will revert if the provided `_coreContract` is not
+     * @dev This function will revert if the provided `coreContract` is not
      * a valid Engine or V3 Flagship contract.
      * @param coreContract The address of the contract to check.
-     * @return bool indicating if `_coreContract` is a valid engine contract.
+     * @return bool indicating if `coreContract` is a valid engine contract.
      */
     function isEngineView(address coreContract) external view returns (bool) {
         SplitFundsLib.IsEngineCache storage isEngineCache = SplitFundsLib
@@ -523,7 +523,7 @@ contract MinterDAExpSettlementV3 is
      * increased. When this happens, the minter will enable minting, allowing
      * the core contract to enforce the max invocations check. Based on this
      * rationale, we intentionally do not do input validation in this method as
-     * to whether or not the input `_projectId` is an existing project ID.
+     * to whether or not the input `projectId` is an existing project ID.
      * @param projectId is an existing project ID.
      * @param coreContract is an existing core contract address.
      */
@@ -535,7 +535,7 @@ contract MinterDAExpSettlementV3 is
     }
 
     /**
-     * @notice Gets the latest purchase price for project `_projectId`, or 0 if
+     * @notice Gets the latest purchase price for project `projectId`, or 0 if
      * no purchases have been made.
      * @param projectId Project ID to get latest purchase price for.
      * @param coreContract Contract address of the core contract
@@ -551,7 +551,7 @@ contract MinterDAExpSettlementV3 is
     }
 
     /**
-     * @notice Gets the number of settleable invocations for project `_projectId`.
+     * @notice Gets the number of settleable invocations for project `projectId`.
      * @param projectId Project ID to get number of settleable invocations for.
      * @param coreContract Contract address of the core contract
      */
@@ -567,7 +567,7 @@ contract MinterDAExpSettlementV3 is
 
     /**
      * @notice Gets the balance of ETH, in wei, currently held by the minter
-     * for project `_projectId`. This value is non-zero if not all purchasers
+     * for project `projectId`. This value is non-zero if not all purchasers
      * have reclaimed their excess settlement funds, or if an artist/admin has
      * not yet withdrawn their revenues.
      * @param projectId Project ID to get balance for.
@@ -585,7 +585,7 @@ contract MinterDAExpSettlementV3 is
 
     /**
      * @notice Gets if price of token is configured, price of minting a
-     * token on project `_projectId`, and currency symbol and address to be
+     * token on project `projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.
      * @param projectId Project ID to get price information for
      * @param coreContract Contract address of the core contract
@@ -643,8 +643,8 @@ contract MinterDAExpSettlementV3 is
     }
 
     /**
-     * @notice Gets the current excess settlement funds on project `_projectId`
-     * for address `_walletAddress`. The returned value is expected to change
+     * @notice Gets the current excess settlement funds on project `projectId`
+     * for address `walletAddress`. The returned value is expected to change
      * throughtout an auction, since the latest purchase price is used when
      * determining excess settlement funds.
      * A user may claim excess settlement funds by calling the function
@@ -675,7 +675,7 @@ contract MinterDAExpSettlementV3 is
 
     /**
      * @notice Reclaims the sender's payment above current settled price for
-     * project `_projectId` on core contract `_coreContract`.
+     * project `projectId` on core contract `coreContract`.
      * The current settled price is the the price paid for the most recently
      * purchased token, or the base price if the artist has withdrawn revenues
      * after the auction reached base price.
@@ -683,7 +683,7 @@ contract MinterDAExpSettlementV3 is
      * called after auction has sold out above base price or after the auction
      * has been purchased at base price. This minimizes the amount of gas
      * required to send all excess settlement funds to the sender.
-     * Sends excess settlement funds to address `_to`.
+     * Sends excess settlement funds to address `to`.
      * @param to Address to send excess settlement funds to.
      * @param projectId Project ID to reclaim excess settlement funds on.
      * @param coreContract Contract address of the core contract
@@ -705,21 +705,21 @@ contract MinterDAExpSettlementV3 is
 
     /**
      * @notice Reclaims the sender's payment above current settled price for
-     * projects in `_projectIds`. The current settled price is the the price
+     * projects in `projectIds`. The current settled price is the the price
      * paid for the most recently purchased token, or the base price if the
      * artist has withdrawn revenues after the auction reached base price.
      * This function is callable at any point, but is expected to typically be
      * called after auction has sold out above base price or after the auction
      * has been purchased at base price. This minimizes the amount of gas
      * required to send all excess settlement funds to the sender.
-     * Sends total of all excess settlement funds to `_to` in a single
+     * Sends total of all excess settlement funds to `to` in a single
      * chunk. Entire transaction reverts if any excess settlement calculation
      * fails.
      * @param to Address to send excess settlement funds to.
      * @param projectIds Array of project IDs to reclaim excess settlement
      * funds on.
      * @param coreContracts Array of core contract addresses for the given
-     * projects. Must be in the same order as `_projectIds` (aligned by index).
+     * projects. Must be in the same order as `projectIds` (aligned by index).
      */
     function reclaimProjectsExcessSettlementFundsTo(
         address payable to,
@@ -762,8 +762,8 @@ contract MinterDAExpSettlementV3 is
     }
 
     /**
-     * @notice Purchases a token from project `_projectId` and sets
-     * the token's owner to `_to`.
+     * @notice Purchases a token from project `projectId` and sets
+     * the token's owner to `to`.
      * @param to Address to be the new token's owner.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
@@ -778,7 +778,7 @@ contract MinterDAExpSettlementV3 is
         // pre-mint MaxInvocationsLib checks
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
-        // `_maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
+        // `maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
