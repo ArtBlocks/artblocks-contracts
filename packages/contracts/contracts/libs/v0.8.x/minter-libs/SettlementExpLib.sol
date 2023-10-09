@@ -387,8 +387,13 @@ library SettlementExpLib {
         // (minter max invocations) - (current core contract invocations)
         if (settlementAuctionProjectConfig.numPurchasesOnMinter == 0) {
             // get up-to-data invocation data from core contract
-            (uint256 coreInvocations, ) = MaxInvocationsLib
-                .coreContractInvocationData(_projectId, _coreContract);
+            (
+                uint256 coreInvocations,
+                uint256 coreMaxInvocations
+            ) = MaxInvocationsLib.coreContractInvocationData(
+                    _projectId,
+                    _coreContract
+                );
             // snap chalkline on the number of tokens to be auctioned on this
             // minter
             // @dev ackgnowledge that this value may be stale if the core
@@ -396,13 +401,37 @@ library SettlementExpLib {
             // the minter's max invocations were updated, but that is desired.
             // That case would be classified as "funny business", so we want
             // to require admin to be the withdrawer of revenues in that case.
-            uint256 maxInvocations = MaxInvocationsLib.getMaxInvocations(
+            uint256 minterMaxInvocations = MaxInvocationsLib.getMaxInvocations(
                 _projectId,
                 _coreContract
             );
+            // @dev prefer to use stale value minterMaxInvocations here, since
+            // if it is stale, the artist could have decreased max invocations
+            // on core contract at last moment unexpectedly, and we want to
+            // equire admin to be the withdrawer of revenues in that case.
             settlementAuctionProjectConfig.numTokensToBeAuctioned = uint24(
-                maxInvocations - coreInvocations
+                minterMaxInvocations - coreInvocations
             );
+            // edge case: minter max invocations > core contract max invocations.
+            // could be caused by either:
+            //  - core contract max invocations reduced after configuring
+            //    auction (this is generally accidental by artist), and did not
+            //    subsequently update minter's max invocations
+            //  - artist decreased max invocations on core contract at last
+            //    moment prior to this initial mint (this is suspicious)
+            // either way, we want to update minter's local max invocations, so
+            // that the minter returns the most up-to-date value from function
+            // `projectMaxHasBeenInvoked` in the future.
+            // @dev note that this edge case will end up being classified as
+            // "funny business" in case of sellout above base price, and will
+            // require admin concurrence in those cases.
+            if (minterMaxInvocations > coreMaxInvocations) {
+                // update minter's max invocations to match core contract
+                MaxInvocationsLib.syncProjectMaxInvocationsToCore({
+                    _projectId: _projectId,
+                    _coreContract: _coreContract
+                });
+            }
         }
 
         // increment the number of purchases on this minter during every purchase
