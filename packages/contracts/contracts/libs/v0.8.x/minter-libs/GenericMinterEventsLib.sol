@@ -19,116 +19,116 @@ library GenericMinterEventsLib {
      * bytes32 to remain gas-efficient.
      */
     /**
-     * @notice Generic project minter configuration event. Removes key `_key`
-     * for project `_projectId`.
+     * @notice Generic project minter configuration event. Removes key `key`
+     * for project `projectId`.
      */
     event ConfigKeyRemoved(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        bytes32 _key
+        uint256 indexed projectId,
+        address indexed coreContract,
+        bytes32 key
     );
     /// BOOL
     /**
      * @notice Generic project minter configuration event. Sets value of key
-     * `_key` to `_value` for project `_projectId`.
+     * `key` to `value` for project `projectId`.
      */
     event ConfigValueSet(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        bytes32 _key,
-        bool _value
+        uint256 indexed projectId,
+        address indexed coreContract,
+        bytes32 key,
+        bool value
     );
     /// UINT256
     /**
      * @notice Generic project minter configuration event. Sets value of key
-     * `_key` to `_value` for project `_projectId`.
+     * `key` to `value` for project `projectId`.
      */
     event ConfigValueSet(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        bytes32 _key,
-        uint256 _value
+        uint256 indexed projectId,
+        address indexed coreContract,
+        bytes32 key,
+        uint256 value
     );
     /**
-     * @notice Generic project minter configuration event. Adds value `_value`
-     * to the set of uint256 at key `_key` for project `_projectId`.
+     * @notice Generic project minter configuration event. Adds value `value`
+     * to the set of uint256 at key `key` for project `projectId`.
      */
     event ConfigValueAddedToSet(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        bytes32 _key,
-        uint256 _value
+        uint256 indexed projectId,
+        address indexed coreContract,
+        bytes32 key,
+        uint256 value
     );
     /**
      * @notice Generic project minter configuration event. Removes value
-     * `_value` to the set of uint256 at key `_key` for project `_projectId`.
+     * `value` to the set of uint256 at key `key` for project `projectId`.
      */
     event ConfigValueRemovedFromSet(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        bytes32 _key,
-        uint256 _value
+        uint256 indexed projectId,
+        address indexed coreContract,
+        bytes32 key,
+        uint256 value
     );
     /// ADDRESS
     /**
      * @notice Generic project minter configuration event. Sets value of key
-     * `_key` to `_value` for project `_projectId`.
+     * `key` to `value` for project `projectId`.
      */
     event ConfigValueSet(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        bytes32 _key,
-        address _value
+        uint256 indexed projectId,
+        address indexed coreContract,
+        bytes32 key,
+        address value
     );
     /**
-     * @notice Generic project minter configuration event. Adds value `_value`
-     * to the set of addresses at key `_key` for project `_projectId`.
+     * @notice Generic project minter configuration event. Adds value `value`
+     * to the set of addresses at key `key` for project `projectId`.
      */
     event ConfigValueAddedToSet(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        bytes32 _key,
-        address _value
+        uint256 indexed projectId,
+        address indexed coreContract,
+        bytes32 key,
+        address value
     );
     /**
      * @notice Generic project minter configuration event. Removes value
-     * `_value` to the set of addresses at key `_key` for project `_projectId`.
+     * `value` to the set of addresses at key `key` for project `projectId`.
      */
     event ConfigValueRemovedFromSet(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        bytes32 _key,
-        address _value
+        uint256 indexed projectId,
+        address indexed coreContract,
+        bytes32 key,
+        address value
     );
     /// BYTES32
     /**
      * @notice Generic project minter configuration event. Sets value of key
-     * `_key` to `_value` for project `_projectId`.
+     * `key` to `value` for project `projectId`.
      */
     event ConfigValueSet(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        bytes32 _key,
-        bytes32 _value
+        uint256 indexed projectId,
+        address indexed coreContract,
+        bytes32 key,
+        bytes32 value
     );
     /**
-     * @notice Generic project minter configuration event. Adds value `_value`
-     * to the set of bytes32 at key `_key` for project `_projectId`.
+     * @notice Generic project minter configuration event. Adds value `value`
+     * to the set of bytes32 at key `key` for project `projectId`.
      */
     event ConfigValueAddedToSet(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        bytes32 _key,
-        bytes32 _value
+        uint256 indexed projectId,
+        address indexed coreContract,
+        bytes32 key,
+        bytes32 value
     );
     /**
      * @notice Generic project minter configuration event. Removes value
-     * `_value` to the set of bytes32 at key `_key` for project `_projectId`.
+     * `value` to the set of bytes32 at key `key` for project `projectId`.
      */
     event ConfigValueRemovedFromSet(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        bytes32 _key,
-        bytes32 _value
+        uint256 indexed projectId,
+        address indexed coreContract,
+        bytes32 key,
+        bytes32 value
     );
 }
