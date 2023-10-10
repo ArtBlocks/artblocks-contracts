@@ -195,9 +195,9 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // for convenience, try to mint and assign a token to the project's
         // next slot
         SEALib.tryMintTokenToNextSlot({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _minterFilter: _minterFilter
+            projectId: projectId,
+            coreContract: coreContract,
+            minterFilter: _minterFilter
         });
     }
 
@@ -296,12 +296,12 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             "Auction duration below minimum"
         );
         SEALib.configureFutureAuctions({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _timestampStart: timestampStart,
-            _auctionDurationSeconds: auctionDurationSeconds,
-            _basePrice: basePrice,
-            _minBidIncrementPercentage: minBidIncrementPercentage
+            projectId: projectId,
+            coreContract: coreContract,
+            timestampStart: timestampStart,
+            auctionDurationSeconds: auctionDurationSeconds,
+            basePrice: basePrice,
+            minBidIncrementPercentage: minBidIncrementPercentage
         });
 
         // for convenience, sync local max invocations to the core contract if
@@ -322,9 +322,9 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         } else {
             // for convenience, try to mint to next token slot
             SEALib.tryMintTokenToNextSlot({
-                _projectId: projectId,
-                _coreContract: coreContract,
-                _minterFilter: _minterFilter
+                projectId: projectId,
+                coreContract: coreContract,
+                minterFilter: _minterFilter
             });
         }
     }
@@ -356,8 +356,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         });
         // reset to initial values
         SEALib.resetFutureAuctionDetails({
-            _projectId: projectId,
-            _coreContract: coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
         // @dev do not affect next token or max invocations
     }
@@ -393,9 +393,9 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             _selector: this.ejectNextTokenTo.selector
         });
         SEALib.ejectNextTokenTo({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _to: to
+            projectId: projectId,
+            coreContract: coreContract,
+            to: to
         });
     }
 
@@ -566,8 +566,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         address coreContract
     ) external view returns (SEALib.SEAProjectConfig memory SEAProjectConfig_) {
         SEAProjectConfig_ = SEALib.getSEAProjectConfig({
-            _projectId: projectId,
-            _coreContract: coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
         // clean up next token number to handle case where it is stale
         SEAProjectConfig_.nextTokenNumber = SEAProjectConfig_
@@ -588,8 +588,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     ) external view returns (SEALib.Auction memory auction) {
         return
             SEALib.projectActiveAuctionDetails({
-                _projectId: projectId,
-                _coreContract: coreContract
+                projectId: projectId,
+                coreContract: coreContract
             });
     }
 
@@ -614,8 +614,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     ) external view returns (uint256) {
         return
             SEALib.getTokenToBid({
-                _projectId: projectId,
-                _coreContract: coreContract
+                projectId: projectId,
+                coreContract: coreContract
             });
     }
 
@@ -633,8 +633,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     ) external view returns (uint256 nextTokenId) {
         return
             SEALib.getNextTokenId({
-                _projectId: projectId,
-                _coreContract: coreContract
+                projectId: projectId,
+                coreContract: coreContract
             });
     }
 
@@ -677,8 +677,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         )
     {
         (isConfigured, tokenPriceInWei) = SEALib.getPriceInfo({
-            _projectId: projectId,
-            _coreContract: coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
         // currency is always ETH
         currencySymbol = "ETH";
@@ -711,9 +711,9 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // for convenience, try to mint and assign a token to the project's
         // next slot
         SEALib.tryMintTokenToNextSlot({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _minterFilter: _minterFilter
+            projectId: projectId,
+            coreContract: coreContract,
+            minterFilter: _minterFilter
         });
     }
 
@@ -749,8 +749,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // revert if project is not configured on this minter
         require(
             SEALib.projectIsConfigured({
-                _projectId: projectId,
-                _coreContract: coreContract
+                projectId: projectId,
+                coreContract: coreContract
             }),
             "Project not configured"
         );
@@ -758,9 +758,9 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // attempt to mint new token to this minter contract, only if max
         // invocations has not been reached
         SEALib.tryMintTokenToNextSlot({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _minterFilter: _minterFilter
+            projectId: projectId,
+            coreContract: coreContract,
+            minterFilter: _minterFilter
         });
     }
 
@@ -781,7 +781,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         uint256 tokenId,
         address coreContract
     ) public nonReentrant {
-        SEALib.settleAuction({_tokenId: tokenId, _coreContract: coreContract});
+        SEALib.settleAuction({tokenId: tokenId, coreContract: coreContract});
     }
 
     /**
@@ -825,11 +825,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         address coreContract
     ) public payable nonReentrant {
         SEALib.createBid({
-            _tokenId: tokenId,
-            _coreContract: coreContract,
-            _minterTimeBufferSeconds: _minterTimeBufferSeconds,
-            _minterRefundGasLimit: _minterRefundGasLimit,
-            _minterFilter: _minterFilter
+            tokenId: tokenId,
+            coreContract: coreContract,
+            minterTimeBufferSeconds: _minterTimeBufferSeconds,
+            minterRefundGasLimit: _minterRefundGasLimit,
+            minterFilter: _minterFilter
         });
     }
 }
