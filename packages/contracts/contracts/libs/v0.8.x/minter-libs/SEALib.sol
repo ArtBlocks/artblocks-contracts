@@ -351,9 +351,9 @@ library SEALib {
         });
         // distribute revenues from auction
         SplitFundsLib.splitRevenuesETHNoRefund({
-            _projectId: projectId,
-            _valueInWei: currentBid,
-            _coreContract: coreContract
+            projectId: projectId,
+            valueInWei: currentBid,
+            coreContract: coreContract
         });
 
         emit AuctionSettled({
@@ -466,9 +466,9 @@ library SEALib {
         // INTERACTIONS
         // refund previous highest bidder
         SplitFundsLib.forceSafeTransferETH({
-            _to: previousBidder,
-            _amount: previousBid,
-            _minterRefundGasLimit: minterRefundGasLimit
+            to: previousBidder,
+            amount: previousBid,
+            minterRefundGasLimit: minterRefundGasLimit
         });
 
         emit AuctionBid({

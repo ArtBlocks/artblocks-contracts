@@ -277,9 +277,9 @@ library SettlementExpLib {
 
         // INTERACTIONS
         SplitFundsLib.splitRevenuesETHNoRefund({
-            _projectId: projectId,
-            _valueInWei: netRevenues,
-            _coreContract: coreContract
+            projectId: projectId,
+            valueInWei: netRevenues,
+            coreContract: coreContract
         });
 
         emit GenericMinterEventsLib.ConfigValueSet(
@@ -464,9 +464,9 @@ library SettlementExpLib {
 
             // INTERACTIONS
             SplitFundsLib.splitRevenuesETHNoRefund({
-                _projectId: projectId,
-                _valueInWei: currentPriceInWei,
-                _coreContract: coreContract
+                projectId: projectId,
+                valueInWei: currentPriceInWei,
+                coreContract: coreContract
             });
         } else {
             // increment the number of settleable invocations that will be

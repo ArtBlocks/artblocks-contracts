@@ -828,9 +828,9 @@ contract MinterDALinHolderV5 is
         });
 
         SplitFundsLib.splitFundsETHRefundSender({
-            _projectId: projectId,
-            _pricePerTokenInWei: pricePerTokenInWei,
-            _coreContract: coreContract
+            projectId: projectId,
+            pricePerTokenInWei: pricePerTokenInWei,
+            coreContract: coreContract
         });
 
         return tokenId;

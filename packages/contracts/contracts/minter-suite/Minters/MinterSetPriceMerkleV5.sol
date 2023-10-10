@@ -651,9 +651,9 @@ contract MinterSetPriceMerkleV5 is
 
         // INTERACTIONS
         SplitFundsLib.splitFundsETHRefundSender({
-            _projectId: projectId,
-            _pricePerTokenInWei: pricePerTokenInWei,
-            _coreContract: coreContract
+            projectId: projectId,
+            pricePerTokenInWei: pricePerTokenInWei,
+            coreContract: coreContract
         });
 
         return tokenId;

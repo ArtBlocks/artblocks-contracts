@@ -231,10 +231,10 @@ contract MinterSetPricePolyptychERC20V5 is
             _sender: msg.sender
         });
         SplitFundsLib.updateProjectCurrencyInfoERC20({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _currencySymbol: currencySymbol,
-            _currencyAddress: currencyAddress
+            projectId: projectId,
+            coreContract: coreContract,
+            currencySymbol: currencySymbol,
+            currencyAddress: currencyAddress
         });
     }
 
@@ -636,9 +636,9 @@ contract MinterSetPricePolyptychERC20V5 is
             coreContract
         );
         remaining = SplitFundsLib.getERC20Allowance({
-            _currencyAddress: currencyAddress,
-            _walletAddress: msg.sender,
-            _spenderAddress: address(this)
+            currencyAddress: currencyAddress,
+            walletAddress: msg.sender,
+            spenderAddress: address(this)
         });
         return remaining;
     }
@@ -917,9 +917,9 @@ contract MinterSetPricePolyptychERC20V5 is
         // split funds
         // process payment in ERC20
         SplitFundsLib.splitFundsERC20({
-            _projectId: projectId,
-            _pricePerTokenInWei: pricePerTokenInWei,
-            _coreContract: coreContract
+            projectId: projectId,
+            pricePerTokenInWei: pricePerTokenInWei,
+            coreContract: coreContract
         });
 
         return tokenId;
