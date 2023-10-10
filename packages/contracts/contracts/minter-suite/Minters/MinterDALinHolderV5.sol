@@ -168,9 +168,9 @@ contract MinterDALinHolderV5 is
             _sender: msg.sender
         });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _maxInvocations: maxInvocations
+            projectId: projectId,
+            coreContract: coreContract,
+            maxInvocations: maxInvocations
         });
     }
 
@@ -720,8 +720,8 @@ contract MinterDALinHolderV5 is
         });
 
         MaxInvocationsLib.syncProjectMaxInvocationsToCore({
-            _projectId: projectId,
-            _coreContract: coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
     }
 

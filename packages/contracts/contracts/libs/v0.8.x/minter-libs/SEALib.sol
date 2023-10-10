@@ -537,8 +537,8 @@ library SEALib {
         }
         // update local maxHasBeenInvoked value if necessary
         MaxInvocationsLib.validatePurchaseEffectsInvocations({
-            _tokenId: nextTokenId,
-            _coreContract: _coreContract
+            tokenId: nextTokenId,
+            coreContract: _coreContract
         });
         emit ProjectNextTokenUpdated({
             projectId: _projectId,

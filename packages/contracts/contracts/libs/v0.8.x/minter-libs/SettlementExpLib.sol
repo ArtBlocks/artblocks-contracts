@@ -622,8 +622,8 @@ library SettlementExpLib {
         // accurately check if project has sold out
         if (
             MaxInvocationsLib.projectMaxHasBeenInvokedSafe({
-                _projectId: _projectId,
-                _coreContract: _coreContract
+                projectId: _projectId,
+                coreContract: _coreContract
             })
         ) {
             // max invocations have been reached, return the latest purchased

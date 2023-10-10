@@ -154,9 +154,9 @@ contract MinterDAExpSettlementV3 is
             "Only before purchases"
         );
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _maxInvocations: maxInvocations
+            projectId: projectId,
+            coreContract: coreContract,
+            maxInvocations: maxInvocations
         });
     }
 
