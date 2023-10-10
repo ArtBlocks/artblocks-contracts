@@ -119,9 +119,9 @@ library PolyptychLib {
         IGenArt721CoreContractV3WithSharedRandomizer(_coreContract)
             .randomizerContract()
             .preSetHashSeed({
-                _coreContract: _coreContract,
-                _tokenId: _tokenId,
-                _hashSeed: _hashSeed
+                coreContract: _coreContract,
+                tokenId: _tokenId,
+                hashSeed: _hashSeed
             });
     }
 
