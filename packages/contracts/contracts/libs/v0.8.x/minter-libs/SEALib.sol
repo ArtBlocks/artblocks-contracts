@@ -294,8 +294,8 @@ library SEALib {
         // INTERACTIONS
         // @dev overflow automatically handled by Sol ^0.8.0
         uint256 nextTokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
-            _projectId: projectId,
-            _tokenNumber: SEAProjectConfig_.nextTokenNumber
+            projectId: projectId,
+            tokenNumber: SEAProjectConfig_.nextTokenNumber
         });
         IERC721(coreContract).transferFrom({
             from: address(this),

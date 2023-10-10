@@ -771,10 +771,10 @@ contract MinterSetPricePolyptychV5 is
             });
 
             uint256 newTokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
-                _projectId: projectId,
+                projectId: projectId,
                 // @dev next token number is current invocations due to number
                 // being zero-based-indexed
-                _tokenNumber: invocations
+                tokenNumber: invocations
             });
             PolyptychLib.setPolyptychHashSeed({
                 coreContract: coreContract,
