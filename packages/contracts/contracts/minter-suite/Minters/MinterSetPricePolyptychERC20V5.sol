@@ -378,8 +378,8 @@ contract MinterSetPricePolyptychERC20V5 is
             _sender: msg.sender
         });
         PolyptychLib.incrementPolyptychProjectPanelId({
-            _projectId: projectId,
-            _coreContract: coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
     }
 
@@ -704,8 +704,8 @@ contract MinterSetPricePolyptychERC20V5 is
     ) external view returns (uint256) {
         return
             PolyptychLib.getPolyptychPanelId({
-                _projectId: projectId,
-                _coreContract: coreContract
+                projectId: projectId,
+                coreContract: coreContract
             });
     }
 
@@ -728,10 +728,10 @@ contract MinterSetPricePolyptychERC20V5 is
     ) external view returns (bool) {
         return
             PolyptychLib.getPolyptychPanelHashSeedIsMinted({
-                _projectId: projectId,
-                _coreContract: coreContract,
-                _panelId: panelId,
-                _hashSeed: hashSeed
+                projectId: projectId,
+                coreContract: coreContract,
+                panelId: panelId,
+                hashSeed: hashSeed
             });
     }
 
@@ -854,16 +854,16 @@ contract MinterSetPricePolyptychERC20V5 is
             );
 
             PolyptychLib.validatePolyptychEffects({
-                _projectId: projectId,
-                _coreContract: coreContract,
-                _tokenHashSeed: targetHashSeed
+                projectId: projectId,
+                coreContract: coreContract,
+                tokenHashSeed: targetHashSeed
             });
 
             uint256 newTokenId = (projectId * ONE_MILLION) + _invocations;
             PolyptychLib.setPolyptychHashSeed({
-                _coreContract: coreContract,
-                _tokenId: newTokenId, // new token ID
-                _hashSeed: targetHashSeed
+                coreContract: coreContract,
+                tokenId: newTokenId, // new token ID
+                hashSeed: targetHashSeed
             });
 
             // once mint() is called, the polyptych randomizer will either:
@@ -880,9 +880,9 @@ contract MinterSetPricePolyptychERC20V5 is
 
             // redundant check against reentrancy
             PolyptychLib.validateAssignedHashSeed({
-                _coreContract: coreContract,
-                _tokenId: tokenId,
-                _targetHashSeed: targetHashSeed
+                coreContract: coreContract,
+                tokenId: tokenId,
+                targetHashSeed: targetHashSeed
             });
         }
 
