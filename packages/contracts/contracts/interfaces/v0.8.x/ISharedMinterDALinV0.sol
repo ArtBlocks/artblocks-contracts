@@ -7,6 +7,6 @@ interface ISharedMinterDALinV0 {
     function minimumAuctionLengthSeconds() external view returns (uint256);
 
     function setMinimumAuctionLengthSeconds(
-        uint256 _minimumAuctionLengthSeconds
+        uint256 minimumAuctionLengthSeconds
     ) external;
 }

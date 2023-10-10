@@ -7,7 +7,7 @@ interface ISharedMinterDAV0 {
     // @dev return variables left unnamed because specific minter
     // implementations may return different values for the same slots
     function projectAuctionParameters(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external view returns (uint40, uint40, uint256, uint256);
 }

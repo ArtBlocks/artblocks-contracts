@@ -15,9 +15,9 @@ interface ISharedRandomizerV0 is IRandomizer_V3CoreBase {
     );
 
     /**
-     * @notice Contract at `_hashSeedSetterContract` allowed to assign
-     * token hash seeds on core contract `_coreContract` for project
-     * `_projectId`.
+     * @notice Contract at `hashSeedSetterContract` allowed to assign
+     * token hash seeds on core contract `coreContract` for project
+     * `projectId`.
      */
     event HashSeedSetterForProjectUpdated(
         address indexed coreContract,
@@ -26,7 +26,7 @@ interface ISharedRandomizerV0 is IRandomizer_V3CoreBase {
     );
 
     /**
-     * @notice Project with ID `_projectId` is is or is not using a hash seed
+     * @notice Project with ID `projectId` is is or is not using a hash seed
      * setter contract to assign token hash seeds on core contract.
      */
     event ProjectUsingHashSeedSetterUpdated(
@@ -39,15 +39,15 @@ interface ISharedRandomizerV0 is IRandomizer_V3CoreBase {
      * @notice Allows the artist of a project to set the contract that is
      * allowed to assign hash seeds to tokens. Typically, this is expected to
      * be a minter contract, such as `MinterPolyptychV1`.
-     * @param _coreContract - the core contract that is being configured
-     * @param _projectId - the project ID that is being configured
-     * @param _hashSeedSetterContract - the contract that is allowed to assign
+     * @param coreContract - the core contract that is being configured
+     * @param projectId - the project ID that is being configured
+     * @param hashSeedSetterContract - the contract that is allowed to assign
      * hash seeds to tokens
      */
     function setHashSeedSetterContract(
-        address _coreContract,
-        uint256 _projectId,
-        address _hashSeedSetterContract
+        address coreContract,
+        uint256 projectId,
+        address hashSeedSetterContract
     ) external;
 
     /**
@@ -60,48 +60,48 @@ interface ISharedRandomizerV0 is IRandomizer_V3CoreBase {
      * An example use case is where the artist wants to mint a polyptych panel
      * (second, third, etc.) of a project, and therefore wants to re-use
      * specific hash seeds of the original project.
-     * @param _coreContract - The address of the core contract
-     * @param _projectId - The ID of the project to be toggled
+     * @param coreContract - The address of the core contract
+     * @param projectId - The ID of the project to be toggled
      */
     function toggleProjectUseAssignedHashSeed(
-        address _coreContract,
-        uint256 _projectId
+        address coreContract,
+        uint256 projectId
     ) external;
 
     /**
      * @notice Pre-set the hash seed for a token. This function is only
      * callable by the hash seed setter contract of the project.
-     * @param _coreContract - The address of the core contract of `_tokenId`
-     * @param _tokenId - The ID of the token to set the hash seed for
-     * @param _hashSeed - The hash seed to set for `_tokenId`
-     * @dev Only callable by the hash seed setter contract of `_coreContract`.
+     * @param coreContract - The address of the core contract of `tokenId`
+     * @param tokenId - The ID of the token to set the hash seed for
+     * @param hashSeed - The hash seed to set for `tokenId`
+     * @dev Only callable by the hash seed setter contract of `coreContract`.
      */
     function preSetHashSeed(
-        address _coreContract,
-        uint256 _tokenId,
-        bytes12 _hashSeed
+        address coreContract,
+        uint256 tokenId,
+        bytes12 hashSeed
     ) external;
 
     /**
-     * @notice Boolean representing whether or not project with ID `_projectId`
-     * on core contract `_coreContract` is currently using a hash seed setter
+     * @notice Boolean representing whether or not project with ID `projectId`
+     * on core contract `coreContract` is currently using a hash seed setter
      * contract to assign hash seeds to tokens.
      */
     function projectUsesHashSeedSetter(
-        address _coreContract,
-        uint256 _projectId
-    ) external view returns (bool _usingHashSeedSetter);
+        address coreContract,
+        uint256 projectId
+    ) external view returns (bool usingHashSeedSetter);
 
     /**
      * Returns the hash seed setter contract for a given core contract.
      * Returns address(0) if no hash seed setter contract is set for the core.
-     * @param _coreContract - The address of the core contract
-     * @param _projectId - The ID of the project to query
+     * @param coreContract - The address of the core contract
+     * @param projectId - The ID of the project to query
      */
     function hashSeedSetterContracts(
-        address _coreContract,
-        uint256 _projectId
-    ) external view returns (address _hashSeedSetterContract);
+        address coreContract,
+        uint256 projectId
+    ) external view returns (address hashSeedSetterContract);
 
     /**
      * Returns the current pre-assigned hash seed for a given token ID.
@@ -112,12 +112,12 @@ interface ISharedRandomizerV0 is IRandomizer_V3CoreBase {
      * the hash seed is generated on-chain by the pseudorandom atomic contract
      * and is not stored on-chain in this randomizer contract, and therefore
      * this function will return bytes12(0).
-     * @param _coreContract - The address of the core contract of `_tokenId`
-     * @param _tokenId - The ID of the token to get the hash seed for
-     * @return _hashSeed - The stored hash seed for `_tokenId`
+     * @param coreContract - The address of the core contract of `tokenId`
+     * @param tokenId - The ID of the token to get the hash seed for
+     * @return hashSeed - The stored hash seed for `tokenId`
      */
     function preAssignedHashSeed(
-        address _coreContract,
-        uint256 _tokenId
-    ) external view returns (bytes12 _hashSeed);
+        address coreContract,
+        uint256 tokenId
+    ) external view returns (bytes12 hashSeed);
 }
