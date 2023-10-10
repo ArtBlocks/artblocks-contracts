@@ -148,8 +148,8 @@ contract MinterDAExpSettlementV3 is
         // after one or more purchases have been made
         require(
             SettlementExpLib.getNumPurchasesOnMinter({
-                _projectId: projectId,
-                _coreContract: coreContract
+                projectId: projectId,
+                coreContract: coreContract
             }) == 0,
             "Only before purchases"
         );
@@ -189,9 +189,9 @@ contract MinterDAExpSettlementV3 is
         // require valid start price on a settlement minter
         require(
             SettlementExpLib.isValidStartPrice({
-                _projectId: projectId,
-                _coreContract: coreContract,
-                _startPrice: startPrice
+                projectId: projectId,
+                coreContract: coreContract,
+                startPrice: startPrice
             }),
             "Only monotonic decreasing price"
         );
@@ -327,8 +327,8 @@ contract MinterDAExpSettlementV3 is
         // revert if the project's balance is insufficient to cover the
         // settlement amount (which is expected to not be possible)
         SettlementExpLib.distributeArtistAndAdminRevenues({
-            _projectId: projectId,
-            _coreContract: coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
     }
 
@@ -634,8 +634,8 @@ contract MinterDAExpSettlementV3 is
             // function, and we prefer to use the extra gas to appropriately
             // correct for the case of a stale minter max invocation state.
             tokenPriceInWei = SettlementExpLib.getPriceSafe({
-                _projectId: projectId,
-                _coreContract: coreContract
+                projectId: projectId,
+                coreContract: coreContract
             });
         }
         currencySymbol = "ETH";
@@ -666,9 +666,9 @@ contract MinterDAExpSettlementV3 is
 
         (excessSettlementFundsInWei, ) = SettlementExpLib
             .getProjectExcessSettlementFunds({
-                _projectId: projectId,
-                _coreContract: coreContract,
-                _walletAddress: walletAddress
+                projectId: projectId,
+                coreContract: coreContract,
+                walletAddress: walletAddress
             });
         return excessSettlementFundsInWei;
     }
@@ -696,10 +696,10 @@ contract MinterDAExpSettlementV3 is
         require(to != address(0), "No claiming to the zero address");
 
         SettlementExpLib.reclaimProjectExcessSettlementFundsTo({
-            _to: to,
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _purchaserAddress: msg.sender
+            to: to,
+            projectId: projectId,
+            coreContract: coreContract,
+            purchaserAddress: msg.sender
         });
     }
 
@@ -740,10 +740,10 @@ contract MinterDAExpSettlementV3 is
         uint256 excessSettlementFunds;
         for (uint256 i; i < projectIdsLength; ) {
             SettlementExpLib.reclaimProjectExcessSettlementFundsTo({
-                _to: to,
-                _projectId: projectIds[i],
-                _coreContract: coreContracts[i],
-                _purchaserAddress: msg.sender
+                to: to,
+                projectId: projectIds[i],
+                coreContract: coreContracts[i],
+                purchaserAddress: msg.sender
             });
 
             // gas efficiently increment i
@@ -794,20 +794,20 @@ contract MinterDAExpSettlementV3 is
         // call later on in this function, when the core contract's max
         // invocation check fails.
         uint256 currentPriceInWei = SettlementExpLib.getPriceUnsafe({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _maxHasBeenInvoked: false // always false due to MaxInvocationsLib.preMintChecks
+            projectId: projectId,
+            coreContract: coreContract,
+            maxHasBeenInvoked: false // always false due to MaxInvocationsLib.preMintChecks
         });
 
         // EFFECTS
         // update and validate receipts, latest purchase price, overall project
         // balance, and number of tokens auctioned on this minter
         SettlementExpLib.preMintEffects({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _currentPriceInWei: currentPriceInWei,
-            _msgValue: msg.value,
-            _purchaserAddress: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            currentPriceInWei: currentPriceInWei,
+            msgValue: msg.value,
+            purchaserAddress: msg.sender
         });
 
         // INTERACTIONS
@@ -828,9 +828,9 @@ contract MinterDAExpSettlementV3 is
         // distribute payments if revenues have been collected, or increment
         // number of settleable invocations if revenues have not been collected
         SettlementExpLib.postMintInteractions({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _currentPriceInWei: currentPriceInWei
+            projectId: projectId,
+            coreContract: coreContract,
+            currentPriceInWei: currentPriceInWei
         });
 
         return tokenId;
