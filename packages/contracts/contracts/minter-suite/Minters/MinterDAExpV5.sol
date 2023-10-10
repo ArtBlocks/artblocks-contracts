@@ -177,13 +177,13 @@ contract MinterDAExpV5 is
             coreContract
         );
         DAExpLib.setAuctionDetailsExp({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _auctionTimestampStart: auctionTimestampStart,
-            _priceDecayHalfLifeSeconds: priceDecayHalfLifeSeconds,
-            _startPrice: startPrice.toUint88(),
-            _basePrice: basePrice.toUint88(),
-            _allowReconfigureAfterStart: maxHasBeenInvoked
+            projectId: projectId,
+            coreContract: coreContract,
+            auctionTimestampStart: auctionTimestampStart,
+            priceDecayHalfLifeSeconds: priceDecayHalfLifeSeconds,
+            startPrice: startPrice.toUint88(),
+            basePrice: basePrice.toUint88(),
+            allowReconfigureAfterStart: maxHasBeenInvoked
         });
 
         // sync local max invocations if not initially populated
@@ -244,8 +244,8 @@ contract MinterDAExpV5 is
         });
 
         DAExpLib.resetAuctionDetails({
-            _projectId: projectId,
-            _coreContract: coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
     }
 
@@ -439,8 +439,8 @@ contract MinterDAExpV5 is
             tokenPriceInWei = auctionProjectConfig.startPrice;
         } else {
             tokenPriceInWei = DAExpLib.getPriceExp({
-                _projectId: projectId,
-                _coreContract: coreContract
+                projectId: projectId,
+                coreContract: coreContract
             });
         }
         currencySymbol = "ETH";
@@ -499,8 +499,8 @@ contract MinterDAExpV5 is
 
         // getPriceExp reverts if auction is unconfigured or has not started
         uint256 pricePerTokenInWei = DAExpLib.getPriceExp({
-            _projectId: projectId,
-            _coreContract: coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 

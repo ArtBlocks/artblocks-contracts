@@ -205,16 +205,16 @@ contract MinterDAExpSettlementV3 is
 
         // EFFECTS
         DAExpLib.setAuctionDetailsExp({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _auctionTimestampStart: auctionTimestampStart,
-            _priceDecayHalfLifeSeconds: priceDecayHalfLifeSeconds,
-            _startPrice: startPrice.toUint88(),
-            _basePrice: basePrice.toUint88(),
+            projectId: projectId,
+            coreContract: coreContract,
+            auctionTimestampStart: auctionTimestampStart,
+            priceDecayHalfLifeSeconds: priceDecayHalfLifeSeconds,
+            startPrice: startPrice.toUint88(),
+            basePrice: basePrice.toUint88(),
             // we set this to false so it prevents artist from altering auction
             // even after max has been invoked (require explicit auction reset
             // on settlement minter)
-            _allowReconfigureAfterStart: false
+            allowReconfigureAfterStart: false
         });
 
         // refresh max invocations, ensuring the values are populated, and
@@ -285,8 +285,8 @@ contract MinterDAExpSettlementV3 is
         // EFFECTS
         // delete auction parameters
         DAExpLib.resetAuctionDetails({
-            _projectId: projectId,
-            _coreContract: coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
 
         // @dev do NOT delete settlement parameters, as they are used to
@@ -453,8 +453,8 @@ contract MinterDAExpSettlementV3 is
     {
         DAExpLib.DAProjectConfig storage _auctionProjectConfig = DAExpLib
             .getDAProjectConfig({
-                _projectId: projectId,
-                _coreContract: coreContract
+                projectId: projectId,
+                coreContract: coreContract
             });
         timestampStart = _auctionProjectConfig.timestampStart;
         priceDecayHalfLifeSeconds = _auctionProjectConfig
@@ -613,8 +613,8 @@ contract MinterDAExpSettlementV3 is
     {
         DAExpLib.DAProjectConfig storage auctionProjectConfig = DAExpLib
             .getDAProjectConfig({
-                _projectId: projectId,
-                _coreContract: coreContract
+                projectId: projectId,
+                coreContract: coreContract
             });
 
         // take action based on configured state

@@ -207,8 +207,8 @@ library SettlementExpLib {
         // reached max invocations. This prevents premature withdrawl
         // before final auction price is possible to know.
         uint256 basePrice = DAExpLib.getAuctionBasePrice({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            projectId: _projectId,
+            coreContract: _coreContract
         });
         if (_price != basePrice) {
             require(maxHasBeenInvoked, "Active auction not yet sold out");
@@ -589,8 +589,8 @@ library SettlementExpLib {
         // unconfigured, which is relied upon for security.
         return
             DAExpLib.getPriceExp({
-                _projectId: _projectId,
-                _coreContract: _coreContract
+                projectId: _projectId,
+                coreContract: _coreContract
             });
     }
 
