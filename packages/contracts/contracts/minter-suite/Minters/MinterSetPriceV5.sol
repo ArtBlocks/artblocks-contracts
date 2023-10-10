@@ -363,12 +363,12 @@ contract MinterSetPriceV5 is
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
         // EFFECTS
-        tokenId = _minterFilter.mint_joo(
-            to,
-            projectId,
-            coreContract,
-            msg.sender
-        );
+        tokenId = _minterFilter.mint_joo({
+            to: to,
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
+        });
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,

@@ -520,12 +520,12 @@ library SEALib {
         SEAProjectConfig_.nextTokenNumberIsPopulated = true;
         // mint a new token to this project's "next token" slot
         // @dev this is an interaction with a trusted contract
-        uint256 nextTokenId = _minterFilter.mint_joo(
-            address(this),
-            _projectId,
-            _coreContract,
-            msg.sender
-        );
+        uint256 nextTokenId = _minterFilter.mint_joo({
+            to: address(this),
+            projectId: _projectId,
+            coreContract: _coreContract,
+            sender: msg.sender
+        });
         // update state to reflect new token number
         // @dev state changes after trusted contract interaction
         // @dev unchecked is safe because mod 1e6 is guaranteed to be less than

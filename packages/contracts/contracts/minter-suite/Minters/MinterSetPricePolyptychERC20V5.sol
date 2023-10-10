@@ -869,12 +869,12 @@ contract MinterSetPricePolyptychERC20V5 is
             // once mint() is called, the polyptych randomizer will either:
             // 1) assign a random token hash
             // 2) if configured, obtain the token hash from the `polyptychSeedHashes` mapping
-            tokenId = _minterFilter.mint_joo(
-                to,
-                projectId,
-                coreContract,
-                vault_
-            );
+            tokenId = _minterFilter.mint_joo({
+                to: to,
+                projectId: projectId,
+                coreContract: coreContract,
+                sender: vault_
+            });
 
             // NOTE: delegate-vault handling **ends here**.
 

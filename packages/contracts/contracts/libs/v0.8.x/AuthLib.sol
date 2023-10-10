@@ -148,9 +148,9 @@ library AuthLib {
     ) private returns (bool) {
         return
             IMinterFilterV1(_minterFilterAddress).adminACLAllowed({
-                _sender: _sender,
-                _contract: _contract,
-                _selector: _selector
+                sender: _sender,
+                contract_: _contract,
+                selector: _selector
             });
     }
 

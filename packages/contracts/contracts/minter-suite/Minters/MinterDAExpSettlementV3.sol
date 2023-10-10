@@ -812,10 +812,10 @@ contract MinterDAExpSettlementV3 is
 
         // INTERACTIONS
         tokenId = _minterFilter.mint_joo({
-            _to: to,
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            to: to,
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
 
         // verify token invocation is valid given local minter max invocations,

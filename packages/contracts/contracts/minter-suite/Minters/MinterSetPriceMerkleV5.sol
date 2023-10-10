@@ -637,12 +637,12 @@ contract MinterSetPriceMerkleV5 is
         // mint effects for MerkleLib
         MerkleLib.mintEffects(projectId, coreContract, vault_);
 
-        tokenId = _minterFilter.mint_joo(
-            to,
-            projectId,
-            coreContract,
-            msg.sender
-        );
+        tokenId = _minterFilter.mint_joo({
+            to: to,
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
+        });
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,

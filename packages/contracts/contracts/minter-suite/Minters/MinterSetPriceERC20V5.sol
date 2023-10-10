@@ -450,12 +450,12 @@ contract MinterSetPriceERC20V5 is
         // configured (i.e. address(0)), so check is not performed here
 
         // EFFECTS
-        tokenId = _minterFilter.mint_joo(
-            to,
-            projectId,
-            coreContract,
-            msg.sender
-        );
+        tokenId = _minterFilter.mint_joo({
+            to: to,
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
+        });
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,

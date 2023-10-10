@@ -506,10 +506,10 @@ contract MinterDAExpV5 is
 
         // EFFECTS
         tokenId = _minterFilter.mint_joo({
-            _to: to,
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            to: to,
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(

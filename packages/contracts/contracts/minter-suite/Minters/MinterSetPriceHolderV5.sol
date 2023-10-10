@@ -663,7 +663,12 @@ contract MinterSetPriceHolderV5 is
         }
 
         // EFFECTS
-        tokenId = _minterFilter.mint_joo(to, projectId, coreContract, vault_);
+        tokenId = _minterFilter.mint_joo({
+            to: to,
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: vault_
+        });
 
         // NOTE: delegate-vault handling **ends here**.
 
