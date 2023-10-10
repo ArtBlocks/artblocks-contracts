@@ -58,8 +58,7 @@ library TokenHolderLib {
 
     struct HolderProjectConfig {
         // projects whose holders are allowed to purchase a token on `projectId`
-        // ownedNFTAddress => ownedNFTProjectIds => bool
-        mapping(address => mapping(uint256 => bool)) allowedProjectHolders;
+        mapping(address ownedNFTAddress => mapping(uint256 ownedNFTProjectId => bool allowed)) allowedProjectHolders;
     }
 
     // Diamond storage pattern is used in this library

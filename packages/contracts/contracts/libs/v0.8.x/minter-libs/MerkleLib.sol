@@ -55,7 +55,7 @@ library MerkleLib {
         // The root of the Merkle tree for this project.
         bytes32 merkleRoot;
         // The number of current invocations for this project from a given user address.
-        mapping(address => uint256) userMintInvocations;
+        mapping(address user => uint256 mintInvocations) userMintInvocations;
     }
 
     // Diamond storage pattern is used in this library

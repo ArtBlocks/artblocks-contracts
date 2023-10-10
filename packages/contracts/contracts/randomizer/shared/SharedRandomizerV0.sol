@@ -59,15 +59,15 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
     // @dev this mapping is only used when the project is configured as using
     // a hash seed setter contract. It is not populated when the project is
     // using pseudorandomAtomicContract.
-    mapping(address => mapping(uint256 => bytes12))
+    mapping(address coreContract => mapping(uint256 tokenId => bytes12 preAssignedHashSeed))
         private _preAssignedHashSeeds;
 
     // mapping of core contract => project ID => usesHashSeedSetter Contract
-    mapping(address => mapping(uint256 => bool))
+    mapping(address coreContract => mapping(uint256 projectId => bool usesHashSeedSetter))
         private _projectUsesHashSeedSetter;
 
     // mapping of core contract => projectId => hash seed setter contract
-    mapping(address => mapping(uint256 => address))
+    mapping(address coreContract => mapping(uint256 projectId => address hashSeedSetterContract))
         private _hashSeedSetterContracts;
 
     // modifier to restrict access to only Artist allowed calls

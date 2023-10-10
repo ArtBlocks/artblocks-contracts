@@ -32,8 +32,7 @@ library PolyptychLib {
         // in the future if other values are added to this struct.
         uint24 polyptychPanelId;
         // Stores whether a panel with an ID has been minted for a given token hash seed
-        // panelId => hashSeed => panelIsMinted
-        mapping(uint256 => mapping(bytes12 => bool)) polyptychPanelHashSeedIsMinted;
+        mapping(uint256 panelId => mapping(bytes12 hashSeed => bool panelIsMinted)) polyptychPanelHashSeedIsMinted;
     }
 
     // Diamond storage pattern is used in this library
