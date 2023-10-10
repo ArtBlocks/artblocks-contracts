@@ -6,22 +6,20 @@ import "./IEngineRegistryV0.sol";
 
 interface ICoreRegistryV1 is IEngineRegistryV0 {
     function registerContracts(
-        address[] calldata _contractAddresses,
-        bytes32[] calldata _coreVersions,
-        bytes32[] calldata _coreTypes
+        address[] calldata contractAddresses,
+        bytes32[] calldata coreVersions,
+        bytes32[] calldata coreTypes
     ) external;
 
-    function unregisterContracts(
-        address[] calldata _contractAddresses
-    ) external;
+    function unregisterContracts(address[] calldata contractAddresses) external;
 
     function getNumRegisteredContracts() external view returns (uint256);
 
     function getRegisteredContractAt(
-        uint256 _index
+        uint256 index
     ) external view returns (address);
 
     function isRegisteredContract(
-        address _contractAddress
+        address contractAddress
     ) external view returns (bool isRegistered);
 }
