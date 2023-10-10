@@ -140,9 +140,9 @@ contract MinterDAExpSettlementV3 is
         uint24 maxInvocations
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         // @dev guard rail to prevent accidentally adjusting max invocations
         // after one or more purchases have been made
@@ -181,9 +181,9 @@ contract MinterDAExpSettlementV3 is
         uint256 basePrice
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         // CHECKS
         // require valid start price on a settlement minter
@@ -238,10 +238,10 @@ contract MinterDAExpSettlementV3 is
         uint256 minimumPriceDecayHalfLifeSeconds_
     ) external {
         AuthLib.onlyMinterFilterAdminACL({
-            _minterFilterAddress: minterFilterAddress,
-            _sender: msg.sender,
-            _contract: address(this),
-            _selector: this.setMinimumPriceDecayHalfLifeSeconds.selector
+            minterFilterAddress: minterFilterAddress,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.setMinimumPriceDecayHalfLifeSeconds.selector
         });
         require(
             minimumPriceDecayHalfLifeSeconds_ > 0,
@@ -266,10 +266,10 @@ contract MinterDAExpSettlementV3 is
         address coreContract
     ) external {
         AuthLib.onlyCoreAdminACL({
-            _coreContract: coreContract,
-            _sender: msg.sender,
-            _contract: address(this),
-            _selector: this.resetAuctionDetails.selector
+            coreContract: coreContract,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.resetAuctionDetails.selector
         });
 
         SettlementExpLib.SettlementAuctionProjectConfig
@@ -313,11 +313,11 @@ contract MinterDAExpSettlementV3 is
         address coreContract
     ) external nonReentrant {
         AuthLib.onlyCoreAdminACLOrArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender,
-            _contract: address(this),
-            _selector: this.withdrawArtistAndAdminRevenues.selector
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.withdrawArtistAndAdminRevenues.selector
         });
 
         // @dev the following function affects settlement state and marks
@@ -850,9 +850,9 @@ contract MinterDAExpSettlementV3 is
         address coreContract
     ) public view {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         revert("Not implemented");
     }

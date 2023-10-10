@@ -131,9 +131,9 @@ contract MinterSetPriceMerkleV5 is
         uint24 maxInvocations
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             projectId,
@@ -157,9 +157,9 @@ contract MinterSetPriceMerkleV5 is
         uint248 pricePerTokenInWei
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         SetPriceLib.updatePricePerTokenInWei(
             projectId,
@@ -197,9 +197,9 @@ contract MinterSetPriceMerkleV5 is
         bytes32 root
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         MerkleLib.updateMerkleRoot(projectId, coreContract, root);
     }
@@ -223,9 +223,9 @@ contract MinterSetPriceMerkleV5 is
         uint24 maxInvocationsPerAddress
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         MerkleLib.setProjectInvocationsPerAddress(
             projectId,
@@ -561,9 +561,9 @@ contract MinterSetPriceMerkleV5 is
         address coreContract
     ) public {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
 
         MaxInvocationsLib.syncProjectMaxInvocationsToCore(

@@ -94,9 +94,9 @@ contract MinterSetPriceV5 is
         uint24 maxInvocations
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             projectId,
@@ -120,9 +120,9 @@ contract MinterSetPriceV5 is
         uint248 pricePerTokenInWei
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         SetPriceLib.updatePricePerTokenInWei(
             projectId,
@@ -319,9 +319,9 @@ contract MinterSetPriceV5 is
         address coreContract
     ) public {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
 
         MaxInvocationsLib.syncProjectMaxInvocationsToCore(

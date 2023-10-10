@@ -231,10 +231,10 @@ library SettlementExpLib {
                 !_allTokensToBeAuctionedWereSold(settlementAuctionProjectConfig)
             ) {
                 AuthLib.onlyCoreAdminACL({
-                    _coreContract: coreContract,
-                    _sender: msg.sender,
-                    _contract: address(this),
-                    _selector: bytes4(
+                    coreContract: coreContract,
+                    sender: msg.sender,
+                    contract_: address(this),
+                    selector: bytes4(
                         keccak256(
                             "distributeArtistAndAdminRevenues(uint256,address)"
                         )

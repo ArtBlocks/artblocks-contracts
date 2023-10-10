@@ -163,9 +163,9 @@ contract MinterDALinHolderV5 is
         uint24 maxInvocations
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
             projectId: projectId,
@@ -197,9 +197,9 @@ contract MinterDALinHolderV5 is
         uint256[] memory ownedNFTProjectIds
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         TokenHolderLib.allowHoldersOfProjects({
             projectId: projectId,
@@ -232,9 +232,9 @@ contract MinterDALinHolderV5 is
         uint256[] memory ownedNFTProjectIds
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         // require same length arrays
         TokenHolderLib.removeHoldersOfProjects({
@@ -285,9 +285,9 @@ contract MinterDALinHolderV5 is
         uint256[] memory ownedNFTProjectIdsRemove
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         TokenHolderLib.allowAndRemoveHoldersOfProjects({
             projectId: projectId,
@@ -327,9 +327,9 @@ contract MinterDALinHolderV5 is
         uint256 basePrice
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         // CHECKS
         require(
@@ -375,10 +375,10 @@ contract MinterDALinHolderV5 is
         uint256 minimumAuctionLengthSeconds_
     ) external {
         AuthLib.onlyMinterFilterAdminACL({
-            _minterFilterAddress: minterFilterAddress,
-            _sender: msg.sender,
-            _contract: address(this),
-            _selector: this.setMinimumAuctionLengthSeconds.selector
+            minterFilterAddress: minterFilterAddress,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.setMinimumAuctionLengthSeconds.selector
         });
         minimumAuctionLengthSeconds = minimumAuctionLengthSeconds_;
         emit DALinLib.AuctionMinimumLengthSecondsUpdated(
@@ -398,10 +398,10 @@ contract MinterDALinHolderV5 is
         address coreContract
     ) external {
         AuthLib.onlyCoreAdminACL({
-            _coreContract: coreContract,
-            _sender: msg.sender,
-            _contract: address(this),
-            _selector: this.resetAuctionDetails.selector
+            coreContract: coreContract,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.resetAuctionDetails.selector
         });
 
         DALinLib.resetAuctionDetails({
@@ -714,9 +714,9 @@ contract MinterDALinHolderV5 is
         address coreContract
     ) public {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
 
         MaxInvocationsLib.syncProjectMaxInvocationsToCore({

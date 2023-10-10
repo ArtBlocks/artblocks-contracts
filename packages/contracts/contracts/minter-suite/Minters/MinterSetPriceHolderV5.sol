@@ -139,9 +139,9 @@ contract MinterSetPriceHolderV5 is
         uint24 maxInvocations
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             projectId,
@@ -165,9 +165,9 @@ contract MinterSetPriceHolderV5 is
         uint248 pricePerTokenInWei
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         SetPriceLib.updatePricePerTokenInWei(
             projectId,
@@ -215,9 +215,9 @@ contract MinterSetPriceHolderV5 is
         uint256[] memory ownedNFTProjectIds
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         TokenHolderLib.allowHoldersOfProjects({
             projectId: projectId,
@@ -250,9 +250,9 @@ contract MinterSetPriceHolderV5 is
         uint256[] memory ownedNFTProjectIds
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         TokenHolderLib.removeHoldersOfProjects({
             projectId: projectId,
@@ -302,9 +302,9 @@ contract MinterSetPriceHolderV5 is
         uint256[] memory ownedNFTProjectIdsRemove
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         TokenHolderLib.allowAndRemoveHoldersOfProjects({
             projectId: projectId,
@@ -578,9 +578,9 @@ contract MinterSetPriceHolderV5 is
         address coreContract
     ) public {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
 
         MaxInvocationsLib.syncProjectMaxInvocationsToCore(

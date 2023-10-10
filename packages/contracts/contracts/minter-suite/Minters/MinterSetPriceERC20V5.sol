@@ -96,9 +96,9 @@ contract MinterSetPriceERC20V5 is
         uint24 maxInvocations
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             projectId,
@@ -122,9 +122,9 @@ contract MinterSetPriceERC20V5 is
         uint248 pricePerTokenInWei
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         SetPriceLib.updatePricePerTokenInWei(
             projectId,
@@ -168,9 +168,9 @@ contract MinterSetPriceERC20V5 is
         address currencyAddress
     ) external nonReentrant {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         SplitFundsLib.updateProjectCurrencyInfoERC20({
             projectId: projectId,
@@ -406,9 +406,9 @@ contract MinterSetPriceERC20V5 is
         address coreContract
     ) public {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
 
         MaxInvocationsLib.syncProjectMaxInvocationsToCore(

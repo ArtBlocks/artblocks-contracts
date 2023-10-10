@@ -121,9 +121,9 @@ contract MinterDAExpV5 is
         uint24 maxInvocations
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
             projectId: projectId,
@@ -161,9 +161,9 @@ contract MinterDAExpV5 is
         uint256 basePrice
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         // CHECKS
         require(
@@ -209,10 +209,10 @@ contract MinterDAExpV5 is
         uint256 minimumPriceDecayHalfLifeSeconds_
     ) external {
         AuthLib.onlyMinterFilterAdminACL({
-            _minterFilterAddress: minterFilterAddress,
-            _sender: msg.sender,
-            _contract: address(this),
-            _selector: this.setMinimumPriceDecayHalfLifeSeconds.selector
+            minterFilterAddress: minterFilterAddress,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.setMinimumPriceDecayHalfLifeSeconds.selector
         });
         require(
             minimumPriceDecayHalfLifeSeconds_ > 0,
@@ -237,10 +237,10 @@ contract MinterDAExpV5 is
         address coreContract
     ) external {
         AuthLib.onlyCoreAdminACL({
-            _coreContract: coreContract,
-            _sender: msg.sender,
-            _contract: address(this),
-            _selector: this.resetAuctionDetails.selector
+            coreContract: coreContract,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.resetAuctionDetails.selector
         });
 
         DAExpLib.resetAuctionDetails({
@@ -460,9 +460,9 @@ contract MinterDAExpV5 is
         address coreContract
     ) public {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
 
         MaxInvocationsLib.syncProjectMaxInvocationsToCore({

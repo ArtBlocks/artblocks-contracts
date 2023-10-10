@@ -154,9 +154,9 @@ contract MinterSetPricePolyptychERC20V5 is
         uint24 maxInvocations
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             projectId,
@@ -180,9 +180,9 @@ contract MinterSetPricePolyptychERC20V5 is
         uint248 pricePerTokenInWei
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         SetPriceLib.updatePricePerTokenInWei(
             projectId,
@@ -226,9 +226,9 @@ contract MinterSetPricePolyptychERC20V5 is
         address currencyAddress
     ) external nonReentrant {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         SplitFundsLib.updateProjectCurrencyInfoERC20({
             projectId: projectId,
@@ -261,9 +261,9 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256[] memory ownedNFTProjectIds
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         TokenHolderLib.allowHoldersOfProjects({
             projectId: projectId,
@@ -296,9 +296,9 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256[] memory ownedNFTProjectIds
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         // require same length arrays
         TokenHolderLib.removeHoldersOfProjects({
@@ -349,9 +349,9 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256[] memory ownedNFTProjectIdsRemove
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         TokenHolderLib.allowAndRemoveHoldersOfProjects({
             projectId: projectId,
@@ -373,9 +373,9 @@ contract MinterSetPricePolyptychERC20V5 is
         address coreContract
     ) public {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         PolyptychLib.incrementPolyptychProjectPanelId({
             projectId: projectId,
@@ -748,9 +748,9 @@ contract MinterSetPricePolyptychERC20V5 is
         address coreContract
     ) public {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
 
         MaxInvocationsLib.syncProjectMaxInvocationsToCore(

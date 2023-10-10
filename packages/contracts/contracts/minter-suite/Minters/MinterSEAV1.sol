@@ -181,9 +181,9 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         uint24 maxInvocations
     ) external {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             projectId,
@@ -214,10 +214,10 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // CHECKS
         _onlyNonZero(minterTimeBufferSeconds);
         AuthLib.onlyMinterFilterAdminACL({
-            _minterFilterAddress: minterFilterAddress,
-            _sender: msg.sender,
-            _contract: address(this),
-            _selector: this.updateMinterTimeBufferSeconds.selector
+            minterFilterAddress: minterFilterAddress,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.updateMinterTimeBufferSeconds.selector
         });
         // EFFECTS
         _minterTimeBufferSeconds = minterTimeBufferSeconds;
@@ -238,10 +238,10 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     function updateRefundGasLimit(uint24 minterRefundGasLimit) external {
         // CHECKS
         AuthLib.onlyMinterFilterAdminACL({
-            _minterFilterAddress: minterFilterAddress,
-            _sender: msg.sender,
-            _contract: address(this),
-            _selector: this.updateRefundGasLimit.selector
+            minterFilterAddress: minterFilterAddress,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.updateRefundGasLimit.selector
         });
         // @dev max gas limit implicitly checked by using uint16 input arg
         // @dev min gas limit is based on rounding up current cost to send ETH
@@ -287,9 +287,9 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         _onlyNonZero(basePrice);
         _onlyNonZero(minBidIncrementPercentage);
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         require(
             auctionDurationSeconds >= MIN_AUCTION_DURATION_SECONDS,
@@ -348,11 +348,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         address coreContract
     ) external {
         AuthLib.onlyCoreAdminACLOrArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender,
-            _contract: address(this),
-            _selector: this.resetFutureAuctionDetails.selector
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.resetFutureAuctionDetails.selector
         });
         // reset to initial values
         SEALib.resetFutureAuctionDetails({
@@ -387,10 +387,10 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         address to
     ) external {
         AuthLib.onlyCoreAdminACL({
-            _coreContract: coreContract,
-            _sender: msg.sender,
-            _contract: address(this),
-            _selector: this.ejectNextTokenTo.selector
+            coreContract: coreContract,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.ejectNextTokenTo.selector
         });
         SEALib.ejectNextTokenTo({
             projectId: projectId,
@@ -698,9 +698,9 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         address coreContract
     ) public {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
 
         MaxInvocationsLib.syncProjectMaxInvocationsToCore(
@@ -741,9 +741,9 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         address coreContract
     ) public nonReentrant {
         AuthLib.onlyArtist({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
         // CHECKS
         // revert if project is not configured on this minter
