@@ -14,7 +14,7 @@ pragma solidity ^0.8.0;
 library DALib {
     /// Auction details cleared for project `projectId`.
     event ResetAuctionDetails(
-        uint256 indexed _projectId,
-        address indexed _coreContract
+        uint256 indexed projectId,
+        address indexed coreContract
     );
 }
