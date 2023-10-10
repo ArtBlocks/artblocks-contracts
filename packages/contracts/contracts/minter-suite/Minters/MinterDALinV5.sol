@@ -171,13 +171,13 @@ contract MinterDALinV5 is
             coreContract
         );
         DALinLib.setAuctionDetailsLin({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _auctionTimestampStart: auctionTimestampStart,
-            _auctionTimestampEnd: auctionTimestampEnd,
-            _startPrice: startPrice.toUint88(),
-            _basePrice: basePrice.toUint88(),
-            _allowReconfigureAfterStart: maxHasBeenInvoked
+            projectId: projectId,
+            coreContract: coreContract,
+            auctionTimestampStart: auctionTimestampStart,
+            auctionTimestampEnd: auctionTimestampEnd,
+            startPrice: startPrice.toUint88(),
+            basePrice: basePrice.toUint88(),
+            allowReconfigureAfterStart: maxHasBeenInvoked
         });
 
         // sync local max invocations if not initially populated
@@ -232,8 +232,8 @@ contract MinterDALinV5 is
         });
 
         DALinLib.resetAuctionDetails({
-            _projectId: projectId,
-            _coreContract: coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
     }
 
@@ -425,8 +425,8 @@ contract MinterDALinV5 is
             tokenPriceInWei = auctionProjectConfig.startPrice;
         } else {
             tokenPriceInWei = DALinLib.getPriceLin({
-                _projectId: projectId,
-                _coreContract: coreContract
+                projectId: projectId,
+                coreContract: coreContract
             });
         }
         currencySymbol = "ETH";
@@ -485,8 +485,8 @@ contract MinterDALinV5 is
 
         // getPriceLin reverts if auction is unconfigured or has not started
         uint256 pricePerTokenInWei = DALinLib.getPriceLin({
-            _projectId: projectId,
-            _coreContract: coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
