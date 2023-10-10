@@ -13,13 +13,13 @@ pragma solidity ^0.8.0;
 
 library SetPriceLib {
     /**
-     * @notice Price per token in wei updated for project `_projectId` to
-     * `_pricePerTokenInWei`.
+     * @notice Price per token in wei updated for project `projectId` to
+     * `pricePerTokenInWei`.
      */
     event PricePerTokenInWeiUpdated(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        uint256 indexed _pricePerTokenInWei
+        uint256 indexed projectId,
+        address indexed coreContract,
+        uint256 indexed pricePerTokenInWei
     );
 
     // position of Set Price Lib storage, using a diamond storage pattern
@@ -44,43 +44,43 @@ library SetPriceLib {
 
     /**
      * @notice Updates the minter's price per token in wei to be
-     * `_pricePerTokenInWei`, in Wei, for the referenced SetPriceProjectConfig
+     * `pricePerTokenInWei`, in Wei, for the referenced SetPriceProjectConfig
      * struct in storage.
      * @dev Note that it is intentionally supported here that the configured
      * price may be explicitly set to `0`.
-     * @param _projectId Project Id to update price for
-     * @param _coreContract Core contract address to update price for
-     * @param _pricePerTokenInWei price per token in wei.
+     * @param projectId Project Id to update price for
+     * @param coreContract Core contract address to update price for
+     * @param pricePerTokenInWei price per token in wei.
      */
     function updatePricePerTokenInWei(
-        uint256 _projectId,
-        address _coreContract,
-        uint256 _pricePerTokenInWei
+        uint256 projectId,
+        address coreContract,
+        uint256 pricePerTokenInWei
     ) internal {
         SetPriceProjectConfig
             storage setPriceProjectConfig = getSetPriceProjectConfig(
-                _projectId,
-                _coreContract
+                projectId,
+                coreContract
             );
         // update storage with new values
-        setPriceProjectConfig.pricePerTokenInWei = uint248(_pricePerTokenInWei);
+        setPriceProjectConfig.pricePerTokenInWei = uint248(pricePerTokenInWei);
         setPriceProjectConfig.priceIsConfigured = true;
 
         emit PricePerTokenInWeiUpdated(
-            _projectId,
-            _coreContract,
-            _pricePerTokenInWei
+            projectId,
+            coreContract,
+            pricePerTokenInWei
         );
     }
 
     function preMintChecksAndGetPrice(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (uint256 pricePerTokenInWei) {
         SetPriceProjectConfig
             storage setPriceProjectConfig = getSetPriceProjectConfig(
-                _projectId,
-                _coreContract
+                projectId,
+                coreContract
             );
 
         // require artist to have configured price of token on this minter
@@ -93,14 +93,14 @@ library SetPriceLib {
 
     /**
      * Loads the SetPriceProjectConfig for a given project and core contract.
-     * @param _projectId Project Id to get config for
-     * @param _coreContract Core contract address to get config for
+     * @param projectId Project Id to get config for
+     * @param coreContract Core contract address to get config for
      */
     function getSetPriceProjectConfig(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (SetPriceProjectConfig storage) {
-        return s().setPriceProjectConfigs[_coreContract][_projectId];
+        return s().setPriceProjectConfigs[coreContract][projectId];
     }
 
     /**
