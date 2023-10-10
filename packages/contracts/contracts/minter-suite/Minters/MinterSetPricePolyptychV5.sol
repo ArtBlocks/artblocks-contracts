@@ -230,10 +230,10 @@ contract MinterSetPricePolyptychV5 is
             _sender: msg.sender
         });
         TokenHolderLib.allowHoldersOfProjects({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _ownedNFTAddresses: ownedNFTAddresses,
-            _ownedNFTProjectIds: ownedNFTProjectIds
+            projectId: projectId,
+            coreContract: coreContract,
+            ownedNFTAddresses: ownedNFTAddresses,
+            ownedNFTProjectIds: ownedNFTProjectIds
         });
     }
 
@@ -266,10 +266,10 @@ contract MinterSetPricePolyptychV5 is
         });
         // require same length arrays
         TokenHolderLib.removeHoldersOfProjects({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _ownedNFTAddresses: ownedNFTAddresses,
-            _ownedNFTProjectIds: ownedNFTProjectIds
+            projectId: projectId,
+            coreContract: coreContract,
+            ownedNFTAddresses: ownedNFTAddresses,
+            ownedNFTProjectIds: ownedNFTProjectIds
         });
     }
 
@@ -318,12 +318,12 @@ contract MinterSetPricePolyptychV5 is
             _sender: msg.sender
         });
         TokenHolderLib.allowAndRemoveHoldersOfProjects({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _ownedNFTAddressesAdd: ownedNFTAddressesAdd,
-            _ownedNFTProjectIdsAdd: ownedNFTProjectIdsAdd,
-            _ownedNFTAddressesRemove: ownedNFTAddressesRemove,
-            _ownedNFTProjectIdsRemove: ownedNFTProjectIdsRemove
+            projectId: projectId,
+            coreContract: coreContract,
+            ownedNFTAddressesAdd: ownedNFTAddressesAdd,
+            ownedNFTProjectIdsAdd: ownedNFTProjectIdsAdd,
+            ownedNFTAddressesRemove: ownedNFTAddressesRemove,
+            ownedNFTProjectIdsRemove: ownedNFTProjectIdsRemove
         });
     }
 
@@ -485,10 +485,10 @@ contract MinterSetPricePolyptychV5 is
     ) external view returns (bool) {
         return
             TokenHolderLib.isAllowlistedNFT({
-                _projectId: projectId,
-                _coreContract: coreContract,
-                _ownedNFTAddress: ownedNFTAddress,
-                _ownedNFTTokenId: ownedNFTTokenId
+                projectId: projectId,
+                coreContract: coreContract,
+                ownedNFTAddress: ownedNFTAddress,
+                ownedNFTTokenId: ownedNFTTokenId
             });
     }
 
@@ -715,10 +715,10 @@ contract MinterSetPricePolyptychV5 is
         // require token used to claim to be in set of allowlisted NFTs
         require(
             TokenHolderLib.isAllowlistedNFT({
-                _projectId: projectId,
-                _coreContract: coreContract,
-                _ownedNFTAddress: ownedNFTAddress,
-                _ownedNFTTokenId: ownedNFTTokenId
+                projectId: projectId,
+                coreContract: coreContract,
+                ownedNFTAddress: ownedNFTAddress,
+                ownedNFTTokenId: ownedNFTTokenId
             }),
             "Only allowlisted NFTs"
         );
@@ -824,9 +824,9 @@ contract MinterSetPricePolyptychV5 is
             );
             address targetOwner = (msg.sender == _artist) ? to : vault_;
             TokenHolderLib.validateNFTOwnership({
-                _ownedNFTAddress: ownedNFTAddress,
-                _ownedNFTTokenId: ownedNFTTokenId,
-                _targetOwner: targetOwner
+                ownedNFTAddress: ownedNFTAddress,
+                ownedNFTTokenId: ownedNFTTokenId,
+                targetOwner: targetOwner
             });
         }
 

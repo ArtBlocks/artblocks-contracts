@@ -203,10 +203,10 @@ contract MinterDAExpHolderV5 is
             _sender: msg.sender
         });
         TokenHolderLib.allowHoldersOfProjects({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _ownedNFTAddresses: ownedNFTAddresses,
-            _ownedNFTProjectIds: ownedNFTProjectIds
+            projectId: projectId,
+            coreContract: coreContract,
+            ownedNFTAddresses: ownedNFTAddresses,
+            ownedNFTProjectIds: ownedNFTProjectIds
         });
     }
 
@@ -239,10 +239,10 @@ contract MinterDAExpHolderV5 is
         });
         // require same length arrays
         TokenHolderLib.removeHoldersOfProjects({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _ownedNFTAddresses: ownedNFTAddresses,
-            _ownedNFTProjectIds: ownedNFTProjectIds
+            projectId: projectId,
+            coreContract: coreContract,
+            ownedNFTAddresses: ownedNFTAddresses,
+            ownedNFTProjectIds: ownedNFTProjectIds
         });
     }
 
@@ -291,12 +291,12 @@ contract MinterDAExpHolderV5 is
             _sender: msg.sender
         });
         TokenHolderLib.allowAndRemoveHoldersOfProjects({
-            _projectId: projectId,
-            _coreContract: coreContract,
-            _ownedNFTAddressesAdd: ownedNFTAddressesAdd,
-            _ownedNFTProjectIdsAdd: ownedNFTProjectIdsAdd,
-            _ownedNFTAddressesRemove: ownedNFTAddressesRemove,
-            _ownedNFTProjectIdsRemove: ownedNFTProjectIdsRemove
+            projectId: projectId,
+            coreContract: coreContract,
+            ownedNFTAddressesAdd: ownedNFTAddressesAdd,
+            ownedNFTProjectIdsAdd: ownedNFTProjectIdsAdd,
+            ownedNFTAddressesRemove: ownedNFTAddressesRemove,
+            ownedNFTProjectIdsRemove: ownedNFTProjectIdsRemove
         });
     }
 
@@ -703,10 +703,10 @@ contract MinterDAExpHolderV5 is
     ) external view returns (bool) {
         return
             TokenHolderLib.isAllowlistedNFT({
-                _projectId: projectId,
-                _coreContract: coreContract,
-                _ownedNFTAddress: ownedNFTAddress,
-                _ownedNFTTokenId: ownedNFTTokenId
+                projectId: projectId,
+                coreContract: coreContract,
+                ownedNFTAddress: ownedNFTAddress,
+                ownedNFTTokenId: ownedNFTTokenId
             });
     }
 
@@ -777,10 +777,10 @@ contract MinterDAExpHolderV5 is
         // require token used to claim to be in set of allowlisted NFTs
         require(
             TokenHolderLib.isAllowlistedNFT({
-                _projectId: projectId,
-                _coreContract: coreContract,
-                _ownedNFTAddress: ownedNFTAddress,
-                _ownedNFTTokenId: ownedNFTTokenId
+                projectId: projectId,
+                coreContract: coreContract,
+                ownedNFTAddress: ownedNFTAddress,
+                ownedNFTTokenId: ownedNFTTokenId
             }),
             "Only allowlisted NFTs"
         );
@@ -832,9 +832,9 @@ contract MinterDAExpHolderV5 is
          * function is non-reentrant, so this is extra cautious.
          */
         TokenHolderLib.validateNFTOwnership({
-            _ownedNFTAddress: ownedNFTAddress,
-            _ownedNFTTokenId: ownedNFTTokenId,
-            _targetOwner: vault_
+            ownedNFTAddress: ownedNFTAddress,
+            ownedNFTTokenId: ownedNFTTokenId,
+            targetOwner: vault_
         });
         SplitFundsLib.splitFundsETHRefundSender({
             projectId: projectId,
