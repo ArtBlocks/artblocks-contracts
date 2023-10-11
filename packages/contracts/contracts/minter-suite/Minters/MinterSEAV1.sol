@@ -187,11 +187,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             coreContract: coreContract,
             sender: msg.sender
         });
-        MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
-            projectId,
-            coreContract,
-            maxInvocations
-        );
+        MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
+            projectId: projectId,
+            coreContract: coreContract,
+            maxInvocations: maxInvocations
+        });
 
         // @dev the following is unique behavior to this minter
         // for convenience, try to mint and assign a token to the project's
@@ -313,12 +313,15 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // intentionally less than the core contract's max invocations.
         // sync local max invocations if not initially populated
         if (
-            MaxInvocationsLib.maxInvocationsIsUnconfigured(
-                projectId,
-                coreContract
-            )
+            MaxInvocationsLib.maxInvocationsIsUnconfigured({
+                projectId: projectId,
+                coreContract: coreContract
+            })
         ) {
-            syncProjectMaxInvocationsToCore(projectId, coreContract);
+            syncProjectMaxInvocationsToCore({
+                projectId: projectId,
+                coreContract: coreContract
+            });
             // @dev syncProjectMaxInvocationsToCore function calls
             // SEALib.tryMintTokenToNextSlot, so we do not call it here.
         } else {
@@ -435,9 +438,9 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             "Only tokens in same project"
         );
         // settle completed auction, if applicable
-        settleAuction(settleTokenId, coreContract);
+        settleAuction({tokenId: settleTokenId, coreContract: coreContract});
         // attempt to bid on next token
-        createBid(bidTokenId, coreContract);
+        createBid({tokenId: bidTokenId, coreContract: coreContract});
     }
 
     /**
@@ -478,10 +481,10 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
         return
-            MaxInvocationsLib.getMaxInvocationsProjectConfig(
-                projectId,
-                coreContract
-            );
+            MaxInvocationsLib.getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -502,7 +505,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         uint256 projectId,
         address coreContract
     ) external view returns (bool) {
-        return MaxInvocationsLib.getMaxHasBeenInvoked(projectId, coreContract);
+        return
+            MaxInvocationsLib.getMaxHasBeenInvoked({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -529,7 +536,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         uint256 projectId,
         address coreContract
     ) external view returns (uint256) {
-        return MaxInvocationsLib.getMaxInvocations(projectId, coreContract);
+        return
+            MaxInvocationsLib.getMaxInvocations({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -705,10 +716,10 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             sender: msg.sender
         });
 
-        MaxInvocationsLib.syncProjectMaxInvocationsToCore(
-            projectId,
-            coreContract
-        );
+        MaxInvocationsLib.syncProjectMaxInvocationsToCore({
+            projectId: projectId,
+            coreContract: coreContract
+        });
 
         // for convenience, try to mint and assign a token to the project's
         // next slot

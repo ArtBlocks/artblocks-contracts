@@ -341,10 +341,10 @@ contract MinterDALinHolderV5 is
         );
 
         // EFFECTS
-        bool maxHasBeenInvoked = MaxInvocationsLib.getMaxHasBeenInvoked(
-            projectId,
-            coreContract
-        );
+        bool maxHasBeenInvoked = MaxInvocationsLib.getMaxHasBeenInvoked({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         DALinLib.setAuctionDetailsLin({
             projectId: projectId,
             coreContract: coreContract,
@@ -359,12 +359,15 @@ contract MinterDALinHolderV5 is
         // @dev if local max invocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated.
         if (
-            MaxInvocationsLib.maxInvocationsIsUnconfigured(
-                projectId,
-                coreContract
-            )
+            MaxInvocationsLib.maxInvocationsIsUnconfigured({
+                projectId: projectId,
+                coreContract: coreContract
+            })
         ) {
-            syncProjectMaxInvocationsToCore(projectId, coreContract);
+            syncProjectMaxInvocationsToCore({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         }
     }
 
@@ -493,10 +496,10 @@ contract MinterDALinHolderV5 is
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
         return
-            MaxInvocationsLib.getMaxInvocationsProjectConfig(
-                projectId,
-                coreContract
-            );
+            MaxInvocationsLib.getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -573,7 +576,11 @@ contract MinterDALinHolderV5 is
         uint256 projectId,
         address coreContract
     ) external view returns (bool) {
-        return MaxInvocationsLib.getMaxHasBeenInvoked(projectId, coreContract);
+        return
+            MaxInvocationsLib.getMaxHasBeenInvoked({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -600,7 +607,11 @@ contract MinterDALinHolderV5 is
         uint256 projectId,
         address coreContract
     ) external view returns (uint256) {
-        return MaxInvocationsLib.getMaxInvocations(projectId, coreContract);
+        return
+            MaxInvocationsLib.getMaxInvocations({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -674,7 +685,10 @@ contract MinterDALinHolderV5 is
     ) external view returns (bool) {
         return
             TokenHolderLib
-                .getHolderProjectConfig(projectId, coreContract)
+                .getHolderProjectConfig({
+                    projectId: projectId,
+                    coreContract: coreContract
+                })
                 .allowedProjectHolders[ownedNFTAddress][ownedNFTProjectId];
     }
 
@@ -758,7 +772,10 @@ contract MinterDALinHolderV5 is
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
-        MaxInvocationsLib.preMintChecks(projectId, coreContract);
+        MaxInvocationsLib.preMintChecks({
+            projectId: projectId,
+            coreContract: coreContract
+        });
 
         // getPriceLin reverts if auction is unconfigured or has not started
         uint256 pricePerTokenInWei = DALinLib.getPriceLin({
@@ -810,10 +827,10 @@ contract MinterDALinHolderV5 is
 
         // NOTE: delegate-vault handling **ends here**.
 
-        MaxInvocationsLib.validatePurchaseEffectsInvocations(
-            tokenId,
-            coreContract
-        );
+        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+            tokenId: tokenId,
+            coreContract: coreContract
+        });
 
         // INTERACTIONS
         // require vault to own NFT used to redeem

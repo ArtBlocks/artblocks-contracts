@@ -100,11 +100,11 @@ contract MinterSetPriceV5 is
             coreContract: coreContract,
             sender: msg.sender
         });
-        MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
-            projectId,
-            coreContract,
-            maxInvocations
-        );
+        MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
+            projectId: projectId,
+            coreContract: coreContract,
+            maxInvocations: maxInvocations
+        });
     }
 
     /**
@@ -126,11 +126,11 @@ contract MinterSetPriceV5 is
             coreContract: coreContract,
             sender: msg.sender
         });
-        SetPriceLib.updatePricePerTokenInWei(
-            projectId,
-            coreContract,
-            pricePerTokenInWei
-        );
+        SetPriceLib.updatePricePerTokenInWei({
+            projectId: projectId,
+            coreContract: coreContract,
+            pricePerTokenInWei: pricePerTokenInWei
+        });
 
         // for convenience, sync local max invocations to the core contract if
         // and only if max invocations have not already been synced.
@@ -140,12 +140,15 @@ contract MinterSetPriceV5 is
         // @dev if local maxInvocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated on this minter
         if (
-            MaxInvocationsLib.maxInvocationsIsUnconfigured(
-                projectId,
-                coreContract
-            )
+            MaxInvocationsLib.maxInvocationsIsUnconfigured({
+                projectId: projectId,
+                coreContract: coreContract
+            })
         ) {
-            syncProjectMaxInvocationsToCore(projectId, coreContract);
+            syncProjectMaxInvocationsToCore({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         }
     }
 
@@ -159,7 +162,11 @@ contract MinterSetPriceV5 is
         uint256 projectId,
         address coreContract
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo(msg.sender, projectId, coreContract);
+        tokenId = purchaseTo({
+            to: msg.sender,
+            projectId: projectId,
+            coreContract: coreContract
+        });
         return tokenId;
     }
 
@@ -180,10 +187,10 @@ contract MinterSetPriceV5 is
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
         return
-            MaxInvocationsLib.getMaxInvocationsProjectConfig(
-                projectId,
-                coreContract
-            );
+            MaxInvocationsLib.getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -197,7 +204,11 @@ contract MinterSetPriceV5 is
         uint256 projectId,
         address coreContract
     ) external view returns (SetPriceLib.SetPriceProjectConfig memory) {
-        return SetPriceLib.getSetPriceProjectConfig(projectId, coreContract);
+        return
+            SetPriceLib.getSetPriceProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -241,7 +252,11 @@ contract MinterSetPriceV5 is
         uint256 projectId,
         address coreContract
     ) external view returns (bool) {
-        return MaxInvocationsLib.getMaxHasBeenInvoked(projectId, coreContract);
+        return
+            MaxInvocationsLib.getMaxHasBeenInvoked({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -268,7 +283,11 @@ contract MinterSetPriceV5 is
         uint256 projectId,
         address coreContract
     ) external view returns (uint256) {
-        return MaxInvocationsLib.getMaxInvocations(projectId, coreContract);
+        return
+            MaxInvocationsLib.getMaxInvocations({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -300,10 +319,13 @@ contract MinterSetPriceV5 is
         )
     {
         SetPriceLib.SetPriceProjectConfig
-            storage _setPriceProjectConfig = SetPriceLib
-                .getSetPriceProjectConfig(projectId, coreContract);
-        isConfigured = _setPriceProjectConfig.priceIsConfigured;
-        tokenPriceInWei = _setPriceProjectConfig.pricePerTokenInWei;
+            storage setPriceProjectConfig_ = SetPriceLib
+                .getSetPriceProjectConfig({
+                    projectId: projectId,
+                    coreContract: coreContract
+                });
+        isConfigured = setPriceProjectConfig_.priceIsConfigured;
+        tokenPriceInWei = setPriceProjectConfig_.pricePerTokenInWei;
         currencySymbol = "ETH";
         currencyAddress = address(0);
     }
@@ -326,10 +348,10 @@ contract MinterSetPriceV5 is
             sender: msg.sender
         });
 
-        MaxInvocationsLib.syncProjectMaxInvocationsToCore(
-            projectId,
-            coreContract
-        );
+        MaxInvocationsLib.syncProjectMaxInvocationsToCore({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
@@ -353,14 +375,17 @@ contract MinterSetPriceV5 is
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
-        MaxInvocationsLib.preMintChecks(projectId, coreContract);
+        MaxInvocationsLib.preMintChecks({
+            projectId: projectId,
+            coreContract: coreContract
+        });
 
         // pre-mint checks for set price lib, and get price per token in wei
         // @dev price per token is loaded into memory here for gas efficiency
-        uint256 pricePerTokenInWei = SetPriceLib.preMintChecksAndGetPrice(
-            projectId,
-            coreContract
-        );
+        uint256 pricePerTokenInWei = SetPriceLib.preMintChecksAndGetPrice({
+            projectId: projectId,
+            coreContract: coreContract
+        });
 
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
@@ -372,10 +397,10 @@ contract MinterSetPriceV5 is
             sender: msg.sender
         });
 
-        MaxInvocationsLib.validatePurchaseEffectsInvocations(
-            tokenId,
-            coreContract
-        );
+        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+            tokenId: tokenId,
+            coreContract: coreContract
+        });
 
         // INTERACTIONS
         SplitFundsLib.splitFundsETHRefundSender({
