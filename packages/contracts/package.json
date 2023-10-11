@@ -81,7 +81,7 @@
     "eslint": "^8.51.0",
     "eslint-config-custom": "*",
     "eslint-plugin-mocha": "^10.2.0",
-    "eslint-plugin-prettier": "^5.0.0",
+    "eslint-plugin-prettier": "^5.0.1",
     "ethereum-waffle": "^4.0.10",
     "ethers": "^5.7.2",
     "hardhat": "^2.18.0",
