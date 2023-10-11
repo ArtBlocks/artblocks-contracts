@@ -1083,9 +1083,8 @@ runForEach.forEach((params) => {
             config.genArt721Core.address
           );
         expect(seaProjectConfig.activeAuction.settled).to.be.true;
-        const ownerOfTargetToken = await config.genArt721Core.ownerOf(
-          targetToken
-        );
+        const ownerOfTargetToken =
+          await config.genArt721Core.ownerOf(targetToken);
         expect(ownerOfTargetToken).to.equal(config.accounts.user.address);
       });
     });

@@ -121,9 +121,8 @@ for (const coreContractName of coreContractsToTest) {
         // addresses for the purposes of config test
         let tx;
         if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          const engineRegistryFactory = await ethers.getContractFactory(
-            "EngineRegistryV0"
-          );
+          const engineRegistryFactory =
+            await ethers.getContractFactory("EngineRegistryV0");
           const engineRegistry = await engineRegistryFactory
             .connect(config.accounts.deployer)
             .deploy();

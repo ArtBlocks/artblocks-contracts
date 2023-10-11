@@ -140,9 +140,8 @@ for (const coreContractName of coreContractsToTest) {
         .updatePricePerTokenInWei(config.projectOne, config.pricePerTokenInWei);
 
       // artist mints a token on config.projectZero to use as proof of ownership
-      const minterFactorySetPrice = await ethers.getContractFactory(
-        "MinterSetPriceV2"
-      );
+      const minterFactorySetPrice =
+        await ethers.getContractFactory("MinterSetPriceV2");
       config.minterSetPrice = await minterFactorySetPrice.deploy(
         config.genArt721Core.address,
         config.minterFilter.address
@@ -748,9 +747,8 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist)
           .manuallyLimitProjectMaxInvocations(config.projectZero, 2);
         // switch to different minter
-        const setPriceFactory = await ethers.getContractFactory(
-          "MinterSetPriceV4"
-        );
+        const setPriceFactory =
+          await ethers.getContractFactory("MinterSetPriceV4");
         const setPriceMinter = await setPriceFactory.deploy(
           config.genArt721Core.address,
           config.minterFilter.address

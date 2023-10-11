@@ -1385,9 +1385,8 @@ for (const coreContractName of coreContractsToTest) {
             config.projectZero,
             0
           );
-        const newScriptByteCode = await ethers.provider.getCode(
-          newScriptAddress
-        );
+        const newScriptByteCode =
+          await ethers.provider.getCode(newScriptAddress);
         expect(newScriptByteCode).to.not.equal("0x");
         expect(newScriptByteCode).to.not.equal(scriptByteCode);
       });

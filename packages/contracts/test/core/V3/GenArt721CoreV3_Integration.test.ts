@@ -213,9 +213,8 @@ for (const coreContractName of coreContractsToTest) {
       it("behaves as expected when transferring ownership", async function () {
         const config = await loadFixture(_beforeEach);
         // deploy new ACL with user as superAdmin
-        const userAdminACLFactory = await ethers.getContractFactory(
-          "AdminACLV0"
-        );
+        const userAdminACLFactory =
+          await ethers.getContractFactory("AdminACLV0");
         const userAdminACL = await userAdminACLFactory
           .connect(config.accounts.user)
           .deploy();
@@ -384,9 +383,8 @@ for (const coreContractName of coreContractsToTest) {
         const nextProjectId = 365;
         let differentGenArt721Core;
         if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          const engineRegistryFactory = await ethers.getContractFactory(
-            "EngineRegistryV0"
-          );
+          const engineRegistryFactory =
+            await ethers.getContractFactory("EngineRegistryV0");
           const engineRegistry = await engineRegistryFactory
             .connect(config.accounts.deployer)
             .deploy();
@@ -433,9 +431,8 @@ for (const coreContractName of coreContractsToTest) {
         const nextProjectId = 365;
         let differentGenArt721Core;
         if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          const engineRegistryFactory = await ethers.getContractFactory(
-            "EngineRegistryV0"
-          );
+          const engineRegistryFactory =
+            await ethers.getContractFactory("EngineRegistryV0");
           const engineRegistry = await engineRegistryFactory
             .connect(config.accounts.deployer)
             .deploy();

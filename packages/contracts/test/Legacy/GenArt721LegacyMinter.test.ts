@@ -26,9 +26,8 @@ describe("GenArt721Minter", async function () {
     };
     config = await assignDefaultConstants(config, 3);
 
-    const randomizerFactory = await ethers.getContractFactory(
-      "BasicRandomizer"
-    );
+    const randomizerFactory =
+      await ethers.getContractFactory("BasicRandomizer");
     config.randomizer = await randomizerFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
     config.genArt721Core = await artblocksFactory

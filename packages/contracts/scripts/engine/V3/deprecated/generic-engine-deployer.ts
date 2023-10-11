@@ -560,9 +560,8 @@ async function main() {
     if (deployDetails.existingAdminACL) {
       adminACLContractName = deployDetails.adminACLContractName;
     }
-    const adminACLFactory = await ethers.getContractFactory(
-      adminACLContractName
-    );
+    const adminACLFactory =
+      await ethers.getContractFactory(adminACLContractName);
     adminACL = adminACLFactory.attach(adminACLAddress);
     if (deployDetails.doTransferSuperAdmin) {
       // transfer superAdmin role on adminACL, triggering indexing update on new core contract

@@ -68,9 +68,8 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock/BytecodeV1LibCallsMock Libr
       await config.bytecodeV1TextCR_DMock.storedTextBytecodeAddresses(
         textSlotId
       );
-    const textFromLib = await config.bytecodeV1LibCallsMock.readFromBytecode(
-      textBytecodeAddress
-    );
+    const textFromLib =
+      await config.bytecodeV1LibCallsMock.readFromBytecode(textBytecodeAddress);
     expect(textFromLib).to.equal(targetText);
   }
 
@@ -176,9 +175,10 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock/BytecodeV1LibCallsMock Libr
         config,
         config.bytecodeV1TextCR_DMock
       );
-      const text = await config.bytecodeV1TextCR_DMock.readTextAtAddress(
-        textBytecodeAddress
-      );
+      const text =
+        await config.bytecodeV1TextCR_DMock.readTextAtAddress(
+          textBytecodeAddress
+        );
       expect(text).to.equal(targetText);
     });
 
@@ -207,9 +207,10 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock/BytecodeV1LibCallsMock Libr
           "BytecodeV1TextCR_DMock",
           [] // no deployment args
         );
-      const text = await additionalBytecodeV1TextCR_DMock.readTextAtAddress(
-        textBytecodeAddress
-      );
+      const text =
+        await additionalBytecodeV1TextCR_DMock.readTextAtAddress(
+          textBytecodeAddress
+        );
       expect(text).to.equal(targetText);
     });
   });
@@ -252,8 +253,8 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock/BytecodeV1LibCallsMock Libr
         config,
         config.bytecodeV1TextCR_DMock
       );
-      const resolvedMockAddress = await config.bytecodeV1TextCR_DMock
-        .resolvedAddress;
+      const resolvedMockAddress =
+        await config.bytecodeV1TextCR_DMock.resolvedAddress;
 
       // First validate w/ BytecodeV1TextCR_DMock read
       const textAuthorAddress =
@@ -302,8 +303,8 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock/BytecodeV1LibCallsMock Libr
         await additionalBytecodeV1TextCR_DMock.readAuthorForTextAtAddress(
           textBytecodeAddress
         );
-      const resolvedMockAddress = await config.bytecodeV1TextCR_DMock
-        .resolvedAddress;
+      const resolvedMockAddress =
+        await config.bytecodeV1TextCR_DMock.resolvedAddress;
       expect(textAuthorAddress).to.equal(resolvedMockAddress);
     });
   });
@@ -319,9 +320,8 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock/BytecodeV1LibCallsMock Libr
         config.bytecodeV1TextCR_DMock
       );
 
-      const deployedBytecode = await ethers.provider.getCode(
-        textBytecodeAddress
-      );
+      const deployedBytecode =
+        await ethers.provider.getCode(textBytecodeAddress);
       expect(deployedBytecode).to.not.equal("0x");
 
       const nextTextSlotId =
@@ -332,9 +332,8 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock/BytecodeV1LibCallsMock Libr
         .connect(config.accounts.deployer)
         .deleteText(textSlotId);
 
-      const deletedBytecode = await ethers.provider.getCode(
-        textBytecodeAddress
-      );
+      const deletedBytecode =
+        await ethers.provider.getCode(textBytecodeAddress);
       // no-purge! bytecode is still there
       expect(deletedBytecode).to.equal(deployedBytecode);
     });

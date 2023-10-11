@@ -51,9 +51,8 @@ export const MinterSetPriceV1V2V3V4_Common = async (
     it("does not allow reentrant purchaseTo", async function () {
       const config = await loadFixture(_beforeEach);
       // attacker deploys reentrancy contract
-      const reentrancyMockFactory = await ethers.getContractFactory(
-        "ReentrancyMock"
-      );
+      const reentrancyMockFactory =
+        await ethers.getContractFactory("ReentrancyMock");
       const reentrancyMock = await reentrancyMockFactory
         .connect(config.accounts.deployer)
         .deploy();
@@ -144,9 +143,8 @@ export const MinterSetPriceV1V2V3V4_Common = async (
       const projectStateDataBefore = await viewFunctionWithInvocations(
         config.projectZero
       );
-      const executeTxResponse = await safeSdk2.executeTransaction(
-        safeTransaction
-      );
+      const executeTxResponse =
+        await safeSdk2.executeTransaction(safeTransaction);
       await executeTxResponse.transactionResponse?.wait();
       const projectStateDataAfter = await viewFunctionWithInvocations(
         config.projectZero

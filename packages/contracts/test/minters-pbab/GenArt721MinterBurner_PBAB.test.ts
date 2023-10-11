@@ -19,9 +19,8 @@ describe("GenArt721MinterBurner_PBAB", async function () {
     config = await assignDefaultConstants(config);
     config.higherPricePerTokenInWei = ethers.utils.parseEther("1.1");
     // deploy and configure contracts
-    const randomizerFactory = await ethers.getContractFactory(
-      "BasicRandomizer"
-    );
+    const randomizerFactory =
+      await ethers.getContractFactory("BasicRandomizer");
     config.randomizer = await randomizerFactory.deploy();
 
     const PBABFactory = await ethers.getContractFactory("GenArt721CoreV2_PBAB");

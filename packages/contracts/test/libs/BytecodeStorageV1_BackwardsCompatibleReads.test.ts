@@ -66,9 +66,10 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
     );
 
     // Validate that V1 read of SSTORE2 written text is same as original text.
-    const text = await bytecodeV1TextCR_DMock.readSSTORE2TextAtAddress(
-      textBytecodeAddress
-    );
+    const text =
+      await bytecodeV1TextCR_DMock.readSSTORE2TextAtAddress(
+        textBytecodeAddress
+      );
     expect(text).to.equal(targetText);
     // Validate that read is the same when using manually provided read-offsets.
     const textManualOffset =
@@ -99,9 +100,8 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
     );
 
     // Validate that V1 read of V0 written text is same as original text.
-    const text = await bytecodeV1TextCR_DMock.readTextAtAddress(
-      textBytecodeAddress
-    );
+    const text =
+      await bytecodeV1TextCR_DMock.readTextAtAddress(textBytecodeAddress);
     expect(text).to.equal(targetText);
     // Validate that read is the same when using manually provided read-offsets.
     const textManualOffset =
@@ -118,9 +118,8 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
     const nextTextSlotId = await sstore2Mock.nextTextSlotId();
     // decrement from `nextTextSlotId` to get last updated slot
     const textSlotId = nextTextSlotId - 1;
-    const textBytecodeAddress = await sstore2Mock.storedTextBytecodeAddresses(
-      textSlotId
-    );
+    const textBytecodeAddress =
+      await sstore2Mock.storedTextBytecodeAddresses(textSlotId);
     return textBytecodeAddress;
   }
 
@@ -285,8 +284,8 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
         await config.bytecodeV0TextCR_DMock.readAuthorForTextAtAddress(
           textBytecodeAddress
         );
-      const resolvedMockAddress = await config.bytecodeV0TextCR_DMock
-        .resolvedAddress;
+      const resolvedMockAddress =
+        await config.bytecodeV0TextCR_DMock.resolvedAddress;
       expect(textAuthorAddressV1).to.equal(resolvedMockAddress);
       expect(textAuthorAddressV1).to.equal(textAuthorAddressV0);
     });

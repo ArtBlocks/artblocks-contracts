@@ -411,9 +411,8 @@ export const GenArt721Minter_PBAB_Common = async (
     it("does not allow reentrant purchaseTo", async function () {
       const config = await loadFixture(_beforeEach);
       // attacker deploys reentrancy contract
-      const reentrancyMockFactory = await ethers.getContractFactory(
-        "ReentrancyMock"
-      );
+      const reentrancyMockFactory =
+        await ethers.getContractFactory("ReentrancyMock");
       const reentrancyMock = await reentrancyMockFactory
         .connect(config.accounts.deployer)
         .deploy();

@@ -83,9 +83,8 @@ runForEach.forEach((params) => {
     describe("Deployed", async function () {
       it("should emit Deployed during deployment", async function () {
         const config = await loadFixture(_beforeEach);
-        const minterFilterFactory = await ethers.getContractFactory(
-          "MinterFilterV1"
-        );
+        const minterFilterFactory =
+          await ethers.getContractFactory("MinterFilterV1");
 
         const tx = await minterFilterFactory
           .connect(config.accounts.deployer)

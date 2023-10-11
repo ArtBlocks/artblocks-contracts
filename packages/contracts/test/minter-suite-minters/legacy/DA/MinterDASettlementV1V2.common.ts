@@ -341,9 +341,8 @@ export const MinterDASettlementV1V2_Common = async (
       // attacker is must be priviliged artist or admin, making config a somewhat
       // silly reentrancy attack. Still worth testing to ensure nonReentrant
       // modifier is working.
-      const reentrancyMockFactory = await ethers.getContractFactory(
-        "ReentrancyMock"
-      );
+      const reentrancyMockFactory =
+        await ethers.getContractFactory("ReentrancyMock");
       const reentrancyMock = await reentrancyMockFactory
         .connect(config.accounts.deployer)
         .deploy();
@@ -456,9 +455,8 @@ export const MinterDASettlementV1V2_Common = async (
       const projectStateDataBefore = await viewFunctionWithInvocations(
         config.projectZero
       );
-      const executeTxResponse = await safeSdk2.executeTransaction(
-        safeTransaction
-      );
+      const executeTxResponse =
+        await safeSdk2.executeTransaction(safeTransaction);
       await executeTxResponse.transactionResponse?.wait();
       const projectStateDataAfter = await viewFunctionWithInvocations(
         config.projectZero
