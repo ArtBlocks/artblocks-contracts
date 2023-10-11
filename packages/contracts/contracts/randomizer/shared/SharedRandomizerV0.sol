@@ -125,7 +125,7 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
         uint256 projectId,
         address hashSeedSetterContract
     ) external {
-        _onlyArtist(coreContract, projectId);
+        _onlyArtist({projectId: projectId, coreContract: coreContract});
         _hashSeedSetterContracts[coreContract][
             projectId
         ] = hashSeedSetterContract;
@@ -143,7 +143,7 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
         address coreContract,
         uint256 projectId
     ) external {
-        _onlyArtist(coreContract, projectId);
+        _onlyArtist({projectId: projectId, coreContract: coreContract});
         _projectUsesHashSeedSetter[coreContract][
             projectId
         ] = !_projectUsesHashSeedSetter[coreContract][projectId];
@@ -165,7 +165,10 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
         bytes12 hashSeed
     ) external {
         uint256 projectId = _tokenIdToProjectId(tokenId);
-        _onlyHashSeedSetterContract(coreContract, projectId);
+        _onlyHashSeedSetterContract({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         _preAssignedHashSeeds[coreContract][tokenId] = hashSeed;
         // @dev event indicating token hash seed assigned is not required for
         // subgraph indexing because token hash seeds are still assigned
@@ -190,15 +193,18 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
         if (_projectUsesHashSeedSetter[coreContract][projectId]) {
             hashSeed = _preAssignedHashSeeds[coreContract][tokenId];
         } else {
-            hashSeed = _getPseudorandomAtomic(coreContract, tokenId);
+            hashSeed = _getPseudorandomAtomic({
+                coreContract: coreContract,
+                tokenId: tokenId
+            });
         }
         // verify that the hash seed is non-zero
         require(hashSeed != 0, "Only non-zero hash seed");
         // assign the token hash seed on the core contract
-        IGenArt721CoreContractV3_Base(coreContract).setTokenHash_8PT(
-            tokenId,
-            hashSeed
-        );
+        IGenArt721CoreContractV3_Base(coreContract).setTokenHash_8PT({
+            _tokenId: tokenId,
+            _hash: hashSeed
+        });
     }
 
     /**

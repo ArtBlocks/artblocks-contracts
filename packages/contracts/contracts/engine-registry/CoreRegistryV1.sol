@@ -84,7 +84,11 @@ contract CoreRegistryV1 is Ownable, ICoreRegistryV1 {
         // revert if not called by owner
         Ownable._checkOwner();
         // EFFECTS
-        _registerContract(contractAddress, coreVersion, coreType);
+        _registerContract({
+            contractAddress: contractAddress,
+            coreVersion: coreVersion,
+            coreType: coreType
+        });
     }
 
     /**
@@ -128,11 +132,11 @@ contract CoreRegistryV1 is Ownable, ICoreRegistryV1 {
         );
         // EFFECTS
         for (uint256 i = 0; i < numContracts; ) {
-            _registerContract(
-                contractAddresses[i],
-                coreVersions[i],
-                coreTypes[i]
-            );
+            _registerContract({
+                contractAddress: contractAddresses[i],
+                coreVersion: coreVersions[i],
+                coreType: coreTypes[i]
+            });
             unchecked {
                 ++i;
             }
@@ -221,7 +225,11 @@ contract CoreRegistryV1 is Ownable, ICoreRegistryV1 {
             _registeredContracts.add(contractAddress),
             "Contract already registered"
         );
-        emit ContractRegistered(contractAddress, coreVersion, coreType);
+        emit ContractRegistered({
+            _contractAddress: contractAddress,
+            _coreVersion: coreVersion,
+            _coreType: coreType
+        });
     }
 
     /**
@@ -234,6 +242,6 @@ contract CoreRegistryV1 is Ownable, ICoreRegistryV1 {
             _registeredContracts.remove(contractAddress),
             "Only registered contracts"
         );
-        emit ContractUnregistered(contractAddress);
+        emit ContractUnregistered({_contractAddress: contractAddress});
     }
 }
