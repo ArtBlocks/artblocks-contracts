@@ -102,7 +102,8 @@ export interface BaseFormFieldSchema extends JSONSchema7 {
     | "merkleRoot"
     | "tokenHolderAllowlist"
     | "ethToWei"
-    | "datetimeToUnixTimestamp";
+    | "datetimeToUnixTimestamp"
+    | "auctionEndDatetimeToHalfLifeSeconds";
 
   /** Optional property indicating how a field should be transformed before being displayed. */
   displayProcessing?: "weiToEth" | "unixTimestampToDatetime";

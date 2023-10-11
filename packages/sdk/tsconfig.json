@@ -1,6 +1,6 @@
 {
   "extends": "tsconfig/base.json",
   "compilerOptions": {
-    "target": "ES6"
+    "target": "ES2016"
   }
 }

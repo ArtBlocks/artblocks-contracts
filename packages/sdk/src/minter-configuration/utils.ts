@@ -200,26 +200,73 @@ export function getInitialMinterConfigurationValuesForFormField(
   return initialValues;
 }
 
-/**
- * Function to process display value based on the displayProcessing property
- * @param displayProcessing - the displayProcessing property
- * @param configuration - the configuration object
- * @param key - the key of the property
- * @param defaultValue - the default value of the property
- * @returns processed value
- */
+/* 
+HalfLife comes from the following formula: (t_f - t_i) / ((h_c + 1)*z + h_c*(1-z))
+and the variables are defined as follows:
+
+1. t_f and t_i are the final and initial timestamps (seconds)
+2. h_c is the number of completed half lives at end of auction
+  - thus, h_c = floor((log(p_i/p_f) / log(2))
+    - where p_i and p_f are initial and final prices, in wei
+3. z = (p_f - y1) / (y2 - y1), where:
+  - y1 = p_i / (2 ** (h_c)) = price at the last fully-completed half life
+  - y2 = y1 / 2 = price at the next fully completed half life, after the auction is complete
+
+  Note: we don't use a standard decay function because our auction linearly interpolates between half life points
+*/
+export const calculateHalfLifeSecondsFromAuctionDetails = (
+  startPriceInEther: number,
+  endPriceInEther: number,
+  startTime: number,
+  endTime: number
+) => {
+  // calc intermediate terms
+  const priceRatio = startPriceInEther / endPriceInEther;
+
+  const completedHalfLives = Math.floor(Math.log(priceRatio) / Math.log(2));
+  const y1 = startPriceInEther / Math.pow(2, completedHalfLives);
+  const y2 = y1 / 2;
+  const z = (endPriceInEther - y1) / (y2 - y1);
+
+  const halfLifeSeconds = Math.round(
+    (endTime - startTime) /
+      ((completedHalfLives + 1) * z + completedHalfLives * (1 - z))
+  );
+
+  return halfLifeSeconds.toString();
+};
+
 function processValueForDisplay(
   value: any,
   displayProcessing?: BaseFormFieldSchema["displayProcessing"]
 ): any {
+  const valueType = typeof value;
   switch (displayProcessing) {
-    // TODO: This should be made more generic to handle arbitrary ERC-20 tokens
-    case "weiToEth":
+    case "weiToEth": {
+      if (
+        value &&
+        !(
+          typeof value === "string" ||
+          typeof value === "number" ||
+          typeof value === "bigint"
+        )
+      ) {
+        throw new Error(
+          `Unexpected value type for weiToEth transformation. Expected string, number, or bigint, received ${valueType}`
+        );
+      }
       return Number(formatEther(BigInt(value ?? 0)));
-    case "unixTimestampToDatetime":
+    }
+    case "unixTimestampToDatetime": {
+      if (value && !(valueType === "number" || valueType === "string")) {
+        throw new Error(
+          `Unexpected value type for unixTimestampToDatetime transformation. Expected string or number, received ${valueType}`
+        );
+      }
       return value
         ? new Date(Number(value) * 1000).toISOString()
         : new Date().toISOString();
+    }
     default:
       return value;
   }
@@ -298,6 +345,37 @@ export async function transformProjectMinterConfigurationFormValues(
           );
 
           set(transformedFormValues, key, unixTimestamp);
+          break;
+        }
+        case "auctionEndDatetimeToHalfLifeSeconds": {
+          const startTime = get(formValues, "extra_minter_details.startTime");
+          const endTime = get(
+            formValues,
+            "extra_minter_details.approximateDAExpEndTime"
+          );
+          // TODO: We're assuming the start price and base price are in ETH
+          // and not wei. We're also assuming that startTime and endTime are
+          // datetimes and not unix timestamps. This is only the case because
+          // we tranform the values before adding them to the initial form values.
+          // We should probably include this assumption in the schema instead of
+          // having it be implicit here.
+          const startPrice = get(formValues, "extra_minter_details.startPrice");
+          const basePrice = get(formValues, "base_price");
+          const startTimeUnixTimestamp = Math.floor(
+            new Date(startTime).getTime() / 1000
+          );
+          const endTimeUnixTimestamp = Math.floor(
+            new Date(endTime).getTime() / 1000
+          );
+
+          const halfLifeSeconds = calculateHalfLifeSecondsFromAuctionDetails(
+            Number(startPrice),
+            Number(basePrice),
+            startTimeUnixTimestamp,
+            endTimeUnixTimestamp
+          );
+
+          set(transformedFormValues, key, halfLifeSeconds);
           break;
         }
       }
