@@ -7,7 +7,7 @@
 // Created By: Art Blocks Inc.
 import hre from "hardhat";
 import { ethers } from "hardhat";
-import { tryVerify } from "../../util/verification";
+import { tryVerify } from "../../../util/verification";
 
 /**
  * This script was created to deploy the V3 core Engine contracts,

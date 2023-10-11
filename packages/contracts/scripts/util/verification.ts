@@ -16,7 +16,7 @@ export async function tryVerify(
       constructorArguments: constructorArguments,
     });
     console.log(
-      `[INFO] ${contractName} contract verified on Etherscan at ${contractAddress}}`
+      `[INFO] ${contractName} contract verified on Etherscan at ${contractAddress}`
     );
   } catch (error) {
     console.log(

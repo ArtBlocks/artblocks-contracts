@@ -1,0 +1,59 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-09-07T23:37:42.798Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/staging-v3-bd-testing/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+----------------------------------------
+[INFO] Datetime of deployment: 2023-09-07T23:39:05.263Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/staging-v3-bd-testing/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xf920cf65760Dc111eBC13f5a7c73D5fd0Cfae9a8
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xaA40a1A4dFD7819eD504D1853323DD9f3e9a090E
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x730d0C5891e3682D0f8Bd0F2dd52ED10eaE90570
+[INFO] Minter Filter MinterFilterV1 deployed at 0x1d05474220e67d5FfA14f29a7b0212C754fec171
+[INFO] MinterSetPriceV4 deployed at 0xAcD7D529B049B9d8cD8d284cC0881694Ff2F4126
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x1d05474220e67d5FfA14f29a7b0212C754fec171.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xAcD7D529B049B9d8cD8d284cC0881694Ff2F4126 on minter filter.
+[INFO] Added AL3C Art project 0 placeholder on AL3C Art contract, artist is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63.
+[INFO] Configured set price minter (0xAcD7D529B049B9d8cD8d284cC0881694Ff2F4126) for project 0.
+[INFO] Configured minter price project 0.
+[INFO] Minted token 0 for project 0.
+[INFO] Transferred superAdmin role on adminACL to 0x4a8557FFC313a398904daE6e5561eE216a04602D.
+[INFO] Verifying core contract contract deployment...
+The contract 0x730d0C5891e3682D0f8Bd0F2dd52ED10eaE90570 has already been verified
+[INFO] Core contract verified on Etherscan at 0x730d0C5891e3682D0f8Bd0F2dd52ED10eaE90570}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xf920cf65760Dc111eBC13f5a7c73D5fd0Cfae9a8 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xf920cf65760Dc111eBC13f5a7c73D5fd0Cfae9a8
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x1d05474220e67d5FfA14f29a7b0212C754fec171 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x1d05474220e67d5FfA14f29a7b0212C754fec171
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0xAcD7D529B049B9d8cD8d284cC0881694Ff2F4126 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xAcD7D529B049B9d8cD8d284cC0881694Ff2F4126
+Created s3 bucket for https://al3c-art-goerli.s3.amazonaws.com
+[INFO] Created image bucket al3c-art-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/staging-v3-bd-testing/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x730d0c5891e3682d0f8bd0f2dd52ed10eae90570",
+  "name": "AL3C Art",
+  "bucket_name": "al3c-art-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+Upserting 1 project...
+Projects metadata upsert input:
+{
+  "id": "0x730d0c5891e3682d0f8bd0f2dd52ed10eae90570-0",
+  "contract_address": "0x730d0c5891e3682d0f8bd0f2dd52ed10eae90570",
+  "project_id": "0",
+  "artist_address": "0xb8559af91377e5bab052a4e9a5088cb65a9a4d63",
+  "vertical_name": "flex"
+}
+Successfully upserted 1 project
+[ACTION] render provider sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x4a8557FFC313a398904daE6e5561eE216a04602D, don't forget to update if required.
+[ACTION] Subgraph: Add Minter Filter and Minter contracts to subgraph config if desire to index minter suite.

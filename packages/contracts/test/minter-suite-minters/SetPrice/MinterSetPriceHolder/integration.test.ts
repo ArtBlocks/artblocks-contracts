@@ -9,6 +9,9 @@ import {
 } from "../../../util/common";
 import { ethers } from "hardhat";
 import { revertMessages } from "../../constants";
+import { Logger } from "@ethersproject/logger";
+// hide nuisance logs about event overloading
+Logger.setLogLevel(Logger.levels.ERROR);
 
 const TARGET_MINTER_NAME = "MinterSetPriceHolderV5";
 const TARGET_MINTER_VERSION = "v5.0.0";
@@ -660,6 +663,62 @@ runForEach.forEach((params) => {
         // Check that with setProjectMaxInvocations it's not too much moer expensive
         expect(gasCostMaxInvocations < (gasCostNoMaxInvocations * 110) / 100).to
           .be.true;
+      });
+
+      it("does not allow reentrant purchases", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        // deploy reentrancy contract
+        const reentrancy = await deployAndGet(
+          config,
+          "ReentrancyHolderMockShared",
+          []
+        );
+        // artist sents token zero of project zero to reentrant contract
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .transferFrom(
+            config.accounts.artist.address,
+            reentrancy.address,
+            config.projectZeroTokenZero.toNumber()
+          );
+        // perform attack
+        // @dev refund failed error message is expected, because attack occurrs during the refund call
+        await expectRevert(
+          reentrancy.connect(config.accounts.user).attack(
+            2, // qty to purchase
+            config.minter.address, // minter address
+            config.projectZero, // project id
+            config.genArt721Core.address, // core address
+            config.pricePerTokenInWei.add("1"), // price to pay
+            config.genArt721Core.address, // held token address
+            config.projectZeroTokenZero.toNumber(), // held token id
+            {
+              value: config.pricePerTokenInWei.add(1).mul(2),
+            }
+          ),
+          revertMessages.refundFailed
+        );
+
+        // does allow single purchase
+        await reentrancy.connect(config.accounts.user).attack(
+          1, // qty to purchase
+          config.minter.address, // minter address
+          config.projectZero, // project id
+          config.genArt721Core.address, // core address
+          config.pricePerTokenInWei.add("1"), // price to pay
+          config.genArt721Core.address, // held token address
+          config.projectZeroTokenZero.toNumber(), // held token id
+          {
+            value: config.pricePerTokenInWei.add(1),
+          }
+        );
       });
     });
 

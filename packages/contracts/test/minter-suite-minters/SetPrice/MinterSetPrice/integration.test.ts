@@ -4,6 +4,9 @@ import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
 import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
 import { ethers } from "hardhat";
 import { revertMessages } from "../../constants";
+import { Logger } from "@ethersproject/logger";
+// hide nuisance logs about event overloading
+Logger.setLogLevel(Logger.levels.ERROR);
 
 const TARGET_MINTER_NAME = "MinterSetPriceV5";
 const TARGET_MINTER_VERSION = "v5.0.0";
@@ -40,7 +43,7 @@ runForEach.forEach((params) => {
         config.minterFilter.address
       );
 
-      config.minter = await deployAndGet(config, "MinterSetPriceV5", [
+      config.minter = await deployAndGet(config, TARGET_MINTER_NAME, [
         config.minterFilter.address,
       ]);
       await config.minterFilter
@@ -463,6 +466,50 @@ runForEach.forEach((params) => {
               value: config.pricePerTokenInWei,
             });
         });
+      });
+
+      it("does not allow reentrant purchases", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        // deploy reentrancy contract
+        const reentrancy = await deployAndGet(
+          config,
+          "ReentrancyMockShared",
+          []
+        );
+        // perform attack
+        // @dev refund failed error message is expected, because attack occurrs during the refund call
+        await expectRevert(
+          reentrancy.connect(config.accounts.user).attack(
+            2, // qty to purchase
+            config.minter.address, // minter address
+            config.projectZero, // project id
+            config.genArt721Core.address, // core address
+            config.pricePerTokenInWei.add("1"), // price to pay
+            {
+              value: config.pricePerTokenInWei.add(1).mul(2),
+            }
+          ),
+          revertMessages.refundFailed
+        );
+
+        // does allow single purchase
+        await reentrancy.connect(config.accounts.user).attack(
+          1, // qty to purchase
+          config.minter.address, // minter address
+          config.projectZero, // project id
+          config.genArt721Core.address, // core address
+          config.pricePerTokenInWei.add("1"), // price to pay
+          {
+            value: config.pricePerTokenInWei.add(1),
+          }
+        );
       });
     });
 

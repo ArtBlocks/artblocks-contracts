@@ -134,27 +134,11 @@ for (const coreContractName of coreContractsToTest) {
               config.accounts.additional.address,
               config.accounts.additional.address,
               365,
-              false,
-              engineRegistry.address // Note: important to use a real engine registry
+              false
             );
           const receipt = await tx.deployTransaction.wait();
-          const registrationLog = receipt.logs[receipt.logs.length - 1];
-          // expect "ContractRegistered" event as log 0
-          await expect(registrationLog.topics[0]).to.be.equal(
-            ethers.utils.keccak256(
-              ethers.utils.toUtf8Bytes(
-                "ContractRegistered(address,bytes32,bytes32)"
-              )
-            )
-          );
-          // expect field to be address of registered contract as log 1
-          await expect(
-            hexDataSlice(registrationLog.topics[1], 12).toLowerCase()
-          ).to.be.equal(tx.address.toLowerCase());
-          console.log(registrationLog.topics);
-          // target event is in the second-to-last log,
-          // given that engine registry event comes before it
-          const targetLog = receipt.logs[receipt.logs.length - 2];
+          // target event is in the last log
+          const targetLog = receipt.logs[receipt.logs.length - 1];
           // expect "PlatformUpdated" event as log 0
           await expect(targetLog.topics[0]).to.be.equal(
             ethers.utils.keccak256(

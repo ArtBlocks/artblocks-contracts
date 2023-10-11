@@ -4,7 +4,7 @@ import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
 import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
 import { ethers } from "hardhat";
 import { AbiCoder } from "ethers/lib/utils";
-import { ONE_MINUTE } from "../../../util/constants";
+import { ONE_MINUTE, ONE_DAY } from "../../../util/constants";
 import {
   configureProjectZeroAuction,
   configureProjectZeroAuctionAndAdvanceOneDayAndWithdrawRevenues,
@@ -231,6 +231,57 @@ runForEach.forEach((params) => {
             targetNewSelloutPrice
           );
       });
+
+      it("emits during withdrawArtistAndAdminRevenues when sellout price is updated (to base price, no sellout)", async function () {
+        const config = await loadFixture(_beforeEach);
+        // artist configures auction
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // user purchases
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // advance time to one day after auction start time
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_DAY]);
+        // expect emitted event when artist collects revenues
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .withdrawArtistAndAdminRevenues(
+              config.projectZero,
+              config.genArt721Core.address
+            )
+        )
+          .to.emit(
+            config.minter,
+            "ConfigValueSet(uint256,address,bytes32,uint256)"
+          )
+          .withArgs(
+            config.projectZero,
+            config.genArt721Core.address,
+            ethers.utils.formatBytes32String("currentSettledPrice"),
+            config.basePrice
+          );
+      });
+
+      it("emits during withdrawArtistAndAdminRevenues when sellout price is not updated (it was a sellout)", async function () {
+        const config = await loadFixture(_beforeEach);
+        // artist configures auction
+        await configureProjectZeroAuctionAndSellout(config);
+        // expect call to not emit event (since sellout, last price is already set)
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .withdrawArtistAndAdminRevenues(
+              config.projectZero,
+              config.genArt721Core.address
+            )
+        ).to.not.emit(
+          config.minter,
+          "ConfigValueSet(uint256,address,bytes32,uint256)"
+        );
+      });
     });
 
     describe("Generic: ArtistAndAdminRevenuesWithdrawn", async function () {
@@ -424,7 +475,11 @@ runForEach.forEach((params) => {
               config.basePrice
             )
         )
-          .to.emit(config.minter, "ProjectMaxInvocationsLimitUpdated")
+          .to.emit(
+            // event is defined in MaxInvocationsLib
+            await ethers.getContractFactory("MaxInvocationsLib"),
+            "ProjectMaxInvocationsLimitUpdated"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -457,7 +512,11 @@ runForEach.forEach((params) => {
               config.startingPrice,
               config.basePrice
             )
-        ).to.not.emit(config.minter, "ProjectMaxInvocationsLimitUpdated");
+        ).to.not.emit(
+          // event is defined in MaxInvocationsLib
+          await ethers.getContractFactory("MaxInvocationsLib"),
+          "ProjectMaxInvocationsLimitUpdated"
+        );
       });
 
       // @dev don't think it is possible to test case where adminEmergencyReduceSelloutPrice ends up emitting event here
@@ -475,7 +534,11 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               targetNewSelloutPrice
             )
-        ).to.not.emit(config.minter, "ProjectMaxInvocationsLimitUpdated");
+        ).to.not.emit(
+          // event is defined in MaxInvocationsLib
+          await ethers.getContractFactory("MaxInvocationsLib"),
+          "ProjectMaxInvocationsLimitUpdated"
+        );
       });
 
       it("emits during withdrawArtistAndAdminRevenues when minter-local max invocations are updated", async function () {
@@ -501,7 +564,11 @@ runForEach.forEach((params) => {
               config.genArt721Core.address
             )
         )
-          .to.emit(config.minter, "ProjectMaxInvocationsLimitUpdated")
+          .to.emit(
+            // event is defined in MaxInvocationsLib
+            await ethers.getContractFactory("MaxInvocationsLib"),
+            "ProjectMaxInvocationsLimitUpdated"
+          )
           .withArgs(config.projectZero, config.genArt721Core.address, 1);
       });
 
@@ -517,7 +584,11 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address
             )
-        ).to.not.emit(config.minter, "ProjectMaxInvocationsLimitUpdated");
+        ).to.not.emit(
+          // event is defined in MaxInvocationsLib
+          await ethers.getContractFactory("MaxInvocationsLib"),
+          "ProjectMaxInvocationsLimitUpdated"
+        );
       });
     });
   });

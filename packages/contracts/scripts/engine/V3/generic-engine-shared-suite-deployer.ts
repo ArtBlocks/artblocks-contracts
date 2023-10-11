@@ -5,11 +5,9 @@ import { ethers } from "hardhat";
 import { BigNumber, Contract } from "ethers";
 import path from "path";
 import fs from "fs";
-var util = require("util");
 // hide nuisance logs about event overloading
 import { Logger } from "@ethersproject/logger";
 Logger.setLogLevel(Logger.levels.ERROR);
-import prompt from "prompt";
 
 import {
   syncContractMetadataAfterDeploy,
@@ -17,18 +15,17 @@ import {
 } from "../../util/graphql-utils";
 
 import {
-  DELEGATION_REGISTRY_ADDRESSES,
   BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES,
-  KNOWN_ENGINE_REGISTRIES,
+  getActiveSharedMinterFilter,
+  getActiveSharedRandomizer,
+  getActiveCoreRegistry,
   EXTRA_DELAY_BETWEEN_TX,
 } from "../../util/constants";
 import { tryVerify } from "../../util/verification";
 // image bucket creation
 import { createEngineBucket } from "../../util/aws_s3";
 // delay to avoid issues with reorgs and tx failures
-import { delay, getAppPath } from "../../util/utils";
-const MANUAL_GAS_LIMIT = 500000; // gas
-var log_stdout = process.stdout;
+import { delay, getConfigInputs } from "../../util/utils";
 
 const ONE_HUNDRED_PERCENT = BigNumber.from(100);
 const TEN_THOUSAND_BASIS_POINTS = BigNumber.from(10000);
@@ -43,59 +40,30 @@ const SUPPORTED_CORE_CONTRACTS = [
 
 /**
  * This script was created to deploy the V3 core Engine contracts,
- * including the associated minter suite, to the Ethereum goerli testnet.
+ * configuring them to use the shared minter suite.
  * It is intended to document the deployment process and provide a
  * reference for the steps required to deploy the V3 core contract suite.
- * IMPORTANT: This deploys a basic randomizer, which may be changed after
- * deployment by the configured superAdmin.
+ * IMPORTANT: This configures the core contract to use the active shared minter
+ * filter and active shared randomizer as defined in constants.ts
  */
 async function main() {
-  // get repo's root directory absolute path
-  const appPath = await getAppPath();
-  console.log(appPath);
-  console.log(
-    `[INFO] example deployment config file is:\n\ndeployments/engine/V3/partners/dev-example/deployment-config.dev.ts\n`
-  );
-  prompt.start();
-  const deploymentConfigFile = (
-    await prompt.get<{ from: string }>(["deployment config file"])
-  )["deployment config file"];
-  // dynamically import input deployment configuration details
-  const fullDeploymentConfigPath = path.join(appPath, deploymentConfigFile);
-  let deployDetailsArray;
-  const fullImportPath = path.join(fullDeploymentConfigPath);
-  const inputFileDirectory = path.dirname(fullImportPath);
-  try {
-    ({ deployDetailsArray } = await import(fullImportPath));
-  } catch (error) {
-    throw new Error(
-      `[ERROR] Unable to import deployment configuration file at: ${fullDeploymentConfigPath}
-      Please ensure the file exists (e.g. deployments/engine/V3/partners/dev-example/deployment-config.dev.ts)`
+  // get deployment configuration details
+  const { deployConfigDetailsArray, deploymentConfigFile, inputFileDirectory } =
+    await getConfigInputs(
+      "deployments/engine/V3/deployment-config.template.ts",
+      "Engine deployment config file"
     );
-  }
-  // record all deployment logs to a file, monkey-patching stdout
-  const pathToMyLogFile = path.join(inputFileDirectory, "DEPLOYMENT_LOGS.log");
-  var myLogFileStream = fs.createWriteStream(pathToMyLogFile, { flags: "a+" });
-  var log_stdout = process.stdout;
-  console.log = function (d) {
-    myLogFileStream.write(util.format(d) + "\n");
-    log_stdout.write(util.format(d) + "\n");
-  };
-  // record relevant deployment information in logs
-  console.log(`----------------------------------------`);
-  console.log(`[INFO] Datetime of deployment: ${new Date().toISOString()}`);
-  console.log(
-    `[INFO] Deployment configuration file: ${fullDeploymentConfigPath}`
-  );
 
   const [deployer] = await ethers.getSigners();
-  // Perform the following deploy steps for each to-be-deployed contract
-  for (let index = 0; index < deployDetailsArray.length; index++) {
-    const deployDetails = deployDetailsArray[index];
 
-    //////////////////////////////////////////////////////////////////////////////
-    // INPUT VALIDATION BEGINS HERE
-    //////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
+  // INPUT VALIDATION BEGINS HERE
+  //////////////////////////////////////////////////////////////////////////////
+  // @dev perform input validation for ALL deploy config details to avoid mid-deployment failures
+
+  // Perform the following steps for each to-be-deployed contract
+  for (let index = 0; index < deployConfigDetailsArray.length; index++) {
+    const deployDetails = deployConfigDetailsArray[index];
 
     // verify intended network
     const network = await ethers.provider.getNetwork();
@@ -118,17 +86,28 @@ async function main() {
       );
     }
 
-    // verify deployer wallet is the same as the one used to deploy the engine registry
-    const targetDeployerAddress =
-      KNOWN_ENGINE_REGISTRIES[networkName][deployDetails.engineRegistryAddress];
-    if (targetDeployerAddress == undefined) {
+    // verify a shared minter filter address is defined for network and environment
+    // @dev throws if not found
+    getActiveSharedMinterFilter(networkName, deployDetails.environment);
+
+    // verify a shared randomizer address is defined for network and environment
+    // @dev throws if not found
+    getActiveSharedRandomizer(networkName, deployDetails.environment);
+
+    // verify deployer wallet is allowed to add projects to the core registry contract
+    // @dev throws if not found
+    const activeCoreRegistryAddress = await getActiveCoreRegistry(
+      networkName,
+      deployDetails.environment
+    );
+    const coreRegistryContract = await ethers.getContractAt(
+      "CoreRegistryV1",
+      activeCoreRegistryAddress
+    );
+    const requiredDeployer = await coreRegistryContract.owner();
+    if (requiredDeployer !== deployer.address) {
       throw new Error(
-        `[ERROR] Engine registry address ${deployDetails.engineRegistryAddress} is not configured for deployment on network ${networkName}, please update KNOWN_ENGINE_REGISTRIES`
-      );
-    }
-    if (deployer.address !== targetDeployerAddress) {
-      throw new Error(
-        `[ERROR] This script is intended to be run only by the deployer wallet: ${targetDeployerAddress}, due to engine registry ownership requirements on engine registry ${deployDetails.engineRegistryAddress}`
+        `[ERROR] Active core registry address ${activeCoreRegistryAddress} is not owned by deployer wallet ${deployer.address}. Please use appropriate deployer wallet.`
       );
     }
     // only allow supported core contract names to be deployed with this script
@@ -173,27 +152,29 @@ async function main() {
     }
 
     // verify a sensible AdminACL input config
+    // ensure that the adminACL contract name is valid (i.e. the following doesn't throw)
+    await ethers.getContractFactory(deployDetails.adminACLContractName);
     if (deployDetails.existingAdminACL) {
       // ensure a valid address
       ethers.utils.isAddress(deployDetails.existingAdminACL);
-      // ensure we have a factory for adminACLContractName, because we use it in this script
-      const _adminACLContractName = deployDetails.adminACLContractName;
-      // @dev getContractFactory throws if no factory is found for _adminACLContractName
-      await ethers.getContractFactory(_adminACLContractName);
-    } else {
-      // ensure that the adminACL contract name is defined
-      if (deployDetails.adminACLContractName == undefined) {
-        throw new Error(
-          `[ERROR] adminACLContractName must be defined if existingAdminACL is not defined`
-        );
-      }
-      // ensure that the adminACL contract name is valid (i.e. the following doesn't throw)
-      await ethers.getContractFactory(deployDetails.adminACLContractName);
     }
+  }
 
-    //////////////////////////////////////////////////////////////////////////////
-    // INPUT VALIDATION ENDS HERE
-    //////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
+  // INPUT VALIDATION ENDS HERE
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Perform the following steps for each to-be-deployed contract
+  for (let index = 0; index < deployConfigDetailsArray.length; index++) {
+    const deployDetails = deployConfigDetailsArray[index];
+    const network = await ethers.provider.getNetwork();
+    const networkName = network.name == "homestead" ? "mainnet" : network.name;
+    const bytecodeStorageLibraryAddress =
+      BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES[networkName];
+    const activeCoreRegistryAddress = await getActiveCoreRegistry(
+      networkName,
+      deployDetails.environment
+    );
 
     //////////////////////////////////////////////////////////////////////////////
     // DEPLOYMENT (SHARED) BEGINS HERE
@@ -232,17 +213,12 @@ async function main() {
     // DEPLOYMENT (PER-CONTRACT) BEGINS HERE
     //////////////////////////////////////////////////////////////////////////////
 
-    // Deploy randomizer contract
-    const randomizerFactory = await ethers.getContractFactory(
-      deployDetails.randomizerContractName
+    // specify shared randomizer contract
+    const randomizerAddress = getActiveSharedRandomizer(
+      networkName,
+      deployDetails.environment
     );
-    const randomizer = await randomizerFactory.deploy();
-    await randomizer.deployed();
-    const randomizerAddress = randomizer.address;
-    console.log(
-      `[INFO] Randomizer ${deployDetails.randomizerContractName} deployed at ${randomizerAddress}`
-    );
-    await delay(EXTRA_DELAY_BETWEEN_TX);
+    console.log(`[INFO] Using shared Randomizer at ${randomizerAddress}`);
 
     // Deploy Core contract
     // Ensure that BytecodeStorageReader library is linked in the process
@@ -276,7 +252,7 @@ async function main() {
       adminACLAddress,
       startingProjectId,
       autoApproveArtistSplitProposals,
-      deployDetails.engineRegistryAddress
+      activeCoreRegistryAddress
     );
 
     await genArt721Core.deployed();
@@ -285,49 +261,35 @@ async function main() {
     );
     await delay(EXTRA_DELAY_BETWEEN_TX);
 
-    // Deploy Minter Filter contract.
-    const minterFilterFactory = await ethers.getContractFactory(
-      deployDetails.minterFilterContractName
-    );
-    const minterFilter = await minterFilterFactory.deploy(
-      genArt721Core.address
-    );
-    await minterFilter.deployed();
-    console.log(
-      `[INFO] Minter Filter ${deployDetails.minterFilterContractName} deployed at ${minterFilter.address}`
-    );
+    // register core contract on core registry
+    let registeredContractOnCoreRegistry = false;
+    try {
+      const coreRegistryContract = await ethers.getContractAt(
+        "CoreRegistryV1",
+        activeCoreRegistryAddress
+      );
+      const coreType = await genArt721Core.coreType();
+      const coreVersion = await genArt721Core.coreVersion();
+      await coreRegistryContract
+        .connect(deployer)
+        .registerContract(
+          genArt721Core.address,
+          ethers.utils.formatBytes32String(coreVersion),
+          ethers.utils.formatBytes32String(coreType)
+        );
+      console.log(
+        `[INFO] Registered core contract ${genArt721Core.address} on core registry ${activeCoreRegistryAddress}`
+      );
+      registeredContractOnCoreRegistry = true;
+    } catch (error) {
+      console.error(
+        `[ERROR] Failed to register core contract on core registry, please register manually!`
+      );
+      console.error(error);
+    }
     await delay(EXTRA_DELAY_BETWEEN_TX);
 
-    // Deploy Minter contracts
-    const deployedMinterAddresses: string[] = [];
-    const deployedMinters: Contract[] = [];
-    const deployedMinterNames: string[] = [];
-    const deployedMinterConstructorArgs: any[] = [];
-    for (let j = 0; j < deployDetails.minters.length; j++) {
-      const minterName = deployDetails.minters[j];
-
-      const minterFactory = await ethers.getContractFactory(minterName);
-      const minterConstructorArgs = [
-        genArt721Core.address,
-        minterFilter.address,
-      ];
-      // add delegation registry address to constructor args if needed
-      if (
-        minterName.startsWith("MinterHolder") ||
-        minterName.startsWith("MinterMerkle") ||
-        minterName.startsWith("MinterPolyptych")
-      ) {
-        minterConstructorArgs.push(DELEGATION_REGISTRY_ADDRESSES[networkName]);
-      }
-      const minter = await minterFactory.deploy(...minterConstructorArgs);
-      await minter.deployed();
-      console.log(`[INFO] ${minterName} deployed at ${minter.address}`);
-      deployedMinterAddresses.push(minter.address);
-      deployedMinters.push(minter);
-      deployedMinterNames.push(minterName);
-      deployedMinterConstructorArgs.push(minterConstructorArgs);
-      await delay(EXTRA_DELAY_BETWEEN_TX);
-    }
+    // using shared minter suite, so no minter suite deployments
 
     //////////////////////////////////////////////////////////////////////////////
     // DEPLOYMENT (PER-CONTRACT) ENDS HERE
@@ -337,32 +299,18 @@ async function main() {
     // SETUP BEGINS HERE
     //////////////////////////////////////////////////////////////////////////////
 
-    // Assign randomizer to core and renounce ownership on randomizer
-    await randomizer.assignCoreAndRenounce(genArt721Core.address);
-    console.log(
-      `[INFO] Assigned randomizer to core and renounced ownership of randomizer`
-    );
-    await delay(EXTRA_DELAY_BETWEEN_TX);
-
     // Set the Minter to MinterFilter on the Core contract.
+    const minterFilterAddress = getActiveSharedMinterFilter(
+      networkName,
+      deployDetails.environment
+    );
     await genArt721Core
       .connect(deployer)
-      .updateMinterContract(minterFilter.address);
+      .updateMinterContract(minterFilterAddress);
     console.log(
-      `[INFO] Updated the Minter Filter on the Core contract to ${minterFilter.address}.`
+      `[INFO] Updated the Minter Filter on the Core contract to ${minterFilterAddress}.`
     );
     await delay(EXTRA_DELAY_BETWEEN_TX);
-
-    // Allowlist new Minters on MinterFilter.
-    for (let j = 0; j < deployDetails.minters.length; j++) {
-      const minterName = deployDetails.minters[j];
-      const minterAddress = deployedMinterAddresses[j];
-      await minterFilter.connect(deployer).addApprovedMinter(minterAddress);
-      console.log(
-        `[INFO] Allowlisted minter ${minterName} at ${minterAddress} on minter filter.`
-      );
-      await delay(EXTRA_DELAY_BETWEEN_TX);
-    }
 
     if (deployDetails.addInitialProject) {
       // Create a project 0, and a token 0, on that empty project.
@@ -378,57 +326,8 @@ async function main() {
       console.log(`[INFO] Skipping adding placeholder initial project.`);
     }
 
-    if (deployDetails.addInitialProject && deployDetails.addInitialToken) {
-      // ensure we have a set price minter
-      let minterName: string;
-      let minterAddress: string;
-      let minter: Contract;
-      for (let j = 0; j < deployDetails.minters.length; j++) {
-        const currentMinterName = deployDetails.minters[j];
-        if (
-          currentMinterName.startsWith("MinterSetPrice") &&
-          !currentMinterName.startsWith("MinterSetPriceERC20")
-        ) {
-          // found a set price minter that is not an ERC20 minter
-          minterName = currentMinterName;
-          minterAddress = deployedMinterAddresses[j];
-          minter = deployedMinters[j];
-          break;
-        }
-      }
-      if (!minterName) {
-        console.warn(
-          "[WARN] No set price minter found, skipping initial token creation."
-        );
-      } else {
-        await minterFilter
-          .connect(deployer)
-          .setMinterForProject(startingProjectId, minterAddress, {
-            gasLimit: MANUAL_GAS_LIMIT,
-          }); // provide manual gas limit
-        console.log(
-          `[INFO] Configured set price minter (${minterAddress}) for project ${startingProjectId}.`
-        );
-        await delay(EXTRA_DELAY_BETWEEN_TX);
-        await minter
-          .connect(deployer)
-          .updatePricePerTokenInWei(startingProjectId, 0, {
-            gasLimit: MANUAL_GAS_LIMIT,
-          }); // provide manual gas limit
-        console.log(
-          `[INFO] Configured minter price project ${startingProjectId}.`
-        );
-        await delay(EXTRA_DELAY_BETWEEN_TX);
-        await minter
-          .connect(deployer)
-          .purchase(startingProjectId, { gasLimit: MANUAL_GAS_LIMIT }); // provide manual gas limit
-        console.log(`[INFO] Minted token 0 for project ${startingProjectId}.`);
-        `[INFO] Minted token 0 for project ${startingProjectId} placeholder on ${tokenName} contract, artist is ${deployer.address}.`;
-        await delay(EXTRA_DELAY_BETWEEN_TX);
-      }
-    } else {
-      console.log(`[INFO] Skipping adding placeholder initial token.`);
-    }
+    // @dev no initial token option in this script, due to the complexity of
+    // retrieving minters from the shared minter filter contract
 
     // update split percentages if something other than the default is provided
     // primary sales
@@ -440,7 +339,7 @@ async function main() {
       if (
         deployDetails.renderProviderSplitPercentagePrimary < 0 ||
         deployDetails.renderProviderSplitPercentagePrimary >
-          ONE_HUNDRED_PERCENT.sub(platformSplitPercentagePrimary)
+          ONE_HUNDRED_PERCENT.sub(platformSplitPercentagePrimary).toNumber()
       ) {
         console.log(
           `[ERROR] renderProviderSplitPercentagePrimary must be between 0 and ${ONE_HUNDRED_PERCENT.sub(
@@ -456,7 +355,7 @@ async function main() {
       const currentRenderProviderSplitPercentagePrimary =
         await genArt721Core.renderProviderPrimarySalesPercentage();
       if (
-        parseInt(deployDetails.renderProviderSplitPercentagePrimary) ==
+        deployDetails.renderProviderSplitPercentagePrimary ==
         currentRenderProviderSplitPercentagePrimary.toNumber()
       ) {
         console.log(
@@ -485,7 +384,7 @@ async function main() {
       if (
         deployDetails.renderProviderSplitBPSSecondary < 0 ||
         deployDetails.renderProviderSplitBPSSecondary >
-          TEN_THOUSAND_BASIS_POINTS.sub(platformSplitBPSSecondary)
+          TEN_THOUSAND_BASIS_POINTS.sub(platformSplitBPSSecondary).toNumber()
       ) {
         console.log(
           `[ERROR] renderProviderSplitBPSSecondary must be between 0 and ${TEN_THOUSAND_BASIS_POINTS.sub(
@@ -501,7 +400,7 @@ async function main() {
       const currentRenderProviderSplitBPSSecondary =
         await genArt721Core.renderProviderSecondarySalesBPS();
       if (
-        parseInt(deployDetails.renderProviderSplitBPSSecondary) ==
+        deployDetails.renderProviderSplitBPSSecondary ==
         currentRenderProviderSplitBPSSecondary.toNumber()
       ) {
         console.log(
@@ -529,9 +428,8 @@ async function main() {
     if (deployDetails.existingAdminACL) {
       adminACLContractName = deployDetails.adminACLContractName;
     }
-    const adminACLFactory = await ethers.getContractFactory(
-      adminACLContractName
-    );
+    const adminACLFactory =
+      await ethers.getContractFactory(adminACLContractName);
     adminACL = adminACLFactory.attach(adminACLAddress);
     if (deployDetails.doTransferSuperAdmin) {
       // transfer superAdmin role on adminACL, triggering indexing update on new core contract
@@ -573,7 +471,6 @@ async function main() {
           adminACLAddress, // admin acl
           startingProjectId, // starting project id
           autoApproveArtistSplitProposals, // auto approve artist split proposals
-          deployDetails.engineRegistryAddress, // engine registry],
         ],
       });
       console.log(
@@ -597,7 +494,6 @@ async function main() {
         "${adminACLAddress}", // admin acl
         ${startingProjectId}, // starting project id
         ${autoApproveArtistSplitProposals}, // auto approve artist split proposals
-        "${deployDetails.engineRegistryAddress}" // engine registry
       ];`
       );
       console.log(
@@ -609,29 +505,20 @@ async function main() {
       // only verify if we deployed a new adminACL contract
       await tryVerify("AdminACL", adminACLAddress, [], networkName);
     }
-    // MINTER FILTER CONTRACT
-    await tryVerify(
-      "MinterFilter",
-      minterFilter.address,
-      [genArt721Core.address],
-      networkName
-    );
-    // MINTERS
-    for (let i = 0; i < deployedMinters.length; i++) {
-      const minterName = deployedMinterNames[i];
-      const minterAddress = deployedMinterAddresses[i];
-      const minterConstructorArgs = deployedMinterConstructorArgs[i];
-      await tryVerify(
-        minterName,
-        minterAddress,
-        minterConstructorArgs,
-        networkName
-      );
-    }
 
     // create image bucket
-    const { bucketName } = await createEngineBucket(tokenName, networkName);
-    console.log(`[INFO] Created image bucket ${bucketName}`);
+    let imageBucketCreated = false;
+    // @dev initial bucket name of TBD to handle case of failure to generate bucket.
+    // if bucket generation fails, TBD still enables output of DEPLOYMENTS file,
+    // while making it clear that the bucket was not created
+    let bucketName = "TBD";
+    try {
+      ({ bucketName } = await createEngineBucket(tokenName, networkName));
+      console.log(`[INFO] Created image bucket ${bucketName}`);
+      imageBucketCreated = true;
+    } catch (error) {
+      console.log(`[ERROR] Failed to create image bucket`);
+    }
 
     //////////////////////////////////////////////////////////////////////////////
     // VERIFICATION ENDS HERE
@@ -665,25 +552,11 @@ Date: ${new Date().toISOString()}
       deployDetails.adminACLContractName
     }:** https://${etherscanSubdomain}etherscan.io/address/${adminACLAddress}#code
 
-**Engine Registry:** https://${etherscanSubdomain}etherscan.io/address/${
-      deployDetails.engineRegistryAddress
-    }#code
+**Core Registry:** https://${etherscanSubdomain}etherscan.io/address/${activeCoreRegistryAddress}#code
 
-**${
-      deployDetails.minterFilterContractName
-    }:** https://${etherscanSubdomain}etherscan.io/address/${
-      minterFilter.address
-    }#code
+**Shared Minter Filter:** https://${etherscanSubdomain}etherscan.io/address/${minterFilterAddress}#code
 
-**Minters:**
-
-${deployedMinterNames
-  .map((minterName, i) => {
-    return `**${minterName}:** https://${etherscanSubdomain}etherscan.io/address/${deployedMinterAddresses[i]}#code
-
-`;
-  })
-  .join("")}
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
 
 **Metadata**
 
@@ -702,7 +575,7 @@ ${deployedMinterNames
 **Other**
 
 - **Add initial project?:** ${deployDetails.addInitialProject}
-- **Add initial token?:** ${deployDetails.addInitialToken}
+- **Add initial token?:** false
 - **Image Bucket:** ${bucketName}
 
 ---
@@ -746,28 +619,28 @@ ${deployedMinterNames
     //////////////////////////////////////////////////////////////////////////////
 
     // Reminder to update provider payment addresses that are left as the deployer for now.
-    if (renderProviderAddress === deployer.address) {
-      console.log(
-        `[ACTION] render provider sales payment addresses remain as deployer addresses: ${deployer.address}. Update later as needed.`
-      );
-    }
-    if (platformProviderAddress === deployer.address) {
-      console.log(
-        `[ACTION] platform provider sales payment addresses remain as deployer addresses: ${deployer.address}. Update later as needed.`
-      );
-    }
+    console.log(
+      `[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: ${deployer.address}. Update later as needed.`
+    );
 
     // Reminder to update adminACL superAdmin if needed
     const adminACLSuperAdmin = await adminACL.superAdmin();
     console.log(
-      `[ACTION] AdminACL's superAdmin address is ${adminACLSuperAdmin}, don't forget to update if required.`
+      `[ACTION] AdminACL's superAdmin address is ${adminACLSuperAdmin}, don't forget to update if requred.`
     );
 
-    // reminder to add to subgraph config if desire to index minter filter
-    console.log(
-      `[ACTION] Subgraph: Add Minter Filter and Minter contracts to subgraph config if desire to index minter suite.`
-    );
-    // delay to finish logging to file
+    if (!imageBucketCreated) {
+      console.log(
+        `[ACTION] Manually create an image bucket for ${tokenName} due to failure when this script was ran.`
+      );
+    }
+
+    if (!registeredContractOnCoreRegistry) {
+      console.log(
+        `[ACTION] Due to script failure, please manually register the core contract on the core registry at ${activeCoreRegistryAddress}:`
+      );
+    }
+    // extra delay to ensure all logs are written to files
     await delay(1000);
 
     //////////////////////////////////////////////////////////////////////////////

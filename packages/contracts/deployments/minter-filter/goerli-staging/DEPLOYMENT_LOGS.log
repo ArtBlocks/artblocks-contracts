@@ -1,0 +1,26 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-09-11T13:41:29.617Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minter-filter/goerli-staging/shared-minter-filter-deploy-config.staging.ts
+[INFO] Admin ACL contract AdminACLV0 deployed at 0x512174CE633D08764809af74d7e62670BD764F3F
+[INFO] Core Registry contract CoreRegistryV1 deployed at 0xddFfc62A975f7EBA75A877a0535755ceA18232C9
+[INFO] MinterFilterV2 deployed at 0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559
+[INFO] Verifying AdminACLV0 contract deployment...
+The contract 0x512174CE633D08764809af74d7e62670BD764F3F has already been verified
+[INFO] AdminACLV0 contract verified on Etherscan at 0x512174CE633D08764809af74d7e62670BD764F3F
+[INFO] Verifying CoreRegistryV1 contract deployment...
+The contract 0xddFfc62A975f7EBA75A877a0535755ceA18232C9 has already been verified
+[INFO] CoreRegistryV1 contract verified on Etherscan at 0xddFfc62A975f7EBA75A877a0535755ceA18232C9
+[INFO] Verifying MinterFilterV2 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/MinterFilter/MinterFilterV2.sol:MinterFilterV2 at 0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559
+for verification on the block explorer. Waiting for verification result...
+
+[WARN] Etherscan verification of MinterFilterV2 failed: NomicLabsHardhatPluginError: The Etherscan API responded with a failure status.
+The verification may still succeed but should be checked manually.
+Reason: Already Verified
+[ACTION] Verify MinterFilterV2 contract deployment with:
+yarn hardhat verify --network goerli 0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559 0x512174CE633D08764809af74d7e62670BD764F3F 0xddFfc62A975f7EBA75A877a0535755ceA18232C9
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minter-filter/goerli-staging/DEPLOYMENTS.md
+[INFO] Done!
+[INFO] Ensure any superAdmin migration actions are performed before proceeding to use the deployed contracts.

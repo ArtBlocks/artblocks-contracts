@@ -1,0 +1,70 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-09-11T13:46:01.754Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-staging/shared-minter-deploy-config.staging.ts
+[INFO] MinterSetPriceV5 deployed at 0x1F3DF1E177B419bC46705F8138809893497aAadF
+[INFO] MinterSetPriceV5 approved globally on minter filter at 0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559
+[INFO] Verifying MinterSetPriceV5 contract deployment...
+The contract 0x1F3DF1E177B419bC46705F8138809893497aAadF has already been verified
+[INFO] MinterSetPriceV5 contract verified on Etherscan at 0x1F3DF1E177B419bC46705F8138809893497aAadF
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-staging/DEPLOYMENTS.md
+[INFO] MinterSetPriceERC20V5 deployed at 0xED081222a01d33ff751F656aD45342F08089776c
+[INFO] MinterSetPriceERC20V5 approved globally on minter filter at 0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559
+[INFO] Verifying MinterSetPriceERC20V5 contract deployment...
+The contract 0xED081222a01d33ff751F656aD45342F08089776c has already been verified
+[INFO] MinterSetPriceERC20V5 contract verified on Etherscan at 0xED081222a01d33ff751F656aD45342F08089776c
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-staging/DEPLOYMENTS.md
+[INFO] MinterSetPriceHolderV5 deployed at 0x8Ade3fF97302BaEBE15C540e5de1abD6427A5243
+[INFO] MinterSetPriceHolderV5 approved globally on minter filter at 0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559
+[INFO] Verifying MinterSetPriceHolderV5 contract deployment...
+The contract 0x8Ade3fF97302BaEBE15C540e5de1abD6427A5243 has already been verified
+[INFO] MinterSetPriceHolderV5 contract verified on Etherscan at 0x8Ade3fF97302BaEBE15C540e5de1abD6427A5243
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-staging/DEPLOYMENTS.md
+[INFO] MinterSetPriceMerkleV5 deployed at 0x6e762e7Cb478b8C2C6424d8bBfb30F782b4A445d
+[INFO] MinterSetPriceMerkleV5 approved globally on minter filter at 0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559
+[INFO] Verifying MinterSetPriceMerkleV5 contract deployment...
+The contract 0x6e762e7Cb478b8C2C6424d8bBfb30F782b4A445d has already been verified
+[INFO] MinterSetPriceMerkleV5 contract verified on Etherscan at 0x6e762e7Cb478b8C2C6424d8bBfb30F782b4A445d
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-staging/DEPLOYMENTS.md
+[INFO] MinterSetPricePolyptychV5 deployed at 0x802e6209C6Acb7B0F87aFb687E61543E3fB57DcA
+[INFO] MinterSetPricePolyptychV5 approved globally on minter filter at 0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559
+[INFO] Verifying MinterSetPricePolyptychV5 contract deployment...
+The contract 0x802e6209C6Acb7B0F87aFb687E61543E3fB57DcA has already been verified
+[INFO] MinterSetPricePolyptychV5 contract verified on Etherscan at 0x802e6209C6Acb7B0F87aFb687E61543E3fB57DcA
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-staging/DEPLOYMENTS.md
+[INFO] MinterSetPricePolyptychERC20V5 deployed at 0x3CB4674f510966E1105eBe5d6c5F0b7a744F3272
+[INFO] MinterSetPricePolyptychERC20V5 approved globally on minter filter at 0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559
+[INFO] Verifying MinterSetPricePolyptychERC20V5 contract deployment...
+The contract 0x3CB4674f510966E1105eBe5d6c5F0b7a744F3272 has already been verified
+[INFO] MinterSetPricePolyptychERC20V5 contract verified on Etherscan at 0x3CB4674f510966E1105eBe5d6c5F0b7a744F3272
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-staging/DEPLOYMENTS.md
+[INFO] MinterDAExpV5 deployed at 0x431BCE8b28Bdd25c0a8843aC4a15F4E78537C1b4
+[INFO] MinterDAExpV5 approved globally on minter filter at 0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559
+[INFO] Verifying MinterDAExpV5 contract deployment...
+The contract 0x431BCE8b28Bdd25c0a8843aC4a15F4E78537C1b4 has already been verified
+[INFO] MinterDAExpV5 contract verified on Etherscan at 0x431BCE8b28Bdd25c0a8843aC4a15F4E78537C1b4
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-staging/DEPLOYMENTS.md
+[INFO] MinterDALinV5 deployed at 0x6DF4DcdF43023C882287afA78aDd00672e69BCbA
+[INFO] MinterDALinV5 approved globally on minter filter at 0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559
+[INFO] Verifying MinterDALinV5 contract deployment...
+The contract 0x6DF4DcdF43023C882287afA78aDd00672e69BCbA has already been verified
+[INFO] MinterDALinV5 contract verified on Etherscan at 0x6DF4DcdF43023C882287afA78aDd00672e69BCbA
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-staging/DEPLOYMENTS.md
+[INFO] MinterDAExpSettlementV3 deployed at 0xD56B16436B551d9a4b28d2f9A288688d7801f316
+[INFO] MinterDAExpSettlementV3 approved globally on minter filter at 0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559
+[INFO] Verifying MinterDAExpSettlementV3 contract deployment...
+The contract 0xD56B16436B551d9a4b28d2f9A288688d7801f316 has already been verified
+[INFO] MinterDAExpSettlementV3 contract verified on Etherscan at 0xD56B16436B551d9a4b28d2f9A288688d7801f316
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-staging/DEPLOYMENTS.md
+[INFO] MinterDAExpHolderV5 deployed at 0x448b4F7a0981beCd5e3079088413c8E48D6DF39b
+[INFO] MinterDAExpHolderV5 approved globally on minter filter at 0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559
+[INFO] Verifying MinterDAExpHolderV5 contract deployment...
+The contract 0x448b4F7a0981beCd5e3079088413c8E48D6DF39b has already been verified
+[INFO] MinterDAExpHolderV5 contract verified on Etherscan at 0x448b4F7a0981beCd5e3079088413c8E48D6DF39b
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-staging/DEPLOYMENTS.md
+[INFO] MinterDALinHolderV5 deployed at 0x2054C63D49EF5b77739E4DC2e978c5506Ae1b883
+[INFO] MinterDALinHolderV5 approved globally on minter filter at 0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559
+[INFO] Verifying MinterDALinHolderV5 contract deployment...
+The contract 0x2054C63D49EF5b77739E4DC2e978c5506Ae1b883 has already been verified
+[INFO] MinterDALinHolderV5 contract verified on Etherscan at 0x2054C63D49EF5b77739E4DC2e978c5506Ae1b883
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-staging/DEPLOYMENTS.md
+[INFO] Done!

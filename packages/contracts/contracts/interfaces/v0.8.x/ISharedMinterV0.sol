@@ -122,35 +122,8 @@ interface ISharedMinterV0 {
         bytes32 _key,
         bytes32 _value
     );
+
     ///////////////////////////
-    /**
-     * @notice Price per token in wei updated for project `_projectId` to
-     * `_pricePerTokenInWei`.
-     */
-    event PricePerTokenInWeiUpdated(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        uint256 indexed _pricePerTokenInWei
-    );
-    /**
-     * @notice Currency updated for project `_projectId` to symbol
-     * `_currencySymbol` and address `_currencyAddress`.
-     */
-    event ProjectCurrencyInfoUpdated(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        address indexed _currencyAddress,
-        string _currencySymbol
-    );
-    /**
-     * @notice Local max invocations for project `_projectId`, tied to core contract `_coreContractAddress`,
-     * updated to `_maxInvocations`.
-     */
-    event ProjectMaxInvocationsLimitUpdated(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        uint256 _maxInvocations
-    );
 
     // Sets the local max invocations for a given project, checking that the provided max invocations is
     // less than or equal to the global max invocations for the project set on the core contract.

@@ -6,9 +6,9 @@ export const minterDeployDetailsArray = [
     network: "goerli",
     // environment is only used for metadata purposes, and is not used in the deployment process
     // Please set to "dev", "staging", or "mainnet", as appropriate
-    environment: "dev",
-    minterName: "MinterPolyptychV0",
-    genArt721V3CoreAddress: "0x08dADD71F8e0F4e4c1DbDE182728179890663436",
-    minterFilterAddress: "0xc3374250ECD41e6632B373e6e050cc500f4B35cD",
+    environment: "staging",
+    minterName: "MinterHolderV4",
+    genArt721V3CoreAddress: "0xAf40b66072Fe00CAcF5A25Cd1b7F1688Cde20f2F",
+    minterFilterAddress: "0x13a8Fca80084Bb968EDE9AA69E38b0cF59Ba603f",
   },
 ];

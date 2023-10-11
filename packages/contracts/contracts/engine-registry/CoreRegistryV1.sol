@@ -63,15 +63,6 @@ contract CoreRegistryV1 is Ownable, ICoreRegistryV1 {
     EnumerableSet.AddressSet
         private registeredMinterFilterV2CompatibleContracts;
 
-    /**
-     * @notice Reverts if `tx.origin` is not the owner.
-     * @dev Warning that this check is only against tx.origin, which may be
-     * misleading when used for security.
-     */
-    function _onlyOwnerOrigin() internal view {
-        require(tx.origin == owner(), "Only tx origin of owner");
-    }
-
     constructor() Ownable() {}
 
     /**
@@ -87,17 +78,8 @@ contract CoreRegistryV1 is Ownable, ICoreRegistryV1 {
         bytes32 _coreType
     ) external {
         // CHECKS
-        // Validate against `tx.origin` rather than `msg.sender` as it is
-        // intended that this registration be performed in an automated
-        // fashion at the time of contract deployment of `_contractAddress`.
-        // @dev Security implications of using `tx.origin` are acknowledged
-        _onlyOwnerOrigin();
-        // only allow registration of a contract registering itself, or allow
-        // the owner to register any contract.
-        require(
-            msg.sender == _contractAddress || msg.sender == owner(),
-            "Only owner or registrant"
-        );
+        // revert if not called by owner
+        Ownable._checkOwner();
         // EFFECTS
         _registerContract(_contractAddress, _coreVersion, _coreType);
     }

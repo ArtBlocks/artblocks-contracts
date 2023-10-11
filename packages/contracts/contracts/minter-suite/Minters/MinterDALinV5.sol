@@ -82,17 +82,6 @@ contract MinterDALinV5 is
     uint256 public minimumAuctionLengthSeconds = 600; // 10 minutes
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => IsEngineCache
-    mapping(address => SplitFundsLib.IsEngineCache) private _isEngineCaches;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR DALinLib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -101,18 +90,6 @@ contract MinterDALinV5 is
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR DALinLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MaxInvocationsLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => projectId => max invocations specific project config
-    mapping(address => mapping(uint256 => MaxInvocationsLib.MaxInvocationsProjectConfig))
-        private _maxInvocationsProjectConfigMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MaxInvocationsLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -152,17 +129,8 @@ contract MinterDALinV5 is
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
             _projectId: _projectId,
             _coreContract: _coreContract,
-            _maxInvocations: _maxInvocations,
-            maxInvocationsProjectConfig: _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId]
+            _maxInvocations: _maxInvocations
         });
-
-        emit ProjectMaxInvocationsLimitUpdated(
-            _projectId,
-            _coreContract,
-            _maxInvocations
-        );
     }
 
     /**
@@ -198,10 +166,6 @@ contract MinterDALinV5 is
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
 
         require(
             _auctionTimestampEnd >=
@@ -211,7 +175,8 @@ contract MinterDALinV5 is
 
         // EFFECTS
         bool maxHasBeenInvoked = MaxInvocationsLib.getMaxHasBeenInvoked(
-            _maxInvocationsProjectConfig
+            _projectId,
+            _coreContract
         );
         DALinLib.setAuctionDetailsLin({
             _DAProjectConfig: _auctionProjectConfig,
@@ -236,7 +201,8 @@ contract MinterDALinV5 is
         // initial values, we know they have not been populated.
         if (
             MaxInvocationsLib.maxInvocationsIsUnconfigured(
-                _maxInvocationsProjectConfig
+                _projectId,
+                _coreContract
             )
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
@@ -322,7 +288,11 @@ contract MinterDALinV5 is
         view
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
-        return _maxInvocationsProjectConfigMapping[_coreContract][_projectId];
+        return
+            MaxInvocationsLib.getMaxInvocationsProjectConfig(
+                _projectId,
+                _coreContract
+            );
     }
 
     /**
@@ -370,9 +340,8 @@ contract MinterDALinV5 is
      * @return bool indicating if `_coreContract` is a valid engine contract.
      */
     function isEngineView(address _coreContract) external view returns (bool) {
-        SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
-            _coreContract
-        ];
+        SplitFundsLib.IsEngineCache storage isEngineCache = SplitFundsLib
+            .getIsEngineCacheConfig(_coreContract);
         if (isEngineCache.isCached) {
             return isEngineCache.isEngine;
         } else {
@@ -400,9 +369,7 @@ contract MinterDALinV5 is
         address _coreContract
     ) external view returns (bool) {
         return
-            MaxInvocationsLib.getMaxHasBeenInvoked(
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
+            MaxInvocationsLib.getMaxHasBeenInvoked(_projectId, _coreContract);
     }
 
     /**
@@ -429,10 +396,7 @@ contract MinterDALinV5 is
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256) {
-        return
-            MaxInvocationsLib.getMaxInvocations(
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
+        return MaxInvocationsLib.getMaxInvocations(_projectId, _coreContract);
     }
 
     /**
@@ -502,19 +466,10 @@ contract MinterDALinV5 is
             _sender: msg.sender
         });
 
-        uint256 maxInvocations = MaxInvocationsLib
-            .syncProjectMaxInvocationsToCore({
-                _projectId: _projectId,
-                _coreContract: _coreContract,
-                maxInvocationsProjectConfig: _maxInvocationsProjectConfigMapping[
-                    _coreContract
-                ][_projectId]
-            });
-        emit ProjectMaxInvocationsLimitUpdated(
-            _projectId,
-            _coreContract,
-            maxInvocations
-        );
+        MaxInvocationsLib.syncProjectMaxInvocationsToCore({
+            _projectId: _projectId,
+            _coreContract: _coreContract
+        });
     }
 
     /**
@@ -534,26 +489,19 @@ contract MinterDALinV5 is
         address _coreContract
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-
         DALinLib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
 
+        // pre-mint MaxInvocationsLib checks
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
         // `_maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
-        require(
-            !_maxInvocationsProjectConfig.maxHasBeenInvoked,
-            "Max invocations reached"
-        );
+        MaxInvocationsLib.preMintChecks(_projectId, _coreContract);
 
         // getPriceLin reverts if auction is unconfigured or has not started
         uint256 pricePerTokenInWei = DALinLib.getPriceLin(
@@ -571,19 +519,14 @@ contract MinterDALinV5 is
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
-            _maxInvocationsProjectConfig
+            _coreContract
         );
 
         // INTERACTIONS
-        bool isEngine = SplitFundsLib.isEngine(
-            _coreContract,
-            _isEngineCaches[_coreContract]
-        );
-        SplitFundsLib.splitFundsETH({
+        SplitFundsLib.splitFundsETHRefundSender({
             _projectId: _projectId,
             _pricePerTokenInWei: pricePerTokenInWei,
-            _coreContract: _coreContract,
-            _isEngine: isEngine
+            _coreContract: _coreContract
         });
 
         return tokenId;

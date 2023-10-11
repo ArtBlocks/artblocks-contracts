@@ -99,41 +99,6 @@ contract MinterSetPricePolyptychV5 is
     string public constant minterVersion = "v5.0.0";
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SetPriceLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /// contractAddress => projectId => set price project config
-    mapping(address => mapping(uint256 => SetPriceLib.SetPriceProjectConfig))
-        private _setPriceProjectConfigMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SetPriceLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => IsEngineCache
-    mapping(address => SplitFundsLib.IsEngineCache) private _isEngineCaches;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MaxInvocationsLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => projectId => max invocations specific project config
-    mapping(address => mapping(uint256 => MaxInvocationsLib.MaxInvocationsProjectConfig))
-        private _maxInvocationsProjectConfigMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MaxInvocationsLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR PolyptychLib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -143,21 +108,6 @@ contract MinterSetPricePolyptychV5 is
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR PolyptychLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR TokenHolderLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * coreContract => projectId => ownedNFTAddress => ownedNFTProjectIds => bool
-     * projects whose holders are allowed to purchase a token on `projectId`
-     */
-    mapping(address => mapping(uint256 => TokenHolderLib.HolderProjectConfig))
-        private _allowedProjectHoldersMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR TokenHolderLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // MODIFIERS
@@ -183,7 +133,9 @@ contract MinterSetPricePolyptychV5 is
         delegationRegistryContract = IDelegationRegistry(
             _delegationRegistryAddress
         );
-        emit DelegationRegistryUpdated(_delegationRegistryAddress);
+        emit TokenHolderLib.DelegationRegistryUpdated(
+            _delegationRegistryAddress
+        );
     }
 
     /**
@@ -211,12 +163,6 @@ contract MinterSetPricePolyptychV5 is
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             _projectId,
             _coreContract,
-            _maxInvocations,
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-        );
-        emit ProjectMaxInvocationsLimitUpdated(
-            _projectId,
-            _coreContract,
             _maxInvocations
         );
     }
@@ -240,15 +186,7 @@ contract MinterSetPricePolyptychV5 is
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        SetPriceLib.SetPriceProjectConfig
-            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         SetPriceLib.updatePricePerTokenInWei(
-            _pricePerTokenInWei,
-            _setPriceProjectConfig
-        );
-        emit PricePerTokenInWeiUpdated(
             _projectId,
             _coreContract,
             _pricePerTokenInWei
@@ -257,15 +195,12 @@ contract MinterSetPricePolyptychV5 is
         // sync local max invocations if not initially populated
         // @dev if local max invocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated.
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         // @dev if local maxInvocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated on this minter
         if (
             MaxInvocationsLib.maxInvocationsIsUnconfigured(
-                _maxInvocationsProjectConfig
+                _projectId,
+                _coreContract
             )
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
@@ -300,20 +235,11 @@ contract MinterSetPricePolyptychV5 is
             _sender: msg.sender
         });
         TokenHolderLib.allowHoldersOfProjects({
-            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
-                _projectId
-            ],
+            _projectId: _projectId,
+            _coreContract: _coreContract,
             _ownedNFTAddresses: _ownedNFTAddresses,
             _ownedNFTProjectIds: _ownedNFTProjectIds
         });
-
-        // emit approve event
-        emit AllowedHoldersOfProjects(
-            _projectId,
-            _coreContract,
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
     }
 
     /**
@@ -345,20 +271,11 @@ contract MinterSetPricePolyptychV5 is
         });
         // require same length arrays
         TokenHolderLib.removeHoldersOfProjects({
-            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
-                _projectId
-            ],
+            _projectId: _projectId,
+            _coreContract: _coreContract,
             _ownedNFTAddresses: _ownedNFTAddresses,
             _ownedNFTProjectIds: _ownedNFTProjectIds
         });
-
-        // emit removed event
-        emit RemovedHoldersOfProjects(
-            _projectId,
-            _coreContract,
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
     }
 
     /**
@@ -406,28 +323,13 @@ contract MinterSetPricePolyptychV5 is
             _sender: msg.sender
         });
         TokenHolderLib.allowAndRemoveHoldersOfProjects({
-            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
-                _projectId
-            ],
+            _projectId: _projectId,
+            _coreContract: _coreContract,
             _ownedNFTAddressesAdd: _ownedNFTAddressesAdd,
             _ownedNFTProjectIdsAdd: _ownedNFTProjectIdsAdd,
             _ownedNFTAddressesRemove: _ownedNFTAddressesRemove,
             _ownedNFTProjectIdsRemove: _ownedNFTProjectIdsRemove
         });
-
-        // emit events
-        emit AllowedHoldersOfProjects(
-            _projectId,
-            _coreContract,
-            _ownedNFTAddressesAdd,
-            _ownedNFTProjectIdsAdd
-        );
-        emit RemovedHoldersOfProjects(
-            _projectId,
-            _coreContract,
-            _ownedNFTAddressesRemove,
-            _ownedNFTProjectIdsRemove
-        );
     }
 
     /**
@@ -535,7 +437,11 @@ contract MinterSetPricePolyptychV5 is
         view
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
-        return _maxInvocationsProjectConfigMapping[_coreContract][_projectId];
+        return
+            MaxInvocationsLib.getMaxInvocationsProjectConfig(
+                _projectId,
+                _coreContract
+            );
     }
 
     /**
@@ -549,7 +455,7 @@ contract MinterSetPricePolyptychV5 is
         uint256 _projectId,
         address _coreContract
     ) external view returns (SetPriceLib.SetPriceProjectConfig memory) {
-        return _setPriceProjectConfigMapping[_coreContract][_projectId];
+        return SetPriceLib.getSetPriceProjectConfig(_projectId, _coreContract);
     }
 
     /**
@@ -569,7 +475,8 @@ contract MinterSetPricePolyptychV5 is
         uint256 _ownedNFTProjectId
     ) external view returns (bool) {
         return
-            _allowedProjectHoldersMapping[_coreContract][_projectId]
+            TokenHolderLib
+                .getHolderProjectConfig(_projectId, _coreContract)
                 .allowedProjectHolders[_ownedNFTAddress][_ownedNFTProjectId];
     }
 
@@ -591,9 +498,8 @@ contract MinterSetPricePolyptychV5 is
     ) external view returns (bool) {
         return
             TokenHolderLib.isAllowlistedNFT({
-                holderProjectConfig: _allowedProjectHoldersMapping[
-                    _coreContract
-                ][_projectId],
+                _projectId: _projectId,
+                _coreContract: _coreContract,
                 _ownedNFTAddress: _ownedNFTAddress,
                 _ownedNFTTokenId: _ownedNFTTokenId
             });
@@ -612,9 +518,8 @@ contract MinterSetPricePolyptychV5 is
      * @return bool indicating if `_coreContract` is a valid engine contract.
      */
     function isEngineView(address _coreContract) external view returns (bool) {
-        SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
-            _coreContract
-        ];
+        SplitFundsLib.IsEngineCache storage isEngineCache = SplitFundsLib
+            .getIsEngineCacheConfig(_coreContract);
         if (isEngineCache.isCached) {
             return isEngineCache.isEngine;
         } else {
@@ -642,9 +547,7 @@ contract MinterSetPricePolyptychV5 is
         address _coreContract
     ) external view returns (bool) {
         return
-            MaxInvocationsLib.getMaxHasBeenInvoked(
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
+            MaxInvocationsLib.getMaxHasBeenInvoked(_projectId, _coreContract);
     }
 
     /**
@@ -671,10 +574,7 @@ contract MinterSetPricePolyptychV5 is
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256) {
-        return
-            MaxInvocationsLib.getMaxInvocations(
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
+        return MaxInvocationsLib.getMaxInvocations(_projectId, _coreContract);
     }
 
     /**
@@ -706,9 +606,8 @@ contract MinterSetPricePolyptychV5 is
         )
     {
         SetPriceLib.SetPriceProjectConfig
-            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
-                _coreContract
-            ][_projectId];
+            storage _setPriceProjectConfig = SetPriceLib
+                .getSetPriceProjectConfig(_projectId, _coreContract);
         isConfigured = _setPriceProjectConfig.priceIsConfigured;
         tokenPriceInWei = _setPriceProjectConfig.pricePerTokenInWei;
         currencySymbol = "ETH";
@@ -780,16 +679,9 @@ contract MinterSetPricePolyptychV5 is
             _sender: msg.sender
         });
 
-        uint256 maxInvocations = MaxInvocationsLib
-            .syncProjectMaxInvocationsToCore(
-                _projectId,
-                _coreContract,
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
-        emit ProjectMaxInvocationsLimitUpdated(
+        MaxInvocationsLib.syncProjectMaxInvocationsToCore(
             _projectId,
-            _coreContract,
-            maxInvocations
+            _coreContract
         );
     }
 
@@ -818,44 +710,30 @@ contract MinterSetPricePolyptychV5 is
         address _vault
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-        SetPriceLib.SetPriceProjectConfig
-            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-
+        // pre-mint MaxInvocationsLib checks
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
         // `_maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
-        require(
-            !_maxInvocationsProjectConfig.maxHasBeenInvoked,
-            "Max invocations reached"
-        );
+        MaxInvocationsLib.preMintChecks(_projectId, _coreContract);
 
-        // require artist to have configured price of token on this minter
-        require(
-            _setPriceProjectConfig.priceIsConfigured,
-            "Price not configured"
+        // pre-mint checks for set price lib, and get price per token in wei
+        // @dev price per token is loaded into memory here for gas efficiency
+        uint256 pricePerTokenInWei = SetPriceLib.preMintChecksAndGetPrice(
+            _projectId,
+            _coreContract
         );
         // @dev pricePerTokenInWei intentionally not loaded as local variable
         // to avoid stack too deep error
-        require(
-            msg.value >= _setPriceProjectConfig.pricePerTokenInWei,
-            "Min value to mint req."
-        );
+        require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
         // require token used to claim to be in set of allowlisted NFTs
         require(
             TokenHolderLib.isAllowlistedNFT({
-                holderProjectConfig: _allowedProjectHoldersMapping[
-                    _coreContract
-                ][_projectId],
+                _projectId: _projectId,
+                _coreContract: _coreContract,
                 _ownedNFTAddress: _ownedNFTAddress,
                 _ownedNFTTokenId: _ownedNFTTokenId
             }),
@@ -949,7 +827,7 @@ contract MinterSetPricePolyptychV5 is
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
-            _maxInvocationsProjectConfig
+            _coreContract
         );
 
         // INTERACTIONS
@@ -976,15 +854,10 @@ contract MinterSetPricePolyptychV5 is
         }
 
         // split funds
-        bool isEngine = SplitFundsLib.isEngine(
-            _coreContract,
-            _isEngineCaches[_coreContract]
-        );
-        SplitFundsLib.splitFundsETH({
+        SplitFundsLib.splitFundsETHRefundSender({
             _projectId: _projectId,
-            _pricePerTokenInWei: _setPriceProjectConfig.pricePerTokenInWei,
-            _coreContract: _coreContract,
-            _isEngine: isEngine
+            _pricePerTokenInWei: pricePerTokenInWei,
+            _coreContract: _coreContract
         });
 
         return tokenId;

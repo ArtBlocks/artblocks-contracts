@@ -1,3 +1,5 @@
+import { ethers } from "hardhat";
+
 // empirically have found adding 10 seconds between txs in scripts is enough to
 // avoid chain reorgs and tx failures
 export const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
@@ -18,9 +20,121 @@ export const BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES = {
   mainnet: "0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5",
 };
 
-// known V3 engine registry contracts, and their deployers
+/**
+ * Get active shared minter filter contract address for the given network and
+ * environment.
+ * @param networkName network name (e.g. "goerli", "mainnet", "arbitrum", etc.)
+ * @param environment environment (e.g. "dev", "staging", "mainnet")
+ * @returns active shared minter filter contract address
+ */
+export function getActiveSharedMinterFilter(
+  networkName: string,
+  environment: string
+): string {
+  const activeMinterFilter =
+    ACTIVE_SHARED_MINTER_FILTERS[networkName]?.[environment];
+  if (!activeMinterFilter) {
+    throw new Error(
+      `No active shared minter filter found for network ${networkName} and environment ${environment}`
+    );
+  }
+  return activeMinterFilter;
+}
+// TODO: add addresses when deployed
+// Active shared minter filter contracts being used for the shared minter
+// suite, on each network and environment.
+// format is [network]: { [environment]: [minter filter address] }
+const ACTIVE_SHARED_MINTER_FILTERS = {
+  goerli: {
+    dev: "0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208",
+    staging: "0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559",
+  },
+  mainnet: {
+    mainnet: "0xTBD",
+  },
+  "arbitrum-goerli": {
+    dev: "0xTBD",
+    staging: "0xTBD",
+  },
+  arbitrum: {
+    mainnet: "0xTBD",
+  },
+};
+
+/**
+ * Get active shared randomizer contract address for the given network and
+ * environment.
+ * @param networkName network name (e.g. "goerli", "mainnet", "arbitrum", etc.)
+ * @param environment environment (e.g. "dev", "staging", "mainnet")
+ * @returns active shared randomizer contract address
+ */
+export function getActiveSharedRandomizer(
+  networkName: string,
+  environment: string
+): string {
+  const activeSharedRandomizer =
+    ACTIVE_SHARED_RANDOMIZERS[networkName]?.[environment];
+  if (!activeSharedRandomizer) {
+    throw new Error(
+      `No active shared randomizer found for network ${networkName} and environment ${environment}`
+    );
+  }
+  return activeSharedRandomizer;
+}
+// TODO: add addresses when deployed
+// Active shared randomizer contracts being used for the shared minter
+// suite, on each network and environment.
+// format is [network]: { [environment]: [randomizer address] }
+const ACTIVE_SHARED_RANDOMIZERS = {
+  goerli: {
+    dev: "0xD023790a7Bf5Dd71414409dc62008B8a190e0C28",
+    staging: "0x88293a3eef2516855BE0F798630e141D14333423",
+  },
+  mainnet: {
+    mainnet: "0xTBD",
+  },
+  "arbitrum-goerli": {
+    dev: "0xTBD",
+    staging: "0xTBD",
+  },
+  arbitrum: {
+    mainnet: "0xTBD",
+  },
+};
+
+/**
+ * Gets active core registry contract address for the given network and
+ * environment.
+ * @dev keys off of the current core registry of the active Minter Filter for
+ * the given network and environment
+ * @param networkName
+ * @param environment
+ * @returns
+ */
+export async function getActiveCoreRegistry(
+  networkName: string,
+  environment: string
+): Promise<string> {
+  // get the active minter filter for the network and environment
+  const activeMinterFilter = getActiveSharedMinterFilter(
+    networkName,
+    environment
+  );
+  const minterFilterFactory = await ethers.getContractFactory("MinterFilterV2");
+  const minterFilter = minterFilterFactory.attach(activeMinterFilter);
+  const activeCoreRegistryAddress = await minterFilter.coreRegistry();
+  if (!activeCoreRegistryAddress) {
+    throw new Error(
+      `No active core registry found for network ${networkName} and environment ${environment}`
+    );
+  }
+  return activeCoreRegistryAddress;
+}
+
+// DEPRECATED - use getActiveCoreRegistry after migration to shared minter suite
+// deprecated V3 engine registry contracts, and their deployers
 // format is [network]: { [registry address]: [deployer address] }
-export const KNOWN_ENGINE_REGISTRIES = {
+export const DEPRECATED_ENGINE_REGISTRIES = {
   goerli: {
     // [INDEXED] goerli staging registry, indexed in staging subgraph | deployer: staging deployer wallet
     "0xEa698596b6009A622C3eD00dD5a8b5d1CAE4fC36":
