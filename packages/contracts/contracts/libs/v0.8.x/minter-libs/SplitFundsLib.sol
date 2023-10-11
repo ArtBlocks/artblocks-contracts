@@ -212,10 +212,10 @@ library SplitFundsLib {
         // block scope to avoid stack too deep error
         {
             SplitFundsProjectConfig
-                storage splitFundsProjectConfig = getSplitFundsProjectConfig(
-                    projectId,
-                    coreContract
-                );
+                storage splitFundsProjectConfig = getSplitFundsProjectConfig({
+                    projectId: projectId,
+                    coreContract: coreContract
+                });
             address currencyAddress = splitFundsProjectConfig.currencyAddress;
             require(
                 currencyAddress != address(0),
@@ -327,10 +327,10 @@ library SplitFundsLib {
         require(bytes(currencySymbol).length > 0, "only non-null symbol");
         // EFFECTS
         SplitFundsProjectConfig
-            storage splitFundsProjectConfig = getSplitFundsProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage splitFundsProjectConfig = getSplitFundsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         splitFundsProjectConfig.currencySymbol = currencySymbol;
         splitFundsProjectConfig.currencyAddress = currencyAddress;
 
@@ -495,10 +495,10 @@ library SplitFundsLib {
         returns (address currencyAddress, string memory currencySymbol)
     {
         SplitFundsProjectConfig
-            storage splitFundsProjectConfig = getSplitFundsProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage splitFundsProjectConfig = getSplitFundsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         currencyAddress = splitFundsProjectConfig.currencyAddress;
         // default to "UNCONFIG" if project currency address is initial value
         currencySymbol = currencyAddress == address(0)
@@ -532,10 +532,10 @@ library SplitFundsLib {
         address walletAddress,
         address spenderAddress
     ) internal view returns (uint256 allowance) {
-        allowance = IERC20(currencyAddress).allowance(
-            walletAddress,
-            spenderAddress
-        );
+        allowance = IERC20(currencyAddress).allowance({
+            owner: walletAddress,
+            spender: spenderAddress
+        });
         return allowance;
     }
 
@@ -608,8 +608,10 @@ library SplitFundsLib {
         uint256 pricePerTokenInWei
     ) private view {
         require(
-            IERC20(currencyAddress).allowance(msgSender, address(this)) >=
-                pricePerTokenInWei,
+            IERC20(currencyAddress).allowance({
+                owner: msgSender,
+                spender: address(this)
+            }) >= pricePerTokenInWei,
             "Insufficient ERC20 allowance"
         );
         require(
@@ -697,33 +699,33 @@ library SplitFundsLib {
         // Platform Provider payment (only possible if engine)
         if (platformProviderRevenue > 0) {
             require(
-                projectCurrency.transferFrom(
-                    msg.sender,
-                    platformProviderAddress,
-                    platformProviderRevenue
-                ),
+                projectCurrency.transferFrom({
+                    from: msg.sender,
+                    to: platformProviderAddress,
+                    amount: platformProviderRevenue
+                }),
                 "Platform Provider payment failed"
             );
         }
         // Art Blocks payment
         if (renderProviderRevenue > 0) {
             require(
-                projectCurrency.transferFrom(
-                    msg.sender,
-                    renderProviderAddress,
-                    renderProviderRevenue
-                ),
+                projectCurrency.transferFrom({
+                    from: msg.sender,
+                    to: renderProviderAddress,
+                    amount: renderProviderRevenue
+                }),
                 "Render Provider payment failed"
             );
         }
         // artist payment
         if (artistRevenue > 0) {
             require(
-                projectCurrency.transferFrom(
-                    msg.sender,
-                    artistAddress,
-                    artistRevenue
-                ),
+                projectCurrency.transferFrom({
+                    from: msg.sender,
+                    to: artistAddress,
+                    amount: artistRevenue
+                }),
                 "Artist payment failed"
             );
         }
@@ -732,11 +734,11 @@ library SplitFundsLib {
             // @dev some ERC20 may not revert on transfer failure, so we
             // check the return value
             require(
-                projectCurrency.transferFrom(
-                    msg.sender,
-                    additionalPayeePrimaryAddress,
-                    additionalPayeePrimaryRevenue
-                ),
+                projectCurrency.transferFrom({
+                    from: msg.sender,
+                    to: additionalPayeePrimaryAddress,
+                    amount: additionalPayeePrimaryRevenue
+                }),
                 "Additional Payee payment failed"
             );
         }

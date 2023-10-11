@@ -58,19 +58,19 @@ library SetPriceLib {
         uint256 pricePerTokenInWei
     ) internal {
         SetPriceProjectConfig
-            storage setPriceProjectConfig = getSetPriceProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage setPriceProjectConfig = getSetPriceProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // update storage with new values
         setPriceProjectConfig.pricePerTokenInWei = uint248(pricePerTokenInWei);
         setPriceProjectConfig.priceIsConfigured = true;
 
-        emit PricePerTokenInWeiUpdated(
-            projectId,
-            coreContract,
-            pricePerTokenInWei
-        );
+        emit PricePerTokenInWeiUpdated({
+            projectId: projectId,
+            coreContract: coreContract,
+            pricePerTokenInWei: pricePerTokenInWei
+        });
     }
 
     function preMintChecksAndGetPrice(
@@ -78,10 +78,10 @@ library SetPriceLib {
         address coreContract
     ) internal view returns (uint256 pricePerTokenInWei) {
         SetPriceProjectConfig
-            storage setPriceProjectConfig = getSetPriceProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage setPriceProjectConfig = getSetPriceProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
 
         // require artist to have configured price of token on this minter
         require(

@@ -50,20 +50,20 @@ library PolyptychLib {
         address coreContract
     ) internal {
         PolyptychProjectConfig
-            storage polyptychProjectConfig = getPolyptychProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage polyptychProjectConfig = getPolyptychProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // increment panel ID
         ++polyptychProjectConfig.polyptychPanelId;
 
         // index the update
-        emit GenericMinterEventsLib.ConfigValueSet(
-            projectId,
-            coreContract,
-            PolyptychLib.POLYPTYCH_PANEL_ID,
-            polyptychProjectConfig.polyptychPanelId
-        );
+        emit GenericMinterEventsLib.ConfigValueSet({
+            projectId: projectId,
+            coreContract: coreContract,
+            key: PolyptychLib.POLYPTYCH_PANEL_ID,
+            value: polyptychProjectConfig.polyptychPanelId
+        });
     }
 
     /**
@@ -81,10 +81,10 @@ library PolyptychLib {
         bytes12 tokenHashSeed
     ) internal {
         PolyptychProjectConfig
-            storage polyptychProjectConfig = getPolyptychProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage polyptychProjectConfig = getPolyptychProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // ensure non-zero hash seed
         require(tokenHashSeed != bytes12(0), "Only non-zero hash seeds");
         // verify that the hash seed has not been used on the current panel
@@ -137,7 +137,10 @@ library PolyptychLib {
         uint256 tokenId,
         bytes12 targetHashSeed
     ) internal view {
-        bytes12 assignedHashSeed = getTokenHashSeed(coreContract, tokenId);
+        bytes12 assignedHashSeed = getTokenHashSeed({
+            coreContract: coreContract,
+            tokenId: tokenId
+        });
         require(
             assignedHashSeed == targetHashSeed,
             "Unexpected token hash seed"
@@ -196,10 +199,10 @@ library PolyptychLib {
         bytes12 hashSeed
     ) internal view returns (bool) {
         PolyptychProjectConfig
-            storage polyptychProjectConfig = getPolyptychProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage polyptychProjectConfig = getPolyptychProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         return
             polyptychProjectConfig.polyptychPanelHashSeedIsMinted[panelId][
                 hashSeed
