@@ -634,21 +634,17 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         uint256 numProjectsOnContractUsingMinter;
         for (uint256 i; i < numProjects; ) {
             (uint256 projectId, address minter_) = minterMap.at(i);
-            if (minter_ == minter) {
-                projectIds[numProjectsOnContractUsingMinter++] = projectId;
-            }
             unchecked {
+                if (minter_ == minter) {
+                    projectIds[numProjectsOnContractUsingMinter++] = projectId;
+                }
                 ++i;
             }
         }
         // trim array if necessary
         if (maxNumProjects > numProjectsOnContractUsingMinter) {
-            assembly {
-                let decrease := sub(
-                    maxNumProjects,
-                    numProjectsOnContractUsingMinter
-                )
-                mstore(projectIds, sub(mload(projectIds), decrease))
+            assembly ("memory-safe") {
+                mstore(projectIds, numProjectsOnContractUsingMinter)
             }
         }
         return projectIds;
@@ -743,9 +739,9 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      * `selector` on contract `contract`.
      * @dev assumes the Admin ACL contract is the owner of this contract, which
      * is expected to always be true.
-     * @dev adminACLContract is expected to either be null address (if owner
-     * has renounced ownership), or conform to IAdminACLV0 interface. Check for
-     * null address first to avoid revert when admin has renounced ownership.
+     * @dev adminACLContract is expected to not be null address (owner cannot
+     * renounce ownership on this contract), and conform to IAdminACLV0
+     * interface.
      */
     function adminACLAllowed(
         address sender,
@@ -753,7 +749,6 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         bytes4 selector
     ) public returns (bool) {
         return
-            owner() != address(0) &&
             adminACLContract.allowed({
                 _sender: sender,
                 _contract: contract_,

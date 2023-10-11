@@ -177,10 +177,10 @@ library DAExpLib {
             // so no underflow is possible when the subtraction assignment
             // operator is used on decayedPrice.
             decayedPrice -=
-                (decayedPrice *
+                ((decayedPrice *
                     (elapsedTimeSeconds % priceDecayHalfLifeSeconds)) /
-                priceDecayHalfLifeSeconds /
-                2;
+                    priceDecayHalfLifeSeconds) >>
+                1; // divide by 2 via bitshift 1
         }
         if (decayedPrice < basePrice) {
             // Price may not decay below stay `basePrice`.

@@ -15,7 +15,7 @@ library Bytes32Strings {
     function toString(
         bytes32 source
     ) internal pure returns (string memory result) {
-        uint8 length = 0;
+        uint8 length;
         while (source[length] != 0 && length < 32) {
             length++;
         }
@@ -43,9 +43,9 @@ library Bytes32Strings {
         uint8 utf8CharCode,
         uint8 targetQty
     ) internal pure returns (bool) {
-        uint8 _occurrences = 0;
+        uint8 _occurrences;
         uint8 i;
-        for (i = 0; i < 32; ) {
+        for (i; i < 32; ) {
             uint8 _charCode = uint8(source[i]);
             // if not a null byte, or a multi-byte UTF-8 character, check match
             if (_charCode != 0 && _charCode < 0x80) {
