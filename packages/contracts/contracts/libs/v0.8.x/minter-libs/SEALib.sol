@@ -592,7 +592,7 @@ library SEALib {
     }
 
     /**
-     * Returns bool representing if an auction is accepting bids above base
+     * @notice Function returns bool representing if an auction is accepting bids above base
      * price. It is accepting bids if it is initialized and has not reached its
      * end time.
      * @param auction The auction to check.
@@ -748,7 +748,7 @@ library SEALib {
     }
 
     /**
-     * Returns the minimum next bid amount in a configured auction, given the
+     * @notice Function returns the minimum next bid amount in a configured auction, given the
      * current bid amount and the project's configured minimum bid increment
      * percentage.
      * @param auction Auction to query
@@ -881,7 +881,7 @@ library SEALib {
     }
 
     /**
-     * Overwrite the active auction for a project with a new auction.
+     * @notice Function to overwrite the active auction for a project with a new auction.
      * @dev This function is used to initialize a new auction. Care must be
      * taken to ensure that the existing auction is fully complete and settled.
      * @param SEAProjectConfig_ SEAProjectConfig to update

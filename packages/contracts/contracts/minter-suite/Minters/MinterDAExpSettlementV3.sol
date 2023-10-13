@@ -94,19 +94,19 @@ contract MinterDAExpSettlementV3 is
 {
     using SafeCast for uint256;
 
-    /// Minter filter address this minter interacts with
+    /// @notice Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
 
-    /// Minter filter this minter may interact with.
+    /// @notice Minter filter this minter may interact with.
     IMinterFilterV1 private immutable _minterFilter;
 
-    /// minterType for this minter
+    /// @notice minterType for this minter
     string public constant minterType = "MinterDAExpSettlementV3";
 
-    /// minter version for this minter
+    /// @notice minter version for this minter
     string public constant minterVersion = "v3.0.0";
 
-    /// Minimum price decay half life: price can decay with a half life of a
+    /// @notice Minimum price decay half life: price can decay with a half life of a
     /// minimum of this amount (can cut in half a minimum of every N seconds).
     uint256 public minimumPriceDecayHalfLifeSeconds = 45; // 45 seconds
 
@@ -171,8 +171,7 @@ contract MinterDAExpSettlementV3 is
      *  price (in seconds).
      * @param startPrice Price at which to start the auction, in Wei.
      * @param basePrice Resting price of the auction, in Wei.
-     * @dev Note that it is intentionally supported here that the configured
-     * price may be explicitly set to `0`.
+     * @dev Note that a basePrice of `0` will cause the transaction to revert.
      */
     function setAuctionDetails(
         uint256 projectId,
@@ -501,9 +500,9 @@ contract MinterDAExpSettlementV3 is
      * intentional, as it only enables gas optimization of mints after a
      * project's maximum invocations has been reached. A false negative will
      * only result in a gas cost increase, since the core contract will still
-     * enforce a maxInvocation check during minting. A false positive is not
-     * possible because the V3 core contract only allows maximum invocations
-     * to be reduced, not increased. Based on this rationale, we intentionally
+     * enforce a maxInvocation check during minting. A false positive may be possible
+     * if function `manuallyLimitProjectMaxInvocations` has been invoked, resulting in
+     * `localMaxInvocations` < `coreContractMaxInvocations`. Based on this rationale, we intentionally
      * do not do input validation in this method as to whether or not the input
      * @param projectId is an existing project ID.
      * @param coreContract is an existing core contract address.
@@ -529,8 +528,9 @@ contract MinterDAExpSettlementV3 is
      * @dev A number greater than the core contract's project max invocations
      * will only result in a gas cost increase, since the core contract will
      * still enforce a maxInvocation check during minting. A number less than
-     * the core contract's project max invocations is only possible when the
-     * project's max invocations have not been synced on this minter, since the
+     * the core contract's project max invocations is possible if the artist
+     * has called manuallyLimitProjectMaxInvocations or when the project's max
+     * invocations have not been synced on this minter, since the
      * V3 core contract only allows maximum invocations to be reduced, not
      * increased. When this happens, the minter will enable minting, allowing
      * the core contract to enforce the max invocations check. Based on this
@@ -555,6 +555,7 @@ contract MinterDAExpSettlementV3 is
      * no purchases have been made.
      * @param projectId Project ID to get latest purchase price for.
      * @param coreContract Contract address of the core contract
+     * @return latestPurchasePrice Latest purchase price
      */
     function getProjectLatestPurchasePrice(
         uint256 projectId,
@@ -573,6 +574,7 @@ contract MinterDAExpSettlementV3 is
      * @notice Gets the number of settleable invocations for project `projectId`.
      * @param projectId Project ID to get number of settleable invocations for.
      * @param coreContract Contract address of the core contract
+     * @return numSettleableInvocations Number of settleable invocations
      */
     function getNumSettleableInvocations(
         uint256 projectId,

@@ -9,7 +9,7 @@ pragma solidity ^0.8.0;
  */
 library Bytes32Strings {
     /**
-     * @dev Intended to convert a `bytes32`-encoded string literal to `string`.
+     * @notice Intended to convert a `bytes32`-encoded string literal to `string`.
      * Trims zero padding to arrive at original string literal.
      */
     function toString(
@@ -33,7 +33,7 @@ library Bytes32Strings {
     }
 
     /**
-     * @dev Intended to check if a `bytes32`-encoded string contains a given
+     * @notice Intended to check if a `bytes32`-encoded string contains a given
      * character with UTF-8 character code `utf8CharCode exactly `targetQty`
      * times. Does not support searching for multi-byte characters, only
      * characters with UTF-8 character codes < 0x80.
