@@ -697,7 +697,6 @@ contract MinterDAExpSettlementV3 is
                 coreContract: coreContract,
                 walletAddress: walletAddress
             });
-        return excessSettlementFundsInWei;
     }
 
     /**
@@ -862,8 +861,6 @@ contract MinterDAExpSettlementV3 is
             coreContract: coreContract,
             currentPriceInWei: currentPriceInWei
         });
-
-        return tokenId;
     }
 
     /**

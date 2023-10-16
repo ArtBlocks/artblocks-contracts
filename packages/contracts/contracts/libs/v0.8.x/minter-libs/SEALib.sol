@@ -604,7 +604,6 @@ library SEALib {
         // its end time
         isAcceptingBids = (auctionIsInitialized(auction) &&
             block.timestamp < auction.endTime);
-        return isAcceptingBids;
     }
 
     /**
@@ -628,7 +627,6 @@ library SEALib {
         require(auctionIsInitialized(auction_), "No auction exists on project");
         // load entire auction into memory to return
         auction = SEAProjectConfig_.activeAuction;
-        return auction;
     }
 
     /**
@@ -681,14 +679,15 @@ library SEALib {
             projectId: projectId,
             coreContract: coreContract
         });
-        if (!SEAProjectConfig_.nextTokenNumberIsPopulated) {
-            revert("Next token not populated");
-        }
+        require(
+            SEAProjectConfig_.nextTokenNumberIsPopulated,
+            "Next token not populated"
+        );
+
         // @dev overflow automatically checked in Solidity ^0.8.0
         nextTokenId =
             (projectId * ONE_MILLION) +
             SEAProjectConfig_.nextTokenNumber;
-        return nextTokenId;
     }
 
     /**
@@ -909,7 +908,6 @@ library SEALib {
                 .minBidIncrementPercentage,
             settled: false
         });
-        return endTime;
     }
 
     /**
