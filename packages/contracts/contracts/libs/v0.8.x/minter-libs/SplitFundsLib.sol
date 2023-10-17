@@ -80,8 +80,7 @@ library SplitFundsLib {
             // send refund to sender
             uint256 refund = msg.value - pricePerTokenInWei;
             if (refund > 0) {
-                bool success_;
-                (success_, ) = msg.sender.call{value: refund}("");
+                (bool success_, ) = msg.sender.call{value: refund}("");
                 require(success_, "Refund failed");
             }
             // split revenues
