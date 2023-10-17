@@ -45,17 +45,21 @@ export type SelectedMinter = AvailableMinter & {
   configurationForms: ConfigurationForm[];
 };
 
-export function filterProjectIdFromFormSchema(
+export function filterProjectIdAndCoreContractAddressFromFormSchema(
   schema: FormFieldSchema
 ): FormFieldSchema {
   // If properties are defined, remove projectId
   const properties = schema.properties
-    ? (({ projectIndex, ...rest }) => rest)(schema.properties)
+    ? (({ projectIndex, coreContractAddress, ...rest }) => rest)(
+        schema.properties
+      )
     : undefined;
 
   // If required is defined, filter out projectId
   const required = schema.required
-    ? schema.required.filter((item) => item !== "projectIndex")
+    ? schema.required.filter(
+        (item) => item !== "projectIndex" && item !== "coreContractAddress"
+      )
     : undefined;
 
   return {
@@ -65,41 +69,57 @@ export function filterProjectIdFromFormSchema(
   };
 }
 
-export const minterSelectionSchema: OnChainCompoundNonArrayFormFieldSchema = {
-  title: "Set Minter For Project",
-  type: "object",
-  compound: true,
-  compoundBehavior: "transactionGroup",
-  onChain: true,
-  transactionDetails: {
-    functionName: "setMinterForProject",
-    args: ["projectIndex", "minter.address"],
-    abi: [
-      {
-        inputs: [
-          {
-            internalType: "uint256",
-            name: "",
-            type: "uint256",
-          },
-          {
-            internalType: "address",
-            name: "",
-            type: "address",
-          },
-        ],
-        name: "setMinterForProject",
-        outputs: [],
-        stateMutability: "nonpayable",
-        type: "function",
-      },
-    ],
-  },
-  properties: {
-    "minter.address": {
-      type: "string",
-      title: "Minter Address",
+export function generateMinterSelectionFormSchema(
+  shared: boolean
+): OnChainCompoundNonArrayFormFieldSchema {
+  const args = ["projectIndex", "minter.address"];
+  const inputs = [
+    {
+      internalType: "uint256",
+      name: "_projectId",
+      type: "uint256",
     },
-  },
-  required: ["minter.address"],
-};
+    {
+      internalType: "address",
+      name: "_minter",
+      type: "address",
+    },
+  ];
+
+  if (shared) {
+    args.splice(1, 0, "coreContractAddress");
+    inputs.splice(1, 0, {
+      internalType: "address",
+      name: "_coreContract",
+      type: "address",
+    });
+  }
+
+  return {
+    title: "Set Minter For Project",
+    type: "object",
+    compound: true,
+    compoundBehavior: "transactionGroup",
+    onChain: true,
+    transactionDetails: {
+      functionName: "setMinterForProject",
+      args,
+      abi: [
+        {
+          inputs,
+          name: "setMinterForProject",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+      ],
+    },
+    properties: {
+      "minter.address": {
+        type: "string",
+        title: "Minter Address",
+      },
+    },
+    required: ["minter.address"],
+  };
+}

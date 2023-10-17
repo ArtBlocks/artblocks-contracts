@@ -4,12 +4,13 @@ import {
   ConfigurationForm,
   SubmissionStatus,
   SubmissionStatusEnum,
-  filterProjectIdFromFormSchema,
-  minterSelectionSchema,
+  filterProjectIdAndCoreContractAddressFromFormSchema,
+  generateMinterSelectionFormSchema,
 } from "../minters";
 import { getProjectMinterConfigurationQueryDocument } from "./graphql-operations";
 import {
   GetProjectMinterConfigurationQuery,
+  Minter_Filter_Type_Names_Enum,
   ProjectMinterConfigurationDetailsFragment,
 } from "../generated/graphql";
 import {
@@ -146,11 +147,15 @@ function generateSelectMinterForm({
   onConfigurationChange,
 }: GenerateProjectMinterConfigurationFormsContext): ConfigurationForm {
   const minterConfiguration = project.minter_configuration;
+  const minterSelectionFormSchema = generateMinterSelectionFormSchema(
+    project.contract.minter_filter.type ===
+      Minter_Filter_Type_Names_Enum.MinterFilterV2
+  );
 
   // Map available minters to oneOf entries on the minter.address
   // property of the minter selection form schema
-  const minterSelectionSchemaWithMinters = minterSelectionSchema;
-  if (minterSelectionSchemaWithMinters.properties?.["minter.address"]) {
+  const minterSelectionFormSchemaWithMinters = minterSelectionFormSchema;
+  if (minterSelectionFormSchemaWithMinters.properties?.["minter.address"]) {
     const globallyAllowedMinters =
       project.contract.minter_filter.globally_allowed_minters ?? [];
     const latestMinters = globallyAllowedMinters.reduce(
@@ -167,7 +172,7 @@ function generateSelectMinterForm({
       globallyAllowedMinters
     );
 
-    minterSelectionSchemaWithMinters.properties["minter.address"].oneOf =
+    minterSelectionFormSchemaWithMinters.properties["minter.address"].oneOf =
       latestMinters.map((minter) => ({
         const: minter.address,
         title: `${minter.type?.label ?? ""} - ${minter.address}`,
@@ -177,12 +182,12 @@ function generateSelectMinterForm({
   // Initialize configurationForms with the minter selection form
   const form = {
     key: "setMinterForProject",
-    formSchema: minterSelectionSchemaWithMinters,
+    formSchema: minterSelectionFormSchemaWithMinters,
     initialFormValues: getInitialMinterConfigurationValuesForFormField(
-      minterSelectionSchema,
+      minterSelectionFormSchemaWithMinters,
       minterConfiguration ?? null
     ),
-    zodSchema: formFieldSchemaToZod(minterSelectionSchema),
+    zodSchema: formFieldSchemaToZod(minterSelectionFormSchemaWithMinters),
     handleSubmit: async (
       formValues: Record<string, any>,
       walletClient: WalletClient,
@@ -208,7 +213,7 @@ function generateSelectMinterForm({
 
       // Map the form values to an array of arguments expected by the smart contract function
       const functionArgs = mapFormValuesToArgs(
-        minterSelectionSchema.transactionDetails.args,
+        minterSelectionFormSchemaWithMinters.transactionDetails.args,
         formValues,
         projectIndex,
         coreContractAddress
@@ -219,8 +224,9 @@ function generateSelectMinterForm({
         publicClient: sdk.publicClient,
         walletClient,
         address: minterFilterAddress,
-        abi: minterSelectionSchema.transactionDetails.abi as Abi,
-        functionName: minterSelectionSchema.transactionDetails.functionName,
+        abi: minterSelectionFormSchemaWithMinters.transactionDetails.abi as Abi,
+        functionName:
+          minterSelectionFormSchemaWithMinters.transactionDetails.functionName,
         args: functionArgs,
         onUserAccepted: () => {
           onProgress?.(SubmissionStatusEnum.CONFIRMING);
@@ -273,7 +279,8 @@ function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
     onConfigurationChange,
   } = args;
 
-  const schemaWithProjectIdFiltered = filterProjectIdFromFormSchema(formSchema);
+  const schemaWithProjectIdFiltered =
+    filterProjectIdAndCoreContractAddressFromFormSchema(formSchema);
 
   const initialFormValues = getInitialMinterConfigurationValuesForFormField(
     schemaWithProjectIdFiltered,

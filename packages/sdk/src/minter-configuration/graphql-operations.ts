@@ -10,6 +10,7 @@ export const getProjectMinterConfigurationQueryDocument = graphql(
         contract {
           user_is_allowlisted
           minter_filter {
+            type
             address
             globally_allowed_minters {
               address

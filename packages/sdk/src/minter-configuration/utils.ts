@@ -287,7 +287,8 @@ export function mapFormValuesToArgs(
       return acc.concat(coreContractAddress);
     }
 
-    return acc.concat(get(formValues, arg));
+    // Concat the value in an array so that array values are not flattened
+    return acc.concat([get(formValues, arg)]);
   }, []);
 }
 
@@ -304,27 +305,29 @@ export async function transformProjectMinterConfigurationFormValues(
   const { formValues, schema } = args;
 
   // Flatten the formValues object to match the dot notation in schema
-  const flattenedFormValues = flattenObject(formValues);
+  // const flattenedFormValues = flattenObject(formValues);
 
   // Iterate through flattened form values and look them up in the schema
   // to see if they have submissionTransformation set. If they
   // do, apply the relevant transformation.
   let transformedFormValues: Record<string, any> = {};
-  for (const [key, value] of Object.entries(flattenedFormValues)) {
-    const fieldSchema = get(schema.properties, key);
+  for (const [fieldName, fieldSchema] of Object.entries(
+    schema.properties ?? {}
+  )) {
+    const formFieldValue = get(formValues, fieldName);
     if (typeof fieldSchema === "object" && fieldSchema.submissionProcessing) {
       switch (fieldSchema.submissionProcessing) {
         case "merkleRoot": {
           const merkleRoot = await processAllowlistFileToMerkleRoot(
-            value,
+            formFieldValue,
             args
           );
-          set(transformedFormValues, key, merkleRoot);
+          set(transformedFormValues, fieldName, merkleRoot);
           break;
         }
         case "tokenHolderAllowlist": {
           const allowRemoveArgs = processProjectContractTokenHolderList(
-            value,
+            formFieldValue,
             args
           );
 
@@ -335,16 +338,16 @@ export async function transformProjectMinterConfigurationFormValues(
           break;
         }
         case "ethToWei": {
-          const weiValue = parseEther(`${value}`);
-          set(transformedFormValues, key, weiValue);
+          const weiValue = parseEther(`${formFieldValue}`);
+          set(transformedFormValues, fieldName, weiValue);
           break;
         }
         case "datetimeToUnixTimestamp": {
           const unixTimestamp = Math.floor(
-            new Date(value as string).getTime() / 1000
+            new Date(formFieldValue as string).getTime() / 1000
           );
 
-          set(transformedFormValues, key, unixTimestamp);
+          set(transformedFormValues, fieldName, unixTimestamp);
           break;
         }
         case "auctionEndDatetimeToHalfLifeSeconds": {
@@ -375,52 +378,17 @@ export async function transformProjectMinterConfigurationFormValues(
             endTimeUnixTimestamp
           );
 
-          set(transformedFormValues, key, halfLifeSeconds);
+          set(transformedFormValues, fieldName, halfLifeSeconds);
           break;
         }
       }
     } else {
-      set(transformedFormValues, key, value);
+      set(transformedFormValues, fieldName, formFieldValue);
     }
   }
 
   // Unflatten the transformedFormValues to match the original formValues structure
-  return unflattenObject(transformedFormValues);
-}
-
-function flattenObject(
-  obj: any,
-  prefix = "",
-  res: Record<string, any> = {}
-): Record<string, any> {
-  for (const k in obj) {
-    const pre = prefix.length ? `${prefix}.` : "";
-    if (
-      typeof obj[k] === "object" &&
-      !(obj[k] instanceof Date) &&
-      !(obj[k] instanceof File) &&
-      !(obj[k] instanceof FileList)
-    )
-      flattenObject(obj[k], pre + k, res);
-    else res[pre + k] = obj[k];
-  }
-  return res;
-}
-
-function unflattenObject(data: Record<string, any>) {
-  const result: Record<string, any> = {};
-  for (const key in data) {
-    const keys = key.split(".");
-    keys.reduce((res: Record<string, any>, key, i) => {
-      if (i === keys.length - 1) {
-        res[key] = data[keys.join(".")];
-      } else {
-        res[key] = res[key] || {};
-      }
-      return res[key];
-    }, result);
-  }
-  return result;
+  return { ...formValues, ...transformedFormValues };
 }
 
 function mergeObjects(obj1: any, obj2: any) {
@@ -593,7 +561,10 @@ function processProjectContractTokenHolderList(
         ownedNFTProjectIdsAdd: [...acc.ownedNFTProjectIdsAdd, projectIndex],
       };
     },
-    {} as AllowHoldersOfProjectsArgs
+    {
+      ownedNFTAddressesAdd: [],
+      ownedNFTProjectIdsAdd: [],
+    } as AllowHoldersOfProjectsArgs
   );
 
   // Split both add and remove lists into split arrays one for the
@@ -612,7 +583,10 @@ function processProjectContractTokenHolderList(
         ],
       };
     },
-    {} as RemoveHoldersOfProjectArgs
+    {
+      ownedNFTAddressesRemove: [],
+      ownedNFTProjectIdsRemove: [],
+    } as RemoveHoldersOfProjectArgs
   );
 
   return {
