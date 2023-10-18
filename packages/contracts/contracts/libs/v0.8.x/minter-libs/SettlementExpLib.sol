@@ -138,8 +138,6 @@ library SettlementExpLib {
         );
 
         // update Receipt in storage
-        // @dev overflow checks are not required since the added values cannot
-        // be enough to overflow due to maximum invocations or supply of ETH
         receipt.netPosted = netPosted;
         receipt.numPurchased = numPurchased;
 
@@ -180,7 +178,7 @@ library SettlementExpLib {
         );
         // refresh max invocations, updating any local values that are
         // illogical with respect to the current core contract state, and
-        // ensuring that local hasMaxBeenInvoked is accurate.
+        // ensuring that local maxHasBeenInvoked is accurate.
         MaxInvocationsLib.refreshMaxInvocations({
             projectId: projectId,
             coreContract: coreContract
@@ -245,8 +243,8 @@ library SettlementExpLib {
                 });
             }
         } else {
-            // base price of zero indicates no sales, since base price of zero
-            // is not allowed when configuring an auction.
+            // base price of zero indicates that the auction has not been configured,
+            // since base price of zero is not allowed when configuring an auction.
             // @dev no coverage else branch of following line because redundant
             require(basePrice > 0, "Only latestPurchasePrice > 0");
             // if the price is base price, the auction is valid and may be claimed
