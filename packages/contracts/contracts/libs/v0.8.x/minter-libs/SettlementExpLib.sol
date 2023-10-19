@@ -213,7 +213,7 @@ library SettlementExpLib {
         if (_price != basePrice) {
             require(maxHasBeenInvoked, "Active auction not yet sold out");
             // if max has been invoked, but all tokens to be auctioned were not
-            // sold, funny business has been detected (e.g. project max
+            // sold, nonstandard activity has been detected (e.g. project max
             // invocations were reduced on core contract after initial
             // purchase, purchases were made on a different minter after
             // initial purchase, etc.), which could artifically inflate
@@ -399,8 +399,9 @@ library SettlementExpLib {
             // @dev acknowledge that this value may be stale if the core
             // contract's max invocations were reduced since the last time
             // the minter's max invocations were updated, but that is desired.
-            // That case would be classified as "funny business", so we want
-            // to require admin to be the withdrawer of revenues in that case.
+            // That case would be classified as "nonstandard activity", so we
+            // want to require admin to be the withdrawer of revenues in that
+            // case.
             uint256 minterMaxInvocations = MaxInvocationsLib.getMaxInvocations(
                 _projectId,
                 _coreContract
@@ -423,8 +424,8 @@ library SettlementExpLib {
             // that the minter returns the most up-to-date value from function
             // `projectMaxHasBeenInvoked` in the future.
             // @dev note that this edge case will end up being classified as
-            // "funny business" in case of sellout above base price, and will
-            // require admin concurrence in those cases.
+            // "nonstandard activity" in case of sellout above base price, and
+            // will require admin concurrence in those cases.
             if (minterMaxInvocations > coreMaxInvocations) {
                 // update minter's max invocations to match core contract
                 MaxInvocationsLib.syncProjectMaxInvocationsToCore({
