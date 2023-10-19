@@ -57,7 +57,7 @@ library SettlementExpLib {
         // In that case, the new auction will be required to have a starting
         // price less than or equal to this value, if one or more purchases
         // have been made on this minter.
-        // @dev max uint88 ~= 3e26 Wei = ~30 million ETH, which is well above
+        // @dev max uint88 ~= 3e26 Wei = ~300 million ETH, which is well above
         // the expected prices of any NFT mint in the foreseeable future.
         // This enables struct packing.
         uint88 latestPurchasePrice;
@@ -65,7 +65,7 @@ library SettlementExpLib {
         // backstop to prevent one project from draining the minter's balance
         // of ETH from other projects, which is a worthwhile failsafe on this
         // shared minter.
-        // @dev max uint88 ~= 3e26 Wei = ~30 million ETH, which is well above
+        // @dev max uint88 ~= 3e26 Wei = ~300 million ETH, which is well above
         // the expected revenues for a single auction.
         // This enables struct packing.
         uint88 projectBalance;
