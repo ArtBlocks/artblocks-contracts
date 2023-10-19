@@ -6,6 +6,8 @@ import "../../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3WithSharedRandomizer.sol";
 import "../../../interfaces/v0.8.x/ISharedRandomizerV0.sol";
 
+import {GenericMinterEventsLib} from "./GenericMinterEventsLib.sol";
+
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
 
 pragma solidity ^0.8.0;
@@ -20,6 +22,11 @@ pragma solidity ^0.8.0;
 library PolyptychLib {
     bytes32 constant POLYPTYCH_PANEL_ID = "polyptychPanelId";
 
+    // position of Polyptych Lib storage, using a diamond storage pattern
+    // for this library
+    bytes32 constant POLYPTYCH_LIB_STORAGE_POSITION =
+        keccak256("polyptychlib.storage");
+
     struct PolyptychProjectConfig {
         // @dev uint24 provides sufficient qty of panels, and could be packed
         // in the future if other values are added to this struct.
@@ -29,14 +36,35 @@ library PolyptychLib {
         mapping(uint256 => mapping(bytes12 => bool)) polyptychPanelHashSeedIsMinted;
     }
 
+    // Diamond storage pattern is used in this library
+    struct PolyptychLibStorage {
+        mapping(address coreContract => mapping(uint256 projectId => PolyptychProjectConfig)) polyptychProjectConfigs;
+    }
+
     /**
      * @notice Increments the minter to the next polyptych panel of a given project
-     * @param _polyptychProjectConfig Project ID to increment to its next polyptych panel
+     * @param _projectId Project ID to increment panel ID for
+     * @param _coreContract Core contract address that _projectId is on
      */
     function incrementPolyptychProjectPanelId(
-        PolyptychProjectConfig storage _polyptychProjectConfig
+        uint256 _projectId,
+        address _coreContract
     ) internal {
+        PolyptychProjectConfig
+            storage _polyptychProjectConfig = getPolyptychProjectConfig(
+                _projectId,
+                _coreContract
+            );
+        // increment panel ID
         ++_polyptychProjectConfig.polyptychPanelId;
+
+        // index the update
+        emit GenericMinterEventsLib.ConfigValueSet(
+            _projectId,
+            _coreContract,
+            PolyptychLib.POLYPTYCH_PANEL_ID,
+            _polyptychProjectConfig.polyptychPanelId
+        );
     }
 
     /**
@@ -44,25 +72,32 @@ library PolyptychLib {
      * minter.
      * Verifies that the token hash seed is non-zero, and also enforces that
      * the hash seed can only be used up to one time per panel.
-     * @param _polyptychProjectConfig polyptych project config
+     * @param _projectId Project ID to validate
+     * @param _coreContract Core contract address to validate
      * @param _tokenHashSeed token hash seed
      */
     function validatePolyptychEffects(
-        PolyptychProjectConfig storage _polyptychProjectConfig,
+        uint256 _projectId,
+        address _coreContract,
         bytes12 _tokenHashSeed
     ) internal {
+        PolyptychProjectConfig
+            storage polyptychProjectConfig = getPolyptychProjectConfig(
+                _projectId,
+                _coreContract
+            );
         // ensure non-zero hash seed
         require(_tokenHashSeed != bytes12(0), "Only non-zero hash seeds");
         // verify that the hash seed has not been used on the current panel
-        uint256 _panelId = _polyptychProjectConfig.polyptychPanelId;
+        uint256 _panelId = polyptychProjectConfig.polyptychPanelId;
         require(
-            !_polyptychProjectConfig.polyptychPanelHashSeedIsMinted[_panelId][
+            !polyptychProjectConfig.polyptychPanelHashSeedIsMinted[_panelId][
                 _tokenHashSeed
             ],
             "Panel already minted"
         );
         // mark hash seed as used for the current panel
-        _polyptychProjectConfig.polyptychPanelHashSeedIsMinted[_panelId][
+        polyptychProjectConfig.polyptychPanelHashSeedIsMinted[_panelId][
             _tokenHashSeed
         ] = true;
     }
@@ -132,29 +167,72 @@ library PolyptychLib {
      * Gets the current polyptych panel ID from polyptych project config.
      * Polyptych panel ID is an incremented value that is used to track the
      * current panel of a polyptych project.
-     * @param _polyptychProjectConfig Polyptych project config struct to query
+     * @param _projectId Project ID to query
+     * @param _coreContract Core contract address to query
      */
     function getPolyptychPanelId(
-        PolyptychProjectConfig storage _polyptychProjectConfig
+        uint256 _projectId,
+        address _coreContract
     ) internal view returns (uint256) {
-        return _polyptychProjectConfig.polyptychPanelId;
+        PolyptychProjectConfig
+            storage polyptychProjectConfig = getPolyptychProjectConfig({
+                _projectId: _projectId,
+                _coreContract: _coreContract
+            });
+        return polyptychProjectConfig.polyptychPanelId;
     }
 
     /**
      * Gets if a polyptych panel has already been minted for a given panel ID
      * and hash seed.
-     * @param _polyptychProjectConfig Polyptych project config struct to query
+     * @param _projectId Project ID to query
+     * @param _coreContract Core contract address to query
      * @param _panelId Polyptych panel ID to query
      * @param _hashSeed Hash seed of panel to query
      */
     function getPolyptychPanelHashSeedIsMinted(
-        PolyptychProjectConfig storage _polyptychProjectConfig,
+        uint256 _projectId,
+        address _coreContract,
         uint256 _panelId,
         bytes12 _hashSeed
     ) internal view returns (bool) {
+        PolyptychProjectConfig
+            storage polyptychProjectConfig = getPolyptychProjectConfig(
+                _projectId,
+                _coreContract
+            );
         return
-            _polyptychProjectConfig.polyptychPanelHashSeedIsMinted[_panelId][
+            polyptychProjectConfig.polyptychPanelHashSeedIsMinted[_panelId][
                 _hashSeed
             ];
+    }
+
+    /**
+     * Loads the PolyptychProjectConfig for a given project and core
+     * contract.
+     * @param _projectId Project Id to get config for
+     * @param _coreContract Core contract address to get config for
+     */
+    function getPolyptychProjectConfig(
+        uint256 _projectId,
+        address _coreContract
+    ) internal view returns (PolyptychProjectConfig storage) {
+        return s().polyptychProjectConfigs[_coreContract][_projectId];
+    }
+
+    /**
+     * @notice Return the storage struct for reading and writing. This library
+     * uses a diamond storage pattern when managing storage.
+     * @return storageStruct The PolyptychLibStorage struct.
+     */
+    function s()
+        internal
+        pure
+        returns (PolyptychLibStorage storage storageStruct)
+    {
+        bytes32 position = POLYPTYCH_LIB_STORAGE_POSITION;
+        assembly {
+            storageStruct.slot := position
+        }
     }
 }
