@@ -113,17 +113,6 @@ contract MinterDALinHolderV5 is
     /// Minimum auction length in seconds
     uint256 public minimumAuctionLengthSeconds = 600; // 10 minutes
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR DALinLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    mapping(address => mapping(uint256 => DALinLib.DAProjectConfig))
-        private _auctionProjectConfigMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR DALinLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /**
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter` minter filter.
@@ -144,7 +133,9 @@ contract MinterDALinHolderV5 is
         emit TokenHolderLib.DelegationRegistryUpdated(
             _delegationRegistryAddress
         );
-        emit AuctionMinimumLengthSecondsUpdated(minimumAuctionLengthSeconds);
+        emit DALinLib.AuctionMinimumLengthSecondsUpdated(
+            minimumAuctionLengthSeconds
+        );
     }
 
     /**
@@ -334,11 +325,6 @@ contract MinterDALinHolderV5 is
             _sender: msg.sender
         });
         // CHECKS
-        DALinLib.DAProjectConfig
-            storage _auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-
         require(
             _auctionTimestampEnd >=
                 _auctionTimestampStart + minimumAuctionLengthSeconds,
@@ -351,21 +337,13 @@ contract MinterDALinHolderV5 is
             _coreContract
         );
         DALinLib.setAuctionDetailsLin({
-            _DAProjectConfig: _auctionProjectConfig,
+            _projectId: _projectId,
+            _coreContract: _coreContract,
             _auctionTimestampStart: _auctionTimestampStart,
             _auctionTimestampEnd: _auctionTimestampEnd,
             _startPrice: _startPrice.toUint88(),
             _basePrice: _basePrice.toUint88(),
             _allowReconfigureAfterStart: maxHasBeenInvoked
-        });
-
-        emit SetAuctionDetailsLin({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _auctionTimestampStart: _auctionTimestampStart,
-            _auctionTimestampEnd: _auctionTimestampEnd,
-            _startPrice: _startPrice,
-            _basePrice: _basePrice
         });
 
         // sync local max invocations if not initially populated
@@ -396,7 +374,9 @@ contract MinterDALinHolderV5 is
             _selector: this.setMinimumAuctionLengthSeconds.selector
         });
         minimumAuctionLengthSeconds = _minimumAuctionLengthSeconds;
-        emit AuctionMinimumLengthSecondsUpdated(_minimumAuctionLengthSeconds);
+        emit DALinLib.AuctionMinimumLengthSecondsUpdated(
+            _minimumAuctionLengthSeconds
+        );
     }
 
     /**
@@ -417,9 +397,10 @@ contract MinterDALinHolderV5 is
             _selector: this.resetAuctionDetails.selector
         });
 
-        delete _auctionProjectConfigMapping[_coreContract][_projectId];
-
-        emit ResetAuctionDetails(_projectId, _coreContract);
+        DALinLib.resetAuctionDetails({
+            _projectId: _projectId,
+            _coreContract: _coreContract
+        });
     }
 
     /**
@@ -531,10 +512,11 @@ contract MinterDALinHolderV5 is
             uint256 basePrice
         )
     {
-        DALinLib.DAProjectConfig
-            storage _auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
+        DALinLib.DAProjectConfig storage _auctionProjectConfig = DALinLib
+            .getDAProjectConfig({
+                _projectId: _projectId,
+                _coreContract: _coreContract
+            });
         timestampStart = _auctionProjectConfig.timestampStart;
         timestampEnd = _auctionProjectConfig.timestampEnd;
         startPrice = _auctionProjectConfig.startPrice;
@@ -641,10 +623,11 @@ contract MinterDALinHolderV5 is
             address currencyAddress
         )
     {
-        DALinLib.DAProjectConfig
-            storage auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
+        DALinLib.DAProjectConfig storage auctionProjectConfig = DALinLib
+            .getDAProjectConfig({
+                _projectId: _projectId,
+                _coreContract: _coreContract
+            });
         isConfigured = (auctionProjectConfig.startPrice > 0);
         if (!isConfigured) {
             // In the case of unconfigured auction, return price of zero when
@@ -656,7 +639,10 @@ contract MinterDALinHolderV5 is
             // before auction starts.
             tokenPriceInWei = auctionProjectConfig.startPrice;
         } else {
-            tokenPriceInWei = DALinLib.getPriceLin(auctionProjectConfig);
+            tokenPriceInWei = DALinLib.getPriceLin({
+                _projectId: _projectId,
+                _coreContract: _coreContract
+            });
         }
         currencySymbol = "ETH";
         currencyAddress = address(0);
@@ -757,11 +743,6 @@ contract MinterDALinHolderV5 is
         address _vault
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-        DALinLib.DAProjectConfig
-            storage _auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-
         // pre-mint MaxInvocationsLib checks
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
@@ -772,9 +753,10 @@ contract MinterDALinHolderV5 is
         MaxInvocationsLib.preMintChecks(_projectId, _coreContract);
 
         // getPriceLin reverts if auction is unconfigured or has not started
-        uint256 pricePerTokenInWei = DALinLib.getPriceLin(
-            _auctionProjectConfig
-        );
+        uint256 pricePerTokenInWei = DALinLib.getPriceLin({
+            _projectId: _projectId,
+            _coreContract: _coreContract
+        });
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
         // require token used to claim to be in set of allowlisted NFTs

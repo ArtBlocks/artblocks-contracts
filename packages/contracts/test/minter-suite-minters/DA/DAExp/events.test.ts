@@ -148,7 +148,10 @@ runForEach.forEach((params) => {
             .connect(config.accounts.deployer)
             .setMinimumPriceDecayHalfLifeSeconds(1)
         )
-          .to.emit(config.minter, "AuctionMinHalfLifeSecondsUpdated")
+          .to.emit(
+            await ethers.getContractFactory("DAExpLib"),
+            "AuctionMinHalfLifeSecondsUpdated"
+          )
           .withArgs(1);
       });
     });
@@ -168,7 +171,10 @@ runForEach.forEach((params) => {
               config.basePrice
             )
         )
-          .to.emit(config.minter, "SetAuctionDetailsExp")
+          .to.emit(
+            await ethers.getContractFactory("DAExpLib"),
+            "SetAuctionDetailsExp"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -192,7 +198,10 @@ runForEach.forEach((params) => {
               config.genArt721Core.address
             )
         )
-          .to.emit(config.minter, "ResetAuctionDetails")
+          .to.emit(
+            await ethers.getContractFactory("DALib"),
+            "ResetAuctionDetails"
+          )
           .withArgs(config.projectZero, config.genArt721Core.address);
       });
     });

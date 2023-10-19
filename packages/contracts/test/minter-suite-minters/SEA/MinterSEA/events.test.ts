@@ -326,7 +326,10 @@ runForEach.forEach((params) => {
               config.genArt721Core.address
             )
         )
-          .to.emit(config.minter, "ResetAuctionDetails")
+          .to.emit(
+            await ethers.getContractFactory("DALib"),
+            "ResetAuctionDetails"
+          )
           .withArgs(config.projectZero, config.genArt721Core.address);
       });
     });

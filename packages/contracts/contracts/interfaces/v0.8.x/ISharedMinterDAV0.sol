@@ -4,12 +4,6 @@
 pragma solidity ^0.8.0;
 
 interface ISharedMinterDAV0 {
-    /// Auction details cleared for project `projectId`.
-    event ResetAuctionDetails(
-        uint256 indexed _projectId,
-        address indexed _coreContract
-    );
-
     // @dev return variables left unnamed because specific minter
     // implementations may return different values for the same slots
     function projectAuctionParameters(
