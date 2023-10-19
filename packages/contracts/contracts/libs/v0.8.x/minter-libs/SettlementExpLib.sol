@@ -396,7 +396,7 @@ library SettlementExpLib {
                 );
             // snap chalkline on the number of tokens to be auctioned on this
             // minter
-            // @dev ackgnowledge that this value may be stale if the core
+            // @dev acknowledge that this value may be stale if the core
             // contract's max invocations were reduced since the last time
             // the minter's max invocations were updated, but that is desired.
             // That case would be classified as "funny business", so we want
