@@ -330,7 +330,10 @@ runForEach.forEach((params) => {
               value: config.startingPrice,
             })
         )
-          .to.emit(config.minter, "ReceiptUpdated")
+          .to.emit(
+            await ethers.getContractFactory("SettlementExpLib"),
+            "ReceiptUpdated"
+          )
           .withArgs(
             config.accounts.user.address,
             config.projectZero,
@@ -346,7 +349,10 @@ runForEach.forEach((params) => {
               value: config.startingPrice,
             })
         )
-          .to.emit(config.minter, "ReceiptUpdated")
+          .to.emit(
+            await ethers.getContractFactory("SettlementExpLib"),
+            "ReceiptUpdated"
+          )
           .withArgs(
             config.accounts.user.address,
             config.projectZero,
@@ -369,7 +375,10 @@ runForEach.forEach((params) => {
               value: config.startingPrice,
             })
         )
-          .to.emit(config.minter, "ReceiptUpdated")
+          .to.emit(
+            await ethers.getContractFactory("SettlementExpLib"),
+            "ReceiptUpdated"
+          )
           .withArgs(
             config.accounts.user.address,
             config.projectZero,
@@ -385,7 +394,10 @@ runForEach.forEach((params) => {
               value: config.startingPrice,
             })
         )
-          .to.emit(config.minter, "ReceiptUpdated")
+          .to.emit(
+            await ethers.getContractFactory("SettlementExpLib"),
+            "ReceiptUpdated"
+          )
           .withArgs(
             config.accounts.user.address,
             config.projectZero,
@@ -412,7 +424,10 @@ runForEach.forEach((params) => {
               config.genArt721Core.address
             )
         )
-          .to.emit(config.minter, "ReceiptUpdated")
+          .to.emit(
+            await ethers.getContractFactory("SettlementExpLib"),
+            "ReceiptUpdated"
+          )
           .withArgs(
             config.accounts.user.address,
             config.projectZero,
@@ -446,7 +461,10 @@ runForEach.forEach((params) => {
               [config.genArt721Core.address, newCore.address]
             )
         )
-          .to.emit(config.minter, "ReceiptUpdated")
+          .to.emit(
+            await ethers.getContractFactory("SettlementExpLib"),
+            "ReceiptUpdated"
+          )
           .withArgs(
             config.accounts.user.address,
             config.projectZero,
@@ -454,7 +472,10 @@ runForEach.forEach((params) => {
             1, // one sale
             selloutPrice // actual amount due (not necessarily posted amount)
           )
-          .and.to.emit(config.minter, "ReceiptUpdated")
+          .and.to.emit(
+            await ethers.getContractFactory("SettlementExpLib"),
+            "ReceiptUpdated"
+          )
           .withArgs(
             config.accounts.user.address,
             config.projectOne,

@@ -4,6 +4,7 @@
 import "./MaxInvocationsLib.sol";
 import "./DAExpLib.sol";
 import "./SplitFundsLib.sol";
+import {GenericMinterEventsLib} from "./GenericMinterEventsLib.sol";
 
 import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
 
@@ -20,6 +21,19 @@ pragma solidity ^0.8.0;
 
 library SettlementExpLib {
     using SafeCast for uint256;
+    /// receipt has an updated state
+    event ReceiptUpdated(
+        address indexed _purchaser,
+        uint256 indexed _projectId,
+        address indexed _coreContract,
+        uint24 _numPurchased,
+        uint256 _netPosted
+    );
+
+    // position of Settlement Exp Lib storage, using a diamond storage pattern
+    // for this library
+    bytes32 constant SETTLEMENT_EXP_LIB_STORAGE_POSITION =
+        keccak256("settlementExpLib.storage");
 
     bytes32 internal constant CONFIG_CURRENT_SETTLED_PRICE =
         "currentSettledPrice";
@@ -67,6 +81,12 @@ library SettlementExpLib {
         uint24 numPurchased;
     }
 
+    // Diamond storage pattern is used in this library
+    struct SettlementExpLibStorage {
+        mapping(address coreContract => mapping(uint256 projectId => SettlementAuctionProjectConfig)) settlementAuctionProjectConfigs;
+        mapping(address walletAddress => mapping(address coreContract => mapping(uint256 projectId => Receipt))) receipts;
+    }
+
     /**
      * This function updates the _receipt to include `msg.value` and increments
      * the number of tokens purchased by 1. It then checks that the updated
@@ -75,20 +95,29 @@ library SettlementExpLib {
      * The new receipt net posted and num purchased are then returned to make
      * the values available in a gas-efficient manner to the caller of this
      * function.
-     * @param _receipt Receipt struct for the user on the project being checked
+     * @param _walletAddress Address of user to update receipt for
+     * @param _projectId Project ID to update receipt for
+     * @param _coreContract Core contract address
      * @param _currentPriceInWei current price of token in Wei
      * @return netPosted total funds posted by user on project (that have not
      * been yet settled), including the current transaction
      * @return numPurchased total number of tokens purchased by user on
      * project, including the current transaction
      */
-    function validateReceiptEffects(
-        Receipt storage _receipt,
+    function _validateReceiptEffects(
+        address _walletAddress,
+        uint256 _projectId,
+        address _coreContract,
         uint256 _currentPriceInWei
-    ) internal returns (uint232 netPosted, uint24 numPurchased) {
+    ) private returns (uint232 netPosted, uint24 numPurchased) {
+        Receipt storage receipt = getReceipt({
+            _walletAddress: _walletAddress,
+            _projectId: _projectId,
+            _coreContract: _coreContract
+        });
         // in memory copy + update
-        netPosted = (_receipt.netPosted + msg.value).toUint232();
-        numPurchased = _receipt.numPurchased + 1;
+        netPosted = (receipt.netPosted + msg.value).toUint232();
+        numPurchased = receipt.numPurchased + 1;
 
         // require sufficient payment on project
         require(
@@ -99,8 +128,17 @@ library SettlementExpLib {
         // update Receipt in storage
         // @dev overflow checks are not required since the added values cannot
         // be enough to overflow due to maximum invocations or supply of ETH
-        _receipt.netPosted = netPosted;
-        _receipt.numPurchased = numPurchased;
+        receipt.netPosted = netPosted;
+        receipt.numPurchased = numPurchased;
+
+        // emit event indicating new receipt state
+        emit ReceiptUpdated({
+            _purchaser: msg.sender,
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _numPurchased: numPurchased,
+            _netPosted: netPosted
+        });
     }
 
     /**
@@ -118,12 +156,17 @@ library SettlementExpLib {
     function adminEmergencyReduceSelloutPrice(
         uint256 _projectId,
         address _coreContract,
-        uint112 _newSelloutPrice,
-        SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig
+        uint112 _newSelloutPrice
     ) internal {
         // CHECKS
+        // load the project's settlement auction config
+        SettlementAuctionProjectConfig
+            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig(
+                _projectId,
+                _coreContract
+            );
         require(
-            !_settlementAuctionProjectConfig.auctionRevenuesCollected,
+            !settlementAuctionProjectConfig.auctionRevenuesCollected,
             "Only before revenues collected"
         );
 
@@ -146,7 +189,7 @@ library SettlementExpLib {
         // check will fail.
         require(
             _newSelloutPrice <
-                _settlementAuctionProjectConfig.latestPurchasePrice,
+                settlementAuctionProjectConfig.latestPurchasePrice,
             "May only reduce sellout price"
         );
         // ensure _newSelloutPrice is non-zero
@@ -155,7 +198,14 @@ library SettlementExpLib {
         // @dev no coverage else branch of following line because redundant
         require(_newSelloutPrice > 0, "Only sellout prices > 0");
         // EFFECTS
-        _settlementAuctionProjectConfig.latestPurchasePrice = _newSelloutPrice;
+        settlementAuctionProjectConfig.latestPurchasePrice = _newSelloutPrice;
+
+        emit GenericMinterEventsLib.ConfigValueSet(
+            _projectId,
+            _coreContract,
+            CONFIG_CURRENT_SETTLED_PRICE,
+            uint256(_newSelloutPrice)
+        );
     }
 
     /**
@@ -167,19 +217,20 @@ library SettlementExpLib {
      * revenues distributed, and will revert if underflow occurs.
      * @param _projectId Project ID to get revenues for
      * @param _coreContract Core contract address
-     * @param _settlementAuctionProjectConfig SettlementAuctionProjectConfig
-     * struct for the project.
-     * @return settledPriceUpdated whether or not the project's settled price
-     * was updated during this function call.
      */
     function distributeArtistAndAdminRevenues(
         uint256 _projectId,
-        address _coreContract,
-        SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig
-    ) internal returns (bool settledPriceUpdated) {
+        address _coreContract
+    ) internal {
+        // load the project's settlement auction config
+        SettlementAuctionProjectConfig
+            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig(
+                _projectId,
+                _coreContract
+            );
         // require revenues to not have already been collected
         require(
-            !_settlementAuctionProjectConfig.auctionRevenuesCollected,
+            !settlementAuctionProjectConfig.auctionRevenuesCollected,
             "Revenues already collected"
         );
         // refresh max invocations, updating any local values that are
@@ -192,7 +243,7 @@ library SettlementExpLib {
         // @dev we use _getPriceUnsafe here, since we just safely synced the
         // project's max invocations and maxHasBeenInvoked, which guarantees
         // an accurate price calculation from _getPriceUnsafe, while being
-        // more gas efficient than _getPriceSafe.
+        // more gas efficient than getPriceSafe.
         // @dev price is guaranteed <= _projectConfig.latestPurchasePrice,
         // since this minter enforces monotonically decreasing purchase prices.
         // @dev we can trust maxHasBeenInvoked, since we just
@@ -205,7 +256,6 @@ library SettlementExpLib {
         uint256 _price = getPriceUnsafe({
             _projectId: _projectId,
             _coreContract: _coreContract,
-            _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
             _maxHasBeenInvoked: maxHasBeenInvoked
         });
         // if the price is not base price, require that the auction have
@@ -228,19 +278,28 @@ library SettlementExpLib {
             // EFFECTS
             // @dev base price value was just loaded from uint112 in storage,
             // so no safe cast required
-            _settlementAuctionProjectConfig.latestPurchasePrice = uint112(
+            settlementAuctionProjectConfig.latestPurchasePrice = uint112(
                 basePrice
             );
-            settledPriceUpdated = true;
+            // notify indexing service of settled price update
+            // @dev acknowledge that this event may be emitted prior to
+            // other state updates in this function, but that is okay because
+            // the settled price is the only value updated with this event
+            emit GenericMinterEventsLib.ConfigValueSet(
+                _projectId,
+                _coreContract,
+                CONFIG_CURRENT_SETTLED_PRICE,
+                basePrice
+            );
         }
-        _settlementAuctionProjectConfig.auctionRevenuesCollected = true;
+        settlementAuctionProjectConfig.auctionRevenuesCollected = true;
         // calculate the artist and admin revenues
-        uint256 netRevenues = _settlementAuctionProjectConfig
+        uint256 netRevenues = settlementAuctionProjectConfig
             .numSettleableInvocations * _price;
 
         // reduce project balance by the amount of ETH being distributed
         // @dev underflow checked automatically in solidity ^0.8
-        _settlementAuctionProjectConfig.projectBalance -= netRevenues
+        settlementAuctionProjectConfig.projectBalance -= netRevenues
             .toUint112();
 
         // INTERACTIONS
@@ -249,28 +308,205 @@ library SettlementExpLib {
             _valueInWei: netRevenues,
             _coreContract: _coreContract
         });
-        // @dev (settledPriceUpdated) is returned
+
+        emit GenericMinterEventsLib.ConfigValueSet(
+            _projectId,
+            _coreContract,
+            CONFIG_AUCTION_REVENUES_COLLECTED,
+            true
+        );
     }
 
     /**
-     *
-     * @param _settlementAuctionProjectConfig SettlementAuctionProjectConfig
-     * struct for the project.
-     * Reverts if no purchases have been made on the project by the collector
-     * being checked.
-     * @param _receipt Receipt struct for the collector on the project being
-     * checked
+     * @notice Reclaims excess settlement funds for purchaser wallet
+     * `_purchaserAddress` on project `_projectId`. Excess settlement funds are
+     * the amount of funds posted by the purchaser that are in excess of the
+     * amount required to settle the purchaser's tokens on the project.
+     * Excess settlement funds are sent to address `_to`, and function reverts
+     * if send fails.
+     * @param _projectId Project ID to reclaim excess settlement funds for
+     * @param _coreContract Core contract address
+     * @param _purchaserAddress Address to reclaim excess settlement funds for
+     * @param _to Address to send excess settlement funds to
+     */
+    function reclaimProjectExcessSettlementFundsTo(
+        address payable _to,
+        uint256 _projectId,
+        address _coreContract,
+        address _purchaserAddress
+    ) internal {
+        (
+            uint256 excessSettlementFunds,
+            uint256 requiredAmountPosted
+        ) = getProjectExcessSettlementFunds({
+                _projectId: _projectId,
+                _coreContract: _coreContract,
+                _walletAddress: _purchaserAddress
+            });
+
+        SettlementAuctionProjectConfig
+            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig({
+                _projectId: _projectId,
+                _coreContract: _coreContract
+            });
+        Receipt storage receipt = getReceipt({
+            _walletAddress: _purchaserAddress,
+            _coreContract: _coreContract,
+            _projectId: _projectId
+        });
+
+        uint232 newNetPosted = requiredAmountPosted.toUint232();
+        receipt.netPosted = newNetPosted;
+
+        // reduce project balance by the amount of ETH being distributed
+        // @dev underflow checked automatically in solidity ^0.8
+        settlementAuctionProjectConfig.projectBalance -= excessSettlementFunds
+            .toUint112();
+
+        emit ReceiptUpdated({
+            _purchaser: _purchaserAddress,
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _numPurchased: receipt.numPurchased,
+            _netPosted: newNetPosted
+        });
+
+        // INTERACTIONS
+        bool success_;
+        (success_, ) = _to.call{value: excessSettlementFunds}("");
+        require(success_, "Reclaiming failed");
+    }
+
+    /**
+     * @notice Performs updates to project state prior to a mint being
+     * initiated, during a purchase transaction. Specifically, this increments
+     * the project's balance by the amount of funds sent with the transaction,
+     * updates the purchaser's receipt to reflect the new funds posted, checks
+     * that the updated receipt has sufficient funds posted for the number of
+     * tokens to be purchased after this transaction, and updates the project's
+     * latest purchase price to the current price of the token.
+     * Reverts if insuffient funds have been posted for the number of tokens to
+     * be purchased after this transaction.
+     * @param _projectId Project ID to perform the pre-mint effects for
+     * @param _coreContract Core contract address
+     * @param _currentPriceInWei current price of token in Wei
+     * @param _msgValue msg.value sent with mint transaction
+     * @param _purchaserAddress Wallet address of purchaser
+     */
+    function preMintEffects(
+        uint256 _projectId,
+        address _coreContract,
+        uint256 _currentPriceInWei,
+        uint256 _msgValue,
+        address _purchaserAddress
+    ) internal {
+        // load the project's settlement auction config and receipt
+        SettlementAuctionProjectConfig
+            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig(
+                _projectId,
+                _coreContract
+            );
+        // update project balance
+        settlementAuctionProjectConfig.projectBalance += _msgValue.toUint112();
+
+        _validateReceiptEffects({
+            _walletAddress: _purchaserAddress,
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _currentPriceInWei: _currentPriceInWei
+        });
+
+        // update latest purchase price (on this minter) in storage
+        // @dev this is used to enforce monotonically decreasing purchase price
+        // across multiple auctions
+        settlementAuctionProjectConfig.latestPurchasePrice = _currentPriceInWei
+            .toUint112();
+    }
+
+    /**
+     * @notice Performs updates to project state after a mint has been
+     * successfully completed.
+     * Specifically, this function distributes revenues if the auction revenues
+     * have been collected, or increments the number of settleable invocations
+     * if the auction revenues have not been collected.
+     * @param _projectId Project ID to perform post-mint updates for
+     * @param _coreContract Core contract address
+     * @param _currentPriceInWei current price of token in Wei (the value to be
+     * distributed if revenues have been collected)
+     */
+    function postMintInteractions(
+        uint256 _projectId,
+        address _coreContract,
+        uint256 _currentPriceInWei
+    ) internal {
+        // load the project's settlement auction config
+        SettlementAuctionProjectConfig
+            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig(
+                _projectId,
+                _coreContract
+            );
+        if (settlementAuctionProjectConfig.auctionRevenuesCollected) {
+            // if revenues have been collected, split revenues immediately.
+            // @dev note that we are guaranteed to be at auction base price,
+            // since we know we didn't sellout prior to this tx.
+            // note that we don't refund msg.sender here, since a separate
+            // settlement mechanism is provided on this minter, unrelated to
+            // msg.value
+
+            // reduce project balance by the amount of ETH being distributed
+            // @dev specifically, this is not decremented by msg.value, as
+            // msg.sender is not refunded here
+            // @dev underflow checked automatically in solidity ^0.8
+            settlementAuctionProjectConfig.projectBalance -= _currentPriceInWei
+                .toUint112();
+
+            // INTERACTIONS
+            SplitFundsLib.splitRevenuesETHNoRefund({
+                _projectId: _projectId,
+                _valueInWei: _currentPriceInWei,
+                _coreContract: _coreContract
+            });
+        } else {
+            // increment the number of settleable invocations that will be
+            // claimable by the artist and admin once auction is validated.
+            // do not split revenue here since will be claimed at a later time.
+            settlementAuctionProjectConfig.numSettleableInvocations++;
+            // @dev project balance is unaffected because no funds are distributed
+        }
+    }
+
+    /**
+     * @notice Returns the excess settlement funds for purchaser wallet
+     * `_walletAddress` on project `_projectId`. Excess settlement funds are
+     * the amount of funds posted by the purchaser that are in excess of the
+     * amount required to settle the purchaser's tokens on the project.
+     * @param _projectId Project ID to get revenues for
+     * @param _coreContract Core contract address
+     * @param _walletAddress Address to get excess settlement funds for
      * @return excessSettlementFunds excess settlement funds, in wei
      * @return requiredAmountPosted required amount to be posted by user, in wei
      */
     function getProjectExcessSettlementFunds(
-        SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig,
-        Receipt storage _receipt
+        uint256 _projectId,
+        address _coreContract,
+        address _walletAddress
     )
         internal
         view
         returns (uint256 excessSettlementFunds, uint256 requiredAmountPosted)
     {
+        // load the project's settlement auction config
+        SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfig = getSettlementAuctionProjectConfig(
+                _projectId,
+                _coreContract
+            );
+        // load the user's receipt
+        Receipt storage _receipt = getReceipt({
+            _walletAddress: _walletAddress,
+            _projectId: _projectId,
+            _coreContract: _coreContract
+        });
         // require that a user has purchased at least one token on this project
         uint256 numPurchased = _receipt.numPurchased;
         require(numPurchased > 0, "No purchases made by this address");
@@ -294,11 +530,9 @@ library SettlementExpLib {
      * hasMaxBeenInvoked is stale and returning a false negative.
      * @dev when an accurate price is required regardless of the current state
      * state of the locally cached minter max invocations, use the less gas
-     * efficient function `_getPriceSafe`.
+     * efficient function `getPriceSafe`.
      * @param _projectId Project ID to get price of token for.
      * @param _coreContract Core contract address to get price for.
-     * @param _settlementAuctionProjectConfig SettlementAuctionProjectConfig
-     * struct for the project.
      * @param _maxHasBeenInvoked Bool representing if maxHasBeenInvoked for the
      * project.
      * @return uint256 current price of token in Wei, accurate if minter max
@@ -310,9 +544,14 @@ library SettlementExpLib {
     function getPriceUnsafe(
         uint256 _projectId,
         address _coreContract,
-        SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig,
         bool _maxHasBeenInvoked
     ) internal view returns (uint256) {
+        // load the project's settlement auction config
+        SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfig = getSettlementAuctionProjectConfig(
+                _projectId,
+                _coreContract
+            );
         // return latest purchase price if:
         // - minter is aware of a sold-out auction (without updating max
         // invocation value)
@@ -342,7 +581,7 @@ library SettlementExpLib {
      * even in the case of a stale locally cached minter max invocations.
      * Reverts if auction has not yet started or auction is unconfigured, and
      * auction has not sold out or revenues have not been withdrawn.
-     * @dev This method is less gas efficient than `_getPriceUnsafe`, but is
+     * @dev This method is less gas efficient than `getPriceUnsafe`, but is
      * guaranteed to be accurate.
      * @param _projectId Project ID to get price of token for.
      * @return tokenPriceInWei current price of token in Wei
@@ -352,9 +591,14 @@ library SettlementExpLib {
      */
     function getPriceSafe(
         uint256 _projectId,
-        address _coreContract,
-        SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig
+        address _coreContract
     ) internal view returns (uint256 tokenPriceInWei) {
+        // load the project's settlement auction config
+        SettlementAuctionProjectConfig
+            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig(
+                _projectId,
+                _coreContract
+            );
         // accurately check if project has sold out
         if (
             MaxInvocationsLib.projectMaxHasBeenInvokedSafe({
@@ -364,14 +608,13 @@ library SettlementExpLib {
         ) {
             // max invocations have been reached, return the latest purchased
             // price
-            tokenPriceInWei = _settlementAuctionProjectConfig
+            tokenPriceInWei = settlementAuctionProjectConfig
                 .latestPurchasePrice;
         } else {
             // if not sold out, return the current price via getPriceUnsafe
             tokenPriceInWei = getPriceUnsafe({
                 _projectId: _projectId,
                 _coreContract: _coreContract,
-                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
                 _maxHasBeenInvoked: false // this branch is only reached if max invocations have not been reached
             });
         }
@@ -381,14 +624,21 @@ library SettlementExpLib {
     /**
      * Returns if a new auction's start price is valid, given the current
      * state of the project's settlement auction configuration.
+     * @param _projectId Project ID to check start price for
+     * @param _coreContract Core contract address to check start price for
      * @param _startPrice starting price of new auction, in wei
-     * @param _settlementAuctionProjectConfig SettlementAuctionProjectConfig
-     * struct for the project being configured for a new auction.
      */
     function isValidStartPrice(
-        uint256 _startPrice,
-        SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig
+        uint256 _projectId,
+        address _coreContract,
+        uint256 _startPrice
     ) internal view returns (bool) {
+        // load the project's settlement auction config
+        SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfig = getSettlementAuctionProjectConfig(
+                _projectId,
+                _coreContract
+            );
         // If previous purchases have been made, require monotonically
         // decreasing purchase prices to preserve settlement and revenue
         // claiming logic. Since base price is always non-zero, if
@@ -396,5 +646,48 @@ library SettlementExpLib {
         // made, and startPrice may be set to any value.
         return (_settlementAuctionProjectConfig.latestPurchasePrice == 0 || // never purchased
             _startPrice <= _settlementAuctionProjectConfig.latestPurchasePrice);
+    }
+
+    /**
+     * Loads the SettlementAuctionProjectConfig for a given project and core
+     * contract.
+     * @param _projectId Project Id to get config for
+     * @param _coreContract Core contract address to get config for
+     */
+    function getSettlementAuctionProjectConfig(
+        uint256 _projectId,
+        address _coreContract
+    ) internal view returns (SettlementAuctionProjectConfig storage) {
+        return s().settlementAuctionProjectConfigs[_coreContract][_projectId];
+    }
+
+    /**
+     * Loads the Receipt for a given user, project and core contract.
+     * @param _walletAddress User address to get receipt for
+     * @param _projectId Project Id to get config for
+     * @param _coreContract Core contract address to get config for
+     */
+    function getReceipt(
+        address _walletAddress,
+        uint256 _projectId,
+        address _coreContract
+    ) internal view returns (Receipt storage) {
+        return s().receipts[_walletAddress][_coreContract][_projectId];
+    }
+
+    /**
+     * @notice Return the storage struct for reading and writing. This library
+     * uses a diamond storage pattern when managing storage.
+     * @return storageStruct The SettlementExpLibStorage struct.
+     */
+    function s()
+        internal
+        pure
+        returns (SettlementExpLibStorage storage storageStruct)
+    {
+        bytes32 position = SETTLEMENT_EXP_LIB_STORAGE_POSITION;
+        assembly {
+            storageStruct.slot := position
+        }
     }
 }

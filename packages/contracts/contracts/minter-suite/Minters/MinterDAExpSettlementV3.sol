@@ -102,21 +102,6 @@ contract MinterDAExpSettlementV3 is
     /// minimum of this amount (can cut in half a minimum of every N seconds).
     uint256 public minimumPriceDecayHalfLifeSeconds = 45; // 45 seconds
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SettlementExpLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    mapping(address => mapping(uint256 => SettlementExpLib.SettlementAuctionProjectConfig))
-        private _settlementAuctionProjectConfigMapping;
-
-    /// user address => contractAddress => project ID => receipt
-    mapping(address => mapping(address => mapping(uint256 => SettlementExpLib.Receipt)))
-        private _receiptsMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SettlementExpLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /**
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter` minter filter.
@@ -186,16 +171,12 @@ contract MinterDAExpSettlementV3 is
             _sender: msg.sender
         });
         // CHECKS
-        SettlementExpLib.SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-
         // require valid start price on a settlement minter
         require(
             SettlementExpLib.isValidStartPrice({
-                _startPrice: _startPrice,
-                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig
+                _projectId: _projectId,
+                _coreContract: _coreContract,
+                _startPrice: _startPrice
             }),
             "Only monotonic decreasing price"
         );
@@ -276,9 +257,8 @@ contract MinterDAExpSettlementV3 is
         });
 
         SettlementExpLib.SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
+            storage _settlementAuctionProjectConfig = SettlementExpLib
+                .getSettlementAuctionProjectConfig(_projectId, _coreContract);
 
         // no reset after revenues collected, since that solidifies amount due
         require(
@@ -319,24 +299,11 @@ contract MinterDAExpSettlementV3 is
             _contract: address(this),
             _selector: this.adminEmergencyReduceSelloutPrice.selector
         });
-
-        SettlementExpLib.SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-
         SettlementExpLib.adminEmergencyReduceSelloutPrice({
             _projectId: _projectId,
             _coreContract: _coreContract,
-            _newSelloutPrice: _newSelloutPrice,
-            _settlementAuctionProjectConfig: _settlementAuctionProjectConfig
+            _newSelloutPrice: _newSelloutPrice
         });
-        emit ConfigValueSet(
-            _projectId,
-            _coreContract,
-            SettlementExpLib.CONFIG_CURRENT_SETTLED_PRICE,
-            uint256(_newSelloutPrice)
-        );
     }
 
     /**
@@ -364,39 +331,16 @@ contract MinterDAExpSettlementV3 is
             _selector: this.withdrawArtistAndAdminRevenues.selector
         });
 
-        SettlementExpLib.SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-
         // @dev the following function affects settlement state and marks
-        // revenues as collected. Therefore revenues MUST be subsequently sent
-        // distributed in this call.
+        // revenues as collected, as well as distributes revenues.
         // CHECKS-EFFECTS-INTERACTIONS
         // @dev the following function updates the project's balance and will
         // revert if the project's balance is insufficient to cover the
         // settlement amount (which is expected to not be possible)
-        bool settledPriceUpdated = SettlementExpLib
-            .distributeArtistAndAdminRevenues({
-                _projectId: _projectId,
-                _coreContract: _coreContract,
-                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig
-            });
-        emit ConfigValueSet(
-            _projectId,
-            _coreContract,
-            SettlementExpLib.CONFIG_AUCTION_REVENUES_COLLECTED,
-            true
-        );
-        if (settledPriceUpdated) {
-            // notify indexing service of settled price update
-            emit ConfigValueSet(
-                _projectId,
-                _coreContract,
-                SettlementExpLib.CONFIG_CURRENT_SETTLED_PRICE,
-                uint256(_settlementAuctionProjectConfig.latestPurchasePrice)
-            );
-        }
+        SettlementExpLib.distributeArtistAndAdminRevenues({
+            _projectId: _projectId,
+            _coreContract: _coreContract
+        });
     }
 
     /**
@@ -613,10 +557,9 @@ contract MinterDAExpSettlementV3 is
         address _coreContract
     ) external view returns (uint256 latestPurchasePrice) {
         SettlementExpLib.SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        return _settlementAuctionProjectConfig.latestPurchasePrice;
+            storage settlementAuctionProjectConfig = SettlementExpLib
+                .getSettlementAuctionProjectConfig(_projectId, _coreContract);
+        return settlementAuctionProjectConfig.latestPurchasePrice;
     }
 
     /**
@@ -629,10 +572,9 @@ contract MinterDAExpSettlementV3 is
         address _coreContract
     ) external view returns (uint256 numSettleableInvocations) {
         SettlementExpLib.SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        return _settlementAuctionProjectConfig.numSettleableInvocations;
+            storage settlementAuctionProjectConfig = SettlementExpLib
+                .getSettlementAuctionProjectConfig(_projectId, _coreContract);
+        return settlementAuctionProjectConfig.numSettleableInvocations;
     }
 
     /**
@@ -648,10 +590,9 @@ contract MinterDAExpSettlementV3 is
         address _coreContract
     ) external view returns (uint256 projectBalance) {
         SettlementExpLib.SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        return _settlementAuctionProjectConfig.projectBalance;
+            storage settlementAuctionProjectConfig = SettlementExpLib
+                .getSettlementAuctionProjectConfig(_projectId, _coreContract);
+        return settlementAuctionProjectConfig.projectBalance;
     }
 
     /**
@@ -682,10 +623,6 @@ contract MinterDAExpSettlementV3 is
             address currencyAddress
         )
     {
-        SettlementExpLib.SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         DAExpLib.DAProjectConfig storage auctionProjectConfig = DAExpLib
             .getDAProjectConfig({
                 _projectId: _projectId,
@@ -710,8 +647,7 @@ contract MinterDAExpSettlementV3 is
             // correct for the case of a stale minter max invocation state.
             tokenPriceInWei = SettlementExpLib.getPriceSafe({
                 _projectId: _projectId,
-                _coreContract: _coreContract,
-                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig
+                _coreContract: _coreContract
             });
         }
         currencySymbol = "ETH";
@@ -739,18 +675,11 @@ contract MinterDAExpSettlementV3 is
         // input validation
         require(_walletAddress != address(0), "No zero address");
 
-        SettlementExpLib.SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        SettlementExpLib.Receipt storage _receipt = _receiptsMapping[
-            _walletAddress
-        ][_coreContract][_projectId];
-
         (excessSettlementFundsInWei, ) = SettlementExpLib
             .getProjectExcessSettlementFunds({
-                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
-                _receipt: _receipt
+                _projectId: _projectId,
+                _coreContract: _coreContract,
+                _walletAddress: _walletAddress
             });
         return excessSettlementFundsInWei;
     }
@@ -777,41 +706,12 @@ contract MinterDAExpSettlementV3 is
     ) public nonReentrant {
         require(_to != address(0), "No claiming to the zero address");
 
-        SettlementExpLib.SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        SettlementExpLib.Receipt storage _receipt = _receiptsMapping[
-            msg.sender
-        ][_coreContract][_projectId];
-
-        (
-            uint256 excessSettlementFunds,
-            uint256 requiredAmountPosted
-        ) = SettlementExpLib.getProjectExcessSettlementFunds({
-                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
-                _receipt: _receipt
-            });
-        uint232 newNetPosted = requiredAmountPosted.toUint232();
-        _receipt.netPosted = newNetPosted;
-
-        // reduce project balance by the amount of ETH being distributed
-        // @dev underflow checked automatically in solidity ^0.8
-        _settlementAuctionProjectConfig.projectBalance -= excessSettlementFunds
-            .toUint112();
-
-        emit ReceiptUpdated({
-            _purchaser: msg.sender,
+        SettlementExpLib.reclaimProjectExcessSettlementFundsTo({
+            _to: _to,
             _projectId: _projectId,
             _coreContract: _coreContract,
-            _numPurchased: _receipt.numPurchased,
-            _netPosted: newNetPosted
+            _purchaserAddress: msg.sender
         });
-
-        // INTERACTIONS
-        bool success_;
-        (success_, ) = _to.call{value: excessSettlementFunds}("");
-        require(success_, "Reclaiming failed");
     }
 
     /**
@@ -850,43 +750,13 @@ contract MinterDAExpSettlementV3 is
         // the receipt in storage
         uint256 excessSettlementFunds;
         for (uint256 i; i < projectIdsLength; ) {
-            uint256 projectId = _projectIds[i];
-            address coreContract = _coreContracts[i];
-
-            SettlementExpLib.SettlementAuctionProjectConfig
-                storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
-                    coreContract
-                ][projectId];
-            SettlementExpLib.Receipt storage _receipt = _receiptsMapping[
-                msg.sender
-            ][coreContract][projectId];
-
-            (
-                uint256 excessSettlementFundsForProject,
-                uint256 requiredAmountPosted
-            ) = SettlementExpLib.getProjectExcessSettlementFunds({
-                    _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
-                    _receipt: _receipt
-                });
-            uint232 newNetPosted = requiredAmountPosted.toUint232();
-            _receipt.netPosted = newNetPosted;
-
-            // reduce project balance by the amount of ETH being distributed
-            // @dev underflow checked automatically in solidity ^0.8
-            _settlementAuctionProjectConfig
-                .projectBalance -= excessSettlementFundsForProject.toUint112();
-
-            // increase total excess settlement funds
-            excessSettlementFunds += excessSettlementFundsForProject;
-
-            // emit event indicating new receipt state
-            emit ReceiptUpdated({
-                _purchaser: msg.sender,
-                _projectId: projectId,
-                _coreContract: coreContract,
-                _numPurchased: _receipt.numPurchased,
-                _netPosted: newNetPosted
+            SettlementExpLib.reclaimProjectExcessSettlementFundsTo({
+                _to: _to,
+                _projectId: _projectIds[i],
+                _coreContract: _coreContracts[i],
+                _purchaserAddress: msg.sender
             });
+
             // gas efficiently increment i
             // won't overflow due to for loop, as well as gas limts
             unchecked {
@@ -937,11 +807,6 @@ contract MinterDAExpSettlementV3 is
         address _coreContract
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-        SettlementExpLib.SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-
         // pre-mint MaxInvocationsLib checks
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
@@ -963,37 +828,21 @@ contract MinterDAExpSettlementV3 is
         uint256 currentPriceInWei = SettlementExpLib.getPriceUnsafe({
             _projectId: _projectId,
             _coreContract: _coreContract,
-            _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
             _maxHasBeenInvoked: false // always false due to MaxInvocationsLib.preMintChecks
         });
 
         // EFFECTS
-        // update project balance
-        _settlementAuctionProjectConfig.projectBalance += msg.value.toUint112();
-
-        // update the purchaser's receipt and require sufficient net payment
-        SettlementExpLib.Receipt storage receipt = _receiptsMapping[msg.sender][
-            _coreContract
-        ][_projectId];
-
-        (uint232 netPosted, uint24 numPurchased) = SettlementExpLib
-            .validateReceiptEffects(receipt, currentPriceInWei);
-
-        // emit event indicating new receipt state
-        emit ReceiptUpdated({
-            _purchaser: msg.sender,
+        // update and validate receipts, latest purchase price, and
+        // overall project balance
+        SettlementExpLib.preMintEffects({
             _projectId: _projectId,
             _coreContract: _coreContract,
-            _numPurchased: numPurchased,
-            _netPosted: netPosted
+            _currentPriceInWei: currentPriceInWei,
+            _msgValue: msg.value,
+            _purchaserAddress: msg.sender
         });
 
-        // update latest purchase price (on this minter) in storage
-        // @dev this is used to enforce monotonically decreasing purchase price
-        // across multiple auctions
-        _settlementAuctionProjectConfig.latestPurchasePrice = currentPriceInWei
-            .toUint112();
-
+        // INTERACTIONS
         tokenId = minterFilter.mint_joo({
             _to: _to,
             _projectId: _projectId,
@@ -1008,37 +857,13 @@ contract MinterDAExpSettlementV3 is
             _coreContract
         );
 
-        // INTERACTIONS
-        // @dev this logic is intentionally defined here to avoid a dependency
-        // in SettlementLib on SplitFundsLib, which would increase complexity
-        if (_settlementAuctionProjectConfig.auctionRevenuesCollected) {
-            // if revenues have been collected, split revenues immediately.
-            // @dev note that we are guaranteed to be at auction base price,
-            // since we know we didn't sellout prior to this tx.
-            // note that we don't refund msg.sender here, since a separate
-            // settlement mechanism is provided on this minter, unrelated to
-            // msg.value
-
-            // reduce project balance by the amount of ETH being distributed
-            // @dev specifically, this is not decremented by msg.value, as
-            // msg.sender is not refunded here
-            // @dev underflow checked automatically in solidity ^0.8
-            _settlementAuctionProjectConfig.projectBalance -= currentPriceInWei
-                .toUint112();
-
-            // INTERACTIONS
-            SplitFundsLib.splitRevenuesETHNoRefund({
-                _projectId: _projectId,
-                _valueInWei: currentPriceInWei,
-                _coreContract: _coreContract
-            });
-        } else {
-            // increment the number of settleable invocations that will be
-            // claimable by the artist and admin once auction is validated.
-            // do not split revenue here since will be claimed at a later time.
-            _settlementAuctionProjectConfig.numSettleableInvocations++;
-            // @dev project balance is unaffected because no funds are distributed
-        }
+        // distribute payments if revenues have been collected, or increment
+        // number of settleable invocations if revenues have not been collected
+        SettlementExpLib.postMintInteractions({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _currentPriceInWei: currentPriceInWei
+        });
 
         return tokenId;
     }
