@@ -82,17 +82,6 @@ contract MinterDAExpV5 is
     /// least this amount (must cut in half at least every N seconds).
     uint256 public minimumPriceDecayHalfLifeSeconds = 45; // 45 seconds
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR DAExpLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    mapping(address => mapping(uint256 => DAExpLib.DAProjectConfig))
-        private _auctionProjectConfigMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR DAExpLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /**
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter` minter filter.
@@ -102,7 +91,9 @@ contract MinterDAExpV5 is
     constructor(address _minterFilter) ReentrancyGuard() {
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV1(_minterFilter);
-        emit AuctionMinHalfLifeSecondsUpdated(minimumPriceDecayHalfLifeSeconds);
+        emit DAExpLib.AuctionMinHalfLifeSecondsUpdated(
+            minimumPriceDecayHalfLifeSeconds
+        );
     }
 
     /**
@@ -168,11 +159,6 @@ contract MinterDAExpV5 is
             _sender: msg.sender
         });
         // CHECKS
-        DAExpLib.DAProjectConfig
-            storage _auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-
         require(
             (_priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds),
             "Price decay half life must be greater than min allowable value"
@@ -184,21 +170,13 @@ contract MinterDAExpV5 is
             _coreContract
         );
         DAExpLib.setAuctionDetailsExp({
-            _DAProjectConfig: _auctionProjectConfig,
+            _projectId: _projectId,
+            _coreContract: _coreContract,
             _auctionTimestampStart: _auctionTimestampStart,
             _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
             _startPrice: _startPrice.toUint88(),
             _basePrice: _basePrice.toUint88(),
             _allowReconfigureAfterStart: maxHasBeenInvoked
-        });
-
-        emit SetAuctionDetailsExp({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _auctionTimestampStart: _auctionTimestampStart,
-            _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
-            _startPrice: _startPrice,
-            _basePrice: _basePrice
         });
 
         // sync local max invocations if not initially populated
@@ -235,7 +213,7 @@ contract MinterDAExpV5 is
         );
         minimumPriceDecayHalfLifeSeconds = _minimumPriceDecayHalfLifeSeconds;
 
-        emit AuctionMinHalfLifeSecondsUpdated(
+        emit DAExpLib.AuctionMinHalfLifeSecondsUpdated(
             _minimumPriceDecayHalfLifeSeconds
         );
     }
@@ -258,9 +236,10 @@ contract MinterDAExpV5 is
             _selector: this.resetAuctionDetails.selector
         });
 
-        delete _auctionProjectConfigMapping[_coreContract][_projectId];
-
-        emit ResetAuctionDetails(_projectId, _coreContract);
+        DAExpLib.resetAuctionDetails({
+            _projectId: _projectId,
+            _coreContract: _coreContract
+        });
     }
 
     /**
@@ -331,10 +310,8 @@ contract MinterDAExpV5 is
             uint256 basePrice
         )
     {
-        DAExpLib.DAProjectConfig
-            storage _auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
+        DAExpLib.DAProjectConfig storage _auctionProjectConfig = DAExpLib
+            .getDAProjectConfig(_projectId, _coreContract);
         timestampStart = _auctionProjectConfig.timestampStart;
         priceDecayHalfLifeSeconds = _auctionProjectConfig
             .priceDecayHalfLifeSeconds;
@@ -442,10 +419,8 @@ contract MinterDAExpV5 is
             address currencyAddress
         )
     {
-        DAExpLib.DAProjectConfig
-            storage auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
+        DAExpLib.DAProjectConfig storage auctionProjectConfig = DAExpLib
+            .getDAProjectConfig(_projectId, _coreContract);
         isConfigured = (auctionProjectConfig.startPrice > 0);
         if (!isConfigured) {
             // In the case of unconfigured auction, return price of zero when
@@ -457,7 +432,10 @@ contract MinterDAExpV5 is
             // before auction starts.
             tokenPriceInWei = auctionProjectConfig.startPrice;
         } else {
-            tokenPriceInWei = DAExpLib.getPriceExp(auctionProjectConfig);
+            tokenPriceInWei = DAExpLib.getPriceExp({
+                _projectId: _projectId,
+                _coreContract: _coreContract
+            });
         }
         currencySymbol = "ETH";
         currencyAddress = address(0);
@@ -504,12 +482,6 @@ contract MinterDAExpV5 is
         address _coreContract
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-
-        DAExpLib.DAProjectConfig
-            storage _auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-
         // pre-mint MaxInvocationsLib checks
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
@@ -520,9 +492,10 @@ contract MinterDAExpV5 is
         MaxInvocationsLib.preMintChecks(_projectId, _coreContract);
 
         // getPriceExp reverts if auction is unconfigured or has not started
-        uint256 pricePerTokenInWei = DAExpLib.getPriceExp(
-            _auctionProjectConfig
-        );
+        uint256 pricePerTokenInWei = DAExpLib.getPriceExp({
+            _projectId: _projectId,
+            _coreContract: _coreContract
+        });
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
         // EFFECTS

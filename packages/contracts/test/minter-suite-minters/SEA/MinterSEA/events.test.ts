@@ -169,7 +169,10 @@ runForEach.forEach((params) => {
               .connect(config.accounts.deployer)
               .updateMinterTimeBufferSeconds(60)
           )
-            .to.emit(config.minter, "MinterTimeBufferUpdated")
+            .to.emit(
+              await ethers.getContractFactory("SEALib"),
+              "MinterTimeBufferUpdated"
+            )
             .withArgs(60);
         });
       });
@@ -182,7 +185,10 @@ runForEach.forEach((params) => {
               .connect(config.accounts.deployer)
               .updateRefundGasLimit(45_000)
           )
-            .to.emit(config.minter, "MinterRefundGasLimitUpdated")
+            .to.emit(
+              await ethers.getContractFactory("SEALib"),
+              "MinterRefundGasLimitUpdated"
+            )
             .withArgs(45_000);
         });
       });
@@ -203,7 +209,10 @@ runForEach.forEach((params) => {
               config.bidIncrementPercentage
             )
         )
-          .to.emit(config.minter, "ConfiguredFutureAuctions")
+          .to.emit(
+            await ethers.getContractFactory("SEALib"),
+            "ConfiguredFutureAuctions"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -243,7 +252,10 @@ runForEach.forEach((params) => {
               value: config.basePrice.add(1), // ensure actual bid amount is emitted, not base price
             })
         )
-          .to.emit(config.minter, "AuctionInitialized")
+          .to.emit(
+            await ethers.getContractFactory("SEALib"),
+            "AuctionInitialized"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -261,7 +273,7 @@ runForEach.forEach((params) => {
               value: config.basePrice.mul(2),
             })
         )
-          .to.emit(config.minter, "AuctionBid")
+          .to.emit(await ethers.getContractFactory("SEALib"), "AuctionBid")
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -294,7 +306,7 @@ runForEach.forEach((params) => {
             .connect(config.accounts.user)
             .settleAuction(targetToken, config.genArt721Core.address)
         )
-          .to.emit(config.minter, "AuctionSettled")
+          .to.emit(await ethers.getContractFactory("SEALib"), "AuctionSettled")
           .withArgs(
             targetToken,
             config.genArt721Core.address,
@@ -326,7 +338,10 @@ runForEach.forEach((params) => {
               config.genArt721Core.address
             )
         )
-          .to.emit(config.minter, "ResetAuctionDetails")
+          .to.emit(
+            await ethers.getContractFactory("SEALib"),
+            "ResetAuctionDetails"
+          )
           .withArgs(config.projectZero, config.genArt721Core.address);
       });
     });
@@ -350,7 +365,10 @@ runForEach.forEach((params) => {
               config.bidIncrementPercentage
             )
         )
-          .to.emit(config.minter, "ProjectNextTokenUpdated")
+          .to.emit(
+            await ethers.getContractFactory("SEALib"),
+            "ProjectNextTokenUpdated"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -392,7 +410,10 @@ runForEach.forEach((params) => {
               config.accounts.artist.address
             )
         )
-          .to.emit(config.minter, "ProjectNextTokenEjected")
+          .to.emit(
+            await ethers.getContractFactory("SEALib"),
+            "ProjectNextTokenEjected"
+          )
           .withArgs(config.projectZero, config.genArt721Core.address);
       });
     });

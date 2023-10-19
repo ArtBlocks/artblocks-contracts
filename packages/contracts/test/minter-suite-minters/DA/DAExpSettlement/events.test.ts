@@ -154,7 +154,10 @@ runForEach.forEach((params) => {
             .connect(config.accounts.deployer)
             .setMinimumPriceDecayHalfLifeSeconds(1)
         )
-          .to.emit(config.minter, "AuctionMinHalfLifeSecondsUpdated")
+          .to.emit(
+            await ethers.getContractFactory("DAExpLib"),
+            "AuctionMinHalfLifeSecondsUpdated"
+          )
           .withArgs(1);
       });
     });
@@ -174,7 +177,10 @@ runForEach.forEach((params) => {
               config.basePrice
             )
         )
-          .to.emit(config.minter, "SetAuctionDetailsExp")
+          .to.emit(
+            await ethers.getContractFactory("DAExpLib"),
+            "SetAuctionDetailsExp"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -198,39 +204,15 @@ runForEach.forEach((params) => {
               config.genArt721Core.address
             )
         )
-          .to.emit(config.minter, "ResetAuctionDetails")
+          .to.emit(
+            await ethers.getContractFactory("DALib"),
+            "ResetAuctionDetails"
+          )
           .withArgs(config.projectZero, config.genArt721Core.address);
       });
     });
 
     describe("Generic: SelloutPriceUpdated", async function () {
-      it("emits when admin emergency updates sellout price", async function () {
-        const config = await loadFixture(_beforeEach);
-        await configureProjectZeroAuctionAndSellout(config);
-        // expect no revert
-        // @dev target a unique sellout price value
-        const targetNewSelloutPrice = config.basePrice.add(1);
-        await expect(
-          config.minter
-            .connect(config.accounts.deployer)
-            .adminEmergencyReduceSelloutPrice(
-              config.projectZero,
-              config.genArt721Core.address,
-              targetNewSelloutPrice
-            )
-        )
-          .to.emit(
-            config.minter,
-            "ConfigValueSet(uint256,address,bytes32,uint256)"
-          )
-          .withArgs(
-            config.projectZero,
-            config.genArt721Core.address,
-            ethers.utils.formatBytes32String("currentSettledPrice"),
-            targetNewSelloutPrice
-          );
-      });
-
       it("emits during withdrawArtistAndAdminRevenues when sellout price is updated (to base price, no sellout)", async function () {
         const config = await loadFixture(_beforeEach);
         // artist configures auction
@@ -321,7 +303,10 @@ runForEach.forEach((params) => {
               value: config.startingPrice,
             })
         )
-          .to.emit(config.minter, "ReceiptUpdated")
+          .to.emit(
+            await ethers.getContractFactory("SettlementExpLib"),
+            "ReceiptUpdated"
+          )
           .withArgs(
             config.accounts.user.address,
             config.projectZero,
@@ -337,7 +322,10 @@ runForEach.forEach((params) => {
               value: config.startingPrice,
             })
         )
-          .to.emit(config.minter, "ReceiptUpdated")
+          .to.emit(
+            await ethers.getContractFactory("SettlementExpLib"),
+            "ReceiptUpdated"
+          )
           .withArgs(
             config.accounts.user.address,
             config.projectZero,
@@ -360,7 +348,10 @@ runForEach.forEach((params) => {
               value: config.startingPrice,
             })
         )
-          .to.emit(config.minter, "ReceiptUpdated")
+          .to.emit(
+            await ethers.getContractFactory("SettlementExpLib"),
+            "ReceiptUpdated"
+          )
           .withArgs(
             config.accounts.user.address,
             config.projectZero,
@@ -376,7 +367,10 @@ runForEach.forEach((params) => {
               value: config.startingPrice,
             })
         )
-          .to.emit(config.minter, "ReceiptUpdated")
+          .to.emit(
+            await ethers.getContractFactory("SettlementExpLib"),
+            "ReceiptUpdated"
+          )
           .withArgs(
             config.accounts.user.address,
             config.projectZero,
@@ -403,7 +397,10 @@ runForEach.forEach((params) => {
               config.genArt721Core.address
             )
         )
-          .to.emit(config.minter, "ReceiptUpdated")
+          .to.emit(
+            await ethers.getContractFactory("SettlementExpLib"),
+            "ReceiptUpdated"
+          )
           .withArgs(
             config.accounts.user.address,
             config.projectZero,
@@ -437,7 +434,10 @@ runForEach.forEach((params) => {
               [config.genArt721Core.address, newCore.address]
             )
         )
-          .to.emit(config.minter, "ReceiptUpdated")
+          .to.emit(
+            await ethers.getContractFactory("SettlementExpLib"),
+            "ReceiptUpdated"
+          )
           .withArgs(
             config.accounts.user.address,
             config.projectZero,
@@ -445,7 +445,10 @@ runForEach.forEach((params) => {
             1, // one sale
             selloutPrice // actual amount due (not necessarily posted amount)
           )
-          .and.to.emit(config.minter, "ReceiptUpdated")
+          .and.to.emit(
+            await ethers.getContractFactory("SettlementExpLib"),
+            "ReceiptUpdated"
+          )
           .withArgs(
             config.accounts.user.address,
             config.projectOne,
@@ -518,28 +521,6 @@ runForEach.forEach((params) => {
         );
       });
 
-      // @dev don't think it is possible to test case where adminEmergencyReduceSelloutPrice ends up emitting event here
-
-      it("does not emit during adminEmergencyReduceSelloutPrice when minter-local max invocations are not updated", async function () {
-        const config = await loadFixture(_beforeEach);
-        await configureProjectZeroAuctionAndSellout(config);
-        // @dev target a unique sellout price value
-        const targetNewSelloutPrice = config.basePrice.add(1);
-        await expect(
-          config.minter
-            .connect(config.accounts.deployer)
-            .adminEmergencyReduceSelloutPrice(
-              config.projectZero,
-              config.genArt721Core.address,
-              targetNewSelloutPrice
-            )
-        ).to.not.emit(
-          // event is defined in MaxInvocationsLib
-          await ethers.getContractFactory("MaxInvocationsLib"),
-          "ProjectMaxInvocationsLimitUpdated"
-        );
-      });
-
       it("emits during withdrawArtistAndAdminRevenues when minter-local max invocations are updated", async function () {
         const config = await loadFixture(_beforeEach);
         // artist configures auction
@@ -550,20 +531,63 @@ runForEach.forEach((params) => {
           .purchase(config.projectZero, config.genArt721Core.address, {
             value: config.startingPrice,
           });
-        // artist reduces max invocations to 1 on core contract
+        // artist reduces max invocations to 1 on core contract AFTER initial purchase
         await config.genArt721Core
           .connect(config.accounts.artist)
           .updateProjectMaxInvocations(config.projectZero, 1);
         // expect call to emit event
+        // @dev deployer must call because reducing max invocations on core contract
+        // after configuring auction qualifies as "funny business"
         await expect(
           config.minter
-            .connect(config.accounts.artist)
+            .connect(config.accounts.deployer)
             .withdrawArtistAndAdminRevenues(
               config.projectZero,
               config.genArt721Core.address
             )
         )
           .to.emit(
+            // event is defined in MaxInvocationsLib
+            await ethers.getContractFactory("MaxInvocationsLib"),
+            "ProjectMaxInvocationsLimitUpdated"
+          )
+          .withArgs(config.projectZero, config.genArt721Core.address, 1);
+      });
+
+      it("emits during first purchase when minter-local max invocations are updated", async function () {
+        const config = await loadFixture(_beforeEach);
+        // artist configures auction
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // artist reduces max invocations to 1 on core contract AFTER initial purchase
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 1);
+        // user purchases, and event is emitted
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address, {
+              value: config.startingPrice,
+            })
+        )
+          .to.emit(
+            // event is defined in MaxInvocationsLib
+            await ethers.getContractFactory("MaxInvocationsLib"),
+            "ProjectMaxInvocationsLimitUpdated"
+          )
+          .withArgs(config.projectZero, config.genArt721Core.address, 1);
+        // expect call to NOT emit event, since it was updated during initial purchase
+        // @dev deployer must call because reducing max invocations on core contract
+        // after configuring auction qualifies as "funny business"
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .withdrawArtistAndAdminRevenues(
+              config.projectZero,
+              config.genArt721Core.address
+            )
+        )
+          .to.not.emit(
             // event is defined in MaxInvocationsLib
             await ethers.getContractFactory("MaxInvocationsLib"),
             "ProjectMaxInvocationsLimitUpdated"

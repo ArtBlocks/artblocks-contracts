@@ -90,4 +90,5 @@ export const revertMessages = {
   arrayLengthsMatch: "Array lengths must match",
   refundFailed: "Refund failed",
   renderProviderPaymentFailed: "Render Provider payment failed",
+  onlyBeforePurchases: "Only before purchases",
 };
