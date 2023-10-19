@@ -161,3 +161,45 @@ Date: 2023-10-19T21:56:32.810Z
 
 ---
 
+
+# Minter Deployment
+
+Date: 2023-10-19T22:04:38.573Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/proof-flex/minter-deploy-config.mainnet.ts`
+
+**MinterSetPriceV4:** https://etherscan.io/address/0x5F488A081EC066687382b992391446B8082B0EA9#code
+
+**Associated core contract:** 0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d
+
+**Associated minter filter:** 0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79
+
+**Deployment Args:** 0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d,0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79
+
+---
+
+
+# Minter Deployment
+
+Date: 2023-10-19T22:05:24.971Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/proof-flex/minter-deploy-config.mainnet.ts`
+
+**MinterMerkleV5:** https://etherscan.io/address/0xbDDd9a4131c05Fec76eAB9F89ef849cC1D018E8F#code
+
+**Associated core contract:** 0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d
+
+**Associated minter filter:** 0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79
+
+**Deployment Args:** 0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d,0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79,0x00000000000076A84feF008CDAbe6409d2FE638B
+
+---
+
