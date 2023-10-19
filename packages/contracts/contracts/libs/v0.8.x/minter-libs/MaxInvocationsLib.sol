@@ -232,10 +232,7 @@ library MaxInvocationsLib {
         (
             uint256 coreInvocations,
             uint256 coreMaxInvocations
-        ) = MaxInvocationsLib.coreContractInvocationData(
-                _projectId,
-                _coreContract
-            );
+        ) = coreContractInvocationData(_projectId, _coreContract);
         // load minter-local max invocations into memory
         MaxInvocationsProjectConfig
             storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
@@ -334,8 +331,10 @@ library MaxInvocationsLib {
         // get max invocations from core contract
         uint256 coreInvocations;
         uint256 coreMaxInvocations;
-        (coreInvocations, coreMaxInvocations) = MaxInvocationsLib
-            .coreContractInvocationData(_projectId, _coreContract);
+        (coreInvocations, coreMaxInvocations) = coreContractInvocationData(
+            _projectId,
+            _coreContract
+        );
 
         MaxInvocationsProjectConfig
             storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
@@ -397,8 +396,10 @@ library MaxInvocationsLib {
             // if local max invocations were already populated, validate the local state
             uint256 coreMaxInvocations;
             uint256 coreInvocations;
-            (coreInvocations, coreMaxInvocations) = MaxInvocationsLib
-                .coreContractInvocationData(_projectId, _coreContract);
+            (coreInvocations, coreMaxInvocations) = coreContractInvocationData(
+                _projectId,
+                _coreContract
+            );
 
             uint256 localMaxInvocations = maxInvocationsProjectConfig
                 .maxInvocations;

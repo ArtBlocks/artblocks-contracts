@@ -4,6 +4,7 @@
 import "./MaxInvocationsLib.sol";
 import "./DAExpLib.sol";
 import "./SplitFundsLib.sol";
+import "../AuthLib.sol";
 import {GenericMinterEventsLib} from "./GenericMinterEventsLib.sol";
 
 import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
@@ -56,19 +57,30 @@ library SettlementExpLib {
         // In that case, the new auction will be required to have a starting
         // price less than or equal to this value, if one or more purchases
         // have been made on this minter.
-        // @dev max uint112 allows for > 1e15 ETH
-        // (one-hundred-trillion ETH is much more than max supply)
-        // This enables struct packing, and is consistent with prices value
-        // limits in DAExpLib's DAProjectConfig struct.
-        uint112 latestPurchasePrice;
+        // @dev max uint88 ~= 3e26 Wei = ~300 million ETH, which is well above
+        // the expected prices of any NFT mint in the foreseeable future.
+        // This enables struct packing.
+        uint88 latestPurchasePrice;
         // Track per-project fund balance, in wei. This is used as a redundant
         // backstop to prevent one project from draining the minter's balance
         // of ETH from other projects, which is a worthwhile failsafe on this
         // shared minter.
-        // @dev maxuint112 allows for > 1e15 ETH
-        // (one-hundred-trillion ETH is much more than max supply)
+        // @dev max uint88 ~= 3e26 Wei = ~300 million ETH, which is well above
+        // the expected revenues for a single auction.
         // This enables struct packing.
-        uint112 projectBalance;
+        uint88 projectBalance;
+        // field to store the number of purchases that have been made on the
+        // project, on this minter. This is used to track if unexpected mints
+        // from sources other than this minter occur during an auction.
+        // @dev max uint24 allows for > max project supply of 1 million tokens
+        // @dev important to pack this field with other fields updated during a
+        // purchase, for gas efficiency
+        uint24 numPurchasesOnMinter;
+        // The number of tokens to be auctioned for the project on this minter.
+        // This is defined as the number of invocations remaining at the time
+        // of a project's first mint.
+        uint24 numTokensToBeAuctioned;
+        // --- @dev end of storage slot ---
     }
 
     // The Receipt struct tracks the state of a user's settlement on a given
@@ -200,6 +212,35 @@ library SettlementExpLib {
         });
         if (_price != basePrice) {
             require(maxHasBeenInvoked, "Active auction not yet sold out");
+            // if max has been invoked, but all tokens to be auctioned were not
+            // sold, nonstandard activity has been detected (e.g. project max
+            // invocations were reduced on core contract after initial
+            // purchase, purchases were made on a different minter after
+            // initial purchase, etc.), which could artifically inflate
+            // sellout price and harm purchasers. In that case, we should
+            // not revert (since max invocations have been reached), but we
+            // should require admin to be the caller of this function.
+            // This provides separation of powers to protect collectors who
+            // participated in the auction.
+            // Note that if admin determines the artist has been malicious,
+            // admin should replace artist address with a wallet controlled by
+            // admin on the core contract, update payee address on the core,
+            // collect revenues using this function, then distribute any
+            // additional settlement funds to purchasers at admin's discretion.
+            if (
+                !_allTokensToBeAuctionedWereSold(settlementAuctionProjectConfig)
+            ) {
+                AuthLib.onlyCoreAdminACL({
+                    _coreContract: _coreContract,
+                    _sender: msg.sender,
+                    _contract: address(this),
+                    _selector: bytes4(
+                        keccak256(
+                            "distributeArtistAndAdminRevenues(uint256,address)"
+                        )
+                    )
+                });
+            }
         } else {
             // base price of zero indicates no sales, since base price of zero
             // is not allowed when configuring an auction.
@@ -209,9 +250,9 @@ library SettlementExpLib {
             // update the latest purchase price to the base price, to ensure
             // the base price is used for all future settlement calculations
             // EFFECTS
-            // @dev base price value was just loaded from uint112 in storage,
+            // @dev base price value was just loaded from uint88 in storage,
             // so no safe cast required
-            settlementAuctionProjectConfig.latestPurchasePrice = uint112(
+            settlementAuctionProjectConfig.latestPurchasePrice = uint88(
                 basePrice
             );
             // notify indexing service of settled price update
@@ -232,8 +273,7 @@ library SettlementExpLib {
 
         // reduce project balance by the amount of ETH being distributed
         // @dev underflow checked automatically in solidity ^0.8
-        settlementAuctionProjectConfig.projectBalance -= netRevenues
-            .toUint112();
+        settlementAuctionProjectConfig.projectBalance -= netRevenues.toUint88();
 
         // INTERACTIONS
         SplitFundsLib.splitRevenuesETHNoRefund({
@@ -294,7 +334,7 @@ library SettlementExpLib {
         // reduce project balance by the amount of ETH being distributed
         // @dev underflow checked automatically in solidity ^0.8
         settlementAuctionProjectConfig.projectBalance -= excessSettlementFunds
-            .toUint112();
+            .toUint88();
 
         emit ReceiptUpdated({
             _purchaser: _purchaserAddress,
@@ -312,8 +352,10 @@ library SettlementExpLib {
 
     /**
      * @notice Performs updates to project state prior to a mint being
-     * initiated, during a purchase transaction. Specifically, this increments
-     * the project's balance by the amount of funds sent with the transaction,
+     * initiated, during a purchase transaction. Specifically, this updates the
+     * number of purchases on this minter (and populates expected number of
+     * tokens to be auctioned if this is first purchase), increases the
+     * project's balance by the amount of funds sent with the transaction,
      * updates the purchaser's receipt to reflect the new funds posted, checks
      * that the updated receipt has sufficient funds posted for the number of
      * tokens to be purchased after this transaction, and updates the project's
@@ -339,8 +381,65 @@ library SettlementExpLib {
                 _projectId,
                 _coreContract
             );
+
+        // if this is the first purchase on this minter, set the number of
+        // of tokens to be auctioned to:
+        // (minter max invocations) - (current core contract invocations)
+        if (settlementAuctionProjectConfig.numPurchasesOnMinter == 0) {
+            // get up-to-data invocation data from core contract
+            (
+                uint256 coreInvocations,
+                uint256 coreMaxInvocations
+            ) = MaxInvocationsLib.coreContractInvocationData(
+                    _projectId,
+                    _coreContract
+                );
+            // snap chalkline on the number of tokens to be auctioned on this
+            // minter
+            // @dev acknowledge that this value may be stale if the core
+            // contract's max invocations were reduced since the last time
+            // the minter's max invocations were updated, but that is desired.
+            // That case would be classified as "nonstandard activity", so we
+            // want to require admin to be the withdrawer of revenues in that
+            // case.
+            uint256 minterMaxInvocations = MaxInvocationsLib.getMaxInvocations(
+                _projectId,
+                _coreContract
+            );
+            // @dev prefer to use stale value minterMaxInvocations here, since
+            // if it is stale, the artist could have decreased max invocations
+            // on core contract at last moment unexpectedly, and we want to
+            // equire admin to be the withdrawer of revenues in that case.
+            settlementAuctionProjectConfig.numTokensToBeAuctioned = uint24(
+                minterMaxInvocations - coreInvocations
+            );
+            // edge case: minter max invocations > core contract max invocations.
+            // could be caused by either:
+            //  - core contract max invocations reduced after configuring
+            //    auction (this is generally accidental by artist), and did not
+            //    subsequently update minter's max invocations
+            //  - artist decreased max invocations on core contract at last
+            //    moment prior to this initial mint (this is suspicious)
+            // either way, we want to update minter's local max invocations, so
+            // that the minter returns the most up-to-date value from function
+            // `projectMaxHasBeenInvoked` in the future.
+            // @dev note that this edge case will end up being classified as
+            // "nonstandard activity" in case of sellout above base price, and
+            // will require admin concurrence in those cases.
+            if (minterMaxInvocations > coreMaxInvocations) {
+                // update minter's max invocations to match core contract
+                MaxInvocationsLib.syncProjectMaxInvocationsToCore({
+                    _projectId: _projectId,
+                    _coreContract: _coreContract
+                });
+            }
+        }
+
+        // increment the number of purchases on this minter during every purchase
+        settlementAuctionProjectConfig.numPurchasesOnMinter++;
+
         // update project balance
-        settlementAuctionProjectConfig.projectBalance += _msgValue.toUint112();
+        settlementAuctionProjectConfig.projectBalance += _msgValue.toUint88();
 
         _validateReceiptEffects({
             _walletAddress: _purchaserAddress,
@@ -353,7 +452,7 @@ library SettlementExpLib {
         // @dev this is used to enforce monotonically decreasing purchase price
         // across multiple auctions
         settlementAuctionProjectConfig.latestPurchasePrice = _currentPriceInWei
-            .toUint112();
+            .toUint88();
     }
 
     /**
@@ -391,7 +490,7 @@ library SettlementExpLib {
             // msg.sender is not refunded here
             // @dev underflow checked automatically in solidity ^0.8
             settlementAuctionProjectConfig.projectBalance -= _currentPriceInWei
-                .toUint112();
+                .toUint88();
 
             // INTERACTIONS
             SplitFundsLib.splitRevenuesETHNoRefund({
@@ -406,6 +505,24 @@ library SettlementExpLib {
             settlementAuctionProjectConfig.numSettleableInvocations++;
             // @dev project balance is unaffected because no funds are distributed
         }
+    }
+
+    /**
+     * Returns number of purchases that have been made on the minter, for a
+     * given project.
+     * @param _projectId The id of the project.
+     * @param _coreContract The address of the core contract.
+     */
+    function getNumPurchasesOnMinter(
+        uint256 _projectId,
+        address _coreContract
+    ) internal view returns (uint256) {
+        SettlementAuctionProjectConfig
+            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig({
+                _projectId: _projectId,
+                _coreContract: _coreContract
+            });
+        return settlementAuctionProjectConfig.numPurchasesOnMinter;
     }
 
     /**
@@ -622,5 +739,24 @@ library SettlementExpLib {
         assembly {
             storageStruct.slot := position
         }
+    }
+
+    /**
+     * Returns if all tokens to be auctioned were sold, for a given project.
+     * Returns false if the number of tokens to be auctioned is zero, since
+     * that is the default value for unconfigured values.
+     * @param _settlementAuctionProjectConfig The SettlementAuctionProjectConfig
+     * struct of the project to check.
+     */
+    function _allTokensToBeAuctionedWereSold(
+        SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig
+    ) private view returns (bool) {
+        // @dev load numAllocations into memory for gas efficiency
+        uint256 numTokensToBeAuctioned = _settlementAuctionProjectConfig
+            .numTokensToBeAuctioned;
+        return
+            numTokensToBeAuctioned > 0 &&
+            _settlementAuctionProjectConfig.numPurchasesOnMinter ==
+            numTokensToBeAuctioned;
     }
 }
