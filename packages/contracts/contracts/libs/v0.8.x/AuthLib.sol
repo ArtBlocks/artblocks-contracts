@@ -16,7 +16,7 @@ import {IMinterFilterV1} from "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
 library AuthLib {
     /**
-     * function to restrict access to only AdminACL allowed calls, where
+     * @notice Function to restrict access to only AdminACL allowed calls, where
      * AdminACL is the admin of an IMinterFilterV1.
      * Reverts if not allowed.
      * @param minterFilterAddress address of the minter filter to be checked,
@@ -43,7 +43,7 @@ library AuthLib {
     }
 
     /**
-     * Function to restrict access to only AdminACL allowed calls, where
+     * @notice Function to restrict access to only AdminACL allowed calls, where
      * AdminACL is the admin of a core contract at `coreContract`.
      * Reverts if not allowed.
      * @param coreContract address of the core contract to be checked
@@ -71,12 +71,11 @@ library AuthLib {
     /**
      * @notice Throws if `sender` is any account other than the artist of the
      * specified project `projectId` on core contract `coreContract`.
-     * Requirements: `msg.sender` must be the artist associated with
-     * `projectId` on `coreContract`.
      * @param projectId The ID of the project being checked.
      * @param coreContract The address of the GenArt721CoreContractV3_Base
      * contract.
      * @param sender Wallet to check. Typically, the address of the caller.
+     * @dev `sender` must be the artist associated with `projectId` on `coreContract`.
      */
     function onlyArtist(
         uint256 projectId,
@@ -94,7 +93,7 @@ library AuthLib {
     }
 
     /**
-     * function to restrict access to only the artist of a project, or AdminACL
+     * @notice Function to restrict access to only the artist of a project, or AdminACL
      * allowed calls, where AdminACL is the admin of a core contract at
      * `coreContract`.
      * @param projectId id of the project
@@ -131,7 +130,7 @@ library AuthLib {
     // ------------------------------------------------------------------------
 
     /**
-     * Private function that returns if minter filter contract's AdminACL
+     * @notice Private function that returns if minter filter contract's AdminACL
      * allows `sender` to call function with selector `selector` on contract
      * `contract`.
      * @param minterFilterAddress address of the minter filter to be checked.
@@ -155,7 +154,7 @@ library AuthLib {
     }
 
     /**
-     * Private function that returns if core contract's AdminACL allows
+     * @notice Private function that returns if core contract's AdminACL allows
      * `sender` to call function with selector `selector` on contract
      * `contract`.
      * @param coreContract address of the core contract to be checked
@@ -178,7 +177,7 @@ library AuthLib {
     }
 
     /**
-     * Private function that returns if `sender` is the artist of `projectId`
+     * @notice Private function that returns if `sender` is the artist of `projectId`
      * on `coreContract`.
      * @param projectId project ID to check
      * @param coreContract core contract to check

@@ -14,7 +14,7 @@ library ABHelpers {
     uint256 constant ONE_MILLION = 1_000_000;
 
     /**
-     * Convert token id to project id.
+     * @notice Function to convert token id to project id.
      * @param tokenId The id of the token.
      */
     function tokenIdToProjectId(
@@ -28,7 +28,7 @@ library ABHelpers {
     }
 
     /**
-     * Convert token id to token number.
+     * @notice Function to convert token id to token number.
      * @param tokenId The id of the token.
      */
     function tokenIdToTokenNumber(
@@ -40,7 +40,7 @@ library ABHelpers {
     }
 
     /**
-     * Convert project id and token number to token id.
+     * @notice Function to convert project id and token number to token id.
      * @param projectId The id of the project.
      * @param tokenNumber The token number.
      */
