@@ -126,7 +126,11 @@ runForEach.forEach((params) => {
         );
         await config.minter
           .connect(config.accounts.artist)
-          .purchase(config.projectZero, config.genArt721Core.address);
+          .purchase(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
         let result = await config.minter.projectMaxHasBeenInvoked(
           config.projectZero,
           config.genArt721Core.address
@@ -154,7 +158,11 @@ runForEach.forEach((params) => {
         );
         await config.minter
           .connect(config.accounts.artist)
-          .purchase(config.projectZero, config.genArt721Core.address);
+          .purchase(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
 
         const isEngineView = await config.minter
           .connect(config.accounts.artist)
