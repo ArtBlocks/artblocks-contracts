@@ -466,5 +466,27 @@ runForEach.forEach((params) => {
           );
       });
     });
+
+    describe("PricePerTokenReset", async function () {
+      it("emits event upon price reset", async function () {
+        const config = await loadFixture(_beforeEach);
+        // initial currency configuring already done in beforeEach, so should emit event here
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .updateProjectCurrencyInfo(
+              config.projectZero,
+              config.genArt721Core.address,
+              "ERC20",
+              config.ERC20.address
+            )
+        )
+          .to.emit(
+            await ethers.getContractFactory("SetPriceLib"),
+            "PricePerTokenReset"
+          )
+          .withArgs(config.projectZero, config.genArt721Core.address);
+      });
+    });
   });
 });

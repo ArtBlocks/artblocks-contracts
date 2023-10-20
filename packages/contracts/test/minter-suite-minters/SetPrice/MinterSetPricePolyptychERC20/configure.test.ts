@@ -342,6 +342,75 @@ runForEach.forEach((params) => {
       });
     });
 
+    describe("updateProjectCurrencyInfo", async function () {
+      it("does not reset price during initial currency configuring", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure price
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectOne,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        // configure currency to be ERC20 token
+        await config.minter
+          .connect(config.accounts.artist)
+          .updateProjectCurrencyInfo(
+            config.projectOne,
+            config.genArt721Core.address,
+            "ERC20",
+            config.ERC20.address
+          );
+        // price remains configured and at previous value
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectOne,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.tokenPriceInWei.toString()).to.equal(
+          config.pricePerTokenInWei.toString()
+        );
+        expect(priceInfo.isConfigured).to.be.true;
+      });
+
+      it("resets price during currency update when previously configured", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure price
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectOne,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        // configure currency to be ERC20 token
+        await config.minter
+          .connect(config.accounts.artist)
+          .updateProjectCurrencyInfo(
+            config.projectOne,
+            config.genArt721Core.address,
+            "ERC20",
+            config.ERC20.address
+          );
+        // re-configure currency to initiate a price reset
+        await config.minter
+          .connect(config.accounts.artist)
+          .updateProjectCurrencyInfo(
+            config.projectOne,
+            config.genArt721Core.address,
+            "ERC202",
+            config.accounts.additional.address // dummy address
+          );
+        // price is reset and unconfigured
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectOne,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.tokenPriceInWei).to.equal(0);
+        expect(priceInfo.isConfigured).to.be.false;
+      });
+    });
+
     describe("syncProjectMaxInvocationsToCore", async function () {
       it("resets maxHasBeenInvoked after it's been set to true locally and then max project invocations is synced from the core contract", async function () {
         const config = await loadFixture(_beforeEach);
