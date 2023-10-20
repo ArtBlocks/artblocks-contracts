@@ -196,15 +196,15 @@ library SplitFundsLib {
      * business practices, including end-to-end testing on mainnet, and
      * admin-accepted artist payment addresses.
      * @param projectId Project ID for which funds shall be split.
-     * @param pricePerTokenInWei Current price of token, in Wei.
+     * @param pricePerToken Current price of token, no decimals.
      * @param coreContract Core contract address.
      */
     function splitFundsERC20(
         uint256 projectId,
-        uint256 pricePerTokenInWei,
+        uint256 pricePerToken,
         address coreContract
     ) internal {
-        if (pricePerTokenInWei == 0) {
+        if (pricePerToken == 0) {
             return; // nothing to split, return early
         }
         IERC20 projectCurrency;
@@ -240,14 +240,17 @@ library SplitFundsLib {
                 uint256 additionalPayeePrimaryRevenue,
                 address payable additionalPayeePrimaryAddress
             ) = IGenArt721CoreContractV3_Engine(coreContract)
-                    .getPrimaryRevenueSplits(projectId, pricePerTokenInWei);
+                    .getPrimaryRevenueSplits({
+                        _projectId: projectId,
+                        _price: pricePerToken
+                    });
             // require total revenue split is 100%
             require(
                 renderProviderRevenue +
                     platformProviderRevenue +
                     artistRevenue +
                     additionalPayeePrimaryRevenue ==
-                    pricePerTokenInWei,
+                    pricePerToken,
                 "Invalid revenue split totals"
             );
             // distribute revenues
@@ -271,16 +274,16 @@ library SplitFundsLib {
                 address payable artistAddress,
                 uint256 additionalPayeePrimaryRevenue,
                 address payable additionalPayeePrimaryAddress
-            ) = IGenArt721CoreContractV3(coreContract).getPrimaryRevenueSplits(
-                    projectId,
-                    pricePerTokenInWei
-                );
+            ) = IGenArt721CoreContractV3(coreContract).getPrimaryRevenueSplits({
+                    _projectId: projectId,
+                    _price: pricePerToken
+                });
             // require total revenue split is 100%
             require(
                 renderProviderRevenue +
                     artistRevenue +
                     additionalPayeePrimaryRevenue ==
-                    pricePerTokenInWei,
+                    pricePerToken,
                 "Invalid revenue split totals"
             );
             // distribute revenues
@@ -638,7 +641,8 @@ library SplitFundsLib {
 
     /**
      * @notice Sends ERC20 revenues between providers, artist, and artist's
-     * additional payee. Reverts if any payment fails.
+     * additional payee. Reverts if any payment fails. All revenue values
+     * should not use decimals.
      * @dev This function relies on msg.sender, so it must be called from
      * the contract that is receiving the payment.
      * @param projectCurrency IERC20 payment token.

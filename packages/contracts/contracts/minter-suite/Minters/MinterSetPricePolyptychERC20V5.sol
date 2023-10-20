@@ -169,12 +169,15 @@ contract MinterSetPricePolyptychERC20V5 is
 
     /**
      * @notice Updates this minter's price per token of project `projectId`
-     * to be `pricePerTokenInWei`, in Wei.
+     * to be `pricePerTokenInWei`. Note that "in wei" is a misnomer on this
+     * ERC20 minter, but is used for consistency with the ETH minters. The
+     * price value represents the ERC20 token price without decimals.
      * @dev Note that it is intentionally supported here that the configured
      * price may be explicitly set to `0`.
      * @param projectId Project ID to set the price per token for.
      * @param coreContract Core contract address for the given project.
-     * @param pricePerTokenInWei Price per token to set for the project, in Wei.
+     * @param pricePerTokenInWei Price per token to set for the project.
+     * Represents the ERC20 token price without decimals.
      */
     function updatePricePerTokenInWei(
         uint256 projectId,
@@ -186,10 +189,10 @@ contract MinterSetPricePolyptychERC20V5 is
             coreContract: coreContract,
             sender: msg.sender
         });
-        SetPriceLib.updatePricePerTokenInWei({
+        SetPriceLib.updatePricePerToken({
             projectId: projectId,
             coreContract: coreContract,
-            pricePerTokenInWei: pricePerTokenInWei
+            pricePerToken: pricePerTokenInWei
         });
 
         // for convenience, sync local max invocations to the core contract if
@@ -677,7 +680,10 @@ contract MinterSetPricePolyptychERC20V5 is
      * @return isConfigured true only if token price has been configured on
      * this minter and an ERC20 token has been configured
      * @return tokenPriceInWei current price of token on this minter - invalid
-     * if price has not yet been configured
+     * if price has not yet been configured. Note that "in wei" is a misnomer
+     * for ERC20 tokens, but is used here for ABI consistency with the ETH
+     * minters. The value returned represents the price per token, with no
+     * decimals.
      * @return currencySymbol currency symbol for purchases of project on this
      * minter. "UNCONFIG" if not yet configured. Note that currency symbol is
      * defined by the artist, and is not necessarily the same as the ERC20
@@ -704,7 +710,7 @@ contract MinterSetPricePolyptychERC20V5 is
                     projectId: projectId,
                     coreContract: coreContract
                 });
-        tokenPriceInWei = setPriceProjectConfig_.pricePerTokenInWei;
+        tokenPriceInWei = setPriceProjectConfig_.pricePerToken;
         // get currency info from SplitFundsLib
         (currencyAddress, currencySymbol) = SplitFundsLib.getCurrencyInfoERC20({
             projectId: projectId,
@@ -824,7 +830,7 @@ contract MinterSetPricePolyptychERC20V5 is
 
         // pre-mint checks for set price lib, and get price per token in wei
         // @dev price per token is loaded into memory here for gas efficiency
-        uint256 pricePerTokenInWei = SetPriceLib.preMintChecksAndGetPrice({
+        uint256 pricePerToken = SetPriceLib.preMintChecksAndGetPrice({
             projectId: projectId,
             coreContract: coreContract
         });
@@ -947,7 +953,7 @@ contract MinterSetPricePolyptychERC20V5 is
         // process payment in ERC20
         SplitFundsLib.splitFundsERC20({
             projectId: projectId,
-            pricePerTokenInWei: pricePerTokenInWei,
+            pricePerToken: pricePerToken,
             coreContract: coreContract
         });
 
