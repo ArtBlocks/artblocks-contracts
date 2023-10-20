@@ -184,19 +184,19 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * @notice Purchases a token from project `projectId`.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
-     * @param purchasePricePerTokenInWei Price of token in wei sent by purchaser
+     * @param purchasePricePerToken Price of token in wei sent by purchaser
      * @return tokenId Token ID of minted token
      */
     function purchase(
         uint256 projectId,
         address coreContract,
-        uint256 purchasePricePerTokenInWei
+        uint256 purchasePricePerToken
     ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo({
             to: msg.sender,
             projectId: projectId,
             coreContract: coreContract,
-            purchasePricePerTokenInWei: purchasePricePerTokenInWei
+            purchasePricePerToken: purchasePricePerToken
         });
         return tokenId;
     }
@@ -448,14 +448,14 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * @param to Address to be the new token's owner.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
-     * @param purchasePricePerTokenInWei Price of token in wei sent by purchaser
+     * @param purchasePricePerToken Price of token in wei sent by purchaser
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
         address to,
         uint256 projectId,
         address coreContract,
-        uint256 purchasePricePerTokenInWei
+        uint256 purchasePricePerToken
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         // pre-mint MaxInvocationsLib checks
@@ -495,7 +495,7 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
 
         // validate that the price sent is equal to the price per token
         require(
-            purchasePricePerTokenInWei >= pricePerTokenInWei,
+            purchasePricePerToken >= pricePerTokenInWei,
             "Must send amount greater than or equal to price per token"
         );
 
