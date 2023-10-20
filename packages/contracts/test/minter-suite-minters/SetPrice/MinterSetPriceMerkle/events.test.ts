@@ -249,7 +249,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            config.minter,
+            await ethers.getContractFactory("GenericMinterEventsLib"),
             "ConfigValueSet(uint256,address,bytes32,bytes32)"
           )
           .withArgs(
@@ -274,7 +274,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            config.minter,
+            await ethers.getContractFactory("GenericMinterEventsLib"),
             "ConfigValueSet(uint256,address,bytes32,bool)"
           )
           .withArgs(
@@ -294,7 +294,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            config.minter,
+            await ethers.getContractFactory("GenericMinterEventsLib"),
             "ConfigValueSet(uint256,address,bytes32,uint256)"
           )
           .withArgs(
@@ -314,7 +314,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            config.minter,
+            await ethers.getContractFactory("GenericMinterEventsLib"),
             "ConfigValueSet(uint256,address,bytes32,bool)"
           )
           .withArgs(
@@ -334,7 +334,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            config.minter,
+            await ethers.getContractFactory("GenericMinterEventsLib"),
             "ConfigValueSet(uint256,address,bytes32,uint256)"
           )
           .withArgs(

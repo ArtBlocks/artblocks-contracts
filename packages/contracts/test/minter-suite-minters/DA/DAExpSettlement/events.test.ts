@@ -235,7 +235,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            config.minter,
+            await ethers.getContractFactory("GenericMinterEventsLib"),
             "ConfigValueSet(uint256,address,bytes32,uint256)"
           )
           .withArgs(
@@ -259,7 +259,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address
             )
         ).to.not.emit(
-          config.minter,
+          await ethers.getContractFactory("GenericMinterEventsLib"),
           "ConfigValueSet(uint256,address,bytes32,uint256)"
         );
       });
@@ -279,7 +279,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            config.minter,
+            await ethers.getContractFactory("GenericMinterEventsLib"),
             "ConfigValueSet(uint256,address,bytes32,bool)"
           )
           .withArgs(
