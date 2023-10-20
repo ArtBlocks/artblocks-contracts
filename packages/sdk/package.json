@@ -16,7 +16,7 @@
     "jest": "^29.7.0",
     "jsdoc": "^4.0.2",
     "jsdoc-plugin-typescript": "^2.2.1",
-    "lint-staged": "^14.0.1",
+    "lint-staged": "^15.0.2",
     "prettier": "^3.0.3",
     "tsconfig": "*",
     "tsup": "^7.2.0",
