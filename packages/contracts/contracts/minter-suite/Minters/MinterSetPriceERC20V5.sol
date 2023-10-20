@@ -493,7 +493,7 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
             coreContract: coreContract
         });
 
-        // validate that the price sent is equal to the price per token
+        // validate that the price sent is greater than or equal to the price per token
         require(
             purchasePricePerToken >= pricePerTokenInWei,
             "Must send amount greater than or equal to price per token"
