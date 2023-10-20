@@ -476,6 +476,13 @@ contract MinterSetPriceERC20V5 is
             projectId: projectId,
             coreContract: coreContract
         });
+
+        // validate that the price sent is equal to the price per token
+        require(
+            msg.value == pricePerTokenInWei,
+            "Must send amount equal to price per token"
+        );
+
         // @dev revert occurs during payment split if ERC20 token is not
         // configured (i.e. address(0)), so check is not performed here
 

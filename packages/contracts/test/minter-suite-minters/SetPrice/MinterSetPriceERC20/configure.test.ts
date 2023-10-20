@@ -278,6 +278,29 @@ runForEach.forEach((params) => {
           revertMessages.needMoreBalance
         );
       });
+      it("requires price sent to be equal to the minting price", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        // user approves minter to spend an amount higher than mint price
+        await config.ERC20.connect(config.accounts.user).approve(
+          config.minter.address,
+          config.higherPricePerTokenInWei
+        );
+
+        // user cannot purchase token
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address),
+          revertMessages.mustSendEqualAmount
+        );
+      });
     });
 
     describe("syncProjectMaxInvocationsToCore", async function () {
