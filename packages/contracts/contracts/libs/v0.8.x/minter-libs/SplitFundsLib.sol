@@ -306,19 +306,26 @@ library SplitFundsLib {
      * SplitFundsProjectConfig to be `currencySymbol` at address
      * `currencyAddress`.
      * Only supports setting currency info of ERC20 tokens.
+     * Returns bool that is true if the price should be reset after this
+     * update. Price is recommended to be reset if the currency address was
+     * previously configured, but is now being updated to a different currency
+     * address. This is to protect accidental price reductions when changing
+     * currency if an artist is changing currencies in an unpaused state.
      * @dev artist-defined currency symbol is used instead of any on-chain
      * currency symbol.
      * @param projectId Project ID to update.
      * @param coreContract Core contract address.
      * @param currencySymbol Currency symbol.
      * @param currencyAddress Currency address.
+     * @return recommendPriceReset True if the price should be reset after this
+     * update.
      */
     function updateProjectCurrencyInfoERC20(
         uint256 projectId,
         address coreContract,
         string memory currencySymbol,
         address currencyAddress
-    ) internal {
+    ) internal returns (bool recommendPriceReset) {
         // CHECKS
         require(currencyAddress != address(0), "null address, only ERC20");
         require(bytes(currencySymbol).length > 0, "only non-null symbol");
@@ -328,6 +335,10 @@ library SplitFundsLib {
                 projectId: projectId,
                 coreContract: coreContract
             });
+        // recommend price reset if currency address was previously configured
+        if (splitFundsProjectConfig.currencyAddress != address(0)) {
+            recommendPriceReset = true;
+        }
         splitFundsProjectConfig.currencySymbol = currencySymbol;
         splitFundsProjectConfig.currencyAddress = currencyAddress;
 

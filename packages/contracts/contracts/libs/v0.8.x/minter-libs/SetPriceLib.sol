@@ -22,6 +22,14 @@ library SetPriceLib {
         uint256 indexed pricePerToken
     );
 
+    /**
+     * @notice Price per token reset (unconfigured) for project `projectId`.
+     */
+    event PricePerTokenReset(
+        uint256 indexed projectId,
+        address indexed coreContract
+    );
+
     // position of Set Price Lib storage, using a diamond storage pattern
     // for this library
     bytes32 constant SET_PRICE_LIB_STORAGE_POSITION =
@@ -46,7 +54,6 @@ library SetPriceLib {
 
     /**
      * @notice Updates the minter's price per token to be `pricePerToken`.
-     * for the referenced SetPriceProjectConfig struct in storage.
      * @dev Note that it is intentionally supported here that the configured
      * price may be explicitly set to `0`.
      * @param projectId Project Id to update price for
@@ -71,6 +78,30 @@ library SetPriceLib {
             projectId: projectId,
             coreContract: coreContract,
             pricePerToken: pricePerToken
+        });
+    }
+
+    /**
+     * @notice Resets the minter's price per token to be unconfigured.
+     * @param projectId Project Id to reset price for
+     * @param coreContract Core contract address to reset the price for
+     */
+    function resetPricePerToken(
+        uint256 projectId,
+        address coreContract
+    ) internal {
+        SetPriceProjectConfig
+            storage setPriceProjectConfig = getSetPriceProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+        // update storage with solidity initial values
+        setPriceProjectConfig.pricePerToken = uint248(0);
+        setPriceProjectConfig.priceIsConfigured = false;
+
+        emit PricePerTokenReset({
+            projectId: projectId,
+            coreContract: coreContract
         });
     }
 
