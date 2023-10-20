@@ -34,7 +34,7 @@ export const SetPrice_Common_Events = async (
       )
         .to.emit(
           await ethers.getContractFactory("SetPriceLib"),
-          "PricePerTokenInWeiUpdated"
+          "PricePerTokenUpdated"
         )
         .withArgs(
           config.projectZero,
