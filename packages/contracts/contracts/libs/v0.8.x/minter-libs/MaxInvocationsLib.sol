@@ -479,7 +479,7 @@ library MaxInvocationsLib {
         returns (MaxInvocationsLibStorage storage storageStruct)
     {
         bytes32 position = MAX_INVOCATIONS_LIB_STORAGE_POSITION;
-        assembly {
+        assembly ("memory-safe") {
             storageStruct.slot := position
         }
     }

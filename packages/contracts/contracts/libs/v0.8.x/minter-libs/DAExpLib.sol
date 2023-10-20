@@ -243,7 +243,7 @@ library DAExpLib {
      */
     function s() internal pure returns (DAExpLibStorage storage storageStruct) {
         bytes32 position = DAE_EXP_LIB_STORAGE_POSITION;
-        assembly {
+        assembly ("memory-safe") {
             storageStruct.slot := position
         }
     }

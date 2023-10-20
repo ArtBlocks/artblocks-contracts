@@ -196,8 +196,8 @@ contract MinterDAExpHolderV5 is
     function allowHoldersOfProjects(
         uint256 projectId,
         address coreContract,
-        address[] memory ownedNFTAddresses,
-        uint256[] memory ownedNFTProjectIds
+        address[] calldata ownedNFTAddresses,
+        uint256[] calldata ownedNFTProjectIds
     ) external {
         AuthLib.onlyArtist({
             projectId: projectId,
@@ -231,8 +231,8 @@ contract MinterDAExpHolderV5 is
     function removeHoldersOfProjects(
         uint256 projectId,
         address coreContract,
-        address[] memory ownedNFTAddresses,
-        uint256[] memory ownedNFTProjectIds
+        address[] calldata ownedNFTAddresses,
+        uint256[] calldata ownedNFTProjectIds
     ) external {
         AuthLib.onlyArtist({
             projectId: projectId,
@@ -282,10 +282,10 @@ contract MinterDAExpHolderV5 is
     function allowAndRemoveHoldersOfProjects(
         uint256 projectId,
         address coreContract,
-        address[] memory ownedNFTAddressesAdd,
-        uint256[] memory ownedNFTProjectIdsAdd,
-        address[] memory ownedNFTAddressesRemove,
-        uint256[] memory ownedNFTProjectIdsRemove
+        address[] calldata ownedNFTAddressesAdd,
+        uint256[] calldata ownedNFTProjectIdsAdd,
+        address[] calldata ownedNFTAddressesRemove,
+        uint256[] calldata ownedNFTProjectIdsRemove
     ) external {
         AuthLib.onlyArtist({
             projectId: projectId,

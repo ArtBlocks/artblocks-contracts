@@ -209,7 +209,7 @@ library DALinLib {
      */
     function s() internal pure returns (DALinLibStorage storage storageStruct) {
         bytes32 position = DAE_LIN_LIB_STORAGE_POSITION;
-        assembly {
+        assembly ("memory-safe") {
             storageStruct.slot := position
         }
     }
