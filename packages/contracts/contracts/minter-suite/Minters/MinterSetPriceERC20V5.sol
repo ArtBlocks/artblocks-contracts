@@ -476,7 +476,7 @@ contract MinterSetPriceERC20V5 is
             coreContract: coreContract
         });
 
-        // pre-mint checks for set price lib, and get price per token in wei
+        // pre-mint checks for set price lib, and get price per token
         // @dev price per token is loaded into memory here for gas efficiency
         uint256 pricePerToken = SetPriceLib.preMintChecksAndGetPrice({
             projectId: projectId,
