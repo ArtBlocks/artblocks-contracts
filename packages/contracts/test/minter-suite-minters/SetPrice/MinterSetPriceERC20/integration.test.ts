@@ -168,11 +168,7 @@ runForEach.forEach((params) => {
           );
         await setPriceMinter
           .connect(config.accounts.artist)
-          .purchase(
-            config.projectZero,
-            config.genArt721Core.address,
-            ethers.utils.parseEther("0")
-          );
+          .purchase(config.projectZero, config.genArt721Core.address);
         // switch back to original minter
         await config.minterFilter
           .connect(config.accounts.artist)
@@ -192,7 +188,11 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero, config.genArt721Core.address),
+            .purchase(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.pricePerTokenInWei
+            ),
           revertMessages.maximumInvocationsReached
         );
       });
@@ -227,7 +227,11 @@ runForEach.forEach((params) => {
           );
           await config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero, config.genArt721Core.address);
+            .purchase(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.pricePerTokenInWei
+            );
         }
         // switch to different minter
         const setPriceMinter = await deployAndGet(config, "MinterSetPriceV5", [
@@ -253,11 +257,9 @@ runForEach.forEach((params) => {
         for (let i = 0; i < 15; i++) {
           await setPriceMinter
             .connect(config.accounts.user)
-            .purchase(
-              config.projectOne,
-              config.genArt721Core.address,
-              config.pricePerTokenInWei
-            );
+            .purchase(config.projectOne, config.genArt721Core.address, {
+              value: config.pricePerTokenInWei,
+            });
         }
       });
 
