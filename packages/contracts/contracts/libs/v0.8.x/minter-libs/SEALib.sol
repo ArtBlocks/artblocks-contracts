@@ -24,16 +24,38 @@ library SEALib {
     /**
      * @notice Minimum auction length, in seconds, was updated to be the
      * provided value.
+     * @param minAuctionDurationSeconds Minimum auction length, in seconds
      */
     event MinAuctionDurationSecondsUpdated(uint256 minAuctionDurationSeconds);
 
-    /// Admin-controlled time buffer updated
+    /**
+     * @notice Admin-controlled time buffer updated
+     * @param minterTimeBufferSeconds Time buffer, in seconds
+     */
     event MinterTimeBufferUpdated(uint32 minterTimeBufferSeconds);
 
-    // Admin-controlled refund gas limit updated
+    /**
+     * @notice Admin-controlled refund gas limit updated
+     * @param refundGasLimit Gas limit to use when refunding the previous
+     * highest bidder, prior to using fallback force-send to refund
+     */
     event MinterRefundGasLimitUpdated(uint24 refundGasLimit);
 
-    /// Artist configured future auction details
+    /**
+     * @notice Future auctions for project `projectId` on core contract
+     * `coreContract` configured.
+     * @param projectId Project Id configured
+     * @param coreContract Core contract address configured
+     * @param timestampStart Start timestamp after which future auctions may be
+     * started. If zero, auctions can start immediately.
+     * @param auctionDurationSeconds Duration of each new auction, before any
+     * extensions due to late bids
+     * @param basePrice Minimum bid price for the token auctions
+     * @param minBidIncrementPercentage Minimum bid increment percentage. Each
+     * subsequent bid must be at least this percentage greater than the
+     * previous bid. The value is expressed as a whole percentage, e.g. 5% is
+     * 5, 10% is 10, etc.
+     */
     event ConfiguredFutureAuctions(
         uint256 indexed projectId,
         address indexed coreContract,
@@ -43,7 +65,18 @@ library SEALib {
         uint8 minBidIncrementPercentage
     );
 
-    /// New token auction created, token created and sent to minter
+    /**
+     * @notice New token auction created, token created and sent to minter
+     * @param tokenId Token Id for which auction was created
+     * @param coreContract Core contract address for the given token
+     * @param bidder Bidder's address who initialized the auction
+     * @param bidAmount Bid amount
+     * @param endTime Auction end time
+     * @param minBidIncrementPercentage Minimum bid increment percentage. Each
+     * subsequent bid must be at least this percentage greater than the
+     * previous bid. The value is expressed as a whole percentage, e.g. 5% is
+     * 5, 10% is 10, etc.
+     */
     event AuctionInitialized(
         uint256 indexed tokenId,
         address indexed coreContract,
@@ -53,7 +86,13 @@ library SEALib {
         uint8 minBidIncrementPercentage
     );
 
-    /// Successful bid placed on token auction
+    /**
+     * @notice Successful bid placed on token auction
+     * @param tokenId Token Id of auction bid on
+     * @param coreContract Core contract address for the given token
+     * @param bidder Bidder's address who placed the bid
+     * @param bidAmount Bid amount
+     */
     event AuctionBid(
         uint256 indexed tokenId,
         address indexed coreContract,
@@ -61,7 +100,13 @@ library SEALib {
         uint256 bidAmount
     );
 
-    /// Token auction was settled (token distributed to winner)
+    /**
+     * @notice Token auction was settled (token distributed to winner)
+     * @param tokenId Token Id of auction settled
+     * @param coreContract Core contract address for the given token
+     * @param winner Winner's address
+     * @param price Winning bid amount
+     */
     event AuctionSettled(
         uint256 indexed tokenId,
         address indexed coreContract,
@@ -69,21 +114,34 @@ library SEALib {
         uint256 price
     );
 
-    /// Future auction details for project `projectId` reset
+    /**
+     * @notice Future auction details for project `projectId` reset
+     * @param projectId Project Id that was reset
+     * @param coreContract Core contract address that was reset
+     */
     event ResetAuctionDetails(
         uint256 indexed projectId,
         address indexed coreContract
     );
 
-    // Next token ID for project `projectId` updated
+    /**
+     * @notice Next token ID for project `projectId` updated
+     * @param projectId Project Id of next token updated
+     * @param coreContract Core contract address of next token updated
+     * @param tokenId Token Id of next token updated
+     */
     event ProjectNextTokenUpdated(
         uint256 indexed projectId,
         address indexed coreContract,
         uint256 tokenId
     );
 
-    // Next token ID for project `projectId` was ejected from the minter
-    // and is no longer populated
+    /**
+     * @notice Next token ID for project `projectId` ejected from the minter
+     * and is no longer populated
+     * @param projectId Project Id of next token ejected
+     * @param coreContract Core contract address of next token ejected
+     */
     event ProjectNextTokenEjected(
         uint256 indexed projectId,
         address indexed coreContract

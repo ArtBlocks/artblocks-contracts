@@ -24,6 +24,9 @@ library MaxInvocationsLib {
     /**
      * @notice Local max invocations for project `projectId`, tied to core contract `coreContractAddress`,
      * updated to `maxInvocations`.
+     * @param projectId The id of the project.
+     * @param coreContract The address of the core contract.
+     * @param maxInvocations The new max invocations limit.
      */
     event ProjectMaxInvocationsLimitUpdated(
         uint256 indexed projectId,
@@ -177,6 +180,14 @@ library MaxInvocationsLib {
         }
     }
 
+    /**
+     * Checks that the max invocations have not been reached for a given
+     * project. This only checks the minter's local max invocations, and does
+     * not consider the core contract's max invocations.
+     * The function reverts if the max invocations have been reached.
+     * @param projectId The id of the project.
+     * @param coreContract The address of the core contract.
+     */
     function preMintChecks(
         uint256 projectId,
         address coreContract
@@ -382,6 +393,8 @@ library MaxInvocationsLib {
      * be more restrictive than the core contract.
      * @dev assumes core contract's max invocations may only be reduced, which
      * is the case for all V3 core contracts
+     * @param projectId The id of the project.
+     * @param coreContract The address of the core contract.
      */
     function refreshMaxInvocations(
         uint256 projectId,
@@ -443,7 +456,8 @@ library MaxInvocationsLib {
     }
 
     /**
-     * Loads the MaxInvocationsProjectConfig for a given project and core contract.
+     * @notice Loads the MaxInvocationsProjectConfig for a given project and core
+     * contract.
      * @param projectId Project Id to get config for
      * @param coreContract Core contract address to get config for
      */

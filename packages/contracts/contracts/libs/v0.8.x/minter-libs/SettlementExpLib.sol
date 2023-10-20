@@ -22,7 +22,14 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
 
 library SettlementExpLib {
     using SafeCast for uint256;
-    /// receipt has an updated state
+    /**
+     * @notice Receipt updated event. Emitted when a receipt is updated.
+     * @param purchaser purchaser address of updated receipt
+     * @param projectId project ID of updated receipt
+     * @param coreContract core contract address of updated receipt
+     * @param numPurchased new number of tokens purchased on project
+     * @param netPosted new net funds posted on project
+     */
     event ReceiptUpdated(
         address indexed purchaser,
         uint256 indexed projectId,

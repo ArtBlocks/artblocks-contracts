@@ -23,6 +23,10 @@ library SplitFundsLib {
     /**
      * @notice Currency updated for project `projectId` to symbol
      * `currencySymbol` and address `currencyAddress`.
+     * @param projectId Project ID currency was updated for
+     * @param coreContract Core contract address currency was updated for
+     * @param currencyAddress Currency address
+     * @param currencySymbol Currency symbol
      */
     event ProjectCurrencyInfoUpdated(
         uint256 indexed projectId,
@@ -726,7 +730,8 @@ library SplitFundsLib {
     }
 
     /**
-     * Loads the SplitFundsProjectConfig for a given project and core contract.
+     * @notice Loads the SplitFundsProjectConfig for a given project and core
+     * contract.
      * @param projectId Project Id to get config for
      * @param coreContract Core contract address to get config for
      */
@@ -738,7 +743,7 @@ library SplitFundsLib {
     }
 
     /**
-     * Loads the IsEngineCache for a given core contract.
+     * @notice Loads the IsEngineCache for a given core contract.
      * @param coreContract Core contract address to get config for
      */
     function getIsEngineCacheConfig(
