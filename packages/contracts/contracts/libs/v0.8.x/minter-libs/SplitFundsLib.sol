@@ -120,72 +120,66 @@ library SplitFundsLib {
         // split funds between platforms, artist, and artist's
         // additional payee
         bool isEngine_ = isEngine(coreContract);
+        uint256 renderProviderRevenue;
+        address payable renderProviderAddress;
+        uint256 platformProviderRevenue;
+        address payable platformProviderAddress;
+        uint256 artistRevenue;
+        address payable artistAddress;
+        uint256 additionalPayeePrimaryRevenue;
+        address payable additionalPayeePrimaryAddress;
         if (isEngine_) {
             // get engine splits
             (
-                uint256 renderProviderRevenue,
-                address payable renderProviderAddress,
-                uint256 platformProviderRevenue,
-                address payable platformProviderAddress,
-                uint256 artistRevenue,
-                address payable artistAddress,
-                uint256 additionalPayeePrimaryRevenue,
-                address payable additionalPayeePrimaryAddress
+                renderProviderRevenue,
+                renderProviderAddress,
+                platformProviderRevenue,
+                platformProviderAddress,
+                artistRevenue,
+                artistAddress,
+                additionalPayeePrimaryRevenue,
+                additionalPayeePrimaryAddress
             ) = IGenArt721CoreContractV3_Engine(coreContract)
-                    .getPrimaryRevenueSplits(projectId, valueInWei);
-            // require total revenue split is 100%
-            require(
-                renderProviderRevenue +
-                    platformProviderRevenue +
-                    artistRevenue +
-                    additionalPayeePrimaryRevenue ==
-                    valueInWei,
-                "Invalid revenue split totals"
-            );
-            // distribute revenues
-            _sendPaymentsETH({
-                platformProviderRevenue: platformProviderRevenue,
-                platformProviderAddress: platformProviderAddress,
-                renderProviderRevenue: renderProviderRevenue,
-                renderProviderAddress: renderProviderAddress,
-                artistRevenue: artistRevenue,
-                artistAddress: artistAddress,
-                additionalPayeePrimaryRevenue: additionalPayeePrimaryRevenue,
-                additionalPayeePrimaryAddress: additionalPayeePrimaryAddress
-            });
+                .getPrimaryRevenueSplits(projectId, valueInWei);
         } else {
             // get flagship splits
+            // @dev note that platformProviderAddress and
+            // platformProviderRevenue remain 0 for flagship
             (
-                uint256 renderProviderRevenue, // artblocks revenue
-                address payable renderProviderAddress, // artblocks address
-                uint256 artistRevenue,
-                address payable artistAddress,
-                uint256 additionalPayeePrimaryRevenue,
-                address payable additionalPayeePrimaryAddress
+                renderProviderRevenue, // artblocks revenue
+                renderProviderAddress, // artblocks address
+                artistRevenue,
+                artistAddress,
+                additionalPayeePrimaryRevenue,
+                additionalPayeePrimaryAddress
             ) = IGenArt721CoreContractV3(coreContract).getPrimaryRevenueSplits(
-                    projectId,
-                    valueInWei
-                );
-            // require total revenue split is 100%
-            require(
-                renderProviderRevenue +
-                    artistRevenue +
-                    additionalPayeePrimaryRevenue ==
-                    valueInWei,
-                "Invalid revenue split totals"
+                projectId,
+                valueInWei
             );
-            // distribute revenues
-            _sendPaymentsETH({
-                platformProviderRevenue: 0, // no platform provider for flagship
-                platformProviderAddress: payable(address(0)), // dummy value
-                renderProviderRevenue: renderProviderRevenue, // artblocks revenue
-                renderProviderAddress: renderProviderAddress, // artblocks address
-                artistRevenue: artistRevenue,
-                artistAddress: artistAddress,
-                additionalPayeePrimaryRevenue: additionalPayeePrimaryRevenue,
-                additionalPayeePrimaryAddress: additionalPayeePrimaryAddress
-            });
         }
+        // require total revenue split is 100%
+        // @dev note that platformProviderRevenue remains 0 for flagship
+        require(
+            renderProviderRevenue +
+                platformProviderRevenue +
+                artistRevenue +
+                additionalPayeePrimaryRevenue ==
+                valueInWei,
+            "Invalid revenue split totals"
+        );
+        // distribute revenues
+        // @dev note that platformProviderAddress and platformProviderRevenue
+        // remain 0 for flagship
+        _sendPaymentsETH({
+            platformProviderRevenue: platformProviderRevenue,
+            platformProviderAddress: platformProviderAddress,
+            renderProviderRevenue: renderProviderRevenue,
+            renderProviderAddress: renderProviderAddress,
+            artistRevenue: artistRevenue,
+            artistAddress: artistAddress,
+            additionalPayeePrimaryRevenue: additionalPayeePrimaryRevenue,
+            additionalPayeePrimaryAddress: additionalPayeePrimaryAddress
+        });
     }
 
     /**
@@ -230,79 +224,70 @@ library SplitFundsLib {
         }
         // split remaining funds between foundation, artist, and artist's
         bool isEngine_ = isEngine(coreContract);
+        uint256 renderProviderRevenue;
+        address payable renderProviderAddress;
+        uint256 platformProviderRevenue;
+        address payable platformProviderAddress;
+        uint256 artistRevenue;
+        address payable artistAddress;
+        uint256 additionalPayeePrimaryRevenue;
+        address payable additionalPayeePrimaryAddress;
         if (isEngine_) {
             // get engine splits
-            // uint256 platformProviderRevenue_;
-            // address payable platformProviderAddress_;
             (
-                uint256 renderProviderRevenue,
-                address payable renderProviderAddress,
-                uint256 platformProviderRevenue,
-                address payable platformProviderAddress,
-                uint256 artistRevenue,
-                address payable artistAddress,
-                uint256 additionalPayeePrimaryRevenue,
-                address payable additionalPayeePrimaryAddress
+                renderProviderRevenue,
+                renderProviderAddress,
+                platformProviderRevenue,
+                platformProviderAddress,
+                artistRevenue,
+                artistAddress,
+                additionalPayeePrimaryRevenue,
+                additionalPayeePrimaryAddress
             ) = IGenArt721CoreContractV3_Engine(coreContract)
-                    .getPrimaryRevenueSplits({
-                        _projectId: projectId,
-                        _price: pricePerToken
-                    });
-            // require total revenue split is 100%
-            require(
-                renderProviderRevenue +
-                    platformProviderRevenue +
-                    artistRevenue +
-                    additionalPayeePrimaryRevenue ==
-                    pricePerToken,
-                "Invalid revenue split totals"
-            );
-            // distribute revenues
-            _sendPaymentsERC20({
-                projectCurrency: projectCurrency,
-                platformProviderRevenue: platformProviderRevenue,
-                platformProviderAddress: platformProviderAddress,
-                renderProviderRevenue: renderProviderRevenue,
-                renderProviderAddress: renderProviderAddress,
-                artistRevenue: artistRevenue,
-                artistAddress: artistAddress,
-                additionalPayeePrimaryRevenue: additionalPayeePrimaryRevenue,
-                additionalPayeePrimaryAddress: additionalPayeePrimaryAddress
-            });
-        } else {
-            // get flagship splits
-            (
-                uint256 renderProviderRevenue, // artblocks revenue
-                address payable renderProviderAddress, // artblocks address
-                uint256 artistRevenue,
-                address payable artistAddress,
-                uint256 additionalPayeePrimaryRevenue,
-                address payable additionalPayeePrimaryAddress
-            ) = IGenArt721CoreContractV3(coreContract).getPrimaryRevenueSplits({
+                .getPrimaryRevenueSplits({
                     _projectId: projectId,
                     _price: pricePerToken
                 });
-            // require total revenue split is 100%
-            require(
-                renderProviderRevenue +
-                    artistRevenue +
-                    additionalPayeePrimaryRevenue ==
-                    pricePerToken,
-                "Invalid revenue split totals"
-            );
-            // distribute revenues
-            _sendPaymentsERC20({
-                projectCurrency: projectCurrency,
-                platformProviderRevenue: 0, // no platform provider for flagship
-                platformProviderAddress: payable(address(0)), // dummy value
-                renderProviderRevenue: renderProviderRevenue, // artblocks revenue
-                renderProviderAddress: renderProviderAddress, // artblocks address
-                artistRevenue: artistRevenue,
-                artistAddress: artistAddress,
-                additionalPayeePrimaryRevenue: additionalPayeePrimaryRevenue,
-                additionalPayeePrimaryAddress: additionalPayeePrimaryAddress
+        } else {
+            // get flagship splits
+            // @dev note that platformProviderAddress and
+            // platformProviderRevenue remain 0 for flagship
+            (
+                renderProviderRevenue, // artblocks revenue
+                renderProviderAddress, // artblocks address
+                artistRevenue,
+                artistAddress,
+                additionalPayeePrimaryRevenue,
+                additionalPayeePrimaryAddress
+            ) = IGenArt721CoreContractV3(coreContract).getPrimaryRevenueSplits({
+                _projectId: projectId,
+                _price: pricePerToken
             });
         }
+        // require total revenue split is 100%
+        // @dev note that platformProviderRevenue remains 0 for flagship
+        require(
+            renderProviderRevenue +
+                platformProviderRevenue +
+                artistRevenue +
+                additionalPayeePrimaryRevenue ==
+                pricePerToken,
+            "Invalid revenue split totals"
+        );
+        // distribute revenues
+        // @dev note that platformProviderAddress and platformProviderRevenue
+        // remain 0 for flagship
+        _sendPaymentsERC20({
+            projectCurrency: projectCurrency,
+            platformProviderRevenue: platformProviderRevenue,
+            platformProviderAddress: platformProviderAddress,
+            renderProviderRevenue: renderProviderRevenue,
+            renderProviderAddress: renderProviderAddress,
+            artistRevenue: artistRevenue,
+            artistAddress: artistAddress,
+            additionalPayeePrimaryRevenue: additionalPayeePrimaryRevenue,
+            additionalPayeePrimaryAddress: additionalPayeePrimaryAddress
+        });
     }
 
     /**
