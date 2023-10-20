@@ -25,7 +25,8 @@ export const revertMessages = {
   onlyNonZeroAddress: "Only non-zero address",
   onlyNonZero: "Only non-zero",
   minterAlreadyApproved: "Minter already approved",
-  mustSendEqualAmount: "Must send amount equal to price per token",
+  mustSendCorrectAmount:
+    "Must send amount greater than or equal to price per token",
   noMinterAssigned: "No minter assigned",
   onlyPreviouslyApprovedMinter: "Only previously approved minter",
   onlyApprovedMinters: "Only approved minters",

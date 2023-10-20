@@ -168,7 +168,11 @@ runForEach.forEach((params) => {
           );
         await setPriceMinter
           .connect(config.accounts.artist)
-          .purchase(config.projectZero, config.genArt721Core.address);
+          .purchase(
+            config.projectZero,
+            config.genArt721Core.address,
+            ethers.utils.parseEther("0")
+          );
         // switch back to original minter
         await config.minterFilter
           .connect(config.accounts.artist)
@@ -188,9 +192,7 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero, config.genArt721Core.address, {
-              value: config.pricePerTokenInWei,
-            }),
+            .purchase(config.projectZero, config.genArt721Core.address),
           revertMessages.maximumInvocationsReached
         );
       });
@@ -200,9 +202,11 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero, config.genArt721Core.address, {
-              value: config.pricePerTokenInWei,
-            }),
+            .purchase(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.pricePerTokenInWei
+            ),
           revertMessages.priceNotConfigured
         );
       });
@@ -249,9 +253,11 @@ runForEach.forEach((params) => {
         for (let i = 0; i < 15; i++) {
           await setPriceMinter
             .connect(config.accounts.user)
-            .purchase(config.projectOne, config.genArt721Core.address, {
-              value: config.pricePerTokenInWei,
-            });
+            .purchase(
+              config.projectOne,
+              config.genArt721Core.address,
+              config.pricePerTokenInWei
+            );
         }
       });
 
@@ -304,7 +310,11 @@ runForEach.forEach((params) => {
           // purchase token
           await config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero, config.genArt721Core.address);
+            .purchase(
+              config.projectZero,
+              config.genArt721Core.address,
+              ethers.utils.parseEther("0")
+            );
           // check user balance
           const userBalanceAfter = await config.ERC20.balanceOf(
             config.accounts.user.address
@@ -317,7 +327,11 @@ runForEach.forEach((params) => {
           );
           await config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero, config.genArt721Core.address);
+            .purchase(
+              config.projectZero,
+              config.genArt721Core.address,
+              ethers.utils.parseEther("0")
+            );
         });
 
         it("requires successful payment to render provider", async function () {
@@ -359,7 +373,11 @@ runForEach.forEach((params) => {
           await expectRevert(
             config.minter
               .connect(config.accounts.user)
-              .purchase(config.projectZero, config.genArt721Core.address),
+              .purchase(
+                config.projectZero,
+                config.genArt721Core.address,
+                config.pricePerTokenInWei
+              ),
             revertMessages.ERC20MockBannedTransfer
           );
         });
@@ -398,7 +416,8 @@ runForEach.forEach((params) => {
                 .purchaseTo(
                   config.accounts.additional.address,
                   config.projectZero,
-                  config.genArt721Core.address
+                  config.genArt721Core.address,
+                  config.pricePerTokenInWei
                 ),
               revertMessages.ERC20MockBannedTransfer
             );
@@ -428,7 +447,11 @@ runForEach.forEach((params) => {
           await expectRevert(
             config.minter
               .connect(config.accounts.user)
-              .purchase(config.projectZero, config.genArt721Core.address),
+              .purchase(
+                config.projectZero,
+                config.genArt721Core.address,
+                config.pricePerTokenInWei
+              ),
             revertMessages.ERC20MockBannedTransfer
           );
         });
@@ -472,7 +495,11 @@ runForEach.forEach((params) => {
           await expectRevert(
             config.minter
               .connect(config.accounts.user)
-              .purchase(config.projectZero, config.genArt721Core.address),
+              .purchase(
+                config.projectZero,
+                config.genArt721Core.address,
+                config.pricePerTokenInWei
+              ),
             revertMessages.ERC20MockBannedTransfer
           );
         });
@@ -523,7 +550,11 @@ runForEach.forEach((params) => {
           );
           await config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero, config.genArt721Core.address);
+            .purchase(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.pricePerTokenInWei
+            );
         });
 
         it("requires configured, non-zero currency address", async function () {
@@ -539,7 +570,11 @@ runForEach.forEach((params) => {
           await expectRevert(
             config.minter
               .connect(config.accounts.user)
-              .purchase(config.projectOne, config.genArt721Core.address),
+              .purchase(
+                config.projectOne,
+                config.genArt721Core.address,
+                config.pricePerTokenInWei
+              ),
             revertMessages.ERC20NotConfigured
           );
         });
@@ -557,10 +592,12 @@ runForEach.forEach((params) => {
           await expectRevert(
             config.minter
               .connect(config.accounts.user)
-              .purchase(config.projectZero, config.genArt721Core.address, {
-                value: config.pricePerTokenInWei,
-              }),
-            revertMessages.ERC20NoEther
+              .purchase(
+                config.projectZero,
+                config.genArt721Core.address,
+                config.pricePerTokenInWei
+              ),
+            revertMessages.needMoreAllowance
           );
         });
       });
@@ -581,9 +618,7 @@ runForEach.forEach((params) => {
               config.accounts.additional.address,
               config.projectZero,
               config.genArt721Core.address,
-              {
-                value: config.pricePerTokenInWei,
-              }
+              config.pricePerTokenInWei
             ),
           revertMessages.priceNotConfigured
         );
@@ -607,7 +642,8 @@ runForEach.forEach((params) => {
           .purchaseTo(
             config.accounts.additional.address,
             config.projectZero,
-            config.genArt721Core.address
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
           );
       });
     });
