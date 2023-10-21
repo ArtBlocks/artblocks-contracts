@@ -496,7 +496,7 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         // validate that the price sent is greater than or equal to the price per token
         require(
             purchasePricePerToken >= pricePerTokenInWei,
-            "Must send amount greater than or equal to price per token"
+            "Only max price gte token price"
         );
 
         // INTERACTIONS
