@@ -242,11 +242,12 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
+          ["purchase(uint256,address,address,uint256,uint256)"](
             config.projectZero,
             config.genArt721Core.address,
             config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber()
+            config.projectZeroTokenZero.toNumber(),
+            config.pricePerTokenInWei
           );
         let result = await config.minter.projectMaxHasBeenInvoked(
           config.projectZero,
@@ -270,11 +271,12 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
+          ["purchase(uint256,address,address,uint256,uint256)"](
             config.projectZero,
             config.genArt721Core.address,
             config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber()
+            config.projectZeroTokenZero.toNumber(),
+            config.pricePerTokenInWei
           );
         const isEngineView = await config.minter
           .connect(config.accounts.artist)
@@ -380,11 +382,12 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
+          ["purchase(uint256,address,address,uint256,uint256)"](
             config.projectZero,
             config.genArt721Core.address,
             config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber()
+            config.projectZeroTokenZero.toNumber(),
+            config.pricePerTokenInWei
           );
         // validate view response after hash seed is used
         const resultAfter =

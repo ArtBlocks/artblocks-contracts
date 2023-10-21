@@ -8,7 +8,6 @@ pragma solidity 0.8.19;
 import {IGenArt721CoreContractV3_Base} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import {IDelegationRegistry} from "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import {ISharedMinterV0} from "../../interfaces/v0.8.x/ISharedMinterV0.sol";
-import {ISharedMinterHolderV0} from "../../interfaces/v0.8.x/ISharedMinterHolderV0.sol";
 import {IMinterFilterV1} from "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
 import {AuthLib} from "../../libs/v0.8.x/AuthLib.sol";
@@ -82,11 +81,7 @@ import {EnumerableSet} from "@openzeppelin-4.5/contracts/utils/structs/Enumerabl
  * configured on this minter, but they will not be able to mint tokens due to
  * checks performed by this minter's Minter Filter.
  */
-contract MinterSetPricePolyptychERC20V5 is
-    ReentrancyGuard,
-    ISharedMinterV0,
-    ISharedMinterHolderV0
-{
+contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
     // add Enumerable Set methods
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -398,13 +393,15 @@ contract MinterSetPricePolyptychERC20V5 is
      * owned by msg.sender being used as the parent token.
      * @param ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender to be
      * used as the parent token.
+     * @param purchasePricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @return tokenId Token ID of minted token
      */
     function purchase(
         uint256 projectId,
         address coreContract,
         address ownedNFTAddress,
-        uint256 ownedNFTTokenId
+        uint256 ownedNFTTokenId,
+        uint256 purchasePricePerToken
     ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo({
             to: msg.sender,
@@ -412,7 +409,8 @@ contract MinterSetPricePolyptychERC20V5 is
             coreContract: coreContract,
             ownedNFTAddress: ownedNFTAddress,
             ownedNFTTokenId: ownedNFTTokenId,
-            vault: address(0)
+            vault: address(0),
+            purchasePricePerToken: purchasePricePerToken
         });
         return tokenId;
     }
@@ -429,6 +427,7 @@ contract MinterSetPricePolyptychERC20V5 is
      * msg.sender being used as the parent token.
      * @param ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
      * as the parent token.
+     * @param purchasePricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
@@ -436,7 +435,8 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256 projectId,
         address coreContract,
         address ownedNFTAddress,
-        uint256 ownedNFTTokenId
+        uint256 ownedNFTTokenId,
+        uint256 purchasePricePerToken
     ) external payable returns (uint256 tokenId) {
         return
             purchaseTo({
@@ -445,7 +445,8 @@ contract MinterSetPricePolyptychERC20V5 is
                 coreContract: coreContract,
                 ownedNFTAddress: ownedNFTAddress,
                 ownedNFTTokenId: ownedNFTTokenId,
-                vault: address(0)
+                vault: address(0),
+                purchasePricePerToken: purchasePricePerToken
             });
     }
 
@@ -799,6 +800,7 @@ contract MinterSetPricePolyptychERC20V5 is
      * msg.sender or `vault` being used as the parent token.
      * @param ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender or
      * `vault` being used as the parent token.
+     * @param purchasePricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
@@ -807,7 +809,8 @@ contract MinterSetPricePolyptychERC20V5 is
         address coreContract,
         address ownedNFTAddress,
         uint256 ownedNFTTokenId,
-        address vault
+        address vault,
+        uint256 purchasePricePerToken
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         // pre-mint MaxInvocationsLib checks
@@ -942,6 +945,12 @@ contract MinterSetPricePolyptychERC20V5 is
                 targetOwner: targetOwner
             });
         }
+
+        // validate that the specified maximum price is greater than or equal to the price per token
+        require(
+            purchasePricePerToken >= pricePerTokenInWei,
+            "Only max price gte token price"
+        );
 
         // split funds
         // process payment in ERC20

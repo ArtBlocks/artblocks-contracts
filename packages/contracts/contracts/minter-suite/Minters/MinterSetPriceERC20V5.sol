@@ -448,7 +448,7 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * @param to Address to be the new token's owner.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
-    * @param purchasePricePerToken Maximum price of token being allowed by the purchaser, no decimal places
+     * @param purchasePricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
