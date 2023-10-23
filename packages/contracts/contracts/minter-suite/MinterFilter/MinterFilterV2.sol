@@ -78,7 +78,8 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
 
     /// minter address => qty projects across all core contracts currently
     /// using the minter
-    mapping(address => uint256) public numProjectsUsingMinter;
+    mapping(address minterAddress => uint256 numProjects)
+        public numProjectsUsingMinter;
 
     /**
      * Enumerable Set of globally approved minters.
@@ -96,14 +97,14 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      * contract by via the `approveMinterForContract` function, and can remove
      * minters from this Set via the `revokeMinterForContract` function.
      */
-    mapping(address => EnumerableSet.AddressSet)
+    mapping(address coreContract => EnumerableSet.AddressSet approvedMintersForContract)
         private _contractApprovedMinters;
 
     /**
      * Mapping of core contract addresses to Enumerable Maps of project IDs to
      * minter addresses.
      */
-    mapping(address => EnumerableMap.UintToAddressMap)
+    mapping(address coreContract => EnumerableMap.UintToAddressMap projectIdToMinterAddress)
         private _minterForProject;
 
     function _onlyNonZeroAddress(address address_) internal pure {
