@@ -72,13 +72,13 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
 
     // modifier to restrict access to only Artist allowed calls
     function _onlyArtist(
-        address _coreContract,
-        uint256 _projectId
+        address coreContract,
+        uint256 projectId
     ) internal view {
         require(
             msg.sender ==
-                IGenArt721CoreContractV3_Base(_coreContract)
-                    .projectIdToArtistAddress(_projectId),
+                IGenArt721CoreContractV3_Base(coreContract)
+                    .projectIdToArtistAddress(projectId),
             "Only Artist"
         );
     }
@@ -86,32 +86,32 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
     /**
      * Modifier to restrict access to only calls by the hash seed setter
      * contract of a given project.
-     * @param _coreContract core contract address associated with the project
-     * @param _projectId project ID being set
+     * @param coreContract core contract address associated with the project
+     * @param projectId project ID being set
      */
     function _onlyHashSeedSetterContract(
-        address _coreContract,
-        uint256 _projectId
+        address coreContract,
+        uint256 projectId
     ) internal view {
         require(
-            msg.sender == _hashSeedSetterContracts[_coreContract][_projectId],
+            msg.sender == _hashSeedSetterContracts[coreContract][projectId],
             "Only Hash Seed Setter Contract"
         );
     }
 
     /**
      *
-     * @param _pseudorandomAtomicContract Address of the pseudorandom atomic
+     * @param pseudorandomAtomicContract_ Address of the pseudorandom atomic
      * contract to use for atomically generating random values. This contract
      * does not have an owner, and therefore the pseudorandom atomic contract
      * address cannot be changed after deployment.
      */
-    constructor(address _pseudorandomAtomicContract) {
+    constructor(address pseudorandomAtomicContract_) {
         pseudorandomAtomicContract = IPseudorandomAtomic(
-            _pseudorandomAtomicContract
+            pseudorandomAtomicContract_
         );
         emit PseudorandomAtomicContractUpdated({
-            pseudorandomAtomicContract: _pseudorandomAtomicContract
+            pseudorandomAtomicContract: pseudorandomAtomicContract_
         });
     }
 
@@ -119,18 +119,18 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
      * @inheritdoc ISharedRandomizerV0
      */
     function setHashSeedSetterContract(
-        address _coreContract,
-        uint256 _projectId,
-        address _hashSeedSetterContract
+        address coreContract,
+        uint256 projectId,
+        address hashSeedSetterContract
     ) external {
-        _onlyArtist(_coreContract, _projectId);
-        _hashSeedSetterContracts[_coreContract][
-            _projectId
-        ] = _hashSeedSetterContract;
+        _onlyArtist(coreContract, projectId);
+        _hashSeedSetterContracts[coreContract][
+            projectId
+        ] = hashSeedSetterContract;
         emit HashSeedSetterForProjectUpdated({
-            coreContract: _coreContract,
-            projectId: _projectId,
-            hashSeedSetterContract: _hashSeedSetterContract
+            coreContract: coreContract,
+            projectId: projectId,
+            hashSeedSetterContract: hashSeedSetterContract
         });
     }
 
@@ -138,18 +138,18 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
      * @inheritdoc ISharedRandomizerV0
      */
     function toggleProjectUseAssignedHashSeed(
-        address _coreContract,
-        uint256 _projectId
+        address coreContract,
+        uint256 projectId
     ) external {
-        _onlyArtist(_coreContract, _projectId);
-        _projectUsesHashSeedSetter[_coreContract][
-            _projectId
-        ] = !_projectUsesHashSeedSetter[_coreContract][_projectId];
+        _onlyArtist(coreContract, projectId);
+        _projectUsesHashSeedSetter[coreContract][
+            projectId
+        ] = !_projectUsesHashSeedSetter[coreContract][projectId];
         emit ProjectUsingHashSeedSetterUpdated({
-            coreContract: _coreContract,
-            projectId: _projectId,
-            usingHashSeedSetter: _projectUsesHashSeedSetter[_coreContract][
-                _projectId
+            coreContract: coreContract,
+            projectId: projectId,
+            usingHashSeedSetter: _projectUsesHashSeedSetter[coreContract][
+                projectId
             ]
         });
     }
@@ -158,13 +158,13 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
      * @inheritdoc ISharedRandomizerV0
      */
     function preSetHashSeed(
-        address _coreContract,
-        uint256 _tokenId,
-        bytes12 _hashSeed
+        address coreContract,
+        uint256 tokenId,
+        bytes12 hashSeed
     ) external {
-        uint256 projectId = _tokenIdToProjectId(_tokenId);
-        _onlyHashSeedSetterContract(_coreContract, projectId);
-        _preAssignedHashSeeds[_coreContract][_tokenId] = _hashSeed;
+        uint256 projectId = _tokenIdToProjectId(tokenId);
+        _onlyHashSeedSetterContract(coreContract, projectId);
+        _preAssignedHashSeeds[coreContract][tokenId] = hashSeed;
         // @dev event indicating token hash seed assigned is not required for
         // subgraph indexing because token hash seeds are still assigned
         // atomically in `assignTokenHash` function. If token hash seeds were
@@ -175,7 +175,7 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
     /**
      * @inheritdoc IRandomizer_V3CoreBase
      */
-    function assignTokenHash(uint256 _tokenId) external {
+    function assignTokenHash(uint256 tokenId) external {
         // @dev This function is not specifically gated to any specific caller,
         // but will only call back to the calling contract, `msg.sender`, to
         // set the specified token's hash seed.
@@ -183,18 +183,18 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
         // the token hash seed on a different core contract.
         // @dev variables are named to improve readability
         address coreContract = msg.sender;
-        uint256 projectId = _tokenIdToProjectId(_tokenId);
+        uint256 projectId = _tokenIdToProjectId(tokenId);
         bytes32 hashSeed;
         if (_projectUsesHashSeedSetter[coreContract][projectId]) {
-            hashSeed = _preAssignedHashSeeds[coreContract][_tokenId];
+            hashSeed = _preAssignedHashSeeds[coreContract][tokenId];
         } else {
-            hashSeed = _getPseudorandomAtomic(coreContract, _tokenId);
+            hashSeed = _getPseudorandomAtomic(coreContract, tokenId);
         }
         // verify that the hash seed is non-zero
         require(hashSeed != 0, "Only non-zero hash seed");
         // assign the token hash seed on the core contract
         IGenArt721CoreContractV3_Base(coreContract).setTokenHash_8PT(
-            _tokenId,
+            tokenId,
             hashSeed
         );
     }
@@ -203,58 +203,58 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
      * @inheritdoc ISharedRandomizerV0
      */
     function projectUsesHashSeedSetter(
-        address _coreContract,
-        uint256 _projectId
-    ) external view returns (bool _usingHashSeedSetter) {
-        return _projectUsesHashSeedSetter[_coreContract][_projectId];
+        address coreContract,
+        uint256 projectId
+    ) external view returns (bool usingHashSeedSetter) {
+        return _projectUsesHashSeedSetter[coreContract][projectId];
     }
 
     /**
      * @inheritdoc ISharedRandomizerV0
      */
     function hashSeedSetterContracts(
-        address _coreContract,
-        uint256 _projectId
+        address coreContract,
+        uint256 projectId
     ) external view returns (address _hashSeedSetterContract) {
-        return _hashSeedSetterContracts[_coreContract][_projectId];
+        return _hashSeedSetterContracts[coreContract][projectId];
     }
 
     /**
      * @inheritdoc ISharedRandomizerV0
      */
     function preAssignedHashSeed(
-        address _coreContract,
-        uint256 _tokenId
+        address coreContract,
+        uint256 tokenId
     ) external view returns (bytes12 _hashSeed) {
-        return _preAssignedHashSeeds[_coreContract][_tokenId];
+        return _preAssignedHashSeeds[coreContract][tokenId];
     }
 
     /**
      * @notice Internal function to atomically obtain a pseudorandom number
      * from the configured pseudorandom contract.
-     * @param _coreContract - The core contract that is requesting an atomic
+     * @param coreContract - The core contract that is requesting an atomic
      * pseudorandom number.
-     * @param _tokenId - The token ID on `_coreContract` that is associated
+     * @param tokenId - The token ID on `coreContract` that is associated
      * with the pseudorandom number request.
      */
     function _getPseudorandomAtomic(
-        address _coreContract,
-        uint256 _tokenId
+        address coreContract,
+        uint256 tokenId
     ) internal view returns (bytes32) {
         return
             pseudorandomAtomicContract.getPseudorandomAtomic(
-                keccak256(abi.encodePacked(_coreContract, _tokenId))
+                keccak256(abi.encodePacked(coreContract, tokenId))
             );
     }
 
     /**
-     * @notice Gets the project ID for a given `_tokenId`.
-     * @param _tokenId Token ID to be queried.
-     * @return projectId Project ID for given `_tokenId`.
+     * @notice Gets the project ID for a given `tokenId`.
+     * @param tokenId Token ID to be queried.
+     * @return projectId Project ID for given `tokenId`.
      */
     function _tokenIdToProjectId(
-        uint256 _tokenId
+        uint256 tokenId
     ) internal pure returns (uint256 projectId) {
-        return _tokenId / ONE_MILLION;
+        return tokenId / ONE_MILLION;
     }
 }

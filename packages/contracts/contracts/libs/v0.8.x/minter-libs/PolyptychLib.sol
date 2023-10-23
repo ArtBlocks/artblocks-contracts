@@ -43,27 +43,27 @@ library PolyptychLib {
 
     /**
      * @notice Increments the minter to the next polyptych panel of a given project
-     * @param _projectId Project ID to increment panel ID for
-     * @param _coreContract Core contract address that _projectId is on
+     * @param projectId Project ID to increment panel ID for
+     * @param coreContract Core contract address that _projectId is on
      */
     function incrementPolyptychProjectPanelId(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal {
         PolyptychProjectConfig
-            storage _polyptychProjectConfig = getPolyptychProjectConfig(
-                _projectId,
-                _coreContract
+            storage polyptychProjectConfig = getPolyptychProjectConfig(
+                projectId,
+                coreContract
             );
         // increment panel ID
-        ++_polyptychProjectConfig.polyptychPanelId;
+        ++polyptychProjectConfig.polyptychPanelId;
 
         // index the update
         emit GenericMinterEventsLib.ConfigValueSet(
-            _projectId,
-            _coreContract,
+            projectId,
+            coreContract,
             PolyptychLib.POLYPTYCH_PANEL_ID,
-            _polyptychProjectConfig.polyptychPanelId
+            polyptychProjectConfig.polyptychPanelId
         );
     }
 
@@ -72,33 +72,33 @@ library PolyptychLib {
      * minter.
      * Verifies that the token hash seed is non-zero, and also enforces that
      * the hash seed can only be used up to one time per panel.
-     * @param _projectId Project ID to validate
-     * @param _coreContract Core contract address to validate
-     * @param _tokenHashSeed token hash seed
+     * @param projectId Project ID to validate
+     * @param coreContract Core contract address to validate
+     * @param tokenHashSeed token hash seed
      */
     function validatePolyptychEffects(
-        uint256 _projectId,
-        address _coreContract,
-        bytes12 _tokenHashSeed
+        uint256 projectId,
+        address coreContract,
+        bytes12 tokenHashSeed
     ) internal {
         PolyptychProjectConfig
             storage polyptychProjectConfig = getPolyptychProjectConfig(
-                _projectId,
-                _coreContract
+                projectId,
+                coreContract
             );
         // ensure non-zero hash seed
-        require(_tokenHashSeed != bytes12(0), "Only non-zero hash seeds");
+        require(tokenHashSeed != bytes12(0), "Only non-zero hash seeds");
         // verify that the hash seed has not been used on the current panel
-        uint256 _panelId = polyptychProjectConfig.polyptychPanelId;
+        uint256 panelId = polyptychProjectConfig.polyptychPanelId;
         require(
-            !polyptychProjectConfig.polyptychPanelHashSeedIsMinted[_panelId][
-                _tokenHashSeed
+            !polyptychProjectConfig.polyptychPanelHashSeedIsMinted[panelId][
+                tokenHashSeed
             ],
             "Panel already minted"
         );
         // mark hash seed as used for the current panel
-        polyptychProjectConfig.polyptychPanelHashSeedIsMinted[_panelId][
-            _tokenHashSeed
+        polyptychProjectConfig.polyptychPanelHashSeedIsMinted[panelId][
+            tokenHashSeed
         ] = true;
     }
 
@@ -107,40 +107,40 @@ library PolyptychLib {
      * token ID on a core contract.
      * @dev This function assumes the core contract is configured to use a
      * shared randomizer that supports polyptych minting.
-     * @param _coreContract Core contract address
-     * @param _tokenId Token ID to set hash seed for
-     * @param _hashSeed Hash seed to set
+     * @param coreContract Core contract address
+     * @param tokenId Token ID to set hash seed for
+     * @param hashSeed Hash seed to set
      */
     function setPolyptychHashSeed(
-        address _coreContract,
-        uint256 _tokenId,
-        bytes12 _hashSeed
+        address coreContract,
+        uint256 tokenId,
+        bytes12 hashSeed
     ) internal {
-        IGenArt721CoreContractV3WithSharedRandomizer(_coreContract)
+        IGenArt721CoreContractV3WithSharedRandomizer(coreContract)
             .randomizerContract()
             .preSetHashSeed({
-                _coreContract: _coreContract,
-                _tokenId: _tokenId,
-                _hashSeed: _hashSeed
+                coreContract: coreContract,
+                tokenId: tokenId,
+                hashSeed: hashSeed
             });
     }
 
     /**
-     * Validates that token hash seed is assigned to the token ID `_tokenId` on
-     * the core contract `_coreContract`.
+     * Validates that token hash seed is assigned to the token ID `tokenId` on
+     * the core contract `coreContract`.
      * Reverts if hash seed is not assigned to the token ID.
-     * @param _coreContract Core contract address
-     * @param _tokenId Token ID to validate
-     * @param _targetHashSeed target hash seed of `_tokenId` on `_coreContract`
+     * @param coreContract Core contract address
+     * @param tokenId Token ID to validate
+     * @param targetHashSeed target hash seed of `tokenId` on `coreContract`
      */
     function validateAssignedHashSeed(
-        address _coreContract,
-        uint256 _tokenId,
-        bytes12 _targetHashSeed
+        address coreContract,
+        uint256 tokenId,
+        bytes12 targetHashSeed
     ) internal view {
-        bytes12 _assignedHashSeed = getTokenHashSeed(_coreContract, _tokenId);
+        bytes12 assignedHashSeed = getTokenHashSeed(coreContract, tokenId);
         require(
-            _assignedHashSeed == _targetHashSeed,
+            assignedHashSeed == targetHashSeed,
             "Unexpected token hash seed"
         );
     }
@@ -151,33 +151,33 @@ library PolyptychLib {
      * `IGenArt721CoreContractExposesHashSeed`, which early versions of V3
      * core contracts do not. If a contract does not conform to this interface,
      * this function will revert.
-     * @param _coreContract Core contract address
-     * @param _tokenId Token ID to query hash seed for
+     * @param coreContract Core contract address
+     * @param tokenId Token ID to query hash seed for
      */
     function getTokenHashSeed(
-        address _coreContract,
-        uint256 _tokenId
+        address coreContract,
+        uint256 tokenId
     ) internal view returns (bytes12) {
         return
-            IGenArt721CoreContractExposesHashSeed(_coreContract)
-                .tokenIdToHashSeed(_tokenId);
+            IGenArt721CoreContractExposesHashSeed(coreContract)
+                .tokenIdToHashSeed(tokenId);
     }
 
     /**
      * Gets the current polyptych panel ID from polyptych project config.
      * Polyptych panel ID is an incremented value that is used to track the
      * current panel of a polyptych project.
-     * @param _projectId Project ID to query
-     * @param _coreContract Core contract address to query
+     * @param projectId Project ID to query
+     * @param coreContract Core contract address to query
      */
     function getPolyptychPanelId(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (uint256) {
         PolyptychProjectConfig
             storage polyptychProjectConfig = getPolyptychProjectConfig({
-                _projectId: _projectId,
-                _coreContract: _coreContract
+                projectId: projectId,
+                coreContract: coreContract
             });
         return polyptychProjectConfig.polyptychPanelId;
     }
@@ -185,39 +185,39 @@ library PolyptychLib {
     /**
      * Gets if a polyptych panel has already been minted for a given panel ID
      * and hash seed.
-     * @param _projectId Project ID to query
-     * @param _coreContract Core contract address to query
-     * @param _panelId Polyptych panel ID to query
-     * @param _hashSeed Hash seed of panel to query
+     * @param projectId Project ID to query
+     * @param coreContract Core contract address to query
+     * @param panelId Polyptych panel ID to query
+     * @param hashSeed Hash seed of panel to query
      */
     function getPolyptychPanelHashSeedIsMinted(
-        uint256 _projectId,
-        address _coreContract,
-        uint256 _panelId,
-        bytes12 _hashSeed
+        uint256 projectId,
+        address coreContract,
+        uint256 panelId,
+        bytes12 hashSeed
     ) internal view returns (bool) {
         PolyptychProjectConfig
             storage polyptychProjectConfig = getPolyptychProjectConfig(
-                _projectId,
-                _coreContract
+                projectId,
+                coreContract
             );
         return
-            polyptychProjectConfig.polyptychPanelHashSeedIsMinted[_panelId][
-                _hashSeed
+            polyptychProjectConfig.polyptychPanelHashSeedIsMinted[panelId][
+                hashSeed
             ];
     }
 
     /**
      * Loads the PolyptychProjectConfig for a given project and core
      * contract.
-     * @param _projectId Project Id to get config for
-     * @param _coreContract Core contract address to get config for
+     * @param projectId Project Id to get config for
+     * @param coreContract Core contract address to get config for
      */
     function getPolyptychProjectConfig(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (PolyptychProjectConfig storage) {
-        return s().polyptychProjectConfigs[_coreContract][_projectId];
+        return s().polyptychProjectConfigs[coreContract][projectId];
     }
 
     /**
