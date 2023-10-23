@@ -5,7 +5,6 @@
 // source code verification purposes.
 pragma solidity 0.8.19;
 
-import {ISharedMinterSimplePurchaseV0} from "../../interfaces/v0.8.x/ISharedMinterSimplePurchaseV0.sol";
 import {ISharedMinterV0} from "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import {IMinterFilterV1} from "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
@@ -47,11 +46,7 @@ import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGu
  * configured on this minter, but they will not be able to mint tokens due to
  * checks performed by this minter's Minter Filter.
  */
-contract MinterSetPriceERC20V5 is
-    ReentrancyGuard,
-    ISharedMinterSimplePurchaseV0,
-    ISharedMinterV0
-{
+contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
 
@@ -189,16 +184,19 @@ contract MinterSetPriceERC20V5 is
      * @notice Purchases a token from project `projectId`.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
+     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @return tokenId Token ID of minted token
      */
     function purchase(
         uint256 projectId,
-        address coreContract
+        address coreContract,
+        uint256 maxPricePerToken
     ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo({
             to: msg.sender,
             projectId: projectId,
-            coreContract: coreContract
+            coreContract: coreContract,
+            maxPricePerToken: maxPricePerToken
         });
         return tokenId;
     }
@@ -450,12 +448,14 @@ contract MinterSetPriceERC20V5 is
      * @param to Address to be the new token's owner.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
+     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
         address to,
         uint256 projectId,
-        address coreContract
+        address coreContract,
+        uint256 maxPricePerToken
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         // pre-mint MaxInvocationsLib checks
@@ -476,6 +476,7 @@ contract MinterSetPriceERC20V5 is
             projectId: projectId,
             coreContract: coreContract
         });
+
         // @dev revert occurs during payment split if ERC20 token is not
         // configured (i.e. address(0)), so check is not performed here
 
@@ -491,6 +492,12 @@ contract MinterSetPriceERC20V5 is
             tokenId: tokenId,
             coreContract: coreContract
         });
+
+        // validate that the specified maximum price is greater than or equal to the price per token
+        require(
+            maxPricePerToken >= pricePerTokenInWei,
+            "Only max price gte token price"
+        );
 
         // INTERACTIONS
         // split ERC20 funds

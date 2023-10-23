@@ -8,7 +8,7 @@ pragma solidity 0.8.19;
 import {IGenArt721CoreContractV3_Base} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import {IDelegationRegistry} from "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import {ISharedMinterV0} from "../../interfaces/v0.8.x/ISharedMinterV0.sol";
-import {ISharedMinterHolderV0} from "../../interfaces/v0.8.x/ISharedMinterHolderV0.sol";
+import {ISharedMinterHolderERC20V0} from "../../interfaces/v0.8.x/ISharedMinterHolderERC20V0.sol";
 import {IMinterFilterV1} from "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
 import {AuthLib} from "../../libs/v0.8.x/AuthLib.sol";
@@ -85,7 +85,7 @@ import {EnumerableSet} from "@openzeppelin-4.5/contracts/utils/structs/Enumerabl
 contract MinterSetPricePolyptychERC20V5 is
     ReentrancyGuard,
     ISharedMinterV0,
-    ISharedMinterHolderV0
+    ISharedMinterHolderERC20V0
 {
     // add Enumerable Set methods
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -394,6 +394,7 @@ contract MinterSetPricePolyptychERC20V5 is
      * token ID `ownedNFTTokenId` as the parent token.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
+     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @param ownedNFTAddress ERC-721 NFT address holding the project token
      * owned by msg.sender being used as the parent token.
      * @param ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender to be
@@ -403,6 +404,7 @@ contract MinterSetPricePolyptychERC20V5 is
     function purchase(
         uint256 projectId,
         address coreContract,
+        uint256 maxPricePerToken,
         address ownedNFTAddress,
         uint256 ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
@@ -410,6 +412,7 @@ contract MinterSetPricePolyptychERC20V5 is
             to: msg.sender,
             projectId: projectId,
             coreContract: coreContract,
+            maxPricePerToken: maxPricePerToken,
             ownedNFTAddress: ownedNFTAddress,
             ownedNFTTokenId: ownedNFTTokenId,
             vault: address(0)
@@ -425,6 +428,7 @@ contract MinterSetPricePolyptychERC20V5 is
      * @param to Address to be the new token's owner.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
+     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @param ownedNFTAddress ERC-721 NFT holding the project token owned by
      * msg.sender being used as the parent token.
      * @param ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
@@ -435,6 +439,7 @@ contract MinterSetPricePolyptychERC20V5 is
         address to,
         uint256 projectId,
         address coreContract,
+        uint256 maxPricePerToken,
         address ownedNFTAddress,
         uint256 ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
@@ -443,6 +448,7 @@ contract MinterSetPricePolyptychERC20V5 is
                 to: to,
                 projectId: projectId,
                 coreContract: coreContract,
+                maxPricePerToken: maxPricePerToken,
                 ownedNFTAddress: ownedNFTAddress,
                 ownedNFTTokenId: ownedNFTTokenId,
                 vault: address(0)
@@ -795,6 +801,7 @@ contract MinterSetPricePolyptychERC20V5 is
      * @param to Address to be the new token's owner.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
+     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @param ownedNFTAddress ERC-721 NFT holding the project token owned by
      * msg.sender or `vault` being used as the parent token.
      * @param ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender or
@@ -805,6 +812,7 @@ contract MinterSetPricePolyptychERC20V5 is
         address to,
         uint256 projectId,
         address coreContract,
+        uint256 maxPricePerToken,
         address ownedNFTAddress,
         uint256 ownedNFTTokenId,
         address vault
@@ -830,6 +838,12 @@ contract MinterSetPricePolyptychERC20V5 is
         });
         // @dev revert occurs during payment split if ERC20 token is not
         // configured (i.e. address(0)), so check is not performed here
+
+        // validate that the specified maximum price is greater than or equal to the price per token
+        require(
+            maxPricePerToken >= pricePerTokenInWei,
+            "Only max price gte token price"
+        );
 
         // require token used to claim to be in set of allowlisted NFTs
         require(

@@ -25,6 +25,7 @@ export const revertMessages = {
   onlyNonZeroAddress: "Only non-zero address",
   onlyNonZero: "Only non-zero",
   minterAlreadyApproved: "Minter already approved",
+  mustSendCorrectAmount: "Only max price gte token price",
   noMinterAssigned: "No minter assigned",
   onlyPreviouslyApprovedMinter: "Only previously approved minter",
   onlyApprovedMinters: "Only approved minters",
