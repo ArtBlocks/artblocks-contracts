@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
+pragma solidity ^0.8.0;
+
 import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3WithSharedRandomizer.sol";
@@ -9,8 +11,6 @@ import "../../../interfaces/v0.8.x/ISharedRandomizerV0.sol";
 import {GenericMinterEventsLib} from "./GenericMinterEventsLib.sol";
 
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
-
-pragma solidity ^0.8.0;
 
 /**
  * @title Art Blocks Polyptych Minter Library

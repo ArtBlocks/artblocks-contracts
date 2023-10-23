@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
+pragma solidity ^0.8.0;
+
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin-4.7/contracts/token/ERC721/IERC721.sol";
-
-pragma solidity ^0.8.0;
 
 /**
  * @title Art Blocks Token Holder Library

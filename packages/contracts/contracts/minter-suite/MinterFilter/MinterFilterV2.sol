@@ -59,18 +59,13 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     // add Bytes32Strings methods
     using Bytes32Strings for bytes32;
 
-    /// version & type of this core contract
+    /// version of this minter filter contract
+    // @dev use function minterFilterVersion to get this as a string
     bytes32 constant MINTER_FILTER_VERSION = "v2.0.0";
 
-    function minterFilterVersion() external pure returns (string memory) {
-        return MINTER_FILTER_VERSION.toString();
-    }
-
+    /// type of this minter filter contract
+    // @dev use function minterFilterType to get this as a string
     bytes32 constant MINTER_FILTER_TYPE = "MinterFilterV2";
-
-    function minterFilterType() external pure returns (string memory) {
-        return MINTER_FILTER_TYPE.toString();
-    }
 
     /// Admin ACL contract for this minter filter
     IAdminACLV0 public adminACLContract;
@@ -221,10 +216,18 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         emit Deployed();
     }
 
-    /// @dev override to prevent renouncing ownership
-    /// @dev not permission gated since this immediately reverts
-    function renounceOwnership() public pure override {
-        revert("Cannot renounce ownership");
+    /**
+     * @notice returns the version of this minter filter contract
+     */
+    function minterFilterVersion() external pure returns (string memory) {
+        return MINTER_FILTER_VERSION.toString();
+    }
+
+    /**
+     * @notice returns the type of this minter filter contract
+     */
+    function minterFilterType() external pure returns (string memory) {
+        return MINTER_FILTER_TYPE.toString();
     }
 
     /**
@@ -777,6 +780,12 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         returns (address)
     {
         return Ownable.owner();
+    }
+
+    /// @dev override to prevent renouncing ownership
+    /// @dev not permission gated since this immediately reverts
+    function renounceOwnership() public pure override {
+        revert("Cannot renounce ownership");
     }
 
     /**

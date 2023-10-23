@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
+pragma solidity 0.8.19;
+
 import "../../interfaces/v0.8.x/ISharedMinterSimplePurchaseV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDAV0.sol";
@@ -16,8 +18,6 @@ import "../../libs/v0.8.x/AuthLib.sol";
 
 import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
-
-pragma solidity 0.8.19;
 
 /**
  * @title Shared, filtered Minter contract that allows tokens to be minted with
@@ -759,27 +759,6 @@ contract MinterDAExpSettlementV3 is
     }
 
     /**
-     * @notice This function is intentionally not implemented for this version
-     * of the minter. Due to potential for unintended consequences, the
-     * function `manuallyLimitProjectMaxInvocations` should be used to manually
-     * and explicitly limit the maximum invocations for a project to a value
-     * other than the core contract's maximum invocations for a project.
-     * @param _coreContract Core contract address for the given project.
-     * @param _projectId Project ID to set the maximum invocations for.
-     */
-    function syncProjectMaxInvocationsToCore(
-        uint256 _projectId,
-        address _coreContract
-    ) public view {
-        AuthLib.onlyArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _sender: msg.sender
-        });
-        revert("Not implemented");
-    }
-
-    /**
      * @notice Purchases a token from project `_projectId` and sets
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
@@ -852,5 +831,26 @@ contract MinterDAExpSettlementV3 is
         });
 
         return tokenId;
+    }
+
+    /**
+     * @notice This function is intentionally not implemented for this version
+     * of the minter. Due to potential for unintended consequences, the
+     * function `manuallyLimitProjectMaxInvocations` should be used to manually
+     * and explicitly limit the maximum invocations for a project to a value
+     * other than the core contract's maximum invocations for a project.
+     * @param _coreContract Core contract address for the given project.
+     * @param _projectId Project ID to set the maximum invocations for.
+     */
+    function syncProjectMaxInvocationsToCore(
+        uint256 _projectId,
+        address _coreContract
+    ) public view {
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
+        revert("Not implemented");
     }
 }

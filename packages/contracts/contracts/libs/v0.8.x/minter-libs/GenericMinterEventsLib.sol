@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
+pragma solidity ^0.8.0;
+
 import "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
 import "./GenericMinterEventsLib.sol";
-
-pragma solidity ^0.8.0;
 
 /**
  * @title Art Blocks Generic Events Library
