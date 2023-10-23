@@ -154,9 +154,8 @@ library DAExpLib {
         uint256 timestampStart = DAProjectConfig_.timestampStart;
         uint256 priceDecayHalfLifeSeconds = DAProjectConfig_
             .priceDecayHalfLifeSeconds;
-        uint256 basePrice = DAProjectConfig_.basePrice;
 
-        require(block.timestamp > timestampStart, "Auction not yet started");
+        require(block.timestamp >= timestampStart, "Auction not yet started");
         require(priceDecayHalfLifeSeconds > 0, "Only configured auctions");
         uint256 decayedPrice = DAProjectConfig_.startPrice;
         uint256 elapsedTimeSeconds;
@@ -182,6 +181,7 @@ library DAExpLib {
                     priceDecayHalfLifeSeconds) >>
                 1; // divide by 2 via bitshift 1
         }
+        uint256 basePrice = DAProjectConfig_.basePrice;
         if (decayedPrice < basePrice) {
             // Price may not decay below stay `basePrice`.
             return basePrice;

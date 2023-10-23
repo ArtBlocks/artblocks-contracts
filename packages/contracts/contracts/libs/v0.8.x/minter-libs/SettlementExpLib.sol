@@ -571,7 +571,6 @@ library SettlementExpLib {
         // implicit overflow/underflow checks in solidity ^0.8
         requiredAmountPosted = numPurchased * currentSettledTokenPrice;
         excessSettlementFunds = receipt.netPosted - requiredAmountPosted;
-        return (excessSettlementFunds, requiredAmountPosted);
     }
 
     /**

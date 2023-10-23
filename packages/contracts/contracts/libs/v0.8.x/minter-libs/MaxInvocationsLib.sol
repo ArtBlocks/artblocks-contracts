@@ -60,22 +60,23 @@ library MaxInvocationsLib {
         uint256 projectId,
         address coreContract
     ) internal {
-        uint256 maxInvocations;
-        uint256 invocations;
-        (invocations, maxInvocations, , , , ) = IGenArt721CoreContractV3_Base(
-            coreContract
-        ).projectStateData(projectId);
+        uint256 coreInvocations;
+        uint256 coreMaxInvocations;
+        (coreInvocations, coreMaxInvocations) = coreContractInvocationData({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         // update storage with results
         MaxInvocationsProjectConfig
             storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
                 projectId: projectId,
                 coreContract: coreContract
             });
-        maxInvocationsProjectConfig.maxInvocations = uint24(maxInvocations);
+        maxInvocationsProjectConfig.maxInvocations = uint24(coreMaxInvocations);
         emit ProjectMaxInvocationsLimitUpdated({
             projectId: projectId,
             coreContract: coreContract,
-            maxInvocations: maxInvocations
+            maxInvocations: coreMaxInvocations
         });
 
         // We need to ensure maxHasBeenInvoked is correctly set after manually syncing the
@@ -83,7 +84,7 @@ library MaxInvocationsLib {
         // This synced value of maxInvocations from the core contract will always be greater
         // than or equal to the previous value of maxInvocations stored locally.
         maxInvocationsProjectConfig.maxHasBeenInvoked =
-            invocations == maxInvocations;
+            coreInvocations == coreMaxInvocations;
     }
 
     /**
@@ -394,7 +395,7 @@ library MaxInvocationsLib {
         if (maxInvocationsIsUnconfigured(projectId, coreContract)) {
             // populate the minter max invocation state to equal the values on
             // the core contract (least restrictive state)
-            MaxInvocationsLib.syncProjectMaxInvocationsToCore({
+            syncProjectMaxInvocationsToCore({
                 projectId: projectId,
                 coreContract: coreContract
             });

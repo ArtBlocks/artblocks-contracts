@@ -611,7 +611,6 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         // @dev at() reverts if index is out of bounds
         (projectId, minterAddress) = _minterForProject[coreContract].at(index);
         minterType = ISharedMinterV0(minterAddress).minterType();
-        return (projectId, minterAddress, minterType);
     }
 
     /**
