@@ -184,21 +184,21 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * @notice Purchases a token from project `projectId`.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
-     * @param purchasePricePerToken Maximum price of token being allowed by the purchaser, no decimal places
+     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @param currencyAddress Currency address of token.
      * @return tokenId Token ID of minted token
      */
     function purchase(
         uint256 projectId,
         address coreContract,
-        uint256 purchasePricePerToken,
+        uint256 maxPricePerToken,
         address currencyAddress
     ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo({
             to: msg.sender,
             projectId: projectId,
             coreContract: coreContract,
-            purchasePricePerToken: purchasePricePerToken,
+            maxPricePerToken: maxPricePerToken,
             currencyAddress: currencyAddress
         });
         return tokenId;
@@ -451,7 +451,7 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * @param to Address to be the new token's owner.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
-     * @param purchasePricePerToken Maximum price of token being allowed by the purchaser, no decimal places
+     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @param currencyAddress Currency address of token.
      * @return tokenId Token ID of minted token
      */
@@ -459,7 +459,7 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         address to,
         uint256 projectId,
         address coreContract,
-        uint256 purchasePricePerToken,
+        uint256 maxPricePerToken,
         address currencyAddress
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
@@ -494,7 +494,7 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
 
         // validate that the specified maximum price is greater than or equal to the price per token
         require(
-            purchasePricePerToken >= pricePerTokenInWei,
+            maxPricePerToken >= pricePerTokenInWei,
             "Only max price gte token price"
         );
 
