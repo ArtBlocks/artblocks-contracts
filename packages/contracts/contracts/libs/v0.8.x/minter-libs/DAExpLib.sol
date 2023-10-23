@@ -54,7 +54,7 @@ library DAExpLib {
         // @dev max uint40 ~= 1.1e12 sec ~= 34 thousand years
         uint40 timestampStart;
         uint40 priceDecayHalfLifeSeconds;
-        // @dev max uint88 ~= 3e26 Wei = ~30 million ETH, which is well above
+        // @dev max uint88 ~= 3e26 Wei = ~300 million ETH, which is well above
         // the expected prices of any NFT mint in the foreseeable future.
         uint88 startPrice;
         uint88 basePrice;
