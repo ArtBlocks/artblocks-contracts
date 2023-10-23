@@ -391,8 +391,8 @@ library SettlementExpLib {
                 uint256 coreInvocations,
                 uint256 coreMaxInvocations
             ) = MaxInvocationsLib.coreContractInvocationData(
-                    _projectId,
-                    _coreContract
+                    projectId,
+                    coreContract
                 );
             // snap chalkline on the number of tokens to be auctioned on this
             // minter
@@ -403,8 +403,8 @@ library SettlementExpLib {
             // want to require admin to be the withdrawer of revenues in that
             // case.
             uint256 minterMaxInvocations = MaxInvocationsLib.getMaxInvocations(
-                _projectId,
-                _coreContract
+                projectId,
+                coreContract
             );
             // @dev prefer to use stale value minterMaxInvocations here, since
             // if it is stale, the artist could have decreased max invocations
@@ -429,8 +429,8 @@ library SettlementExpLib {
             if (minterMaxInvocations > coreMaxInvocations) {
                 // update minter's max invocations to match core contract
                 MaxInvocationsLib.syncProjectMaxInvocationsToCore({
-                    _projectId: _projectId,
-                    _coreContract: _coreContract
+                    projectId: projectId,
+                    coreContract: coreContract
                 });
             }
         }
