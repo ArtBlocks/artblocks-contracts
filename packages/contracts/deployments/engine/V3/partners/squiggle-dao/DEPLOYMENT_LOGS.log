@@ -1,0 +1,52 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T18:45:32.228Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/squiggle-dao/deployment-config.staging.ts
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T18:46:02.363Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/squiggle-dao/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xA112161F672f9CdbB25cD660F6C0202C04ACDdC7
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x6e04067EB10560bbF30AbC33AA6735E6f18F61C4
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xBfcb700AeBbCEc56c0604Ea3d7CB01334441FecA
+[INFO] Registered core contract 0xBfcb700AeBbCEc56c0604Ea3d7CB01334441FecA on engine registry 0xEa698596b6009A622C3eD00dD5a8b5d1CAE4fC36
+[INFO] Minter Filter MinterFilterV1 deployed at 0xA9F41a797525D35F390DDCAAcD6B8BaCea0533AA
+[INFO] MinterSetPriceV4 deployed at 0x1CfDA15A4B1C9A9Bca6B27D5a5946E438d236fcB
+[INFO] MinterMerkleV5 deployed at 0x5fC76502F32d05E0982f767533C02C92Aa0B2Dca
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xA9F41a797525D35F390DDCAAcD6B8BaCea0533AA.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x1CfDA15A4B1C9A9Bca6B27D5a5946E438d236fcB on minter filter.
+[INFO] Allowlisted minter MinterMerkleV5 at 0x5fC76502F32d05E0982f767533C02C92Aa0B2Dca on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xc904Af16BeDe828A7e2728923CD72DA1F73Fe186.
+[INFO] Verifying core contract contract deployment...
+The contract 0xBfcb700AeBbCEc56c0604Ea3d7CB01334441FecA has already been verified
+[INFO] Core contract verified on Etherscan at 0xBfcb700AeBbCEc56c0604Ea3d7CB01334441FecA}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xA112161F672f9CdbB25cD660F6C0202C04ACDdC7 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xA112161F672f9CdbB25cD660F6C0202C04ACDdC7
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xA9F41a797525D35F390DDCAAcD6B8BaCea0533AA has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xA9F41a797525D35F390DDCAAcD6B8BaCea0533AA
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x1CfDA15A4B1C9A9Bca6B27D5a5946E438d236fcB has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x1CfDA15A4B1C9A9Bca6B27D5a5946E438d236fcB
+[INFO] Verifying MinterMerkleV5 contract deployment...
+The contract 0x5fC76502F32d05E0982f767533C02C92Aa0B2Dca has already been verified
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0x5fC76502F32d05E0982f767533C02C92Aa0B2Dca
+Created s3 bucket for https://squiggle-dao-studios-goerli.s3.amazonaws.com
+[INFO] Created image bucket squiggle-dao-studios-goerli
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/squiggle-dao/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xbfcb700aebbcec56c0604ea3d7cb01334441feca",
+  "name": "Squiggle DAO Studios",
+  "bucket_name": "squiggle-dao-studios-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] render provider sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xc904Af16BeDe828A7e2728923CD72DA1F73Fe186, don't forget to update if required.
+[ACTION] Subgraph: Add Minter Filter and Minter contracts to subgraph config if desire to index minter suite.

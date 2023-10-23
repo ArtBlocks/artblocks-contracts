@@ -1,0 +1,141 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T18:52:38.655Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/shiseido/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x8d4781eD08B905c31A83501De86fab2508Ac6F51
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T18:57:35.375Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/shiseido/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T19:13:50.336Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/shiseido/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T19:19:36.921Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/shiseido/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T19:24:40.805Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/shiseido/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x171187D1cA1f5015AabEb96332cb599CBc47f3c4
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x635047E0fB36Ca9baEcc0E68C26177c3bBF49F6e
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xc74eC888104842277Fa1b74e1C3D415eb673009F
+[INFO] Registered core contract 0xc74eC888104842277Fa1b74e1C3D415eb673009F on engine registry 0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2
+[INFO] Minter Filter MinterFilterV1 deployed at 0xFb4d6304729E77BeE0697CAD1c80a151822bCaEC
+[INFO] MinterSetPriceV4 deployed at 0x5aC686630c2aA04f814b316E225b12ff314FaD89
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xFb4d6304729E77BeE0697CAD1c80a151822bCaEC.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x5aC686630c2aA04f814b316E225b12ff314FaD89 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x0E63aF41ebdB6FF4C37530Dde4757ABBFE3a2dF5.
+[INFO] Verifying core contract contract deployment...
+The contract 0xc74eC888104842277Fa1b74e1C3D415eb673009F has already been verified
+[INFO] Core contract verified on Etherscan at 0xc74eC888104842277Fa1b74e1C3D415eb673009F}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x171187D1cA1f5015AabEb96332cb599CBc47f3c4 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x171187D1cA1f5015AabEb96332cb599CBc47f3c4
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xFb4d6304729E77BeE0697CAD1c80a151822bCaEC has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xFb4d6304729E77BeE0697CAD1c80a151822bCaEC
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x5aC686630c2aA04f814b316E225b12ff314FaD89 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x5aC686630c2aA04f814b316E225b12ff314FaD89
+Created s3 bucket for https://shiseido-abe-mainnet.s3.amazonaws.com
+[INFO] Created image bucket shiseido-abe-mainnet
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/shiseido/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xc74ec888104842277fa1b74e1c3d415eb673009f",
+  "name": "Shiseido x ABE",
+  "bucket_name": "shiseido-abe-mainnet",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] render provider sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x0E63aF41ebdB6FF4C37530Dde4757ABBFE3a2dF5, don't forget to update if required.
+[ACTION] Subgraph: Add Minter Filter and Minter contracts to subgraph config if desire to index minter suite.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T19:33:07.643Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/shiseido/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T19:35:24.015Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/shiseido/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T19:42:51.755Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/shiseido/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+deploying...
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T19:45:20.430Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/shiseido/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+deploying...
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T19:48:45.853Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/shiseido/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+deploying...
+called deploy...
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T19:54:02.471Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/shiseido/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+deploying...
+called deploy...
+deployed...
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x67bCCE6a38875DC155D2C2E7afaaF8a1D3e1CB7b
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x3D7379c49b9f51750F6167D34A964C6872dac002
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x912f9451b04F1a990332665Efae7222Cb1eFAA04
+[INFO] Registered core contract 0x912f9451b04F1a990332665Efae7222Cb1eFAA04 on engine registry 0xEa698596b6009A622C3eD00dD5a8b5d1CAE4fC36
+[INFO] Minter Filter MinterFilterV1 deployed at 0xd1B7B418c4BD19326F15eb56321Ac7FdFC50C403
+[INFO] MinterSetPriceV4 deployed at 0xc4cbC7Cf4068858fE32E36fBbFe857bDEc4C1dEF
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xd1B7B418c4BD19326F15eb56321Ac7FdFC50C403.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xc4cbC7Cf4068858fE32E36fBbFe857bDEc4C1dEF on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x63095F23364563e68EA8aAc7cA7D64a69D61CB8b.
+[INFO] Verifying core contract contract deployment...
+The contract 0x912f9451b04F1a990332665Efae7222Cb1eFAA04 has already been verified
+[INFO] Core contract verified on Etherscan at 0x912f9451b04F1a990332665Efae7222Cb1eFAA04}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x67bCCE6a38875DC155D2C2E7afaaF8a1D3e1CB7b has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x67bCCE6a38875DC155D2C2E7afaaF8a1D3e1CB7b
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xd1B7B418c4BD19326F15eb56321Ac7FdFC50C403 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xd1B7B418c4BD19326F15eb56321Ac7FdFC50C403
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0xc4cbC7Cf4068858fE32E36fBbFe857bDEc4C1dEF has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xc4cbC7Cf4068858fE32E36fBbFe857bDEc4C1dEF
+Created s3 bucket for https://shiseido-abe-goerli.s3.amazonaws.com
+[INFO] Created image bucket shiseido-abe-goerli
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/shiseido/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x912f9451b04f1a990332665efae7222cb1efaa04",
+  "name": "Shiseido x ABE",
+  "bucket_name": "shiseido-abe-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] render provider sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x63095F23364563e68EA8aAc7cA7D64a69D61CB8b, don't forget to update if required.
+[ACTION] Subgraph: Add Minter Filter and Minter contracts to subgraph config if desire to index minter suite.

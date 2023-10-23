@@ -33,6 +33,8 @@ const runForEach = [
   },
 ];
 
+const FAKE_CURRENCY_ADDRESS = "0xba5bd3d5644f570738eecd5ad9639e6f712dae87";
+
 runForEach.forEach((params) => {
   describe(`${TARGET_MINTER_NAME} Configure w/ core ${params.core}`, async function () {
     async function _beforeEach() {
@@ -229,41 +231,57 @@ runForEach.forEach((params) => {
             config.genArt721Core.address,
             config.higherPricePerTokenInWei
           );
-        // can purchase token at higher price
+
+        // approve lower price of ERC20 tokens
+        await config.ERC20.connect(config.accounts.artist).approve(
+          config.minter.address,
+          config.pricePerTokenInWei
+        );
+        // cannot purchase token at lower price
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            ["purchase(uint256,address,uint256,address,address,uint256)"](
+              config.projectZero,
+              config.genArt721Core.address,
+              config.pricePerTokenInWei,
+              config.ERC20.address,
+              config.genArt721Core.address,
+              config.projectZeroTokenZero.toNumber()
+            ),
+          revertMessages.mustSendCorrectAmount
+        );
+
+        // even if correct price is sent, need to approve higher allowance of ERC20 tokens
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            ["purchase(uint256,address,uint256,address,address,uint256)"](
+              config.projectZero,
+              config.genArt721Core.address,
+              config.higherPricePerTokenInWei,
+              config.ERC20.address,
+              config.genArt721Core.address,
+              config.projectZeroTokenZero.toNumber()
+            ),
+          revertMessages.needMoreAllowance
+        );
+
+        // can purchase token at higher price, after approval
         await config.ERC20.connect(config.accounts.artist).approve(
           config.minter.address,
           config.higherPricePerTokenInWei
         );
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
+          ["purchase(uint256,address,uint256,address,address,uint256)"](
             config.projectZero,
             config.genArt721Core.address,
+            config.higherPricePerTokenInWei,
+            config.ERC20.address,
             config.genArt721Core.address,
             config.projectZeroTokenZero.toNumber()
           );
-        // cannot purchase token at lower price
-        await config.minter
-          .connect(config.accounts.artist)
-          .incrementPolyptychProjectPanelId(
-            config.projectZero,
-            config.genArt721Core.address
-          );
-        await config.ERC20.connect(config.accounts.artist).approve(
-          config.minter.address,
-          config.pricePerTokenInWei
-        );
-        await expectRevert(
-          config.minter
-            .connect(config.accounts.artist)
-            ["purchase(uint256,address,address,uint256)"](
-              config.projectZero,
-              config.genArt721Core.address,
-              config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber()
-            ),
-          revertMessages.needMoreAllowance
-        );
       });
 
       it("enforces price update only on desired project", async function () {
@@ -322,20 +340,129 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.artist)
-            ["purchase(uint256,address,address,uint256)"](
+            ["purchase(uint256,address,uint256,address,address,uint256)"](
               config.projectOne,
               config.genArt721Core.address,
+              config.pricePerTokenInWei,
+              config.ERC20.address,
               config.genArt721Core.address,
               config.projectZeroTokenZero.toNumber()
             ),
-          revertMessages.needMoreAllowance
+          revertMessages.mustSendCorrectAmount
         );
         // can purchase project two token at lower price
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
+          ["purchase(uint256,address,uint256,address,address,uint256)"](
             config.projectZero,
             config.genArt721Core.address,
+            config.pricePerTokenInWei,
+            config.ERC20.address,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber()
+          );
+      });
+    });
+    describe("purchase", async function () {
+      it("requires price sent to be greater than or equal to the minting price", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+
+        // user approves minter to spend an amount of mint price
+        await config.ERC20.connect(config.accounts.artist).approve(
+          config.minter.address,
+          config.pricePerTokenInWei
+        );
+
+        // user can purchase token for mint price
+        await config.minter
+          .connect(config.accounts.artist)
+          ["purchase(uint256,address,uint256,address,address,uint256)"](
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei,
+            config.ERC20.address,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber()
+          );
+
+        // increment polyptych panel
+        await config.minter
+          .connect(config.accounts.artist)
+          .incrementPolyptychProjectPanelId(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // user can purchase token for price higher than mint
+        await config.ERC20.connect(config.accounts.artist).approve(
+          config.minter.address,
+          config.higherPricePerTokenInWei
+        );
+        await config.minter
+          .connect(config.accounts.artist)
+          ["purchase(uint256,address,uint256,address,address,uint256)"](
+            config.projectZero,
+            config.genArt721Core.address,
+            config.higherPricePerTokenInWei,
+            config.ERC20.address,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber()
+          );
+      });
+      it("requires the currency to match the configured currency on the project", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+
+        // update currency for project zero
+        await config.minter
+          .connect(config.accounts.artist)
+          .updateProjectCurrencyInfo(
+            config.projectZero,
+            config.genArt721Core.address,
+            "ERC20",
+            config.ERC20.address
+          );
+        // user approves minter to spend an amount of mint price
+        await config.ERC20.connect(config.accounts.artist).approve(
+          config.minter.address,
+          config.pricePerTokenInWei
+        );
+
+        // user can not purchase token if currency addresses do not match
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            ["purchase(uint256,address,uint256,address,address,uint256)"](
+              config.projectZero,
+              config.genArt721Core.address,
+              config.pricePerTokenInWei,
+              FAKE_CURRENCY_ADDRESS,
+              config.genArt721Core.address,
+              config.projectZeroTokenZero.toNumber()
+            ),
+          revertMessages.currencyAddressMatch
+        );
+
+        // user can purchase token if currency address and symbol match
+        await config.minter
+          .connect(config.accounts.artist)
+          ["purchase(uint256,address,uint256,address,address,uint256)"](
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei,
+            config.ERC20.address,
             config.genArt721Core.address,
             config.projectZeroTokenZero.toNumber()
           );
@@ -441,9 +568,11 @@ runForEach.forEach((params) => {
         // mint a token
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
+          ["purchase(uint256,address,uint256,address,address,uint256)"](
             config.projectZero,
             config.genArt721Core.address,
+            config.pricePerTokenInWei,
+            config.ERC20.address,
             config.genArt721Core.address,
             config.projectZeroTokenZero.toNumber()
           );
@@ -511,9 +640,11 @@ runForEach.forEach((params) => {
         // mint a token
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
+          ["purchase(uint256,address,uint256,address,address,uint256)"](
             config.projectZero,
             config.genArt721Core.address,
+            config.pricePerTokenInWei,
+            config.ERC20.address,
             config.genArt721Core.address,
             config.projectZeroTokenZero.toNumber()
           );
@@ -743,9 +874,11 @@ runForEach.forEach((params) => {
         // can purchase first token
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
+          ["purchase(uint256,address,uint256,address,address,uint256)"](
             config.projectZero,
             config.genArt721Core.address,
+            config.pricePerTokenInWei,
+            config.ERC20.address,
             config.genArt721Core.address,
             config.projectZeroTokenZero.toNumber()
           );
@@ -753,9 +886,11 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.artist)
-            ["purchase(uint256,address,address,uint256)"](
+            ["purchase(uint256,address,uint256,address,address,uint256)"](
               config.projectZero,
               config.genArt721Core.address,
+              config.pricePerTokenInWei,
+              config.ERC20.address,
               config.genArt721Core.address,
               config.projectZeroTokenZero.toNumber()
             ),
@@ -771,9 +906,11 @@ runForEach.forEach((params) => {
         // can purchase second token after incrementing panel
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
+          ["purchase(uint256,address,uint256,address,address,uint256)"](
             config.projectZero,
             config.genArt721Core.address,
+            config.pricePerTokenInWei,
+            config.ERC20.address,
             config.genArt721Core.address,
             config.projectZeroTokenZero.toNumber()
           );
@@ -782,9 +919,11 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.artist)
-            ["purchase(uint256,address,address,uint256)"](
+            ["purchase(uint256,address,uint256,address,address,uint256)"](
               config.projectZero,
               config.genArt721Core.address,
+              config.pricePerTokenInWei,
+              config.ERC20.address,
               config.genArt721Core.address,
               config.projectZeroTokenOne.toNumber()
             ),
@@ -814,9 +953,11 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.artist)
-            ["purchase(uint256,address,address,uint256)"](
+            ["purchase(uint256,address,uint256,address,address,uint256)"](
               config.projectZero,
               config.genArt721Core.address,
+              config.pricePerTokenInWei,
+              config.ERC20.address,
               config.genArt721Core.address,
               config.projectZeroTokenZero.toNumber()
             ),

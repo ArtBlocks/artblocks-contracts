@@ -220,6 +220,11 @@ library SplitFundsLib {
             );
             require(msg.value == 0, "ERC20: No ETH when using ERC20");
             // ERC20 token is used for payment
+            validateERC20Approvals({
+                msgSender: msg.sender,
+                currencyAddress: currencyAddress,
+                pricePerTokenInWei: pricePerTokenInWei
+            });
             projectCurrency = IERC20(currencyAddress);
         }
         // split remaining funds between foundation, artist, and artist's
@@ -537,6 +542,34 @@ library SplitFundsLib {
             spender: spenderAddress
         });
         return allowance;
+    }
+
+    /**
+     * @notice Function validates that `msgSender` has approved the contract to spend at least
+     * `pricePerTokenInWei` of `currencyAddress` ERC20 tokens, and that
+     * `msgSender` has a balance of at least `pricePerTokenInWei` of
+     * `currencyAddress` ERC20 tokens.
+     * Reverts if insufficient allowance or balance.
+     * @param msgSender Address of the message sender to validate.
+     * @param currencyAddress Address of the ERC20 token to validate.
+     * @param pricePerTokenInWei Price per token in wei to validate.
+     */
+    function validateERC20Approvals(
+        address msgSender,
+        address currencyAddress,
+        uint256 pricePerTokenInWei
+    ) private view {
+        require(
+            IERC20(currencyAddress).allowance({
+                owner: msgSender,
+                spender: address(this)
+            }) >= pricePerTokenInWei,
+            "Insufficient ERC20 allowance"
+        );
+        require(
+            IERC20(currencyAddress).balanceOf(msgSender) >= pricePerTokenInWei,
+            "Insufficient ERC20 balance"
+        );
     }
 
     /**
