@@ -110,33 +110,38 @@ import {Math} from "@openzeppelin-4.7/contracts/utils/math/Math.sol";
 contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     using SafeCast for uint256;
 
-    /// Minter filter address this minter interacts with
+    /// @notice Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
 
-    /// Minter filter this minter may interact with.
+    /// @notice Minter filter this minter may interact with.
     IMinterFilterV1 private immutable _minterFilter;
 
-    /// minterType for this minter
+    /// @notice minterType for this minter
     string public constant minterType = "MinterSEAV1";
 
-    /// minter version for this minter
+    /// @notice minter version for this minter
     string public constant minterVersion = "v1.0.0";
 
+    /// @notice Minimum auction duration
     uint256 public constant MIN_AUCTION_DURATION_SECONDS = 60; // seconds
 
     // minter-wide, AdminACL-configurable parameters, where AdminACL is the
     // admin of this minter's MinterFilter.
     // ----------------------------------------
-    // minimum time remaining in auction after a new bid is placed
-    // configureable by admin, default to 120 seconds
-    // max uint32 ~= 4.3e9 sec ~= 136 years
-    // @dev used when determining the buffer time for any new bid on the
-    // minter, across all projects
+
+    /** @notice minimum time remaining in auction after a new bid is placed
+     * configureable by admin, default to 120 seconds
+     * max uint32 ~= 4.3e9 sec ~= 136 years
+     * @dev used when determining the buffer time for any new bid on the
+     * minter, across all projects
+     */
     uint32 internal _minterTimeBufferSeconds = 120;
-    // gas limit for refunding ETH to bidders
-    // configurable by admin, default to 30,000
-    // max uint24 ~= 16 million gas, more than enough for a refund
-    // @dev SENDALL fallback is used to refund ETH if this limit is exceeded
+
+    /** @notice Gas limit for refunding ETH to bidders
+     * configurable by admin, default to 30,000
+     * max uint24 ~= 16 million gas, more than enough for a refund
+     * @dev SENDALL fallback is used to refund ETH if this limit is exceeded
+     */
     uint24 internal _minterRefundGasLimit = 30_000;
 
     // MODIFIERS
@@ -372,7 +377,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
      * the minter and sends it to the input `to` address.
      * This function is only intended for use in the edge case where the minter
      * has a "next token" assigned to a project, but the project has been reset
-     * via `resetAuctionDetails`, and the artist does not want an auction to be
+     * via `resetFutureAuctionDetails`, and the artist does not want an auction to be
      * started for the "next token". This function also protects against the
      * unforseen case where the minter is in an unexpected state where it has a
      * "next token" assigned to a project, but for some reason the project is
@@ -780,8 +785,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     /**
      * @notice Settles a completed auction for `tokenId`, if it exists and is
      * not yet settled.
-     * Returns early (does not modify state) if
-     *   - there is no initialized auction for the project
+     * Function reverts if there is no initialized auction for the project.
+     * Function returns early (does not modify state) if
      *   - there is an auction that has already been settled for the project
      *   - there is an auction for a different token ID on the project
      *     (likely due to a front-run)

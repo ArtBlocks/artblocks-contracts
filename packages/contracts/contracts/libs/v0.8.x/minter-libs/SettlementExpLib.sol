@@ -100,7 +100,7 @@ library SettlementExpLib {
     }
 
     /**
-     * This function updates the _receipt to include `msg.value` and increments
+     * @notice This function updates the _receipt to include `msg.value` and increments
      * the number of tokens purchased by 1. It then checks that the updated
      * receipt is valid (i.e. sufficient funds have been posted for the
      * number of tokens purchased on the updated receipt), and reverts if not.
@@ -676,7 +676,7 @@ library SettlementExpLib {
     }
 
     /**
-     * Returns if a new auction's start price is valid, given the current
+     * @notice Returns if a new auction's start price is valid, given the current
      * state of the project's settlement auction configuration.
      * @param projectId Project ID to check start price for
      * @param coreContract Core contract address to check start price for

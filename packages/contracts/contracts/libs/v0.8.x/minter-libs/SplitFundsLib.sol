@@ -477,7 +477,7 @@ library SplitFundsLib {
     }
 
     /**
-     * Gets the currency address and symbol for the referenced
+     * @notice Gets the currency address and symbol for the referenced
      * SplitFundsProjectConfig.
      * Only supports ERC20 tokens - returns currencySymbol of `UNCONFIG` if
      * `currencyAddress` is zero.
@@ -507,7 +507,7 @@ library SplitFundsLib {
     }
 
     /**
-     * Get the balance of `currencyAddress` ERC20 tokens for `walletAddress`.
+     * @notice Gets the balance of `currencyAddress` ERC20 tokens for `walletAddress`.
      * @param currencyAddress ERC20 token address.
      * @param walletAddress wallet address.
      * @return balance
@@ -520,7 +520,7 @@ library SplitFundsLib {
     }
 
     /**
-     * Gets the allowance of `spenderAddress` to spend `walletAddress`'s
+     * @notice Gets the allowance of `spenderAddress` to spend `walletAddress`'s
      * `currencyAddress` ERC20 tokens.
      * @param currencyAddress ERC20 token address.
      * @param walletAddress wallet address.
@@ -593,7 +593,7 @@ library SplitFundsLib {
     }
 
     /**
-     * Validate that `msgSender` has approved the contract to spend at least
+     * @notice Function validates that `msgSender` has approved the contract to spend at least
      * `pricePerTokenInWei` of `currencyAddress` ERC20 tokens, and that
      * `msgSender` has a balance of at least `pricePerTokenInWei` of
      * `currencyAddress` ERC20 tokens.

@@ -211,7 +211,7 @@ library SEALib {
             "Only future start times or 0"
         );
         // EFFECTS
-        SEAProjectConfig_.timestampStart = timestampStart.toUint64();
+        SEAProjectConfig_.timestampStart = timestampStart.toUint64(); // @dev rely on this safe-cast check in event emit below
         SEAProjectConfig_.auctionDurationSeconds = auctionDurationSeconds
             .toUint32();
         SEAProjectConfig_.basePrice = basePrice;
@@ -220,7 +220,7 @@ library SEALib {
         emit ConfiguredFutureAuctions({
             projectId: projectId,
             coreContract: coreContract,
-            timestampStart: timestampStart.toUint64(),
+            timestampStart: uint64(timestampStart), // @dev safe-casting already previously checked
             auctionDurationSeconds: auctionDurationSeconds.toUint32(),
             basePrice: basePrice,
             minBidIncrementPercentage: minBidIncrementPercentage
@@ -427,10 +427,6 @@ library SEALib {
         });
         Auction storage auction = SEAProjectConfig_.activeAuction;
         // CHECKS
-        // load from storage to memory for gas efficiency
-        uint256 auctionEndTime = auction.endTime;
-        uint256 previousBid = auction.currentBid;
-
         // if no auction exists, or current auction is already settled, attempt
         // to initialize a new auction for the input token ID and immediately
         // return
@@ -451,15 +447,16 @@ library SEALib {
         require(auction.tokenId == tokenId, "Token ID does not match auction");
 
         // ensure auction is not already ended
-        require(auctionEndTime > block.timestamp, "Auction already ended");
+        require(auction.endTime > block.timestamp, "Auction already ended");
 
         // require bid to be sufficiently greater than current highest bid
         // @dev no overflow enforced automatically by solidity ^0.8.0
         require(msg.value >= getMinimumNextBid(auction), "Bid is too low");
 
         // EFFECTS
-        // record previous highest bider for refunding
+        // record previous highest bidder and bid for refunding
         address payable previousBidder = auction.currentBidder;
+        uint256 previousBid = auction.currentBid;
 
         // update auction bid state
         auctionUpdateBid({
@@ -595,7 +592,7 @@ library SEALib {
     }
 
     /**
-     * Returns bool representing if an auction is accepting bids above base
+     * @notice Function returns bool representing if an auction is accepting bids above base
      * price. It is accepting bids if it is initialized and has not reached its
      * end time.
      * @param auction The auction to check.
@@ -751,7 +748,7 @@ library SEALib {
     }
 
     /**
-     * Returns the minimum next bid amount in a configured auction, given the
+     * @notice Function returns the minimum next bid amount in a configured auction, given the
      * current bid amount and the project's configured minimum bid increment
      * percentage.
      * @param auction Auction to query
@@ -759,10 +756,13 @@ library SEALib {
     function getMinimumNextBid(
         Auction storage auction
     ) internal view returns (uint256 minimumNextBid) {
-        // @dev overflow automatically checked in Solidity ^0.8.0
-        return
-            (auction.currentBid * (100 + auction.minBidIncrementPercentage)) /
-            100;
+        // @dev unchecked due to 0 <= minBidIncrementPercentage <= 255, and
+        // currentBid is capped at supply of ETH, so no risk of overflow
+        unchecked {
+            return
+                (auction.currentBid *
+                    (100 + auction.minBidIncrementPercentage)) / 100;
+        }
     }
 
     /**
@@ -881,7 +881,7 @@ library SEALib {
     }
 
     /**
-     * Overwrite the active auction for a project with a new auction.
+     * @notice Function to overwrite the active auction for a project with a new auction.
      * @dev This function is used to initialize a new auction. Care must be
      * taken to ensure that the existing auction is fully complete and settled.
      * @param SEAProjectConfig_ SEAProjectConfig to update

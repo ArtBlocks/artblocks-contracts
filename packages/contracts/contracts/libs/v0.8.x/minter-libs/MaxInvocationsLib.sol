@@ -193,7 +193,7 @@ library MaxInvocationsLib {
     }
 
     /**
-     * Helper function to check if max invocations has not been initialized.
+     * @notice Helper function to check if max invocations has not been initialized.
      * Returns true if not initialized, false if initialized.
      * @param projectId The id of the project.
      * @param coreContract The address of the core contract.
@@ -218,7 +218,7 @@ library MaxInvocationsLib {
     }
 
     /**
-     * Returns if invocations remain available for a given project.
+     * @notice Function returns if invocations remain available for a given project.
      * This function calls the core contract to get the most up-to-date
      * invocation data (which may be useful to avoid reverts during mint).
      * This function considers core contract max invocations, and minter local
@@ -257,7 +257,7 @@ library MaxInvocationsLib {
     }
 
     /**
-     * Pulls core contract invocation data for a given project.
+     * @notice Pulls core contract invocation data for a given project.
      * @dev This function calls the core contract to get the invocation data
      * @param projectId The id of the project.
      * @param coreContract The address of the core contract.
@@ -286,7 +286,7 @@ library MaxInvocationsLib {
     }
 
     /**
-     * Returns the max invocations for a given project.
+     * @notice Function returns the max invocations for a given project.
      * @param projectId The id of the project.
      * @param coreContract The address of the core contract.
      * to be queried.
@@ -304,7 +304,7 @@ library MaxInvocationsLib {
     }
 
     /**
-     * Returns if max has been invoked for a given project.
+     * @notice Function returns if max has been invoked for a given project.
      * @param projectId The id of the project.
      * @param coreContract The address of the core contract.
      * to be queried.
@@ -322,8 +322,8 @@ library MaxInvocationsLib {
     }
 
     /**
-     * Get if a project has reached its max invocations.
-     * Function is labaled as "safe" because it checks the core contract's
+     * @notice Function returns if a project has reached its max invocations.
+     * Function is labelled as "safe" because it checks the core contract's
      * invocations and max invocations. If the local max invocations is greater
      * than the core contract's max invocations, it will defer to the core
      * contract's max invocations (since those are the limiting factor).

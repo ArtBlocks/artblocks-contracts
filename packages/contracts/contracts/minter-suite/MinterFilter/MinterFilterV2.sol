@@ -62,15 +62,15 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     // add Bytes32Strings methods
     using Bytes32Strings for bytes32;
 
-    /// version of this minter filter contract
+    /// @notice Version of this minter filter contract
     // @dev use function minterFilterVersion to get this as a string
     bytes32 constant MINTER_FILTER_VERSION = "v2.0.0";
 
-    /// type of this minter filter contract
+    /// @notice Type of this minter filter contract
     // @dev use function minterFilterType to get this as a string
     bytes32 constant MINTER_FILTER_TYPE = "MinterFilterV2";
 
-    /// Admin ACL contract for this minter filter
+    /// @notice Admin ACL contract for this minter filter
     IAdminACLV0 public adminACLContract;
 
     /**
@@ -78,13 +78,13 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      */
     ICoreRegistryV1 public coreRegistry;
 
-    /// minter address => qty projects across all core contracts currently
+    /// @notice Minter address => qty projects across all core contracts currently
     /// using the minter
     mapping(address minterAddress => uint256 numProjects)
         public numProjectsUsingMinter;
 
     /**
-     * Enumerable Set of globally approved minters.
+     * @notice Enumerable Set of globally approved minters.
      * This is a Set of addresses that are approved to mint on any
      * project, for any core contract.
      * @dev note that contract admins can extend a separate Set of minters for
@@ -93,7 +93,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     EnumerableSet.AddressSet private _globallyApprovedMinters;
 
     /**
-     * Mapping of core contract addresses to Enumerable Sets of approved
+     * @notice Mapping of core contract addresses to Enumerable Sets of approved
      * minters for that core contract.
      * @dev note that contract admins can extend this Set for their core
      * contract by via the `approveMinterForContract` function, and can remove
@@ -103,12 +103,16 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         private _contractApprovedMinters;
 
     /**
-     * Mapping of core contract addresses to Enumerable Maps of project IDs to
+     * @notice Mapping of core contract addresses to Enumerable Maps of project IDs to
      * minter addresses.
      */
     mapping(address coreContract => EnumerableMap.UintToAddressMap projectIdToMinterAddress)
         private _minterForProject;
 
+    /**
+     * @notice Function to validate an address is non-zero.
+     * @param address_ Address to validate
+     */
     function _onlyNonZeroAddress(address address_) internal pure {
         require(address_ != address(0), "Only non-zero address");
     }
@@ -144,7 +148,12 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         );
     }
 
-    // function to restrict access to only core AdminACL or the project artist
+    /**
+     * @notice Function to restrict access to only core AdminACL or the project artist.
+     * @dev Defers to the ACL contract used by the core contract
+     * @param coreContract core contract address
+     * @param selector function selector to be checked
+     */
     function _onlyCoreAdminACLOrArtist(
         uint256 projectId,
         address coreContract,
@@ -167,9 +176,12 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         );
     }
 
-    // function to restrict access to only core contracts registered with the
-    // currently configured core registry. This is used to prevent
-    // non-registered core contracts from being used with this minter filter.
+    /**
+     * @notice Function to restrict access to only core contracts registered with the
+     * currently configured core registry. This is used to prevent non-registered core
+     * contracts from being used with this minter filter.
+     * @param coreContract core contract address
+     */
     function _onlyRegisteredCoreContract(address coreContract) internal view {
         // @dev use core registry to check if core contract is registered
         require(
@@ -178,7 +190,11 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         );
     }
 
-    // function to restrict access to only valid project IDs
+    /**
+     * @notice Function to restrict access to only valid project IDs.
+     * @param projectId Project ID to validate.
+     * @param coreContract core contract address
+     */
     function _onlyValidProjectId(
         uint256 projectId,
         address coreContract
@@ -193,7 +209,11 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         );
     }
 
-    // checks if minter is globally approved or approved for a core contract
+    /**
+     * @notice Function to check if minter is globally approved or approved for a core contract.
+     * @param coreContract core contract address
+     * @param minter Minter to validate.
+     */
     function _onlyApprovedMinter(
         address coreContract,
         address minter
@@ -270,8 +290,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      * @notice Removes previously globally approved minter `minter`
      * from the list of globally approved minters.
      * Only callable as allowed by AdminACL of this contract.
-     * Reverts if minter is not globally approved, or if minter is still
-     * in use by any project.
+     * Reverts if minter is not globally approved.
      * @dev intentionally do not check if minter is still in use by any
      * project, meaning that any projects currently using the minter will
      * continue to be able to use it. If existing projects should be forced
@@ -634,21 +653,17 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         uint256 numProjectsOnContractUsingMinter;
         for (uint256 i; i < numProjects; ) {
             (uint256 projectId, address minter_) = minterMap.at(i);
-            if (minter_ == minter) {
-                projectIds[numProjectsOnContractUsingMinter++] = projectId;
-            }
             unchecked {
+                if (minter_ == minter) {
+                    projectIds[numProjectsOnContractUsingMinter++] = projectId;
+                }
                 ++i;
             }
         }
         // trim array if necessary
         if (maxNumProjects > numProjectsOnContractUsingMinter) {
-            assembly {
-                let decrease := sub(
-                    maxNumProjects,
-                    numProjectsOnContractUsingMinter
-                )
-                mstore(projectIds, sub(mload(projectIds), decrease))
+            assembly ("memory-safe") {
+                mstore(projectIds, numProjectsOnContractUsingMinter)
             }
         }
         return projectIds;
@@ -743,9 +758,9 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      * `selector` on contract `contract`.
      * @dev assumes the Admin ACL contract is the owner of this contract, which
      * is expected to always be true.
-     * @dev adminACLContract is expected to either be null address (if owner
-     * has renounced ownership), or conform to IAdminACLV0 interface. Check for
-     * null address first to avoid revert when admin has renounced ownership.
+     * @dev adminACLContract is expected to not be null address (owner cannot
+     * renounce ownership on this contract), and conform to IAdminACLV0
+     * interface.
      */
     function adminACLAllowed(
         address sender,
@@ -753,7 +768,6 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         bytes4 selector
     ) public returns (bool) {
         return
-            owner() != address(0) &&
             adminACLContract.allowed({
                 _sender: sender,
                 _contract: contract_,
