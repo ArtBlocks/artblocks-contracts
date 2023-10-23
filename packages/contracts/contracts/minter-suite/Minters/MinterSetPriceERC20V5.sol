@@ -185,18 +185,24 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
      * @param purchasePricePerToken Maximum price of token being allowed by the purchaser, no decimal places
+     * @param currencySymbol Currency symbol of token.
+     * @param currencyAddress Currency address of token.
      * @return tokenId Token ID of minted token
      */
     function purchase(
         uint256 projectId,
         address coreContract,
-        uint256 purchasePricePerToken
+        uint256 purchasePricePerToken,
+        string memory currencySymbol,
+        address currencyAddress
     ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo({
             to: msg.sender,
             projectId: projectId,
             coreContract: coreContract,
-            purchasePricePerToken: purchasePricePerToken
+            purchasePricePerToken: purchasePricePerToken,
+            currencySymbol: currencySymbol,
+            currencyAddress: currencyAddress
         });
         return tokenId;
     }
@@ -449,13 +455,17 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
      * @param purchasePricePerToken Maximum price of token being allowed by the purchaser, no decimal places
+     * @param currencySymbol Currency symbol of token.
+     * @param currencyAddress Currency address of token.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
         address to,
         uint256 projectId,
         address coreContract,
-        uint256 purchasePricePerToken
+        uint256 purchasePricePerToken,
+        string memory currencySymbol,
+        address currencyAddress
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         // pre-mint MaxInvocationsLib checks
@@ -492,6 +502,25 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
             tokenId: tokenId,
             coreContract: coreContract
         });
+
+        // get the currency symbol and address configured on the projectId
+        (
+            ,
+            ,
+            string memory configuredCurrencySymbol,
+            address configuredCurrencyAddress
+        ) = this.getPriceInfo(projectId, coreContract);
+
+        // validate that the currency address and symbols matches the project configured currency
+        require(
+            currencyAddress == configuredCurrencyAddress,
+            "Currency addresses must match"
+        );
+        require(
+            keccak256(abi.encodePacked(currencySymbol)) ==
+                keccak256(abi.encodePacked(configuredCurrencySymbol)),
+            "Currency symbols must match"
+        );
 
         // validate that the specified maximum price is greater than or equal to the price per token
         require(

@@ -35,6 +35,8 @@ export const revertMessages = {
   lengthOfArraysMustMatch: "TokenHolderLib: arrays neq length",
   onlyRegisteredNFTAddresses: "TokenHolderLib: address not registered",
   purchaseRequiresNFT: "Purchase requires NFT ownership",
+  currencySymbolMatch: "Currency symbols must match",
+  currencyAddressMatch: "Currency addresses must match",
   needMoreAllowance:
     "VM Exception while processing transaction: reverted with reason string 'ERC20: insufficient allowance",
   needMoreBalance:
