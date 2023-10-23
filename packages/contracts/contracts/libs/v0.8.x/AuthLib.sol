@@ -3,8 +3,8 @@
 
 pragma solidity ^0.8.0;
 
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
+import {IGenArt721CoreContractV3_Base} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import {IMinterFilterV1} from "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
 /**
  * @title Art Blocks Authorization Minter Library

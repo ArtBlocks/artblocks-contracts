@@ -3,22 +3,22 @@
 
 pragma solidity 0.8.19;
 
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
-import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
-import "../../interfaces/v0.8.x/ISharedMinterHolderV0.sol";
-import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
+import {IGenArt721CoreContractV3_Base} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import {IDelegationRegistry} from "../../interfaces/v0.8.x/IDelegationRegistry.sol";
+import {ISharedMinterV0} from "../../interfaces/v0.8.x/ISharedMinterV0.sol";
+import {ISharedMinterHolderV0} from "../../interfaces/v0.8.x/ISharedMinterHolderV0.sol";
+import {IMinterFilterV1} from "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
-import "../../libs/v0.8.x/ABHelpers.sol";
-import "../../libs/v0.8.x/AuthLib.sol";
-import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
-import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
-import "../../libs/v0.8.x/minter-libs/SetPriceLib.sol";
-import "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
-import "../../libs/v0.8.x/minter-libs/PolyptychLib.sol";
+import {ABHelpers} from "../../libs/v0.8.x/ABHelpers.sol";
+import {AuthLib} from "../../libs/v0.8.x/AuthLib.sol";
+import {SplitFundsLib} from "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
+import {MaxInvocationsLib} from "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
+import {SetPriceLib} from "../../libs/v0.8.x/minter-libs/SetPriceLib.sol";
+import {TokenHolderLib} from "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
+import {PolyptychLib} from "../../libs/v0.8.x/minter-libs/PolyptychLib.sol";
 
-import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
+import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
+import {EnumerableSet} from "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 
 /**
  * @title Shared, filtered Minter contract that allows tokens to be minted with

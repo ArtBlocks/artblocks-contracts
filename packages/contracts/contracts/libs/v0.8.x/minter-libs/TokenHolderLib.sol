@@ -3,8 +3,9 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
-import "@openzeppelin-4.7/contracts/token/ERC721/IERC721.sol";
+import {IERC721} from "@openzeppelin-4.7/contracts/token/ERC721/IERC721.sol";
+
+import {EnumerableSet} from "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 
 /**
  * @title Art Blocks Token Holder Library

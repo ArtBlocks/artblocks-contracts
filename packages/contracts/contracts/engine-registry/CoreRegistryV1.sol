@@ -2,9 +2,10 @@
 
 pragma solidity 0.8.19;
 
-import "../interfaces/v0.8.x/ICoreRegistryV1.sol";
-import "@openzeppelin-4.7/contracts/access/Ownable.sol";
-import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
+import {ICoreRegistryV1} from "../interfaces/v0.8.x/ICoreRegistryV1.sol";
+
+import {Ownable} from "@openzeppelin-4.7/contracts/access/Ownable.sol";
+import {EnumerableSet} from "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
 
 /**
  * @title Art Blocks Core Contract Registry, V1.
