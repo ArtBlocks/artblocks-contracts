@@ -840,7 +840,7 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
             coreContract: coreContract
         });
 
-        // get the currency address configured on the projectId
+        // get the currency address configured on the project
         {
             (address configuredCurrencyAddress, ) = SplitFundsLib
                 .getCurrencyInfoERC20(projectId, coreContract);

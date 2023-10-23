@@ -192,7 +192,6 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address,
               config.pricePerTokenInWei,
-              "ERC20",
               config.ERC20.address
             ),
           revertMessages.maximumInvocationsReached
@@ -208,7 +207,6 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address,
               config.pricePerTokenInWei,
-              "ERC20",
               config.ERC20.address
             ),
           revertMessages.priceNotConfigured
@@ -235,7 +233,6 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address,
               config.pricePerTokenInWei,
-              "ERC20",
               config.ERC20.address
             );
         }
@@ -322,7 +319,6 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address,
               ethers.utils.parseEther("0"),
-              "ERC20",
               config.ERC20.address
             );
           // check user balance
@@ -341,7 +337,6 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address,
               ethers.utils.parseEther("0"),
-              "ERC20",
               config.ERC20.address
             );
         });
@@ -389,7 +384,6 @@ runForEach.forEach((params) => {
                 config.projectZero,
                 config.genArt721Core.address,
                 config.pricePerTokenInWei,
-                "ERC20",
                 config.ERC20.address
               ),
             revertMessages.ERC20MockBannedTransfer
@@ -432,7 +426,6 @@ runForEach.forEach((params) => {
                   config.projectZero,
                   config.genArt721Core.address,
                   config.pricePerTokenInWei,
-                  "ERC20",
                   config.ERC20.address
                 ),
               revertMessages.ERC20MockBannedTransfer
@@ -467,7 +460,6 @@ runForEach.forEach((params) => {
                 config.projectZero,
                 config.genArt721Core.address,
                 config.pricePerTokenInWei,
-                "ERC20",
                 config.ERC20.address
               ),
             revertMessages.ERC20MockBannedTransfer
@@ -517,7 +509,6 @@ runForEach.forEach((params) => {
                 config.projectZero,
                 config.genArt721Core.address,
                 config.pricePerTokenInWei,
-                "ERC20",
                 config.ERC20.address
               ),
             revertMessages.ERC20MockBannedTransfer
@@ -574,7 +565,6 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address,
               config.pricePerTokenInWei,
-              "ERC20",
               config.ERC20.address
             );
         });
@@ -596,7 +586,6 @@ runForEach.forEach((params) => {
                 config.projectOne,
                 config.genArt721Core.address,
                 config.pricePerTokenInWei,
-                "ERC20",
                 config.ERC20.address
               ),
             revertMessages.currencyAddressMatch
@@ -620,7 +609,6 @@ runForEach.forEach((params) => {
                 config.projectZero,
                 config.genArt721Core.address,
                 config.pricePerTokenInWei,
-                "ERC20",
                 config.ERC20.address
               ),
             revertMessages.needMoreAllowance
@@ -645,7 +633,6 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address,
               config.pricePerTokenInWei,
-              "ERC20",
               config.ERC20.address
             ),
           revertMessages.priceNotConfigured
@@ -672,7 +659,6 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             config.pricePerTokenInWei,
-            "ERC20",
             config.ERC20.address
           );
       });

@@ -130,7 +130,6 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             config.pricePerTokenInWei,
-            "ERC20",
             config.ERC20.address
           );
         let result = await config.minter.projectMaxHasBeenInvoked(
@@ -164,7 +163,6 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             config.pricePerTokenInWei,
-            "ERC20",
             config.ERC20.address
           );
 
