@@ -525,16 +525,16 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         // artist configures auction
         await configureProjectZeroAuctionAndAdvanceToStart(config);
-        // artist reduces max invocations to 1 on core contract
-        await config.genArt721Core
-          .connect(config.accounts.artist)
-          .updateProjectMaxInvocations(config.projectZero, 1);
         // user purchases
         await config.minter
           .connect(config.accounts.user)
           .purchase(config.projectZero, config.genArt721Core.address, {
             value: config.startingPrice,
           });
+        // artist reduces max invocations to 1 on core contract AFTER initial purchase
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 1);
         // expect call to emit event
         // @dev deployer must call because reducing max invocations on core contract
         // after configuring auction qualifies as "funny business"
@@ -547,6 +547,47 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
+            // event is defined in MaxInvocationsLib
+            await ethers.getContractFactory("MaxInvocationsLib"),
+            "ProjectMaxInvocationsLimitUpdated"
+          )
+          .withArgs(config.projectZero, config.genArt721Core.address, 1);
+      });
+
+      it("emits during first purchase when minter-local max invocations are updated", async function () {
+        const config = await loadFixture(_beforeEach);
+        // artist configures auction
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // artist reduces max invocations to 1 on core contract AFTER initial purchase
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 1);
+        // user purchases, and event is emitted
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address, {
+              value: config.startingPrice,
+            })
+        )
+          .to.emit(
+            // event is defined in MaxInvocationsLib
+            await ethers.getContractFactory("MaxInvocationsLib"),
+            "ProjectMaxInvocationsLimitUpdated"
+          )
+          .withArgs(config.projectZero, config.genArt721Core.address, 1);
+        // expect call to NOT emit event, since it was updated during initial purchase
+        // @dev deployer must call because reducing max invocations on core contract
+        // after configuring auction qualifies as "funny business"
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .withdrawArtistAndAdminRevenues(
+              config.projectZero,
+              config.genArt721Core.address
+            )
+        )
+          .to.not.emit(
             // event is defined in MaxInvocationsLib
             await ethers.getContractFactory("MaxInvocationsLib"),
             "ProjectMaxInvocationsLimitUpdated"
