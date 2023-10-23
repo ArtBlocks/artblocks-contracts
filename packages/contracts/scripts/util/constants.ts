@@ -47,7 +47,7 @@ export function getActiveSharedMinterFilter(
 const ACTIVE_SHARED_MINTER_FILTERS = {
   goerli: {
     dev: "0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208",
-    staging: "0xTBD",
+    staging: "0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559",
   },
   mainnet: {
     mainnet: "0xTBD",
@@ -88,7 +88,7 @@ export function getActiveSharedRandomizer(
 const ACTIVE_SHARED_RANDOMIZERS = {
   goerli: {
     dev: "0xD023790a7Bf5Dd71414409dc62008B8a190e0C28",
-    staging: "0xTBD",
+    staging: "0x88293a3eef2516855BE0F798630e141D14333423",
   },
   mainnet: {
     mainnet: "0xTBD",
