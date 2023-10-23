@@ -29,6 +29,17 @@ The following table shows which Minters and MinterFilters are compatible with di
 
 > \*only compatible with Engine/Engine Flex contracts
 
+## Shared Minter Filter Contracts
+
+Below is a table of the shared minter filter contracts that are deployed on mainnet and testnets. Note that each of these contracts has a function available to enumerate all globally approved minter contracts, `getAllGloballyApprovedMinters()`
+
+| Network                        | Shared Minter Filter Contract Address        |
+| ------------------------------ | -------------------------------------------- |
+| Mainnet (Ethereum)             | `TBD`                                        |
+| Artist Staging Goerli          | `0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559` |
+| Arbitrum One                   | `TBD`                                        |
+| Artist Staging Arbitrum-Goerli | `TBD`                                        |
+
 ## Flagship
 
 ### Active Flagship Minting Contract(s)
@@ -42,7 +53,7 @@ These are the smart contracts that receive funds, and split them between the art
 - V2: [0x7B7917e083CeA6d9f6a3060a7330c1072fcb4e40](https://etherscan.io/address/0x7B7917e083CeA6d9f6a3060a7330c1072fcb4e40#code)
 - V3: N/A, never used in prod.
 - V4: [0x234B25288011081817B5cC199C3754269cCb76D2](https://etherscan.io/address/0x234B25288011081817B5cC199C3754269cCb76D2#code)
-- V5: TBD, shared minter suite not yet deployed on mainnet
+- V5 (shared with Engine): TBD, shared minter suite not yet deployed on mainnet
 
 #### MinterSetPriceERC20 (Set Price with ERC20)
 
@@ -51,7 +62,7 @@ These are the smart contracts that receive funds, and split them between the art
 - V2: [0xe4c6EeF13649e9C4Ad8ae8A9C7fA9A7F26B4287a](https://etherscan.io/address/0xe4c6EeF13649e9C4Ad8ae8A9C7fA9A7F26B4287a#code)
 - V3: N/A, never used in prod.
 - V4: [0x9fEcd2FbC6D890fB93632DcE9b1a01c4090A7E2d](https://etherscan.io/address/0x9fEcd2FbC6D890fB93632DcE9b1a01c4090A7E2d#code)
-- V5: TBD, shared minter suite not yet deployed on mainnet
+- V5 (shared with Engine): TBD, shared minter suite not yet deployed on mainnet
 
 #### MinterDALin (Linear Dutch Auction)
 
@@ -60,7 +71,7 @@ These are the smart contracts that receive funds, and split them between the art
 - V2: [0xdaa6D1e224f4B9f7c4f1368C362C4333A8e385A6](https://etherscan.io/address/0xdaa6D1e224f4B9f7c4f1368C362C4333A8e385A6#code)
 - V3: N/A, never used in prod.
 - V4: [0x419501DD208BFf237e3E32C40D074065e12DfF4d](https://etherscan.io/address/0x419501DD208BFf237e3E32C40D074065e12DfF4d#code)
-- V5: TBD, shared minter suite not yet deployed on mainnet
+- V5 (shared with Engine): TBD, shared minter suite not yet deployed on mainnet
 
 #### MinterDAExp (Exponential Decay Dutch Auction)
 
@@ -69,13 +80,13 @@ These are the smart contracts that receive funds, and split them between the art
 - V2: [0x706d6C6ef700a3c1C3a727f0c46492492E0A72b5](https://etherscan.io/address/0x706d6C6ef700a3c1C3a727f0c46492492E0A72b5#code)
 - V3: N/A, never used in prod.
 - V4: [0x47e2df2723238f913741Cc6b1963e76fdfD19B94](https://etherscan.io/address/0x47e2df2723238f913741Cc6b1963e76fdfD19B94#code)
-- V5: TBD, shared minter suite not yet deployed on mainnet
+- V5 (shared with Engine): TBD, shared minter suite not yet deployed on mainnet
 
 #### MinterDAExpSettlement (Expotential Decay Last Price Dutch Auction)
 
 - V0: N/A, never used in prod.
 - V1: [0xfdE58c821D1c226b4a45c22904de20b114EDe7E7](https://etherscan.io/address/0xfdE58c821D1c226b4a45c22904de20b114EDe7E7#code)
-- V3: TBD, shared minter suite not yet deployed on mainnet
+- V3 (shared with Engine): TBD, shared minter suite not yet deployed on mainnet
 
 #### MinterMerkle (Address Allowlist)
 
@@ -85,11 +96,11 @@ These are the smart contracts that receive funds, and split them between the art
 - V3: N/A, never used in prod.
 - V4: N/A, never used in prod.
 - V5: [0xB8Bd1D2836C466DB149f665F777928bEE267304d](https://etherscan.io/address/0xB8Bd1D2836C466DB149f665F777928bEE267304d#code)
-- V5: TBD, shared minter suite not yet deployed on mainnet
+- V5 (shared with Engine): TBD, shared minter suite not yet deployed on mainnet
 
 #### Minter Holder (Token Holder)
 
-- V5: TBD, shared minter suite not yet deployed on mainnet
+- V5 (shared with Engine): TBD, shared minter suite not yet deployed on mainnet
 
 ### Other Flagship Minter Contracts
 

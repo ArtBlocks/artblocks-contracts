@@ -1,0 +1,52 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T16:28:51.955Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/backseats/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T16:35:13.912Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/backseats/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x0C46aE40e83cE6674B1105D0b5436C3D62295a95
+[INFO] Using shared Randomizer at 0x88293a3eef2516855BE0F798630e141D14333423
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T16:39:43.835Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/backseats/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xeC71d132Ca0b1b09080074DcA2DD1cafcCbfa58e
+[INFO] Using shared Randomizer at 0x88293a3eef2516855BE0F798630e141D14333423
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xF6CE3a6D13D4302267E4EAd8b99678BAd13cf573
+[INFO] Registered core contract 0xF6CE3a6D13D4302267E4EAd8b99678BAd13cf573 on core registry 0xddFfc62A975f7EBA75A877a0535755ceA18232C9
+[INFO] Updated the Minter Filter on the Core contract to 0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0xEA4D7Cc8432171Ec044A8a03EeC16E8c81cB207d.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine_Flex.sol:GenArt721CoreV3_Engine_Flex at 0xF6CE3a6D13D4302267E4EAd8b99678BAd13cf573
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex on Etherscan.
+https://goerli.etherscan.io/address/0xF6CE3a6D13D4302267E4EAd8b99678BAd13cf573#code
+[INFO] Core contract verified on Etherscan at 0xF6CE3a6D13D4302267E4EAd8b99678BAd13cf573}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xeC71d132Ca0b1b09080074DcA2DD1cafcCbfa58e has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xeC71d132Ca0b1b09080074DcA2DD1cafcCbfa58e
+Created s3 bucket for https://white-hot-memphis-night-goerli.s3.amazonaws.com
+[INFO] Created image bucket white-hot-memphis-night-goerli
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/backseats/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xf6ce3a6d13d4302267e4ead8b99678bad13cf573",
+  "name": "White Hot Memphis Night",
+  "bucket_name": "white-hot-memphis-night-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xEA4D7Cc8432171Ec044A8a03EeC16E8c81cB207d, don't forget to update if requred.
