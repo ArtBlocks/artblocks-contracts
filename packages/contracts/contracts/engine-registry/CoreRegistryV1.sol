@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+// @dev fixed to specific solidity version for clarity and for more clear
+// source code verification purposes.
 pragma solidity 0.8.19;
 
 import {ICoreRegistryV1} from "../interfaces/v0.8.x/ICoreRegistryV1.sol";
