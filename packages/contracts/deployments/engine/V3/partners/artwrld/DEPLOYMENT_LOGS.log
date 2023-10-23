@@ -1,0 +1,109 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T16:54:58.058Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/artwrld/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xD2Bb2e5b8faC8512a175918d6744A7Bc37D6c2A6
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x0DFaCf44e3A59B98F962cD956932FAc1164A856C
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x5CaE5b134137F416D80563d71AeBc1F7c876ee21
+[INFO] Registered core contract 0x5CaE5b134137F416D80563d71AeBc1F7c876ee21 on engine registry 0xEa698596b6009A622C3eD00dD5a8b5d1CAE4fC36
+[INFO] Minter Filter MinterFilterV1 deployed at 0xcD8C77082D2C62410F136E51374C57661b94f757
+[INFO] MinterSetPriceV4 deployed at 0x1F41a1d75C697173063103e416d42d8E951CD918
+[INFO] MinterDAExpSettlementV1 deployed at 0x28B7B31f2A4DE097FCD326bedb8dA2c33384b7D4
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xcD8C77082D2C62410F136E51374C57661b94f757.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x1F41a1d75C697173063103e416d42d8E951CD918 on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0x28B7B31f2A4DE097FCD326bedb8dA2c33384b7D4 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xb24EDdc13d67FEa233D3810f7A2426ACAa0AC105.
+[INFO] Verifying core contract contract deployment...
+The contract 0x5CaE5b134137F416D80563d71AeBc1F7c876ee21 has already been verified
+[INFO] Core contract verified on Etherscan at 0x5CaE5b134137F416D80563d71AeBc1F7c876ee21}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xD2Bb2e5b8faC8512a175918d6744A7Bc37D6c2A6 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xD2Bb2e5b8faC8512a175918d6744A7Bc37D6c2A6
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xcD8C77082D2C62410F136E51374C57661b94f757 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xcD8C77082D2C62410F136E51374C57661b94f757
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x1F41a1d75C697173063103e416d42d8E951CD918 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x1F41a1d75C697173063103e416d42d8E951CD918
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+The contract 0x28B7B31f2A4DE097FCD326bedb8dA2c33384b7D4 has already been verified
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0x28B7B31f2A4DE097FCD326bedb8dA2c33384b7D4
+Created s3 bucket for https://artwrld-goerli.s3.amazonaws.com
+[INFO] Created image bucket artwrld-goerli
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/artwrld/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x5cae5b134137f416d80563d71aebc1f7c876ee21",
+  "name": "Artwrld",
+  "bucket_name": "artwrld-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] render provider sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xb24EDdc13d67FEa233D3810f7A2426ACAa0AC105, don't forget to update if required.
+[ACTION] Subgraph: Add Minter Filter and Minter contracts to subgraph config if desire to index minter suite.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T17:39:58.937Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/artwrld/deployment-config.mainnet.ts
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T17:41:42.615Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/artwrld/deployment-config.mainnet.ts
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-06T17:42:41.175Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/artwrld/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x630445399a5A698662bD15ec7f1C01d44dC277E0
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xd375529B79F2525c058A935D88E95E230334dE33
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x5fdf5E6CAf7b8b0F64c3612aFd85E9407A7e1389
+[INFO] Registered core contract 0x5fdf5E6CAf7b8b0F64c3612aFd85E9407A7e1389 on engine registry 0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2
+[INFO] Minter Filter MinterFilterV1 deployed at 0xEA503d02D36dd7C4DF205be3F1c18C266DdB3411
+[INFO] MinterSetPriceV4 deployed at 0x3ade999397F6BE92a637acDCbfb875c63f4f96DE
+[INFO] MinterDAExpSettlementV1 deployed at 0x80f2DBb3921FB09D5E95587F52702ea6F3D3B303
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xEA503d02D36dd7C4DF205be3F1c18C266DdB3411.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x3ade999397F6BE92a637acDCbfb875c63f4f96DE on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0x80f2DBb3921FB09D5E95587F52702ea6F3D3B303 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xb24EDdc13d67FEa233D3810f7A2426ACAa0AC105.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine_Flex.sol:GenArt721CoreV3_Engine_Flex at 0x5fdf5E6CAf7b8b0F64c3612aFd85E9407A7e1389
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex on Etherscan.
+https://etherscan.io/address/0x5fdf5E6CAf7b8b0F64c3612aFd85E9407A7e1389#code
+[INFO] Core contract verified on Etherscan at 0x5fdf5E6CAf7b8b0F64c3612aFd85E9407A7e1389}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x630445399a5A698662bD15ec7f1C01d44dC277E0 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x630445399a5A698662bD15ec7f1C01d44dC277E0
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xEA503d02D36dd7C4DF205be3F1c18C266DdB3411 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xEA503d02D36dd7C4DF205be3F1c18C266DdB3411
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x3ade999397F6BE92a637acDCbfb875c63f4f96DE has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x3ade999397F6BE92a637acDCbfb875c63f4f96DE
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+The contract 0x80f2DBb3921FB09D5E95587F52702ea6F3D3B303 has already been verified
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0x80f2DBb3921FB09D5E95587F52702ea6F3D3B303
+Created s3 bucket for https://artwrld-mainnet.s3.amazonaws.com
+[INFO] Created image bucket artwrld-mainnet
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/artwrld/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x5fdf5e6caf7b8b0f64c3612afd85e9407a7e1389",
+  "name": "Artwrld",
+  "bucket_name": "artwrld-mainnet",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] AdminACL's superAdmin address is 0xb24EDdc13d67FEa233D3810f7A2426ACAa0AC105, don't forget to update if required.
+[ACTION] Subgraph: Add Minter Filter and Minter contracts to subgraph config if desire to index minter suite.
