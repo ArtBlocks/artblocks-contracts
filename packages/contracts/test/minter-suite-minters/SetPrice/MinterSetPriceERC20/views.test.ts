@@ -129,7 +129,8 @@ runForEach.forEach((params) => {
           .purchase(
             config.projectZero,
             config.genArt721Core.address,
-            config.pricePerTokenInWei
+            config.pricePerTokenInWei,
+            config.ERC20.address
           );
         let result = await config.minter.projectMaxHasBeenInvoked(
           config.projectZero,
@@ -161,7 +162,8 @@ runForEach.forEach((params) => {
           .purchase(
             config.projectZero,
             config.genArt721Core.address,
-            config.pricePerTokenInWei
+            config.pricePerTokenInWei,
+            config.ERC20.address
           );
 
         const isEngineView = await config.minter

@@ -191,7 +191,8 @@ runForEach.forEach((params) => {
             .purchase(
               config.projectZero,
               config.genArt721Core.address,
-              config.pricePerTokenInWei
+              config.pricePerTokenInWei,
+              config.ERC20.address
             ),
           revertMessages.maximumInvocationsReached
         );
@@ -205,7 +206,8 @@ runForEach.forEach((params) => {
             .purchase(
               config.projectZero,
               config.genArt721Core.address,
-              config.pricePerTokenInWei
+              config.pricePerTokenInWei,
+              config.ERC20.address
             ),
           revertMessages.priceNotConfigured
         );
@@ -230,7 +232,8 @@ runForEach.forEach((params) => {
             .purchase(
               config.projectZero,
               config.genArt721Core.address,
-              config.pricePerTokenInWei
+              config.pricePerTokenInWei,
+              config.ERC20.address
             );
         }
         // switch to different minter
@@ -315,7 +318,8 @@ runForEach.forEach((params) => {
             .purchase(
               config.projectZero,
               config.genArt721Core.address,
-              ethers.utils.parseEther("0")
+              ethers.utils.parseEther("0"),
+              config.ERC20.address
             );
           // check user balance
           const userBalanceAfter = await config.ERC20.balanceOf(
@@ -332,7 +336,8 @@ runForEach.forEach((params) => {
             .purchase(
               config.projectZero,
               config.genArt721Core.address,
-              ethers.utils.parseEther("0")
+              ethers.utils.parseEther("0"),
+              config.ERC20.address
             );
         });
 
@@ -378,7 +383,8 @@ runForEach.forEach((params) => {
               .purchase(
                 config.projectZero,
                 config.genArt721Core.address,
-                config.pricePerTokenInWei
+                config.pricePerTokenInWei,
+                config.ERC20.address
               ),
             revertMessages.ERC20MockBannedTransfer
           );
@@ -419,7 +425,8 @@ runForEach.forEach((params) => {
                   config.accounts.additional.address,
                   config.projectZero,
                   config.genArt721Core.address,
-                  config.pricePerTokenInWei
+                  config.pricePerTokenInWei,
+                  config.ERC20.address
                 ),
               revertMessages.ERC20MockBannedTransfer
             );
@@ -452,7 +459,8 @@ runForEach.forEach((params) => {
               .purchase(
                 config.projectZero,
                 config.genArt721Core.address,
-                config.pricePerTokenInWei
+                config.pricePerTokenInWei,
+                config.ERC20.address
               ),
             revertMessages.ERC20MockBannedTransfer
           );
@@ -500,7 +508,8 @@ runForEach.forEach((params) => {
               .purchase(
                 config.projectZero,
                 config.genArt721Core.address,
-                config.pricePerTokenInWei
+                config.pricePerTokenInWei,
+                config.ERC20.address
               ),
             revertMessages.ERC20MockBannedTransfer
           );
@@ -555,7 +564,8 @@ runForEach.forEach((params) => {
             .purchase(
               config.projectZero,
               config.genArt721Core.address,
-              config.pricePerTokenInWei
+              config.pricePerTokenInWei,
+              config.ERC20.address
             );
         });
 
@@ -575,9 +585,10 @@ runForEach.forEach((params) => {
               .purchase(
                 config.projectOne,
                 config.genArt721Core.address,
-                config.pricePerTokenInWei
+                config.pricePerTokenInWei,
+                config.ERC20.address
               ),
-            revertMessages.ERC20NotConfigured
+            revertMessages.currencyAddressMatch
           );
         });
 
@@ -597,7 +608,8 @@ runForEach.forEach((params) => {
               .purchase(
                 config.projectZero,
                 config.genArt721Core.address,
-                config.pricePerTokenInWei
+                config.pricePerTokenInWei,
+                config.ERC20.address
               ),
             revertMessages.needMoreAllowance
           );
@@ -620,7 +632,8 @@ runForEach.forEach((params) => {
               config.accounts.additional.address,
               config.projectZero,
               config.genArt721Core.address,
-              config.pricePerTokenInWei
+              config.pricePerTokenInWei,
+              config.ERC20.address
             ),
           revertMessages.priceNotConfigured
         );
@@ -645,7 +658,8 @@ runForEach.forEach((params) => {
             config.accounts.additional.address,
             config.projectZero,
             config.genArt721Core.address,
-            config.pricePerTokenInWei
+            config.pricePerTokenInWei,
+            config.ERC20.address
           );
       });
     });

@@ -14,6 +14,7 @@ interface ISharedMinterHolderERC20V0 {
         uint256 projectId,
         address coreContract,
         uint256 maxPricePerToken,
+        address currencyAddress,
         address ownedNFTAddress,
         uint256 ownedNFTTokenId
     ) external payable returns (uint256 tokenId);
@@ -25,6 +26,7 @@ interface ISharedMinterHolderERC20V0 {
         uint256 projectId,
         address coreContract,
         uint256 maxPricePerToken,
+        address currencyAddress,
         address ownedNFTAddress,
         uint256 ownedNFTTokenId
     ) external payable returns (uint256 tokenId);
@@ -37,6 +39,7 @@ interface ISharedMinterHolderERC20V0 {
         uint256 projectId,
         address coreContract,
         uint256 maxPricePerToken,
+        address currencyAddress,
         address ownedNFTAddress,
         uint256 ownedNFTTokenId,
         address vault

@@ -35,6 +35,7 @@ export const revertMessages = {
   lengthOfArraysMustMatch: "TokenHolderLib: arrays neq length",
   onlyRegisteredNFTAddresses: "TokenHolderLib: address not registered",
   purchaseRequiresNFT: "Purchase requires NFT ownership",
+  currencyAddressMatch: "Currency addresses must match",
   needMoreAllowance: "Insufficient ERC20 allowance",
   needMoreBalance: "Insufficient ERC20 balance",
   ERC20TransferToZeroError: "ERC20: transfer to the zero address",

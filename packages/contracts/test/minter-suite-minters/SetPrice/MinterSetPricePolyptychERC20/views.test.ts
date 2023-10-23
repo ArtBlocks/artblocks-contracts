@@ -242,10 +242,11 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,uint256,address,uint256)"](
+          ["purchase(uint256,address,uint256,address,address,uint256)"](
             config.projectZero,
             config.genArt721Core.address,
             config.pricePerTokenInWei,
+            config.ERC20.address,
             config.genArt721Core.address,
             config.projectZeroTokenZero.toNumber()
           );
@@ -271,10 +272,11 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,uint256,address,uint256)"](
+          ["purchase(uint256,address,uint256,address,address,uint256)"](
             config.projectZero,
             config.genArt721Core.address,
             config.pricePerTokenInWei,
+            config.ERC20.address,
             config.genArt721Core.address,
             config.projectZeroTokenZero.toNumber()
           );
@@ -382,10 +384,11 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,uint256,address,uint256)"](
+          ["purchase(uint256,address,uint256,address,address,uint256)"](
             config.projectZero,
             config.genArt721Core.address,
             config.pricePerTokenInWei,
+            config.ERC20.address,
             config.genArt721Core.address,
             config.projectZeroTokenZero.toNumber()
           );
