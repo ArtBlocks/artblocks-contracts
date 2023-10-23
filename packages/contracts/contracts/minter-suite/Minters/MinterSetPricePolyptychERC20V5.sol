@@ -845,10 +845,16 @@ contract MinterSetPricePolyptychERC20V5 is
             coreContract: coreContract
         });
 
-        // get the currency address configured on the project
+        // @dev block scope to avoid stack too deep error
         {
+            // get the currency address configured on the project
+            // @dev revert occurs during payment split if ERC20 token is not
+            // configured (i.e. address(0)), so check is not performed here
             (address configuredCurrencyAddress, ) = SplitFundsLib
-                .getCurrencyInfoERC20(projectId, coreContract);
+                .getCurrencyInfoERC20({
+                    projectId: projectId,
+                    coreContract: coreContract
+                });
             // validate that the currency address and symbols matches the project configured currency
             require(
                 currencyAddress == configuredCurrencyAddress,
@@ -861,9 +867,6 @@ contract MinterSetPricePolyptychERC20V5 is
             maxPricePerToken >= pricePerTokenInWei,
             "Only max price gte token price"
         );
-
-        // @dev revert occurs during payment split if ERC20 token is not
-        // configured (i.e. address(0)), so check is not performed here
 
         // require token used to claim to be in set of allowlisted NFTs
         require(
@@ -909,7 +912,7 @@ contract MinterSetPricePolyptychERC20V5 is
         // EFFECTS
 
         // we need to store the new token ID before it is minted so the randomizer can query it
-        // block scope to avoid stack too deep error
+        // @dev block scope to avoid stack too deep error
         {
             bytes12 targetHashSeed = PolyptychLib.getTokenHashSeed({
                 coreContract: ownedNFTAddress,
@@ -922,6 +925,7 @@ contract MinterSetPricePolyptychERC20V5 is
                 tokenHashSeed: targetHashSeed
             });
 
+            // @dev block scope to avoid stack too deep error
             {
                 uint256 newTokenId = (projectId * ONE_MILLION) + invocations;
                 PolyptychLib.setPolyptychHashSeed({
@@ -957,7 +961,7 @@ contract MinterSetPricePolyptychERC20V5 is
         });
 
         // INTERACTIONS
-        // block scope to avoid stack too deep error
+        // @dev block scope to avoid stack too deep error
         {
             // require proper ownership of NFT used to redeem
             /**

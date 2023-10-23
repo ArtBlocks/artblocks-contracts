@@ -483,8 +483,13 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         });
 
         // get the currency address configured on the project
+        // @dev revert occurs during payment split if ERC20 token is not
+        // configured (i.e. address(0)), so check is not performed here
         (address configuredCurrencyAddress, ) = SplitFundsLib
-            .getCurrencyInfoERC20(projectId, coreContract);
+            .getCurrencyInfoERC20({
+                projectId: projectId,
+                coreContract: coreContract
+            });
 
         // validate that the currency address matches the project configured currency
         require(
@@ -497,9 +502,6 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
             maxPricePerToken >= pricePerTokenInWei,
             "Only max price gte token price"
         );
-
-        // @dev revert occurs during payment split if ERC20 token is not
-        // configured (i.e. address(0)), so check is not performed here
 
         // EFFECTS
         tokenId = _minterFilter.mint_joo({
