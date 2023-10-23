@@ -394,6 +394,7 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * @param ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender to be
      * used as the parent token.
      * @param purchasePricePerToken Maximum price of token being allowed by the purchaser, no decimal places
+     * @param currencyAddress Currency address of token.
      * @return tokenId Token ID of minted token
      */
     function purchase(
@@ -401,7 +402,8 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         address coreContract,
         address ownedNFTAddress,
         uint256 ownedNFTTokenId,
-        uint256 purchasePricePerToken
+        uint256 purchasePricePerToken,
+        address currencyAddress
     ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo({
             to: msg.sender,
@@ -410,7 +412,8 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
             ownedNFTAddress: ownedNFTAddress,
             ownedNFTTokenId: ownedNFTTokenId,
             vault: address(0),
-            purchasePricePerToken: purchasePricePerToken
+            purchasePricePerToken: purchasePricePerToken,
+            currencyAddress: currencyAddress
         });
         return tokenId;
     }
@@ -428,6 +431,7 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * @param ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
      * as the parent token.
      * @param purchasePricePerToken Maximum price of token being allowed by the purchaser, no decimal places
+     * @param currencyAddress Currency address of token.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
@@ -436,7 +440,8 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         address coreContract,
         address ownedNFTAddress,
         uint256 ownedNFTTokenId,
-        uint256 purchasePricePerToken
+        uint256 purchasePricePerToken,
+        address currencyAddress
     ) external payable returns (uint256 tokenId) {
         return
             purchaseTo({
@@ -446,7 +451,8 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
                 ownedNFTAddress: ownedNFTAddress,
                 ownedNFTTokenId: ownedNFTTokenId,
                 vault: address(0),
-                purchasePricePerToken: purchasePricePerToken
+                purchasePricePerToken: purchasePricePerToken,
+                currencyAddress: currencyAddress
             });
     }
 
@@ -801,6 +807,7 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * @param ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender or
      * `vault` being used as the parent token.
      * @param purchasePricePerToken Maximum price of token being allowed by the purchaser, no decimal places
+     * @param currencyAddress Currency address of token.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
@@ -810,7 +817,8 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         address ownedNFTAddress,
         uint256 ownedNFTTokenId,
         address vault,
-        uint256 purchasePricePerToken
+        uint256 purchasePricePerToken,
+        address currencyAddress
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         // pre-mint MaxInvocationsLib checks
@@ -831,6 +839,25 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
             projectId: projectId,
             coreContract: coreContract
         });
+
+        // get the currency symbol and address configured on the projectId
+        // Try block scope if this errors out
+        {
+            (address configuredCurrencyAddress, ) = SplitFundsLib
+                .getCurrencyInfoERC20(projectId, coreContract);
+            // validate that the currency address and symbols matches the project configured currency
+            require(
+                currencyAddress == configuredCurrencyAddress,
+                "Currency addresses must match"
+            );
+        }
+
+        // validate that the specified maximum price is greater than or equal to the price per token
+        require(
+            purchasePricePerToken >= pricePerTokenInWei,
+            "Only max price gte token price"
+        );
+
         // @dev revert occurs during payment split if ERC20 token is not
         // configured (i.e. address(0)), so check is not performed here
 
@@ -891,12 +918,14 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
                 tokenHashSeed: targetHashSeed
             });
 
-            uint256 newTokenId = (projectId * ONE_MILLION) + invocations;
-            PolyptychLib.setPolyptychHashSeed({
-                coreContract: coreContract,
-                tokenId: newTokenId, // new token ID
-                hashSeed: targetHashSeed
-            });
+            {
+                uint256 newTokenId = (projectId * ONE_MILLION) + invocations;
+                PolyptychLib.setPolyptychHashSeed({
+                    coreContract: coreContract,
+                    tokenId: newTokenId, // new token ID
+                    hashSeed: targetHashSeed
+                });
+            }
 
             // once mint() is called, the polyptych randomizer will either:
             // 1) assign a random token hash
@@ -945,12 +974,6 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
                 targetOwner: targetOwner
             });
         }
-
-        // validate that the specified maximum price is greater than or equal to the price per token
-        require(
-            purchasePricePerToken >= pricePerTokenInWei,
-            "Only max price gte token price"
-        );
 
         // split funds
         // process payment in ERC20

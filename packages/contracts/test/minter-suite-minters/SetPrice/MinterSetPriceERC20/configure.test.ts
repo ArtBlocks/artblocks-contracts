@@ -159,7 +159,6 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address,
               config.pricePerTokenInWei,
-              "ERC20",
               config.ERC20.address
             ),
           revertMessages.mustSendCorrectAmount
@@ -173,7 +172,6 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address,
               config.higherPricePerTokenInWei,
-              "ERC20",
               config.ERC20.address
             ),
           revertMessages.needMoreAllowance
@@ -189,7 +187,6 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             config.higherPricePerTokenInWei,
-            "ERC20",
             config.ERC20.address
           );
       });
@@ -234,7 +231,6 @@ runForEach.forEach((params) => {
               config.projectOne,
               config.genArt721Core.address,
               config.pricePerTokenInWei,
-              "ERC20",
               config.ERC20.address
             ),
           revertMessages.mustSendCorrectAmount
@@ -247,7 +243,6 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             config.pricePerTokenInWei,
-            "ERC20",
             config.ERC20.address
           );
       });
@@ -318,7 +313,6 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address,
               config.pricePerTokenInWei,
-              "ERC20",
               config.ERC20.address
             ),
           revertMessages.needMoreBalance
@@ -346,7 +340,6 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             config.pricePerTokenInWei,
-            "ERC20",
             config.ERC20.address
           );
 
@@ -362,7 +355,6 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             config.higherPricePerTokenInWei,
-            "ERC20",
             config.ERC20.address
           );
       });
@@ -389,7 +381,6 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address,
               config.pricePerTokenInWei,
-              "ERC20",
               config.ERC20.address
             ),
           revertMessages.mustSendCorrectAmount
@@ -420,20 +411,6 @@ runForEach.forEach((params) => {
           config.pricePerTokenInWei
         );
 
-        // user can not purchase token if currency symbols do not match
-        await expectRevert(
-          config.minter
-            .connect(config.accounts.user)
-            .purchase(
-              config.projectZero,
-              config.genArt721Core.address,
-              config.pricePerTokenInWei,
-              "BAD",
-              config.ERC20.address
-            ),
-          revertMessages.currencySymbolMatch
-        );
-
         // user can not purchase token if currency addresses do not match
         await expectRevert(
           config.minter
@@ -442,7 +419,6 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address,
               config.pricePerTokenInWei,
-              "ERC20",
               FAKE_CURRENCY_ADDRESS
             ),
           revertMessages.currencyAddressMatch
@@ -455,7 +431,6 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             config.higherPricePerTokenInWei,
-            "ERC20",
             config.ERC20.address
           );
       });
@@ -499,7 +474,6 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             config.pricePerTokenInWei,
-            "ERC20",
             config.ERC20.address
           );
 
@@ -574,7 +548,6 @@ runForEach.forEach((params) => {
             config.projectOne,
             config.genArt721Core.address,
             config.pricePerTokenInWei,
-            "ERC20",
             config.ERC20.address
           );
 
@@ -654,7 +627,6 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address,
               config.pricePerTokenInWei,
-              "ERC20",
               config.ERC20.address
             ),
           revertMessages.maximumInvocationsReached
@@ -681,7 +653,6 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             config.pricePerTokenInWei,
-            "ERC20",
             config.ERC20.address
           );
         // expect revert when setting max invocations to less than current invocations
