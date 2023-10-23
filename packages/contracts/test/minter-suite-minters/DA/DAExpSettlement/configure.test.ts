@@ -779,7 +779,6 @@ runForEach.forEach((params) => {
           .purchase(config.projectZero, config.genArt721Core.address, {
             value: config.startingPrice,
           });
-        // expect call to emit event
         // @dev deployer must call because reducing max invocations on core contract
         // after configuring auction qualifies as "funny business"
         await expectRevert(
@@ -791,6 +790,15 @@ runForEach.forEach((params) => {
             ),
           revertMessages.onlyCoreAdminACL
         );
+        // however, since no changes were made after initial purchase, auction
+        // should be marked as "sold out", prior to the funny business
+        const hasMaxBeenInvokedOnMinter = await config.minter
+          .connect(config.accounts.artist)
+          .projectMaxHasBeenInvoked(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(hasMaxBeenInvokedOnMinter).to.be.true;
       });
 
       it("requires sellout if last purchase price is > base price", async function () {
