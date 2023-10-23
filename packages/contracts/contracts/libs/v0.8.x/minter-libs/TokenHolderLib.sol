@@ -87,22 +87,22 @@ library TokenHolderLib {
             "TokenHolderLib: arrays neq length"
         );
         HolderProjectConfig
-            storage holderProjectConfig = getHolderProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage holderProjectConfig = getHolderProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         for (uint256 i = 0; i < ownedNFTAddresses.length; i++) {
             holderProjectConfig.allowedProjectHolders[ownedNFTAddresses[i]][
                 ownedNFTProjectIds[i]
             ] = true;
         }
         // emit approve event
-        emit AllowedHoldersOfProjects(
-            projectId,
-            coreContract,
-            ownedNFTAddresses,
-            ownedNFTProjectIds
-        );
+        emit AllowedHoldersOfProjects({
+            projectId: projectId,
+            coreContract: coreContract,
+            ownedNFTAddresses: ownedNFTAddresses,
+            ownedNFTProjectIds: ownedNFTProjectIds
+        });
     }
 
     /**
@@ -126,22 +126,22 @@ library TokenHolderLib {
             "TokenHolderLib: arrays neq length"
         );
         HolderProjectConfig
-            storage holderProjectConfig = getHolderProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage holderProjectConfig = getHolderProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         for (uint256 i = 0; i < ownedNFTAddresses.length; i++) {
             holderProjectConfig.allowedProjectHolders[ownedNFTAddresses[i]][
                 ownedNFTProjectIds[i]
             ] = false;
         }
         // emit removed event
-        emit RemovedHoldersOfProjects(
-            projectId,
-            coreContract,
-            ownedNFTAddresses,
-            ownedNFTProjectIds
-        );
+        emit RemovedHoldersOfProjects({
+            projectId: projectId,
+            coreContract: coreContract,
+            ownedNFTAddresses: ownedNFTAddresses,
+            ownedNFTProjectIds: ownedNFTProjectIds
+        });
     }
 
     /**
@@ -169,18 +169,18 @@ library TokenHolderLib {
         address[] memory ownedNFTAddressesRemove,
         uint256[] memory ownedNFTProjectIdsRemove
     ) internal {
-        allowHoldersOfProjects(
-            projectId,
-            coreContract,
-            ownedNFTAddressesAdd,
-            ownedNFTProjectIdsAdd
-        );
-        removeHoldersOfProjects(
-            projectId,
-            coreContract,
-            ownedNFTAddressesRemove,
-            ownedNFTProjectIdsRemove
-        );
+        allowHoldersOfProjects({
+            projectId: projectId,
+            coreContract: coreContract,
+            ownedNFTAddresses: ownedNFTAddressesAdd,
+            ownedNFTProjectIds: ownedNFTProjectIdsAdd
+        });
+        removeHoldersOfProjects({
+            projectId: projectId,
+            coreContract: coreContract,
+            ownedNFTAddresses: ownedNFTAddressesRemove,
+            ownedNFTProjectIds: ownedNFTProjectIdsRemove
+        });
     }
 
     /**
@@ -217,10 +217,10 @@ library TokenHolderLib {
         uint256 ownedNFTTokenId
     ) internal view returns (bool) {
         HolderProjectConfig
-            storage holderProjectConfig = getHolderProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage holderProjectConfig = getHolderProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         uint256 ownedNFTProjectId = ownedNFTTokenId / ONE_MILLION;
         return
             holderProjectConfig.allowedProjectHolders[ownedNFTAddress][

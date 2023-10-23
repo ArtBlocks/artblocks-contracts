@@ -160,16 +160,16 @@ contract MinterSetPricePolyptychERC20V5 is
             coreContract: coreContract,
             sender: msg.sender
         });
-        MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
-            projectId,
-            coreContract,
-            maxInvocations
-        );
+        MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
+            projectId: projectId,
+            coreContract: coreContract,
+            maxInvocations: maxInvocations
+        });
     }
 
     /**
      * @notice Updates this minter's price per token of project `projectId`
-     * to be '_pricePerTokenInWei`, in Wei.
+     * to be `pricePerTokenInWei`, in Wei.
      * @dev Note that it is intentionally supported here that the configured
      * price may be explicitly set to `0`.
      * @param projectId Project ID to set the price per token for.
@@ -186,11 +186,11 @@ contract MinterSetPricePolyptychERC20V5 is
             coreContract: coreContract,
             sender: msg.sender
         });
-        SetPriceLib.updatePricePerTokenInWei(
-            projectId,
-            coreContract,
-            pricePerTokenInWei
-        );
+        SetPriceLib.updatePricePerTokenInWei({
+            projectId: projectId,
+            coreContract: coreContract,
+            pricePerTokenInWei: pricePerTokenInWei
+        });
 
         // for convenience, sync local max invocations to the core contract if
         // and only if max invocations have not already been synced.
@@ -200,12 +200,15 @@ contract MinterSetPricePolyptychERC20V5 is
         // @dev if local maxInvocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated on this minter
         if (
-            MaxInvocationsLib.maxInvocationsIsUnconfigured(
-                projectId,
-                coreContract
-            )
+            MaxInvocationsLib.maxInvocationsIsUnconfigured({
+                projectId: projectId,
+                coreContract: coreContract
+            })
         ) {
-            syncProjectMaxInvocationsToCore(projectId, coreContract);
+            syncProjectMaxInvocationsToCore({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         }
     }
 
@@ -403,14 +406,14 @@ contract MinterSetPricePolyptychERC20V5 is
         address ownedNFTAddress,
         uint256 ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo(
-            msg.sender,
-            projectId,
-            coreContract,
-            ownedNFTAddress,
-            ownedNFTTokenId,
-            address(0)
-        );
+        tokenId = purchaseTo({
+            to: msg.sender,
+            projectId: projectId,
+            coreContract: coreContract,
+            ownedNFTAddress: ownedNFTAddress,
+            ownedNFTTokenId: ownedNFTTokenId,
+            vault: address(0)
+        });
         return tokenId;
     }
 
@@ -436,14 +439,14 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256 ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
         return
-            purchaseTo(
-                to,
-                projectId,
-                coreContract,
-                ownedNFTAddress,
-                ownedNFTTokenId,
-                address(0)
-            );
+            purchaseTo({
+                to: to,
+                projectId: projectId,
+                coreContract: coreContract,
+                ownedNFTAddress: ownedNFTAddress,
+                ownedNFTTokenId: ownedNFTTokenId,
+                vault: address(0)
+            });
     }
 
     // public getter functions
@@ -463,10 +466,10 @@ contract MinterSetPricePolyptychERC20V5 is
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
         return
-            MaxInvocationsLib.getMaxInvocationsProjectConfig(
-                projectId,
-                coreContract
-            );
+            MaxInvocationsLib.getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -480,7 +483,11 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256 projectId,
         address coreContract
     ) external view returns (SetPriceLib.SetPriceProjectConfig memory) {
-        return SetPriceLib.getSetPriceProjectConfig(projectId, coreContract);
+        return
+            SetPriceLib.getSetPriceProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -501,7 +508,10 @@ contract MinterSetPricePolyptychERC20V5 is
     ) external view returns (bool) {
         return
             TokenHolderLib
-                .getHolderProjectConfig(projectId, coreContract)
+                .getHolderProjectConfig({
+                    projectId: projectId,
+                    coreContract: coreContract
+                })
                 .allowedProjectHolders[ownedNFTAddress][ownedNFTProjectId];
     }
 
@@ -571,7 +581,11 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256 projectId,
         address coreContract
     ) external view returns (bool) {
-        return MaxInvocationsLib.getMaxHasBeenInvoked(projectId, coreContract);
+        return
+            MaxInvocationsLib.getMaxHasBeenInvoked({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -598,7 +612,11 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256 projectId,
         address coreContract
     ) external view returns (uint256) {
-        return MaxInvocationsLib.getMaxInvocations(projectId, coreContract);
+        return
+            MaxInvocationsLib.getMaxInvocations({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -617,7 +635,10 @@ contract MinterSetPricePolyptychERC20V5 is
             projectId,
             coreContract
         );
-        balance = SplitFundsLib.getERC20Balance(currencyAddress, msg.sender);
+        balance = SplitFundsLib.getERC20Balance({
+            currencyAddress: currencyAddress,
+            walletAddress: msg.sender
+        });
         return balance;
     }
 
@@ -633,10 +654,10 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256 projectId,
         address coreContract
     ) external view returns (uint256 remaining) {
-        (address currencyAddress, ) = SplitFundsLib.getCurrencyInfoERC20(
-            projectId,
-            coreContract
-        );
+        (address currencyAddress, ) = SplitFundsLib.getCurrencyInfoERC20({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         remaining = SplitFundsLib.getERC20Allowance({
             currencyAddress: currencyAddress,
             walletAddress: msg.sender,
@@ -678,18 +699,21 @@ contract MinterSetPricePolyptychERC20V5 is
         )
     {
         SetPriceLib.SetPriceProjectConfig
-            storage _setPriceProjectConfig = SetPriceLib
-                .getSetPriceProjectConfig(projectId, coreContract);
-        tokenPriceInWei = _setPriceProjectConfig.pricePerTokenInWei;
+            storage setPriceProjectConfig_ = SetPriceLib
+                .getSetPriceProjectConfig({
+                    projectId: projectId,
+                    coreContract: coreContract
+                });
+        tokenPriceInWei = setPriceProjectConfig_.pricePerTokenInWei;
         // get currency info from SplitFundsLib
-        (currencyAddress, currencySymbol) = SplitFundsLib.getCurrencyInfoERC20(
-            projectId,
-            coreContract
-        );
+        (currencyAddress, currencySymbol) = SplitFundsLib.getCurrencyInfoERC20({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         // report if price and ERC20 token are configured
         // @dev currencyAddress is non-zero if an ERC20 token is configured
         isConfigured =
-            _setPriceProjectConfig.priceIsConfigured &&
+            setPriceProjectConfig_.priceIsConfigured &&
             currencyAddress != address(0);
     }
 
@@ -755,10 +779,10 @@ contract MinterSetPricePolyptychERC20V5 is
             sender: msg.sender
         });
 
-        MaxInvocationsLib.syncProjectMaxInvocationsToCore(
-            projectId,
-            coreContract
-        );
+        MaxInvocationsLib.syncProjectMaxInvocationsToCore({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
@@ -793,14 +817,17 @@ contract MinterSetPricePolyptychERC20V5 is
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
-        MaxInvocationsLib.preMintChecks(projectId, coreContract);
+        MaxInvocationsLib.preMintChecks({
+            projectId: projectId,
+            coreContract: coreContract
+        });
 
         // pre-mint checks for set price lib, and get price per token in wei
         // @dev price per token is loaded into memory here for gas efficiency
-        uint256 pricePerTokenInWei = SetPriceLib.preMintChecksAndGetPrice(
-            projectId,
-            coreContract
-        );
+        uint256 pricePerTokenInWei = SetPriceLib.preMintChecksAndGetPrice({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         // @dev revert occurs during payment split if ERC20 token is not
         // configured (i.e. address(0)), so check is not performed here
 
@@ -827,12 +854,12 @@ contract MinterSetPricePolyptychERC20V5 is
             // Note, we do not check `checkDelegateForAll` or `checkDelegateForContract` as well,
             // as they are known to be implicitly checked by calling `checkDelegateForToken`.
             bool isValidVault = _delegationRegistryContract
-                .checkDelegateForToken(
-                    msg.sender, // delegate
-                    vault, // vault
-                    coreContract, // contract
-                    ownedNFTTokenId // tokenId
-                );
+                .checkDelegateForToken({
+                    delegate: msg.sender,
+                    vault: vault,
+                    contract_: coreContract,
+                    tokenId: ownedNFTTokenId
+                });
             require(isValidVault, "Invalid delegate-vault pairing");
             vault_ = vault;
         }
@@ -841,7 +868,7 @@ contract MinterSetPricePolyptychERC20V5 is
         IGenArt721CoreContractV3_Base genArtCoreContract = IGenArt721CoreContractV3_Base(
                 coreContract
             );
-        (uint256 _invocations, , , , , ) = genArtCoreContract.projectStateData(
+        (uint256 invocations, , , , , ) = genArtCoreContract.projectStateData(
             projectId
         );
 
@@ -850,10 +877,10 @@ contract MinterSetPricePolyptychERC20V5 is
         // we need to store the new token ID before it is minted so the randomizer can query it
         // block scope to avoid stack too deep error
         {
-            bytes12 targetHashSeed = PolyptychLib.getTokenHashSeed(
-                ownedNFTAddress,
-                ownedNFTTokenId
-            );
+            bytes12 targetHashSeed = PolyptychLib.getTokenHashSeed({
+                coreContract: ownedNFTAddress,
+                tokenId: ownedNFTTokenId
+            });
 
             PolyptychLib.validatePolyptychEffects({
                 projectId: projectId,
@@ -861,7 +888,7 @@ contract MinterSetPricePolyptychERC20V5 is
                 tokenHashSeed: targetHashSeed
             });
 
-            uint256 newTokenId = (projectId * ONE_MILLION) + _invocations;
+            uint256 newTokenId = (projectId * ONE_MILLION) + invocations;
             PolyptychLib.setPolyptychHashSeed({
                 coreContract: coreContract,
                 tokenId: newTokenId, // new token ID
@@ -888,10 +915,10 @@ contract MinterSetPricePolyptychERC20V5 is
             });
         }
 
-        MaxInvocationsLib.validatePurchaseEffectsInvocations(
-            tokenId,
-            coreContract
-        );
+        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+            tokenId: tokenId,
+            coreContract: coreContract
+        });
 
         // INTERACTIONS
         // block scope to avoid stack too deep error

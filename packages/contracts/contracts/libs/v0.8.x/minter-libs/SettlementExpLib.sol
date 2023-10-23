@@ -169,10 +169,10 @@ library SettlementExpLib {
     ) internal {
         // load the project's settlement auction config
         SettlementAuctionProjectConfig
-            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // require revenues to not have already been collected
         require(
             !settlementAuctionProjectConfig.auctionRevenuesCollected,
@@ -181,7 +181,10 @@ library SettlementExpLib {
         // refresh max invocations, updating any local values that are
         // illogical with respect to the current core contract state, and
         // ensuring that local hasMaxBeenInvoked is accurate.
-        MaxInvocationsLib.refreshMaxInvocations(projectId, coreContract);
+        MaxInvocationsLib.refreshMaxInvocations({
+            projectId: projectId,
+            coreContract: coreContract
+        });
 
         // get the current net price of the auction - reverts if no auction
         // is configured.
@@ -194,10 +197,10 @@ library SettlementExpLib {
         // @dev we can trust maxHasBeenInvoked, since we just
         // refreshed it above with refreshMaxInvocations, preventing any
         // false negatives
-        bool maxHasBeenInvoked = MaxInvocationsLib.getMaxHasBeenInvoked(
-            projectId,
-            coreContract
-        );
+        bool maxHasBeenInvoked = MaxInvocationsLib.getMaxHasBeenInvoked({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         uint256 price = getPriceUnsafe({
             projectId: projectId,
             coreContract: coreContract,
@@ -259,12 +262,12 @@ library SettlementExpLib {
             // @dev acknowledge that this event may be emitted prior to
             // other state updates in this function, but that is okay because
             // the settled price is the only value updated with this event
-            emit GenericMinterEventsLib.ConfigValueSet(
-                projectId,
-                coreContract,
-                CONFIG_CURRENT_SETTLED_PRICE,
-                basePrice
-            );
+            emit GenericMinterEventsLib.ConfigValueSet({
+                projectId: projectId,
+                coreContract: coreContract,
+                key: CONFIG_CURRENT_SETTLED_PRICE,
+                value: basePrice
+            });
         }
         settlementAuctionProjectConfig.auctionRevenuesCollected = true;
         // calculate the artist and admin revenues
@@ -282,12 +285,12 @@ library SettlementExpLib {
             coreContract: coreContract
         });
 
-        emit GenericMinterEventsLib.ConfigValueSet(
-            projectId,
-            coreContract,
-            CONFIG_AUCTION_REVENUES_COLLECTED,
-            true
-        );
+        emit GenericMinterEventsLib.ConfigValueSet({
+            projectId: projectId,
+            coreContract: coreContract,
+            key: CONFIG_AUCTION_REVENUES_COLLECTED,
+            value: true
+        });
     }
 
     /**
@@ -377,10 +380,10 @@ library SettlementExpLib {
     ) internal {
         // load the project's settlement auction config and receipt
         SettlementAuctionProjectConfig
-            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
 
         // if this is the first purchase on this minter, set the number of
         // of tokens to be auctioned to:
@@ -390,10 +393,10 @@ library SettlementExpLib {
             (
                 uint256 coreInvocations,
                 uint256 coreMaxInvocations
-            ) = MaxInvocationsLib.coreContractInvocationData(
-                    projectId,
-                    coreContract
-                );
+            ) = MaxInvocationsLib.coreContractInvocationData({
+                    projectId: projectId,
+                    coreContract: coreContract
+                });
             // snap chalkline on the number of tokens to be auctioned on this
             // minter
             // @dev acknowledge that this value may be stale if the core
@@ -402,10 +405,10 @@ library SettlementExpLib {
             // That case would be classified as "nonstandard activity", so we
             // want to require admin to be the withdrawer of revenues in that
             // case.
-            uint256 minterMaxInvocations = MaxInvocationsLib.getMaxInvocations(
-                projectId,
-                coreContract
-            );
+            uint256 minterMaxInvocations = MaxInvocationsLib.getMaxInvocations({
+                projectId: projectId,
+                coreContract: coreContract
+            });
             // @dev prefer to use stale value minterMaxInvocations here, since
             // if it is stale, the artist could have decreased max invocations
             // on core contract at last moment unexpectedly, and we want to
@@ -473,10 +476,10 @@ library SettlementExpLib {
     ) internal {
         // load the project's settlement auction config
         SettlementAuctionProjectConfig
-            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         if (settlementAuctionProjectConfig.auctionRevenuesCollected) {
             // if revenues have been collected, split revenues immediately.
             // @dev note that we are guaranteed to be at auction base price,
@@ -547,10 +550,10 @@ library SettlementExpLib {
     {
         // load the project's settlement auction config
         SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfig = getSettlementAuctionProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage _settlementAuctionProjectConfig = getSettlementAuctionProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // load the user's receipt
         Receipt storage receipt = getReceipt({
             walletAddress: walletAddress,
@@ -598,10 +601,10 @@ library SettlementExpLib {
     ) internal view returns (uint256) {
         // load the project's settlement auction config
         SettlementAuctionProjectConfig
-            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // return latest purchase price if:
         // - minter is aware of a sold-out auction (without updating max
         // invocation value)
@@ -646,10 +649,10 @@ library SettlementExpLib {
     ) internal view returns (uint256 tokenPriceInWei) {
         // load the project's settlement auction config
         SettlementAuctionProjectConfig
-            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // accurately check if project has sold out
         if (
             MaxInvocationsLib.projectMaxHasBeenInvokedSafe({
@@ -686,10 +689,10 @@ library SettlementExpLib {
     ) internal view returns (bool) {
         // load the project's settlement auction config
         SettlementAuctionProjectConfig
-            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // If previous purchases have been made, require monotonically
         // decreasing purchase prices to preserve settlement and revenue
         // claiming logic. Since base price is always non-zero, if

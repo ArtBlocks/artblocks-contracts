@@ -77,10 +77,10 @@ library DALinLib {
         uint88 basePrice,
         bool allowReconfigureAfterStart
     ) internal {
-        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig(
-            projectId,
-            coreContract
-        );
+        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         require(
             DAProjectConfig_.timestampStart == 0 || // uninitialized
                 block.timestamp < DAProjectConfig_.timestampStart || // auction not yet started
@@ -116,17 +116,20 @@ library DALinLib {
         uint256 projectId,
         address coreContract
     ) internal {
-        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig(
-            projectId,
-            coreContract
-        );
+        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
 
         DAProjectConfig_.timestampStart = 0;
         DAProjectConfig_.timestampEnd = 0;
         DAProjectConfig_.startPrice = 0;
         DAProjectConfig_.basePrice = 0;
 
-        emit DALib.ResetAuctionDetails(projectId, coreContract);
+        emit DALib.ResetAuctionDetails({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
@@ -142,10 +145,10 @@ library DALinLib {
         uint256 projectId,
         address coreContract
     ) internal view returns (uint256) {
-        DAProjectConfig storage _DAProjectConfig = getDAProjectConfig(
-            projectId,
-            coreContract
-        );
+        DAProjectConfig storage _DAProjectConfig = getDAProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         // move parameters to memory if used more than once
         uint256 timestampStart = _DAProjectConfig.timestampStart;
         uint256 timestampEnd = _DAProjectConfig.timestampEnd;

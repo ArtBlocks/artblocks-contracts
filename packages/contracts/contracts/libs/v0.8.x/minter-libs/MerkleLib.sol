@@ -75,25 +75,25 @@ library MerkleLib {
         uint24 maxInvocationsPerAddress
     ) internal {
         MerkleProjectConfig
-            storage merkleProjectConfig = getMerkleProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage merkleProjectConfig = getMerkleProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         merkleProjectConfig.useMaxInvocationsPerAddressOverride = true;
         merkleProjectConfig
             .maxInvocationsPerAddressOverride = maxInvocationsPerAddress;
-        emit GenericMinterEventsLib.ConfigValueSet(
-            projectId,
-            coreContract,
-            MerkleLib.CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
-            true
-        );
-        emit GenericMinterEventsLib.ConfigValueSet(
-            projectId,
-            coreContract,
-            MerkleLib.CONFIG_MAX_INVOCATIONS_OVERRIDE,
-            uint256(maxInvocationsPerAddress)
-        );
+        emit GenericMinterEventsLib.ConfigValueSet({
+            projectId: projectId,
+            coreContract: coreContract,
+            key: MerkleLib.CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
+            value: true
+        });
+        emit GenericMinterEventsLib.ConfigValueSet({
+            projectId: projectId,
+            coreContract: coreContract,
+            key: MerkleLib.CONFIG_MAX_INVOCATIONS_OVERRIDE,
+            value: uint256(maxInvocationsPerAddress)
+        });
     }
 
     /**
@@ -109,17 +109,17 @@ library MerkleLib {
     ) internal {
         require(root != bytes32(0), "Root must be provided");
         MerkleProjectConfig
-            storage merkleProjectConfig = getMerkleProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage merkleProjectConfig = getMerkleProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         merkleProjectConfig.merkleRoot = root;
-        emit GenericMinterEventsLib.ConfigValueSet(
-            projectId,
-            coreContract,
-            MerkleLib.CONFIG_MERKLE_ROOT,
-            root
-        );
+        emit GenericMinterEventsLib.ConfigValueSet({
+            projectId: projectId,
+            coreContract: coreContract,
+            key: MerkleLib.CONFIG_MERKLE_ROOT,
+            value: root
+        });
     }
 
     function preMintChecks(
@@ -129,13 +129,17 @@ library MerkleLib {
         address vault
     ) internal view {
         MerkleProjectConfig
-            storage merkleProjectConfig = getMerkleProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage merkleProjectConfig = getMerkleProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // require valid Merkle proof
         require(
-            verifyAddress(merkleProjectConfig.merkleRoot, proof, vault),
+            verifyAddress({
+                proofRoot: merkleProjectConfig.merkleRoot,
+                proof: proof,
+                address_: vault
+            }),
             "Invalid Merkle proof"
         );
 
@@ -159,10 +163,10 @@ library MerkleLib {
         address vault
     ) internal {
         MerkleProjectConfig
-            storage merkleProjectConfig = getMerkleProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage merkleProjectConfig = getMerkleProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // increment mint invocations for vault address
         unchecked {
             // this will never overflow since user's invocations on a project
@@ -233,10 +237,10 @@ library MerkleLib {
         uint256 projectId,
         address coreContract
     ) internal view returns (uint256) {
-        MerkleProjectConfig storage projectConfig = getMerkleProjectConfig(
-            projectId,
-            coreContract
-        );
+        MerkleProjectConfig storage projectConfig = getMerkleProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         return projectMaxInvocationsPerAddress(projectConfig);
     }
 
@@ -245,10 +249,10 @@ library MerkleLib {
         address coreContract,
         address purchaser
     ) internal view returns (uint256) {
-        MerkleProjectConfig storage projectConfig = getMerkleProjectConfig(
-            projectId,
-            coreContract
-        );
+        MerkleProjectConfig storage projectConfig = getMerkleProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         return projectConfig.userMintInvocations[purchaser];
     }
 
@@ -281,10 +285,10 @@ library MerkleLib {
             uint256 mintInvocationsRemaining
         )
     {
-        MerkleProjectConfig storage projectConfig = getMerkleProjectConfig(
-            projectId,
-            coreContract
-        );
+        MerkleProjectConfig storage projectConfig = getMerkleProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         uint256 maxInvocationsPerAddress = projectMaxInvocationsPerAddress(
             projectConfig
         );

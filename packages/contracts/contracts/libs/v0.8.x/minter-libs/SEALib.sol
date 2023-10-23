@@ -172,7 +172,10 @@ library SEALib {
         SEAProjectConfig_.basePrice = 0;
         SEAProjectConfig_.timestampStart = 0;
 
-        emit ResetAuctionDetails(projectId, coreContract);
+        emit ResetAuctionDetails({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
@@ -302,7 +305,10 @@ library SEALib {
             to: to,
             tokenId: nextTokenId
         });
-        emit ProjectNextTokenEjected(projectId, coreContract);
+        emit ProjectNextTokenEjected({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
@@ -513,7 +519,12 @@ library SEALib {
         // and avoid revert if relying on core to limit invocations, therefore
         // use MaxInvocationsLib.invocationsRemain, which calls core contract
         // to get latest invocation data
-        if (!MaxInvocationsLib.invocationsRemain(projectId, coreContract)) {
+        if (
+            !MaxInvocationsLib.invocationsRemain({
+                projectId: projectId,
+                coreContract: coreContract
+            })
+        ) {
             // we have reached the max invocations, so we do not mint a new
             // token as the "next token", and leave the next token number as
             // not populated
@@ -862,7 +873,11 @@ library SEALib {
         // INTERACTIONS
         // attempt to mint new token to this minter contract, only if max
         // invocations has not been reached
-        tryMintTokenToNextSlot(projectId, coreContract, minterFilter);
+        tryMintTokenToNextSlot({
+            projectId: projectId,
+            coreContract: coreContract,
+            minterFilter: minterFilter
+        });
     }
 
     /**

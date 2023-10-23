@@ -174,10 +174,10 @@ contract MinterDAExpV5 is
         );
 
         // EFFECTS
-        bool maxHasBeenInvoked = MaxInvocationsLib.getMaxHasBeenInvoked(
-            projectId,
-            coreContract
-        );
+        bool maxHasBeenInvoked = MaxInvocationsLib.getMaxHasBeenInvoked({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         DAExpLib.setAuctionDetailsExp({
             projectId: projectId,
             coreContract: coreContract,
@@ -192,12 +192,15 @@ contract MinterDAExpV5 is
         // @dev if local max invocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated.
         if (
-            MaxInvocationsLib.maxInvocationsIsUnconfigured(
-                projectId,
-                coreContract
-            )
+            MaxInvocationsLib.maxInvocationsIsUnconfigured({
+                projectId: projectId,
+                coreContract: coreContract
+            })
         ) {
-            syncProjectMaxInvocationsToCore(projectId, coreContract);
+            syncProjectMaxInvocationsToCore({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         }
     }
 
@@ -290,10 +293,10 @@ contract MinterDAExpV5 is
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
         return
-            MaxInvocationsLib.getMaxInvocationsProjectConfig(
-                projectId,
-                coreContract
-            );
+            MaxInvocationsLib.getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -369,7 +372,11 @@ contract MinterDAExpV5 is
         uint256 projectId,
         address coreContract
     ) external view returns (bool) {
-        return MaxInvocationsLib.getMaxHasBeenInvoked(projectId, coreContract);
+        return
+            MaxInvocationsLib.getMaxHasBeenInvoked({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -396,7 +403,11 @@ contract MinterDAExpV5 is
         uint256 projectId,
         address coreContract
     ) external view returns (uint256) {
-        return MaxInvocationsLib.getMaxInvocations(projectId, coreContract);
+        return
+            MaxInvocationsLib.getMaxInvocations({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -428,7 +439,10 @@ contract MinterDAExpV5 is
         )
     {
         DAExpLib.DAProjectConfig storage auctionProjectConfig = DAExpLib
-            .getDAProjectConfig(projectId, coreContract);
+            .getDAProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         isConfigured = (auctionProjectConfig.startPrice > 0);
         if (!isConfigured) {
             // In the case of unconfigured auction, return price of zero when
@@ -514,10 +528,10 @@ contract MinterDAExpV5 is
             sender: msg.sender
         });
 
-        MaxInvocationsLib.validatePurchaseEffectsInvocations(
-            tokenId,
-            coreContract
-        );
+        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+            tokenId: tokenId,
+            coreContract: coreContract
+        });
 
         // INTERACTIONS
         SplitFundsLib.splitFundsETHRefundSender({

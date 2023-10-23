@@ -102,11 +102,11 @@ contract MinterSetPriceERC20V5 is
             coreContract: coreContract,
             sender: msg.sender
         });
-        MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
-            projectId,
-            coreContract,
-            maxInvocations
-        );
+        MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
+            projectId: projectId,
+            coreContract: coreContract,
+            maxInvocations: maxInvocations
+        });
     }
 
     /**
@@ -128,11 +128,11 @@ contract MinterSetPriceERC20V5 is
             coreContract: coreContract,
             sender: msg.sender
         });
-        SetPriceLib.updatePricePerTokenInWei(
-            projectId,
-            coreContract,
-            pricePerTokenInWei
-        );
+        SetPriceLib.updatePricePerTokenInWei({
+            projectId: projectId,
+            coreContract: coreContract,
+            pricePerTokenInWei: pricePerTokenInWei
+        });
 
         // for convenience, sync local max invocations to the core contract if
         // and only if max invocations have not already been synced.
@@ -142,12 +142,15 @@ contract MinterSetPriceERC20V5 is
         // @dev if local maxInvocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated on this minter
         if (
-            MaxInvocationsLib.maxInvocationsIsUnconfigured(
-                projectId,
-                coreContract
-            )
+            MaxInvocationsLib.maxInvocationsIsUnconfigured({
+                projectId: projectId,
+                coreContract: coreContract
+            })
         ) {
-            syncProjectMaxInvocationsToCore(projectId, coreContract);
+            syncProjectMaxInvocationsToCore({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         }
     }
 
@@ -192,7 +195,11 @@ contract MinterSetPriceERC20V5 is
         uint256 projectId,
         address coreContract
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo(msg.sender, projectId, coreContract);
+        tokenId = purchaseTo({
+            to: msg.sender,
+            projectId: projectId,
+            coreContract: coreContract
+        });
         return tokenId;
     }
 
@@ -213,10 +220,10 @@ contract MinterSetPriceERC20V5 is
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
         return
-            MaxInvocationsLib.getMaxInvocationsProjectConfig(
-                projectId,
-                coreContract
-            );
+            MaxInvocationsLib.getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -230,7 +237,11 @@ contract MinterSetPriceERC20V5 is
         uint256 projectId,
         address coreContract
     ) external view returns (SetPriceLib.SetPriceProjectConfig memory) {
-        return SetPriceLib.getSetPriceProjectConfig(projectId, coreContract);
+        return
+            SetPriceLib.getSetPriceProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -274,7 +285,11 @@ contract MinterSetPriceERC20V5 is
         uint256 projectId,
         address coreContract
     ) external view returns (bool) {
-        return MaxInvocationsLib.getMaxHasBeenInvoked(projectId, coreContract);
+        return
+            MaxInvocationsLib.getMaxHasBeenInvoked({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -301,7 +316,11 @@ contract MinterSetPriceERC20V5 is
         uint256 projectId,
         address coreContract
     ) external view returns (uint256) {
-        return MaxInvocationsLib.getMaxInvocations(projectId, coreContract);
+        return
+            MaxInvocationsLib.getMaxInvocations({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -316,11 +335,14 @@ contract MinterSetPriceERC20V5 is
         uint256 projectId,
         address coreContract
     ) external view returns (uint256 balance) {
-        (address currencyAddress, ) = SplitFundsLib.getCurrencyInfoERC20(
-            projectId,
-            coreContract
-        );
-        balance = SplitFundsLib.getERC20Balance(currencyAddress, msg.sender);
+        (address currencyAddress, ) = SplitFundsLib.getCurrencyInfoERC20({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        balance = SplitFundsLib.getERC20Balance({
+            currencyAddress: currencyAddress,
+            walletAddress: msg.sender
+        });
         return balance;
     }
 
@@ -336,10 +358,10 @@ contract MinterSetPriceERC20V5 is
         uint256 projectId,
         address coreContract
     ) external view returns (uint256 remaining) {
-        (address currencyAddress, ) = SplitFundsLib.getCurrencyInfoERC20(
-            projectId,
-            coreContract
-        );
+        (address currencyAddress, ) = SplitFundsLib.getCurrencyInfoERC20({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         remaining = SplitFundsLib.getERC20Allowance({
             currencyAddress: currencyAddress,
             walletAddress: msg.sender,
@@ -381,17 +403,20 @@ contract MinterSetPriceERC20V5 is
         )
     {
         SetPriceLib.SetPriceProjectConfig
-            storage _setPriceProjectConfig = SetPriceLib
-                .getSetPriceProjectConfig(projectId, coreContract);
-        tokenPriceInWei = _setPriceProjectConfig.pricePerTokenInWei;
-        (currencyAddress, currencySymbol) = SplitFundsLib.getCurrencyInfoERC20(
-            projectId,
-            coreContract
-        );
+            storage setPriceProjectConfig_ = SetPriceLib
+                .getSetPriceProjectConfig({
+                    projectId: projectId,
+                    coreContract: coreContract
+                });
+        tokenPriceInWei = setPriceProjectConfig_.pricePerTokenInWei;
+        (currencyAddress, currencySymbol) = SplitFundsLib.getCurrencyInfoERC20({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         // report if price and ERC20 token are configured
         // @dev currencyAddress is non-zero if an ERC20 token is configured
         isConfigured =
-            _setPriceProjectConfig.priceIsConfigured &&
+            setPriceProjectConfig_.priceIsConfigured &&
             currencyAddress != address(0);
     }
 
@@ -413,10 +438,10 @@ contract MinterSetPriceERC20V5 is
             sender: msg.sender
         });
 
-        MaxInvocationsLib.syncProjectMaxInvocationsToCore(
-            projectId,
-            coreContract
-        );
+        MaxInvocationsLib.syncProjectMaxInvocationsToCore({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
@@ -440,14 +465,17 @@ contract MinterSetPriceERC20V5 is
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
-        MaxInvocationsLib.preMintChecks(projectId, coreContract);
+        MaxInvocationsLib.preMintChecks({
+            projectId: projectId,
+            coreContract: coreContract
+        });
 
         // pre-mint checks for set price lib, and get price per token in wei
         // @dev price per token is loaded into memory here for gas efficiency
-        uint256 pricePerTokenInWei = SetPriceLib.preMintChecksAndGetPrice(
-            projectId,
-            coreContract
-        );
+        uint256 pricePerTokenInWei = SetPriceLib.preMintChecksAndGetPrice({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         // @dev revert occurs during payment split if ERC20 token is not
         // configured (i.e. address(0)), so check is not performed here
 
@@ -459,10 +487,10 @@ contract MinterSetPriceERC20V5 is
             sender: msg.sender
         });
 
-        MaxInvocationsLib.validatePurchaseEffectsInvocations(
-            tokenId,
-            coreContract
-        );
+        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+            tokenId: tokenId,
+            coreContract: coreContract
+        });
 
         // INTERACTIONS
         // split ERC20 funds

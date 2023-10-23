@@ -135,11 +135,11 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      */
     function _onlyCoreAdminACL(address coreContract, bytes4 selector) internal {
         require(
-            IGenArt721CoreContractV3_Base(coreContract).adminACLAllowed(
-                msg.sender,
-                address(this),
-                selector
-            ),
+            IGenArt721CoreContractV3_Base(coreContract).adminACLAllowed({
+                _sender: msg.sender,
+                _contract: address(this),
+                _selector: selector
+            }),
             "Only Core AdminACL allowed"
         );
     }
@@ -157,11 +157,11 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
             (msg.sender ==
                 genArtCoreContract_Base.projectIdToArtistAddress(projectId)) ||
                 (
-                    genArtCoreContract_Base.adminACLAllowed(
-                        msg.sender,
-                        address(this),
-                        selector
-                    )
+                    genArtCoreContract_Base.adminACLAllowed({
+                        _sender: msg.sender,
+                        _contract: address(this),
+                        _selector: selector
+                    })
                 ),
             "Only Artist or Core Admin ACL"
         );
@@ -199,7 +199,10 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         address minter
     ) internal view {
         require(
-            isApprovedMinterForContract(coreContract, minter),
+            isApprovedMinterForContract({
+                coreContract: coreContract,
+                minter: minter
+            }),
             "Only approved minters"
         );
     }
@@ -257,10 +260,10 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
             _globallyApprovedMinters.add(minter),
             "Minter already approved"
         );
-        emit MinterApprovedGlobally(
-            minter,
-            ISharedMinterV0(minter).minterType()
-        );
+        emit MinterApprovedGlobally({
+            minter: minter,
+            minterType: ISharedMinterV0(minter).minterType()
+        });
     }
 
     /**
@@ -301,7 +304,10 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         address minter
     ) external {
         _onlyRegisteredCoreContract(coreContract);
-        _onlyCoreAdminACL(coreContract, this.approveMinterForContract.selector);
+        _onlyCoreAdminACL({
+            coreContract: coreContract,
+            selector: this.approveMinterForContract.selector
+        });
         // @dev add() returns true only if the value was not already in the Set
         require(
             _contractApprovedMinters[coreContract].add(minter),
@@ -333,7 +339,10 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         address minter
     ) external {
         _onlyRegisteredCoreContract(coreContract);
-        _onlyCoreAdminACL(coreContract, this.revokeMinterForContract.selector);
+        _onlyCoreAdminACL({
+            coreContract: coreContract,
+            selector: this.revokeMinterForContract.selector
+        });
         // @dev intentionally do not check if minter is still in use by any
         // project, since it is possible that a different contract's project is
         // using the minter
@@ -372,13 +381,13 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     ) external {
         /// CHECKS
         _onlyRegisteredCoreContract(coreContract);
-        _onlyCoreAdminACLOrArtist(
-            projectId,
-            coreContract,
-            this.setMinterForProject.selector
-        );
-        _onlyApprovedMinter(coreContract, minter);
-        _onlyValidProjectId(projectId, coreContract);
+        _onlyCoreAdminACLOrArtist({
+            projectId: projectId,
+            coreContract: coreContract,
+            selector: this.setMinterForProject.selector
+        });
+        _onlyApprovedMinter({coreContract: coreContract, minter: minter});
+        _onlyValidProjectId({projectId: projectId, coreContract: coreContract});
         /// EFFECTS
         // decrement number of projects using a previous minter
         (bool hasPreviousMinter, address previousMinter) = _minterForProject[
@@ -417,13 +426,16 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         address coreContract
     ) external {
         _onlyRegisteredCoreContract(coreContract);
-        _onlyCoreAdminACLOrArtist(
-            projectId,
-            coreContract,
-            this.removeMinterForProject.selector
-        );
+        _onlyCoreAdminACLOrArtist({
+            projectId: projectId,
+            coreContract: coreContract,
+            selector: this.removeMinterForProject.selector
+        });
         // @dev this will revert if project does not have a minter
-        _removeMinterForProject(projectId, coreContract);
+        _removeMinterForProject({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
@@ -440,13 +452,16 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         address coreContract
     ) external {
         _onlyRegisteredCoreContract(coreContract);
-        _onlyCoreAdminACL(
-            coreContract,
-            this.removeMintersForProjectsOnContract.selector
-        );
+        _onlyCoreAdminACL({
+            coreContract: coreContract,
+            selector: this.removeMintersForProjectsOnContract.selector
+        });
         uint256 numProjects = projectIds.length;
         for (uint256 i; i < numProjects; ) {
-            _removeMinterForProject(projectIds[i], coreContract);
+            _removeMinterForProject({
+                projectId: projectIds[i],
+                coreContract: coreContract
+            });
             unchecked {
                 ++i;
             }
@@ -482,11 +497,11 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
             "Only assigned minter"
         );
         // INTERACTIONS
-        tokenId = IGenArt721CoreContractV3_Base(coreContract).mint_Ecf(
-            to,
-            projectId,
-            sender
-        );
+        tokenId = IGenArt721CoreContractV3_Base(coreContract).mint_Ecf({
+            _to: to,
+            _projectId: projectId,
+            _by: sender
+        });
         return tokenId;
     }
 
@@ -739,7 +754,11 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     ) public returns (bool) {
         return
             owner() != address(0) &&
-            adminACLContract.allowed(sender, contract_, selector);
+            adminACLContract.allowed({
+                _sender: sender,
+                _contract: contract_,
+                _selector: selector
+            });
     }
 
     /**
@@ -810,7 +829,10 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
             _minterForProject[coreContract].get(projectId, "No minter assigned")
         ]--;
         _minterForProject[coreContract].remove(projectId);
-        emit ProjectMinterRemoved(projectId, coreContract);
+        emit ProjectMinterRemoved({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**

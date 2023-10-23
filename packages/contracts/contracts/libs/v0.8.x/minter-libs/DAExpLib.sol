@@ -77,10 +77,10 @@ library DAExpLib {
         uint88 basePrice,
         bool allowReconfigureAfterStart
     ) internal {
-        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig(
-            projectId,
-            coreContract
-        );
+        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         require(
             DAProjectConfig_.timestampStart == 0 || // uninitialized
                 block.timestamp < DAProjectConfig_.timestampStart || // auction not yet started
@@ -116,17 +116,20 @@ library DAExpLib {
         uint256 projectId,
         address coreContract
     ) internal {
-        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig(
-            projectId,
-            coreContract
-        );
+        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
 
         DAProjectConfig_.timestampStart = 0;
         DAProjectConfig_.priceDecayHalfLifeSeconds = 0;
         DAProjectConfig_.startPrice = 0;
         DAProjectConfig_.basePrice = 0;
 
-        emit DALib.ResetAuctionDetails(projectId, coreContract);
+        emit DALib.ResetAuctionDetails({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
@@ -143,10 +146,10 @@ library DAExpLib {
         uint256 projectId,
         address coreContract
     ) internal view returns (uint256) {
-        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig(
-            projectId,
-            coreContract
-        );
+        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         // move parameters to memory if used more than once
         uint256 timestampStart = DAProjectConfig_.timestampStart;
         uint256 priceDecayHalfLifeSeconds = DAProjectConfig_
@@ -196,7 +199,11 @@ library DAExpLib {
         uint256 projectId,
         address coreContract
     ) internal view returns (uint256) {
-        return getDAProjectConfig(projectId, coreContract).basePrice;
+        return
+            getDAProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            }).basePrice;
     }
 
     /**

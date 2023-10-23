@@ -67,16 +67,16 @@ library MaxInvocationsLib {
         ).projectStateData(projectId);
         // update storage with results
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         maxInvocationsProjectConfig.maxInvocations = uint24(maxInvocations);
-        emit ProjectMaxInvocationsLimitUpdated(
-            projectId,
-            coreContract,
-            maxInvocations
-        );
+        emit ProjectMaxInvocationsLimitUpdated({
+            projectId: projectId,
+            coreContract: coreContract,
+            maxInvocations: maxInvocations
+        });
 
         // We need to ensure maxHasBeenInvoked is correctly set after manually syncing the
         // local maxInvocations value with the core contract's maxInvocations value.
@@ -101,7 +101,10 @@ library MaxInvocationsLib {
         (
             uint256 coreInvocations,
             uint256 coreMaxInvocations
-        ) = coreContractInvocationData(projectId, coreContract);
+        ) = coreContractInvocationData({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         require(
             maxInvocations <= coreMaxInvocations,
             "Invalid max invocations"
@@ -110,10 +113,10 @@ library MaxInvocationsLib {
 
         // EFFECTS
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // update storage with results
         maxInvocationsProjectConfig.maxInvocations = uint24(maxInvocations);
         // We need to ensure maxHasBeenInvoked is correctly set after manually setting the
@@ -121,11 +124,11 @@ library MaxInvocationsLib {
         maxInvocationsProjectConfig.maxHasBeenInvoked =
             coreInvocations == maxInvocations;
 
-        emit ProjectMaxInvocationsLimitUpdated(
-            projectId,
-            coreContract,
-            maxInvocations
-        );
+        emit ProjectMaxInvocationsLimitUpdated({
+            projectId: projectId,
+            coreContract: coreContract,
+            maxInvocations: maxInvocations
+        });
     }
 
     /**
@@ -144,10 +147,10 @@ library MaxInvocationsLib {
     ) internal {
         uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // invocation is token number plus one, and will never overflow due to
         // limit of 1e6 invocations per project. block scope for gas efficiency
         // (i.e. avoid an unnecessary var initialization to 0).
@@ -179,10 +182,10 @@ library MaxInvocationsLib {
     ) internal view {
         // check that max invocations have not been reached
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         require(
             !maxInvocationsProjectConfig.maxHasBeenInvoked,
             "Max invocations reached"
@@ -205,10 +208,10 @@ library MaxInvocationsLib {
         address coreContract
     ) internal view returns (bool) {
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         return
             maxInvocationsProjectConfig.maxInvocations == 0 &&
             !maxInvocationsProjectConfig.maxHasBeenInvoked;
@@ -232,13 +235,16 @@ library MaxInvocationsLib {
         (
             uint256 coreInvocations,
             uint256 coreMaxInvocations
-        ) = coreContractInvocationData(projectId, coreContract);
+        ) = coreContractInvocationData({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // load minter-local max invocations into memory
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         uint256 localMaxInvocations = maxInvocationsProjectConfig
             .maxInvocations;
         // invocations remain available if the core contract has not reached
@@ -290,10 +296,10 @@ library MaxInvocationsLib {
         address coreContract
     ) internal view returns (uint256) {
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         return maxInvocationsProjectConfig.maxInvocations;
     }
 
@@ -308,10 +314,10 @@ library MaxInvocationsLib {
         address coreContract
     ) internal view returns (bool) {
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         return maxInvocationsProjectConfig.maxHasBeenInvoked;
     }
 
@@ -331,16 +337,16 @@ library MaxInvocationsLib {
         // get max invocations from core contract
         uint256 coreInvocations;
         uint256 coreMaxInvocations;
-        (coreInvocations, coreMaxInvocations) = coreContractInvocationData(
-            projectId,
-            coreContract
-        );
+        (coreInvocations, coreMaxInvocations) = coreContractInvocationData({
+            projectId: projectId,
+            coreContract: coreContract
+        });
 
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         uint256 localMaxInvocations = maxInvocationsProjectConfig
             .maxInvocations;
         // value is locally defined, and could be out of date.
@@ -381,25 +387,25 @@ library MaxInvocationsLib {
         address coreContract
     ) internal {
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                projectId,
-                coreContract
-            );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         if (maxInvocationsIsUnconfigured(projectId, coreContract)) {
             // populate the minter max invocation state to equal the values on
             // the core contract (least restrictive state)
-            MaxInvocationsLib.syncProjectMaxInvocationsToCore(
-                projectId,
-                coreContract
-            );
+            MaxInvocationsLib.syncProjectMaxInvocationsToCore({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         } else {
             // if local max invocations were already populated, validate the local state
             uint256 coreMaxInvocations;
             uint256 coreInvocations;
-            (coreInvocations, coreMaxInvocations) = coreContractInvocationData(
-                projectId,
-                coreContract
-            );
+            (coreInvocations, coreMaxInvocations) = coreContractInvocationData({
+                projectId: projectId,
+                coreContract: coreContract
+            });
 
             uint256 localMaxInvocations = maxInvocationsProjectConfig
                 .maxInvocations;
@@ -417,11 +423,11 @@ library MaxInvocationsLib {
                 maxInvocationsProjectConfig
                     .maxHasBeenInvoked = (coreMaxInvocations ==
                     coreInvocations);
-                emit ProjectMaxInvocationsLimitUpdated(
-                    projectId,
-                    coreContract,
-                    coreMaxInvocations
-                );
+                emit ProjectMaxInvocationsLimitUpdated({
+                    projectId: projectId,
+                    coreContract: coreContract,
+                    maxInvocations: coreMaxInvocations
+                });
             } else if (coreInvocations >= localMaxInvocations) {
                 // core invocations are greater than this minter's max
                 // invocations, indicating that minting must have occurred on

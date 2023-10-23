@@ -227,7 +227,10 @@ contract MinterDAExpSettlementV3 is
         // @dev this minter pays the higher gas cost of a full refresh here due
         // to the more severe ux degredation of a stale minter-local max
         // invocations state.
-        MaxInvocationsLib.refreshMaxInvocations(projectId, coreContract);
+        MaxInvocationsLib.refreshMaxInvocations({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
@@ -276,7 +279,10 @@ contract MinterDAExpSettlementV3 is
 
         SettlementExpLib.SettlementAuctionProjectConfig
             storage settlementAuctionProjectConfig = SettlementExpLib
-                .getSettlementAuctionProjectConfig(projectId, coreContract);
+                .getSettlementAuctionProjectConfig({
+                    projectId: projectId,
+                    coreContract: coreContract
+                });
 
         // no reset after revenues collected, since that solidifies amount due
         require(
@@ -352,11 +358,11 @@ contract MinterDAExpSettlementV3 is
         uint256 projectId,
         address coreContract
     ) external {
-        reclaimProjectExcessSettlementFundsTo(
-            payable(msg.sender),
-            projectId,
-            coreContract
-        );
+        reclaimProjectExcessSettlementFundsTo({
+            to: payable(msg.sender),
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
@@ -381,11 +387,11 @@ contract MinterDAExpSettlementV3 is
         address[] calldata coreContracts
     ) external {
         // @dev input validation checks are performed in subcall
-        reclaimProjectsExcessSettlementFundsTo(
-            payable(msg.sender),
-            projectIds,
-            coreContracts
-        );
+        reclaimProjectsExcessSettlementFundsTo({
+            to: payable(msg.sender),
+            projectIds: projectIds,
+            coreContracts: coreContracts
+        });
     }
 
     /**
@@ -410,24 +416,24 @@ contract MinterDAExpSettlementV3 is
     // public getter functions
     /**
      * @notice Gets the maximum invocations project configuration.
-     * @param _coreContract The address of the core contract.
-     * @param _projectId The ID of the project whose data needs to be fetched.
+     * @param coreContract The address of the core contract.
+     * @param projectId The ID of the project whose data needs to be fetched.
      * @return MaxInvocationsLib.MaxInvocationsProjectConfig instance with the
      * configuration data.
      */
     function maxInvocationsProjectConfig(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     )
         external
         view
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
         return
-            MaxInvocationsLib.getMaxInvocationsProjectConfig(
-                _projectId,
-                _coreContract
-            );
+            MaxInvocationsLib.getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -506,7 +512,11 @@ contract MinterDAExpSettlementV3 is
         uint256 projectId,
         address coreContract
     ) external view returns (bool) {
-        return MaxInvocationsLib.getMaxHasBeenInvoked(projectId, coreContract);
+        return
+            MaxInvocationsLib.getMaxHasBeenInvoked({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -533,7 +543,11 @@ contract MinterDAExpSettlementV3 is
         uint256 projectId,
         address coreContract
     ) external view returns (uint256) {
-        return MaxInvocationsLib.getMaxInvocations(projectId, coreContract);
+        return
+            MaxInvocationsLib.getMaxInvocations({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -548,7 +562,10 @@ contract MinterDAExpSettlementV3 is
     ) external view returns (uint256 latestPurchasePrice) {
         SettlementExpLib.SettlementAuctionProjectConfig
             storage settlementAuctionProjectConfig = SettlementExpLib
-                .getSettlementAuctionProjectConfig(projectId, coreContract);
+                .getSettlementAuctionProjectConfig({
+                    projectId: projectId,
+                    coreContract: coreContract
+                });
         return settlementAuctionProjectConfig.latestPurchasePrice;
     }
 
@@ -563,7 +580,10 @@ contract MinterDAExpSettlementV3 is
     ) external view returns (uint256 numSettleableInvocations) {
         SettlementExpLib.SettlementAuctionProjectConfig
             storage settlementAuctionProjectConfig = SettlementExpLib
-                .getSettlementAuctionProjectConfig(projectId, coreContract);
+                .getSettlementAuctionProjectConfig({
+                    projectId: projectId,
+                    coreContract: coreContract
+                });
         return settlementAuctionProjectConfig.numSettleableInvocations;
     }
 
@@ -581,7 +601,10 @@ contract MinterDAExpSettlementV3 is
     ) external view returns (uint256 projectBalance) {
         SettlementExpLib.SettlementAuctionProjectConfig
             storage settlementAuctionProjectConfig = SettlementExpLib
-                .getSettlementAuctionProjectConfig(projectId, coreContract);
+                .getSettlementAuctionProjectConfig({
+                    projectId: projectId,
+                    coreContract: coreContract
+                });
         return settlementAuctionProjectConfig.projectBalance;
     }
 
@@ -784,7 +807,10 @@ contract MinterDAExpSettlementV3 is
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
-        MaxInvocationsLib.preMintChecks(projectId, coreContract);
+        MaxInvocationsLib.preMintChecks({
+            projectId: projectId,
+            coreContract: coreContract
+        });
 
         // _getPriceUnsafe reverts if auction has not yet started or auction is
         // unconfigured, and auction has not sold out or revenues have not been
@@ -822,10 +848,10 @@ contract MinterDAExpSettlementV3 is
 
         // verify token invocation is valid given local minter max invocations,
         // update local maxHasBeenInvoked
-        MaxInvocationsLib.validatePurchaseEffectsInvocations(
-            tokenId,
-            coreContract
-        );
+        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+            tokenId: tokenId,
+            coreContract: coreContract
+        });
 
         // distribute payments if revenues have been collected, or increment
         // number of settleable invocations if revenues have not been collected

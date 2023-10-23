@@ -137,11 +137,11 @@ contract MinterSetPriceMerkleV5 is
             coreContract: coreContract,
             sender: msg.sender
         });
-        MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
-            projectId,
-            coreContract,
-            maxInvocations
-        );
+        MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
+            projectId: projectId,
+            coreContract: coreContract,
+            maxInvocations: maxInvocations
+        });
     }
 
     /**
@@ -163,11 +163,11 @@ contract MinterSetPriceMerkleV5 is
             coreContract: coreContract,
             sender: msg.sender
         });
-        SetPriceLib.updatePricePerTokenInWei(
-            projectId,
-            coreContract,
-            pricePerTokenInWei
-        );
+        SetPriceLib.updatePricePerTokenInWei({
+            projectId: projectId,
+            coreContract: coreContract,
+            pricePerTokenInWei: pricePerTokenInWei
+        });
 
         // for convenience, sync local max invocations to the core contract if
         // and only if max invocations have not already been synced.
@@ -177,12 +177,15 @@ contract MinterSetPriceMerkleV5 is
         // @dev if local maxInvocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated on this minter
         if (
-            MaxInvocationsLib.maxInvocationsIsUnconfigured(
-                projectId,
-                coreContract
-            )
+            MaxInvocationsLib.maxInvocationsIsUnconfigured({
+                projectId: projectId,
+                coreContract: coreContract
+            })
         ) {
-            syncProjectMaxInvocationsToCore(projectId, coreContract);
+            syncProjectMaxInvocationsToCore({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         }
     }
 
@@ -203,7 +206,11 @@ contract MinterSetPriceMerkleV5 is
             coreContract: coreContract,
             sender: msg.sender
         });
-        MerkleLib.updateMerkleRoot(projectId, coreContract, root);
+        MerkleLib.updateMerkleRoot({
+            projectId: projectId,
+            coreContract: coreContract,
+            root: root
+        });
     }
 
     /**
@@ -229,11 +236,11 @@ contract MinterSetPriceMerkleV5 is
             coreContract: coreContract,
             sender: msg.sender
         });
-        MerkleLib.setProjectInvocationsPerAddress(
-            projectId,
-            coreContract,
-            maxInvocationsPerAddress
-        );
+        MerkleLib.setProjectInvocationsPerAddress({
+            projectId: projectId,
+            coreContract: coreContract,
+            maxInvocationsPerAddress: maxInvocationsPerAddress
+        });
     }
 
     /**
@@ -248,13 +255,13 @@ contract MinterSetPriceMerkleV5 is
         address coreContract,
         bytes32[] calldata proof
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo(
-            msg.sender,
-            projectId,
-            coreContract,
-            proof,
-            address(0)
-        );
+        tokenId = purchaseTo({
+            to: msg.sender,
+            projectId: projectId,
+            coreContract: coreContract,
+            proof: proof,
+            vault: address(0)
+        });
         return tokenId;
     }
 
@@ -273,7 +280,14 @@ contract MinterSetPriceMerkleV5 is
         address coreContract,
         bytes32[] calldata proof
     ) external payable returns (uint256 tokenId) {
-        return purchaseTo(to, projectId, coreContract, proof, address(0));
+        return
+            purchaseTo({
+                to: to,
+                projectId: projectId,
+                coreContract: coreContract,
+                proof: proof,
+                vault: address(0)
+            });
     }
 
     // public getter functions
@@ -293,10 +307,10 @@ contract MinterSetPriceMerkleV5 is
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
         return
-            MaxInvocationsLib.getMaxInvocationsProjectConfig(
-                projectId,
-                coreContract
-            );
+            MaxInvocationsLib.getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -310,7 +324,11 @@ contract MinterSetPriceMerkleV5 is
         uint256 projectId,
         address coreContract
     ) external view returns (SetPriceLib.SetPriceProjectConfig memory) {
-        return SetPriceLib.getSetPriceProjectConfig(projectId, coreContract);
+        return
+            SetPriceLib.getSetPriceProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -325,12 +343,15 @@ contract MinterSetPriceMerkleV5 is
         uint256 projectId,
         address coreContract
     ) external view returns (bool, uint24, bytes32) {
-        MerkleLib.MerkleProjectConfig storage _merkleProjectConfig = MerkleLib
-            .getMerkleProjectConfig(projectId, coreContract);
+        MerkleLib.MerkleProjectConfig storage merkleProjectConfig_ = MerkleLib
+            .getMerkleProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         return (
-            _merkleProjectConfig.useMaxInvocationsPerAddressOverride,
-            _merkleProjectConfig.maxInvocationsPerAddressOverride,
-            _merkleProjectConfig.merkleRoot
+            merkleProjectConfig_.useMaxInvocationsPerAddressOverride,
+            merkleProjectConfig_.maxInvocationsPerAddressOverride,
+            merkleProjectConfig_.merkleRoot
         );
     }
 
@@ -349,11 +370,11 @@ contract MinterSetPriceMerkleV5 is
         address purchaser
     ) external view returns (uint256) {
         return
-            MerkleLib.projectUserMintInvocations(
-                projectId,
-                coreContract,
-                purchaser
-            );
+            MerkleLib.projectUserMintInvocations({
+                projectId: projectId,
+                coreContract: coreContract,
+                purchaser: purchaser
+            });
     }
 
     /**
@@ -397,7 +418,11 @@ contract MinterSetPriceMerkleV5 is
         uint256 projectId,
         address coreContract
     ) external view returns (bool) {
-        return MaxInvocationsLib.getMaxHasBeenInvoked(projectId, coreContract);
+        return
+            MaxInvocationsLib.getMaxHasBeenInvoked({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -424,7 +449,11 @@ contract MinterSetPriceMerkleV5 is
         uint256 projectId,
         address coreContract
     ) external view returns (uint256) {
-        return MaxInvocationsLib.getMaxInvocations(projectId, coreContract);
+        return
+            MaxInvocationsLib.getMaxInvocations({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -456,10 +485,13 @@ contract MinterSetPriceMerkleV5 is
         )
     {
         SetPriceLib.SetPriceProjectConfig
-            storage _setPriceProjectConfig = SetPriceLib
-                .getSetPriceProjectConfig(projectId, coreContract);
-        isConfigured = _setPriceProjectConfig.priceIsConfigured;
-        tokenPriceInWei = _setPriceProjectConfig.pricePerTokenInWei;
+            storage setPriceProjectConfig_ = SetPriceLib
+                .getSetPriceProjectConfig({
+                    projectId: projectId,
+                    coreContract: coreContract
+                });
+        isConfigured = setPriceProjectConfig_.priceIsConfigured;
+        tokenPriceInWei = setPriceProjectConfig_.pricePerTokenInWei;
         currencySymbol = "ETH";
         currencyAddress = address(0);
     }
@@ -499,11 +531,11 @@ contract MinterSetPriceMerkleV5 is
         )
     {
         return
-            MerkleLib.projectRemainingInvocationsForAddress(
-                projectId,
-                coreContract,
-                address_
-            );
+            MerkleLib.projectRemainingInvocationsForAddress({
+                projectId: projectId,
+                coreContract: coreContract,
+                address_: address_
+            });
     }
 
     /**
@@ -523,7 +555,10 @@ contract MinterSetPriceMerkleV5 is
         address coreContract
     ) external view returns (uint256) {
         return
-            MerkleLib.projectMaxInvocationsPerAddress(projectId, coreContract);
+            MerkleLib.projectMaxInvocationsPerAddress({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -536,7 +571,11 @@ contract MinterSetPriceMerkleV5 is
         bytes32[] calldata proof,
         address address_
     ) external pure returns (bytes32) {
-        return MerkleLib.processProofForAddress(proof, address_);
+        return
+            MerkleLib.processProofForAddress({
+                proof: proof,
+                address_: address_
+            });
     }
 
     /**
@@ -568,10 +607,10 @@ contract MinterSetPriceMerkleV5 is
             sender: msg.sender
         });
 
-        MaxInvocationsLib.syncProjectMaxInvocationsToCore(
-            projectId,
-            coreContract
-        );
+        MaxInvocationsLib.syncProjectMaxInvocationsToCore({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
@@ -600,14 +639,17 @@ contract MinterSetPriceMerkleV5 is
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
-        MaxInvocationsLib.preMintChecks(projectId, coreContract);
+        MaxInvocationsLib.preMintChecks({
+            projectId: projectId,
+            coreContract: coreContract
+        });
 
         // pre-mint checks for set price lib, and get price per token in wei
         // @dev price per token is loaded into memory here for gas efficiency
-        uint256 pricePerTokenInWei = SetPriceLib.preMintChecksAndGetPrice(
-            projectId,
-            coreContract
-        );
+        uint256 pricePerTokenInWei = SetPriceLib.preMintChecksAndGetPrice({
+            projectId: projectId,
+            coreContract: coreContract
+        });
 
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
@@ -623,21 +665,30 @@ contract MinterSetPriceMerkleV5 is
             // Note, we do not check `checkDelegateForAll` as well, as it is known
             // to be implicitly checked by calling `checkDelegateForContract`.
             bool isValidDelegee = _delegationRegistryContract
-                .checkDelegateForContract(
-                    msg.sender, // delegate
-                    vault, // vault
-                    coreContract // contract
-                );
+                .checkDelegateForContract({
+                    delegate: msg.sender,
+                    vault: vault,
+                    contract_: coreContract
+                });
             require(isValidDelegee, "Invalid delegate-vault pairing");
             vault_ = vault;
         }
 
         // pre-mint MerkleLib checks
-        MerkleLib.preMintChecks(projectId, coreContract, proof, vault_);
+        MerkleLib.preMintChecks({
+            projectId: projectId,
+            coreContract: coreContract,
+            proof: proof,
+            vault: vault_
+        });
 
         // EFFECTS
         // mint effects for MerkleLib
-        MerkleLib.mintEffects(projectId, coreContract, vault_);
+        MerkleLib.mintEffects({
+            projectId: projectId,
+            coreContract: coreContract,
+            vault: vault_
+        });
 
         tokenId = _minterFilter.mint_joo({
             to: to,
@@ -646,10 +697,10 @@ contract MinterSetPriceMerkleV5 is
             sender: msg.sender
         });
 
-        MaxInvocationsLib.validatePurchaseEffectsInvocations(
-            tokenId,
-            coreContract
-        );
+        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+            tokenId: tokenId,
+            coreContract: coreContract
+        });
 
         // INTERACTIONS
         SplitFundsLib.splitFundsETHRefundSender({
