@@ -8,6 +8,7 @@ pragma solidity 0.8.19;
 import {IGenArt721CoreContractV3_Base} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import {IDelegationRegistry} from "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import {ISharedMinterV0} from "../../interfaces/v0.8.x/ISharedMinterV0.sol";
+import {ISharedMinterHolderERC20V0} from "../../interfaces/v0.8.x/ISharedMinterHolderERC20V0.sol";
 import {IMinterFilterV1} from "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
 import {AuthLib} from "../../libs/v0.8.x/AuthLib.sol";
@@ -81,7 +82,11 @@ import {EnumerableSet} from "@openzeppelin-4.5/contracts/utils/structs/Enumerabl
  * configured on this minter, but they will not be able to mint tokens due to
  * checks performed by this minter's Minter Filter.
  */
-contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
+contract MinterSetPricePolyptychERC20V5 is
+    ReentrancyGuard,
+    ISharedMinterV0,
+    ISharedMinterHolderERC20V0
+{
     // add Enumerable Set methods
     using EnumerableSet for EnumerableSet.AddressSet;
 
