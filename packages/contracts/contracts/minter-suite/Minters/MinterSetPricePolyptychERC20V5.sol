@@ -393,7 +393,7 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * owned by msg.sender being used as the parent token.
      * @param ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender to be
      * used as the parent token.
-     * @param purchasePricePerToken Maximum price of token being allowed by the purchaser, no decimal places
+     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @return tokenId Token ID of minted token
      */
     function purchase(
@@ -401,7 +401,7 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         address coreContract,
         address ownedNFTAddress,
         uint256 ownedNFTTokenId,
-        uint256 purchasePricePerToken
+        uint256 maxPricePerToken
     ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo({
             to: msg.sender,
@@ -410,7 +410,7 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
             ownedNFTAddress: ownedNFTAddress,
             ownedNFTTokenId: ownedNFTTokenId,
             vault: address(0),
-            purchasePricePerToken: purchasePricePerToken
+            maxPricePerToken: maxPricePerToken
         });
         return tokenId;
     }
@@ -427,7 +427,7 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * msg.sender being used as the parent token.
      * @param ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
      * as the parent token.
-     * @param purchasePricePerToken Maximum price of token being allowed by the purchaser, no decimal places
+     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
@@ -436,7 +436,7 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         address coreContract,
         address ownedNFTAddress,
         uint256 ownedNFTTokenId,
-        uint256 purchasePricePerToken
+        uint256 maxPricePerToken
     ) external payable returns (uint256 tokenId) {
         return
             purchaseTo({
@@ -446,7 +446,7 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
                 ownedNFTAddress: ownedNFTAddress,
                 ownedNFTTokenId: ownedNFTTokenId,
                 vault: address(0),
-                purchasePricePerToken: purchasePricePerToken
+                maxPricePerToken: maxPricePerToken
             });
     }
 
@@ -800,7 +800,7 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * msg.sender or `vault` being used as the parent token.
      * @param ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender or
      * `vault` being used as the parent token.
-     * @param purchasePricePerToken Maximum price of token being allowed by the purchaser, no decimal places
+     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
@@ -810,7 +810,7 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         address ownedNFTAddress,
         uint256 ownedNFTTokenId,
         address vault,
-        uint256 purchasePricePerToken
+        uint256 maxPricePerToken
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         // pre-mint MaxInvocationsLib checks
@@ -833,6 +833,12 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         });
         // @dev revert occurs during payment split if ERC20 token is not
         // configured (i.e. address(0)), so check is not performed here
+
+        // validate that the specified maximum price is greater than or equal to the price per token
+        require(
+            maxPricePerToken >= pricePerTokenInWei,
+            "Only max price gte token price"
+        );
 
         // require token used to claim to be in set of allowlisted NFTs
         require(
@@ -945,12 +951,6 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
                 targetOwner: targetOwner
             });
         }
-
-        // validate that the specified maximum price is greater than or equal to the price per token
-        require(
-            purchasePricePerToken >= pricePerTokenInWei,
-            "Only max price gte token price"
-        );
 
         // split funds
         // process payment in ERC20
