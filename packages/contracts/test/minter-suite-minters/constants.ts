@@ -34,10 +34,8 @@ export const revertMessages = {
   lengthOfArraysMustMatch: "TokenHolderLib: arrays neq length",
   onlyRegisteredNFTAddresses: "TokenHolderLib: address not registered",
   purchaseRequiresNFT: "Purchase requires NFT ownership",
-  needMoreAllowance:
-    "VM Exception while processing transaction: reverted with reason string 'ERC20: insufficient allowance",
-  needMoreBalance:
-    "VM Exception while processing transaction: reverted with reason string 'ERC20: transfer amount exceeds balance",
+  needMoreAllowance: "Insufficient ERC20 allowance",
+  needMoreBalance: "Insufficient ERC20 balance",
   ERC20TransferToZeroError: "ERC20: transfer to the zero address",
   ERC20MockBannedTransfer: "ERC20Mock: transfer to banned address",
   ERC20NotConfigured: "ERC20: payment not configured",
