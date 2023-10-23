@@ -242,12 +242,12 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256,uint256)"](
+          ["purchase(uint256,address,uint256,address,uint256)"](
             config.projectZero,
             config.genArt721Core.address,
+            config.pricePerTokenInWei,
             config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            config.pricePerTokenInWei
+            config.projectZeroTokenZero.toNumber()
           );
         let result = await config.minter.projectMaxHasBeenInvoked(
           config.projectZero,
@@ -271,12 +271,12 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256,uint256)"](
+          ["purchase(uint256,address,uint256,address,uint256)"](
             config.projectZero,
             config.genArt721Core.address,
+            config.pricePerTokenInWei,
             config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            config.pricePerTokenInWei
+            config.projectZeroTokenZero.toNumber()
           );
         const isEngineView = await config.minter
           .connect(config.accounts.artist)
@@ -382,12 +382,12 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256,uint256)"](
+          ["purchase(uint256,address,uint256,address,uint256)"](
             config.projectZero,
             config.genArt721Core.address,
+            config.pricePerTokenInWei,
             config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            config.pricePerTokenInWei
+            config.projectZeroTokenZero.toNumber()
           );
         // validate view response after hash seed is used
         const resultAfter =

@@ -389,28 +389,28 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * token ID `ownedNFTTokenId` as the parent token.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
+     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @param ownedNFTAddress ERC-721 NFT address holding the project token
      * owned by msg.sender being used as the parent token.
      * @param ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender to be
      * used as the parent token.
-     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @return tokenId Token ID of minted token
      */
     function purchase(
         uint256 projectId,
         address coreContract,
+        uint256 maxPricePerToken,
         address ownedNFTAddress,
-        uint256 ownedNFTTokenId,
-        uint256 maxPricePerToken
+        uint256 ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo({
             to: msg.sender,
             projectId: projectId,
             coreContract: coreContract,
+            maxPricePerToken: maxPricePerToken,
             ownedNFTAddress: ownedNFTAddress,
             ownedNFTTokenId: ownedNFTTokenId,
-            vault: address(0),
-            maxPricePerToken: maxPricePerToken
+            vault: address(0)
         });
         return tokenId;
     }
@@ -423,30 +423,30 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * @param to Address to be the new token's owner.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
+     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @param ownedNFTAddress ERC-721 NFT holding the project token owned by
      * msg.sender being used as the parent token.
      * @param ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
      * as the parent token.
-     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
         address to,
         uint256 projectId,
         address coreContract,
+        uint256 maxPricePerToken,
         address ownedNFTAddress,
-        uint256 ownedNFTTokenId,
-        uint256 maxPricePerToken
+        uint256 ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
         return
             purchaseTo({
                 to: to,
                 projectId: projectId,
                 coreContract: coreContract,
+                maxPricePerToken: maxPricePerToken,
                 ownedNFTAddress: ownedNFTAddress,
                 ownedNFTTokenId: ownedNFTTokenId,
-                vault: address(0),
-                maxPricePerToken: maxPricePerToken
+                vault: address(0)
             });
     }
 
@@ -796,21 +796,21 @@ contract MinterSetPricePolyptychERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * @param to Address to be the new token's owner.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
+     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @param ownedNFTAddress ERC-721 NFT holding the project token owned by
      * msg.sender or `vault` being used as the parent token.
      * @param ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender or
      * `vault` being used as the parent token.
-     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
         address to,
         uint256 projectId,
         address coreContract,
+        uint256 maxPricePerToken,
         address ownedNFTAddress,
         uint256 ownedNFTTokenId,
-        address vault,
-        uint256 maxPricePerToken
+        address vault
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         // pre-mint MaxInvocationsLib checks
