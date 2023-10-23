@@ -251,8 +251,7 @@ async function main() {
       randomizerAddress,
       adminACLAddress,
       startingProjectId,
-      autoApproveArtistSplitProposals,
-      activeCoreRegistryAddress
+      autoApproveArtistSplitProposals
     );
 
     await genArt721Core.deployed();
