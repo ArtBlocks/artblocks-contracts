@@ -11,7 +11,7 @@
     "@babel/preset-env": "^7.23.2",
     "@babel/preset-typescript": "^7.23.2",
     "@jest/globals": "^29.7.0",
-    "@typechain/ethers-v5": "^11.1.1",
+    "@typechain/ethers-v5": "^11.1.2",
     "eslint-config-custom": "*",
     "jest": "^29.7.0",
     "jsdoc": "^4.0.2",
