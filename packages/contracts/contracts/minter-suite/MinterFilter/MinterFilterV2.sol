@@ -39,7 +39,6 @@ import {EnumerableSet} from "@openzeppelin-4.7/contracts/utils/structs/Enumerabl
  * - updateCoreRegistry
  * - approveMinterGlobally
  * - revokeMinterGlobally
- * - removeMintersForProjectsOnContracts
  * ----------------------------------------------------------------------------
  * The following functions are restricted as allowed by each core contract's
  * Admin ACL contract:
@@ -275,7 +274,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      */
     function approveMinterGlobally(address minter) external {
         _onlyAdminACL(this.approveMinterGlobally.selector);
-        // @dev add() returns true only if the value was not already in the Set
+        // @dev add() return true if the value was removed from the set
         require(
             _globallyApprovedMinters.add(minter),
             "Minter already approved"
@@ -327,7 +326,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
             coreContract: coreContract,
             selector: this.approveMinterForContract.selector
         });
-        // @dev add() returns true only if the value was not already in the Set
+        // @dev add() returns true if the value was removed from the Set
         require(
             _contractApprovedMinters[coreContract].add(minter),
             "Minter already approved"

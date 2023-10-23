@@ -250,7 +250,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             contract_: address(this),
             selector: this.updateRefundGasLimit.selector
         });
-        // @dev max gas limit implicitly checked by using uint16 input arg
+        // @dev max gas limit implicitly checked by using uint24 input arg
         // @dev min gas limit is based on rounding up current cost to send ETH
         // to a Gnosis Safe wallet, which accesses cold address and emits event
         require(minterRefundGasLimit >= 7_000, "Only gte 7_000");
