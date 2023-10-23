@@ -394,9 +394,9 @@ library SettlementExpLib {
                 uint256 coreInvocations,
                 uint256 coreMaxInvocations
             ) = MaxInvocationsLib.coreContractInvocationData({
-                projectId: projectId,
-                coreContract: coreContract
-            });
+                    projectId: projectId,
+                    coreContract: coreContract
+                });
             // snap chalkline on the number of tokens to be auctioned on this
             // minter
             // @dev acknowledge that this value may be stale if the core
