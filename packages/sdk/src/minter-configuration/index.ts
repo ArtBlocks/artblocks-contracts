@@ -4,7 +4,7 @@ import {
   ConfigurationForm,
   SubmissionStatus,
   SubmissionStatusEnum,
-  filterProjectIdAndCoreContractAddressFromFormSchema,
+  processFormSchema,
   generateMinterSelectionFormSchema,
 } from "../minters";
 import { getProjectMinterConfigurationQueryDocument } from "./graphql-operations";
@@ -16,6 +16,8 @@ import {
 import {
   ConfigurationSchema,
   FormFieldSchema,
+  OnChainArrayFormFieldSchema,
+  TransactionDetails,
   isOnChainFormFieldSchema,
 } from "../json-schema";
 import { formFieldSchemaToZod } from "../utils";
@@ -279,19 +281,18 @@ function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
     onConfigurationChange,
   } = args;
 
-  const schemaWithProjectIdFiltered =
-    filterProjectIdAndCoreContractAddressFromFormSchema(formSchema);
+  const processedFormSchema = processFormSchema(formSchema);
 
   const initialFormValues = getInitialMinterConfigurationValuesForFormField(
-    schemaWithProjectIdFiltered,
+    processedFormSchema,
     minterConfiguration
   );
 
   return {
     key,
-    formSchema: schemaWithProjectIdFiltered,
+    formSchema: processedFormSchema,
     initialFormValues,
-    zodSchema: formFieldSchemaToZod(schemaWithProjectIdFiltered),
+    zodSchema: formFieldSchemaToZod(processedFormSchema),
     handleSubmit: async (
       formValues: Record<string, any>,
       walletClient: WalletClient,
@@ -299,12 +300,26 @@ function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
     ) => {
       if (
         !minterConfiguration.minter ||
-        !isOnChainFormFieldSchema(schemaWithProjectIdFiltered) ||
-        !schemaWithProjectIdFiltered.transactionDetails ||
+        !isOnChainFormFieldSchema(processedFormSchema) ||
+        !processedFormSchema.transactionDetails ||
         !walletClient.account
       ) {
         throw new Error("Invalid form configuration");
       }
+
+      // Throw an error if the schema is for an on chain array form
+      if (
+        (processedFormSchema as OnChainArrayFormFieldSchema).transactionDetails
+          .ADD
+      ) {
+        throw new Error(
+          "On chain array form schemas are not currently supported"
+        );
+      }
+
+      // Narrow the type of processedFormSchema.transactionDetails
+      const transactionDetails =
+        processedFormSchema.transactionDetails as TransactionDetails;
 
       onProgress?.(SubmissionStatusEnum.AWAITING_USER_SIGNATURE);
 
@@ -318,7 +333,7 @@ function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
         });
 
       const functionArgs = mapFormValuesToArgs(
-        schemaWithProjectIdFiltered.transactionDetails.args,
+        transactionDetails.args,
         transformedFormValues,
         projectIndex,
         coreContractAddress
@@ -328,9 +343,8 @@ function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
         publicClient: sdk.publicClient,
         walletClient,
         address: minterConfiguration.minter.address as `0x${string}`,
-        abi: schemaWithProjectIdFiltered.transactionDetails.abi as Abi,
-        functionName:
-          schemaWithProjectIdFiltered.transactionDetails.functionName,
+        abi: transactionDetails.abi as Abi,
+        functionName: transactionDetails.functionName,
         args: functionArgs, // sdk needs to come from values,
         onUserAccepted: () => onProgress?.(SubmissionStatusEnum.CONFIRMING),
       });
@@ -342,9 +356,7 @@ function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
       const transactionConfirmedAt = new Date(Number(timestamp) * 1000);
 
       const expectedUpdates =
-        schemaWithProjectIdFiltered.transactionDetails
-          .syncCheckFieldsOverride ??
-        schemaWithProjectIdFiltered.transactionDetails.args;
+        transactionDetails.syncCheckFieldsOverride ?? transactionDetails.args;
 
       // Poll for updates to the configuration
       await pollForProjectMinterConfigurationUpdates(

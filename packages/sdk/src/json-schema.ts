@@ -109,6 +109,12 @@ export interface BaseFormFieldSchema extends JSONSchema7 {
   displayProcessing?: "weiToEth" | "unixTimestampToDatetime";
 
   validationDependency?: ValidationDependency;
+
+  /** Optional property indicating the order the fields should be displayed */
+  "ui:order"?: string[];
+
+  /** Optional property specifying what widget should be used in the ui for this field */
+  "ui:widget"?: string;
 }
 
 interface FormFieldProperties {
