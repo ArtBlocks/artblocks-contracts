@@ -505,7 +505,7 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
 
         // validate that the specified maximum price is greater than or equal to the price per token
         require(
-            maxPricePerToken >= pricePerTokenInWei,
+            maxPricePerToken >= pricePerToken,
             "Only max price gte token price"
         );
 

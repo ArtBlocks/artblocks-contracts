@@ -225,7 +225,7 @@ library SplitFundsLib {
             validateERC20Approvals({
                 msgSender: msg.sender,
                 currencyAddress: currencyAddress,
-                pricePerTokenInWei: pricePerTokenInWei
+                pricePerTokenInWei: pricePerToken
             });
             projectCurrency = IERC20(currencyAddress);
         }
