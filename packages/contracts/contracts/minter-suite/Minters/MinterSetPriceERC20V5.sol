@@ -157,6 +157,9 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * contract `coreContract` to be `currencySymbol` at address
      * `currencyAddress`.
      * Only supports ERC20 tokens - for ETH minting, use a different minter.
+     * Resets price to be unconfigured if currency was previously configured,
+     * as a safeguard against accidentally setting a price in one currency
+     * and then changing the currency but not the price.
      * @dev nonReentrant because no reentrant use cases, and to eliminate an
      * entire branch of reentrancy attack vectors.
      * @param projectId Project ID to update.
@@ -175,12 +178,19 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
             coreContract: coreContract,
             sender: msg.sender
         });
-        SplitFundsLib.updateProjectCurrencyInfoERC20({
-            projectId: projectId,
-            coreContract: coreContract,
-            currencySymbol: currencySymbol,
-            currencyAddress: currencyAddress
-        });
+        bool recommendPriceReset = SplitFundsLib
+            .updateProjectCurrencyInfoERC20({
+                projectId: projectId,
+                coreContract: coreContract,
+                currencySymbol: currencySymbol,
+                currencyAddress: currencyAddress
+            });
+        if (recommendPriceReset) {
+            SetPriceLib.resetPricePerToken({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+        }
     }
 
     /**

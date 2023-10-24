@@ -1,4 +1,5 @@
 import { expectRevert } from "@openzeppelin/test-helpers";
+import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
 import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
@@ -280,6 +281,73 @@ runForEach.forEach((params) => {
           revertMessages.ERC20NonNullSymbol
         );
       });
+
+      it("does not reset price during initial currency configuring", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure price
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectOne,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        // configure currency to be ERC20 token
+        await config.minter
+          .connect(config.accounts.artist)
+          .updateProjectCurrencyInfo(
+            config.projectOne,
+            config.genArt721Core.address,
+            "ERC20",
+            config.ERC20.address
+          );
+        // price remains configured and at previous value
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectOne,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.tokenPriceInWei.toString()).to.equal(
+          config.pricePerTokenInWei.toString()
+        );
+        expect(priceInfo.isConfigured).to.be.true;
+      });
+
+      it("resets price during currency update when previously configured", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure price
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectOne,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        // configure currency to be ERC20 token
+        await config.minter
+          .connect(config.accounts.artist)
+          .updateProjectCurrencyInfo(
+            config.projectOne,
+            config.genArt721Core.address,
+            "ERC20",
+            config.ERC20.address
+          );
+        // re-configure currency to initiate a price reset
+        await config.minter
+          .connect(config.accounts.artist)
+          .updateProjectCurrencyInfo(
+            config.projectOne,
+            config.genArt721Core.address,
+            "ERC202",
+            config.accounts.additional.address // dummy address
+          );
+        // price is reset and unconfigured
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectOne,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.tokenPriceInWei).to.equal(0);
+        expect(priceInfo.isConfigured).to.be.false;
+      });
     });
 
     describe("purchase", async function () {
@@ -388,13 +456,6 @@ runForEach.forEach((params) => {
       });
       it("requires the currency to match the configured currency on the project", async function () {
         const config = await loadFixture(_beforeEach);
-        await config.minter
-          .connect(config.accounts.artist)
-          .updatePricePerTokenInWei(
-            config.projectZero,
-            config.genArt721Core.address,
-            config.pricePerTokenInWei
-          );
         // artist configured the currency
         await config.minter
           .connect(config.accounts.artist)
@@ -403,6 +464,13 @@ runForEach.forEach((params) => {
             config.genArt721Core.address,
             "ERC20",
             config.ERC20.address
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
           );
 
         // user approves minter to spend an amount of mint price
