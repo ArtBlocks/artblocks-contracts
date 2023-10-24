@@ -99,7 +99,7 @@
     "solidity-coverage": "^0.8.5",
     "ts-node": "^9.1.1",
     "tsconfig": "*",
-    "typechain": "^8.3.1",
+    "typechain": "^8.3.2",
     "typescript": "^5.2.2"
   },
   "author": "Art Blocks, Inc",
