@@ -417,13 +417,6 @@ runForEach.forEach((params) => {
       });
       it("requires the currency to match the configured currency on the project", async function () {
         const config = await loadFixture(_beforeEach);
-        await config.minter
-          .connect(config.accounts.artist)
-          .updatePricePerTokenInWei(
-            config.projectZero,
-            config.genArt721Core.address,
-            config.pricePerTokenInWei
-          );
 
         // update currency for project zero
         await config.minter
@@ -433,6 +426,13 @@ runForEach.forEach((params) => {
             config.genArt721Core.address,
             "ERC20",
             config.ERC20.address
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
           );
         // user approves minter to spend an amount of mint price
         await config.ERC20.connect(config.accounts.artist).approve(
