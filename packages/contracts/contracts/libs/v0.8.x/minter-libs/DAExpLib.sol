@@ -14,6 +14,17 @@ import {DALib} from "./DALib.sol";
  */
 
 library DAExpLib {
+    /**
+     * @notice Auction details set for project `projectId` on core contract
+     * `coreContract`.
+     * @param projectId Project Id for which auction details were set
+     * @param coreContract Core contract address for which auction details were
+     * set
+     * @param auctionTimestampStart Timestamp when auction will start
+     * @param priceDecayHalfLifeSeconds Half life of price decay, in seconds
+     * @param startPrice Start price of auction
+     * @param basePrice Base price of auction (end price)
+     */
     event SetAuctionDetailsExp(
         uint256 indexed projectId,
         address indexed coreContract,
@@ -23,6 +34,13 @@ library DAExpLib {
         uint256 basePrice
     );
     /// Minimum allowed price decay half life seconds updated.
+
+    /**
+     * @notice Minimum allowed price decay half life on the minter updated to
+     * `minimumPriceDecayHalfLifeSeconds`.
+     * @param minimumPriceDecayHalfLifeSeconds minimum price decay half life
+     * for new auctions, in seconds
+     */
     event AuctionMinHalfLifeSecondsUpdated(
         uint256 minimumPriceDecayHalfLifeSeconds
     );

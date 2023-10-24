@@ -23,10 +23,15 @@ library MerkleLib {
      * @notice Notifies of the contract's default maximum mints allowed per
      * user for a given project, on this minter. This value can be overridden
      * by the artist of any project at any time.
+     * @param defaultMaxInvocationsPerAddress The default maximum mints allowed
      */
     event DefaultMaxInvocationsPerAddress(
         uint256 defaultMaxInvocationsPerAddress
     );
+    /**
+     * @notice Notifies of the contracts' current delegation registry address.
+     * @param delegationRegistry The address of the delegation registry
+     */
     event DelegationRegistryUpdated(address delegationRegistry);
 
     // position of Merkle Lib storage, using a diamond storage pattern for this
@@ -122,6 +127,17 @@ library MerkleLib {
         });
     }
 
+    /**
+     * @notice Checks that a given proof is valid for the vault address, and
+     * also checks that the vault address has not exceeded the maximum number
+     * of invocations per address for the project.
+     * Reverts if the proof is invalid or if the vault address has exceeded the
+     * maximum number of invocations per address for the project.
+     * @param projectId project id to check
+     * @param coreContract core contract address to check
+     * @param proof Merkle proof to check
+     * @param vault address to check proof against
+     */
     function preMintChecks(
         uint256 projectId,
         address coreContract,
@@ -157,6 +173,13 @@ library MerkleLib {
         );
     }
 
+    /**
+     * @notice Updates the number of invocations for the `vault` address on the
+     * given project.
+     * @param projectId Project Id to mint on
+     * @param coreContract Core contract address to mint on
+     * @param vault Address being used to mint (the allowlisted address)
+     */
     function mintEffects(
         uint256 projectId,
         address coreContract,
@@ -244,6 +267,13 @@ library MerkleLib {
         return projectMaxInvocationsPerAddress(projectConfig);
     }
 
+    /**
+     * @notice Returns the number of invocations for a given address on a given
+     * project.
+     * @param projectId Project Id to query
+     * @param coreContract Core contract address to query
+     * @param purchaser Address to query
+     */
     function projectUserMintInvocations(
         uint256 projectId,
         address coreContract,
@@ -272,6 +302,12 @@ library MerkleLib {
      * @param projectId Project Id to get remaining invocations on
      * @param coreContract Core contract address of project
      * @param address_ Address to get remaining invocations for
+     * @return projectLimitsMintInvocationsPerAddress If true, the project
+     * limits mint invocations per address. If false, the project does not
+     * limit mint invocations per address.
+     * @return mintInvocationsRemaining The number of remaining mint invocations
+     * for address `address_`. If `projectLimitsMintInvocationsPerAddress` is
+     * false, this value is always dummy zero.
      */
     function projectRemainingInvocationsForAddress(
         uint256 projectId,

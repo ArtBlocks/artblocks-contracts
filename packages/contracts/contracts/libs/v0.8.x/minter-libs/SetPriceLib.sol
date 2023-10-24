@@ -15,6 +15,9 @@ library SetPriceLib {
     /**
      * @notice Price per token updated for project `projectId` to
      * `pricePerToken`.
+     * @param projectId Project Id price was updated for
+     * @param coreContract Core contract address price was updated for
+     * @param pricePerToken price per token, no decimals (e.g. in wei for ETH)
      */
     event PricePerTokenUpdated(
         uint256 indexed projectId,
@@ -24,6 +27,8 @@ library SetPriceLib {
 
     /**
      * @notice Price per token reset (unconfigured) for project `projectId`.
+     * @param projectId Project Id price was reset for
+     * @param coreContract Core contract address price was reset for
      */
     event PricePerTokenReset(
         uint256 indexed projectId,
@@ -105,6 +110,14 @@ library SetPriceLib {
         });
     }
 
+    /**
+     * @notice Checks that the minter's price per token is configured, and
+     * returns the price per token.
+     * Reverts if the price is not configured.
+     * @param projectId Project Id to check and get price for
+     * @param coreContract Core contract address to check and get price for
+     * @return pricePerToken price per token, no decimals (e.g. in wei for ETH)
+     */
     function preMintChecksAndGetPrice(
         uint256 projectId,
         address coreContract
@@ -124,7 +137,7 @@ library SetPriceLib {
     }
 
     /**
-     * Loads the SetPriceProjectConfig for a given project and core contract.
+     * @notice Loads the SetPriceProjectConfig for a given project and core contract.
      * @param projectId Project Id to get config for
      * @param coreContract Core contract address to get config for
      */

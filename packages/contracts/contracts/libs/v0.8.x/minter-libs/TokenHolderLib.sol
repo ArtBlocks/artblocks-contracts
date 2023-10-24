@@ -20,6 +20,10 @@ import {EnumerableSet} from "@openzeppelin-4.5/contracts/utils/structs/Enumerabl
 
 library TokenHolderLib {
     using EnumerableSet for EnumerableSet.AddressSet;
+    /**
+     * @notice Notifies of the contracts' current delegation registry address.
+     * @param delegationRegistry The address of the delegation registry
+     */
     event DelegationRegistryUpdated(address delegationRegistry);
     /**
      * @notice Allow holders of NFTs at addresses `ownedNFTAddresses`, project
@@ -27,6 +31,13 @@ library TokenHolderLib {
      * `ownedNFTAddresses` assumed to be aligned with `ownedNFTProjectIds`.
      * e.g. Allows holders of project `ownedNFTProjectIds[0]` on token
      * contract `ownedNFTAddresses[0]` to mint.
+     * @param projectId Project ID to allowlist holders for.
+     * @param coreContract Core contract address to allowlist holders for.
+     * @param ownedNFTAddresses NFT core addresses of projects to be
+     * allowlisted. Indexes align with `ownedNFTProjectIds`.
+     * @param ownedNFTProjectIds Project IDs on `ownedNFTAddresses` whose
+     * holders shall be allowlisted to mint project `projectId`. Indexes
+     * align with `ownedNFTAddresses`.
      */
     event AllowedHoldersOfProjects(
         uint256 indexed projectId,
@@ -40,6 +51,13 @@ library TokenHolderLib {
      * `ownedNFTAddresses` assumed to be aligned with `ownedNFTProjectIds`.
      * e.g. Removes holders of project `ownedNFTProjectIds[0]` on token
      * contract `ownedNFTAddresses[0]` from mint allowlist.
+     * @param projectId Project ID to remove holders for.
+     * @param coreContract Core contract address to remove holders for.
+     * @param ownedNFTAddresses NFT core addresses of projects to be removed
+     * from allowlist. Indexes align with `ownedNFTProjectIds`.
+     * @param ownedNFTProjectIds Project IDs on `ownedNFTAddresses` whose
+     * holders will be removed from allowlist to mint project `projectId`.
+     * Indexes align with `ownedNFTAddresses`.
      */
     event RemovedHoldersOfProjects(
         uint256 indexed projectId,
@@ -67,7 +85,7 @@ library TokenHolderLib {
     }
 
     /**
-     * @dev Allows holders of specific project tokens.
+     * @notice Allows holders of specific project tokens.
      * @param projectId Project ID to allowlist holders for.
      * @param coreContract Core contract address to allowlist holders for.
      * @param ownedNFTAddresses NFT core addresses of projects to be
@@ -106,7 +124,7 @@ library TokenHolderLib {
     }
 
     /**
-     * @dev Removes holders of specific project tokens.
+     * @notice Removes holders of specific project tokens.
      * @param projectId Project ID to remove holders for.
      * @param coreContract Core contract address to remove holders for.
      * @param ownedNFTAddresses NFT core addresses of projects to be removed
@@ -145,7 +163,8 @@ library TokenHolderLib {
     }
 
     /**
-     * @dev Allows and removes holders of specific project tokens in one operation.
+     * @notice Allows and removes holders of specific project tokens in one
+     * operation.
      * @param projectId Project ID to modify holders for.
      * @param coreContract Core contract address to modify holders for.
      * @param ownedNFTAddressesAdd NFT core addresses of projects to be
@@ -190,6 +209,9 @@ library TokenHolderLib {
      * contract. Plan is to only integrate with AB/PBAB NFTs on the minter, but
      * in case other NFTs are registered, better to check here. Also,
      * function is non-reentrant, so this is extra cautious.
+     * @param ownedNFTAddress ERC-721 NFT token address to be checked.
+     * @param ownedNFTTokenId ERC-721 NFT token ID to be checked.
+     * @param targetOwner Target owner address to check.
      */
     function validateNFTOwnership(
         address ownedNFTAddress,
@@ -203,7 +225,7 @@ library TokenHolderLib {
     }
 
     /**
-     * @dev Checks if a specific NFT is allowlisted.
+     * @notice Checks if a specific NFT is allowlisted.
      * @param projectId Project ID to be checked.
      * @param coreContract Core contract address to be checked.
      * @param ownedNFTAddress ERC-721 NFT token address to be checked.
@@ -229,7 +251,8 @@ library TokenHolderLib {
     }
 
     /**
-     * Loads the HolderProjectConfig for a given project and core contract.
+     * @notice Loads the HolderProjectConfig for a given project and core
+     * contract.
      * @param projectId Project Id to get config for
      * @param coreContract Core contract address to get config for
      */

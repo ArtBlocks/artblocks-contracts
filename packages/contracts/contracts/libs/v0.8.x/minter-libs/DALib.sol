@@ -12,7 +12,13 @@ pragma solidity ^0.8.0;
  */
 
 library DALib {
-    /// Auction details cleared for project `projectId`.
+    /**
+     * @notice Auction details cleared for project `projectId` on core contract
+     * `coreContract`.
+     * @param projectId Project Id for which auction details were cleared
+     * @param coreContract Core contract address for which auction details were
+     * cleared
+     */
     event ResetAuctionDetails(
         uint256 indexed projectId,
         address indexed coreContract

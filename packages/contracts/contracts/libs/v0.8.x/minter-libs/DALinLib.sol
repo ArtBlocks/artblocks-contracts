@@ -14,6 +14,17 @@ import {DALib} from "./DALib.sol";
  */
 
 library DALinLib {
+    /**
+     * @notice Auction details set for project `projectId` on core contract
+     * `coreContract`.
+     * @param projectId Project Id for which auction details were set
+     * @param coreContract Core contract address for which auction details were
+     * set
+     * @param auctionTimestampStart Timestamp when auction will start
+     * @param auctionTimestampEnd Timestamp when auction will end
+     * @param startPrice Start price of auction
+     * @param basePrice Base price of auction (end price)
+     */
     event SetAuctionDetailsLin(
         uint256 indexed projectId,
         address indexed coreContract,
@@ -23,7 +34,12 @@ library DALinLib {
         uint256 basePrice
     );
 
-    /// Minimum allowed auction length updated
+    /**
+     * @notice Minimum allowed auction length updated to
+     * `minimumAuctionLengthSeconds` on the minter.
+     * @param minimumAuctionLengthSeconds minimum auction length for new
+     * auctions, in seconds
+     */
     event AuctionMinimumLengthSecondsUpdated(
         uint256 minimumAuctionLengthSeconds
     );
