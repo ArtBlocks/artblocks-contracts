@@ -126,10 +126,10 @@ contract MinterSetPriceV5 is
             coreContract: coreContract,
             sender: msg.sender
         });
-        SetPriceLib.updatePricePerTokenInWei({
+        SetPriceLib.updatePricePerToken({
             projectId: projectId,
             coreContract: coreContract,
-            pricePerTokenInWei: pricePerTokenInWei
+            pricePerToken: pricePerTokenInWei
         });
 
         // for convenience, sync local max invocations to the core contract if
@@ -325,7 +325,7 @@ contract MinterSetPriceV5 is
                     coreContract: coreContract
                 });
         isConfigured = setPriceProjectConfig_.priceIsConfigured;
-        tokenPriceInWei = setPriceProjectConfig_.pricePerTokenInWei;
+        tokenPriceInWei = setPriceProjectConfig_.pricePerToken;
         currencySymbol = "ETH";
         currencyAddress = address(0);
     }
