@@ -226,7 +226,7 @@ library SplitFundsLib {
             validateERC20Approvals({
                 msgSender: msg.sender,
                 currencyAddress: currencyAddress,
-                pricePerTokenInWei: pricePerToken
+                pricePerToken: pricePerToken
             });
             projectCurrency = IERC20(currencyAddress);
         }
@@ -549,28 +549,28 @@ library SplitFundsLib {
 
     /**
      * @notice Function validates that `msgSender` has approved the contract to spend at least
-     * `pricePerTokenInWei` of `currencyAddress` ERC20 tokens, and that
-     * `msgSender` has a balance of at least `pricePerTokenInWei` of
+     * `pricePerToken` of `currencyAddress` ERC20 tokens, and that
+     * `msgSender` has a balance of at least `pricePerToken` of
      * `currencyAddress` ERC20 tokens.
      * Reverts if insufficient allowance or balance.
      * @param msgSender Address of the message sender to validate.
      * @param currencyAddress Address of the ERC20 token to validate.
-     * @param pricePerTokenInWei Price per token in wei to validate.
+     * @param pricePerToken Price per token to validate (no decimals)
      */
     function validateERC20Approvals(
         address msgSender,
         address currencyAddress,
-        uint256 pricePerTokenInWei
+        uint256 pricePerToken
     ) private view {
         require(
             IERC20(currencyAddress).allowance({
                 owner: msgSender,
                 spender: address(this)
-            }) >= pricePerTokenInWei,
+            }) >= pricePerToken,
             "Insufficient ERC20 allowance"
         );
         require(
-            IERC20(currencyAddress).balanceOf(msgSender) >= pricePerTokenInWei,
+            IERC20(currencyAddress).balanceOf(msgSender) >= pricePerToken,
             "Insufficient ERC20 balance"
         );
     }
