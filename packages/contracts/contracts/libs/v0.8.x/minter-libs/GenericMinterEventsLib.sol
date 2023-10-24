@@ -3,9 +3,6 @@
 
 pragma solidity ^0.8.0;
 
-import {MerkleProof} from "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
-import {GenericMinterEventsLib} from "./GenericMinterEventsLib.sol";
-
 /**
  * @title Art Blocks Generic Events Library
  * @notice This library is designed to define a set of generic events that all

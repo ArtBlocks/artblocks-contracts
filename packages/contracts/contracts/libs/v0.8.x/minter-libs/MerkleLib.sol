@@ -90,13 +90,13 @@ library MerkleLib {
         emit GenericMinterEventsLib.ConfigValueSet({
             projectId: projectId,
             coreContract: coreContract,
-            key: MerkleLib.CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
+            key: CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
             value: true
         });
         emit GenericMinterEventsLib.ConfigValueSet({
             projectId: projectId,
             coreContract: coreContract,
-            key: MerkleLib.CONFIG_MAX_INVOCATIONS_OVERRIDE,
+            key: CONFIG_MAX_INVOCATIONS_OVERRIDE,
             value: uint256(maxInvocationsPerAddress)
         });
     }
@@ -122,7 +122,7 @@ library MerkleLib {
         emit GenericMinterEventsLib.ConfigValueSet({
             projectId: projectId,
             coreContract: coreContract,
-            key: MerkleLib.CONFIG_MERKLE_ROOT,
+            key: CONFIG_MERKLE_ROOT,
             value: root
         });
     }
@@ -151,7 +151,7 @@ library MerkleLib {
             });
         // require valid Merkle proof
         require(
-            verifyAddress({
+            _verifyAddress({
                 proofRoot: merkleProjectConfig.merkleRoot,
                 proof: proof,
                 address_: vault
@@ -218,21 +218,6 @@ library MerkleLib {
         address address_
     ) internal pure returns (bytes32) {
         return proof.processProofCalldata(hashAddress(address_));
-    }
-
-    /**
-     * @notice Verifies an address against a proof.
-     * @param proofRoot The root of the proof to verify agaisnst.
-     * @param proof The proof to verify.
-     * @param address_ The address to verify.
-     * @return True if the address is verified, false otherwise.
-     */
-    function verifyAddress(
-        bytes32 proofRoot,
-        bytes32[] calldata proof,
-        address address_
-    ) internal pure returns (bool) {
-        return proof.verifyCalldata(proofRoot, hashAddress(address_));
     }
 
     /**
@@ -380,5 +365,20 @@ library MerkleLib {
         assembly ("memory-safe") {
             storageStruct.slot := position
         }
+    }
+
+    /**
+     * @notice Verifies an address against a proof.
+     * @param proofRoot The root of the proof to verify agaisnst.
+     * @param proof The proof to verify.
+     * @param address_ The address to verify.
+     * @return True if the address is verified, false otherwise.
+     */
+    function _verifyAddress(
+        bytes32 proofRoot,
+        bytes32[] calldata proof,
+        address address_
+    ) private pure returns (bool) {
+        return proof.verifyCalldata(proofRoot, hashAddress(address_));
     }
 }

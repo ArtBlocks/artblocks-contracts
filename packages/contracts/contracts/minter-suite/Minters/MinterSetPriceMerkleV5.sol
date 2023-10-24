@@ -381,7 +381,7 @@ contract MinterSetPriceMerkleV5 is
      * @notice Checks if the specified `coreContract` is a valid engine contract.
      * @dev This function retrieves the cached value of `isEngine` from
      * the `isEngineCache` mapping. If the cached value is already set, it
-     * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
+     * returns the cached value. Otherwise, it calls the `getV3CoreIsEngineView`
      * function from the `SplitFundsLib` library to check if `coreContract`
      * is a valid engine contract.
      * @dev This function will revert if the provided `coreContract` is not
@@ -395,7 +395,7 @@ contract MinterSetPriceMerkleV5 is
         if (isEngineCache.isCached) {
             return isEngineCache.isEngine;
         } else {
-            // @dev this calls the non-modifying variant of getV3CoreIsEngine
+            // @dev this calls the non-state-modifying variant of isEngine
             return SplitFundsLib.getV3CoreIsEngineView(coreContract);
         }
     }
@@ -694,7 +694,7 @@ contract MinterSetPriceMerkleV5 is
             to: to,
             projectId: projectId,
             coreContract: coreContract,
-            sender: msg.sender
+            sender: vault_
         });
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations({
