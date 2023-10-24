@@ -422,7 +422,7 @@ contract MinterSetPricePolyptychERC20V5 is
         address currencyAddress,
         address ownedNFTAddress,
         uint256 ownedNFTTokenId
-    ) external payable returns (uint256 tokenId) {
+    ) external returns (uint256 tokenId) {
         tokenId = purchaseTo({
             to: msg.sender,
             projectId: projectId,
@@ -460,7 +460,7 @@ contract MinterSetPricePolyptychERC20V5 is
         address currencyAddress,
         address ownedNFTAddress,
         uint256 ownedNFTTokenId
-    ) external payable returns (uint256 tokenId) {
+    ) external returns (uint256 tokenId) {
         return
             purchaseTo({
                 to: to,
@@ -840,7 +840,7 @@ contract MinterSetPricePolyptychERC20V5 is
         address ownedNFTAddress,
         uint256 ownedNFTTokenId,
         address vault
-    ) public payable nonReentrant returns (uint256 tokenId) {
+    ) public nonReentrant returns (uint256 tokenId) {
         // CHECKS
         // pre-mint MaxInvocationsLib checks
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas

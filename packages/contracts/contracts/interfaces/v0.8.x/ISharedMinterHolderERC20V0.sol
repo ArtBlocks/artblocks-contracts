@@ -17,7 +17,7 @@ interface ISharedMinterHolderERC20V0 {
         address currencyAddress,
         address ownedNFTAddress,
         uint256 ownedNFTTokenId
-    ) external payable returns (uint256 tokenId);
+    ) external returns (uint256 tokenId);
 
     // Triggers a purchase of a token from the desired project, to the specified
     // receiving address, using owned ERC-721 NFT to claim right to purchase.
@@ -29,7 +29,7 @@ interface ISharedMinterHolderERC20V0 {
         address currencyAddress,
         address ownedNFTAddress,
         uint256 ownedNFTTokenId
-    ) external payable returns (uint256 tokenId);
+    ) external returns (uint256 tokenId);
 
     // Triggers a purchase of a token from the desired project, on behalf of
     // the provided vault, to the specified receiving address, using owned
@@ -43,5 +43,5 @@ interface ISharedMinterHolderERC20V0 {
         address ownedNFTAddress,
         uint256 ownedNFTTokenId,
         address vault
-    ) external payable returns (uint256 tokenId);
+    ) external returns (uint256 tokenId);
 }

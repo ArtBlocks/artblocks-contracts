@@ -206,7 +206,7 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         address coreContract,
         uint256 maxPricePerToken,
         address currencyAddress
-    ) external payable returns (uint256 tokenId) {
+    ) external returns (uint256 tokenId) {
         tokenId = purchaseTo({
             to: msg.sender,
             projectId: projectId,
@@ -477,7 +477,7 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         address coreContract,
         uint256 maxPricePerToken,
         address currencyAddress
-    ) public payable nonReentrant returns (uint256 tokenId) {
+    ) public nonReentrant returns (uint256 tokenId) {
         // CHECKS
         // pre-mint MaxInvocationsLib checks
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
