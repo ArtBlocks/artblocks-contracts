@@ -8,6 +8,7 @@ import { WalletClient } from "viem";
 import { ZodValidationSchema } from "./utils";
 
 export const SubmissionStatusEnum = {
+  SIMULATING_TRANSACTION: "SIMULATING_TRANSACTION",
   AWAITING_USER_SIGNATURE: "AWAITING_USER_SIGNATURE",
   CONFIRMING: "CONFIRMING",
   SYNCING: "SYNCING",

@@ -321,7 +321,7 @@ function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
       const transactionDetails =
         processedFormSchema.transactionDetails as TransactionDetails;
 
-      onProgress?.(SubmissionStatusEnum.AWAITING_USER_SIGNATURE);
+      onProgress?.(SubmissionStatusEnum.SIMULATING_TRANSACTION);
 
       // Check if any of the form values should be transformed before submitting the transaction
       // const transformedForm;
@@ -346,6 +346,8 @@ function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
         abi: transactionDetails.abi as Abi,
         functionName: transactionDetails.functionName,
         args: functionArgs, // sdk needs to come from values,
+        onSimulationSuccess: () =>
+          onProgress?.(SubmissionStatusEnum.AWAITING_USER_SIGNATURE),
         onUserAccepted: () => onProgress?.(SubmissionStatusEnum.CONFIRMING),
       });
 

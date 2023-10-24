@@ -8,6 +8,7 @@ export async function submitTransaction({
   abi,
   functionName,
   args,
+  onSimulationSuccess,
   onUserAccepted,
 }: {
   publicClient: PublicClient;
@@ -16,35 +17,54 @@ export async function submitTransaction({
   abi: Abi;
   functionName: string;
   args: (string | number)[];
+  onSimulationSuccess?: () => void;
   onUserAccepted?: () => void;
 }) {
   if (!walletClient.account) {
     throw Error("No account selected");
   }
 
-  const hash = await walletClient.writeContract({
-    address,
-    abi,
-    functionName,
-    args,
-    account: walletClient.account,
-    chain: walletClient.chain,
-  });
-
-  onUserAccepted?.();
-
-  if (hash) {
-    // If the transaction reverts this will throw an error
-    const { status, blockHash } = await publicClient.waitForTransactionReceipt({
-      hash,
+  try {
+    const { request } = await publicClient.simulateContract({
+      address,
+      abi,
+      functionName,
+      args,
+      account: walletClient.account,
+      chain: walletClient.chain,
     });
 
-    if (status !== "success") {
-      throw new Error("Transaction reverted");
+    onSimulationSuccess?.();
+
+    const hash = await walletClient.writeContract(request);
+
+    onUserAccepted?.();
+
+    if (hash) {
+      // If the transaction reverts this will throw an error
+      const { status, blockHash } =
+        await publicClient.waitForTransactionReceipt({
+          hash,
+        });
+
+      if (status !== "success") {
+        throw new Error("Transaction reverted");
+      }
+
+      return { hash, blockHash };
+    } else {
+      throw new Error("Cannot retrieve transaction hash");
+    }
+  } catch (e) {
+    if (
+      e &&
+      typeof e === "object" &&
+      "shortMessage" in e &&
+      typeof e.shortMessage === "string"
+    ) {
+      throw new Error(e.shortMessage);
     }
 
-    return { hash, blockHash };
-  } else {
-    throw new Error("Cannot retrieve transaction hash");
+    throw e;
   }
 }
