@@ -988,7 +988,7 @@ library SEALib {
      */
     function s() internal pure returns (SEALibStorage storage storageStruct) {
         bytes32 position = SEA_LIB_STORAGE_POSITION;
-        assembly {
+        assembly ("memory-safe") {
             storageStruct.slot := position
         }
     }

@@ -97,8 +97,8 @@ library TokenHolderLib {
     function allowHoldersOfProjects(
         uint256 projectId,
         address coreContract,
-        address[] memory ownedNFTAddresses,
-        uint256[] memory ownedNFTProjectIds
+        address[] calldata ownedNFTAddresses,
+        uint256[] calldata ownedNFTProjectIds
     ) internal {
         require(
             ownedNFTAddresses.length == ownedNFTProjectIds.length,
@@ -109,10 +109,15 @@ library TokenHolderLib {
                 projectId: projectId,
                 coreContract: coreContract
             });
-        for (uint256 i = 0; i < ownedNFTAddresses.length; i++) {
+        uint256 ownedNFTLoopLength = ownedNFTAddresses.length;
+        for (uint256 i; i < ownedNFTLoopLength; ) {
             holderProjectConfig.allowedProjectHolders[ownedNFTAddresses[i]][
                 ownedNFTProjectIds[i]
             ] = true;
+            // gas-efficient loop increment
+            unchecked {
+                ++i;
+            }
         }
         // emit approve event
         emit AllowedHoldersOfProjects({
@@ -136,8 +141,8 @@ library TokenHolderLib {
     function removeHoldersOfProjects(
         uint256 projectId,
         address coreContract,
-        address[] memory ownedNFTAddresses,
-        uint256[] memory ownedNFTProjectIds
+        address[] calldata ownedNFTAddresses,
+        uint256[] calldata ownedNFTProjectIds
     ) internal {
         require(
             ownedNFTAddresses.length == ownedNFTProjectIds.length,
@@ -148,10 +153,15 @@ library TokenHolderLib {
                 projectId: projectId,
                 coreContract: coreContract
             });
-        for (uint256 i = 0; i < ownedNFTAddresses.length; i++) {
+        uint256 ownedNFTLoopLength = ownedNFTAddresses.length;
+        for (uint256 i; i < ownedNFTLoopLength; ) {
             holderProjectConfig.allowedProjectHolders[ownedNFTAddresses[i]][
                 ownedNFTProjectIds[i]
             ] = false;
+            // gas-efficient loop increment
+            unchecked {
+                ++i;
+            }
         }
         // emit removed event
         emit RemovedHoldersOfProjects({
@@ -183,10 +193,10 @@ library TokenHolderLib {
     function allowAndRemoveHoldersOfProjects(
         uint256 projectId,
         address coreContract,
-        address[] memory ownedNFTAddressesAdd,
-        uint256[] memory ownedNFTProjectIdsAdd,
-        address[] memory ownedNFTAddressesRemove,
-        uint256[] memory ownedNFTProjectIdsRemove
+        address[] calldata ownedNFTAddressesAdd,
+        uint256[] calldata ownedNFTProjectIdsAdd,
+        address[] calldata ownedNFTAddressesRemove,
+        uint256[] calldata ownedNFTProjectIdsRemove
     ) internal {
         allowHoldersOfProjects({
             projectId: projectId,
@@ -274,7 +284,7 @@ library TokenHolderLib {
         returns (TokenHolderLibStorage storage storageStruct)
     {
         bytes32 position = TOKEN_HOLDER_LIB_STORAGE_POSITION;
-        assembly {
+        assembly ("memory-safe") {
             storageStruct.slot := position
         }
     }

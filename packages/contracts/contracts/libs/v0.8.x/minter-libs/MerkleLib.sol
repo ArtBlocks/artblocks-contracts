@@ -377,7 +377,7 @@ library MerkleLib {
         returns (MerkleLibStorage storage storageStruct)
     {
         bytes32 position = MERKLE_LIB_STORAGE_POSITION;
-        assembly {
+        assembly ("memory-safe") {
             storageStruct.slot := position
         }
     }

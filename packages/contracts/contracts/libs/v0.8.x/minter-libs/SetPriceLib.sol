@@ -159,7 +159,7 @@ library SetPriceLib {
         returns (SetPriceLibStorage storage storageStruct)
     {
         bytes32 position = SET_PRICE_LIB_STORAGE_POSITION;
-        assembly {
+        assembly ("memory-safe") {
             storageStruct.slot := position
         }
     }

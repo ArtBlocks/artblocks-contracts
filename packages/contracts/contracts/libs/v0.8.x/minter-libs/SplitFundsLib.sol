@@ -796,7 +796,7 @@ library SplitFundsLib {
         returns (SplitFundsLibStorage storage storageStruct)
     {
         bytes32 position = SPLIT_FUNDS_LIB_STORAGE_POSITION;
-        assembly {
+        assembly ("memory-safe") {
             storageStruct.slot := position
         }
     }

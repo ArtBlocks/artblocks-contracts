@@ -744,7 +744,7 @@ library SettlementExpLib {
         returns (SettlementExpLibStorage storage storageStruct)
     {
         bytes32 position = SETTLEMENT_EXP_LIB_STORAGE_POSITION;
-        assembly {
+        assembly ("memory-safe") {
             storageStruct.slot := position
         }
     }
