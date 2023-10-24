@@ -140,7 +140,10 @@ library SplitFundsLib {
                 additionalPayeePrimaryRevenue,
                 additionalPayeePrimaryAddress
             ) = IGenArt721CoreContractV3_Engine(coreContract)
-                .getPrimaryRevenueSplits(projectId, valueInWei);
+                .getPrimaryRevenueSplits({
+                    _projectId: projectId,
+                    _price: valueInWei
+                });
         } else {
             // get flagship splits
             // @dev note that platformProviderAddress and
@@ -152,10 +155,10 @@ library SplitFundsLib {
                 artistAddress,
                 additionalPayeePrimaryRevenue,
                 additionalPayeePrimaryAddress
-            ) = IGenArt721CoreContractV3(coreContract).getPrimaryRevenueSplits(
-                projectId,
-                valueInWei
-            );
+            ) = IGenArt721CoreContractV3(coreContract).getPrimaryRevenueSplits({
+                _projectId: projectId,
+                _price: valueInWei
+            });
         }
         // require total revenue split is 100%
         // @dev note that platformProviderRevenue remains 0 for flagship
