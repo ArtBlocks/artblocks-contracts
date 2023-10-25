@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../interfaces/v0.8.x/ISharedMinterSimplePurchaseV0.sol";
-import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
-import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
-
-import "../../libs/v0.8.x/AuthLib.sol";
-import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
-import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
-import "../../libs/v0.8.x/minter-libs/SetPriceLib.sol";
-
-import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
-
+// @dev fixed to specific solidity version for clarity and for more clear
+// source code verification purposes.
 pragma solidity 0.8.19;
+
+import {ISharedMinterV0} from "../../interfaces/v0.8.x/ISharedMinterV0.sol";
+import {IMinterFilterV1} from "../../interfaces/v0.8.x/IMinterFilterV1.sol";
+
+import {AuthLib} from "../../libs/v0.8.x/AuthLib.sol";
+import {SplitFundsLib} from "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
+import {MaxInvocationsLib} from "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
+import {SetPriceLib} from "../../libs/v0.8.x/minter-libs/SetPriceLib.sol";
+
+import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title Shared, filtered Minter contract that allows tokens to be minted with
@@ -37,17 +38,20 @@ pragma solidity 0.8.19;
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
+ * ----------------------------------------------------------------------------
+ * @notice Caution: While Engine projects must be registered on the Art Blocks
+ * Core Registry to assign this minter, this minter does not enforce that a
+ * project is registered when configured or queried. This is primarily for gas
+ * optimization purposes. It is, therefore, possible that fake projects may be
+ * configured on this minter, but they will not be able to mint tokens due to
+ * checks performed by this minter's Minter Filter.
  */
-contract MinterSetPriceERC20V5 is
-    ReentrancyGuard,
-    ISharedMinterSimplePurchaseV0,
-    ISharedMinterV0
-{
+contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
 
     /// Minter filter this minter may interact with.
-    IMinterFilterV1 private immutable minterFilter;
+    IMinterFilterV1 private immutable _minterFilter;
 
     /// minterType for this minter
     string public constant minterType = "MinterSetPriceERC20V5";
@@ -62,68 +66,71 @@ contract MinterSetPriceERC20V5 is
 
     /**
      * @notice Initializes contract to be a Filtered Minter for
-     * `_minterFilter` minter filter.
-     * @param _minterFilter Minter filter for which this will be a
+     * `minterFilter` minter filter.
+     * @param minterFilter Minter filter for which this will be a
      * filtered minter.
      */
-    constructor(address _minterFilter) ReentrancyGuard() {
-        minterFilterAddress = _minterFilter;
-        minterFilter = IMinterFilterV1(_minterFilter);
+    constructor(address minterFilter) ReentrancyGuard() {
+        minterFilterAddress = minterFilter;
+        _minterFilter = IMinterFilterV1(minterFilter);
     }
 
     /**
-     * @notice Manually sets the local maximum invocations of project `_projectId`
-     * with the provided `_maxInvocations`, checking that `_maxInvocations` is less
-     * than or equal to the value of project `_project_id`'s maximum invocations that is
+     * @notice Manually sets the local maximum invocations of project `projectId`
+     * with the provided `maxInvocations`, checking that `maxInvocations` is less
+     * than or equal to the value of project `project_id`'s maximum invocations that is
      * set on the core contract.
-     * @dev Note that a `_maxInvocations` of 0 can only be set if the current `invocations`
+     * @dev Note that a `maxInvocations` of 0 can only be set if the current `invocations`
      * value is also 0 and this would also set `maxHasBeenInvoked` to true, correctly short-circuiting
      * this minter's purchase function, avoiding extra gas costs from the core contract's maxInvocations check.
-     * @param _projectId Project ID to set the maximum invocations for.
-     * @param _coreContract Core contract address for the given project.
-     * @param _maxInvocations Maximum invocations to set for the project.
+     * @param projectId Project ID to set the maximum invocations for.
+     * @param coreContract Core contract address for the given project.
+     * @param maxInvocations Maximum invocations to set for the project.
      */
     function manuallyLimitProjectMaxInvocations(
-        uint256 _projectId,
-        address _coreContract,
-        uint24 _maxInvocations
+        uint256 projectId,
+        address coreContract,
+        uint24 maxInvocations
     ) external {
         AuthLib.onlyArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
-        MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
-            _projectId,
-            _coreContract,
-            _maxInvocations
-        );
+        MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
+            projectId: projectId,
+            coreContract: coreContract,
+            maxInvocations: maxInvocations
+        });
     }
 
     /**
-     * @notice Updates this minter's price per token of project `_projectId`
-     * to be '_pricePerTokenInWei`, in Wei.
+     * @notice Updates this minter's price per token of project `projectId`
+     * to be `pricePerTokenInWei`. Note that "in wei" is a misnomer on this
+     * ERC20 minter, but is used for consistency with the ETH minters. The
+     * price value represents the ERC20 token price without decimals.
      * @dev Note that it is intentionally supported here that the configured
      * price may be explicitly set to `0`.
-     * @param _projectId Project ID to set the price per token for.
-     * @param _coreContract Core contract address for the given project.
-     * @param _pricePerTokenInWei Price per token to set for the project, in Wei.
+     * @param projectId Project ID to set the price per token for.
+     * @param coreContract Core contract address for the given project.
+     * @param pricePerTokenInWei Price per token to set for the project.
+     * Represents the ERC20 token price without decimals.
      */
     function updatePricePerTokenInWei(
-        uint256 _projectId,
-        address _coreContract,
-        uint248 _pricePerTokenInWei
+        uint256 projectId,
+        address coreContract,
+        uint248 pricePerTokenInWei
     ) external {
         AuthLib.onlyArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
-        SetPriceLib.updatePricePerTokenInWei(
-            _projectId,
-            _coreContract,
-            _pricePerTokenInWei
-        );
+        SetPriceLib.updatePricePerToken({
+            projectId: projectId,
+            coreContract: coreContract,
+            pricePerToken: pricePerTokenInWei
+        });
 
         // for convenience, sync local max invocations to the core contract if
         // and only if max invocations have not already been synced.
@@ -133,117 +140,144 @@ contract MinterSetPriceERC20V5 is
         // @dev if local maxInvocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated on this minter
         if (
-            MaxInvocationsLib.maxInvocationsIsUnconfigured(
-                _projectId,
-                _coreContract
-            )
+            MaxInvocationsLib.maxInvocationsIsUnconfigured({
+                projectId: projectId,
+                coreContract: coreContract
+            })
         ) {
-            syncProjectMaxInvocationsToCore(_projectId, _coreContract);
+            syncProjectMaxInvocationsToCore({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         }
     }
 
     /**
-     * @notice Updates payment currency of project `_projectId` on core
-     * contract `_coreContract` to be `_currencySymbol` at address
-     * `_currencyAddress`.
+     * @notice Updates payment currency of project `projectId` on core
+     * contract `coreContract` to be `currencySymbol` at address
+     * `currencyAddress`.
      * Only supports ERC20 tokens - for ETH minting, use a different minter.
+     * Resets price to be unconfigured if currency was previously configured,
+     * as a safeguard against accidentally setting a price in one currency
+     * and then changing the currency but not the price.
      * @dev nonReentrant because no reentrant use cases, and to eliminate an
      * entire branch of reentrancy attack vectors.
-     * @param _projectId Project ID to update.
-     * @param _coreContract Core contract address for the given project.
-     * @param _currencySymbol Currency symbol.
-     * @param _currencyAddress Currency address.
+     * @param projectId Project ID to update.
+     * @param coreContract Core contract address for the given project.
+     * @param currencySymbol Currency symbol.
+     * @param currencyAddress Currency address.
      */
     function updateProjectCurrencyInfo(
-        uint256 _projectId,
-        address _coreContract,
-        string memory _currencySymbol,
-        address _currencyAddress
+        uint256 projectId,
+        address coreContract,
+        string memory currencySymbol,
+        address currencyAddress
     ) external nonReentrant {
         AuthLib.onlyArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
-        SplitFundsLib.updateProjectCurrencyInfoERC20({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _currencySymbol: _currencySymbol,
-            _currencyAddress: _currencyAddress
-        });
+        bool recommendPriceReset = SplitFundsLib
+            .updateProjectCurrencyInfoERC20({
+                projectId: projectId,
+                coreContract: coreContract,
+                currencySymbol: currencySymbol,
+                currencyAddress: currencyAddress
+            });
+        if (recommendPriceReset) {
+            SetPriceLib.resetPricePerToken({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+        }
     }
 
     /**
-     * @notice Purchases a token from project `_projectId`.
-     * @param _projectId Project ID to mint a token on.
-     * @param _coreContract Core contract address for the given project.
+     * @notice Purchases a token from project `projectId`.
+     * @param projectId Project ID to mint a token on.
+     * @param coreContract Core contract address for the given project.
+     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
+     * @param currencyAddress Currency address of token.
      * @return tokenId Token ID of minted token
      */
     function purchase(
-        uint256 _projectId,
-        address _coreContract
-    ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo(msg.sender, _projectId, _coreContract);
+        uint256 projectId,
+        address coreContract,
+        uint256 maxPricePerToken,
+        address currencyAddress
+    ) external returns (uint256 tokenId) {
+        tokenId = purchaseTo({
+            to: msg.sender,
+            projectId: projectId,
+            coreContract: coreContract,
+            maxPricePerToken: maxPricePerToken,
+            currencyAddress: currencyAddress
+        });
         return tokenId;
     }
 
     // public getter functions
     /**
      * @notice Gets the maximum invocations project configuration.
-     * @param _projectId The ID of the project whose data needs to be fetched.
-     * @param _coreContract The address of the core contract.
+     * @param projectId The ID of the project whose data needs to be fetched.
+     * @param coreContract The address of the core contract.
      * @return MaxInvocationsLib.MaxInvocationsProjectConfig instance with the
      * configuration data.
      */
     function maxInvocationsProjectConfig(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     )
         external
         view
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
         return
-            MaxInvocationsLib.getMaxInvocationsProjectConfig(
-                _projectId,
-                _coreContract
-            );
+            MaxInvocationsLib.getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
      * @notice Gets the set price project configuration.
-     * @param _projectId The ID of the project whose data needs to be fetched.
-     * @param _coreContract The address of the core contract.
+     * @param projectId The ID of the project whose data needs to be fetched.
+     * @param coreContract The address of the core contract.
      * @return SetPriceProjectConfig struct with the fixed price project
      * configuration data.
      */
     function setPriceProjectConfig(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external view returns (SetPriceLib.SetPriceProjectConfig memory) {
-        return SetPriceLib.getSetPriceProjectConfig(_projectId, _coreContract);
+        return
+            SetPriceLib.getSetPriceProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
-     * @notice Checks if the specified `_coreContract` is a valid engine contract.
-     * @dev This function retrieves the cached value of `_isEngine` from
+     * @notice Checks if the specified `coreContract` is a valid engine contract.
+     * @dev This function retrieves the cached value of `isEngine` from
      * the `isEngineCache` mapping. If the cached value is already set, it
-     * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
-     * function from the `SplitFundsLib` library to check if `_coreContract`
+     * returns the cached value. Otherwise, it calls the `getV3CoreIsEngineView`
+     * function from the `SplitFundsLib` library to check if `coreContract`
      * is a valid engine contract.
-     * @dev This function will revert if the provided `_coreContract` is not
+     * @dev This function will revert if the provided `coreContract` is not
      * a valid Engine or V3 Flagship contract.
-     * @param _coreContract The address of the contract to check.
-     * @return bool indicating if `_coreContract` is a valid engine contract.
+     * @param coreContract The address of the contract to check.
+     * @return bool indicating if `coreContract` is a valid engine contract.
      */
-    function isEngineView(address _coreContract) external view returns (bool) {
+    function isEngineView(address coreContract) external view returns (bool) {
         SplitFundsLib.IsEngineCache storage isEngineCache = SplitFundsLib
-            .getIsEngineCacheConfig(_coreContract);
+            .getIsEngineCacheConfig(coreContract);
         if (isEngineCache.isCached) {
             return isEngineCache.isEngine;
         } else {
-            // @dev this calls the non-modifying variant of getV3CoreIsEngine
-            return SplitFundsLib.getV3CoreIsEngineView(_coreContract);
+            // @dev this calls the non-state-modifying variant of isEngine
+            return SplitFundsLib.getV3CoreIsEngineView(coreContract);
         }
     }
 
@@ -258,15 +292,18 @@ contract MinterSetPriceERC20V5 is
      * possible because the V3 core contract only allows maximum invocations
      * to be reduced, not increased. Based on this rationale, we intentionally
      * do not do input validation in this method as to whether or not the input
-     * @param `_projectId` is an existing project ID.
-     * @param `_coreContract` is an existing core contract address.
+     * @param projectId is an existing project ID.
+     * @param coreContract is an existing core contract address.
      */
     function projectMaxHasBeenInvoked(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external view returns (bool) {
         return
-            MaxInvocationsLib.getMaxHasBeenInvoked(_projectId, _coreContract);
+            MaxInvocationsLib.getMaxHasBeenInvoked({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
@@ -285,73 +322,83 @@ contract MinterSetPriceERC20V5 is
      * increased. When this happens, the minter will enable minting, allowing
      * the core contract to enforce the max invocations check. Based on this
      * rationale, we intentionally do not do input validation in this method as
-     * to whether or not the input `_projectId` is an existing project ID.
-     * @param `_projectId` is an existing project ID.
-     * @param `_coreContract` is an existing core contract address.
+     * to whether or not the input `projectId` is an existing project ID.
+     * @param projectId is an existing project ID.
+     * @param coreContract is an existing core contract address.
      */
     function projectMaxInvocations(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external view returns (uint256) {
-        return MaxInvocationsLib.getMaxInvocations(_projectId, _coreContract);
+        return
+            MaxInvocationsLib.getMaxInvocations({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**
      * @notice Gets your balance of the ERC20 token currently set
-     * as the payment currency for project `_projectId` in the core
-     * contract `_coreContract`.
-     * @param _projectId Project ID to be queried.
-     * @param _coreContract The address of the core contract.
+     * as the payment currency for project `projectId` in the core
+     * contract `coreContract`.
+     * @param projectId Project ID to be queried.
+     * @param coreContract The address of the core contract.
      * @return balance Balance of ERC20
      */
     function getYourBalanceOfProjectERC20(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external view returns (uint256 balance) {
-        (address currencyAddress, ) = SplitFundsLib.getCurrencyInfoERC20(
-            _projectId,
-            _coreContract
-        );
-        balance = SplitFundsLib.getERC20Balance(currencyAddress, msg.sender);
+        (address currencyAddress, ) = SplitFundsLib.getCurrencyInfoERC20({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        balance = SplitFundsLib.getERC20Balance({
+            currencyAddress: currencyAddress,
+            walletAddress: msg.sender
+        });
         return balance;
     }
 
     /**
      * @notice Gets your allowance for this minter of the ERC20
      * token currently set as the payment currency for project
-     * `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @param _coreContract The address of the core contract.
+     * `projectId`.
+     * @param projectId Project ID to be queried.
+     * @param coreContract The address of the core contract.
      * @return remaining Remaining allowance of ERC20
      */
     function checkYourAllowanceOfProjectERC20(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external view returns (uint256 remaining) {
-        (address currencyAddress, ) = SplitFundsLib.getCurrencyInfoERC20(
-            _projectId,
-            _coreContract
-        );
+        (address currencyAddress, ) = SplitFundsLib.getCurrencyInfoERC20({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         remaining = SplitFundsLib.getERC20Allowance({
-            _currencyAddress: currencyAddress,
-            _walletAddress: msg.sender,
-            _spenderAddress: address(this)
+            currencyAddress: currencyAddress,
+            walletAddress: msg.sender,
+            spenderAddress: address(this)
         });
         return remaining;
     }
 
     /**
      * @notice Gets if price of token is configured, price of minting a
-     * token on project `_projectId`, and currency symbol and address to be
+     * token on project `projectId`, and currency symbol and address to be
      * used as payment.
      * `isConfigured` is only true if a price has been configured, and an ERC20
      * token has been configured.
-     * @param _projectId Project ID to get price information for
-     * @param _coreContract Contract address of the core contract
+     * @param projectId Project ID to get price information for
+     * @param coreContract Contract address of the core contract
      * @return isConfigured true only if token price has been configured on
      * this minter and an ERC20 token has been configured
      * @return tokenPriceInWei current price of token on this minter - invalid
-     * if price has not yet been configured
+     * if price has not yet been configured. Note that "in wei" is a misnomer
+     * for ERC20 tokens, but is used here for ABI consistency with the ETH
+     * minters. The value returned represents the price per token, with no
+     * decimals.
      * @return currencySymbol currency symbol for purchases of project on this
      * minter. "UNCONFIG" if not yet configured. Note that currency symbol is
      * defined by the artist, and is not necessarily the same as the ERC20
@@ -360,8 +407,8 @@ contract MinterSetPriceERC20V5 is
      * this minter. Null address if not yet configured.
      */
     function getPriceInfo(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     )
         external
         view
@@ -373,95 +420,124 @@ contract MinterSetPriceERC20V5 is
         )
     {
         SetPriceLib.SetPriceProjectConfig
-            storage _setPriceProjectConfig = SetPriceLib
-                .getSetPriceProjectConfig(_projectId, _coreContract);
-        tokenPriceInWei = _setPriceProjectConfig.pricePerTokenInWei;
-        (currencyAddress, currencySymbol) = SplitFundsLib.getCurrencyInfoERC20(
-            _projectId,
-            _coreContract
-        );
+            storage setPriceProjectConfig_ = SetPriceLib
+                .getSetPriceProjectConfig({
+                    projectId: projectId,
+                    coreContract: coreContract
+                });
+        tokenPriceInWei = setPriceProjectConfig_.pricePerToken;
+        (currencyAddress, currencySymbol) = SplitFundsLib.getCurrencyInfoERC20({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         // report if price and ERC20 token are configured
         // @dev currencyAddress is non-zero if an ERC20 token is configured
         isConfigured =
-            _setPriceProjectConfig.priceIsConfigured &&
+            setPriceProjectConfig_.priceIsConfigured &&
             currencyAddress != address(0);
     }
 
     /**
-     * @notice Syncs local maximum invocations of project `_projectId` based on
+     * @notice Syncs local maximum invocations of project `projectId` based on
      * the value currently defined in the core contract.
-     * @param _projectId Project ID to set the maximum invocations for.
-     * @param _coreContract Core contract address for the given project.
+     * @param projectId Project ID to set the maximum invocations for.
+     * @param coreContract Core contract address for the given project.
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
     function syncProjectMaxInvocationsToCore(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) public {
         AuthLib.onlyArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _sender: msg.sender
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
         });
 
-        MaxInvocationsLib.syncProjectMaxInvocationsToCore(
-            _projectId,
-            _coreContract
-        );
+        MaxInvocationsLib.syncProjectMaxInvocationsToCore({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
-     * @notice Purchases a token from project `_projectId` and sets
-     * the token's owner to `_to`.
-     * @param _to Address to be the new token's owner.
-     * @param _projectId Project ID to mint a token on.
-     * @param _coreContract Core contract address for the given project.
+     * @notice Purchases a token from project `projectId` and sets
+     * the token's owner to `to`.
+     * @param to Address to be the new token's owner.
+     * @param projectId Project ID to mint a token on.
+     * @param coreContract Core contract address for the given project.
+     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
+     * @param currencyAddress Currency address of token.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
-        address _to,
-        uint256 _projectId,
-        address _coreContract
-    ) public payable nonReentrant returns (uint256 tokenId) {
+        address to,
+        uint256 projectId,
+        address coreContract,
+        uint256 maxPricePerToken,
+        address currencyAddress
+    ) public nonReentrant returns (uint256 tokenId) {
         // CHECKS
         // pre-mint MaxInvocationsLib checks
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
-        // `_maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
+        // `maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
-        MaxInvocationsLib.preMintChecks(_projectId, _coreContract);
+        MaxInvocationsLib.preMintChecks({
+            projectId: projectId,
+            coreContract: coreContract
+        });
 
-        // pre-mint checks for set price lib, and get price per token in wei
+        // pre-mint checks for set price lib, and get price per token
         // @dev price per token is loaded into memory here for gas efficiency
-        uint256 pricePerTokenInWei = SetPriceLib.preMintChecksAndGetPrice(
-            _projectId,
-            _coreContract
-        );
+        uint256 pricePerToken = SetPriceLib.preMintChecksAndGetPrice({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+
+        // get the currency address configured on the project
         // @dev revert occurs during payment split if ERC20 token is not
         // configured (i.e. address(0)), so check is not performed here
+        (address configuredCurrencyAddress, ) = SplitFundsLib
+            .getCurrencyInfoERC20({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+
+        // validate that the currency address matches the project configured currency
+        require(
+            currencyAddress == configuredCurrencyAddress,
+            "Currency addresses must match"
+        );
+
+        // validate that the specified maximum price is greater than or equal to the price per token
+        require(
+            maxPricePerToken >= pricePerToken,
+            "Only max price gte token price"
+        );
 
         // EFFECTS
-        tokenId = minterFilter.mint_joo(
-            _to,
-            _projectId,
-            _coreContract,
-            msg.sender
-        );
+        tokenId = _minterFilter.mint_joo({
+            to: to,
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
+        });
 
-        MaxInvocationsLib.validatePurchaseEffectsInvocations(
-            tokenId,
-            _coreContract
-        );
+        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+            tokenId: tokenId,
+            coreContract: coreContract
+        });
 
         // INTERACTIONS
         // split ERC20 funds
         SplitFundsLib.splitFundsERC20({
-            _projectId: _projectId,
-            _pricePerTokenInWei: pricePerTokenInWei,
-            _coreContract: _coreContract
+            projectId: projectId,
+            pricePerToken: pricePerToken,
+            coreContract: coreContract
         });
 
         return tokenId;

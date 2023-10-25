@@ -169,9 +169,7 @@ export const Common_Views = async (_beforeEach: () => Promise<T_Config>) => {
           config.genArt721Core.address
         );
 
-      expect(projectConfig.pricePerTokenInWei).to.equal(
-        config.pricePerTokenInWei
-      );
+      expect(projectConfig.pricePerToken).to.equal(config.pricePerTokenInWei);
       expect(projectConfig.priceIsConfigured).to.equal(true);
     });
     it("should return proper response when not set", async function () {
@@ -189,7 +187,7 @@ export const Common_Views = async (_beforeEach: () => Promise<T_Config>) => {
           config.genArt721Core.address
         );
 
-      expect(projectConfig.pricePerTokenInWei).to.equal(constants.ZERO_BYTES32);
+      expect(projectConfig.pricePerToken).to.equal(constants.ZERO_BYTES32);
       expect(projectConfig.priceIsConfigured).to.equal(false);
     });
   });

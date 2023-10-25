@@ -4,9 +4,9 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "@typescript-eslint/eslint-plugin": "^6.7.5",
-    "@typescript-eslint/parser": "^6.7.5",
-    "eslint": "^8.51.0",
+    "@typescript-eslint/eslint-plugin": "^6.9.0",
+    "@typescript-eslint/parser": "^6.9.0",
+    "eslint": "^8.52.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.1"
   },

@@ -93,55 +93,55 @@ interface IMinterFilterV1 {
     }
 
     function setMinterForProject(
-        uint256 _projectId,
-        address _coreContract,
-        address _minter
+        uint256 projectId,
+        address coreContract,
+        address minter
     ) external;
 
     function removeMinterForProject(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external;
 
     // @dev function name is optimized for gas
     function mint_joo(
-        address _to,
-        uint256 _projectId,
-        address _coreContract,
-        address _sender
+        address to,
+        uint256 projectId,
+        address coreContract,
+        address sender
     ) external returns (uint256);
 
-    function updateCoreRegistry(address _coreRegistry) external;
+    function updateCoreRegistry(address coreRegistry) external;
 
     /**
-     * @notice Returns if `_sender` is allowed to call function on `_contract`
-     * with `_selector` selector, according to the MinterFilter's Admin ACL.
+     * @notice Returns if `sender` is allowed to call function on `contract`
+     * with `selector` selector, according to the MinterFilter's Admin ACL.
      */
     function adminACLAllowed(
-        address _sender,
-        address _contract,
-        bytes4 _selector
+        address sender,
+        address contract_,
+        bytes4 selector
     ) external returns (bool);
 
     function minterFilterType() external pure returns (string memory);
 
     function getMinterForProject(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external view returns (address);
 
     function projectHasMinter(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external view returns (bool);
 
     /**
      * @notice View that returns if a core contract is registered with the
      * core registry, allowing this minter filter to service it.
-     * @param _coreContract core contract address to be checked
+     * @param coreContract core contract address to be checked
      */
     function isRegisteredCoreContract(
-        address _coreContract
+        address coreContract
     ) external view returns (bool);
 
     /// Address of current core registry contract
@@ -152,12 +152,12 @@ interface IMinterFilterV1 {
 
     /// The quantity of projects on a core contract that have assigned minters
     function getNumProjectsOnContractWithMinters(
-        address _coreContract
+        address coreContract
     ) external view returns (uint256);
 
     function getProjectAndMinterInfoOnContractAt(
-        address _coreContract,
-        uint256 _index
+        address coreContract,
+        uint256 index
     )
         external
         view
@@ -173,7 +173,7 @@ interface IMinterFilterV1 {
         returns (MinterWithType[] memory mintersWithTypes);
 
     function getAllContractApprovedMinters(
-        address _coreContract
+        address coreContract
     ) external view returns (MinterWithType[] memory mintersWithTypes);
 
     /**

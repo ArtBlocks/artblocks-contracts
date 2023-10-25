@@ -3,6 +3,8 @@
 
 pragma solidity ^0.8.0;
 
+import {DALib} from "./DALib.sol";
+
 /**
  * @title Art Blocks Dutch Auction (exponential price curve) Library
  * @notice This library is designed to implement logic and checks for Art
@@ -12,6 +14,42 @@ pragma solidity ^0.8.0;
  */
 
 library DAExpLib {
+    /**
+     * @notice Auction details set for project `projectId` on core contract
+     * `coreContract`.
+     * @param projectId Project Id for which auction details were set
+     * @param coreContract Core contract address for which auction details were
+     * set
+     * @param auctionTimestampStart Timestamp when auction will start
+     * @param priceDecayHalfLifeSeconds Half life of price decay, in seconds
+     * @param startPrice Start price of auction
+     * @param basePrice Base price of auction (end price)
+     */
+    event SetAuctionDetailsExp(
+        uint256 indexed projectId,
+        address indexed coreContract,
+        uint40 auctionTimestampStart,
+        uint40 priceDecayHalfLifeSeconds,
+        uint256 startPrice,
+        uint256 basePrice
+    );
+    /// Minimum allowed price decay half life seconds updated.
+
+    /**
+     * @notice Minimum allowed price decay half life on the minter updated to
+     * `minimumPriceDecayHalfLifeSeconds`.
+     * @param minimumPriceDecayHalfLifeSeconds minimum price decay half life
+     * for new auctions, in seconds
+     */
+    event AuctionMinHalfLifeSecondsUpdated(
+        uint256 minimumPriceDecayHalfLifeSeconds
+    );
+
+    // position of DA Exp Lib storage, using a diamond storage pattern
+    // for this library
+    bytes32 constant DAE_EXP_LIB_STORAGE_POSITION =
+        keccak256("daexplib.storage");
+
     struct DAProjectConfig {
         // @dev max uint40 ~= 1.1e12 sec ~= 34 thousand years
         uint40 timestampStart;
@@ -20,6 +58,11 @@ library DAExpLib {
         // the expected prices of any NFT mint in the foreseeable future.
         uint88 startPrice;
         uint88 basePrice;
+    }
+
+    // Diamond storage pattern is used in this library
+    struct DAExpLibStorage {
+        mapping(address coreContract => mapping(uint256 projectId => DAProjectConfig)) DAProjectConfigs_;
     }
 
     /**
@@ -31,46 +74,80 @@ library DAExpLib {
      * minter should check that _priceDecayHalfLifeSeconds is greater than the
      * minter's minimum allowable value for price decay half-life (if the
      * minter chooses to include that guard-rail).
-     * @param _DAProjectConfig The storage reference to the DAProjectConfig
-     * struct.
-     * @param _auctionTimestampStart The timestamp when the auction will start.
-     * @param _priceDecayHalfLifeSeconds The half-life time for price decay in
+     * @param projectId The project Id to set auction details for.
+     * @param coreContract The core contract address to set auction details.
+     * @param auctionTimestampStart The timestamp when the auction will start.
+     * @param priceDecayHalfLifeSeconds The half-life time for price decay in
      * seconds.
-     * @param _startPrice The starting price of the auction.
-     * @param _basePrice The base price of the auction.
-     * @param _allowReconfigureAfterStart Bool indicating whether the auction
+     * @param startPrice The starting price of the auction.
+     * @param basePrice The base price of the auction.
+     * @param allowReconfigureAfterStart Bool indicating whether the auction
      * can be reconfigured after it has started. This is sometimes useful for
      * minter implementations that want to allow an artist to reconfigure the
      * auction after it has reached minter-local max invocations, for example.
      */
     function setAuctionDetailsExp(
-        DAProjectConfig storage _DAProjectConfig,
-        uint40 _auctionTimestampStart,
-        uint40 _priceDecayHalfLifeSeconds,
-        uint88 _startPrice,
-        uint88 _basePrice,
-        bool _allowReconfigureAfterStart
+        uint256 projectId,
+        address coreContract,
+        uint40 auctionTimestampStart,
+        uint40 priceDecayHalfLifeSeconds,
+        uint88 startPrice,
+        uint88 basePrice,
+        bool allowReconfigureAfterStart
     ) internal {
+        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         require(
-            _DAProjectConfig.timestampStart == 0 || // uninitialized
-                block.timestamp < _DAProjectConfig.timestampStart || // auction not yet started
-                _allowReconfigureAfterStart, // specifically allowing reconfiguration after start
+            DAProjectConfig_.timestampStart == 0 || // uninitialized
+                block.timestamp < DAProjectConfig_.timestampStart || // auction not yet started
+                allowReconfigureAfterStart, // specifically allowing reconfiguration after start
             "No modifications mid-auction"
         );
         require(
-            block.timestamp < _auctionTimestampStart,
+            block.timestamp < auctionTimestampStart,
             "Only future auctions"
         );
         require(
-            _startPrice > _basePrice,
+            startPrice > basePrice,
             "Auction start price must be greater than auction end price"
         );
 
         // EFFECTS
-        _DAProjectConfig.timestampStart = _auctionTimestampStart;
-        _DAProjectConfig.priceDecayHalfLifeSeconds = _priceDecayHalfLifeSeconds;
-        _DAProjectConfig.startPrice = _startPrice;
-        _DAProjectConfig.basePrice = _basePrice;
+        DAProjectConfig_.timestampStart = auctionTimestampStart;
+        DAProjectConfig_.priceDecayHalfLifeSeconds = priceDecayHalfLifeSeconds;
+        DAProjectConfig_.startPrice = startPrice;
+        DAProjectConfig_.basePrice = basePrice;
+
+        emit SetAuctionDetailsExp({
+            projectId: projectId,
+            coreContract: coreContract,
+            auctionTimestampStart: auctionTimestampStart,
+            priceDecayHalfLifeSeconds: priceDecayHalfLifeSeconds,
+            startPrice: startPrice,
+            basePrice: basePrice
+        });
+    }
+
+    function resetAuctionDetails(
+        uint256 projectId,
+        address coreContract
+    ) internal {
+        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+
+        DAProjectConfig_.timestampStart = 0;
+        DAProjectConfig_.priceDecayHalfLifeSeconds = 0;
+        DAProjectConfig_.startPrice = 0;
+        DAProjectConfig_.basePrice = 0;
+
+        emit DALib.ResetAuctionDetails({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
@@ -79,30 +156,36 @@ library DAExpLib {
      * This function reverts if auction has not yet started, or if auction is
      * unconfigured, which is relied upon by certain minter implications for
      * security.
+     * @param projectId Project Id to get price for
+     * @param coreContract Core contract address to get price for
      * @return uint256 current price of token in Wei
      */
     function getPriceExp(
-        DAProjectConfig storage _DAProjectConfig
+        uint256 projectId,
+        address coreContract
     ) internal view returns (uint256) {
+        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         // move parameters to memory if used more than once
-        uint256 _timestampStart = _DAProjectConfig.timestampStart;
-        uint256 _priceDecayHalfLifeSeconds = _DAProjectConfig
+        uint256 timestampStart = DAProjectConfig_.timestampStart;
+        uint256 priceDecayHalfLifeSeconds = DAProjectConfig_
             .priceDecayHalfLifeSeconds;
-        uint256 _basePrice = _DAProjectConfig.basePrice;
 
-        require(block.timestamp > _timestampStart, "Auction not yet started");
-        require(_priceDecayHalfLifeSeconds > 0, "Only configured auctions");
-        uint256 decayedPrice = _DAProjectConfig.startPrice;
+        require(block.timestamp >= timestampStart, "Auction not yet started");
+        require(priceDecayHalfLifeSeconds > 0, "Only configured auctions");
+        uint256 decayedPrice = DAProjectConfig_.startPrice;
         uint256 elapsedTimeSeconds;
         unchecked {
             // already checked that block.timestamp > _timestampStart above
-            elapsedTimeSeconds = block.timestamp - _timestampStart;
+            elapsedTimeSeconds = block.timestamp - timestampStart;
         }
         // Divide by two (via bit-shifting) for the number of entirely completed
         // half-lives that have elapsed since auction start time.
         unchecked {
-            // already required _priceDecayHalfLifeSeconds > 0
-            decayedPrice >>= elapsedTimeSeconds / _priceDecayHalfLifeSeconds;
+            // already required priceDecayHalfLifeSeconds > 0
+            decayedPrice >>= elapsedTimeSeconds / priceDecayHalfLifeSeconds;
         }
         // Perform a linear interpolation between partial half-life points, to
         // approximate the current place on a perfect exponential decay curve.
@@ -111,15 +194,57 @@ library DAExpLib {
             // so no underflow is possible when the subtraction assignment
             // operator is used on decayedPrice.
             decayedPrice -=
-                (decayedPrice *
-                    (elapsedTimeSeconds % _priceDecayHalfLifeSeconds)) /
-                _priceDecayHalfLifeSeconds /
-                2;
+                ((decayedPrice *
+                    (elapsedTimeSeconds % priceDecayHalfLifeSeconds)) /
+                    priceDecayHalfLifeSeconds) >>
+                1; // divide by 2 via bitshift 1
         }
-        if (decayedPrice < _basePrice) {
+        uint256 basePrice = DAProjectConfig_.basePrice;
+        if (decayedPrice < basePrice) {
             // Price may not decay below stay `basePrice`.
-            return _basePrice;
+            return basePrice;
         }
         return decayedPrice;
+    }
+
+    /**
+     * Gets auction base price for project `projectId` on core contract
+     * `coreContract`.
+     * @param projectId Project Id to get price for
+     * @param coreContract Core contract address to get price for
+     */
+    function getAuctionBasePrice(
+        uint256 projectId,
+        address coreContract
+    ) internal view returns (uint256) {
+        return
+            getDAProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            }).basePrice;
+    }
+
+    /**
+     * Loads the DAProjectConfig for a given project and core contract.
+     * @param projectId Project Id to get config for
+     * @param coreContract Core contract address to get config for
+     */
+    function getDAProjectConfig(
+        uint256 projectId,
+        address coreContract
+    ) internal view returns (DAProjectConfig storage) {
+        return s().DAProjectConfigs_[coreContract][projectId];
+    }
+
+    /**
+     * @notice Return the storage struct for reading and writing. This library
+     * uses a diamond storage pattern when managing storage.
+     * @return storageStruct The DAExpLibStorage struct.
+     */
+    function s() internal pure returns (DAExpLibStorage storage storageStruct) {
+        bytes32 position = DAE_EXP_LIB_STORAGE_POSITION;
+        assembly ("memory-safe") {
+            storageStruct.slot := position
+        }
     }
 }

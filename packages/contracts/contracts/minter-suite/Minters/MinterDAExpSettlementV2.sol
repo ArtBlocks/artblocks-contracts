@@ -40,7 +40,6 @@ pragma solidity 0.8.19;
  *   enforced when creating new auctions)
  * - resetAuctionDetails (note: this will prevent minting until a new auction
  *   is created)
- * - adminEmergencyReduceSelloutPrice
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist or the core
  * contract's Admin ACL contract:
@@ -508,52 +507,6 @@ contract MinterDAExpSettlementV2 is
             _projectConfig.numSettleableInvocations,
             _projectConfig.latestPurchasePrice
         );
-    }
-
-    /**
-     * @notice This represents an admin stepping in and reducing the sellout
-     * price of an auction. This is only callable by the core admin, only
-     * after the auction is complete, but before project revenues are
-     * withdrawn.
-     * This is only intended to be used in the case where for some reason, the
-     * sellout price was too high.
-     * @param _projectId Project ID to reduce auction sellout price for.
-     * @param _newSelloutPrice New sellout price to set for the auction. Must
-     * be less than the current sellout price.
-     */
-    function adminEmergencyReduceSelloutPrice(
-        uint256 _projectId,
-        uint256 _newSelloutPrice
-    ) external {
-        _onlyCoreAdminACL(this.adminEmergencyReduceSelloutPrice.selector);
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        require(
-            !_projectConfig.auctionRevenuesCollected,
-            "Only before revenues collected"
-        );
-
-        // refresh max invocations, updating any local values that are
-        // illogical with respect to the current core contract state, and
-        // ensuring that local hasMaxBeenInvoked is accurate.
-        _refreshMaxInvocations(_projectId);
-
-        // require max invocations has been reached
-        require(_projectConfig.maxHasBeenInvoked, "Auction must be complete");
-        // @dev no need to check that auction max invocations has been reached,
-        // because if it was, the sellout price will be zero, and the following
-        // check will fail.
-        require(
-            _newSelloutPrice < _projectConfig.latestPurchasePrice,
-            "May only reduce sellout price"
-        );
-        require(
-            _newSelloutPrice >= _projectConfig.basePrice,
-            "May only reduce sellout price to base price or greater"
-        );
-        // ensure _newSelloutPrice is non-zero
-        require(_newSelloutPrice > 0, "Only sellout prices > 0");
-        _projectConfig.latestPurchasePrice = _newSelloutPrice;
-        emit SelloutPriceUpdated(_projectId, _newSelloutPrice);
     }
 
     /**

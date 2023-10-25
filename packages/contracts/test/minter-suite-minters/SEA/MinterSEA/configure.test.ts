@@ -790,7 +790,7 @@ runForEach.forEach((params) => {
         // validate state update
         const minterConfigDetails =
           await config.minter.minterConfigurationDetails();
-        expect(minterConfigDetails.minterRefundGasLimit_).to.equal(7_001);
+        expect(minterConfigDetails.minterRefundGasLimit).to.equal(7_001);
       });
     });
 
@@ -827,7 +827,7 @@ runForEach.forEach((params) => {
           .updateMinterTimeBufferSeconds(61);
         const minterConfigDetails =
           await config.minter.minterConfigurationDetails();
-        expect(minterConfigDetails.minterTimeBufferSeconds_).to.equal(61);
+        expect(minterConfigDetails.minterTimeBufferSeconds).to.equal(61);
       });
     });
   });

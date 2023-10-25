@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-
-import "../ABHelpers.sol";
-
-import "@openzeppelin-4.7/contracts/utils/math/Math.sol";
-
 pragma solidity ^0.8.0;
+
+import {IGenArt721CoreContractV3_Base} from "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+
+import {ABHelpers} from "../ABHelpers.sol";
+
+import {Math} from "@openzeppelin-4.7/contracts/utils/math/Math.sol";
 
 /**
  * @title Art Blocks Max Invocations Library
@@ -22,13 +22,16 @@ pragma solidity ^0.8.0;
 
 library MaxInvocationsLib {
     /**
-     * @notice Local max invocations for project `_projectId`, tied to core contract `_coreContractAddress`,
-     * updated to `_maxInvocations`.
+     * @notice Local max invocations for project `projectId`, tied to core contract `coreContractAddress`,
+     * updated to `maxInvocations`.
+     * @param projectId The id of the project.
+     * @param coreContract The address of the core contract.
+     * @param maxInvocations The new max invocations limit.
      */
     event ProjectMaxInvocationsLimitUpdated(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        uint256 _maxInvocations
+        uint256 indexed projectId,
+        address indexed coreContract,
+        uint256 maxInvocations
     );
 
     // position of Max Invocations Lib storage, using a diamond storage pattern
@@ -53,79 +56,85 @@ library MaxInvocationsLib {
 
     /**
      * @notice Syncs project's max invocations to core contract value.
-     * @param _projectId The id of the project.
-     * @param _coreContract The address of the core contract.
+     * @param projectId The id of the project.
+     * @param coreContract The address of the core contract.
      */
     function syncProjectMaxInvocationsToCore(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal {
-        uint256 maxInvocations;
-        uint256 invocations;
-        (invocations, maxInvocations, , , , ) = IGenArt721CoreContractV3_Base(
-            _coreContract
-        ).projectStateData(_projectId);
+        (
+            uint256 coreInvocations,
+            uint256 coreMaxInvocations
+        ) = coreContractInvocationData({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // update storage with results
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                _projectId,
-                _coreContract
-            );
-        maxInvocationsProjectConfig.maxInvocations = uint24(maxInvocations);
-        emit ProjectMaxInvocationsLimitUpdated(
-            _projectId,
-            _coreContract,
-            maxInvocations
-        );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+        maxInvocationsProjectConfig.maxInvocations = uint24(coreMaxInvocations);
 
         // We need to ensure maxHasBeenInvoked is correctly set after manually syncing the
         // local maxInvocations value with the core contract's maxInvocations value.
         // This synced value of maxInvocations from the core contract will always be greater
         // than or equal to the previous value of maxInvocations stored locally.
         maxInvocationsProjectConfig.maxHasBeenInvoked =
-            invocations == maxInvocations;
+            coreInvocations == coreMaxInvocations;
+
+        emit ProjectMaxInvocationsLimitUpdated({
+            projectId: projectId,
+            coreContract: coreContract,
+            maxInvocations: coreMaxInvocations
+        });
     }
 
     /**
      * @notice Manually limits project's max invocations.
-     * @param _projectId The id of the project.
-     * @param _coreContract The address of the core contract.
-     * @param _maxInvocations The new max invocations limit.
+     * @param projectId The id of the project.
+     * @param coreContract The address of the core contract.
+     * @param maxInvocations The new max invocations limit.
      */
     function manuallyLimitProjectMaxInvocations(
-        uint256 _projectId,
-        address _coreContract,
-        uint24 _maxInvocations
+        uint256 projectId,
+        address coreContract,
+        uint24 maxInvocations
     ) internal {
         // CHECKS
         (
             uint256 coreInvocations,
             uint256 coreMaxInvocations
-        ) = coreContractInvocationData(_projectId, _coreContract);
+        ) = coreContractInvocationData({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         require(
-            _maxInvocations <= coreMaxInvocations,
+            maxInvocations <= coreMaxInvocations,
             "Invalid max invocations"
         );
-        require(_maxInvocations >= coreInvocations, "Invalid max invocations");
+        require(maxInvocations >= coreInvocations, "Invalid max invocations");
 
         // EFFECTS
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                _projectId,
-                _coreContract
-            );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // update storage with results
-        maxInvocationsProjectConfig.maxInvocations = uint24(_maxInvocations);
+        maxInvocationsProjectConfig.maxInvocations = uint24(maxInvocations);
         // We need to ensure maxHasBeenInvoked is correctly set after manually setting the
         // local maxInvocations value.
         maxInvocationsProjectConfig.maxHasBeenInvoked =
-            coreInvocations == _maxInvocations;
+            coreInvocations == maxInvocations;
 
-        emit ProjectMaxInvocationsLimitUpdated(
-            _projectId,
-            _coreContract,
-            _maxInvocations
-        );
+        emit ProjectMaxInvocationsLimitUpdated({
+            projectId: projectId,
+            coreContract: coreContract,
+            maxInvocations: maxInvocations
+        });
     }
 
     /**
@@ -135,24 +144,24 @@ library MaxInvocationsLib {
      * @dev This function checks that the token invocation is less than or
      * equal to the local max invocations, and also updates the local
      * maxHasBeenInvoked value.
-     * @param _tokenId The id of the token.
-     * @param _coreContract The address of the core contract.
+     * @param tokenId The id of the token.
+     * @param coreContract The address of the core contract.
      */
     function validatePurchaseEffectsInvocations(
-        uint256 _tokenId,
-        address _coreContract
+        uint256 tokenId,
+        address coreContract
     ) internal {
-        uint256 projectId = ABHelpers.tokenIdToProjectId(_tokenId);
+        uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                projectId,
-                _coreContract
-            );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // invocation is token number plus one, and will never overflow due to
         // limit of 1e6 invocations per project. block scope for gas efficiency
         // (i.e. avoid an unnecessary var initialization to 0).
         unchecked {
-            uint256 tokenInvocation = (_tokenId % ONE_MILLION) + 1;
+            uint256 tokenInvocation = (tokenId % ONE_MILLION) + 1;
             uint256 localMaxInvocations = maxInvocationsProjectConfig
                 .maxInvocations;
             // handle the case where the token invocation == minter local max
@@ -173,16 +182,24 @@ library MaxInvocationsLib {
         }
     }
 
+    /**
+     * Checks that the max invocations have not been reached for a given
+     * project. This only checks the minter's local max invocations, and does
+     * not consider the core contract's max invocations.
+     * The function reverts if the max invocations have been reached.
+     * @param projectId The id of the project.
+     * @param coreContract The address of the core contract.
+     */
     function preMintChecks(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view {
         // check that max invocations have not been reached
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                _projectId,
-                _coreContract
-            );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         require(
             !maxInvocationsProjectConfig.maxHasBeenInvoked,
             "Max invocations reached"
@@ -190,10 +207,10 @@ library MaxInvocationsLib {
     }
 
     /**
-     * Helper function to check if max invocations has not been initialized.
+     * @notice Helper function to check if max invocations has not been initialized.
      * Returns true if not initialized, false if initialized.
-     * @param _projectId The id of the project.
-     * @param _coreContract The address of the core contract.
+     * @param projectId The id of the project.
+     * @param coreContract The address of the core contract.
      * @return bool
      * @dev We know a project's max invocations have never been initialized if
      * both max invocations and maxHasBeenInvoked are still initial values.
@@ -201,70 +218,68 @@ library MaxInvocationsLib {
      * maxHasBeenInvoked would be set to true.
      */
     function maxInvocationsIsUnconfigured(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (bool) {
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                _projectId,
-                _coreContract
-            );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         return
             maxInvocationsProjectConfig.maxInvocations == 0 &&
             !maxInvocationsProjectConfig.maxHasBeenInvoked;
     }
 
     /**
-     * Returns if invocations remain available for a given project.
+     * @notice Function returns if invocations remain available for a given project.
      * This function calls the core contract to get the most up-to-date
      * invocation data (which may be useful to avoid reverts during mint).
      * This function considers core contract max invocations, and minter local
      * max invocations, and returns a response based on the most limiting
      * max invocations value.
-     * @param _projectId The id of the project.
-     * @param _coreContract The address of the core contract.
+     * @param projectId The id of the project.
+     * @param coreContract The address of the core contract.
      */
     function invocationsRemain(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (bool) {
         // get up-to-data invocation data from core contract
         (
             uint256 coreInvocations,
             uint256 coreMaxInvocations
-        ) = MaxInvocationsLib.coreContractInvocationData(
-                _projectId,
-                _coreContract
-            );
+        ) = coreContractInvocationData({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // load minter-local max invocations into memory
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                _projectId,
-                _coreContract
-            );
-        uint256 localMaxInvocations = maxInvocationsProjectConfig
-            .maxInvocations;
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // invocations remain available if the core contract has not reached
         // the most limiting max invocations, either on minter or core contract
         uint256 limitingMaxInvocations = Math.min(
             coreMaxInvocations,
-            localMaxInvocations
+            maxInvocationsProjectConfig.maxInvocations // local max invocations
         );
         return coreInvocations < limitingMaxInvocations;
     }
 
     /**
-     * Pulls core contract invocation data for a given project.
+     * @notice Pulls core contract invocation data for a given project.
      * @dev This function calls the core contract to get the invocation data
-     * @param _projectId The id of the project.
-     * @param _coreContract The address of the core contract.
+     * @param projectId The id of the project.
+     * @param coreContract The address of the core contract.
      * @return coreInvocations The number of invocations for the project.
      * @return coreMaxInvocations The max invocations for the project, as
      * defined on the core contract.
      */
     function coreContractInvocationData(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     )
         internal
         view
@@ -277,71 +292,74 @@ library MaxInvocationsLib {
             ,
             ,
 
-        ) = IGenArt721CoreContractV3_Base(_coreContract).projectStateData(
-            _projectId
+        ) = IGenArt721CoreContractV3_Base(coreContract).projectStateData(
+            projectId
         );
     }
 
     /**
-     * Returns the max invocations for a given project.
-     * @param _projectId The id of the project.
-     * @param _coreContract The address of the core contract.
+     * @notice Function returns the max invocations for a given project.
+     * @param projectId The id of the project.
+     * @param coreContract The address of the core contract.
      * to be queried.
      */
     function getMaxInvocations(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (uint256) {
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                _projectId,
-                _coreContract
-            );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         return maxInvocationsProjectConfig.maxInvocations;
     }
 
     /**
-     * Returns if max has been invoked for a given project.
-     * @param _projectId The id of the project.
-     * @param _coreContract The address of the core contract.
+     * @notice Function returns if max has been invoked for a given project.
+     * @param projectId The id of the project.
+     * @param coreContract The address of the core contract.
      * to be queried.
      */
     function getMaxHasBeenInvoked(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (bool) {
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                _projectId,
-                _coreContract
-            );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         return maxInvocationsProjectConfig.maxHasBeenInvoked;
     }
 
     /**
-     * Get if a project has reached its max invocations.
-     * Function is labaled as "safe" because it checks the core contract's
+     * @notice Function returns if a project has reached its max invocations.
+     * Function is labelled as "safe" because it checks the core contract's
      * invocations and max invocations. If the local max invocations is greater
      * than the core contract's max invocations, it will defer to the core
      * contract's max invocations (since those are the limiting factor).
-     * @param _projectId The id of the project.
-     * @param _coreContract The address of the core contract.
+     * @param projectId The id of the project.
+     * @param coreContract The address of the core contract.
      */
     function projectMaxHasBeenInvokedSafe(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (bool) {
         // get max invocations from core contract
-        uint256 coreInvocations;
-        uint256 coreMaxInvocations;
-        (coreInvocations, coreMaxInvocations) = MaxInvocationsLib
-            .coreContractInvocationData(_projectId, _coreContract);
+        (
+            uint256 coreInvocations,
+            uint256 coreMaxInvocations
+        ) = coreContractInvocationData({
+                projectId: projectId,
+                coreContract: coreContract
+            });
 
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                _projectId,
-                _coreContract
-            );
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         uint256 localMaxInvocations = maxInvocationsProjectConfig
             .maxInvocations;
         // value is locally defined, and could be out of date.
@@ -376,29 +394,34 @@ library MaxInvocationsLib {
      * be more restrictive than the core contract.
      * @dev assumes core contract's max invocations may only be reduced, which
      * is the case for all V3 core contracts
+     * @param projectId The id of the project.
+     * @param coreContract The address of the core contract.
      */
     function refreshMaxInvocations(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal {
         MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
-                _projectId,
-                _coreContract
-            );
-        if (maxInvocationsIsUnconfigured(_projectId, _coreContract)) {
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+        if (maxInvocationsIsUnconfigured(projectId, coreContract)) {
             // populate the minter max invocation state to equal the values on
             // the core contract (least restrictive state)
-            MaxInvocationsLib.syncProjectMaxInvocationsToCore(
-                _projectId,
-                _coreContract
-            );
+            syncProjectMaxInvocationsToCore({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         } else {
             // if local max invocations were already populated, validate the local state
-            uint256 coreMaxInvocations;
-            uint256 coreInvocations;
-            (coreInvocations, coreMaxInvocations) = MaxInvocationsLib
-                .coreContractInvocationData(_projectId, _coreContract);
+            (
+                uint256 coreInvocations,
+                uint256 coreMaxInvocations
+            ) = coreContractInvocationData({
+                    projectId: projectId,
+                    coreContract: coreContract
+                });
 
             uint256 localMaxInvocations = maxInvocationsProjectConfig
                 .maxInvocations;
@@ -416,11 +439,11 @@ library MaxInvocationsLib {
                 maxInvocationsProjectConfig
                     .maxHasBeenInvoked = (coreMaxInvocations ==
                     coreInvocations);
-                emit ProjectMaxInvocationsLimitUpdated(
-                    _projectId,
-                    _coreContract,
-                    coreMaxInvocations
-                );
+                emit ProjectMaxInvocationsLimitUpdated({
+                    projectId: projectId,
+                    coreContract: coreContract,
+                    maxInvocations: coreMaxInvocations
+                });
             } else if (coreInvocations >= localMaxInvocations) {
                 // core invocations are greater than this minter's max
                 // invocations, indicating that minting must have occurred on
@@ -435,15 +458,16 @@ library MaxInvocationsLib {
     }
 
     /**
-     * Loads the MaxInvocationsProjectConfig for a given project and core contract.
-     * @param _projectId Project Id to get config for
-     * @param _coreContract Core contract address to get config for
+     * @notice Loads the MaxInvocationsProjectConfig for a given project and core
+     * contract.
+     * @param projectId Project Id to get config for
+     * @param coreContract Core contract address to get config for
      */
     function getMaxInvocationsProjectConfig(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (MaxInvocationsProjectConfig storage) {
-        return s().maxInvocationsProjectConfigs[_coreContract][_projectId];
+        return s().maxInvocationsProjectConfigs[coreContract][projectId];
     }
 
     /**
@@ -457,7 +481,7 @@ library MaxInvocationsLib {
         returns (MaxInvocationsLibStorage storage storageStruct)
     {
         bytes32 position = MAX_INVOCATIONS_LIB_STORAGE_POSITION;
-        assembly {
+        assembly ("memory-safe") {
             storageStruct.slot := position
         }
     }

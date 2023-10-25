@@ -408,7 +408,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            config.minter,
+            await ethers.getContractFactory("GenericMinterEventsLib"),
             "ConfigValueSet(uint256,address,bytes32,uint256)"
           )
           .withArgs(
