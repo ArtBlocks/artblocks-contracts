@@ -87,7 +87,7 @@ export function getActiveSharedRandomizer(
 // format is [network]: { [environment]: [randomizer address] }
 const ACTIVE_SHARED_RANDOMIZERS = {
   goerli: {
-    dev: "0xD023790a7Bf5Dd71414409dc62008B8a190e0C28",
+    dev: "0x16D3b6164E7F05869287CC0fE57f3EA2572178A0",
     staging: "0x88293a3eef2516855BE0F798630e141D14333423",
   },
   mainnet: {
