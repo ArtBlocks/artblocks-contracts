@@ -3,14 +3,14 @@
 
 pragma solidity ^0.8.0;
 
-import "../../../interfaces/v0.8.x/IMinterFilterV1.sol";
+import {IMinterFilterV1} from "../../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
 import {ABHelpers} from "../ABHelpers.sol";
 import {SplitFundsLib} from "./SplitFundsLib.sol";
 import {MaxInvocationsLib} from "./MaxInvocationsLib.sol";
 
-import "@openzeppelin-4.7/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
+import {IERC721} from "@openzeppelin-4.7/contracts/token/ERC721/IERC721.sol";
+import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
 
 /**
  * @title Art Blocks SEA Minter Library
@@ -24,16 +24,38 @@ library SEALib {
     /**
      * @notice Minimum auction length, in seconds, was updated to be the
      * provided value.
+     * @param minAuctionDurationSeconds Minimum auction length, in seconds
      */
     event MinAuctionDurationSecondsUpdated(uint256 minAuctionDurationSeconds);
 
-    /// Admin-controlled time buffer updated
+    /**
+     * @notice Admin-controlled time buffer updated
+     * @param minterTimeBufferSeconds Time buffer, in seconds
+     */
     event MinterTimeBufferUpdated(uint32 minterTimeBufferSeconds);
 
-    // Admin-controlled refund gas limit updated
+    /**
+     * @notice Admin-controlled refund gas limit updated
+     * @param refundGasLimit Gas limit to use when refunding the previous
+     * highest bidder, prior to using fallback force-send to refund
+     */
     event MinterRefundGasLimitUpdated(uint24 refundGasLimit);
 
-    /// Artist configured future auction details
+    /**
+     * @notice Future auctions for project `projectId` on core contract
+     * `coreContract` configured.
+     * @param projectId Project Id configured
+     * @param coreContract Core contract address configured
+     * @param timestampStart Start timestamp after which future auctions may be
+     * started. If zero, auctions can start immediately.
+     * @param auctionDurationSeconds Duration of each new auction, before any
+     * extensions due to late bids
+     * @param basePrice Minimum bid price for the token auctions
+     * @param minBidIncrementPercentage Minimum bid increment percentage. Each
+     * subsequent bid must be at least this percentage greater than the
+     * previous bid. The value is expressed as a whole percentage, e.g. 5% is
+     * 5, 10% is 10, etc.
+     */
     event ConfiguredFutureAuctions(
         uint256 indexed projectId,
         address indexed coreContract,
@@ -43,7 +65,18 @@ library SEALib {
         uint8 minBidIncrementPercentage
     );
 
-    /// New token auction created, token created and sent to minter
+    /**
+     * @notice New token auction created, token created and sent to minter
+     * @param tokenId Token Id for which auction was created
+     * @param coreContract Core contract address for the given token
+     * @param bidder Bidder's address who initialized the auction
+     * @param bidAmount Bid amount
+     * @param endTime Auction end time
+     * @param minBidIncrementPercentage Minimum bid increment percentage. Each
+     * subsequent bid must be at least this percentage greater than the
+     * previous bid. The value is expressed as a whole percentage, e.g. 5% is
+     * 5, 10% is 10, etc.
+     */
     event AuctionInitialized(
         uint256 indexed tokenId,
         address indexed coreContract,
@@ -53,7 +86,13 @@ library SEALib {
         uint8 minBidIncrementPercentage
     );
 
-    /// Successful bid placed on token auction
+    /**
+     * @notice Successful bid placed on token auction
+     * @param tokenId Token Id of auction bid on
+     * @param coreContract Core contract address for the given token
+     * @param bidder Bidder's address who placed the bid
+     * @param bidAmount Bid amount
+     */
     event AuctionBid(
         uint256 indexed tokenId,
         address indexed coreContract,
@@ -61,7 +100,13 @@ library SEALib {
         uint256 bidAmount
     );
 
-    /// Token auction was settled (token distributed to winner)
+    /**
+     * @notice Token auction was settled (token distributed to winner)
+     * @param tokenId Token Id of auction settled
+     * @param coreContract Core contract address for the given token
+     * @param winner Winner's address
+     * @param price Winning bid amount
+     */
     event AuctionSettled(
         uint256 indexed tokenId,
         address indexed coreContract,
@@ -69,21 +114,34 @@ library SEALib {
         uint256 price
     );
 
-    /// Future auction details for project `projectId` reset
+    /**
+     * @notice Future auction details for project `projectId` reset
+     * @param projectId Project Id that was reset
+     * @param coreContract Core contract address that was reset
+     */
     event ResetAuctionDetails(
         uint256 indexed projectId,
         address indexed coreContract
     );
 
-    // Next token ID for project `projectId` updated
+    /**
+     * @notice Next token ID for project `projectId` updated
+     * @param projectId Project Id of next token updated
+     * @param coreContract Core contract address of next token updated
+     * @param tokenId Token Id of next token updated
+     */
     event ProjectNextTokenUpdated(
         uint256 indexed projectId,
         address indexed coreContract,
         uint256 tokenId
     );
 
-    // Next token ID for project `projectId` was ejected from the minter
-    // and is no longer populated
+    /**
+     * @notice Next token ID for project `projectId` ejected from the minter
+     * and is no longer populated
+     * @param projectId Project Id of next token ejected
+     * @param coreContract Core contract address of next token ejected
+     */
     event ProjectNextTokenEjected(
         uint256 indexed projectId,
         address indexed coreContract
@@ -155,16 +213,16 @@ library SEALib {
      * future auctions on the project. Values are reset to their default
      * initial values.
      * Current auction details are not cleared or affected.
-     * @param _projectId Project ID to reset
-     * @param _coreContract Core contract address to reset
+     * @param projectId Project ID to reset
+     * @param coreContract Core contract address to reset
      */
     function resetFutureAuctionDetails(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal {
         SEAProjectConfig storage SEAProjectConfig_ = getSEAProjectConfig({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
         // reset future auction details
         SEAProjectConfig_.auctionDurationSeconds = 0;
@@ -172,89 +230,91 @@ library SEALib {
         SEAProjectConfig_.basePrice = 0;
         SEAProjectConfig_.timestampStart = 0;
 
-        emit ResetAuctionDetails(_projectId, _coreContract);
+        emit ResetAuctionDetails({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
-     * @notice Configures future auctions for project `_projectId` on core
-     * contract `_coreContract`.
-     * Reverts if `_timestampStart` is in the past and not zero.
-     * @param _projectId Project ID to configure
-     * @param _coreContract Core contract address to configure
-     * @param _timestampStart Timestamp to start future auctions at. If zero,
+     * @notice Configures future auctions for project `projectId` on core
+     * contract `coreContract`.
+     * Reverts if `timestampStart` is in the past and not zero.
+     * @param projectId Project ID to configure
+     * @param coreContract Core contract address to configure
+     * @param timestampStart Timestamp to start future auctions at. If zero,
      * auctions can start immediately.
-     * @param _auctionDurationSeconds Duration of each new auction, before any
+     * @param auctionDurationSeconds Duration of each new auction, before any
      * extensions due to late bids
-     * @param _basePrice Minimum bid price for the token auctions
-     * @param _minBidIncrementPercentage Minimum bid increment percentage. Each
+     * @param basePrice Minimum bid price for the token auctions
+     * @param minBidIncrementPercentage Minimum bid increment percentage. Each
      * subsequent bid must be at least this percentage greater than the
      * previous bid. The value is expressed as a whole percentage, e.g. 5% is
      * 5, 10% is 10, etc.
      */
     function configureFutureAuctions(
-        uint256 _projectId,
-        address _coreContract,
-        uint256 _timestampStart,
-        uint256 _auctionDurationSeconds,
-        uint256 _basePrice,
-        uint8 _minBidIncrementPercentage
+        uint256 projectId,
+        address coreContract,
+        uint256 timestampStart,
+        uint256 auctionDurationSeconds,
+        uint256 basePrice,
+        uint8 minBidIncrementPercentage
     ) internal {
         SEAProjectConfig storage SEAProjectConfig_ = getSEAProjectConfig({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
         require(
-            _timestampStart == 0 || block.timestamp < _timestampStart,
+            timestampStart == 0 || block.timestamp < timestampStart,
             "Only future start times or 0"
         );
         // EFFECTS
-        SEAProjectConfig_.timestampStart = _timestampStart.toUint64();
-        SEAProjectConfig_.auctionDurationSeconds = _auctionDurationSeconds
+        SEAProjectConfig_.timestampStart = timestampStart.toUint64(); // @dev rely on this safe-cast check in event emit below
+        SEAProjectConfig_.auctionDurationSeconds = auctionDurationSeconds
             .toUint32();
-        SEAProjectConfig_.basePrice = _basePrice;
-        SEAProjectConfig_
-            .minBidIncrementPercentage = _minBidIncrementPercentage;
+        SEAProjectConfig_.basePrice = basePrice;
+        SEAProjectConfig_.minBidIncrementPercentage = minBidIncrementPercentage;
 
         emit ConfiguredFutureAuctions({
-            projectId: _projectId,
-            coreContract: _coreContract,
-            timestampStart: _timestampStart.toUint64(),
-            auctionDurationSeconds: _auctionDurationSeconds.toUint32(),
-            basePrice: _basePrice,
-            minBidIncrementPercentage: _minBidIncrementPercentage
+            projectId: projectId,
+            coreContract: coreContract,
+            timestampStart: uint64(timestampStart), // @dev safe-casting already previously checked
+            auctionDurationSeconds: auctionDurationSeconds.toUint32(),
+            basePrice: basePrice,
+            minBidIncrementPercentage: minBidIncrementPercentage
         });
     }
 
     /**
      * @notice Updates the bid state of an Auction.
      * Note that the auction's end time is extended if the bid is placed within
-     * the last `_timeBufferSeconds` of the auction.
+     * the last `timeBufferSeconds` of the auction.
      * NOTE: This function does not check if the bid is valid. It is assumed
      * that the bid has already been checked for validity by the caller.
-     * @param _auction Auction to update
-     * @param _timeBufferSeconds Time buffer to extend the auction to if the
-     * bid is placed within the last `_timeBufferSeconds` of the auction.
-     * @param _bidAmount bid amount
-     * @param _bidder bidder's payable address
+     * @param auction Auction to update
+     * @param timeBufferSeconds Time buffer to extend the auction to if the
+     * bid is placed within the last `timeBufferSeconds` of the auction.
+     * @param bidAmount bid amount
+     * @param bidder bidder's payable address
      */
     function auctionUpdateBid(
-        Auction storage _auction,
-        uint256 _timeBufferSeconds,
-        uint256 _bidAmount,
-        address payable _bidder
+        Auction storage auction,
+        uint256 timeBufferSeconds,
+        uint256 bidAmount,
+        address payable bidder
     ) internal {
         // update auction state
-        _auction.currentBid = _bidAmount;
-        _auction.currentBidder = _bidder;
-        uint256 minEndTime = block.timestamp + _timeBufferSeconds;
-        if (_auction.endTime < minEndTime) {
-            _auction.endTime = minEndTime.toUint64();
+        auction.currentBid = bidAmount;
+        auction.currentBidder = bidder;
+        uint256 minEndTime = block.timestamp + timeBufferSeconds;
+        if (auction.endTime < minEndTime) {
+            auction.endTime = minEndTime.toUint64();
         }
     }
 
     /**
      * @notice Ejects a project's "next token" from the minter and sends it to
-     * the input `_to` address.
+     * the input `to` address.
      * This function is only intended for use in the edge case where the minter
      * has a "next token" assigned to a project, but the project has been reset
      * via `resetAuctionDetails`, and the artist does not want an auction to be
@@ -262,26 +322,26 @@ library SEALib {
      * unforseen case where the minter is in an unexpected state where it has a
      * "next token" assigned to a project, but for some reason the project is
      * unable to begin a new auction due to a bug.
-     * @param _projectId The project ID being ejected
-     * @param _coreContract The core contract address being ejected
-     * @param _to The address to send the ejected token to
+     * @param projectId The project ID being ejected
+     * @param coreContract The core contract address being ejected
+     * @param to The address to send the ejected token to
      */
     function ejectNextTokenTo(
-        uint256 _projectId,
-        address _coreContract,
-        address _to
+        uint256 projectId,
+        address coreContract,
+        address to
     ) internal {
         SEAProjectConfig storage SEAProjectConfig_ = getSEAProjectConfig({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
         // CHECKS
         // only if project is not configured (i.e. artist called
         // `resetAuctionDetails`)
         require(
             !projectIsConfigured({
-                _projectId: _projectId,
-                _coreContract: _coreContract
+                projectId: projectId,
+                coreContract: coreContract
             }),
             "Only unconfigured projects"
         );
@@ -295,79 +355,82 @@ library SEALib {
         // INTERACTIONS
         // @dev overflow automatically handled by Sol ^0.8.0
         uint256 nextTokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
-            _projectId: _projectId,
-            _tokenNumber: SEAProjectConfig_.nextTokenNumber
+            projectId: projectId,
+            tokenNumber: SEAProjectConfig_.nextTokenNumber
         });
-        IERC721(_coreContract).transferFrom({
+        IERC721(coreContract).transferFrom({
             from: address(this),
-            to: _to,
+            to: to,
             tokenId: nextTokenId
         });
-        emit ProjectNextTokenEjected(_projectId, _coreContract);
+        emit ProjectNextTokenEjected({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
-     * @notice Settles a completed auction for `_tokenId`, if it exists and is
+     * @notice Settles a completed auction for `tokenId`, if it exists and is
      * not yet settled.
      * Returns early (does not modify state) if
      *   - there is no initialized auction for the project
      *   - there is an auction that has already been settled for the project
      *   - there is an auction for a different token ID on the project
      *     (likely due to a front-run)
-     * This function reverts if the auction for `_tokenId` exists, but has not
+     * This function reverts if the auction for `tokenId` exists, but has not
      * yet ended.
-     * @param _tokenId Token ID to settle auction for.
-     * @param _coreContract Core contract address for the given token.
+     * @param tokenId Token ID to settle auction for.
+     * @param coreContract Core contract address for the given token.
      */
-    function settleAuction(uint256 _tokenId, address _coreContract) internal {
-        uint256 _projectId = ABHelpers.tokenIdToProjectId(_tokenId);
+    function settleAuction(uint256 tokenId, address coreContract) internal {
+        uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
         SEAProjectConfig storage _SEAProjectConfig = getSEAProjectConfig({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
-        Auction storage _auction = _SEAProjectConfig.activeAuction;
+        Auction storage auction = _SEAProjectConfig.activeAuction;
         // load from storage to memory for gas efficiency
-        address currentBidder = _auction.currentBidder;
-        uint256 currentBid = _auction.currentBid;
+        address currentBidder = auction.currentBidder;
+        uint256 currentBid = auction.currentBid;
         // CHECKS
         // @dev this check is not strictly necessary, but is included for
         // clear error messaging
-        require(auctionIsInitialized(_auction), "Auction not initialized");
-        if (_auction.settled || (_auction.tokenId != _tokenId)) {
+        require(auctionIsInitialized(auction), "Auction not initialized");
+        if (auction.settled || (auction.tokenId != tokenId)) {
             // auction already settled or is for a different token ID, so
             // return early and do not modify state
             return;
         }
         // @dev important that the following check is after the early return
         // block above to maintain desired behavior
-        require(block.timestamp >= _auction.endTime, "Auction not yet ended");
+        require(block.timestamp >= auction.endTime, "Auction not yet ended");
         // EFFECTS
-        _auction.settled = true;
+        auction.settled = true;
         // INTERACTIONS
         // send token to the winning bidder
-        IERC721(_coreContract).transferFrom({
+        IERC721(coreContract).transferFrom({
             from: address(this),
             to: currentBidder,
-            tokenId: _tokenId
+            tokenId: tokenId
         });
         // distribute revenues from auction
         SplitFundsLib.splitRevenuesETHNoRefund({
-            _projectId: _projectId,
-            _valueInWei: currentBid,
-            _coreContract: _coreContract
+            projectId: projectId,
+            valueInWei: currentBid,
+            coreContract: coreContract
         });
 
         emit AuctionSettled({
-            tokenId: _tokenId,
-            coreContract: _coreContract,
+            tokenId: tokenId,
+            coreContract: coreContract,
             winner: currentBidder,
             price: currentBid
         });
     }
 
     /**
-     * @notice Enters a bid for token `_tokenId`.
-     * If an auction for token `_tokenId` does not exist, an auction will be
+     * @notice Enters a bid for token `tokenId`.
+     * If an auction for token `tokenId` does not exist, an auction will be
      * initialized as long as any existing auction for the project has been
      * settled.
      * In order to successfully place the bid, the token bid must be:
@@ -387,7 +450,7 @@ library SEALib {
      * outbid and their funds are returned to the original `msg.sender` address
      * via SELFDESTRUCT (SENDALL).
      * ------------------------------------------------------------------------
-     * Note that the use of `_tokenId` is to prevent the possibility of
+     * Note that the use of `tokenId` is to prevent the possibility of
      * transactions that are stuck in the pending pool for long periods of time
      * from unintentionally bidding on auctions for future tokens.
      * If a new auction is initialized during this call, the project's next
@@ -395,39 +458,42 @@ library SEALib {
      * it for the next auction. If the project's next token cannot be minted
      * due to e.g. reaching the maximum invocations on the core contract or
      * minter, the project's next token will not be minted.
-     * @param _tokenId Token ID being bid on.
-     * @param _coreContract Core contract address for the given project.
+     * @param tokenId Token ID being bid on.
+     * @param coreContract Core contract address for the given project.
+     * @param minterTimeBufferSeconds Time buffer to extend the auction to if
+     * the bid is placed within the last `minterTimeBufferSeconds` of the
+     * auction.
+     * @param minterRefundGasLimit Gas limit to use when refunding the previous
+     * highest bidder.
+     * @param minterFilter Minter filter to use when minting the next token for
+     * the project.
      * @dev nonReentrant modifier is used to prevent reentrancy attacks, e.g.
      * an an auto-bidder that would be able to atomically outbid a user's
      * new bid via a reentrant call to createBid.
      */
     function createBid(
-        uint256 _tokenId,
-        address _coreContract,
-        uint256 _minterTimeBufferSeconds,
-        uint256 _minterRefundGasLimit,
-        IMinterFilterV1 _minterFilter
+        uint256 tokenId,
+        address coreContract,
+        uint256 minterTimeBufferSeconds,
+        uint256 minterRefundGasLimit,
+        IMinterFilterV1 minterFilter
     ) internal {
-        uint256 _projectId = ABHelpers.tokenIdToProjectId(_tokenId);
+        uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
         SEAProjectConfig storage SEAProjectConfig_ = getSEAProjectConfig({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
-        Auction storage _auction = SEAProjectConfig_.activeAuction;
+        Auction storage auction = SEAProjectConfig_.activeAuction;
         // CHECKS
-        // load from storage to memory for gas efficiency
-        uint256 auctionEndTime = _auction.endTime;
-        uint256 previousBid = _auction.currentBid;
-
         // if no auction exists, or current auction is already settled, attempt
         // to initialize a new auction for the input token ID and immediately
         // return
-        if ((!auctionIsInitialized(_auction)) || _auction.settled) {
+        if ((!auctionIsInitialized(auction)) || auction.settled) {
             _initializeAuctionWithBid({
-                _projectId: _projectId,
-                _coreContract: _coreContract,
-                _targetTokenId: _tokenId,
-                _minterFilter: _minterFilter
+                projectId: projectId,
+                coreContract: coreContract,
+                targetTokenId: tokenId,
+                minterFilter: minterFilter
             });
             return;
         }
@@ -436,41 +502,39 @@ library SEALib {
 
         // ensure bids for a specific token ID are only applied to the auction
         // for that token ID.
-        require(
-            _auction.tokenId == _tokenId,
-            "Token ID does not match auction"
-        );
+        require(auction.tokenId == tokenId, "Token ID does not match auction");
 
         // ensure auction is not already ended
-        require(auctionEndTime > block.timestamp, "Auction already ended");
+        require(auction.endTime > block.timestamp, "Auction already ended");
 
         // require bid to be sufficiently greater than current highest bid
         // @dev no overflow enforced automatically by solidity ^0.8.0
-        require(msg.value >= getMinimumNextBid(_auction), "Bid is too low");
+        require(msg.value >= getMinimumNextBid(auction), "Bid is too low");
 
         // EFFECTS
-        // record previous highest bider for refunding
-        address payable previousBidder = _auction.currentBidder;
+        // record previous highest bidder and bid for refunding
+        address payable previousBidder = auction.currentBidder;
+        uint256 previousBid = auction.currentBid;
 
         // update auction bid state
         auctionUpdateBid({
-            _auction: _auction,
-            _timeBufferSeconds: _minterTimeBufferSeconds,
-            _bidAmount: msg.value,
-            _bidder: payable(msg.sender)
+            auction: auction,
+            timeBufferSeconds: minterTimeBufferSeconds,
+            bidAmount: msg.value,
+            bidder: payable(msg.sender)
         });
 
         // INTERACTIONS
         // refund previous highest bidder
         SplitFundsLib.forceSafeTransferETH({
-            _to: previousBidder,
-            _amount: previousBid,
-            _minterRefundGasLimit: _minterRefundGasLimit
+            to: previousBidder,
+            amount: previousBid,
+            minterRefundGasLimit: minterRefundGasLimit
         });
 
         emit AuctionBid({
-            tokenId: _tokenId,
-            coreContract: _coreContract,
+            tokenId: tokenId,
+            coreContract: coreContract,
             bidder: msg.sender,
             bidAmount: msg.value
         });
@@ -478,27 +542,27 @@ library SEALib {
 
     /**
      * @notice Internal function that attempts to mint a new token to the next
-     * token slot for the project `_projectId`.
+     * token slot for the project `projectId`.
      * This function returns early and does not modify state if
      *   - the project has reached its maximum invocations on either the core
      *     contract or minter
      *   - the project config's `nextTokenNumberIsPopulated` is already true
-     * @param _projectId The ID of the project to mint a new token for.
-     * @param _coreContract The core contract address
-     * @param _minterFilter The minter filter contract address
+     * @param projectId The ID of the project to mint a new token for.
+     * @param coreContract The core contract address
+     * @param minterFilter The minter filter contract address
      * @dev this calls mint with `msg.sender` as the sender, allowing artists
      * to mint tokens to the next token slot for their project while a project
      * is still paused. This happens when an artist is configuring their
      * project's auction parameters or minter max invocations.
      */
     function tryMintTokenToNextSlot(
-        uint256 _projectId,
-        address _coreContract,
-        IMinterFilterV1 _minterFilter
+        uint256 projectId,
+        address coreContract,
+        IMinterFilterV1 minterFilter
     ) internal {
         SEAProjectConfig storage SEAProjectConfig_ = getSEAProjectConfig({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
         if (SEAProjectConfig_.nextTokenNumberIsPopulated) {
             return;
@@ -510,7 +574,12 @@ library SEALib {
         // and avoid revert if relying on core to limit invocations, therefore
         // use MaxInvocationsLib.invocationsRemain, which calls core contract
         // to get latest invocation data
-        if (!MaxInvocationsLib.invocationsRemain(_projectId, _coreContract)) {
+        if (
+            !MaxInvocationsLib.invocationsRemain({
+                projectId: projectId,
+                coreContract: coreContract
+            })
+        ) {
             // we have reached the max invocations, so we do not mint a new
             // token as the "next token", and leave the next token number as
             // not populated
@@ -520,12 +589,12 @@ library SEALib {
         SEAProjectConfig_.nextTokenNumberIsPopulated = true;
         // mint a new token to this project's "next token" slot
         // @dev this is an interaction with a trusted contract
-        uint256 nextTokenId = _minterFilter.mint_joo(
-            address(this),
-            _projectId,
-            _coreContract,
-            msg.sender
-        );
+        uint256 nextTokenId = minterFilter.mint_joo({
+            to: address(this),
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
+        });
         // update state to reflect new token number
         // @dev state changes after trusted contract interaction
         // @dev unchecked is safe because mod 1e6 is guaranteed to be less than
@@ -537,12 +606,12 @@ library SEALib {
         }
         // update local maxHasBeenInvoked value if necessary
         MaxInvocationsLib.validatePurchaseEffectsInvocations({
-            _tokenId: nextTokenId,
-            _coreContract: _coreContract
+            tokenId: nextTokenId,
+            coreContract: coreContract
         });
         emit ProjectNextTokenUpdated({
-            projectId: _projectId,
-            coreContract: _coreContract,
+            projectId: projectId,
+            coreContract: coreContract,
             tokenId: nextTokenId
         });
     }
@@ -552,16 +621,16 @@ library SEALib {
      * Uses project config's `auctionDurationSeconds` to determine if project
      * is configured, because `auctionDurationSeconds` is required to be
      * non-zero when configured.
-     * @param _projectId The project ID being queried
-     * @param _coreContract The core contract address being queried
+     * @param projectId The project ID being queried
+     * @param coreContract The core contract address being queried
      */
     function projectIsConfigured(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (bool) {
         SEAProjectConfig storage SEAProjectConfig_ = getSEAProjectConfig({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
         return SEAProjectConfig_.auctionDurationSeconds != 0;
     }
@@ -571,52 +640,51 @@ library SEALib {
      * Uses auction's `currentBidder` address to determine if auction is
      * initialized, because `currentBidder` is always non-zero after an auction
      * has been initialized.
-     * @param _auction The auction to check.
+     * @param auction The auction to check.
      */
     function auctionIsInitialized(
-        Auction storage _auction
+        Auction storage auction
     ) internal view returns (bool isInitialized) {
         // auction is initialized if currentBidder is non-zero
-        return _auction.currentBidder != address(0);
+        return auction.currentBidder != address(0);
     }
 
     /**
-     * Returns bool representing if an auction is accepting bids above base
+     * @notice Function returns bool representing if an auction is accepting bids above base
      * price. It is accepting bids if it is initialized and has not reached its
      * end time.
-     * @param _auction The auction to check.
+     * @param auction The auction to check.
      */
     function auctionIsAcceptingIncreasingBids(
-        Auction storage _auction
+        Auction storage auction
     ) internal view returns (bool isAcceptingBids) {
         // auction is accepting bids if it is initialized and has not reached
         // its end time
-        isAcceptingBids = (auctionIsInitialized(_auction) &&
-            block.timestamp < _auction.endTime);
-        return isAcceptingBids;
+        isAcceptingBids = (auctionIsInitialized(auction) &&
+            block.timestamp < auction.endTime);
     }
 
     /**
      * @notice SEAProjectConfig => active auction details.
      * @dev reverts if no auction exists for the project.
-     * @param _projectId The project ID being queried
-     * @param _coreContract The core contract address being queried
+     * @param projectId The project ID being queried
+     * @param coreContract The core contract address being queried
      */
     function projectActiveAuctionDetails(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (Auction memory auction) {
         SEAProjectConfig storage SEAProjectConfig_ = getSEAProjectConfig({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
-        Auction storage _auction = SEAProjectConfig_.activeAuction;
+        // load auction storage pointer to pass ref to utility function
+        Auction storage auction_ = SEAProjectConfig_.activeAuction;
         // do not return uninitialized auctions (i.e. auctions that do not
         // exist, where currentBidder is still the default value)
-        require(auctionIsInitialized(_auction), "No auction exists on project");
-        // load entire auction into memory
+        require(auctionIsInitialized(auction_), "No auction exists on project");
+        // load entire auction into memory to return
         auction = SEAProjectConfig_.activeAuction;
-        return auction;
     }
 
     /**
@@ -629,55 +697,55 @@ library SEALib {
      * target bid token ID to be passed in as an argument.
      * The function reverts if a project does not have an active auction and
      * the next expected token ID has not been populated.
-     * @param _projectId The project ID being queried
-     * @param _coreContract The core contract address being queried
+     * @param projectId The project ID being queried
+     * @param coreContract The core contract address being queried
      * @return The current token ID being auctioned, or the next token ID to be
      * auctioned if a new auction is ready to be created.
      */
     function getTokenToBid(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (uint256) {
         SEAProjectConfig storage SEAProjectConfig_ = getSEAProjectConfig({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
-        Auction storage _auction = SEAProjectConfig_.activeAuction;
+        Auction storage auction = SEAProjectConfig_.activeAuction;
         // if project has an active token auction that is not settled, return
         // that token ID
         if (
-            auctionIsInitialized(_auction) &&
-            (_auction.endTime > block.timestamp)
+            auctionIsInitialized(auction) && (auction.endTime > block.timestamp)
         ) {
-            return _auction.tokenId;
+            return auction.tokenId;
         }
         // otherwise, return the next expected token ID to be auctioned.
-        return getNextTokenId(_projectId, _coreContract);
+        return getNextTokenId(projectId, coreContract);
     }
 
     /**
      * @notice View function that returns the next token ID to be auctioned
-     * by this minter for project `_projectId`.
+     * by this minter for project `projectId`.
      * Reverts if the next token ID has not been populated for the project.
-     * @param _projectId The project ID being queried
-     * @param _coreContract The core contract address being queried
+     * @param projectId The project ID being queried
+     * @param coreContract The core contract address being queried
      */
     function getNextTokenId(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (uint256 nextTokenId) {
         SEAProjectConfig storage SEAProjectConfig_ = getSEAProjectConfig({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
-        if (!SEAProjectConfig_.nextTokenNumberIsPopulated) {
-            revert("Next token not populated");
-        }
+        require(
+            SEAProjectConfig_.nextTokenNumberIsPopulated,
+            "Next token not populated"
+        );
+
         // @dev overflow automatically checked in Solidity ^0.8.0
         nextTokenId =
-            (_projectId * ONE_MILLION) +
+            (projectId * ONE_MILLION) +
             SEAProjectConfig_.nextTokenNumber;
-        return nextTokenId;
     }
 
     /**
@@ -693,29 +761,29 @@ library SEALib {
      * the project is configured, `isConfigured` will be true, and
      * `tokenPriceInWei` will be the minimum initial bid price for the next
      * token auction.
-     * @param _projectId Project ID to get price info for
-     * @param _coreContract Core contract address to get price info for
+     * @param projectId Project ID to get price info for
+     * @param coreContract Core contract address to get price info for
      * @return isConfigured true only if project auctions are configured.
      * @return tokenPriceInWei price in wei to become the leading bidder on a
      * token auction.
      */
     function getPriceInfo(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (bool isConfigured, uint256 tokenPriceInWei) {
         SEAProjectConfig storage SEAProjectConfig_ = getSEAProjectConfig({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
-        Auction storage _auction = SEAProjectConfig_.activeAuction;
+        Auction storage auction = SEAProjectConfig_.activeAuction;
         // base price of zero not allowed when configuring auctions, so use it
         // as indicator of whether auctions are configured for the project
         bool projectIsConfigured_ = projectIsConfigured({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
         bool auctionIsAcceptingIncreasingBids_ = auctionIsAcceptingIncreasingBids(
-                _auction
+                auction
             );
         isConfigured =
             projectIsConfigured_ ||
@@ -724,7 +792,7 @@ library SEALib {
         if (isConfigured) {
             if (auctionIsAcceptingIncreasingBids_) {
                 // return minimum next bid, given current bid
-                tokenPriceInWei = getMinimumNextBid(_auction);
+                tokenPriceInWei = getMinimumNextBid(auction);
             } else {
                 // return base (starting) price if if current auction is not
                 // accepting bids (i.e. the minimum initial bid price for the
@@ -737,23 +805,26 @@ library SEALib {
     }
 
     /**
-     * Returns the minimum next bid amount in a configured auction, given the
+     * @notice Function returns the minimum next bid amount in a configured auction, given the
      * current bid amount and the project's configured minimum bid increment
      * percentage.
-     * @param _auction Auction to query
+     * @param auction Auction to query
      */
     function getMinimumNextBid(
-        Auction storage _auction
+        Auction storage auction
     ) internal view returns (uint256 minimumNextBid) {
-        // @dev overflow automatically checked in Solidity ^0.8.0
-        return
-            (_auction.currentBid * (100 + _auction.minBidIncrementPercentage)) /
-            100;
+        // @dev unchecked due to 0 <= minBidIncrementPercentage <= 255, and
+        // currentBid is capped at supply of ETH, so no risk of overflow
+        unchecked {
+            return
+                (auction.currentBid *
+                    (100 + auction.minBidIncrementPercentage)) / 100;
+        }
     }
 
     /**
      * @dev Private function to initialize an auction for the next token ID
-     * on project `_projectId` with a bid of `msg.value` from `msg.sender`.
+     * on project `projectId` with a bid of `msg.value` from `msg.sender`.
      * This function reverts in any of the following cases:
      *   - project is not configured on this minter
      *   - project is configured but has not yet reached its start time
@@ -761,7 +832,7 @@ library SEALib {
      *   - insufficient bid amount (msg.value < basePrice)
      *   - no next token has been minted for the project (artist may need to
      *     call `tryPopulateNextToken`)
-     *   - `_targetTokenId` does not match the next token ID for the project
+     *   - `targetTokenId` does not match the next token ID for the project
      * After initializing a new auction, this function attempts to mint a new
      * token and assign it to the project's next token slot, in preparation for
      * a future token auction. However, if the project has reached its maximum
@@ -769,26 +840,30 @@ library SEALib {
      * for the project will remain empty.
      * @dev This should be executed in a nonReentrant context to provide redundant
      * protection against reentrancy.
+     * @param projectId The project ID to initialize an auction for
+     * @param coreContract The core contract address to initialize an auction for
+     * @param targetTokenId The token ID to initialize an auction for
+     * @param minterFilter The minter filter contract address
      */
     function _initializeAuctionWithBid(
-        uint256 _projectId,
-        address _coreContract,
-        uint256 _targetTokenId,
-        IMinterFilterV1 _minterFilter
+        uint256 projectId,
+        address coreContract,
+        uint256 targetTokenId,
+        IMinterFilterV1 minterFilter
     ) private {
         SEAProjectConfig storage SEAProjectConfig_ = getSEAProjectConfig({
-            _projectId: _projectId,
-            _coreContract: _coreContract
+            projectId: projectId,
+            coreContract: coreContract
         });
-        Auction storage _auction = SEAProjectConfig_.activeAuction;
+        Auction storage auction = SEAProjectConfig_.activeAuction;
         // CHECKS
         // ensure project auctions are configured
         // @dev base price of zero indicates auctions are not configured
         // because only base price of gt zero is allowed when configuring
         require(
             projectIsConfigured({
-                _projectId: _projectId,
-                _coreContract: _coreContract
+                projectId: projectId,
+                coreContract: coreContract
             }),
             "Project not configured"
         );
@@ -804,7 +879,7 @@ library SEALib {
         // check is not present
         // @dev no cover else branch of next line because unreachable
         require(
-            (!auctionIsInitialized(_auction)) || _auction.settled,
+            (!auctionIsInitialized(auction)) || auction.settled,
             "Existing auction not settled"
         );
         // require valid bid value
@@ -822,17 +897,17 @@ library SEALib {
         // require next token number is the target token ID
         require(
             SEAProjectConfig_.nextTokenNumber ==
-                ABHelpers.tokenIdToTokenNumber(_targetTokenId),
+                ABHelpers.tokenIdToTokenNumber(targetTokenId),
             "Incorrect target token ID"
         );
 
         // EFFECTS
         // create new auction, overwriting previous auction if it exists
         uint64 endTime = overwriteProjectActiveAuction({
-            _SEAProjectConfig: SEAProjectConfig_,
-            _targetTokenId: _targetTokenId,
-            _bidAmount: msg.value,
-            _bidder: payable(msg.sender)
+            SEAProjectConfig_: SEAProjectConfig_,
+            targetTokenId: targetTokenId,
+            bidAmount: msg.value,
+            bidder: payable(msg.sender)
         });
         // mark next token number as not populated
         // @dev intentionally not setting nextTokenNumber to zero to avoid
@@ -842,8 +917,8 @@ library SEALib {
         // @dev we intentionally emit event here due to potential of early
         // return in INTERACTIONS section
         emit AuctionInitialized({
-            tokenId: _targetTokenId,
-            coreContract: _coreContract,
+            tokenId: targetTokenId,
+            coreContract: coreContract,
             bidder: msg.sender,
             bidAmount: msg.value,
             endTime: endTime,
@@ -855,52 +930,55 @@ library SEALib {
         // INTERACTIONS
         // attempt to mint new token to this minter contract, only if max
         // invocations has not been reached
-        tryMintTokenToNextSlot(_projectId, _coreContract, _minterFilter);
+        tryMintTokenToNextSlot({
+            projectId: projectId,
+            coreContract: coreContract,
+            minterFilter: minterFilter
+        });
     }
 
     /**
-     * Overwrite the active auction for a project with a new auction.
+     * @notice Function to overwrite the active auction for a project with a new auction.
      * @dev This function is used to initialize a new auction. Care must be
      * taken to ensure that the existing auction is fully complete and settled.
-     * @param _SEAProjectConfig SEAProjectConfig to update
-     * @param _targetTokenId token ID to create the auction for
-     * @param _bidAmount initial bid amount
-     * @param _bidder initial bidder's payable address
+     * @param SEAProjectConfig_ SEAProjectConfig to update
+     * @param targetTokenId token ID to create the auction for
+     * @param bidAmount initial bid amount
+     * @param bidder initial bidder's payable address
      * @return endTime end time of the newly created auction
      */
     function overwriteProjectActiveAuction(
-        SEAProjectConfig storage _SEAProjectConfig,
-        uint256 _targetTokenId,
-        uint256 _bidAmount,
-        address payable _bidder
+        SEAProjectConfig storage SEAProjectConfig_,
+        uint256 targetTokenId,
+        uint256 bidAmount,
+        address payable bidder
     ) private returns (uint64 endTime) {
         // calculate auction end time
-        endTime = (block.timestamp + _SEAProjectConfig.auctionDurationSeconds)
+        endTime = (block.timestamp + SEAProjectConfig_.auctionDurationSeconds)
             .toUint64();
         // set active auction on SEAProjectConfig
-        _SEAProjectConfig.activeAuction = Auction({
-            tokenId: _targetTokenId,
-            currentBid: _bidAmount,
-            currentBidder: _bidder,
+        SEAProjectConfig_.activeAuction = Auction({
+            tokenId: targetTokenId,
+            currentBid: bidAmount,
+            currentBidder: bidder,
             endTime: endTime,
-            minBidIncrementPercentage: _SEAProjectConfig
+            minBidIncrementPercentage: SEAProjectConfig_
                 .minBidIncrementPercentage,
             settled: false
         });
-        return endTime;
     }
 
     /**
      * Loads the SEAProjectConfig for a given project and core
      * contract.
-     * @param _projectId Project Id to get config for
-     * @param _coreContract Core contract address to get config for
+     * @param projectId Project Id to get config for
+     * @param coreContract Core contract address to get config for
      */
     function getSEAProjectConfig(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (SEAProjectConfig storage) {
-        return s().SEAProjectConfigs[_coreContract][_projectId];
+        return s().SEAProjectConfigs[coreContract][projectId];
     }
 
     /**
@@ -910,7 +988,7 @@ library SEALib {
      */
     function s() internal pure returns (SEALibStorage storage storageStruct) {
         bytes32 position = SEA_LIB_STORAGE_POSITION;
-        assembly {
+        assembly ("memory-safe") {
             storageStruct.slot := position
         }
     }

@@ -7,6 +7,6 @@ interface ISharedMinterDAExpV0 {
     function minimumPriceDecayHalfLifeSeconds() external view returns (uint256);
 
     function setMinimumPriceDecayHalfLifeSeconds(
-        uint256 _minimumPriceDecayHalfLifeSeconds
+        uint256 minimumPriceDecayHalfLifeSeconds
     ) external;
 }

@@ -14,18 +14,34 @@ import {DALib} from "./DALib.sol";
  */
 
 library DALinLib {
+    /**
+     * @notice Auction details set for project `projectId` on core contract
+     * `coreContract`.
+     * @param projectId Project Id for which auction details were set
+     * @param coreContract Core contract address for which auction details were
+     * set
+     * @param auctionTimestampStart Timestamp when auction will start
+     * @param auctionTimestampEnd Timestamp when auction will end
+     * @param startPrice Start price of auction
+     * @param basePrice Base price of auction (end price)
+     */
     event SetAuctionDetailsLin(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        uint40 _auctionTimestampStart,
-        uint40 _auctionTimestampEnd,
-        uint256 _startPrice,
-        uint256 _basePrice
+        uint256 indexed projectId,
+        address indexed coreContract,
+        uint40 auctionTimestampStart,
+        uint40 auctionTimestampEnd,
+        uint256 startPrice,
+        uint256 basePrice
     );
 
-    /// Minimum allowed auction length updated
+    /**
+     * @notice Minimum allowed auction length updated to
+     * `minimumAuctionLengthSeconds` on the minter.
+     * @param minimumAuctionLengthSeconds minimum auction length for new
+     * auctions, in seconds
+     */
     event AuctionMinimumLengthSecondsUpdated(
-        uint256 _minimumAuctionLengthSeconds
+        uint256 minimumAuctionLengthSeconds
     );
 
     // position of DA Lin Lib storage, using a diamond storage pattern
@@ -57,76 +73,79 @@ library DALinLib {
      * minter should check that auction length is greater than the minter's
      * minimum allowable value (if the minter chooses to include that guard-
      * rail).
-     * @param _projectId The project Id to set auction details for.
-     * @param _coreContract The core contract address to set auction details.
-     * @param _auctionTimestampStart The timestamp when the auction will start.
-     * @param _auctionTimestampEnd The timestamp when the auction will end.
-     * @param _startPrice The starting price of the auction.
-     * @param _basePrice The base price of the auction.
-     * @param _allowReconfigureAfterStart Bool indicating whether the auction
+     * @param projectId The project Id to set auction details for.
+     * @param coreContract The core contract address to set auction details.
+     * @param auctionTimestampStart The timestamp when the auction will start.
+     * @param auctionTimestampEnd The timestamp when the auction will end.
+     * @param startPrice The starting price of the auction.
+     * @param basePrice The base price of the auction.
+     * @param allowReconfigureAfterStart Bool indicating whether the auction
      * can be reconfigured after it has started. This is sometimes useful for
      * minter implementations that want to allow an artist to reconfigure the
      * auction after it has reached minter-local max invocations, for example.
      */
     function setAuctionDetailsLin(
-        uint256 _projectId,
-        address _coreContract,
-        uint40 _auctionTimestampStart,
-        uint40 _auctionTimestampEnd,
-        uint88 _startPrice,
-        uint88 _basePrice,
-        bool _allowReconfigureAfterStart
+        uint256 projectId,
+        address coreContract,
+        uint40 auctionTimestampStart,
+        uint40 auctionTimestampEnd,
+        uint88 startPrice,
+        uint88 basePrice,
+        bool allowReconfigureAfterStart
     ) internal {
-        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig(
-            _projectId,
-            _coreContract
-        );
+        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         require(
             DAProjectConfig_.timestampStart == 0 || // uninitialized
                 block.timestamp < DAProjectConfig_.timestampStart || // auction not yet started
-                _allowReconfigureAfterStart, // specifically allowing reconfiguration after start
+                allowReconfigureAfterStart, // specifically allowing reconfiguration after start
             "No modifications mid-auction"
         );
         require(
-            block.timestamp < _auctionTimestampStart,
+            block.timestamp < auctionTimestampStart,
             "Only future auctions"
         );
         require(
-            _startPrice > _basePrice,
+            startPrice > basePrice,
             "Auction start price must be greater than auction end price"
         );
 
         // EFFECTS
-        DAProjectConfig_.timestampStart = _auctionTimestampStart;
-        DAProjectConfig_.timestampEnd = _auctionTimestampEnd;
-        DAProjectConfig_.startPrice = _startPrice;
-        DAProjectConfig_.basePrice = _basePrice;
+        DAProjectConfig_.timestampStart = auctionTimestampStart;
+        DAProjectConfig_.timestampEnd = auctionTimestampEnd;
+        DAProjectConfig_.startPrice = startPrice;
+        DAProjectConfig_.basePrice = basePrice;
 
         emit SetAuctionDetailsLin({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _auctionTimestampStart: _auctionTimestampStart,
-            _auctionTimestampEnd: _auctionTimestampEnd,
-            _startPrice: _startPrice,
-            _basePrice: _basePrice
+            projectId: projectId,
+            coreContract: coreContract,
+            auctionTimestampStart: auctionTimestampStart,
+            auctionTimestampEnd: auctionTimestampEnd,
+            startPrice: startPrice,
+            basePrice: basePrice
         });
     }
 
     function resetAuctionDetails(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal {
-        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig(
-            _projectId,
-            _coreContract
-        );
+        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
 
         DAProjectConfig_.timestampStart = 0;
         DAProjectConfig_.timestampEnd = 0;
         DAProjectConfig_.startPrice = 0;
         DAProjectConfig_.basePrice = 0;
 
-        emit DALib.ResetAuctionDetails(_projectId, _coreContract);
+        emit DALib.ResetAuctionDetails({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
@@ -134,53 +153,53 @@ library DALinLib {
      * DAProjectConfig.
      * This function reverts if auction has not yet started, or if auction is
      * unconfigured.
-     * @param _projectId Project Id to get price for
-     * @param _coreContract Core contract address to get price for
+     * @param projectId Project Id to get price for
+     * @param coreContract Core contract address to get price for
      * @return current price of token in Wei
      */
     function getPriceLin(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (uint256) {
-        DAProjectConfig storage _DAProjectConfig = getDAProjectConfig(
-            _projectId,
-            _coreContract
-        );
+        DAProjectConfig storage _DAProjectConfig = getDAProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         // move parameters to memory if used more than once
-        uint256 _timestampStart = _DAProjectConfig.timestampStart;
-        uint256 _timestampEnd = _DAProjectConfig.timestampEnd;
-        uint256 _startPrice = _DAProjectConfig.startPrice;
-        uint256 _basePrice = _DAProjectConfig.basePrice;
+        uint256 timestampStart = _DAProjectConfig.timestampStart;
+        uint256 timestampEnd = _DAProjectConfig.timestampEnd;
+        uint256 startPrice = _DAProjectConfig.startPrice;
+        uint256 basePrice = _DAProjectConfig.basePrice;
 
-        require(block.timestamp > _timestampStart, "Auction not yet started");
-        if (block.timestamp >= _timestampEnd) {
-            require(_timestampEnd > 0, "Only configured auctions");
-            return _basePrice;
+        require(block.timestamp > timestampStart, "Auction not yet started");
+        if (block.timestamp >= timestampEnd) {
+            require(timestampEnd > 0, "Only configured auctions");
+            return basePrice;
         }
         uint256 elapsedTime;
         uint256 duration;
         uint256 startToEndDiff;
         unchecked {
             // already checked that block.timestamp > _timestampStart
-            elapsedTime = block.timestamp - _timestampStart;
+            elapsedTime = block.timestamp - timestampStart;
             // _timestampEnd > _timestampStart enforced during assignment
-            duration = _timestampEnd - _timestampStart;
+            duration = timestampEnd - timestampStart;
             // _startPrice > _basePrice enforced during assignment
-            startToEndDiff = _startPrice - _basePrice;
+            startToEndDiff = startPrice - basePrice;
         }
-        return _startPrice - ((elapsedTime * startToEndDiff) / duration);
+        return startPrice - ((elapsedTime * startToEndDiff) / duration);
     }
 
     /**
      * Loads the DAProjectConfig for a given project and core contract.
-     * @param _projectId Project Id to get config for
-     * @param _coreContract Core contract address to get config for
+     * @param projectId Project Id to get config for
+     * @param coreContract Core contract address to get config for
      */
     function getDAProjectConfig(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (DAProjectConfig storage) {
-        return s().DAProjectConfigs_[_coreContract][_projectId];
+        return s().DAProjectConfigs_[coreContract][projectId];
     }
 
     /**
@@ -190,7 +209,7 @@ library DALinLib {
      */
     function s() internal pure returns (DALinLibStorage storage storageStruct) {
         bytes32 position = DAE_LIN_LIB_STORAGE_POSITION;
-        assembly {
+        assembly ("memory-safe") {
             storageStruct.slot := position
         }
     }

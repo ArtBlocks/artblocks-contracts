@@ -9,7 +9,7 @@ pragma solidity ^0.8.0;
  */
 interface ISharedMinterSEAV0 {
     function createBid(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external payable;
 }
