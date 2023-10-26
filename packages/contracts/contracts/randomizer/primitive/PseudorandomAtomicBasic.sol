@@ -10,7 +10,7 @@ import "../../interfaces/v0.8.x/IPseudorandomAtomic.sol";
  * @author Art Blocks Inc.
  * @notice This contract atomically returns a pseudorandom value.
  */
-contract PseudorandomAtomic {
+contract PseudorandomAtomic is IPseudorandomAtomic {
     // base class that returns
     function getPseudorandomAtomic(
         bytes32 _entropy
