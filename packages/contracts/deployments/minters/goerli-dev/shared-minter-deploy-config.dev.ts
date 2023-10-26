@@ -9,7 +9,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "dev",
     minterName: "MinterSetPriceV5",
-    minterFilterAddress: "0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208",
+    minterFilterAddress: "0x15B337C090170D56e45124ebd2Ce278a5b6Ff101",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -19,7 +19,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "dev",
     minterName: "MinterSetPriceERC20V5",
-    minterFilterAddress: "0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208",
+    minterFilterAddress: "0x15B337C090170D56e45124ebd2Ce278a5b6Ff101",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -29,7 +29,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "dev",
     minterName: "MinterSetPriceHolderV5",
-    minterFilterAddress: "0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208",
+    minterFilterAddress: "0x15B337C090170D56e45124ebd2Ce278a5b6Ff101",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -39,7 +39,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "dev",
     minterName: "MinterSetPriceMerkleV5",
-    minterFilterAddress: "0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208",
+    minterFilterAddress: "0x15B337C090170D56e45124ebd2Ce278a5b6Ff101",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -49,7 +49,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "dev",
     minterName: "MinterSetPricePolyptychV5",
-    minterFilterAddress: "0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208",
+    minterFilterAddress: "0x15B337C090170D56e45124ebd2Ce278a5b6Ff101",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -59,7 +59,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "dev",
     minterName: "MinterSetPricePolyptychERC20V5",
-    minterFilterAddress: "0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208",
+    minterFilterAddress: "0x15B337C090170D56e45124ebd2Ce278a5b6Ff101",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -69,7 +69,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "dev",
     minterName: "MinterDAExpV5",
-    minterFilterAddress: "0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208",
+    minterFilterAddress: "0x15B337C090170D56e45124ebd2Ce278a5b6Ff101",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -79,7 +79,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "dev",
     minterName: "MinterDALinV5",
-    minterFilterAddress: "0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208",
+    minterFilterAddress: "0x15B337C090170D56e45124ebd2Ce278a5b6Ff101",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -89,7 +89,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "dev",
     minterName: "MinterDAExpSettlementV3",
-    minterFilterAddress: "0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208",
+    minterFilterAddress: "0x15B337C090170D56e45124ebd2Ce278a5b6Ff101",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -99,7 +99,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "dev",
     minterName: "MinterDAExpHolderV5",
-    minterFilterAddress: "0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208",
+    minterFilterAddress: "0x15B337C090170D56e45124ebd2Ce278a5b6Ff101",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -109,7 +109,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "dev",
     minterName: "MinterDALinHolderV5",
-    minterFilterAddress: "0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208",
+    minterFilterAddress: "0x15B337C090170D56e45124ebd2Ce278a5b6Ff101",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
