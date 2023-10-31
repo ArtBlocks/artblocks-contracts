@@ -8,6 +8,7 @@ import {IGenArt721CoreContractV3_Base} from "../../../interfaces/v0.8.x/IGenArt7
 import {ABHelpers} from "../ABHelpers.sol";
 
 import {Math} from "@openzeppelin-4.7/contracts/utils/math/Math.sol";
+import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
 
 /**
  * @title Art Blocks Max Invocations Library
@@ -21,6 +22,8 @@ import {Math} from "@openzeppelin-4.7/contracts/utils/math/Math.sol";
  */
 
 library MaxInvocationsLib {
+    using SafeCast for uint256;
+
     /**
      * @notice Local max invocations for project `projectId`, tied to core contract `coreContractAddress`,
      * updated to `maxInvocations`.
@@ -76,12 +79,13 @@ library MaxInvocationsLib {
                 projectId: projectId,
                 coreContract: coreContract
             });
-        maxInvocationsProjectConfig.maxInvocations = uint24(coreMaxInvocations);
+        // @dev only bugged core would return > 1e6 invocations, but safe-cast
+        // for additional overflow safety
+        maxInvocationsProjectConfig.maxInvocations = coreMaxInvocations
+            .toUint24();
 
         // We need to ensure maxHasBeenInvoked is correctly set after manually syncing the
         // local maxInvocations value with the core contract's maxInvocations value.
-        // This synced value of maxInvocations from the core contract will always be greater
-        // than or equal to the previous value of maxInvocations stored locally.
         maxInvocationsProjectConfig.maxHasBeenInvoked =
             coreInvocations == coreMaxInvocations;
 
@@ -183,9 +187,9 @@ library MaxInvocationsLib {
     }
 
     /**
-     * Checks that the max invocations have not been reached for a given
-     * project. This only checks the minter's local max invocations, and does
-     * not consider the core contract's max invocations.
+     * @notice Checks that the max invocations have not been reached for a
+     * given project. This only checks the minter's local max invocations, and
+     * does not consider the core contract's max invocations.
      * The function reverts if the max invocations have been reached.
      * @param projectId The id of the project.
      * @param coreContract The address of the core contract.

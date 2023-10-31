@@ -221,7 +221,6 @@ library SplitFundsLib {
                 currencyAddress != address(0),
                 "ERC20: payment not configured"
             );
-            require(msg.value == 0, "ERC20: No ETH when using ERC20");
             // ERC20 token is used for payment
             validateERC20Approvals({
                 msgSender: msg.sender,
@@ -478,10 +477,9 @@ library SplitFundsLib {
             // also note that per Solidity ABI encoding, the address return
             // values are padded to 32 bytes.
             return true;
-        } else {
-            // unexpected return value length
-            revert("Unexpected revenue split bytes");
         }
+        // unexpected return value length
+        revert("Unexpected revenue split bytes");
     }
 
     /**
@@ -578,6 +576,9 @@ library SplitFundsLib {
     /**
      * @notice Sends ETH revenues between providers, artist, and artist's
      * additional payee. Reverts if any payment fails.
+     * @dev This function pays priviliged addresses. DoS is acknowledged, and
+     * mitigated by business practices, including end-to-end testing on
+     * mainnet, and admin-accepted artist payment addresses.
      * @param platformProviderRevenue Platform Provider revenue.
      * @param platformProviderAddress Platform Provider address.
      * @param renderProviderRevenue Render Provider revenue.

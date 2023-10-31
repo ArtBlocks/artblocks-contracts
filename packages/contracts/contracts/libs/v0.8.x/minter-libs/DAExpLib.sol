@@ -33,7 +33,6 @@ library DAExpLib {
         uint256 startPrice,
         uint256 basePrice
     );
-    /// Minimum allowed price decay half life seconds updated.
 
     /**
      * @notice Minimum allowed price decay half life on the minter updated to
@@ -113,6 +112,9 @@ library DAExpLib {
             startPrice > basePrice,
             "Auction start price must be greater than auction end price"
         );
+        // @dev no coverage, as minter auction min half life may be more
+        // restrictive than gt 0
+        require(priceDecayHalfLifeSeconds > 0, "Only half life gt 0");
 
         // EFFECTS
         DAProjectConfig_.timestampStart = auctionTimestampStart;
@@ -134,15 +136,10 @@ library DAExpLib {
         uint256 projectId,
         address coreContract
     ) internal {
-        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig({
-            projectId: projectId,
-            coreContract: coreContract
-        });
-
-        DAProjectConfig_.timestampStart = 0;
-        DAProjectConfig_.priceDecayHalfLifeSeconds = 0;
-        DAProjectConfig_.startPrice = 0;
-        DAProjectConfig_.basePrice = 0;
+        // @dev all fields must be deleted, and none of them are a complex type
+        // @dev getDAProjectConfig not used, as deletion of storage pointers is
+        // not supported
+        delete s().DAProjectConfigs_[coreContract][projectId];
 
         emit DALib.ResetAuctionDetails({
             projectId: projectId,
@@ -173,8 +170,8 @@ library DAExpLib {
         uint256 priceDecayHalfLifeSeconds = DAProjectConfig_
             .priceDecayHalfLifeSeconds;
 
+        require(timestampStart > 0, "Only configured auctions");
         require(block.timestamp >= timestampStart, "Auction not yet started");
-        require(priceDecayHalfLifeSeconds > 0, "Only configured auctions");
         uint256 decayedPrice = DAProjectConfig_.startPrice;
         uint256 elapsedTimeSeconds;
         unchecked {
