@@ -165,7 +165,9 @@ library MaxInvocationsLib {
         // limit of 1e6 invocations per project. block scope for gas efficiency
         // (i.e. avoid an unnecessary var initialization to 0).
         unchecked {
-            uint256 tokenInvocation = (tokenId % ONE_MILLION) + 1;
+            uint256 tokenInvocation = ABHelpers.tokenIdToTokenInvocation(
+                tokenId
+            );
             uint256 localMaxInvocations = maxInvocationsProjectConfig
                 .maxInvocations;
             // handle the case where the token invocation == minter local max

@@ -145,7 +145,7 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
                 coreContract: coreContract
             })
         ) {
-            syncProjectMaxInvocationsToCore({
+            MaxInvocationsLib.syncProjectMaxInvocationsToCore({
                 projectId: projectId,
                 coreContract: coreContract
             });

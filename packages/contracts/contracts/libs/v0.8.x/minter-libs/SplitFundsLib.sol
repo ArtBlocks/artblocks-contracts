@@ -332,9 +332,8 @@ library SplitFundsLib {
                 coreContract: coreContract
             });
         // recommend price reset if currency address was previously configured
-        if (splitFundsProjectConfig.currencyAddress != address(0)) {
-            recommendPriceReset = true;
-        }
+        recommendPriceReset = (splitFundsProjectConfig.currencyAddress !=
+            address(0));
         splitFundsProjectConfig.currencySymbol = currencySymbol;
         splitFundsProjectConfig.currencyAddress = currencyAddress;
 

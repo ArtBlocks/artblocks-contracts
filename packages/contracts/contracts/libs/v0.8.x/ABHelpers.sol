@@ -40,6 +40,20 @@ library ABHelpers {
     }
 
     /**
+     * @notice Function to convert token id to token invocation.
+     * @dev token invocation is the token number plus one, because token #0 is
+     * invocation 1.
+     * @param tokenId The id of the token.
+     */
+    function tokenIdToTokenInvocation(
+        uint256 tokenId
+    ) internal pure returns (uint256) {
+        // mod returns remainder, which is the token number
+        // @dev no way to disable mod zero check in solidity, so not unchecked
+        return (tokenId % ONE_MILLION) + 1;
+    }
+
+    /**
      * @notice Function to convert project id and token number to token id.
      * @param projectId The id of the project.
      * @param tokenNumber The token number.
