@@ -145,7 +145,7 @@ contract MinterSetPriceV5 is
                 coreContract: coreContract
             })
         ) {
-            syncProjectMaxInvocationsToCore({
+            MaxInvocationsLib.syncProjectMaxInvocationsToCore({
                 projectId: projectId,
                 coreContract: coreContract
             });
