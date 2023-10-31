@@ -151,7 +151,7 @@ library MaxInvocationsLib {
      * @param tokenId The id of the token.
      * @param coreContract The address of the core contract.
      */
-    function validatePurchaseEffectsInvocations(
+    function validateMintEffectsInvocations(
         uint256 tokenId,
         address coreContract
     ) internal {

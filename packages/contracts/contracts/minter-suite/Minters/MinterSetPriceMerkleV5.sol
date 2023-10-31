@@ -697,7 +697,7 @@ contract MinterSetPriceMerkleV5 is
             sender: vault_
         });
 
-        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+        MaxInvocationsLib.validateMintEffectsInvocations({
             tokenId: tokenId,
             coreContract: coreContract
         });

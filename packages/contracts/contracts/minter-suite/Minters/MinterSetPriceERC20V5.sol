@@ -527,7 +527,7 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
             sender: msg.sender
         });
 
-        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+        MaxInvocationsLib.validateMintEffectsInvocations({
             tokenId: tokenId,
             coreContract: coreContract
         });

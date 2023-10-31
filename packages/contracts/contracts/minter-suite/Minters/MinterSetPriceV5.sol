@@ -397,7 +397,7 @@ contract MinterSetPriceV5 is
             sender: msg.sender
         });
 
-        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+        MaxInvocationsLib.validateMintEffectsInvocations({
             tokenId: tokenId,
             coreContract: coreContract
         });

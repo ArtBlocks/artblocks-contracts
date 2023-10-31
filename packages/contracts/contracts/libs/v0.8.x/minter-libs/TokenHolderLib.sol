@@ -111,8 +111,8 @@ library TokenHolderLib {
         uint256 ownedNFTLoopLength = ownedNFTAddresses.length;
         for (uint256 i; i < ownedNFTLoopLength; ) {
             holderProjectConfig.allowedProjectHolders[ownedNFTAddresses[i]][
-                    ownedNFTProjectIds[i]
-                ] = true;
+                ownedNFTProjectIds[i]
+            ] = true;
             // gas-efficient loop increment
             unchecked {
                 ++i;
@@ -155,8 +155,8 @@ library TokenHolderLib {
         uint256 ownedNFTLoopLength = ownedNFTAddresses.length;
         for (uint256 i; i < ownedNFTLoopLength; ) {
             holderProjectConfig.allowedProjectHolders[ownedNFTAddresses[i]][
-                    ownedNFTProjectIds[i]
-                ] = false;
+                ownedNFTProjectIds[i]
+            ] = false;
             // gas-efficient loop increment
             unchecked {
                 ++i;

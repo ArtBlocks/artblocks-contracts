@@ -608,7 +608,7 @@ library SEALib {
             );
         }
         // update local maxHasBeenInvoked value if necessary
-        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+        MaxInvocationsLib.validateMintEffectsInvocations({
             tokenId: nextTokenId,
             coreContract: coreContract
         });

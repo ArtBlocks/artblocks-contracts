@@ -849,7 +849,7 @@ contract MinterDAExpSettlementV3 is
 
         // verify token invocation is valid given local minter max invocations,
         // update local maxHasBeenInvoked
-        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+        MaxInvocationsLib.validateMintEffectsInvocations({
             tokenId: tokenId,
             coreContract: coreContract
         });

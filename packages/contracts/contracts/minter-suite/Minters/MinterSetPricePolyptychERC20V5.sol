@@ -971,7 +971,7 @@ contract MinterSetPricePolyptychERC20V5 is
             });
         }
 
-        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+        MaxInvocationsLib.validateMintEffectsInvocations({
             tokenId: tokenId,
             coreContract: coreContract
         });
