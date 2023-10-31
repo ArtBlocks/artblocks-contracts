@@ -8939,10 +8939,10 @@ crypto-browserify@3.12.0, crypto-browserify@^3.11.0:
     randombytes "^2.0.0"
     randomfill "^1.0.3"
 
-crypto-js@^3.1.9-1:
-  version "3.3.0"
-  resolved "https://registry.yarnpkg.com/crypto-js/-/crypto-js-3.3.0.tgz#846dd1cce2f68aacfa156c8578f926a609b7976b"
-  integrity sha512-DIT51nX0dCfKltpRiXV+/TVZq+Qq2NgF4644+K7Ttnla7zEzqc+kjJyiB96BHNyUTBxyjzRcZYpUdZa+QAqi6Q==
+crypto-js@^4.2.0:
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/crypto-js/-/crypto-js-4.2.0.tgz#4d931639ecdfd12ff80e8186dba6af2c2e856631"
+  integrity sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==
 
 css-loader@^6.5.1:
   version "6.5.1"
@@ -14083,14 +14083,14 @@ merkle-patricia-tree@^4.2.2, merkle-patricia-tree@^4.2.4:
     readable-stream "^3.6.0"
     semaphore-async-await "^1.5.1"
 
-merkletreejs@^0.3.10, merkletreejs@^0.3.9:
-  version "0.3.10"
-  resolved "https://registry.yarnpkg.com/merkletreejs/-/merkletreejs-0.3.10.tgz#b9abdfc5e3aadaf9eb8b0a35c4b87aea33f5d4b7"
-  integrity sha512-lin42tKfRdkW+6iE5pjtQ9BnH+1Hk3sJ5Fn9hUUSjcXRcJbSISHgPCfYvMNEXiNqZPhz/TyRPEV30qgnujsQ7A==
+merkletreejs@^0.3.11:
+  version "0.3.11"
+  resolved "https://registry.yarnpkg.com/merkletreejs/-/merkletreejs-0.3.11.tgz#e0de05c3ca1fd368de05a12cb8efb954ef6fc04f"
+  integrity sha512-LJKTl4iVNTndhL+3Uz/tfkjD0klIWsHlUzgtuNnNrsf7bAlXR30m+xYB7lHr5Z/l6e/yAIsr26Dabx6Buo4VGQ==
   dependencies:
     bignumber.js "^9.0.1"
     buffer-reverse "^1.0.1"
-    crypto-js "^3.1.9-1"
+    crypto-js "^4.2.0"
     treeify "^1.1.0"
     web3-utils "^1.3.4"
 
