@@ -10,7 +10,5 @@ interface IPseudorandomAtomic {
      * generation process. An example of entropy might be the hash of a core
      * contract's address, and the ID of the token being generated.
      */
-    function getPseudorandomAtomic(
-        bytes32 _entropy
-    ) external view returns (bytes32);
+    function getPseudorandomAtomic(bytes32 _entropy) external returns (bytes32);
 }

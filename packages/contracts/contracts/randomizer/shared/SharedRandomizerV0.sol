@@ -248,7 +248,7 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
     function _getPseudorandomAtomic(
         address coreContract,
         uint256 tokenId
-    ) internal view returns (bytes32) {
+    ) internal returns (bytes32) {
         return
             pseudorandomAtomicContract.getPseudorandomAtomic(
                 keccak256(abi.encodePacked(coreContract, tokenId))
