@@ -171,13 +171,17 @@ contract MinterSetPricePolyptychERC20V5 is
      * @notice Updates this minter's price per token of project `projectId`
      * to be `pricePerTokenInWei`. Note that "in wei" is a misnomer on this
      * ERC20 minter, but is used for consistency with the ETH minters. The
-     * price value represents the ERC20 token price without decimals.
+     * price value represents the ERC20 token price in base units.
+     * @dev Note that it is intentionally supported here that the configured
+     * price may be explicitly set to `0`.
      * @dev Note that it is intentionally supported here that the configured
      * price may be explicitly set to `0`.
      * @param projectId Project ID to set the price per token for.
      * @param coreContract Core contract address for the given project.
      * @param pricePerTokenInWei Price per token to set for the project.
-     * Represents the ERC20 token price without decimals.
+     * Represents the ERC20 token price in base units. For example, if the
+     * ERC20 token has 6 decimals, an input value of `1_000_000` would
+     * represent a price of `1.000000` tokens.
      */
     function updatePricePerTokenInWei(
         uint256 projectId,
@@ -407,7 +411,10 @@ contract MinterSetPricePolyptychERC20V5 is
      * token ID `ownedNFTTokenId` as the parent token.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
-     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
+     * @param maxPricePerToken Maximum price of token being allowed by the
+     * purchaser, in base units. For example, if the ERC20 token has 6
+     * decimals, an input value of `1_000_000` would represent a maximum price
+     * of `1.000000` tokens.
      * @param currencyAddress Currency address of token.
      * @param ownedNFTAddress ERC-721 NFT address holding the project token
      * owned by msg.sender being used as the parent token.
@@ -444,7 +451,10 @@ contract MinterSetPricePolyptychERC20V5 is
      * @param to Address to be the new token's owner.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
-     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
+     * @param maxPricePerToken Maximum price of token being allowed by the
+     * purchaser, in base units. For example, if the ERC20 token has 6
+     * decimals, an input value of `1_000_000` would represent a maximum price
+     * of `1.000000` tokens.
      * @param currencyAddress Currency address of token.
      * @param ownedNFTAddress ERC-721 NFT holding the project token owned by
      * msg.sender being used as the parent token.
@@ -704,8 +714,9 @@ contract MinterSetPricePolyptychERC20V5 is
      * @return tokenPriceInWei current price of token on this minter - invalid
      * if price has not yet been configured. Note that "in wei" is a misnomer
      * for ERC20 tokens, but is used here for ABI consistency with the ETH
-     * minters. The value returned represents the price per token, with no
-     * decimals.
+     * minters. The value returned represents the price per token in base units.
+     * For example, if the ERC20 token has 6 decimals, an input value of
+     * `1_000_000` would represent a price of `1.000000` tokens.
      * @return currencySymbol currency symbol for purchases of project on this
      * minter. "UNCONFIG" if not yet configured. Note that currency symbol is
      * defined by the artist, and is not necessarily the same as the ERC20
@@ -823,7 +834,10 @@ contract MinterSetPricePolyptychERC20V5 is
      * @param to Address to be the new token's owner.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
-     * @param maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
+     * @param maxPricePerToken Maximum price of token being allowed by the
+     * purchaser, in base units. For example, if the ERC20 token has 6
+     * decimals, an input value of `1_000_000` would represent a maximum price
+     * of `1.000000` tokens.
      * @param currencyAddress Currency address of token.
      * @param ownedNFTAddress ERC-721 NFT holding the project token owned by
      * msg.sender or `vault` being used as the parent token.

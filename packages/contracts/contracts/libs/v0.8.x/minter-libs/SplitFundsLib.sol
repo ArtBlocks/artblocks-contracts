@@ -197,7 +197,9 @@ library SplitFundsLib {
      * business practices, including end-to-end testing on mainnet, and
      * admin-accepted artist payment addresses.
      * @param projectId Project ID for which funds shall be split.
-     * @param pricePerToken Current price of token, no decimals.
+     * @param pricePerToken Current price of token, in base units. For example,
+     * if the ERC20 token has 6 decimals, an input value of `1_000_000` would
+     * represent a price of `1.000000` tokens.
      * @param coreContract Core contract address.
      */
     function splitFundsERC20(
@@ -552,7 +554,9 @@ library SplitFundsLib {
      * Reverts if insufficient allowance or balance.
      * @param msgSender Address of the message sender to validate.
      * @param currencyAddress Address of the ERC20 token to validate.
-     * @param pricePerToken Price per token to validate (no decimals)
+     * @param pricePerToken Price of token, in base units. For example,
+     * if the ERC20 token has 6 decimals, an input value of `1_000_000` would
+     * represent a price of `1.000000` tokens.
      */
     function validateERC20Approvals(
         address msgSender,
@@ -628,7 +632,9 @@ library SplitFundsLib {
     /**
      * @notice Sends ERC20 revenues between providers, artist, and artist's
      * additional payee. Reverts if any payment fails. All revenue values
-     * should not use decimals.
+     * should use base units. For example, if the ERC20 token has 6 decimals,
+     * an input value of `1_000_000` would represent an amount of `1.000000`
+     * tokens.
      * @dev This function relies on msg.sender, so it must be called from
      * the contract that is receiving the payment.
      * @param projectCurrency IERC20 payment token.
