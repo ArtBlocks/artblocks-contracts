@@ -291,8 +291,9 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         uint8 minBidIncrementPercentage
     ) external {
         // CHECKS
-        _onlyNonZero(basePrice);
-        _onlyNonZero(minBidIncrementPercentage);
+        // @dev non-zero basePrice and minBidIncrementPercentage are checked in
+        // SEALib.configureFutureAuctions, therefore not redundantly checked
+        // here
         AuthLib.onlyArtist({
             projectId: projectId,
             coreContract: coreContract,
@@ -311,32 +312,21 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             minBidIncrementPercentage: minBidIncrementPercentage
         });
 
-        // for convenience, sync local max invocations to the core contract if
-        // and only if max invocations have not already been synced.
-        // @dev do not sync if max invocations have already been synced, as
-        // local max invocations could have been manually set to be
-        // intentionally less than the core contract's max invocations.
-        // sync local max invocations if not initially populated
-        if (
-            MaxInvocationsLib.maxInvocationsIsUnconfigured({
-                projectId: projectId,
-                coreContract: coreContract
-            })
-        ) {
-            syncProjectMaxInvocationsToCore({
-                projectId: projectId,
-                coreContract: coreContract
-            });
-            // @dev syncProjectMaxInvocationsToCore function calls
-            // SEALib.tryMintTokenToNextSlot, so we do not call it here.
-        } else {
-            // for convenience, try to mint to next token slot
-            SEALib.tryMintTokenToNextSlot({
-                projectId: projectId,
-                coreContract: coreContract,
-                minterFilter: _minterFilter
-            });
-        }
+        // for convenience, refresh max invocations to ensure they are
+        // populated and updated, without imposing any additional restrictions
+        // if already configured.
+        MaxInvocationsLib.refreshMaxInvocations({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+
+        // try to mint to the next token slot to ensure that the next token
+        // slot is populated, if possible
+        SEALib.tryMintTokenToNextSlot({
+            projectId: projectId,
+            coreContract: coreContract,
+            minterFilter: _minterFilter
+        });
     }
 
     /**
@@ -785,13 +775,12 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     /**
      * @notice Settles a completed auction for `tokenId`, if it exists and is
      * not yet settled.
-     * Function reverts if there is no initialized auction for the project.
      * Function returns early (does not modify state) if
      *   - there is an auction that has already been settled for the project
      *   - there is an auction for a different token ID on the project
      *     (likely due to a front-run)
-     * This function reverts if the auction for `tokenId` exists, but has not
-     * yet ended.
+     * Function reverts if there is no initialized auction for the project, or
+     * if the auction for `tokenId` exists, but has not yet ended.
      * @param tokenId Token ID to settle auction for.
      * @param coreContract Core contract address for the given token.
      */
