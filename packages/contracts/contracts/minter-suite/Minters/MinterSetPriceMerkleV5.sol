@@ -182,7 +182,7 @@ contract MinterSetPriceMerkleV5 is
                 coreContract: coreContract
             })
         ) {
-            syncProjectMaxInvocationsToCore({
+            MaxInvocationsLib.syncProjectMaxInvocationsToCore({
                 projectId: projectId,
                 coreContract: coreContract
             });
@@ -697,7 +697,7 @@ contract MinterSetPriceMerkleV5 is
             sender: vault_
         });
 
-        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+        MaxInvocationsLib.validateMintEffectsInvocations({
             tokenId: tokenId,
             coreContract: coreContract
         });

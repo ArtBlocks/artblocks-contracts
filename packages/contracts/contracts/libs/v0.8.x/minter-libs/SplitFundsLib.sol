@@ -197,7 +197,9 @@ library SplitFundsLib {
      * business practices, including end-to-end testing on mainnet, and
      * admin-accepted artist payment addresses.
      * @param projectId Project ID for which funds shall be split.
-     * @param pricePerToken Current price of token, no decimals.
+     * @param pricePerToken Current price of token, in base units. For example,
+     * if the ERC20 token has 6 decimals, an input value of `1_000_000` would
+     * represent a price of `1.000000` tokens.
      * @param coreContract Core contract address.
      */
     function splitFundsERC20(
@@ -221,7 +223,6 @@ library SplitFundsLib {
                 currencyAddress != address(0),
                 "ERC20: payment not configured"
             );
-            require(msg.value == 0, "ERC20: No ETH when using ERC20");
             // ERC20 token is used for payment
             validateERC20Approvals({
                 msgSender: msg.sender,
@@ -333,9 +334,8 @@ library SplitFundsLib {
                 coreContract: coreContract
             });
         // recommend price reset if currency address was previously configured
-        if (splitFundsProjectConfig.currencyAddress != address(0)) {
-            recommendPriceReset = true;
-        }
+        recommendPriceReset = (splitFundsProjectConfig.currencyAddress !=
+            address(0));
         splitFundsProjectConfig.currencySymbol = currencySymbol;
         splitFundsProjectConfig.currencyAddress = currencyAddress;
 
@@ -478,10 +478,9 @@ library SplitFundsLib {
             // also note that per Solidity ABI encoding, the address return
             // values are padded to 32 bytes.
             return true;
-        } else {
-            // unexpected return value length
-            revert("Unexpected revenue split bytes");
         }
+        // unexpected return value length
+        revert("Unexpected revenue split bytes");
     }
 
     /**
@@ -555,7 +554,9 @@ library SplitFundsLib {
      * Reverts if insufficient allowance or balance.
      * @param msgSender Address of the message sender to validate.
      * @param currencyAddress Address of the ERC20 token to validate.
-     * @param pricePerToken Price per token to validate (no decimals)
+     * @param pricePerToken Price of token, in base units. For example,
+     * if the ERC20 token has 6 decimals, an input value of `1_000_000` would
+     * represent a price of `1.000000` tokens.
      */
     function validateERC20Approvals(
         address msgSender,
@@ -578,6 +579,9 @@ library SplitFundsLib {
     /**
      * @notice Sends ETH revenues between providers, artist, and artist's
      * additional payee. Reverts if any payment fails.
+     * @dev This function pays priviliged addresses. DoS is acknowledged, and
+     * mitigated by business practices, including end-to-end testing on
+     * mainnet, and admin-accepted artist payment addresses.
      * @param platformProviderRevenue Platform Provider revenue.
      * @param platformProviderAddress Platform Provider address.
      * @param renderProviderRevenue Render Provider revenue.
@@ -628,7 +632,9 @@ library SplitFundsLib {
     /**
      * @notice Sends ERC20 revenues between providers, artist, and artist's
      * additional payee. Reverts if any payment fails. All revenue values
-     * should not use decimals.
+     * should use base units. For example, if the ERC20 token has 6 decimals,
+     * an input value of `1_000_000` would represent an amount of `1.000000`
+     * tokens.
      * @dev This function relies on msg.sender, so it must be called from
      * the contract that is receiving the payment.
      * @param projectCurrency IERC20 payment token.

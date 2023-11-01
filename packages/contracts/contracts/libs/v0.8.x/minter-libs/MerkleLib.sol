@@ -131,8 +131,8 @@ library MerkleLib {
      * @notice Checks that a given proof is valid for the vault address, and
      * also checks that the vault address has not exceeded the maximum number
      * of invocations per address for the project.
-     * Reverts if the proof is invalid or if the vault address has exceeded the
-     * maximum number of invocations per address for the project.
+     * @dev Reverts if the proof is invalid or if the vault address has
+     * exceeded the maximum number of invocations per address for the project.
      * @param projectId project id to check
      * @param coreContract core contract address to check
      * @param proof Merkle proof to check
@@ -313,13 +313,7 @@ library MerkleLib {
         uint256 maxInvocationsPerAddress = projectMaxInvocationsPerAddress(
             projectConfig
         );
-        if (maxInvocationsPerAddress == 0) {
-            // project does not limit mint invocations per address, so leave
-            // `projectLimitsMintInvocationsPerAddress` at solidity initial
-            // value of false. Also leave `mintInvocationsRemaining` at
-            // solidity initial value of zero, as indicated in this function's
-            // documentation.
-        } else {
+        if (maxInvocationsPerAddress != 0) {
             projectLimitsMintInvocationsPerAddress = true;
             uint256 userMintInvocations = projectConfig.userMintInvocations[
                 address_
@@ -333,9 +327,17 @@ library MerkleLib {
                         maxInvocationsPerAddress -
                         userMintInvocations;
                 }
+            } else {
+                // user has reached their maximum invocations, so leave
+                // `mintInvocationsRemaining` at solidity initial value of zero
             }
-            // else user has reached their maximum invocations, so leave
-            // `mintInvocationsRemaining` at solidity initial value of zero
+        } else {
+            // maxInvocationsPerAddress is zero, then the project does not
+            // limit mint invocations per address, so do nothing. Leave
+            // `projectLimitsMintInvocationsPerAddress` at solidity initial
+            // value of false. Also leave `mintInvocationsRemaining` at
+            // solidity initial value of zero, as indicated in this function's
+            // documentation.
         }
     }
 
@@ -379,6 +381,10 @@ library MerkleLib {
         bytes32[] calldata proof,
         address address_
     ) private pure returns (bool) {
-        return proof.verifyCalldata(proofRoot, hashAddress(address_));
+        return
+            proof.verifyCalldata({
+                root: proofRoot,
+                leaf: hashAddress(address_)
+            });
     }
 }
