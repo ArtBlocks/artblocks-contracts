@@ -725,7 +725,8 @@ contract MinterDAExpSettlementV3 is
             to: to,
             projectId: projectId,
             coreContract: coreContract,
-            purchaserAddress: msg.sender
+            purchaserAddress: msg.sender,
+            doSendFunds: true
         });
     }
 
@@ -765,12 +766,14 @@ contract MinterDAExpSettlementV3 is
         // the receipt in storage
         uint256 excessSettlementFunds;
         for (uint256 i; i < projectIdsLength; ) {
-            SettlementExpLib.reclaimProjectExcessSettlementFundsTo({
-                to: to,
-                projectId: projectIds[i],
-                coreContract: coreContracts[i],
-                purchaserAddress: msg.sender
-            });
+            excessSettlementFunds += SettlementExpLib
+                .reclaimProjectExcessSettlementFundsTo({
+                    to: to,
+                    projectId: projectIds[i],
+                    coreContract: coreContracts[i],
+                    purchaserAddress: msg.sender,
+                    doSendFunds: false // do not send funds, just tally
+                });
 
             // gas efficiently increment i
             // won't overflow due to for loop, as well as gas limts
@@ -869,18 +872,11 @@ contract MinterDAExpSettlementV3 is
      * function `manuallyLimitProjectMaxInvocations` should be used to manually
      * and explicitly limit the maximum invocations for a project to a value
      * other than the core contract's maximum invocations for a project.
-     * @param coreContract Core contract address for the given project.
-     * @param projectId Project ID to set the maximum invocations for.
      */
     function syncProjectMaxInvocationsToCore(
-        uint256 projectId,
-        address coreContract
-    ) public view {
-        AuthLib.onlyArtist({
-            projectId: projectId,
-            coreContract: coreContract,
-            sender: msg.sender
-        });
+        uint256 /*projectId*/,
+        address /*coreContract*/
+    ) public pure {
         revert("Not implemented");
     }
 }

@@ -258,13 +258,20 @@ library SettlementExpLib {
      * @param coreContract Core contract address
      * @param purchaserAddress Address to reclaim excess settlement funds for
      * @param to Address to send excess settlement funds to
+     * @param doSendFunds If true, sends funds to `to`. If false, only updates
+     * the receipt to reflect the new funds posted, and returns the amount of
+     * excess settlement funds that still need to be sent to `to`.
+     * @return remainingUnsentExcessSettlementFunds amount of excess settlement
+     * funds that still need to be sent to `to`, in wei. If doSendFunds, this
+     * value will be zero, because funds will have been sent to `to`.
      */
     function reclaimProjectExcessSettlementFundsTo(
         address payable to,
         uint256 projectId,
         address coreContract,
-        address purchaserAddress
-    ) internal {
+        address purchaserAddress,
+        bool doSendFunds
+    ) internal returns (uint256 remainingUnsentExcessSettlementFunds) {
         (
             uint256 excessSettlementFunds,
             uint256 requiredAmountPosted
@@ -302,9 +309,14 @@ library SettlementExpLib {
         });
 
         // INTERACTIONS
-        bool success_;
-        (success_, ) = to.call{value: excessSettlementFunds}("");
-        require(success_, "Reclaiming failed");
+        if (doSendFunds) {
+            bool success_;
+            (success_, ) = to.call{value: excessSettlementFunds}("");
+            require(success_, "Reclaiming failed");
+        } else {
+            // return unsent funds amount to caller
+            remainingUnsentExcessSettlementFunds = excessSettlementFunds;
+        }
     }
 
     /**
