@@ -872,11 +872,18 @@ contract MinterDAExpSettlementV3 is
      * function `manuallyLimitProjectMaxInvocations` should be used to manually
      * and explicitly limit the maximum invocations for a project to a value
      * other than the core contract's maximum invocations for a project.
+     * @param coreContract Core contract address for the given project.
+     * @param projectId Project ID to set the maximum invocations for.
      */
     function syncProjectMaxInvocationsToCore(
-        uint256 /*projectId*/,
-        address /*coreContract*/
-    ) public pure {
+        uint256 projectId,
+        address coreContract
+    ) public view {
+        AuthLib.onlyArtist({
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
+        });
         revert("Not implemented");
     }
 }
