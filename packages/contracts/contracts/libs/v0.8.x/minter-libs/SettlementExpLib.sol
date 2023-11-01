@@ -477,7 +477,7 @@ library SettlementExpLib {
     }
 
     /**
-     * Returns number of purchases that have been made on the minter, for a
+     * @notice Returns number of purchases that have been made on the minter, for a
      * given project.
      * @param projectId The id of the project.
      * @param coreContract The address of the core contract.
