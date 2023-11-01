@@ -200,7 +200,7 @@ contract MinterSetPricePolyptychV5 is
                 coreContract: coreContract
             })
         ) {
-            syncProjectMaxInvocationsToCore({
+            MaxInvocationsLib.syncProjectMaxInvocationsToCore({
                 projectId: projectId,
                 coreContract: coreContract
             });
@@ -828,7 +828,7 @@ contract MinterSetPricePolyptychV5 is
             });
         }
 
-        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+        MaxInvocationsLib.validateMintEffectsInvocations({
             tokenId: tokenId,
             coreContract: coreContract
         });
