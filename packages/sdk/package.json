@@ -62,6 +62,6 @@
   },
   "dependencies": {
     "@artblocks/contracts": "^1.0.2",
-    "merkletreejs": "^0.3.10"
+    "merkletreejs": "^0.3.11"
   }
 }
