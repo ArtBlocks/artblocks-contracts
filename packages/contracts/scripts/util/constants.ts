@@ -88,7 +88,7 @@ export function getActiveSharedRandomizer(
 const ACTIVE_SHARED_RANDOMIZERS = {
   goerli: {
     dev: "0x16D3b6164E7F05869287CC0fE57f3EA2572178A0",
-    staging: "0x88293a3eef2516855BE0F798630e141D14333423",
+    staging: "0xC91CFC2062D8B4Ff53A7c8836CAEf925a7C78c81",
   },
   mainnet: {
     mainnet: "0xTBD",
