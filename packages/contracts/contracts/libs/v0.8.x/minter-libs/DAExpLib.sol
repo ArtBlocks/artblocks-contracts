@@ -169,8 +169,9 @@ library DAExpLib {
         uint256 timestampStart = DAProjectConfig_.timestampStart;
         uint256 priceDecayHalfLifeSeconds = DAProjectConfig_
             .priceDecayHalfLifeSeconds;
-
-        require(timestampStart > 0, "Only configured auctions");
+        // @dev check also ensures we don't divide by priceDecayHalfLifeSeconds
+        // of zero
+        require(priceDecayHalfLifeSeconds > 0, "Only configured auctions");
         require(block.timestamp >= timestampStart, "Auction not yet started");
         uint256 decayedPrice = DAProjectConfig_.startPrice;
         uint256 elapsedTimeSeconds;

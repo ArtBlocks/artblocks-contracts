@@ -327,18 +327,16 @@ library MerkleLib {
                         maxInvocationsPerAddress -
                         userMintInvocations;
                 }
-            } else {
-                // user has reached their maximum invocations, so leave
-                // `mintInvocationsRemaining` at solidity initial value of zero
             }
-        } else {
-            // maxInvocationsPerAddress is zero, then the project does not
-            // limit mint invocations per address, so do nothing. Leave
-            // `projectLimitsMintInvocationsPerAddress` at solidity initial
-            // value of false. Also leave `mintInvocationsRemaining` at
-            // solidity initial value of zero, as indicated in this function's
-            // documentation.
+            // else user has reached their maximum invocations, so leave
+            // `mintInvocationsRemaining` at solidity initial value of zero
         }
+        // else maxInvocationsPerAddress is zero, then the project does not
+        // limit mint invocations per address, so do nothing. Leave
+        // `projectLimitsMintInvocationsPerAddress` at solidity initial
+        // value of false. Also leave `mintInvocationsRemaining` at
+        // solidity initial value of zero, as indicated in this function's
+        // documentation.
     }
 
     /**

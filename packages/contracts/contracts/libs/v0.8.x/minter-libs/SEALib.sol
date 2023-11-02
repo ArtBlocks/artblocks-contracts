@@ -267,7 +267,8 @@ library SEALib {
             projectId: projectId,
             coreContract: coreContract
         });
-        // base price of zero breaks auction system as no bid could be placed
+        // base price of zero breaks auction system as percent min increase
+        // makes no sense
         require(basePrice != 0, "Only non-zero");
         // midBidIncrementPercentage of zero would allow a bidder to "outbid"
         // previous users without posting more, so don't allow it
