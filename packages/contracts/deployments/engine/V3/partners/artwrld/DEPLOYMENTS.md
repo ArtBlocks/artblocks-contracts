@@ -88,3 +88,48 @@ Date: 2023-10-06T17:48:09.625Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-10-19T22:23:14.558Z
+
+## **Network:** goerli
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/artwrld/deployment-config2.staging.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://goerli.etherscan.io/address/0x2da79F5E1A80EC648FFCec20A6D7E93Df98F5d9e#code
+
+**AdminACLV1:** https://goerli.etherscan.io/address/0xbebc05873945DeDCD7835090150940A623b539c9#code
+
+**Engine Registry:** https://goerli.etherscan.io/address/0xEa698596b6009A622C3eD00dD5a8b5d1CAE4fC36#code
+
+**MinterFilterV1:** https://goerli.etherscan.io/address/0x39419f1dEc0833A7354A36a2AB23D6f3192120fF#code
+
+**Minters:**
+
+**MinterSetPriceV4:** https://goerli.etherscan.io/address/0x13a72E919284a13358BF4698ACC9695Fe7342a49#code
+
+**MinterDAExpSettlementV1:** https://goerli.etherscan.io/address/0xE8C4750271b25c3026b75aDfD8c0b179AC7F2623#code
+
+
+
+**Metadata**
+
+- **Starting Project Id:** 1
+- **Token Name:** Artwrld
+- **Token Ticker:** WRLD
+- **Auto Approve Artist Split Proposals:** false
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0xAd8049D419768B12EF5332438AadD1c405E57428
+- **BytecodeStorageReader Library:** 0xB8B806A10d16cc80dB788552B54B3ECb4A2A3C3D
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** artwrld-goerli
+
+---
+

@@ -56,7 +56,7 @@ module.exports = {
       url: GOERLI_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${TESTNET_PRIVATE_KEY}`],
       gasPrice: "auto",
-      gasMultiplier: 4.0,
+      gasMultiplier: 10.0,
       maxNominalGasPriceGwei: 200,
     },
     palm_mainnet: {
