@@ -16,6 +16,7 @@ import {Bytes32Strings} from "../../libs/v0.8.x/Bytes32Strings.sol";
 import {Ownable} from "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import {EnumerableMap} from "@openzeppelin-4.7/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
+import {Math} from "@openzeppelin-4.7/contracts/utils/math/Math.sol";
 
 /**
  * @title MinterFilterV2
@@ -118,8 +119,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
 
     /**
      * @notice Function to restrict access to only AdminACL allowed calls
-     * on a given core contract.
-     * @dev defers to the ACL contract used by the core contract
+     * on this minter filter's admin ACL contract.
      * @param selector function selector to be checked
      */
     function _onlyAdminACL(bytes4 selector) internal {
@@ -274,7 +274,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      */
     function approveMinterGlobally(address minter) external {
         _onlyAdminACL(this.approveMinterGlobally.selector);
-        // @dev add() return true if the value was removed from the set
+        // @dev add() return true if the value was added to the set
         require(
             _globallyApprovedMinters.add(minter),
             "Minter already approved"
@@ -326,7 +326,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
             coreContract: coreContract,
             selector: this.approveMinterForContract.selector
         });
-        // @dev add() returns true if the value was removed from the Set
+        // @dev add() returns true if the value was added to the Set
         require(
             _contractApprovedMinters[coreContract].add(minter),
             "Minter already approved"
@@ -539,6 +539,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         uint256 projectId,
         address coreContract
     ) external view returns (address) {
+        // @dev use tryGet to control revert message if no minter assigned
         (bool hasMinter, address currentMinter) = _minterForProject[
             coreContract
         ].tryGet(projectId);
@@ -637,16 +638,21 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         address coreContract,
         address minter
     ) external view returns (uint256[] memory projectIds) {
-        // initialize arrays with maximum potential length
-        // @dev use num projects using minter across all contracts since it the
-        // maximum length of this array
-        uint256 maxNumProjects = numProjectsUsingMinter[minter];
-        projectIds = new uint256[](maxNumProjects);
-        // iterate over all projects on contract, adding to array if using
-        // `minter`
         EnumerableMap.UintToAddressMap storage minterMap = _minterForProject[
             coreContract
         ];
+        // initialize arrays with maximum potential length
+        // @dev use lesser of num projects using minter across all contracts
+        // and number of projects on the contract with minters assigned, since
+        // both values represent an upper bound on the number of projects that
+        // could be using the minter on the contract
+        uint256 maxNumProjects = Math.min(
+            numProjectsUsingMinter[minter],
+            minterMap.length()
+        );
+        projectIds = new uint256[](maxNumProjects);
+        // iterate over all projects on contract, adding to array if using
+        // `minter`
         uint256 numProjects = minterMap.length();
         uint256 numProjectsOnContractUsingMinter;
         for (uint256 i; i < numProjects; ) {

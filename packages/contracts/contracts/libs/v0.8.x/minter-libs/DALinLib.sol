@@ -132,15 +132,10 @@ library DALinLib {
         uint256 projectId,
         address coreContract
     ) internal {
-        DAProjectConfig storage DAProjectConfig_ = getDAProjectConfig({
-            projectId: projectId,
-            coreContract: coreContract
-        });
-
-        DAProjectConfig_.timestampStart = 0;
-        DAProjectConfig_.timestampEnd = 0;
-        DAProjectConfig_.startPrice = 0;
-        DAProjectConfig_.basePrice = 0;
+        // @dev all fields must be deleted, and none of them are a complex type
+        // @dev getDAProjectConfig not used, as deletion of storage pointers is
+        // not supported
+        delete s().DAProjectConfigs_[coreContract][projectId];
 
         emit DALib.ResetAuctionDetails({
             projectId: projectId,

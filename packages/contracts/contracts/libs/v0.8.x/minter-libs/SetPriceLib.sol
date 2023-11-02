@@ -95,14 +95,10 @@ library SetPriceLib {
         uint256 projectId,
         address coreContract
     ) internal {
-        SetPriceProjectConfig
-            storage setPriceProjectConfig = getSetPriceProjectConfig({
-                projectId: projectId,
-                coreContract: coreContract
-            });
-        // update storage with solidity initial values
-        setPriceProjectConfig.pricePerToken = uint248(0);
-        setPriceProjectConfig.priceIsConfigured = false;
+        // @dev all fields must be deleted, and none of them are a complex type
+        // @dev getSetPriceProjectConfig not used, as deletion of storage
+        // pointers is not supported
+        delete s().setPriceProjectConfigs[coreContract][projectId];
 
         emit PricePerTokenReset({
             projectId: projectId,

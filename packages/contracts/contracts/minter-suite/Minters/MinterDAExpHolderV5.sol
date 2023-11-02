@@ -365,7 +365,7 @@ contract MinterDAExpHolderV5 is
                 coreContract: coreContract
             })
         ) {
-            syncProjectMaxInvocationsToCore({
+            MaxInvocationsLib.syncProjectMaxInvocationsToCore({
                 projectId: projectId,
                 coreContract: coreContract
             });
@@ -837,7 +837,7 @@ contract MinterDAExpHolderV5 is
 
         // NOTE: delegate-vault handling **ends here**.
 
-        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+        MaxInvocationsLib.validateMintEffectsInvocations({
             tokenId: tokenId,
             coreContract: coreContract
         });
