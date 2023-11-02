@@ -1,0 +1,30 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-02T19:02:06.568Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minter-filter/mainnet/shared-minter-filter-deploy-config.mainnet.ts
+[INFO] Admin ACL contract AdminACLV0 deployed at 0xfaFda82CDe1502c41e597e4656953533c16ca994
+[INFO] Core Registry contract CoreRegistryV1 deployed at 0x2eE7B9bB2E038bE7323A119701A191c030A61ec6
+[INFO] MinterFilterV2 deployed at 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+[INFO] Verifying AdminACLV0 contract deployment...
+The contract 0xfaFda82CDe1502c41e597e4656953533c16ca994 has already been verified
+[INFO] AdminACLV0 contract verified on Etherscan at 0xfaFda82CDe1502c41e597e4656953533c16ca994
+[INFO] Verifying CoreRegistryV1 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine-registry/CoreRegistryV1.sol:CoreRegistryV1 at 0x2eE7B9bB2E038bE7323A119701A191c030A61ec6
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract CoreRegistryV1 on Etherscan.
+https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+[INFO] CoreRegistryV1 contract verified on Etherscan at 0x2eE7B9bB2E038bE7323A119701A191c030A61ec6
+[INFO] Verifying MinterFilterV2 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/MinterFilter/MinterFilterV2.sol:MinterFilterV2 at 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterFilterV2 on Etherscan.
+https://etherscan.io/address/0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b#code
+[INFO] MinterFilterV2 contract verified on Etherscan at 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minter-filter/mainnet/DEPLOYMENTS.md
+[INFO] Done!
+[INFO] Ensure any superAdmin migration actions are performed before proceeding to use the deployed contracts.

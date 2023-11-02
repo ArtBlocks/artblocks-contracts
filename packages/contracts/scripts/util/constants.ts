@@ -50,7 +50,7 @@ const ACTIVE_SHARED_MINTER_FILTERS = {
     staging: "0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824",
   },
   mainnet: {
-    mainnet: "0xTBD",
+    mainnet: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
   },
   "arbitrum-goerli": {
     dev: "0xTBD",
