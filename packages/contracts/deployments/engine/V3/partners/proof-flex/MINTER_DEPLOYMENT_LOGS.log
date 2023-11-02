@@ -1,0 +1,164 @@
+----------------------------------------
+[INFO] Datetime of minter deployment: 2023-10-19T21:32:11.613Z
+[INFO] Minter deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/proof-flex/minter-deploy-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying MinterSetPriceV4 with deploy args [0x5f53E89f060F6B45333b0CA809E126795Bd978E9,0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53]...
+[INFO] MinterSetPriceV4 deployed at 0xFb593D78F7e60F4FA49De916C4e0988cc2A8B11c
+Error: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (reason="execution reverted: Only Core AdminACL allowed", method="estimateGas", transaction={"from":"0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63","to":"0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53","data":"0xbee4d106000000000000000000000000fb593d78f7e60f4fa49de916c4e0988cc2a8b11c","accessList":null}, error={"name":"ProviderError","_stack":"ProviderError: execution reverted: Only Core AdminACL allowed\n    at HttpProvider.request (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:96:5)\n    at EthersProviderWrapper.send (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":3,"_isProviderError":true,"data":"0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a4f6e6c7920436f72652041646d696e41434c20616c6c6f776564000000000000"}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.7.2)
+    at Logger.makeError (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/logger/src.ts/index.ts:269:28)
+    at Logger.throwError (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at checkError (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:78:20)
+    at EthersProviderWrapper.<anonymous> (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
+    at step (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
+    at Object.throw (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:29:53)
+    at rejected (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:21:65)
+    at processTicksAndRejections (node:internal/process/task_queues:96:5) {
+  reason: 'execution reverted: Only Core AdminACL allowed',
+  code: 'UNPREDICTABLE_GAS_LIMIT',
+  method: 'estimateGas',
+  transaction: {
+    from: '0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63',
+    to: '0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53',
+    data: '0xbee4d106000000000000000000000000fb593d78f7e60f4fa49de916c4e0988cc2a8b11c',
+    accessList: null
+  },
+  error: ProviderError: execution reverted: Only Core AdminACL allowed
+      at HttpProvider.request (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
+      at processTicksAndRejections (node:internal/process/task_queues:96:5)
+      at EthersProviderWrapper.send (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)
+}
+[ERROR] unable to allowlist the new minter on the minter filter at 0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53
+[INFO] this may be because the minter filter has already been transferred to a partner's wallet
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceV4.sol:MinterSetPriceV4 at 0xFb593D78F7e60F4FA49De916C4e0988cc2A8B11c
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceV4 on Etherscan.
+https://goerli.etherscan.io/address/0xFb593D78F7e60F4FA49De916C4e0988cc2A8B11c#code
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xFb593D78F7e60F4FA49De916C4e0988cc2A8B11c
+[INFO] Minter deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/proof-flex/DEPLOYMENTS.md
+[INFO] Completed minter deployment! MinterSetPriceV4 deployed to 0xFb593D78F7e60F4FA49De916C4e0988cc2A8B11c, and allowlisted on the minter filter at 0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53
+[ACTION] If this minter is to be indexed in a subgraph, ensure it is added to the subgraph's config.
+[ACTION] The minter was not able to be allowlisted on the minter filter, ensure the minter filter is updated by appropriate admin.
+[INFO] Deploying to network: goerli
+[INFO] Deploying MinterMerkleV5 with deploy args [0x5f53E89f060F6B45333b0CA809E126795Bd978E9,0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53,0x00000000000076A84feF008CDAbe6409d2FE638B]...
+RO Comment: Transaction hung, had to abort and re-submit at same nonce.
+----------------------------------------
+[INFO] Datetime of minter deployment: 2023-10-19T21:54:38.013Z
+[INFO] Minter deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/proof-flex/minter-deploy-config2.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying MinterMerkleV5 with deploy args [0x5f53E89f060F6B45333b0CA809E126795Bd978E9,0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53,0x00000000000076A84feF008CDAbe6409d2FE638B]...
+[INFO] MinterMerkleV5 deployed at 0xB2202ad6149864C6A6dFA6d4B29ECFF2e5b04884
+Error: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (reason="execution reverted: Only Core AdminACL allowed", method="estimateGas", transaction={"from":"0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63","to":"0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53","data":"0xbee4d106000000000000000000000000b2202ad6149864c6a6dfa6d4b29ecff2e5b04884","accessList":null}, error={"name":"ProviderError","_stack":"ProviderError: execution reverted: Only Core AdminACL allowed\n    at HttpProvider.request (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:96:5)\n    at EthersProviderWrapper.send (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":3,"_isProviderError":true,"data":"0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a4f6e6c7920436f72652041646d696e41434c20616c6c6f776564000000000000"}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.7.2)
+    at Logger.makeError (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/logger/src.ts/index.ts:269:28)
+    at Logger.throwError (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at checkError (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:78:20)
+    at EthersProviderWrapper.<anonymous> (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
+    at step (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
+    at Object.throw (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:29:53)
+    at rejected (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:21:65)
+    at processTicksAndRejections (node:internal/process/task_queues:96:5) {
+  reason: 'execution reverted: Only Core AdminACL allowed',
+  code: 'UNPREDICTABLE_GAS_LIMIT',
+  method: 'estimateGas',
+  transaction: {
+    from: '0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63',
+    to: '0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53',
+    data: '0xbee4d106000000000000000000000000b2202ad6149864c6a6dfa6d4b29ecff2e5b04884',
+    accessList: null
+  },
+  error: ProviderError: execution reverted: Only Core AdminACL allowed
+      at HttpProvider.request (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
+      at processTicksAndRejections (node:internal/process/task_queues:96:5)
+      at EthersProviderWrapper.send (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)
+}
+[ERROR] unable to allowlist the new minter on the minter filter at 0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53
+[INFO] this may be because the minter filter has already been transferred to a partner's wallet
+[INFO] Verifying MinterMerkleV5 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterMerkleV5.sol:MinterMerkleV5 at 0xB2202ad6149864C6A6dFA6d4B29ECFF2e5b04884
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterMerkleV5 on Etherscan.
+https://goerli.etherscan.io/address/0xB2202ad6149864C6A6dFA6d4B29ECFF2e5b04884#code
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0xB2202ad6149864C6A6dFA6d4B29ECFF2e5b04884
+[INFO] Minter deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/proof-flex/DEPLOYMENTS.md
+[INFO] Completed minter deployment! MinterMerkleV5 deployed to 0xB2202ad6149864C6A6dFA6d4B29ECFF2e5b04884, and allowlisted on the minter filter at 0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53
+[ACTION] If this minter is to be indexed in a subgraph, ensure it is added to the subgraph's config.
+[ACTION] The minter was not able to be allowlisted on the minter filter, ensure the minter filter is updated by appropriate admin.
+----------------------------------------
+[INFO] Datetime of minter deployment: 2023-10-19T22:04:10.137Z
+[INFO] Minter deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/proof-flex/minter-deploy-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying MinterSetPriceV4 with deploy args [0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d,0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79]...
+[INFO] MinterSetPriceV4 deployed at 0x5F488A081EC066687382b992391446B8082B0EA9
+Error: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (reason="execution reverted: Only Core AdminACL allowed", method="estimateGas", transaction={"from":"0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63","to":"0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79","data":"0xbee4d1060000000000000000000000005f488a081ec066687382b992391446b8082b0ea9","accessList":null}, error={"name":"ProviderError","_stack":"ProviderError: execution reverted: Only Core AdminACL allowed\n    at HttpProvider.request (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:96:5)\n    at EthersProviderWrapper.send (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":3,"_isProviderError":true,"data":"0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a4f6e6c7920436f72652041646d696e41434c20616c6c6f776564000000000000"}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.7.2)
+    at Logger.makeError (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/logger/src.ts/index.ts:269:28)
+    at Logger.throwError (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at checkError (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:78:20)
+    at EthersProviderWrapper.<anonymous> (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
+    at step (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
+    at Object.throw (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:29:53)
+    at rejected (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:21:65)
+    at processTicksAndRejections (node:internal/process/task_queues:96:5) {
+  reason: 'execution reverted: Only Core AdminACL allowed',
+  code: 'UNPREDICTABLE_GAS_LIMIT',
+  method: 'estimateGas',
+  transaction: {
+    from: '0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63',
+    to: '0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79',
+    data: '0xbee4d1060000000000000000000000005f488a081ec066687382b992391446b8082b0ea9',
+    accessList: null
+  },
+  error: ProviderError: execution reverted: Only Core AdminACL allowed
+      at HttpProvider.request (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
+      at processTicksAndRejections (node:internal/process/task_queues:96:5)
+      at EthersProviderWrapper.send (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)
+}
+[ERROR] unable to allowlist the new minter on the minter filter at 0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79
+[INFO] this may be because the minter filter has already been transferred to a partner's wallet
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x5F488A081EC066687382b992391446B8082B0EA9 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x5F488A081EC066687382b992391446B8082B0EA9
+[INFO] Minter deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/proof-flex/DEPLOYMENTS.md
+[INFO] Completed minter deployment! MinterSetPriceV4 deployed to 0x5F488A081EC066687382b992391446B8082B0EA9, and allowlisted on the minter filter at 0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79
+[ACTION] If this minter is to be indexed in a subgraph, ensure it is added to the subgraph's config.
+[ACTION] The minter was not able to be allowlisted on the minter filter, ensure the minter filter is updated by appropriate admin.
+[INFO] Deploying to network: mainnet
+[INFO] Deploying MinterMerkleV5 with deploy args [0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d,0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79,0x00000000000076A84feF008CDAbe6409d2FE638B]...
+[INFO] MinterMerkleV5 deployed at 0xbDDd9a4131c05Fec76eAB9F89ef849cC1D018E8F
+Error: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (reason="execution reverted: Only Core AdminACL allowed", method="estimateGas", transaction={"from":"0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63","to":"0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79","data":"0xbee4d106000000000000000000000000bddd9a4131c05fec76eab9f89ef849cc1d018e8f","accessList":null}, error={"name":"ProviderError","_stack":"ProviderError: execution reverted: Only Core AdminACL allowed\n    at HttpProvider.request (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:96:5)\n    at EthersProviderWrapper.send (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":3,"_isProviderError":true,"data":"0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a4f6e6c7920436f72652041646d696e41434c20616c6c6f776564000000000000"}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.7.2)
+    at Logger.makeError (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/logger/src.ts/index.ts:269:28)
+    at Logger.throwError (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at checkError (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:78:20)
+    at EthersProviderWrapper.<anonymous> (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
+    at step (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
+    at Object.throw (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:29:53)
+    at rejected (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:21:65)
+    at processTicksAndRejections (node:internal/process/task_queues:96:5) {
+  reason: 'execution reverted: Only Core AdminACL allowed',
+  code: 'UNPREDICTABLE_GAS_LIMIT',
+  method: 'estimateGas',
+  transaction: {
+    from: '0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63',
+    to: '0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79',
+    data: '0xbee4d106000000000000000000000000bddd9a4131c05fec76eab9f89ef849cc1d018e8f',
+    accessList: null
+  },
+  error: ProviderError: execution reverted: Only Core AdminACL allowed
+      at HttpProvider.request (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
+      at processTicksAndRejections (node:internal/process/task_queues:96:5)
+      at EthersProviderWrapper.send (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)
+}
+[ERROR] unable to allowlist the new minter on the minter filter at 0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79
+[INFO] this may be because the minter filter has already been transferred to a partner's wallet
+[INFO] Verifying MinterMerkleV5 contract deployment...
+The contract 0xbDDd9a4131c05Fec76eAB9F89ef849cC1D018E8F has already been verified
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0xbDDd9a4131c05Fec76eAB9F89ef849cC1D018E8F
+[INFO] Minter deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/proof-flex/DEPLOYMENTS.md
+[INFO] Completed minter deployment! MinterMerkleV5 deployed to 0xbDDd9a4131c05Fec76eAB9F89ef849cC1D018E8F, and allowlisted on the minter filter at 0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79
+[ACTION] If this minter is to be indexed in a subgraph, ensure it is added to the subgraph's config.
+[ACTION] The minter was not able to be allowlisted on the minter filter, ensure the minter filter is updated by appropriate admin.

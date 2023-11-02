@@ -277,14 +277,43 @@ async function main() {
       randomizerAddress,
       adminACLAddress,
       startingProjectId,
-      autoApproveArtistSplitProposals,
-      deployDetails.engineRegistryAddress
+      autoApproveArtistSplitProposals
     );
 
     await genArt721Core.deployed();
     console.log(
       `[INFO] Core ${deployDetails.genArt721CoreContractName} deployed at ${genArt721Core.address}`
     );
+    await delay(EXTRA_DELAY_BETWEEN_TX);
+
+    // register core contract on engine registry
+    let registeredContractOnEngineRegistry = false;
+    try {
+      // @dev assume EngineRegistryV0 since this is not deploying a shared minter suite
+      const engineRegistryFactory =
+        await ethers.getContractFactory("EngineRegistryV0");
+      const engineRegistry = engineRegistryFactory.attach(
+        deployDetails.engineRegistryAddress
+      );
+      const coreType = await genArt721Core.coreType();
+      const coreVersion = await genArt721Core.coreVersion();
+      await engineRegistry
+        .connect(deployer)
+        .registerContract(
+          genArt721Core.address,
+          ethers.utils.formatBytes32String(coreVersion),
+          ethers.utils.formatBytes32String(coreType)
+        );
+      console.log(
+        `[INFO] Registered core contract ${genArt721Core.address} on engine registry ${deployDetails.engineRegistryAddress}`
+      );
+      registeredContractOnEngineRegistry = true;
+    } catch (error) {
+      console.error(
+        `[ERROR] Failed to register core contract on engine registry, please register manually!`
+      );
+      console.error(error);
+    }
     await delay(EXTRA_DELAY_BETWEEN_TX);
 
     // Deploy Minter Filter contract.
@@ -574,7 +603,6 @@ async function main() {
           adminACLAddress, // admin acl
           startingProjectId, // starting project id
           autoApproveArtistSplitProposals, // auto approve artist split proposals
-          deployDetails.engineRegistryAddress, // engine registry],
         ],
       });
       console.log(
@@ -598,7 +626,6 @@ async function main() {
         "${adminACLAddress}", // admin acl
         ${startingProjectId}, // starting project id
         ${autoApproveArtistSplitProposals}, // auto approve artist split proposals
-        "${deployDetails.engineRegistryAddress}" // engine registry
       ];`
       );
       console.log(
@@ -755,6 +782,12 @@ ${deployedMinterNames
     if (platformProviderAddress === deployer.address) {
       console.log(
         `[ACTION] platform provider sales payment addresses remain as deployer addresses: ${deployer.address}. Update later as needed.`
+      );
+    }
+
+    if (!registeredContractOnEngineRegistry) {
+      console.log(
+        `[ACTION] Due to script failure, please manually register the core contract on the engine registry at ${deployDetails.engineRegistryAddress}:`
       );
     }
 

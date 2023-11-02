@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { T_Config } from "../../util/common";
 import { Common_Events } from "../common.events";
@@ -31,7 +32,10 @@ export const SetPrice_Common_Events = async (
             config.pricePerTokenInWei
           )
       )
-        .to.emit(config.minter, "PricePerTokenInWeiUpdated")
+        .to.emit(
+          await ethers.getContractFactory("SetPriceLib"),
+          "PricePerTokenUpdated"
+        )
         .withArgs(
           config.projectZero,
           config.genArt721Core.address,

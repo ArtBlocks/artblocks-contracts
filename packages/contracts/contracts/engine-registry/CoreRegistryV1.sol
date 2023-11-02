@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
 
+// @dev fixed to specific solidity version for clarity and for more clear
+// source code verification purposes.
 pragma solidity 0.8.19;
 
-import "../interfaces/v0.8.x/ICoreRegistryV1.sol";
-import "@openzeppelin-4.7/contracts/access/Ownable.sol";
-import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
+import {ICoreRegistryV1} from "../interfaces/v0.8.x/ICoreRegistryV1.sol";
+
+import {Ownable} from "@openzeppelin-4.7/contracts/access/Ownable.sol";
+import {EnumerableSet} from "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
 
 /**
  * @title Art Blocks Core Contract Registry, V1.
@@ -57,20 +60,11 @@ contract CoreRegistryV1 is Ownable, ICoreRegistryV1 {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// private enumerable set of registered contracts
-    EnumerableSet.AddressSet private registeredContracts;
+    EnumerableSet.AddressSet private _registeredContracts;
 
     /// private mapping of registered contract addresses to
     EnumerableSet.AddressSet
-        private registeredMinterFilterV2CompatibleContracts;
-
-    /**
-     * @notice Reverts if `tx.origin` is not the owner.
-     * @dev Warning that this check is only against tx.origin, which may be
-     * misleading when used for security.
-     */
-    function _onlyOwnerOrigin() internal view {
-        require(tx.origin == owner(), "Only tx origin of owner");
-    }
+        private _registeredMinterFilterV2CompatibleContracts;
 
     constructor() Ownable() {}
 
@@ -82,24 +76,19 @@ contract CoreRegistryV1 is Ownable, ICoreRegistryV1 {
      * registered.
      */
     function registerContract(
-        address _contractAddress,
-        bytes32 _coreVersion,
-        bytes32 _coreType
+        address contractAddress,
+        bytes32 coreVersion,
+        bytes32 coreType
     ) external {
         // CHECKS
-        // Validate against `tx.origin` rather than `msg.sender` as it is
-        // intended that this registration be performed in an automated
-        // fashion at the time of contract deployment of `_contractAddress`.
-        // @dev Security implications of using `tx.origin` are acknowledged
-        _onlyOwnerOrigin();
-        // only allow registration of a contract registering itself, or allow
-        // the owner to register any contract.
-        require(
-            msg.sender == _contractAddress || msg.sender == owner(),
-            "Only owner or registrant"
-        );
+        // revert if not called by owner
+        Ownable._checkOwner();
         // EFFECTS
-        _registerContract(_contractAddress, _coreVersion, _coreType);
+        _registerContract({
+            contractAddress: contractAddress,
+            coreVersion: coreVersion,
+            coreType: coreType
+        });
     }
 
     /**
@@ -108,12 +97,12 @@ contract CoreRegistryV1 is Ownable, ICoreRegistryV1 {
      * Reverts if authorization fails, or if the contract is not already
      * registered.
      */
-    function unregisterContract(address _contractAddress) external {
+    function unregisterContract(address contractAddress) external {
         // CHECKS
         // revert if not called by owner
         Ownable._checkOwner();
         // EFFECTS
-        _unregisterContract(_contractAddress);
+        _unregisterContract(contractAddress);
     }
 
     /**
@@ -122,32 +111,32 @@ contract CoreRegistryV1 is Ownable, ICoreRegistryV1 {
      * Reverts if any contract is already registered.
      * @dev This should primarily be used for backfilling the registry with
      * existing contracts shortly after deployment.
-     * @param _contractAddresses Array of contract addresses to register.
-     * @param _coreVersions Array of core versions for each contract (aligned).
-     * @param _coreTypes Array of core types for each contract (aligned).
+     * @param contractAddresses Array of contract addresses to register.
+     * @param coreVersions Array of core versions for each contract (aligned).
+     * @param coreTypes Array of core types for each contract (aligned).
      */
     function registerContracts(
-        address[] calldata _contractAddresses,
-        bytes32[] calldata _coreVersions,
-        bytes32[] calldata _coreTypes
+        address[] calldata contractAddresses,
+        bytes32[] calldata coreVersions,
+        bytes32[] calldata coreTypes
     ) external {
         // CHECKS
         // revert if not called by owner
         Ownable._checkOwner();
         // validate same length arrays
-        uint256 numContracts = _contractAddresses.length;
+        uint256 numContracts = contractAddresses.length;
         require(
-            numContracts == _coreVersions.length &&
-                numContracts == _coreTypes.length,
+            numContracts == coreVersions.length &&
+                numContracts == coreTypes.length,
             "Mismatched array lengths"
         );
         // EFFECTS
         for (uint256 i = 0; i < numContracts; ) {
-            _registerContract(
-                _contractAddresses[i],
-                _coreVersions[i],
-                _coreTypes[i]
-            );
+            _registerContract({
+                contractAddress: contractAddresses[i],
+                coreVersion: coreVersions[i],
+                coreType: coreTypes[i]
+            });
             unchecked {
                 ++i;
             }
@@ -158,18 +147,18 @@ contract CoreRegistryV1 is Ownable, ICoreRegistryV1 {
      * @notice Unregister multiple contracts at once.
      * Only callable by the owner.
      * Reverts if any contract is not already registered.
-     * @param _contractAddresses Array of contract addresses to unregister.
+     * @param contractAddresses Array of contract addresses to unregister.
      */
     function unregisterContracts(
-        address[] calldata _contractAddresses
+        address[] calldata contractAddresses
     ) external {
         // CHECKS
         // revert if not called by owner
         Ownable._checkOwner();
         // EFFECTS
-        uint256 numContracts = _contractAddresses.length;
+        uint256 numContracts = contractAddresses.length;
         for (uint256 i = 0; i < numContracts; ) {
-            _unregisterContract(_contractAddresses[i]);
+            _unregisterContract(contractAddresses[i]);
             unchecked {
                 ++i;
             }
@@ -181,18 +170,18 @@ contract CoreRegistryV1 is Ownable, ICoreRegistryV1 {
      * @return The number of registered contracts.
      */
     function getNumRegisteredContracts() external view returns (uint256) {
-        return registeredContracts.length();
+        return _registeredContracts.length();
     }
 
     /**
      * @notice Get the address of a registered contract by index.
-     * @param _index The index of the contract to get.
+     * @param index The index of the contract to get.
      * @return The address of the contract at the given index.
      */
     function getRegisteredContractAt(
-        uint256 _index
+        uint256 index
     ) external view returns (address) {
-        return registeredContracts.at(_index);
+        return _registeredContracts.at(index);
     }
 
     /**
@@ -207,19 +196,19 @@ contract CoreRegistryV1 is Ownable, ICoreRegistryV1 {
         view
         returns (address[] memory)
     {
-        return registeredContracts.values();
+        return _registeredContracts.values();
     }
 
     /**
      * @notice Returns boolean representing if contract is registered on this
      * registry.
-     * @param _contractAddress The address of the contract to check.
+     * @param contractAddress The address of the contract to check.
      * @return isRegistered True if the contract is registered.
      */
     function isRegisteredContract(
-        address _contractAddress
+        address contractAddress
     ) external view returns (bool isRegistered) {
-        return registeredContracts.contains(_contractAddress);
+        return _registeredContracts.contains(contractAddress);
     }
 
     /**
@@ -227,28 +216,32 @@ contract CoreRegistryV1 is Ownable, ICoreRegistryV1 {
      * Reverts if the contract is already registered.
      */
     function _registerContract(
-        address _contractAddress,
-        bytes32 _coreVersion,
-        bytes32 _coreType
+        address contractAddress,
+        bytes32 coreVersion,
+        bytes32 coreType
     ) internal {
         // @dev add returns true only if not already registered
         require(
-            registeredContracts.add(_contractAddress),
+            _registeredContracts.add(contractAddress),
             "Contract already registered"
         );
-        emit ContractRegistered(_contractAddress, _coreVersion, _coreType);
+        emit ContractRegistered({
+            _contractAddress: contractAddress,
+            _coreVersion: coreVersion,
+            _coreType: coreType
+        });
     }
 
     /**
      * @notice Internal function to unregister a contract.
      * Reverts if the contract is not already registered.
      */
-    function _unregisterContract(address _contractAddress) internal {
+    function _unregisterContract(address contractAddress) internal {
         // @dev remove returns true only if already in set
         require(
-            registeredContracts.remove(_contractAddress),
+            _registeredContracts.remove(contractAddress),
             "Only registered contracts"
         );
-        emit ContractUnregistered(_contractAddress);
+        emit ContractUnregistered({_contractAddress: contractAddress});
     }
 }

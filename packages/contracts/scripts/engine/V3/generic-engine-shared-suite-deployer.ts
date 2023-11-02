@@ -251,14 +251,41 @@ async function main() {
       randomizerAddress,
       adminACLAddress,
       startingProjectId,
-      autoApproveArtistSplitProposals,
-      activeCoreRegistryAddress
+      autoApproveArtistSplitProposals
     );
 
     await genArt721Core.deployed();
     console.log(
       `[INFO] Core ${deployDetails.genArt721CoreContractName} deployed at ${genArt721Core.address}`
     );
+    await delay(EXTRA_DELAY_BETWEEN_TX);
+
+    // register core contract on core registry
+    let registeredContractOnCoreRegistry = false;
+    try {
+      const coreRegistryContract = await ethers.getContractAt(
+        "CoreRegistryV1",
+        activeCoreRegistryAddress
+      );
+      const coreType = await genArt721Core.coreType();
+      const coreVersion = await genArt721Core.coreVersion();
+      await coreRegistryContract
+        .connect(deployer)
+        .registerContract(
+          genArt721Core.address,
+          ethers.utils.formatBytes32String(coreVersion),
+          ethers.utils.formatBytes32String(coreType)
+        );
+      console.log(
+        `[INFO] Registered core contract ${genArt721Core.address} on core registry ${activeCoreRegistryAddress}`
+      );
+      registeredContractOnCoreRegistry = true;
+    } catch (error) {
+      console.error(
+        `[ERROR] Failed to register core contract on core registry, please register manually!`
+      );
+      console.error(error);
+    }
     await delay(EXTRA_DELAY_BETWEEN_TX);
 
     // using shared minter suite, so no minter suite deployments
@@ -443,7 +470,6 @@ async function main() {
           adminACLAddress, // admin acl
           startingProjectId, // starting project id
           autoApproveArtistSplitProposals, // auto approve artist split proposals
-          activeCoreRegistryAddress, // core registry,
         ],
       });
       console.log(
@@ -467,7 +493,6 @@ async function main() {
         "${adminACLAddress}", // admin acl
         ${startingProjectId}, // starting project id
         ${autoApproveArtistSplitProposals}, // auto approve artist split proposals
-        "${activeCoreRegistryAddress}" // core registry
       ];`
       );
       console.log(
@@ -606,6 +631,12 @@ Date: ${new Date().toISOString()}
     if (!imageBucketCreated) {
       console.log(
         `[ACTION] Manually create an image bucket for ${tokenName} due to failure when this script was ran.`
+      );
+    }
+
+    if (!registeredContractOnCoreRegistry) {
+      console.log(
+        `[ACTION] Due to script failure, please manually register the core contract on the core registry at ${activeCoreRegistryAddress}:`
       );
     }
     // extra delay to ensure all logs are written to files

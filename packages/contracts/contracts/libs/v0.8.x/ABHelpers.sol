@@ -14,42 +14,56 @@ library ABHelpers {
     uint256 constant ONE_MILLION = 1_000_000;
 
     /**
-     * Convert token id to project id.
-     * @param _tokenId The id of the token.
+     * @notice Function to convert token id to project id.
+     * @param tokenId The id of the token.
      */
     function tokenIdToProjectId(
-        uint256 _tokenId
+        uint256 tokenId
     ) internal pure returns (uint256) {
         // int division properly rounds down
         // @dev unchecked because will never divide by zero
         unchecked {
-            return _tokenId / ONE_MILLION;
+            return tokenId / ONE_MILLION;
         }
     }
 
     /**
-     * Convert token id to token number.
-     * @param _tokenId The id of the token.
+     * @notice Function to convert token id to token number.
+     * @param tokenId The id of the token.
      */
     function tokenIdToTokenNumber(
-        uint256 _tokenId
+        uint256 tokenId
     ) internal pure returns (uint256) {
         // mod returns remainder, which is the token number
         // @dev no way to disable mod zero check in solidity, so not unchecked
-        return _tokenId % ONE_MILLION;
+        return tokenId % ONE_MILLION;
     }
 
     /**
-     * Convert project id and token number to token id.
-     * @param _projectId The id of the project.
-     * @param _tokenNumber The token number.
+     * @notice Function to convert token id to token invocation.
+     * @dev token invocation is the token number plus one, because token #0 is
+     * invocation 1.
+     * @param tokenId The id of the token.
+     */
+    function tokenIdToTokenInvocation(
+        uint256 tokenId
+    ) internal pure returns (uint256) {
+        // mod returns remainder, which is the token number
+        // @dev no way to disable mod zero check in solidity, so not unchecked
+        return (tokenId % ONE_MILLION) + 1;
+    }
+
+    /**
+     * @notice Function to convert project id and token number to token id.
+     * @param projectId The id of the project.
+     * @param tokenNumber The token number.
      */
     function tokenIdFromProjectIdAndTokenNumber(
-        uint256 _projectId,
-        uint256 _tokenNumber
+        uint256 projectId,
+        uint256 tokenNumber
     ) internal pure returns (uint256) {
         // @dev intentionally not unchecked to ensure overflow detection, which
         // would likley only occur in a malicious call
-        return (_projectId * ONE_MILLION) + _tokenNumber;
+        return (projectId * ONE_MILLION) + tokenNumber;
     }
 }

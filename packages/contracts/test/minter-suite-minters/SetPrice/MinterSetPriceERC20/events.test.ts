@@ -132,13 +132,62 @@ runForEach.forEach((params) => {
               config.ERC20.address
             )
         )
-          .to.emit(config.minter, "ProjectCurrencyInfoUpdated")
+          .to.emit(
+            await ethers.getContractFactory("SplitFundsLib"),
+            "ProjectCurrencyInfoUpdated"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
             config.ERC20.address,
             "ERC20"
           );
+      });
+    });
+
+    describe("PricePerTokenReset", async function () {
+      it("emits event upon price reset", async function () {
+        const config = await loadFixture(_beforeEach);
+        // set price
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectOne,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        // initial currency configuring should not emit price reset
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .updateProjectCurrencyInfo(
+              config.projectZero,
+              config.genArt721Core.address,
+              "ERC20",
+              config.ERC20.address
+            )
+        )
+          .to.not.emit(
+            await ethers.getContractFactory("SetPriceLib"),
+            "PricePerTokenReset"
+          )
+          .withArgs(config.projectZero, config.genArt721Core.address);
+        // subsequent currency configuring should emit price reset
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .updateProjectCurrencyInfo(
+              config.projectZero,
+              config.genArt721Core.address,
+              "ERC20",
+              config.ERC20.address
+            )
+        )
+          .to.emit(
+            await ethers.getContractFactory("SetPriceLib"),
+            "PricePerTokenReset"
+          )
+          .withArgs(config.projectZero, config.genArt721Core.address);
       });
     });
   });

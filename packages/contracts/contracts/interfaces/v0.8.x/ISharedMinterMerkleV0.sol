@@ -8,37 +8,27 @@ pragma solidity ^0.8.0;
  * @author Art Blocks Inc.
  */
 interface ISharedMinterMerkleV0 {
-    /**
-     * @notice Notifies of the contract's default maximum mints allowed per
-     * user for a given project, on this minter. This value can be overridden
-     * by the artist of any project at any time.
-     */
-    event DefaultMaxInvocationsPerAddress(
-        uint256 defaultMaxInvocationsPerAddress
-    );
-    event DelegationRegistryUpdated(address delegationRegistry);
-
     // Triggers a purchase of a token from the desired project, to the
     // TX-sending address. Requires Merkle proof.
     function purchase(
-        uint256 _projectId,
-        address _coreContract,
-        bytes32[] calldata _proof
+        uint256 projectId,
+        address coreContract,
+        bytes32[] calldata proof
     ) external payable returns (uint256 tokenId);
 
     // Triggers a purchase of a token from the desired project, to the specified
     // receiving address. Requires Merkle proof.
     function purchaseTo(
-        address _to,
-        uint256 _projectId,
-        address _coreContract,
-        bytes32[] calldata _proof
+        address to,
+        uint256 projectId,
+        address coreContract,
+        bytes32[] calldata proof
     ) external payable returns (uint256 tokenId);
 
     // Updates the Merkle root for the desired project.
     function updateMerkleRoot(
-        uint256 _projectId,
-        address _coreContract,
-        bytes32 _root
+        uint256 projectId,
+        address coreContract,
+        bytes32 root
     ) external;
 }

@@ -1483,7 +1483,6 @@ for (const coreContractName of coreContractsToTest) {
             config.adminACL.address, // _adminACLContract
             0, // _startingProjectId
             true, // _autoApproveArtistSplitProposals
-            config.engineRegistry.address, // _engineRegistryContract
           ]
         );
         // assign core contract for randomizer to use

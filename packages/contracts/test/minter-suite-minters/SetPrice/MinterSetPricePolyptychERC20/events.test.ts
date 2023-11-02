@@ -223,7 +223,10 @@ runForEach.forEach((params) => {
               [config.projectOne]
             )
         )
-          .to.emit(config.minter, "AllowedHoldersOfProjects")
+          .to.emit(
+            await ethers.getContractFactory("TokenHolderLib"),
+            "AllowedHoldersOfProjects"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -244,7 +247,10 @@ runForEach.forEach((params) => {
               [config.projectOne, config.projectTwo]
             )
         )
-          .to.emit(config.minter, "AllowedHoldersOfProjects")
+          .to.emit(
+            await ethers.getContractFactory("TokenHolderLib"),
+            "AllowedHoldersOfProjects"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -267,7 +273,10 @@ runForEach.forEach((params) => {
               [config.projectOne]
             )
         )
-          .to.emit(config.minter, "RemovedHoldersOfProjects")
+          .to.emit(
+            await ethers.getContractFactory("TokenHolderLib"),
+            "RemovedHoldersOfProjects"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -288,7 +297,10 @@ runForEach.forEach((params) => {
               [config.projectOne, config.projectTwo]
             )
         )
-          .to.emit(config.minter, "RemovedHoldersOfProjects")
+          .to.emit(
+            await ethers.getContractFactory("TokenHolderLib"),
+            "RemovedHoldersOfProjects"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -313,7 +325,10 @@ runForEach.forEach((params) => {
               [config.projectOne]
             )
         )
-          .to.emit(config.minter, "AllowedHoldersOfProjects")
+          .to.emit(
+            await ethers.getContractFactory("TokenHolderLib"),
+            "AllowedHoldersOfProjects"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -333,7 +348,10 @@ runForEach.forEach((params) => {
               [config.projectOne]
             )
         )
-          .to.emit(config.minter, "RemovedHoldersOfProjects")
+          .to.emit(
+            await ethers.getContractFactory("TokenHolderLib"),
+            "RemovedHoldersOfProjects"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -356,7 +374,10 @@ runForEach.forEach((params) => {
               []
             )
         )
-          .to.emit(config.minter, "AllowedHoldersOfProjects")
+          .to.emit(
+            await ethers.getContractFactory("TokenHolderLib"),
+            "AllowedHoldersOfProjects"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -379,7 +400,10 @@ runForEach.forEach((params) => {
               [config.projectOne, config.projectTwo]
             )
         )
-          .to.emit(config.minter, "RemovedHoldersOfProjects")
+          .to.emit(
+            await ethers.getContractFactory("TokenHolderLib"),
+            "RemovedHoldersOfProjects"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -405,7 +429,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            config.minter,
+            await ethers.getContractFactory("GenericMinterEventsLib"),
             "ConfigValueSet(uint256,address,bytes32,uint256)"
           )
           .withArgs(
@@ -430,13 +454,38 @@ runForEach.forEach((params) => {
               config.ERC20.address
             )
         )
-          .to.emit(config.minter, "ProjectCurrencyInfoUpdated")
+          .to.emit(
+            await ethers.getContractFactory("SplitFundsLib"),
+            "ProjectCurrencyInfoUpdated"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
             config.ERC20.address,
             "ERC20"
           );
+      });
+    });
+
+    describe("PricePerTokenReset", async function () {
+      it("emits event upon price reset", async function () {
+        const config = await loadFixture(_beforeEach);
+        // initial currency configuring already done in beforeEach, so should emit event here
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .updateProjectCurrencyInfo(
+              config.projectZero,
+              config.genArt721Core.address,
+              "ERC20",
+              config.ERC20.address
+            )
+        )
+          .to.emit(
+            await ethers.getContractFactory("SetPriceLib"),
+            "PricePerTokenReset"
+          )
+          .withArgs(config.projectZero, config.genArt721Core.address);
       });
     });
   });
