@@ -47,7 +47,7 @@ export function getActiveSharedMinterFilter(
 const ACTIVE_SHARED_MINTER_FILTERS = {
   goerli: {
     dev: "0x15B337C090170D56e45124ebd2Ce278a5b6Ff101",
-    staging: "0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559",
+    staging: "0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824",
   },
   mainnet: {
     mainnet: "0xTBD",

@@ -36,7 +36,7 @@ Below is a table of the shared minter filter contracts that are deployed on main
 | Network                        | Shared Minter Filter Contract Address        |
 | ------------------------------ | -------------------------------------------- |
 | Mainnet (Ethereum)             | `TBD`                                        |
-| Artist Staging Goerli          | `0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559` |
+| Artist Staging Goerli          | `0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824` |
 | Arbitrum One                   | `TBD`                                        |
 | Artist Staging Arbitrum-Goerli | `TBD`                                        |
 

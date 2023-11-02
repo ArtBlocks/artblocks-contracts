@@ -24,3 +24,27 @@ yarn hardhat verify --network goerli 0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559 
 [INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minter-filter/goerli-staging/DEPLOYMENTS.md
 [INFO] Done!
 [INFO] Ensure any superAdmin migration actions are performed before proceeding to use the deployed contracts.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-02T03:30:50.168Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minter-filter/goerli-staging/shared-minter-filter-deploy-config.staging.ts
+[INFO] Admin ACL contract AdminACLV0 deployed at 0xF59e31cf7De9dF611CfFeAAb96c7176E29B4Fd66
+[INFO] Core Registry contract CoreRegistryV1 deployed at 0x4B5f26A0Bd22bB28F9E3aD15fFA5fB23fC791786
+[INFO] MinterFilterV2 deployed at 0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824
+[INFO] Verifying AdminACLV0 contract deployment...
+The contract 0xF59e31cf7De9dF611CfFeAAb96c7176E29B4Fd66 has already been verified
+[INFO] AdminACLV0 contract verified on Etherscan at 0xF59e31cf7De9dF611CfFeAAb96c7176E29B4Fd66
+[INFO] Verifying CoreRegistryV1 contract deployment...
+The contract 0x4B5f26A0Bd22bB28F9E3aD15fFA5fB23fC791786 has already been verified
+[INFO] CoreRegistryV1 contract verified on Etherscan at 0x4B5f26A0Bd22bB28F9E3aD15fFA5fB23fC791786
+[INFO] Verifying MinterFilterV2 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/MinterFilter/MinterFilterV2.sol:MinterFilterV2 at 0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterFilterV2 on Etherscan.
+https://goerli.etherscan.io/address/0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824#code
+[INFO] MinterFilterV2 contract verified on Etherscan at 0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minter-filter/goerli-staging/DEPLOYMENTS.md
+[INFO] Done!
+[INFO] Ensure any superAdmin migration actions are performed before proceeding to use the deployed contracts.
