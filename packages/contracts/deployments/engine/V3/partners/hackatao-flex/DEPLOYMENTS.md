@@ -43,3 +43,24 @@ Date: 2023-07-28T16:36:24.845Z
 
 ---
 
+
+# Minter Deployment
+
+Date: 2023-10-19T22:14:30.396Z
+
+## **Network:** goerli
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/hackatao-flex/minter-deploy-config.staging.ts`
+
+**MinterSetPriceV4:** https://goerli.etherscan.io/address/0xADd8eC58960DA8c293e21095255D86fb48a6dD2d#code
+
+**Associated core contract:** 0xB7168235De560F3c1730e26F2A4d45179f059906
+
+**Associated minter filter:** 0x07580B8f821C6FEAF8f122b32A51682F485198C3
+
+**Deployment Args:** 0xB7168235De560F3c1730e26F2A4d45179f059906,0x07580B8f821C6FEAF8f122b32A51682F485198C3
+
+---
+

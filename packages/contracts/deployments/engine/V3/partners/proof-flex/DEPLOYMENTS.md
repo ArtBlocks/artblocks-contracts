@@ -119,3 +119,87 @@ Date: 2023-07-15T01:23:11.280Z
 
 ---
 
+
+# Minter Deployment
+
+Date: 2023-10-19T21:34:13.524Z
+
+## **Network:** goerli
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/proof-flex/minter-deploy-config.staging.ts`
+
+**MinterSetPriceV4:** https://goerli.etherscan.io/address/0xFb593D78F7e60F4FA49De916C4e0988cc2A8B11c#code
+
+**Associated core contract:** 0x5f53E89f060F6B45333b0CA809E126795Bd978E9
+
+**Associated minter filter:** 0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53
+
+**Deployment Args:** 0x5f53E89f060F6B45333b0CA809E126795Bd978E9,0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53
+
+---
+
+
+# Minter Deployment
+
+Date: 2023-10-19T21:56:32.810Z
+
+## **Network:** goerli
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/proof-flex/minter-deploy-config2.staging.ts`
+
+**MinterMerkleV5:** https://goerli.etherscan.io/address/0xB2202ad6149864C6A6dFA6d4B29ECFF2e5b04884#code
+
+**Associated core contract:** 0x5f53E89f060F6B45333b0CA809E126795Bd978E9
+
+**Associated minter filter:** 0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53
+
+**Deployment Args:** 0x5f53E89f060F6B45333b0CA809E126795Bd978E9,0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53,0x00000000000076A84feF008CDAbe6409d2FE638B
+
+---
+
+
+# Minter Deployment
+
+Date: 2023-10-19T22:04:38.573Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/proof-flex/minter-deploy-config.mainnet.ts`
+
+**MinterSetPriceV4:** https://etherscan.io/address/0x5F488A081EC066687382b992391446B8082B0EA9#code
+
+**Associated core contract:** 0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d
+
+**Associated minter filter:** 0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79
+
+**Deployment Args:** 0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d,0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79
+
+---
+
+
+# Minter Deployment
+
+Date: 2023-10-19T22:05:24.971Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/proof-flex/minter-deploy-config.mainnet.ts`
+
+**MinterMerkleV5:** https://etherscan.io/address/0xbDDd9a4131c05Fec76eAB9F89ef849cC1D018E8F#code
+
+**Associated core contract:** 0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d
+
+**Associated minter filter:** 0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79
+
+**Deployment Args:** 0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d,0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79,0x00000000000076A84feF008CDAbe6409d2FE638B
+
+---
+

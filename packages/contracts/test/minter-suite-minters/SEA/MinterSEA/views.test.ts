@@ -146,13 +146,13 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         const minterConfigurationDetails =
           await config.minter.minterConfigurationDetails();
-        expect(minterConfigurationDetails.minAuctionDurationSeconds_).to.equal(
+        expect(minterConfigurationDetails.minAuctionDurationSeconds).to.equal(
           60
         );
-        expect(minterConfigurationDetails.minterTimeBufferSeconds_).to.equal(
+        expect(minterConfigurationDetails.minterTimeBufferSeconds).to.equal(
           120
         );
-        expect(minterConfigurationDetails.minterRefundGasLimit_).to.equal(
+        expect(minterConfigurationDetails.minterRefundGasLimit).to.equal(
           30_000
         );
       });

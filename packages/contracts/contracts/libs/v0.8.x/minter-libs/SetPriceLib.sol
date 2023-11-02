@@ -13,13 +13,26 @@ pragma solidity ^0.8.0;
 
 library SetPriceLib {
     /**
-     * @notice Price per token in wei updated for project `_projectId` to
-     * `_pricePerTokenInWei`.
+     * @notice Price per token updated for project `projectId` to
+     * `pricePerToken`.
+     * @param projectId Project Id price was updated for
+     * @param coreContract Core contract address price was updated for
+     * @param pricePerToken price per token, no decimals (e.g. in wei for ETH)
      */
-    event PricePerTokenInWeiUpdated(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        uint256 indexed _pricePerTokenInWei
+    event PricePerTokenUpdated(
+        uint256 indexed projectId,
+        address indexed coreContract,
+        uint256 indexed pricePerToken
+    );
+
+    /**
+     * @notice Price per token reset (unconfigured) for project `projectId`.
+     * @param projectId Project Id price was reset for
+     * @param coreContract Core contract address price was reset for
+     */
+    event PricePerTokenReset(
+        uint256 indexed projectId,
+        address indexed coreContract
     );
 
     // position of Set Price Lib storage, using a diamond storage pattern
@@ -29,11 +42,13 @@ library SetPriceLib {
 
     // project-level variables
     /**
-     * Struct used to store a project's currently configured price in wei, and
+     * Struct used to store a project's currently configured price, and
      * whether or not the price has been configured.
      */
     struct SetPriceProjectConfig {
-        uint248 pricePerTokenInWei; // 0 if not configured
+        // @dev The price is stored with no accounting for decimals. e.g. in
+        // wei for ETH.
+        uint248 pricePerToken; // 0 if not configured
         bool priceIsConfigured;
     }
 
@@ -43,64 +58,90 @@ library SetPriceLib {
     }
 
     /**
-     * @notice Updates the minter's price per token in wei to be
-     * `_pricePerTokenInWei`, in Wei, for the referenced SetPriceProjectConfig
-     * struct in storage.
+     * @notice Updates the minter's price per token to be `pricePerToken`.
      * @dev Note that it is intentionally supported here that the configured
      * price may be explicitly set to `0`.
-     * @param _projectId Project Id to update price for
-     * @param _coreContract Core contract address to update price for
-     * @param _pricePerTokenInWei price per token in wei.
+     * @param projectId Project Id to update price for
+     * @param coreContract Core contract address to update price for
+     * @param pricePerToken price per token, no decimals (e.g. in wei for ETH)
      */
-    function updatePricePerTokenInWei(
-        uint256 _projectId,
-        address _coreContract,
-        uint256 _pricePerTokenInWei
+    function updatePricePerToken(
+        uint256 projectId,
+        address coreContract,
+        uint256 pricePerToken
     ) internal {
         SetPriceProjectConfig
-            storage setPriceProjectConfig = getSetPriceProjectConfig(
-                _projectId,
-                _coreContract
-            );
+            storage setPriceProjectConfig = getSetPriceProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
         // update storage with new values
-        setPriceProjectConfig.pricePerTokenInWei = uint248(_pricePerTokenInWei);
+        setPriceProjectConfig.pricePerToken = uint248(pricePerToken);
         setPriceProjectConfig.priceIsConfigured = true;
 
-        emit PricePerTokenInWeiUpdated(
-            _projectId,
-            _coreContract,
-            _pricePerTokenInWei
-        );
+        emit PricePerTokenUpdated({
+            projectId: projectId,
+            coreContract: coreContract,
+            pricePerToken: pricePerToken
+        });
     }
 
+    /**
+     * @notice Resets the minter's price per token to be unconfigured.
+     * @param projectId Project Id to reset price for
+     * @param coreContract Core contract address to reset the price for
+     */
+    function resetPricePerToken(
+        uint256 projectId,
+        address coreContract
+    ) internal {
+        // @dev all fields must be deleted, and none of them are a complex type
+        // @dev getSetPriceProjectConfig not used, as deletion of storage
+        // pointers is not supported
+        delete s().setPriceProjectConfigs[coreContract][projectId];
+
+        emit PricePerTokenReset({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+    }
+
+    /**
+     * @notice Checks that the minter's price per token is configured, and
+     * returns the price per token.
+     * Reverts if the price is not configured.
+     * @param projectId Project Id to check and get price for
+     * @param coreContract Core contract address to check and get price for
+     * @return pricePerToken price per token, no decimals (e.g. in wei for ETH)
+     */
     function preMintChecksAndGetPrice(
-        uint256 _projectId,
-        address _coreContract
-    ) internal view returns (uint256 pricePerTokenInWei) {
+        uint256 projectId,
+        address coreContract
+    ) internal view returns (uint256 pricePerToken) {
         SetPriceProjectConfig
-            storage setPriceProjectConfig = getSetPriceProjectConfig(
-                _projectId,
-                _coreContract
-            );
+            storage setPriceProjectConfig = getSetPriceProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
 
         // require artist to have configured price of token on this minter
         require(
             setPriceProjectConfig.priceIsConfigured,
             "Price not configured"
         );
-        return setPriceProjectConfig.pricePerTokenInWei;
+        return setPriceProjectConfig.pricePerToken;
     }
 
     /**
-     * Loads the SetPriceProjectConfig for a given project and core contract.
-     * @param _projectId Project Id to get config for
-     * @param _coreContract Core contract address to get config for
+     * @notice Loads the SetPriceProjectConfig for a given project and core contract.
+     * @param projectId Project Id to get config for
+     * @param coreContract Core contract address to get config for
      */
     function getSetPriceProjectConfig(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view returns (SetPriceProjectConfig storage) {
-        return s().setPriceProjectConfigs[_coreContract][_projectId];
+        return s().setPriceProjectConfigs[coreContract][projectId];
     }
 
     /**
@@ -114,7 +155,7 @@ library SetPriceLib {
         returns (SetPriceLibStorage storage storageStruct)
     {
         bytes32 position = SET_PRICE_LIB_STORAGE_POSITION;
-        assembly {
+        assembly ("memory-safe") {
             storageStruct.slot := position
         }
     }

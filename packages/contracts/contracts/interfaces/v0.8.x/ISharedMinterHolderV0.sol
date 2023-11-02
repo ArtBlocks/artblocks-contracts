@@ -11,31 +11,31 @@ interface ISharedMinterHolderV0 {
     // Triggers a purchase of a token from the desired project, to the
     // TX-sending address, using owned ERC-721 NFT to claim right to purchase.
     function purchase(
-        uint256 _projectId,
-        address _coreContract,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTTokenId
+        uint256 projectId,
+        address coreContract,
+        address ownedNFTAddress,
+        uint256 ownedNFTTokenId
     ) external payable returns (uint256 tokenId);
 
     // Triggers a purchase of a token from the desired project, to the specified
     // receiving address, using owned ERC-721 NFT to claim right to purchase.
     function purchaseTo(
-        address _to,
-        uint256 _projectId,
-        address _coreContract,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTTokenId
+        address to,
+        uint256 projectId,
+        address coreContract,
+        address ownedNFTAddress,
+        uint256 ownedNFTTokenId
     ) external payable returns (uint256 tokenId);
 
     // Triggers a purchase of a token from the desired project, on behalf of
     // the provided vault, to the specified receiving address, using owned
     // ERC-721 NFT to claim right to purchase.
     function purchaseTo(
-        address _to,
-        uint256 _projectId,
-        address _coreContract,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTTokenId,
-        address _vault
+        address to,
+        uint256 projectId,
+        address coreContract,
+        address ownedNFTAddress,
+        uint256 ownedNFTTokenId,
+        address vault
     ) external payable returns (uint256 tokenId);
 }

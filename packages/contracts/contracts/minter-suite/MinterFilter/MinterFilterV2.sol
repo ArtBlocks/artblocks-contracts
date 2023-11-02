@@ -1,18 +1,22 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
+// @dev fixed to specific solidity version for clarity and for more clear
+// source code verification purposes.
 pragma solidity 0.8.19;
 
-import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
-import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/v0.8.x/ICoreRegistryV1.sol";
+import {IMinterFilterV1} from "../../interfaces/v0.8.x/IMinterFilterV1.sol";
+import {ISharedMinterV0} from "../../interfaces/v0.8.x/ISharedMinterV0.sol";
+import {IGenArt721CoreContractV3_Base} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import {ICoreRegistryV1} from "../../interfaces/v0.8.x/ICoreRegistryV1.sol";
+import {IAdminACLV0} from "../../interfaces/v0.8.x/IAdminACLV0.sol";
 
-import "../../libs/v0.8.x/Bytes32Strings.sol";
+import {Bytes32Strings} from "../../libs/v0.8.x/Bytes32Strings.sol";
 
-import "@openzeppelin-4.7/contracts/access/Ownable.sol";
-import "@openzeppelin-4.7/contracts/utils/structs/EnumerableMap.sol";
-import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
+import {Ownable} from "@openzeppelin-4.7/contracts/access/Ownable.sol";
+import {EnumerableMap} from "@openzeppelin-4.7/contracts/utils/structs/EnumerableMap.sol";
+import {EnumerableSet} from "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
+import {Math} from "@openzeppelin-4.7/contracts/utils/math/Math.sol";
 
 /**
  * @title MinterFilterV2
@@ -36,7 +40,6 @@ import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
  * - updateCoreRegistry
  * - approveMinterGlobally
  * - revokeMinterGlobally
- * - removeMintersForProjectsOnContracts
  * ----------------------------------------------------------------------------
  * The following functions are restricted as allowed by each core contract's
  * Admin ACL contract:
@@ -53,26 +56,21 @@ import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
  * registries, and other contracts that may interact with this contract.
  */
 contract MinterFilterV2 is Ownable, IMinterFilterV1 {
-    // add Enumerable Map methods
+    // add Enumerable Map, Enumerable Set methods
     using EnumerableMap for EnumerableMap.UintToAddressMap;
     using EnumerableSet for EnumerableSet.AddressSet;
     // add Bytes32Strings methods
     using Bytes32Strings for bytes32;
 
-    /// version & type of this core contract
+    /// @notice Version of this minter filter contract
+    // @dev use function minterFilterVersion to get this as a string
     bytes32 constant MINTER_FILTER_VERSION = "v2.0.0";
 
-    function minterFilterVersion() external pure returns (string memory) {
-        return MINTER_FILTER_VERSION.toString();
-    }
-
+    /// @notice Type of this minter filter contract
+    // @dev use function minterFilterType to get this as a string
     bytes32 constant MINTER_FILTER_TYPE = "MinterFilterV2";
 
-    function minterFilterType() external pure returns (string memory) {
-        return MINTER_FILTER_TYPE.toString();
-    }
-
-    /// Admin ACL contract for this minter filter
+    /// @notice Admin ACL contract for this minter filter
     IAdminACLV0 public adminACLContract;
 
     /**
@@ -80,48 +78,53 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      */
     ICoreRegistryV1 public coreRegistry;
 
-    /// minter address => qty projects across all core contracts currently
+    /// @notice Minter address => qty projects across all core contracts currently
     /// using the minter
-    mapping(address => uint256) public numProjectsUsingMinter;
+    mapping(address minterAddress => uint256 numProjects)
+        public numProjectsUsingMinter;
 
     /**
-     * Enumerable Set of globally approved minters.
+     * @notice Enumerable Set of globally approved minters.
      * This is a Set of addresses that are approved to mint on any
      * project, for any core contract.
      * @dev note that contract admins can extend a separate Set of minters for
      * their core contract via the `approveMinterForContract` function.
      */
-    EnumerableSet.AddressSet private globallyApprovedMinters;
+    EnumerableSet.AddressSet private _globallyApprovedMinters;
 
     /**
-     * Mapping of core contract addresses to Enumerable Sets of approved
+     * @notice Mapping of core contract addresses to Enumerable Sets of approved
      * minters for that core contract.
      * @dev note that contract admins can extend this Set for their core
      * contract by via the `approveMinterForContract` function, and can remove
      * minters from this Set via the `revokeMinterForContract` function.
      */
-    mapping(address => EnumerableSet.AddressSet)
-        private contractApprovedMinters;
+    mapping(address coreContract => EnumerableSet.AddressSet approvedMintersForContract)
+        private _contractApprovedMinters;
 
     /**
-     * Mapping of core contract addresses to Enumerable Maps of project IDs to
+     * @notice Mapping of core contract addresses to Enumerable Maps of project IDs to
      * minter addresses.
      */
-    mapping(address => EnumerableMap.UintToAddressMap) private minterForProject;
+    mapping(address coreContract => EnumerableMap.UintToAddressMap projectIdToMinterAddress)
+        private _minterForProject;
 
-    function _onlyNonZeroAddress(address _address) internal pure {
-        require(_address != address(0), "Only non-zero address");
+    /**
+     * @notice Function to validate an address is non-zero.
+     * @param address_ Address to validate
+     */
+    function _onlyNonZeroAddress(address address_) internal pure {
+        require(address_ != address(0), "Only non-zero address");
     }
 
     /**
      * @notice Function to restrict access to only AdminACL allowed calls
-     * on a given core contract.
-     * @dev defers to the ACL contract used by the core contract
-     * @param _selector function selector to be checked
+     * on this minter filter's admin ACL contract.
+     * @param selector function selector to be checked
      */
-    function _onlyAdminACL(bytes4 _selector) internal {
+    function _onlyAdminACL(bytes4 selector) internal {
         require(
-            adminACLAllowed(msg.sender, address(this), _selector),
+            adminACLAllowed(msg.sender, address(this), selector),
             "Only Admin ACL allowed"
         );
     }
@@ -130,225 +133,253 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      * @notice Function to restrict access to only AdminACL allowed calls
      * on a given core contract.
      * @dev defers to the ACL contract used by the core contract
-     * @param _coreContract core contract address
-     * @param _selector function selector to be checked
+     * @param coreContract core contract address
+     * @param selector function selector to be checked
      */
-    function _onlyCoreAdminACL(
-        address _coreContract,
-        bytes4 _selector
-    ) internal {
+    function _onlyCoreAdminACL(address coreContract, bytes4 selector) internal {
         require(
-            IGenArt721CoreContractV3_Base(_coreContract).adminACLAllowed(
-                msg.sender,
-                address(this),
-                _selector
-            ),
+            IGenArt721CoreContractV3_Base(coreContract).adminACLAllowed({
+                _sender: msg.sender,
+                _contract: address(this),
+                _selector: selector
+            }),
             "Only Core AdminACL allowed"
         );
     }
 
-    // function to restrict access to only core AdminACL or the project artist
+    /**
+     * @notice Function to restrict access to only core AdminACL or the project artist.
+     * @dev Defers to the ACL contract used by the core contract
+     * @param coreContract core contract address
+     * @param selector function selector to be checked
+     */
     function _onlyCoreAdminACLOrArtist(
-        uint256 _projectId,
-        address _coreContract,
-        bytes4 _selector
+        uint256 projectId,
+        address coreContract,
+        bytes4 selector
     ) internal {
         IGenArt721CoreContractV3_Base genArtCoreContract_Base = IGenArt721CoreContractV3_Base(
-                _coreContract
+                coreContract
             );
         require(
             (msg.sender ==
-                genArtCoreContract_Base.projectIdToArtistAddress(_projectId)) ||
+                genArtCoreContract_Base.projectIdToArtistAddress(projectId)) ||
                 (
-                    genArtCoreContract_Base.adminACLAllowed(
-                        msg.sender,
-                        address(this),
-                        _selector
-                    )
+                    genArtCoreContract_Base.adminACLAllowed({
+                        _sender: msg.sender,
+                        _contract: address(this),
+                        _selector: selector
+                    })
                 ),
             "Only Artist or Core Admin ACL"
         );
     }
 
-    // function to restrict access to only core contracts registered with the
-    // currently configured core registry. This is used to prevent
-    // non-registered core contracts from being used with this minter filter.
-    function _onlyRegisteredCoreContract(address _coreContract) internal view {
+    /**
+     * @notice Function to restrict access to only core contracts registered with the
+     * currently configured core registry. This is used to prevent non-registered core
+     * contracts from being used with this minter filter.
+     * @param coreContract core contract address
+     */
+    function _onlyRegisteredCoreContract(address coreContract) internal view {
         // @dev use core registry to check if core contract is registered
         require(
-            coreRegistry.isRegisteredContract(_coreContract),
+            coreRegistry.isRegisteredContract(coreContract),
             "Only registered core contract"
         );
     }
 
-    // function to restrict access to only valid project IDs
+    /**
+     * @notice Function to restrict access to only valid project IDs.
+     * @param projectId Project ID to validate.
+     * @param coreContract core contract address
+     */
     function _onlyValidProjectId(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal view {
         IGenArt721CoreContractV3_Base genArtCoreContract = IGenArt721CoreContractV3_Base(
-                _coreContract
+                coreContract
             );
         require(
-            (_projectId >= genArtCoreContract.startingProjectId()) &&
-                (_projectId < genArtCoreContract.nextProjectId()),
+            (projectId >= genArtCoreContract.startingProjectId()) &&
+                (projectId < genArtCoreContract.nextProjectId()),
             "Only valid project ID"
         );
     }
 
-    // checks if minter is globally approved or approved for a core contract
+    /**
+     * @notice Function to check if minter is globally approved or approved for a core contract.
+     * @param coreContract core contract address
+     * @param minter Minter to validate.
+     */
     function _onlyApprovedMinter(
-        address _coreContract,
-        address _minter
+        address coreContract,
+        address minter
     ) internal view {
         require(
-            isApprovedMinterForContract(_coreContract, _minter),
+            isApprovedMinterForContract({
+                coreContract: coreContract,
+                minter: minter
+            }),
             "Only approved minters"
         );
     }
 
     /**
-     * @notice Initializes contract to be a Minter for `_genArt721Address`.
-     * @param _adminACLContract Address of admin access control contract, to be
+     * @notice Initializes contract to be a Minter for `genArt721Address`.
+     * @param adminACLContract_ Address of admin access control contract, to be
      * set as contract owner.
-     * @param _coreRegistry Address of core registry contract.
+     * @param coreRegistry_ Address of core registry contract.
      */
-    constructor(address _adminACLContract, address _coreRegistry) {
+    constructor(address adminACLContract_, address coreRegistry_) {
         // set AdminACL management contract as owner
-        _transferOwnership(_adminACLContract);
+        _transferOwnership(adminACLContract_);
         // set core registry contract
-        _updateCoreRegistry(_coreRegistry);
+        _updateCoreRegistry(coreRegistry_);
         emit Deployed();
     }
 
-    /// @dev override to prevent renouncing ownership
-    /// @dev not permission gated since this immediately reverts
-    function renounceOwnership() public pure override {
-        revert("Cannot renounce ownership");
+    /**
+     * @notice returns the version of this minter filter contract
+     */
+    function minterFilterVersion() external pure returns (string memory) {
+        return MINTER_FILTER_VERSION.toString();
+    }
+
+    /**
+     * @notice returns the type of this minter filter contract
+     */
+    function minterFilterType() external pure returns (string memory) {
+        return MINTER_FILTER_TYPE.toString();
     }
 
     /**
      * @notice Updates the core registry contract to be used by this contract.
      * Only callable as allowed by AdminACL of this contract.
-     * @param _coreRegistry Address of the new core registry contract.
+     * @param coreRegistry_ Address of the new core registry contract.
      */
-    function updateCoreRegistry(address _coreRegistry) external {
+    function updateCoreRegistry(address coreRegistry_) external {
         _onlyAdminACL(this.updateCoreRegistry.selector);
-        _updateCoreRegistry(_coreRegistry);
+        _updateCoreRegistry(coreRegistry_);
     }
 
     /**
-     * @notice Globally approves minter `_minter` to be available for
+     * @notice Globally approves minter `minter` to be available for
      * minting on any project, for any core contract.
      * Only callable as allowed by AdminACL of this contract.
      * @dev Reverts if minter is already globally approved, or does not
      * implement minterType().
-     * @param _minter Minter to be approved.
+     * @param minter Minter to be approved.
      */
-    function approveMinterGlobally(address _minter) external {
+    function approveMinterGlobally(address minter) external {
         _onlyAdminACL(this.approveMinterGlobally.selector);
-        // @dev add() returns true only if the value was not already in the Set
+        // @dev add() return true if the value was added to the set
         require(
-            globallyApprovedMinters.add(_minter),
+            _globallyApprovedMinters.add(minter),
             "Minter already approved"
         );
-        emit MinterApprovedGlobally(
-            _minter,
-            ISharedMinterV0(_minter).minterType()
-        );
-    }
-
-    /**
-     * @notice Removes previously globally approved minter `_minter`
-     * from the list of globally approved minters.
-     * Only callable as allowed by AdminACL of this contract.
-     * Reverts if minter is not globally approved, or if minter is still
-     * in use by any project.
-     * @dev intentionally do not check if minter is still in use by any
-     * project, meaning that any projects currently using the minter will
-     * continue to be able to use it. If existing projects should be forced
-     * to discontinue using a minter, the minter may be removed by the minter
-     * filter admin in bulk via the `TODO` function.
-     * @param _minter Minter to remove.
-     */
-    function revokeMinterGlobally(address _minter) external {
-        _onlyAdminACL(this.revokeMinterGlobally.selector);
-        // @dev remove() returns true only if the value was already in the Set
-        require(
-            globallyApprovedMinters.remove(_minter),
-            "Only previously approved minter"
-        );
-        emit MinterRevokedGlobally(_minter);
-    }
-
-    /**
-     * @notice Approves minter `_minter` to be available for minting on
-     * any project on core contarct `_coreContract`.
-     * Only callable as allowed by AdminACL of core contract `_coreContract`.
-     * Reverts if core contract is not registered, if minter is already
-     * approved for the contract, or if minter does not implement minterType().
-     * @param _coreContract Core contract to approve minter for.
-     * @param _minter Minter to be approved.
-     */
-    function approveMinterForContract(
-        address _coreContract,
-        address _minter
-    ) external {
-        _onlyRegisteredCoreContract(_coreContract);
-        _onlyCoreAdminACL(
-            _coreContract,
-            this.approveMinterForContract.selector
-        );
-        // @dev add() returns true only if the value was not already in the Set
-        require(
-            contractApprovedMinters[_coreContract].add(_minter),
-            "Minter already approved"
-        );
-        emit MinterApprovedForContract({
-            coreContract: _coreContract,
-            minter: _minter,
-            minterType: ISharedMinterV0(_minter).minterType()
+        emit MinterApprovedGlobally({
+            minter: minter,
+            minterType: ISharedMinterV0(minter).minterType()
         });
     }
 
     /**
-     * @notice Removes previously approved minter `_minter` from the
-     * list of approved minters on core contract `_coreContract`.
-     * Only callable as allowed by AdminACL of core contract `_coreContract`.
+     * @notice Removes previously globally approved minter `minter`
+     * from the list of globally approved minters.
+     * Only callable as allowed by AdminACL of this contract.
+     * Reverts if minter is not globally approved.
+     * @dev intentionally do not check if minter is still in use by any
+     * project, meaning that any projects currently using the minter will
+     * continue to be able to use it. If existing projects should be forced
+     * to discontinue using a minter, the minter may be removed by the minter
+     * filter admin in bulk via the `removeMintersForProjectsOnContract`
+     * function.
+     * @param minter Minter to remove.
+     */
+    function revokeMinterGlobally(address minter) external {
+        _onlyAdminACL(this.revokeMinterGlobally.selector);
+        // @dev remove() returns true only if the value was already in the Set
+        require(
+            _globallyApprovedMinters.remove(minter),
+            "Only previously approved minter"
+        );
+        emit MinterRevokedGlobally(minter);
+    }
+
+    /**
+     * @notice Approves minter `minter` to be available for minting on
+     * any project on core contarct `coreContract`.
+     * Only callable as allowed by AdminACL of core contract `coreContract`.
+     * Reverts if core contract is not registered, if minter is already
+     * approved for the contract, or if minter does not implement minterType().
+     * @param coreContract Core contract to approve minter for.
+     * @param minter Minter to be approved.
+     */
+    function approveMinterForContract(
+        address coreContract,
+        address minter
+    ) external {
+        _onlyRegisteredCoreContract(coreContract);
+        _onlyCoreAdminACL({
+            coreContract: coreContract,
+            selector: this.approveMinterForContract.selector
+        });
+        // @dev add() returns true if the value was added to the Set
+        require(
+            _contractApprovedMinters[coreContract].add(minter),
+            "Minter already approved"
+        );
+        emit MinterApprovedForContract({
+            coreContract: coreContract,
+            minter: minter,
+            minterType: ISharedMinterV0(minter).minterType()
+        });
+    }
+
+    /**
+     * @notice Removes previously approved minter `minter` from the
+     * list of approved minters on core contract `coreContract`.
+     * Only callable as allowed by AdminACL of core contract `coreContract`.
      * Reverts if core contract is not registered, or if minter is not approved
      * on contract.
      * @dev intentionally does not check if minter is still in use by any
      * project, meaning that any projects currently using the minter will
      * continue to be able to use it. If existing projects should be forced
      * to discontinue using a minter, the minter may be removed by the contract
-     * admin in bulk via the `TODO` function.
-     * @param _minter Minter to remove.
+     * admin in bulk via the `removeMintersForProjectsOnContract` function.
+     * @param coreContract Core contract to remove minter from.
+     * @param minter Minter to remove.
      */
     function revokeMinterForContract(
-        address _coreContract,
-        address _minter
+        address coreContract,
+        address minter
     ) external {
-        _onlyRegisteredCoreContract(_coreContract);
-        _onlyCoreAdminACL(_coreContract, this.revokeMinterForContract.selector);
+        _onlyRegisteredCoreContract(coreContract);
+        _onlyCoreAdminACL({
+            coreContract: coreContract,
+            selector: this.revokeMinterForContract.selector
+        });
         // @dev intentionally do not check if minter is still in use by any
         // project, since it is possible that a different contract's project is
         // using the minter
         // @dev remove() returns true only if the value was already in the Set
         require(
-            contractApprovedMinters[_coreContract].remove(_minter),
+            _contractApprovedMinters[coreContract].remove(minter),
             "Only previously approved minter"
         );
         emit MinterRevokedForContract({
-            coreContract: _coreContract,
-            minter: _minter
+            coreContract: coreContract,
+            minter: minter
         });
     }
 
     /**
-     * @notice Sets minter for project `_projectId` on contract `_coreContract`
-     * to minter `_minter`.
+     * @notice Sets minter for project `projectId` on contract `coreContract`
+     * to minter `minter`.
      * Only callable by the project's artist or as allowed by AdminACL of
-     * core contract `_coreContract`.
+     * core contract `coreContract`.
      * Reverts if:
      *  - core contract is not registered
      *  - minter is not approved globally on this minter filter or for the
@@ -357,91 +388,98 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      *  - function is called by an address other than the project's artist
      *    or a sender allowed by the core contract's admin ACL
      *  - minter does not implement minterType()
-     * @param _projectId Project ID to set minter for.
-     * @param _coreContract Core contract of project.
-     * @param _minter Minter to be the project's minter.
+     * @param projectId Project ID to set minter for.
+     * @param coreContract Core contract of project.
+     * @param minter Minter to be the project's minter.
      */
     function setMinterForProject(
-        uint256 _projectId,
-        address _coreContract,
-        address _minter
+        uint256 projectId,
+        address coreContract,
+        address minter
     ) external {
         /// CHECKS
-        _onlyRegisteredCoreContract(_coreContract);
-        _onlyCoreAdminACLOrArtist(
-            _projectId,
-            _coreContract,
-            this.setMinterForProject.selector
-        );
-        _onlyApprovedMinter(_coreContract, _minter);
-        _onlyValidProjectId(_projectId, _coreContract);
+        _onlyRegisteredCoreContract(coreContract);
+        _onlyCoreAdminACLOrArtist({
+            projectId: projectId,
+            coreContract: coreContract,
+            selector: this.setMinterForProject.selector
+        });
+        _onlyApprovedMinter({coreContract: coreContract, minter: minter});
+        _onlyValidProjectId({projectId: projectId, coreContract: coreContract});
         /// EFFECTS
         // decrement number of projects using a previous minter
-        (bool hasPreviousMinter, address previousMinter) = minterForProject[
-            _coreContract
-        ].tryGet(_projectId);
+        (bool hasPreviousMinter, address previousMinter) = _minterForProject[
+            coreContract
+        ].tryGet(projectId);
         if (hasPreviousMinter) {
             numProjectsUsingMinter[previousMinter]--;
         }
         // assign new minter
-        numProjectsUsingMinter[_minter]++;
-        minterForProject[_coreContract].set(_projectId, _minter);
+        numProjectsUsingMinter[minter]++;
+        _minterForProject[coreContract].set(projectId, minter);
         emit ProjectMinterRegistered({
-            projectId: _projectId,
-            coreContract: _coreContract,
-            minter: _minter,
-            minterType: ISharedMinterV0(_minter).minterType()
+            projectId: projectId,
+            coreContract: coreContract,
+            minter: minter,
+            minterType: ISharedMinterV0(minter).minterType()
         });
     }
 
     /**
-     * @notice Updates project `_projectId` on contract `_coreContract` to have
+     * @notice Updates project `projectId` on contract `coreContract` to have
      * no configured minter.
      * Only callable by the project's artist or as allowed by AdminACL of
-     * core contract `_coreContract`.
+     * core contract `coreContract`.
      * Reverts if:
      *  - core contract is not registered
      *  - project does not already have a minter assigned
      *  - function is called by an address other than the project's artist
      *    or a sender allowed by the core contract's admin ACL
-     * @param _projectId Project ID to remove minter for.
-     * @param _coreContract Core contract of project.
+     * @param projectId Project ID to remove minter for.
+     * @param coreContract Core contract of project.
      * @dev requires project to have an assigned minter
      */
     function removeMinterForProject(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external {
-        _onlyRegisteredCoreContract(_coreContract);
-        _onlyCoreAdminACLOrArtist(
-            _projectId,
-            _coreContract,
-            this.removeMinterForProject.selector
-        );
+        _onlyRegisteredCoreContract(coreContract);
+        _onlyCoreAdminACLOrArtist({
+            projectId: projectId,
+            coreContract: coreContract,
+            selector: this.removeMinterForProject.selector
+        });
         // @dev this will revert if project does not have a minter
-        _removeMinterForProject(_projectId, _coreContract);
+        _removeMinterForProject({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
      * @notice Updates an array of project IDs to have no configured minter.
-     * Only callable as allowed by AdminACL of core contract `_coreContract`.
+     * Only callable as allowed by AdminACL of core contract `coreContract`.
      * Reverts if the core contract is not registered, or if any project does
      * not already have a minter assigned.
-     * @param _projectIds Array of project IDs to remove minters for.
+     * @param projectIds Array of project IDs to remove minters for.
+     * @param coreContract Core contract of projects.
      * @dev caution with respect to single tx gas limits
      */
     function removeMintersForProjectsOnContract(
-        uint256[] calldata _projectIds,
-        address _coreContract
+        uint256[] calldata projectIds,
+        address coreContract
     ) external {
-        _onlyRegisteredCoreContract(_coreContract);
-        _onlyCoreAdminACL(
-            _coreContract,
-            this.removeMintersForProjectsOnContract.selector
-        );
-        uint256 numProjects = _projectIds.length;
+        _onlyRegisteredCoreContract(coreContract);
+        _onlyCoreAdminACL({
+            coreContract: coreContract,
+            selector: this.removeMintersForProjectsOnContract.selector
+        });
+        uint256 numProjects = projectIds.length;
         for (uint256 i; i < numProjects; ) {
-            _removeMinterForProject(_projectIds[i], _coreContract);
+            _removeMinterForProject({
+                projectId: projectIds[i],
+                coreContract: coreContract
+            });
             unchecked {
                 ++i;
             }
@@ -449,12 +487,12 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     }
 
     /**
-     * @notice Mint a token from project `_projectId` on contract
-     * `_coreContract` to `_to`, originally purchased by `sender`.
-     * @param _to The new token's owner.
-     * @param _projectId Project ID to mint a new token on.
-     * @param _sender Address purchasing a new token.
-     * @param _coreContract Core contract of project.
+     * @notice Mint a token from project `projectId` on contract
+     * `coreContract` to `to`, originally purchased by `sender`.
+     * @param to The new token's owner.
+     * @param projectId Project ID to mint a new token on.
+     * @param sender Address purchasing a new token.
+     * @param coreContract Core contract of project.
      * @return tokenId Token ID of minted token
      * @dev reverts w/nonexistent key error when project has no assigned minter
      * @dev does not check if core contract is registered, for gas efficiency
@@ -465,32 +503,32 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      * @dev function name is optimized for gas.
      */
     function mint_joo(
-        address _to,
-        uint256 _projectId,
-        address _coreContract,
-        address _sender
+        address to,
+        uint256 projectId,
+        address coreContract,
+        address sender
     ) external returns (uint256 tokenId) {
         // CHECKS
         // minter is the project's minter
         require(
-            msg.sender == minterForProject[_coreContract].get(_projectId),
+            msg.sender == _minterForProject[coreContract].get(projectId),
             "Only assigned minter"
         );
         // INTERACTIONS
-        tokenId = IGenArt721CoreContractV3_Base(_coreContract).mint_Ecf(
-            _to,
-            _projectId,
-            _sender
-        );
+        tokenId = IGenArt721CoreContractV3_Base(coreContract).mint_Ecf({
+            _to: to,
+            _projectId: projectId,
+            _by: sender
+        });
         return tokenId;
     }
 
     /**
-     * @notice Gets the assigned minter for project `_projectId` on core
-     * contract `_coreContract`.
+     * @notice Gets the assigned minter for project `projectId` on core
+     * contract `coreContract`.
      * Reverts if project does not have an assigned minter.
-     * @param _projectId Project ID to query.
-     * @param _coreContract Core contract of project.
+     * @param projectId Project ID to query.
+     * @param coreContract Core contract of project.
      * @return address Minter address assigned to project
      * @dev requires project to have an assigned minter
      * @dev this function intentionally does not check that the core contract
@@ -498,21 +536,22 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      * project was assigned a minter
      */
     function getMinterForProject(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external view returns (address) {
-        (bool hasMinter, address currentMinter) = minterForProject[
-            _coreContract
-        ].tryGet(_projectId);
+        // @dev use tryGet to control revert message if no minter assigned
+        (bool hasMinter, address currentMinter) = _minterForProject[
+            coreContract
+        ].tryGet(projectId);
         require(hasMinter, "No minter assigned");
         return currentMinter;
     }
 
     /**
-     * @notice Queries if project `_projectId` on core contract `_coreContract`
+     * @notice Queries if project `projectId` on core contract `coreContract`
      * has an assigned minter.
-     * @param _projectId Project ID to query.
-     * @param _coreContract Core contract of project.
+     * @param projectId Project ID to query.
+     * @param coreContract Core contract of project.
      * @return bool true if project has an assigned minter, else false
      * @dev requires project to have an assigned minter
      * @dev this function intentionally does not check that the core contract
@@ -520,35 +559,35 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      * project was assigned a minter
      */
     function projectHasMinter(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external view returns (bool) {
-        (bool hasMinter, ) = minterForProject[_coreContract].tryGet(_projectId);
+        (bool hasMinter, ) = _minterForProject[coreContract].tryGet(projectId);
         return hasMinter;
     }
 
     /**
      * @notice Gets quantity of projects on a given core contract that have
      * assigned minters.
-     * @param _coreContract Core contract to query.
+     * @param coreContract Core contract to query.
      * @return uint256 quantity of projects that have assigned minters
      * @dev this function intentionally does not check that the core contract
      * is registered, since it must have been registered at the time the
      * project was assigned a minter
      */
     function getNumProjectsOnContractWithMinters(
-        address _coreContract
+        address coreContract
     ) external view returns (uint256) {
-        return minterForProject[_coreContract].length();
+        return _minterForProject[coreContract].length();
     }
 
     /**
-     * @notice Get project ID and minter address at index `_index` of
+     * @notice Get project ID and minter address at index `index` of
      * enumerable map.
-     * @param _coreContract Core contract to query.
-     * @param _index enumerable map index to query.
-     * @return projectId project ID at index `_index`
-     * @return minterAddress minter address for project at index `_index`
+     * @param coreContract Core contract to query.
+     * @param index enumerable map index to query.
+     * @return projectId project ID at index `index`
+     * @return minterAddress minter address for project at index `index`
      * @return minterType minter type of minter at minterAddress
      * @dev index must be < quantity of projects that have assigned minters,
      * otherwise reverts
@@ -558,8 +597,8 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      * project was assigned a minter
      */
     function getProjectAndMinterInfoOnContractAt(
-        address _coreContract,
-        uint256 _index
+        address coreContract,
+        uint256 index
     )
         external
         view
@@ -570,65 +609,65 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         )
     {
         // @dev at() reverts if index is out of bounds
-        (projectId, minterAddress) = minterForProject[_coreContract].at(_index);
+        (projectId, minterAddress) = _minterForProject[coreContract].at(index);
         minterType = ISharedMinterV0(minterAddress).minterType();
-        return (projectId, minterAddress, minterType);
     }
 
     /**
      * @notice View that returns if a core contract is registered with the
      * core registry, allowing this minter filter to service it.
-     * @param _coreContract core contract address to be checked
+     * @param coreContract core contract address to be checked
      * @return bool true if core contract is registered, else false
      */
     function isRegisteredCoreContract(
-        address _coreContract
+        address coreContract
     ) external view override returns (bool) {
-        return coreRegistry.isRegisteredContract(_coreContract);
+        return coreRegistry.isRegisteredContract(coreContract);
     }
 
     /**
-     * @notice Gets all projects on core contract `_coreContract` that are
-     * using minter `_minter`.
+     * @notice Gets all projects on core contract `coreContract` that are
+     * using minter `minter`.
      * Warning: Unbounded gas limit. This function is gas-intensive and should
      * only be used for off-chain queries. Alternatively, the subgraph indexing
      * layer may be used to query these values.
-     * @param _coreContract core contract to query
-     * @param _minter minter to query
+     * @param coreContract core contract to query
+     * @param minter minter to query
      */
     function getProjectsOnContractUsingMinter(
-        address _coreContract,
-        address _minter
+        address coreContract,
+        address minter
     ) external view returns (uint256[] memory projectIds) {
+        EnumerableMap.UintToAddressMap storage minterMap = _minterForProject[
+            coreContract
+        ];
         // initialize arrays with maximum potential length
-        // @dev use num projects using minter across all contracts since it the
-        // maximum length of this array
-        uint256 maxNumProjects = numProjectsUsingMinter[_minter];
+        // @dev use lesser of num projects using minter across all contracts
+        // and number of projects on the contract with minters assigned, since
+        // both values represent an upper bound on the number of projects that
+        // could be using the minter on the contract
+        uint256 maxNumProjects = Math.min(
+            numProjectsUsingMinter[minter],
+            minterMap.length()
+        );
         projectIds = new uint256[](maxNumProjects);
         // iterate over all projects on contract, adding to array if using
-        // `_minter`
-        EnumerableMap.UintToAddressMap storage minterMap = minterForProject[
-            _coreContract
-        ];
+        // `minter`
         uint256 numProjects = minterMap.length();
         uint256 numProjectsOnContractUsingMinter;
         for (uint256 i; i < numProjects; ) {
-            (uint256 projectId, address minter) = minterMap.at(i);
-            if (minter == _minter) {
-                projectIds[numProjectsOnContractUsingMinter++] = projectId;
-            }
+            (uint256 projectId, address minter_) = minterMap.at(i);
             unchecked {
+                if (minter_ == minter) {
+                    projectIds[numProjectsOnContractUsingMinter++] = projectId;
+                }
                 ++i;
             }
         }
         // trim array if necessary
         if (maxNumProjects > numProjectsOnContractUsingMinter) {
-            assembly {
-                let decrease := sub(
-                    maxNumProjects,
-                    numProjectsOnContractUsingMinter
-                )
-                mstore(projectIds, sub(mload(projectIds), decrease))
+            assembly ("memory-safe") {
+                mstore(projectIds, numProjectsOnContractUsingMinter)
             }
         }
         return projectIds;
@@ -651,11 +690,11 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         returns (MinterWithType[] memory mintersWithTypes)
     {
         // initialize arrays with appropriate length
-        uint256 numMinters = globallyApprovedMinters.length();
+        uint256 numMinters = _globallyApprovedMinters.length();
         mintersWithTypes = new MinterWithType[](numMinters);
         // iterate over all globally approved minters, adding to array
         for (uint256 i; i < numMinters; ) {
-            address minterAddress = globallyApprovedMinters.at(i);
+            address minterAddress = _globallyApprovedMinters.at(i);
             // @dev we know minterType() does not revert, because it was called
             // when globally approving the minter
             string memory minterType = ISharedMinterV0(minterAddress)
@@ -676,24 +715,24 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      * address and minter type.
      * This function has unbounded gas, and should only be used for off-chain
      * queries.
-     * @param _coreContract Core contract to query.
+     * @param coreContract Core contract to query.
      * @return mintersWithTypes Array of MinterWithType structs, which contain
      * the minter address and minter type.
      */
     function getAllContractApprovedMinters(
-        address _coreContract
+        address coreContract
     ) external view returns (MinterWithType[] memory mintersWithTypes) {
         // initialize arrays with appropriate length
         EnumerableSet.AddressSet
-            storage _contractApprovedMinters = contractApprovedMinters[
-                _coreContract
+            storage contractApprovedMinters = _contractApprovedMinters[
+                coreContract
             ];
-        uint256 numMinters = _contractApprovedMinters.length();
+        uint256 numMinters = contractApprovedMinters.length();
         mintersWithTypes = new MinterWithType[](numMinters);
         // iterate over all minters approved for a given contract, adding to
         // array
         for (uint256 i; i < numMinters; ) {
-            address minterAddress = _contractApprovedMinters.at(i);
+            address minterAddress = contractApprovedMinters.at(i);
             // @dev we know minterType() does not revert, because it was called
             // when approving the minter for a contract
             string memory minterType = ISharedMinterV0(minterAddress)
@@ -709,58 +748,61 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     }
 
     /**
-     * @notice Convenience function that returns whether `_sender` is allowed
-     * to call function with selector `_selector` on contract `_contract`, as
+     * @notice Convenience function that returns whether `sender` is allowed
+     * to call function with selector `selector` on contract `contract`, as
      * determined by this contract's current Admin ACL contract. Expected use
      * cases include minter contracts checking if caller is allowed to call
      * admin-gated functions on minter contracts.
-     * @param _sender Address of the sender calling function with selector
-     * `_selector` on contract `_contract`.
-     * @param _contract Address of the contract being called by `_sender`.
-     * @param _selector Function selector of the function being called by
-     * `_sender`.
-     * @return bool Whether `_sender` is allowed to call function with selector
-     * `_selector` on contract `_contract`.
+     * @param sender Address of the sender calling function with selector
+     * `selector` on contract `contract`.
+     * @param contract_ Address of the contract being called by `sender`.
+     * @param selector Function selector of the function being called by
+     * `sender`.
+     * @return bool Whether `sender` is allowed to call function with selector
+     * `selector` on contract `contract`.
      * @dev assumes the Admin ACL contract is the owner of this contract, which
      * is expected to always be true.
-     * @dev adminACLContract is expected to either be null address (if owner
-     * has renounced ownership), or conform to IAdminACLV0 interface. Check for
-     * null address first to avoid revert when admin has renounced ownership.
+     * @dev adminACLContract is expected to not be null address (owner cannot
+     * renounce ownership on this contract), and conform to IAdminACLV0
+     * interface.
      */
     function adminACLAllowed(
-        address _sender,
-        address _contract,
-        bytes4 _selector
+        address sender,
+        address contract_,
+        bytes4 selector
     ) public returns (bool) {
         return
-            owner() != address(0) &&
-            adminACLContract.allowed(_sender, _contract, _selector);
+            adminACLContract.allowed({
+                _sender: sender,
+                _contract: contract_,
+                _selector: selector
+            });
     }
 
     /**
-     * @notice Returns whether `_minter` is globally approved to mint tokens
+     * @notice Returns whether `minter` is globally approved to mint tokens
      * on any contract.
-     * @param _minter Address of minter to check.
+     * @param minter Address of minter to check.
      */
     function isGloballyApprovedMinter(
-        address _minter
+        address minter
     ) public view returns (bool) {
-        return globallyApprovedMinters.contains(_minter);
+        return _globallyApprovedMinters.contains(minter);
     }
 
     /**
-     * @notice Returns whether `_minter` is approved to mint tokens on
-     * core contract `_coreContract`.
-     * @param _coreContract Address of core contract to check.
-     * @param _minter Address of minter to check.
+     * @notice Returns whether `minter` is approved to mint tokens on
+     * core contract `coreContract`.
+     * @param coreContract Address of core contract to check.
+     * @param minter Address of minter to check.
      */
     function isApprovedMinterForContract(
-        address _coreContract,
-        address _minter
+        address coreContract,
+        address minter
     ) public view returns (bool) {
         return
-            isGloballyApprovedMinter(_minter) ||
-            contractApprovedMinters[_coreContract].contains(_minter);
+            isGloballyApprovedMinter(minter) ||
+            _contractApprovedMinters[coreContract].contains(minter);
     }
 
     /**
@@ -779,52 +821,59 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         return Ownable.owner();
     }
 
+    /// @dev override to prevent renouncing ownership
+    /// @dev not permission gated since this immediately reverts
+    function renounceOwnership() public pure override {
+        revert("Cannot renounce ownership");
+    }
+
     /**
-     * @notice Updates project `_projectId` to have no configured minter
+     * @notice Updates project `projectId` to have no configured minter
      * Reverts if project does not already have an assigned minter.
-     * @param _projectId Project ID to remove minter.
+     * @param projectId Project ID to remove minter.
+     * @param coreContract Core contract of project.
      * @dev requires project to have an assigned minter
      * @dev this function intentionally does not check that the core contract
      * is registered, since it must have been registered at the time the
      * project was assigned a minter
      */
     function _removeMinterForProject(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) internal {
         // remove minter for project and emit
         // @dev `minterForProject.get()` reverts tx if no minter set for project
         numProjectsUsingMinter[
-            minterForProject[_coreContract].get(
-                _projectId,
-                "No minter assigned"
-            )
+            _minterForProject[coreContract].get(projectId, "No minter assigned")
         ]--;
-        minterForProject[_coreContract].remove(_projectId);
-        emit ProjectMinterRemoved(_projectId, _coreContract);
+        _minterForProject[coreContract].remove(projectId);
+        emit ProjectMinterRemoved({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     /**
-     * @notice Transfers ownership of the contract to a new account (`_owner`).
+     * @notice Transfers ownership of the contract to a new account (`owner`).
      * Internal function without access restriction.
-     * @param _owner New owner.
+     * @param owner_ New owner.
      * @dev owner role was called `admin` prior to V3 core contract.
      * @dev Overrides and wraps OpenZeppelin's _transferOwnership function to
      * also update adminACLContract for improved introspection.
      */
-    function _transferOwnership(address _owner) internal override {
-        Ownable._transferOwnership(_owner);
-        adminACLContract = IAdminACLV0(_owner);
+    function _transferOwnership(address owner_) internal override {
+        Ownable._transferOwnership(owner_);
+        adminACLContract = IAdminACLV0(owner_);
     }
 
     /**
      * @notice Updates this contract's core registry contract to
-     * `_coreRegistry`.
-     * @param _coreRegistry New core registry contract address.
+     * `coreRegistry`.
+     * @param coreRegistry_ New core registry contract address.
      */
-    function _updateCoreRegistry(address _coreRegistry) internal {
-        _onlyNonZeroAddress(_coreRegistry);
-        coreRegistry = ICoreRegistryV1(_coreRegistry);
-        emit CoreRegistryUpdated(_coreRegistry);
+    function _updateCoreRegistry(address coreRegistry_) internal {
+        _onlyNonZeroAddress(coreRegistry_);
+        coreRegistry = ICoreRegistryV1(coreRegistry_);
+        emit CoreRegistryUpdated(coreRegistry_);
     }
 }

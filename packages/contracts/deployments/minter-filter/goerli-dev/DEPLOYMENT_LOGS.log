@@ -22,3 +22,33 @@ https://goerli.etherscan.io/address/0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208#c
 [INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minter-filter/goerli-dev/DEPLOYMENTS.md
 [INFO] Done!
 [INFO] Ensure any superAdmin migration actions are performed before proceeding to use the deployed contracts.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-25T23:19:18.333Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minter-filter/goerli-dev/shared-minter-filter-deploy-config.dev.ts
+[INFO] Admin ACL contract AdminACLV0 deployed at 0x0C61CC68A55411337B406B3f44F651c58feD33b5
+[INFO] Core Registry contract CoreRegistryV1 deployed at 0x4f2ED04015bE6a674B84d36A0E65ffbbff555a9f
+[INFO] MinterFilterV2 deployed at 0x15B337C090170D56e45124ebd2Ce278a5b6Ff101
+[INFO] Verifying AdminACLV0 contract deployment...
+The contract 0x0C61CC68A55411337B406B3f44F651c58feD33b5 has already been verified
+[INFO] AdminACLV0 contract verified on Etherscan at 0x0C61CC68A55411337B406B3f44F651c58feD33b5
+[INFO] Verifying CoreRegistryV1 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine-registry/CoreRegistryV1.sol:CoreRegistryV1 at 0x4f2ED04015bE6a674B84d36A0E65ffbbff555a9f
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract CoreRegistryV1 on Etherscan.
+https://goerli.etherscan.io/address/0x4f2ED04015bE6a674B84d36A0E65ffbbff555a9f#code
+[INFO] CoreRegistryV1 contract verified on Etherscan at 0x4f2ED04015bE6a674B84d36A0E65ffbbff555a9f
+[INFO] Verifying MinterFilterV2 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/MinterFilter/MinterFilterV2.sol:MinterFilterV2 at 0x15B337C090170D56e45124ebd2Ce278a5b6Ff101
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterFilterV2 on Etherscan.
+https://goerli.etherscan.io/address/0x15B337C090170D56e45124ebd2Ce278a5b6Ff101#code
+[INFO] MinterFilterV2 contract verified on Etherscan at 0x15B337C090170D56e45124ebd2Ce278a5b6Ff101
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minter-filter/goerli-dev/DEPLOYMENTS.md
+[INFO] Done!
+[INFO] Ensure any superAdmin migration actions are performed before proceeding to use the deployed contracts.

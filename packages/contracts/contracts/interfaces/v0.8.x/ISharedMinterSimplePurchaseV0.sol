@@ -14,15 +14,15 @@ interface ISharedMinterSimplePurchaseV0 {
     // Triggers a purchase of a token from the desired project, to the
     // TX-sending address.
     function purchase(
-        uint256 _projectId,
-        address _coreContract
+        uint256 projectId,
+        address coreContract
     ) external payable returns (uint256 tokenId);
 
     // Triggers a purchase of a token from the desired project, to the specified
     // receiving address.
     function purchaseTo(
-        address _to,
-        uint256 _projectId,
-        address _coreContract
+        address to,
+        uint256 projectId,
+        address coreContract
     ) external payable returns (uint256 tokenId);
 }
