@@ -46,12 +46,12 @@ async function main() {
         `[ERROR] config file's network ${deployDetails.network} does not match the network you are deploying to ${networkName}`
       );
     }
-    // ensure mainnet uses pre-deployed pseudorandomAtomicContract
+    // warn mainnet to use pre-deployed pseudorandomAtomicContract
     if (networkName != "goerli" && networkName != "arbitrum-goerli") {
       // deploying on a mainnet
       if (!deployDetails.pseudorandomAtomicContractAddress) {
-        throw new Error(
-          "[ERROR] pseudorandomAtomicContractAddress must be defined when deploying to mainnet, because it should already have been deployed"
+        console.warn(
+          "[WARN] consider using a hardened pseudorandom atomic contract"
         );
       }
     }

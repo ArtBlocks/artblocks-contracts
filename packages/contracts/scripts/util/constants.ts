@@ -91,7 +91,7 @@ const ACTIVE_SHARED_RANDOMIZERS = {
     staging: "0xC91CFC2062D8B4Ff53A7c8836CAEf925a7C78c81",
   },
   mainnet: {
-    mainnet: "0xTBD",
+    mainnet: "0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91",
   },
   "arbitrum-goerli": {
     dev: "0xTBD",
