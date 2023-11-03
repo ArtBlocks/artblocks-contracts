@@ -80,6 +80,6 @@ Date: 2023-11-02
 
 - **Add initial project?:** false
 - **Add initial token?:** false
-- **Image Bucket:** tbd
+- **Image Bucket:** squiggle-dao-studios-mainnet
 
 ---
