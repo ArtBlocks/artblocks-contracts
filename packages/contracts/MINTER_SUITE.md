@@ -35,7 +35,7 @@ Below is a table of the shared minter filter contracts that are deployed on main
 
 | Network                        | Shared Minter Filter Contract Address        |
 | ------------------------------ | -------------------------------------------- |
-| Mainnet (Ethereum)             | `TBD`                                        |
+| Mainnet (Ethereum)             | `0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b` |
 | Artist Staging Goerli          | `0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824` |
 | Arbitrum One                   | `TBD`                                        |
 | Artist Staging Arbitrum-Goerli | `TBD`                                        |
@@ -53,7 +53,7 @@ These are the smart contracts that receive funds, and split them between the art
 - V2: [0x7B7917e083CeA6d9f6a3060a7330c1072fcb4e40](https://etherscan.io/address/0x7B7917e083CeA6d9f6a3060a7330c1072fcb4e40#code)
 - V3: N/A, never used in prod.
 - V4: [0x234B25288011081817B5cC199C3754269cCb76D2](https://etherscan.io/address/0x234B25288011081817B5cC199C3754269cCb76D2#code)
-- V5 (shared with Engine): TBD, shared minter suite not yet deployed on mainnet
+- V5 (shared with Engine): [0x0635E2f2926b306356b5B3F5CB6489107796b085](https://etherscan.io/address/0x0635E2f2926b306356b5B3F5CB6489107796b085#code)
 
 #### MinterSetPriceERC20 (Set Price with ERC20)
 
@@ -62,7 +62,7 @@ These are the smart contracts that receive funds, and split them between the art
 - V2: [0xe4c6EeF13649e9C4Ad8ae8A9C7fA9A7F26B4287a](https://etherscan.io/address/0xe4c6EeF13649e9C4Ad8ae8A9C7fA9A7F26B4287a#code)
 - V3: N/A, never used in prod.
 - V4: [0x9fEcd2FbC6D890fB93632DcE9b1a01c4090A7E2d](https://etherscan.io/address/0x9fEcd2FbC6D890fB93632DcE9b1a01c4090A7E2d#code)
-- V5 (shared with Engine): TBD, shared minter suite not yet deployed on mainnet
+- V5 (shared with Engine): [0x11515aE3f510D8BFEDD2B60B4A878F8a77a7b7ec](https://etherscan.io/address/0x11515aE3f510D8BFEDD2B60B4A878F8a77a7b7ec#code)
 
 #### MinterDALin (Linear Dutch Auction)
 
@@ -71,7 +71,7 @@ These are the smart contracts that receive funds, and split them between the art
 - V2: [0xdaa6D1e224f4B9f7c4f1368C362C4333A8e385A6](https://etherscan.io/address/0xdaa6D1e224f4B9f7c4f1368C362C4333A8e385A6#code)
 - V3: N/A, never used in prod.
 - V4: [0x419501DD208BFf237e3E32C40D074065e12DfF4d](https://etherscan.io/address/0x419501DD208BFf237e3E32C40D074065e12DfF4d#code)
-- V5 (shared with Engine): TBD, shared minter suite not yet deployed on mainnet
+- V5 (shared with Engine): [0x7b03Ec8ee63740642ca76b5Fe169978f2077ca08](https://etherscan.io/address/0x7b03Ec8ee63740642ca76b5Fe169978f2077ca08#code)
 
 #### MinterDAExp (Exponential Decay Dutch Auction)
 
@@ -80,13 +80,13 @@ These are the smart contracts that receive funds, and split them between the art
 - V2: [0x706d6C6ef700a3c1C3a727f0c46492492E0A72b5](https://etherscan.io/address/0x706d6C6ef700a3c1C3a727f0c46492492E0A72b5#code)
 - V3: N/A, never used in prod.
 - V4: [0x47e2df2723238f913741Cc6b1963e76fdfD19B94](https://etherscan.io/address/0x47e2df2723238f913741Cc6b1963e76fdfD19B94#code)
-- V5 (shared with Engine): TBD, shared minter suite not yet deployed on mainnet
+- V5 (shared with Engine): [0x7E6F7Aa281133e394041b5fEA1f3Be7a00D7201F](https://etherscan.io/address/0x7E6F7Aa281133e394041b5fEA1f3Be7a00D7201F#code)
 
 #### MinterDAExpSettlement (Expotential Decay Last Price Dutch Auction)
 
 - V0: N/A, never used in prod.
 - V1: [0xfdE58c821D1c226b4a45c22904de20b114EDe7E7](https://etherscan.io/address/0xfdE58c821D1c226b4a45c22904de20b114EDe7E7#code)
-- V3 (shared with Engine): TBD, shared minter suite not yet deployed on mainnet
+- V3 (shared with Engine): [0x6caFC1B007F16f171B34eE45Fc61B378ad58F592](https://etherscan.io/address/0x6caFC1B007F16f171B34eE45Fc61B378ad58F592#code)
 
 #### MinterMerkle (Address Allowlist)
 
@@ -96,11 +96,11 @@ These are the smart contracts that receive funds, and split them between the art
 - V3: N/A, never used in prod.
 - V4: N/A, never used in prod.
 - V5: [0xB8Bd1D2836C466DB149f665F777928bEE267304d](https://etherscan.io/address/0xB8Bd1D2836C466DB149f665F777928bEE267304d#code)
-- V5 (shared with Engine): TBD, shared minter suite not yet deployed on mainnet
+- V5 (shared with Engine): [0xa19Bf77719A9B6E7daa3c33b3AAC119AF865e1c4](https://etherscan.io/address/0xa19Bf77719A9B6E7daa3c33b3AAC119AF865e1c4#code)
 
 #### Minter Holder (Token Holder)
 
-- V5 (shared with Engine): TBD, shared minter suite not yet deployed on mainnet
+- V5 (shared with Engine): [0x69f04FDDF0c4c32642B22E68b867282d5074A98a](https://etherscan.io/address/0x69f04FDDF0c4c32642B22E68b867282d5074A98a#code)
 
 ### Other Flagship Minter Contracts
 
@@ -110,7 +110,7 @@ MinterFilterV0 for flagship V1 core: [0x4aafCE293b9B0faD169c78049A81e400f518E199
 
 MinterFilterV1 for flagship V3 core: [0x092B8F64e713d66b38522978BCf4649db14b931E](https://etherscan.io/address/0x092B8F64e713d66b38522978BCf4649db14b931E).
 
-MinterFilterV2 for flagship V3 core: TBD, shared minter suite not yet deployed on mainnet
+MinterFilterV2 for flagship V3 core: [0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b](https://etherscan.io/address/0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b#code)
 
 ## Art Blocks Engine
 
