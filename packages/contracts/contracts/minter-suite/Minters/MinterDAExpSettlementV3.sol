@@ -785,9 +785,10 @@ contract MinterDAExpSettlementV3 is
         // INTERACTIONS
         // send excess settlement funds in a single chunk for all
         // projects
-        bool success_;
-        (success_, ) = to.call{value: excessSettlementFunds}("");
-        require(success_, "Reclaiming failed");
+        if (excessSettlementFunds > 0) {
+            (bool success_, ) = to.call{value: excessSettlementFunds}("");
+            require(success_, "Reclaiming failed");
+        }
     }
 
     /**
