@@ -47,10 +47,10 @@ export function getActiveSharedMinterFilter(
 const ACTIVE_SHARED_MINTER_FILTERS = {
   goerli: {
     dev: "0x15B337C090170D56e45124ebd2Ce278a5b6Ff101",
-    staging: "0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559",
+    staging: "0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824",
   },
   mainnet: {
-    mainnet: "0xTBD",
+    mainnet: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
   },
   "arbitrum-goerli": {
     dev: "0xTBD",
@@ -88,10 +88,10 @@ export function getActiveSharedRandomizer(
 const ACTIVE_SHARED_RANDOMIZERS = {
   goerli: {
     dev: "0x16D3b6164E7F05869287CC0fE57f3EA2572178A0",
-    staging: "0x88293a3eef2516855BE0F798630e141D14333423",
+    staging: "0xC91CFC2062D8B4Ff53A7c8836CAEf925a7C78c81",
   },
   mainnet: {
-    mainnet: "0xTBD",
+    mainnet: "0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91",
   },
   "arbitrum-goerli": {
     dev: "0xTBD",
