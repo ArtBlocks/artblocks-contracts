@@ -158,6 +158,7 @@ BytecodeStorageReader (currently on V1 version) is public library for reading fr
 Given that it is an externally linked library with a shared public deployment, the deployment addresses for these shared deployments are referenced in our shared deployments `constants.ts` util (in the `BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES` constant) so that they may be linked at time of deployment and are also linked here below for shared reference:
 
 - V1 `BytecodeStorageReader` (goerli): https://goerli.etherscan.io/address/0xB8B806A10d16cc80dB788552B54B3ECb4A2A3C3D#code
+- V1 `BytecodeStorageReader` (sepolia): https://sepolia.etherscan.io/address/0x7497909537cE00fDda93c12d5083D8647C593c67#code
 - V1 `BytecodeStorageReader` (mainnet): https://etherscan.io/address/0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5#code
 - V1 `BytecodeStorageReader` (arbitrum-goerli): https://goerli.arbiscan.io/address/0x681861cD4fC92d70aE57745385065ef862954662#code
 - V1 `BytecodeStorageReader` (arbitrum): https://arbiscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code

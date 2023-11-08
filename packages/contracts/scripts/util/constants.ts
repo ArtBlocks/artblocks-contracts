@@ -18,6 +18,7 @@ export const BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES = {
   arbitrum: "0xa07f47c30C262adcC263A4D44595972c50e04db7",
   goerli: "0xB8B806A10d16cc80dB788552B54B3ECb4A2A3C3D",
   mainnet: "0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5",
+  sepolia: "0x7497909537cE00fDda93c12d5083D8647C593c67",
 };
 
 /**
@@ -59,6 +60,10 @@ const ACTIVE_SHARED_MINTER_FILTERS = {
   arbitrum: {
     mainnet: "0xTBD",
   },
+  sepolia: {
+    dev: "0x29e9f09244497503f304FA549d50eFC751D818d2",
+    staging: "0xa07f47c30C262adcC263A4D44595972c50e04db7",
+  },
 };
 
 /**
@@ -99,6 +104,10 @@ const ACTIVE_SHARED_RANDOMIZERS = {
   },
   arbitrum: {
     mainnet: "0xTBD",
+  },
+  sepolia: {
+    dev: "0xA6F7e62F3B52552f79b2Baa2858a1DB18016c09B",
+    staging: "0x28f2D3805652FB5d359486dFfb7D08320D403240",
   },
 };
 

@@ -58,6 +58,9 @@ export type DeployConfigDetails = {
   renderProviderSplitPercentagePrimary?: number;
   renderProviderSplitBPSSecondary?: number;
   defaultVerticalName?: string;
+  // flagship core fields
+  artblocksPrimarySalesAddress?: string;
+  artblocksSecondarySalesAddress?: string;
 };
 
 export async function getConfigInputs(

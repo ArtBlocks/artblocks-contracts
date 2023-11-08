@@ -13,7 +13,11 @@ const formatTitleCaseToKebabCase = (str: string, networkName: string) => {
 
 const getPBABBucketName = (pbabToken: string, networkName: string) => {
   const base = formatTitleCaseToKebabCase(pbabToken, networkName);
-  return `${base}-${networkName}`;
+  // If the name already has the network in it don't add it again
+  return `${base}-${networkName}`.replace(
+    `${networkName}-${networkName}`,
+    `${networkName}`
+  );
 };
 
 const getBucketURL = (pbabBucketName: string) => {
