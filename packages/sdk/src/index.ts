@@ -1,11 +1,7 @@
-import {
-  ConfigurationForm,
-  SubmissionStatusEnum,
-  SubmissionStatus,
-} from "./minters";
 import { PublicClient } from "viem";
+import { FormBlueprint, SubmissionStatusEnum, SubmissionStatus } from "./types";
 import { generateProjectMinterConfigurationForms } from "./minter-configuration";
-import { GetProjectMinterConfigurationQuery } from "./generated/graphql";
+import { ProjectMinterConfigurationData } from "./minter-configuration/types";
 
 export type ArtBlocksSDKOptions = {
   publicClient: PublicClient;
@@ -36,12 +32,15 @@ export default class ArtBlocksSDK {
   async getProjectMinterConfiguration(projectId: string) {
     // Create a list of subscribers
     let subscribers: Array<
-      (config: { data: ProjectConfigData; forms: ConfigurationForm[] }) => void
+      (config: {
+        data: ProjectMinterConfigurationData;
+        forms: FormBlueprint[];
+      }) => void
     > = [];
 
     const notifySubscribers = (updatedConfig: {
-      data: ProjectConfigData;
-      forms: ConfigurationForm[];
+      data: ProjectMinterConfigurationData;
+      forms: FormBlueprint[];
     }) => {
       for (const subscriber of subscribers) {
         subscriber(updatedConfig);
@@ -72,8 +71,8 @@ export default class ArtBlocksSDK {
       // Provide a method to subscribe to changes in the configuration
       subscribe: (
         callback: (config: {
-          data: ProjectConfigData;
-          forms: ConfigurationForm[];
+          data: ProjectMinterConfigurationData;
+          forms: FormBlueprint[];
         }) => void
       ) => {
         subscribers.push(callback);
@@ -89,7 +88,9 @@ export default class ArtBlocksSDK {
   }
 }
 
-export type ProjectConfigData =
-  GetProjectMinterConfigurationQuery["projects_metadata_by_pk"];
-
-export { type ConfigurationForm, SubmissionStatusEnum, type SubmissionStatus };
+export {
+  type FormBlueprint as ConfigurationForm,
+  type SubmissionStatus,
+  type ProjectMinterConfigurationData as ProjectConfigData,
+  SubmissionStatusEnum,
+};

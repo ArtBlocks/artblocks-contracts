@@ -70,7 +70,6 @@
     "graphql-request": "^6.1.0",
     "lodash": "^4.17.21",
     "merkletreejs": "^0.3.10",
-    "typescript": "^5.1.6",
     "viem": "^1.0.9",
     "zod": "^3.21.4"
   },

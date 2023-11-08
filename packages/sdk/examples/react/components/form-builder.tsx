@@ -20,12 +20,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"; // Assuming you have a Select component
 // TODO: Export this from a good place
-import { ConfigurationForm } from "@artblocks/sdk/src/minters";
+import { FormBlueprint } from "@artblocks/sdk/src/minters";
 import { useWalletClient } from "wagmi";
 import { DevTool } from "@hookform/devtools";
 
 type FormBuilderProps = {
-  configurationForms: ConfigurationForm[];
+  configurationForms: FormBlueprint[];
 };
 
 export const FormBuilder: React.FC<FormBuilderProps> = ({
@@ -62,7 +62,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
   );
 };
 
-function ConfigurationForm({ configForm }: { configForm: ConfigurationForm }) {
+function ConfigurationForm({ configForm }: { configForm: FormBlueprint }) {
   const { data: walletClient } = useWalletClient();
 
   const form = useForm({

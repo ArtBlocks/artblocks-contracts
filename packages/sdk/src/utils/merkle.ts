@@ -1,8 +1,7 @@
-// Convert a string representation of a list of addresses (either comma or newline separated)
-
 import MerkleTree from "merkletreejs";
 import { Hex, encodePacked, keccak256 } from "viem";
 
+// Convert a string representation of a list of addresses (either comma or newline separated)
 // into an array of addresses
 export function textOrCsvAddressListToArray(fileContent: string) {
   // Split the content by either newline, comma, or both

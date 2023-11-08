@@ -1,18 +1,42 @@
+// Third-party dependencies
 import request from "graphql-request";
-import ArtBlocksSDK, { ProjectConfigData } from "../index";
+import { Abi, Hex, WalletClient } from "viem";
+import get from "lodash/get";
+
+// Type imports
 import {
-  ConfigurationForm,
+  FormBlueprint,
   SubmissionStatus,
   SubmissionStatusEnum,
-  processFormSchema,
-  generateMinterSelectionFormSchema,
-} from "../minters";
+} from "../types";
+
+// Utility functions related to form and schema processing
+import { processFormSchema } from "../utils/process-form-schema";
+import { formFieldSchemaToZod } from "../utils/zod";
+import { getAllowedPrivilegedRoles } from "../utils/get-allowed-privileged-roles";
+import {
+  mapFormValuesToArgs,
+  submitTransaction,
+} from "../utils/submit-transaction";
+
+// GraphQL types and operations
 import { getProjectMinterConfigurationQueryDocument } from "./graphql-operations";
 import {
   GetProjectMinterConfigurationQuery,
   Minter_Filter_Type_Names_Enum,
   ProjectMinterConfigurationDetailsFragment,
 } from "../generated/graphql";
+
+// Utils and helpers specific to minters
+import { generateMinterSelectionFormSchema } from "./utils/generate-minter-selection-form-schema";
+import { getInitialMinterConfigurationValuesForFormField } from "./utils/get-initial-minter-configuration-values-for-form-field";
+import { processProjectMinterConfigurationFormValuesForSubmission } from "./submission-processing";
+import {
+  pollForProjectUpdates,
+  pollForSyncedMinterConfigUpdates,
+} from "./utils/polling";
+
+// JSON schema and type checks
 import {
   ConfigurationSchema,
   FormFieldSchema,
@@ -20,51 +44,19 @@ import {
   TransactionDetails,
   isOnChainFormFieldSchema,
 } from "../json-schema";
-import { formFieldSchemaToZod } from "../utils";
-import { submitTransaction } from "../utils/web3";
-import { Abi, Hex, WalletClient } from "viem";
+
+// Types specific to project minter configuration
 import {
-  getAllowedPrivilegedRoles,
-  getInitialMinterConfigurationValuesForFormField,
-  mapFormValuesToArgs,
-  pollForProjectMinterConfigurationUpdates,
-  pollForProjectUpdates,
-  transformProjectMinterConfigurationFormValues,
-} from "./utils";
-import get from "lodash/get";
-
-type GenerateProjectMinterConfigurationFormsArgs = {
-  projectId: string;
-  onConfigurationChange: (args: {
-    data: ProjectConfigData;
-    forms: ConfigurationForm[];
-  }) => void;
-  sdk: ArtBlocksSDK;
-};
-
-export type GenerateProjectMinterConfigurationFormsContext =
-  GenerateProjectMinterConfigurationFormsArgs & {
-    allowedPrivilegedRolesForProject: string[];
-    coreContractAddress: string;
-    projectIndex: number;
-    project: ProjectWithMinterFilter;
-  };
-
-type ProjectWithMinterFilter = NonNullable<
-  GetProjectMinterConfigurationQuery["projects_metadata_by_pk"]
-> & {
-  contract: {
-    minter_filter: {
-      address: string;
-    };
-  };
-};
+  GenerateProjectMinterConfigurationFormsArgs,
+  GenerateProjectMinterConfigurationFormsContext,
+  ProjectWithMinterFilter,
+} from "./types";
 
 export async function generateProjectMinterConfigurationForms(
   args: GenerateProjectMinterConfigurationFormsArgs
 ): Promise<{
   data: GetProjectMinterConfigurationQuery["projects_metadata_by_pk"];
-  forms: ConfigurationForm[];
+  forms: FormBlueprint[];
 }> {
   const { projectId, sdk } = args;
   const [coreContractAddress, projectIndexString] = projectId.split("-");
@@ -147,7 +139,7 @@ function generateSelectMinterForm({
   projectIndex,
   coreContractAddress,
   onConfigurationChange,
-}: GenerateProjectMinterConfigurationFormsContext): ConfigurationForm {
+}: GenerateProjectMinterConfigurationFormsContext): FormBlueprint {
   const minterConfiguration = project.minter_configuration;
   const minterSelectionFormSchema = generateMinterSelectionFormSchema(
     project.contract.minter_filter.type ===
@@ -269,7 +261,7 @@ type GenerateMinterFormArgs = GenerateProjectMinterConfigurationFormsContext & {
 };
 
 // Forms to configure a minter for a project
-function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
+function generateMinterForm(args: GenerateMinterFormArgs): FormBlueprint {
   const {
     sdk,
     key,
@@ -326,7 +318,7 @@ function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
       // Check if any of the form values should be transformed before submitting the transaction
       // const transformedForm;
       const transformedFormValues =
-        await transformProjectMinterConfigurationFormValues({
+        await processProjectMinterConfigurationFormValuesForSubmission({
           ...args,
           formValues,
           schema: formSchema,
@@ -361,7 +353,7 @@ function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
         transactionDetails.syncCheckFieldsOverride ?? transactionDetails.args;
 
       // Poll for updates to the configuration
-      await pollForProjectMinterConfigurationUpdates(
+      await pollForSyncedMinterConfigUpdates(
         sdk,
         projectId,
         transactionConfirmedAt,

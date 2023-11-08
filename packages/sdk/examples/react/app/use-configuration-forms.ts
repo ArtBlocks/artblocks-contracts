@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import ArtBlocksSDK from "@artblocks/sdk";
 // TODO: FIX ME!
-import { ConfigurationForm } from "../../../src/minters";
+import { FormBlueprint } from "../../../src/minters";
 
 type UseConfigurationFormsReturn = {
-  configurationForms: ConfigurationForm[] | null;
+  configurationForms: FormBlueprint[] | null;
   isLoading: boolean;
   error: Error | null;
 };
@@ -16,7 +16,7 @@ export function useConfigurationForms(
   if (!sdk) throw new Error("SDK is not initialized");
 
   const [configurationForms, setConfigurationForms] = useState<
-    ConfigurationForm[] | null
+    FormBlueprint[] | null
   >(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);

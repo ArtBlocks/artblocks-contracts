@@ -1,3 +1,13 @@
+/**
+ * This TypeScript file defines an extended JSON Schema specifically tailored for creating complex forms.
+ * The schema supports various field attributes, dependencies, and processing rules to generate forms
+ * capable of performing both on-chain and off-chain data mutations. On-chain mutations pertain to blockchain transactions,
+ * whereas off-chain mutations relate to traditional data operations outside the blockchain.
+ * The structures here facilitate defining form fields, handling on-chain smart contract interactions,
+ * compound field groupings, and establishing validation dependencies, ultimately driving dynamic and
+ * responsive form generation for decentralized applications.
+ */
+
 import { JSONSchema7 } from "json-schema";
 import { Abi } from "abitype";
 
