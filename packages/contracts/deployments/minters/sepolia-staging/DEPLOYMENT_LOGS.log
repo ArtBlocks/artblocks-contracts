@@ -1,0 +1,70 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-08T20:06:21.253Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-staging/shared-minter-deploy-config.staging.ts
+[INFO] MinterSetPriceV5 deployed at 0xA84E2eFFfCFd1cbE01785Bd10aaEE520A68CD3DD
+[INFO] MinterSetPriceV5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterSetPriceV5 contract deployment...
+The contract 0xA84E2eFFfCFd1cbE01785Bd10aaEE520A68CD3DD has already been verified
+[INFO] MinterSetPriceV5 contract verified on Etherscan at 0xA84E2eFFfCFd1cbE01785Bd10aaEE520A68CD3DD
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterSetPriceERC20V5 deployed at 0x06710498339b30834653459Ac90F52Cbd2F1D085
+[INFO] MinterSetPriceERC20V5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterSetPriceERC20V5 contract deployment...
+The contract 0x06710498339b30834653459Ac90F52Cbd2F1D085 has already been verified
+[INFO] MinterSetPriceERC20V5 contract verified on Etherscan at 0x06710498339b30834653459Ac90F52Cbd2F1D085
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterSetPriceHolderV5 deployed at 0xbDdE08BD57e5C9fD563eE7aC61618CB2ECdc0ce0
+[INFO] MinterSetPriceHolderV5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterSetPriceHolderV5 contract deployment...
+The contract 0xbDdE08BD57e5C9fD563eE7aC61618CB2ECdc0ce0 has already been verified
+[INFO] MinterSetPriceHolderV5 contract verified on Etherscan at 0xbDdE08BD57e5C9fD563eE7aC61618CB2ECdc0ce0
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterSetPriceMerkleV5 deployed at 0xdD1724761e8f291545EA18eE16cCB3f1dDD07466
+[INFO] MinterSetPriceMerkleV5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterSetPriceMerkleV5 contract deployment...
+The contract 0xdD1724761e8f291545EA18eE16cCB3f1dDD07466 has already been verified
+[INFO] MinterSetPriceMerkleV5 contract verified on Etherscan at 0xdD1724761e8f291545EA18eE16cCB3f1dDD07466
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterSetPricePolyptychV5 deployed at 0x47A91457a3a1f700097199Fd63c039c4784384aB
+[INFO] MinterSetPricePolyptychV5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterSetPricePolyptychV5 contract deployment...
+The contract 0x47A91457a3a1f700097199Fd63c039c4784384aB has already been verified
+[INFO] MinterSetPricePolyptychV5 contract verified on Etherscan at 0x47A91457a3a1f700097199Fd63c039c4784384aB
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterSetPricePolyptychERC20V5 deployed at 0xCfc3818816eA26f7406f9FA33a1e4EDd57A01078
+[INFO] MinterSetPricePolyptychERC20V5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterSetPricePolyptychERC20V5 contract deployment...
+The contract 0xCfc3818816eA26f7406f9FA33a1e4EDd57A01078 has already been verified
+[INFO] MinterSetPricePolyptychERC20V5 contract verified on Etherscan at 0xCfc3818816eA26f7406f9FA33a1e4EDd57A01078
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterDAExpV5 deployed at 0x13aAe6f9599880edbB7d144BB13F1212CeE99533
+[INFO] MinterDAExpV5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterDAExpV5 contract deployment...
+The contract 0x13aAe6f9599880edbB7d144BB13F1212CeE99533 has already been verified
+[INFO] MinterDAExpV5 contract verified on Etherscan at 0x13aAe6f9599880edbB7d144BB13F1212CeE99533
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterDALinV5 deployed at 0xf774546CEFa57e2F35BB21f0911BB3421cdED304
+[INFO] MinterDALinV5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterDALinV5 contract deployment...
+The contract 0xf774546CEFa57e2F35BB21f0911BB3421cdED304 has already been verified
+[INFO] MinterDALinV5 contract verified on Etherscan at 0xf774546CEFa57e2F35BB21f0911BB3421cdED304
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterDAExpSettlementV3 deployed at 0xF9AbD90B27dBfbeD4eF05CAdCd9c95CDc88d52c2
+[INFO] MinterDAExpSettlementV3 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterDAExpSettlementV3 contract deployment...
+The contract 0xF9AbD90B27dBfbeD4eF05CAdCd9c95CDc88d52c2 has already been verified
+[INFO] MinterDAExpSettlementV3 contract verified on Etherscan at 0xF9AbD90B27dBfbeD4eF05CAdCd9c95CDc88d52c2
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterDAExpHolderV5 deployed at 0x463B8CED7D22a55Aa4A5d69EF6a54a08AA0feB93
+[INFO] MinterDAExpHolderV5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterDAExpHolderV5 contract deployment...
+The contract 0x463B8CED7D22a55Aa4A5d69EF6a54a08AA0feB93 has already been verified
+[INFO] MinterDAExpHolderV5 contract verified on Etherscan at 0x463B8CED7D22a55Aa4A5d69EF6a54a08AA0feB93
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterDALinHolderV5 deployed at 0xa1577a3EB47CB49afB6b8F53cBcF0E9d613ABEB4
+[INFO] MinterDALinHolderV5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterDALinHolderV5 contract deployment...
+The contract 0xa1577a3EB47CB49afB6b8F53cBcF0E9d613ABEB4 has already been verified
+[INFO] MinterDALinHolderV5 contract verified on Etherscan at 0xa1577a3EB47CB49afB6b8F53cBcF0E9d613ABEB4
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-staging/DEPLOYMENTS.md
+[INFO] Done!
