@@ -55,8 +55,8 @@ async function main() {
     ) {
       // deploying on a mainnet
       if (!deployDetails.pseudorandomAtomicContractAddress) {
-        throw new Error(
-          "[ERROR] pseudorandomAtomicContractAddress must be defined when deploying to mainnet, because it should already have been deployed"
+        console.warn(
+          "[WARN] consider using a hardened pseudorandom atomic contract"
         );
       }
     }
