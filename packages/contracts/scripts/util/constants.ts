@@ -9,12 +9,16 @@ export const DELEGATION_REGISTRY_ADDRESSES = {
   // note: same address for goerli and mainnet
   goerli: "0x00000000000076A84feF008CDAbe6409d2FE638B",
   mainnet: "0x00000000000076A84feF008CDAbe6409d2FE638B",
+  sepolia: "0x00000000000076A84feF008CDAbe6409d2FE638B",
+  arbitrum: "0x00000000000076A84feF008CDAbe6409d2FE638B",
+  "arbitrum-sepolia": "0x00000000000076A84feF008CDAbe6409d2FE638B",
 };
 
 // BytecodeStorageReader library addresses on supported networks
 export const BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES = {
   // note: _different_ address for goerli and mainnet
   "arbitrum-goerli": "0x681861cD4fC92d70aE57745385065ef862954662",
+  "arbitrum-sepolia": "0xb219C04128c9749b597c35D416b9988bEa9E1114",
   arbitrum: "0xa07f47c30C262adcC263A4D44595972c50e04db7",
   goerli: "0xB8B806A10d16cc80dB788552B54B3ECb4A2A3C3D",
   mainnet: "0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5",
@@ -57,8 +61,11 @@ const ACTIVE_SHARED_MINTER_FILTERS = {
     dev: "0xTBD",
     staging: "0xTBD",
   },
+  "arbitrum-sepolia": {
+    "arbitrum-staging": "0xa07f47c30C262adcC263A4D44595972c50e04db7",
+  },
   arbitrum: {
-    mainnet: "0xTBD",
+    mainnet: "0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A",
   },
   sepolia: {
     dev: "0x29e9f09244497503f304FA549d50eFC751D818d2",
@@ -102,8 +109,11 @@ const ACTIVE_SHARED_RANDOMIZERS = {
     dev: "0xTBD",
     staging: "0xTBD",
   },
+  "arbitrum-sepolia": {
+    "arbitrum-staging": "0x28f2D3805652FB5d359486dFfb7D08320D403240",
+  },
   arbitrum: {
-    mainnet: "0xTBD",
+    mainnet: "0x6feb0aB02A85d2C3c5a79B822f0a00061cBBb040",
   },
   sepolia: {
     dev: "0xA6F7e62F3B52552f79b2Baa2858a1DB18016c09B",

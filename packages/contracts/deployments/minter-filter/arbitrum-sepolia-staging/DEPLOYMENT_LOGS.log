@@ -1,0 +1,55 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-10T23:53:19.925Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minter-filter/arbitrum-sepolia-staging/shared-minter-filter-deploy-config.staging.ts
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-11T00:29:15.968Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minter-filter/arbitrum-sepolia-staging/shared-minter-filter-deploy-config.staging.ts
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-11T00:31:03.840Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minter-filter/arbitrum-sepolia-staging/shared-minter-filter-deploy-config.staging.ts
+{ network: { chainId: 421614, name: 'unknown' } }
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-11T00:35:29.637Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minter-filter/arbitrum-sepolia-staging/shared-minter-filter-deploy-config.staging.ts
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-11T00:39:53.459Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minter-filter/arbitrum-sepolia-staging/shared-minter-filter-deploy-config.staging.ts
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-11T00:44:51.001Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minter-filter/arbitrum-sepolia-staging/shared-minter-filter-deploy-config.staging.ts
+[INFO] Admin ACL contract AdminACLV0 deployed at 0x3b30d421a6dA95694EaaE09971424F15Eb375269
+[INFO] Core Registry contract CoreRegistryV1 deployed at 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] MinterFilterV2 deployed at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying AdminACLV0 contract deployment...
+[WARN] Etherscan verification of AdminACLV0 failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+[ACTION] Verify AdminACLV0 contract deployment with:
+yarn hardhat verify --network arbitrum-sepolia 0x3b30d421a6dA95694EaaE09971424F15Eb375269 
+[INFO] Verifying CoreRegistryV1 contract deployment...
+[WARN] Etherscan verification of CoreRegistryV1 failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+[ACTION] Verify CoreRegistryV1 contract deployment with:
+yarn hardhat verify --network arbitrum-sepolia 0xdAe755c2944Ec125a0D8D5CB082c22837593441a 
+[INFO] Verifying MinterFilterV2 contract deployment...
+[WARN] Etherscan verification of MinterFilterV2 failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+[ACTION] Verify MinterFilterV2 contract deployment with:
+yarn hardhat verify --network arbitrum-sepolia 0xa07f47c30C262adcC263A4D44595972c50e04db7 0x3b30d421a6dA95694EaaE09971424F15Eb375269 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minter-filter/arbitrum-sepolia-staging/DEPLOYMENTS.md
+[INFO] Done!
+[INFO] Ensure any superAdmin migration actions are performed before proceeding to use the deployed contracts.

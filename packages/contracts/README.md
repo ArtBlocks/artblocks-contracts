@@ -162,6 +162,7 @@ Given that it is an externally linked library with a shared public deployment, t
 - V1 `BytecodeStorageReader` (mainnet): https://etherscan.io/address/0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5#code
 - V1 `BytecodeStorageReader` (arbitrum-goerli): https://goerli.arbiscan.io/address/0x681861cD4fC92d70aE57745385065ef862954662#code
 - V1 `BytecodeStorageReader` (arbitrum): https://arbiscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+- V1 `BytecodeStorageReader` (arbitrum-sepolia): https://sepolia.arbiscan.io/address/0xb219C04128c9749b597c35D416b9988bEa9E1114#code
 
 ## Shared Randomizers
 
@@ -175,6 +176,7 @@ The most recent version of the Shared Randomizer contract is deployed at the fol
 - Goerli Staging: `0xC91CFC2062D8B4Ff53A7c8836CAEf925a7C78c81`
 - Arbitrum One: TBD
 - Arbitrum Goerli: TBD
+- Arbitrum Sepolia: `0x28f2D3805652FB5d359486dFfb7D08320D403240`
 
 ## Contract Source Code Verification
 

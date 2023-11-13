@@ -1,0 +1,17 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-11T01:20:21.330Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/randomizer/arbitrum-mainnet/shared-randomizer-deploy-config.mainnet.ts
+[INFO] pseudorandom atomic contract PseudorandomAtomic deployed at 0xa1577a3EB47CB49afB6b8F53cBcF0E9d613ABEB4
+[INFO] SharedRandomizerV0 deployed at 0x6feb0aB02A85d2C3c5a79B822f0a00061cBBb040
+[INFO] Verifying SharedRandomizerV0 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/randomizer/shared/SharedRandomizerV0.sol:SharedRandomizerV0 at 0x6feb0aB02A85d2C3c5a79B822f0a00061cBBb040
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract SharedRandomizerV0 on Etherscan.
+https://arbiscan.io/address/0x6feb0aB02A85d2C3c5a79B822f0a00061cBBb040#code
+[INFO] SharedRandomizerV0 contract verified on Etherscan at 0x6feb0aB02A85d2C3c5a79B822f0a00061cBBb040
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/randomizer/arbitrum-mainnet/DEPLOYMENTS.md
+[INFO] Done!
+[INFO] No contracts were migrated to use the new shared randomizers. Each contract must be migrated individually.

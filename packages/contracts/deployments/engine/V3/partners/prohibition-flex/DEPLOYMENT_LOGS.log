@@ -198,3 +198,82 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0xd71a0dB203af616F76b6AD24BD54eE46882FF175, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-13T19:53:12.853Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/prohibition-flex/deployment-config.arbitrum-sepolia-staging.ts
+[INFO] Deploying to network: arbitrum-sepolia
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-13T20:02:39.910Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/prohibition-flex/deployment-config.arbitrum-sepolia-staging.ts
+[INFO] Deploying to network: arbitrum-sepolia
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-13T20:13:54.242Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/prohibition-flex/deployment-config.arbitrum-sepolia-staging.ts
+[INFO] Deploying to network: arbitrum-sepolia
+[INFO] Deploying to environment: arbitrum-staging
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-13T20:18:05.727Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/prohibition-flex/deployment-config.arbitrum-sepolia-staging.ts
+[INFO] Deploying to network: arbitrum-sepolia
+[INFO] Deploying to environment: arbitrum-staging
+[INFO] New Admin ACL AdminACLV0_PROHIBITION deployed at address: 0x7DC2c066251A21520Ae03cd2C3567a3c073Be60A
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex_PROHIBITION deployed at 0x62e37f664b5945629B6549a87F8e10Ed0B6D923b
+[INFO] Registered core contract 0x62e37f664b5945629B6549a87F8e10Ed0B6D923b on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0xC430CE0184e536e341e04dCE0f4C37895a92b809.
+[INFO] Verifying core contract contract deployment...
+[ACTION] Save the following constructor args config file to a constructor-args.js file, then verify core contract deployment with:
+module.exports = [
+        "Prohibition", // name
+        "PRB", // ticker
+        "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63", // render provider
+        "0xC430CE0184e536e341e04dCE0f4C37895a92b809", // platform provider
+        "0x28f2D3805652FB5d359486dFfb7D08320D403240", // randomizer
+        "0x7DC2c066251A21520Ae03cd2C3567a3c073Be60A", // admin acl
+        0, // starting project id
+        true, // auto approve artist split proposals
+      ];
+yarn hardhat verify --network arbitrum-sepolia --constructor-args constructor-args.js 0x62e37f664b5945629B6549a87F8e10Ed0B6D923b
+[INFO] Verifying AdminACL contract deployment...
+[WARN] Etherscan verification of AdminACL failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+[ACTION] Verify AdminACL contract deployment with:
+yarn hardhat verify --network arbitrum-sepolia 0x7DC2c066251A21520Ae03cd2C3567a3c073Be60A 
+[ERROR] Failed to create image bucket
+[INFO] Deployment details written to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/prohibition-flex/DEPLOYMENTS.md
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xC430CE0184e536e341e04dCE0f4C37895a92b809, don't forget to update if requred.
+[ACTION] Manually create an image bucket for Prohibition due to failure when this script was ran.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-13T20:24:09.513Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/prohibition-flex/deployment-config.arbitrum-sepolia-staging.ts
+[INFO] Deploying to network: arbitrum-sepolia
+[INFO] Deploying to environment: arbitrum-staging
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+Error: Unsupported network
+    at /Users/benyo/Development/artblocks-contracts/packages/contracts/scripts/util/aws_s3.ts:99:11
+    at step (/Users/benyo/Development/artblocks-contracts/packages/contracts/scripts/util/aws_s3.ts:33:23)
+    at Object.next (/Users/benyo/Development/artblocks-contracts/packages/contracts/scripts/util/aws_s3.ts:14:53)
+    at /Users/benyo/Development/artblocks-contracts/packages/contracts/scripts/util/aws_s3.ts:8:71
+    at new Promise (<anonymous>)
+    at __awaiter (/Users/benyo/Development/artblocks-contracts/packages/contracts/scripts/util/aws_s3.ts:4:12)
+    at createEngineBucket (/Users/benyo/Development/artblocks-contracts/packages/contracts/scripts/util/aws_s3.ts:130:12)
+    at /Users/benyo/Development/artblocks-contracts/packages/contracts/scripts/engine/V3/generic-engine-shared-suite-deployer.ts:514:49
+    at step (/Users/benyo/Development/artblocks-contracts/packages/contracts/scripts/engine/V3/generic-engine-shared-suite-deployer.ts:33:23)
+    at Object.next (/Users/benyo/Development/artblocks-contracts/packages/contracts/scripts/engine/V3/generic-engine-shared-suite-deployer.ts:14:53)
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-13T20:25:17.362Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/prohibition-flex/deployment-config.arbitrum-sepolia-staging.ts
+[INFO] Deploying to network: arbitrum-sepolia
+[INFO] Deploying to environment: arbitrum-staging
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+Created s3 bucket for https://prohibition-arbitrum-sepolia.s3.amazonaws.com

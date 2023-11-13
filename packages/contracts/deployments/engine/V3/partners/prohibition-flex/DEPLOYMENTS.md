@@ -177,3 +177,42 @@ Date: 2023-06-27T02:19:17.077Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-11-13T20:19:09.456Z
+
+## **Network:** arbitrum-sepolia
+
+## **Environment:** arbitrum-staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/prohibition-flex/deployment-config.arbitrum-sepolia-staging.ts`
+
+**GenArt721CoreV3_Engine_Flex_PROHIBITION:** https://arbitrum-sepolia.etherscan.io/address/0x62e37f664b5945629B6549a87F8e10Ed0B6D923b#code
+
+**AdminACLV0_PROHIBITION:** https://arbitrum-sepolia.etherscan.io/address/0x7DC2c066251A21520Ae03cd2C3567a3c073Be60A#code
+
+**Core Registry:** https://arbitrum-sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**Shared Minter Filter:** https://arbitrum-sepolia.etherscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Prohibition
+- **Token Ticker:** PRB
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0xC430CE0184e536e341e04dCE0f4C37895a92b809
+- **BytecodeStorageReader Library:** 0xb219C04128c9749b597c35D416b9988bEa9E1114
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** TBD
+
+---
+

@@ -9,7 +9,7 @@ import fs from "fs";
 import path from "path";
 
 // delay to avoid issues with reorgs and tx failures
-import { delay, getConfigInputs } from "../util/utils";
+import { delay, getConfigInputs, getNetworkName } from "../util/utils";
 const EXTRA_DELAY_BETWEEN_TX = 5000; // ms]
 
 import {
@@ -42,8 +42,7 @@ async function main() {
   const deployDetails = deployConfigDetailsArray[0];
 
   const [deployer] = await ethers.getSigners();
-  const network = await ethers.provider.getNetwork();
-  const networkName = network.name == "homestead" ? "mainnet" : network.name;
+  const networkName = await getNetworkName();
 
   const tokenName = deployDetails.tokenName;
   const tokenTicker = deployDetails.tokenTicker;
