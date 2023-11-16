@@ -34,3 +34,21 @@ https://arbiscan.io/address/0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A#code
 [INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minter-filter/arbitrum-mainnet/DEPLOYMENTS.md
 [INFO] Done!
 [INFO] Ensure any superAdmin migration actions are performed before proceeding to use the deployed contracts.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-16T18:53:32.746Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minter-filter/arbitrum-mainnet/shared-minter-filter-deploy-config.mainnet.ts
+[INFO] Admin ACL contract AdminACLV0 deployed at 0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98
+[INFO] Core Registry contract CoreRegistryV1 deployed at 0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2
+[INFO] MinterFilterV2 deployed at 0x94560abECb897f359ee1A6Ed0E922315Da11752d
+[INFO] Verifying AdminACLV0 contract deployment...
+The contract 0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98 has already been verified
+[INFO] AdminACLV0 contract verified on Etherscan at 0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98
+[INFO] Verifying CoreRegistryV1 contract deployment...
+The contract 0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2 has already been verified
+[INFO] CoreRegistryV1 contract verified on Etherscan at 0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2
+[INFO] Verifying MinterFilterV2 contract deployment...
+The contract 0x94560abECb897f359ee1A6Ed0E922315Da11752d has already been verified
+[INFO] MinterFilterV2 contract verified on Etherscan at 0x94560abECb897f359ee1A6Ed0E922315Da11752d
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minter-filter/arbitrum-mainnet/DEPLOYMENTS.md
+[INFO] Done!
+[INFO] Ensure any superAdmin migration actions are performed before proceeding to use the deployed contracts.

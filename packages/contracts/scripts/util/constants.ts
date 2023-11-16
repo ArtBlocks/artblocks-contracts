@@ -45,7 +45,6 @@ export function getActiveSharedMinterFilter(
   }
   return activeMinterFilter;
 }
-// TODO: add addresses when deployed
 // Active shared minter filter contracts being used for the shared minter
 // suite, on each network and environment.
 // format is [network]: { [environment]: [minter filter address] }
@@ -65,7 +64,7 @@ const ACTIVE_SHARED_MINTER_FILTERS = {
     "arbitrum-staging": "0xa07f47c30C262adcC263A4D44595972c50e04db7",
   },
   arbitrum: {
-    mainnet: "0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A",
+    mainnet: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
   },
   sepolia: {
     dev: "0x29e9f09244497503f304FA549d50eFC751D818d2",
@@ -93,7 +92,6 @@ export function getActiveSharedRandomizer(
   }
   return activeSharedRandomizer;
 }
-// TODO: add addresses when deployed
 // Active shared randomizer contracts being used for the shared minter
 // suite, on each network and environment.
 // format is [network]: { [environment]: [randomizer address] }
