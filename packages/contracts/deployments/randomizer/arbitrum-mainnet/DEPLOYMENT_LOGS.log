@@ -15,3 +15,14 @@ https://arbiscan.io/address/0x6feb0aB02A85d2C3c5a79B822f0a00061cBBb040#code
 [INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/randomizer/arbitrum-mainnet/DEPLOYMENTS.md
 [INFO] Done!
 [INFO] No contracts were migrated to use the new shared randomizers. Each contract must be migrated individually.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-16T18:41:18.329Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/randomizer/arbitrum-mainnet/shared-randomizer-deploy-config.mainnet.ts
+[INFO] pseudorandom atomic contract PseudorandomAtomic deployed at 0x978a664f23f30d3FFD20093144C8eC6aBc60753f
+[INFO] SharedRandomizerV0 deployed at 0x6a5976391E708fBf918c3786cd1FcbB88732fbc1
+[INFO] Verifying SharedRandomizerV0 contract deployment...
+The contract 0x6a5976391E708fBf918c3786cd1FcbB88732fbc1 has already been verified
+[INFO] SharedRandomizerV0 contract verified on Etherscan at 0x6a5976391E708fBf918c3786cd1FcbB88732fbc1
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/randomizer/arbitrum-mainnet/DEPLOYMENTS.md
+[INFO] Done!
+[INFO] No contracts were migrated to use the new shared randomizers. Each contract must be migrated individually.

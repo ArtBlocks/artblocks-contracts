@@ -113,7 +113,7 @@ const ACTIVE_SHARED_RANDOMIZERS = {
     "arbitrum-staging": "0x28f2D3805652FB5d359486dFfb7D08320D403240",
   },
   arbitrum: {
-    mainnet: "0x6feb0aB02A85d2C3c5a79B822f0a00061cBBb040",
+    mainnet: "0x6a5976391E708fBf918c3786cd1FcbB88732fbc1",
   },
   sepolia: {
     dev: "0xA6F7e62F3B52552f79b2Baa2858a1DB18016c09B",
