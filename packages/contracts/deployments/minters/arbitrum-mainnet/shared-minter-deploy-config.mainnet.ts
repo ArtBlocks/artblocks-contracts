@@ -9,7 +9,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "arbitrum-mainnet",
     minterName: "MinterSetPriceV5",
-    minterFilterAddress: "0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A",
+    minterFilterAddress: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -19,7 +19,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "arbitrum-mainnet",
     minterName: "MinterSetPriceERC20V5",
-    minterFilterAddress: "0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A",
+    minterFilterAddress: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -29,7 +29,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "arbitrum-mainnet",
     minterName: "MinterSetPriceHolderV5",
-    minterFilterAddress: "0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A",
+    minterFilterAddress: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -39,7 +39,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "arbitrum-mainnet",
     minterName: "MinterSetPriceMerkleV5",
-    minterFilterAddress: "0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A",
+    minterFilterAddress: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -49,7 +49,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "arbitrum-mainnet",
     minterName: "MinterSetPricePolyptychV5",
-    minterFilterAddress: "0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A",
+    minterFilterAddress: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -59,7 +59,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "arbitrum-mainnet",
     minterName: "MinterSetPricePolyptychERC20V5",
-    minterFilterAddress: "0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A",
+    minterFilterAddress: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -69,7 +69,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "arbitrum-mainnet",
     minterName: "MinterDAExpV5",
-    minterFilterAddress: "0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A",
+    minterFilterAddress: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -79,7 +79,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "arbitrum-mainnet",
     minterName: "MinterDALinV5",
-    minterFilterAddress: "0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A",
+    minterFilterAddress: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -89,7 +89,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "arbitrum-mainnet",
     minterName: "MinterDAExpSettlementV3",
-    minterFilterAddress: "0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A",
+    minterFilterAddress: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -99,7 +99,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "arbitrum-mainnet",
     minterName: "MinterDAExpHolderV5",
-    minterFilterAddress: "0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A",
+    minterFilterAddress: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
@@ -109,7 +109,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "arbitrum-mainnet",
     minterName: "MinterDALinHolderV5",
-    minterFilterAddress: "0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A",
+    minterFilterAddress: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
