@@ -174,8 +174,7 @@ The most recent version of the Shared Randomizer contract is deployed at the fol
 
 - Mainnet: `0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91`
 - Goerli Staging: `0xC91CFC2062D8B4Ff53A7c8836CAEf925a7C78c81`
-- Arbitrum One: TBD
-- Arbitrum Goerli: TBD
+- Arbitrum One: `0x6a5976391E708fBf918c3786cd1FcbB88732fbc1`
 - Arbitrum Sepolia: `0x28f2D3805652FB5d359486dFfb7D08320D403240`
 
 ## Contract Source Code Verification
