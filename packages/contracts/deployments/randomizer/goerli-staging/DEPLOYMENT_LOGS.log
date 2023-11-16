@@ -9,3 +9,20 @@ The contract 0x88293a3eef2516855BE0F798630e141D14333423 has already been verifie
 [INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/randomizer/goerli-staging/DEPLOYMENTS.md
 [INFO] Done!
 [INFO] No contracts were migrated to use the new shared randomizers. Each contract must be migrated individually.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-02T02:30:14.856Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/randomizer/goerli-staging/shared-randomizer-deploy-config.staging.ts
+[INFO] pseudorandom atomic contract PseudorandomAtomic deployed at 0x77813Cf1eBF71Cda7C05bA7e7327775CC5faAC5f
+[INFO] SharedRandomizerV0 deployed at 0xC91CFC2062D8B4Ff53A7c8836CAEf925a7C78c81
+[INFO] Verifying SharedRandomizerV0 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/randomizer/shared/SharedRandomizerV0.sol:SharedRandomizerV0 at 0xC91CFC2062D8B4Ff53A7c8836CAEf925a7C78c81
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract SharedRandomizerV0 on Etherscan.
+https://goerli.etherscan.io/address/0xC91CFC2062D8B4Ff53A7c8836CAEf925a7C78c81#code
+[INFO] SharedRandomizerV0 contract verified on Etherscan at 0xC91CFC2062D8B4Ff53A7c8836CAEf925a7C78c81
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/randomizer/goerli-staging/DEPLOYMENTS.md
+[INFO] Done!
+[INFO] No contracts were migrated to use the new shared randomizers. Each contract must be migrated individually.

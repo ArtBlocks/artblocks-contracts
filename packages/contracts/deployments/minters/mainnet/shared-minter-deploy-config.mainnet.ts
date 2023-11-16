@@ -4,82 +4,112 @@
 
 export const deployConfigDetailsArray = [
   {
-    network: "goerli",
+    network: "mainnet",
     // environment is only used for metadata purposes, and is not used in the deployment process
     // Please set to "dev", "staging", or "mainnet", as appropriate
-    environment: "staging",
+    environment: "mainnet",
     minterName: "MinterSetPriceV5",
-    minterFilterAddress: "0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824",
+    minterFilterAddress: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
   {
-    network: "goerli",
+    network: "mainnet",
     // environment is only used for metadata purposes, and is not used in the deployment process
     // Please set to "dev", "staging", or "mainnet", as appropriate
-    environment: "staging",
+    environment: "mainnet",
     minterName: "MinterSetPriceERC20V5",
-    minterFilterAddress: "0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824",
+    minterFilterAddress: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
   {
-    network: "goerli",
+    network: "mainnet",
     // environment is only used for metadata purposes, and is not used in the deployment process
     // Please set to "dev", "staging", or "mainnet", as appropriate
-    environment: "staging",
+    environment: "mainnet",
     minterName: "MinterSetPriceHolderV5",
-    minterFilterAddress: "0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824",
+    minterFilterAddress: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
   {
-    network: "goerli",
+    network: "mainnet",
     // environment is only used for metadata purposes, and is not used in the deployment process
     // Please set to "dev", "staging", or "mainnet", as appropriate
-    environment: "staging",
+    environment: "mainnet",
     minterName: "MinterSetPriceMerkleV5",
-    minterFilterAddress: "0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824",
+    minterFilterAddress: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
   {
-    network: "goerli",
+    network: "mainnet",
     // environment is only used for metadata purposes, and is not used in the deployment process
     // Please set to "dev", "staging", or "mainnet", as appropriate
-    environment: "staging",
+    environment: "mainnet",
     minterName: "MinterSetPricePolyptychV5",
-    minterFilterAddress: "0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824",
+    minterFilterAddress: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
   {
-    network: "goerli",
+    network: "mainnet",
     // environment is only used for metadata purposes, and is not used in the deployment process
     // Please set to "dev", "staging", or "mainnet", as appropriate
-    environment: "staging",
+    environment: "mainnet",
     minterName: "MinterSetPricePolyptychERC20V5",
-    minterFilterAddress: "0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824",
+    minterFilterAddress: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
   {
-    network: "goerli",
+    network: "mainnet",
     // environment is only used for metadata purposes, and is not used in the deployment process
     // Please set to "dev", "staging", or "mainnet", as appropriate
-    environment: "staging",
+    environment: "mainnet",
     minterName: "MinterDAExpV5",
-    minterFilterAddress: "0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824",
+    minterFilterAddress: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
   {
-    network: "goerli",
+    network: "mainnet",
     // environment is only used for metadata purposes, and is not used in the deployment process
     // Please set to "dev", "staging", or "mainnet", as appropriate
-    environment: "staging",
+    environment: "mainnet",
     minterName: "MinterDALinV5",
-    minterFilterAddress: "0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824",
+    minterFilterAddress: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
+    // may only set to true if deploying from the MinterFilter's admin wallet
+    approveMinterGlobally: true,
+  },
+  {
+    network: "mainnet",
+    // environment is only used for metadata purposes, and is not used in the deployment process
+    // Please set to "dev", "staging", or "mainnet", as appropriate
+    environment: "mainnet",
+    minterName: "MinterDAExpSettlementV3",
+    minterFilterAddress: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
+    // may only set to true if deploying from the MinterFilter's admin wallet
+    approveMinterGlobally: true,
+  },
+  {
+    network: "mainnet",
+    // environment is only used for metadata purposes, and is not used in the deployment process
+    // Please set to "dev", "staging", or "mainnet", as appropriate
+    environment: "mainnet",
+    minterName: "MinterDAExpHolderV5",
+    minterFilterAddress: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
+    // may only set to true if deploying from the MinterFilter's admin wallet
+    approveMinterGlobally: true,
+  },
+  {
+    network: "mainnet",
+    // environment is only used for metadata purposes, and is not used in the deployment process
+    // Please set to "dev", "staging", or "mainnet", as appropriate
+    environment: "mainnet",
+    minterName: "MinterDALinHolderV5",
+    minterFilterAddress: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
