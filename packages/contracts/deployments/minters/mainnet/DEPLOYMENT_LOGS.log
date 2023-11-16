@@ -1,0 +1,136 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-02T19:10:14.778Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/mainnet/shared-minter-deploy-config.mainnet.ts
+[INFO] MinterSetPriceV5 deployed at 0x0635E2f2926b306356b5B3F5CB6489107796b085
+[INFO] MinterSetPriceV5 approved globally on minter filter at 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+[INFO] Verifying MinterSetPriceV5 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceV5.sol:MinterSetPriceV5 at 0x0635E2f2926b306356b5B3F5CB6489107796b085
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceV5 on Etherscan.
+https://etherscan.io/address/0x0635E2f2926b306356b5B3F5CB6489107796b085#code
+[INFO] MinterSetPriceV5 contract verified on Etherscan at 0x0635E2f2926b306356b5B3F5CB6489107796b085
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/mainnet/DEPLOYMENTS.md
+[INFO] MinterSetPriceERC20V5 deployed at 0x11515aE3f510D8BFEDD2B60B4A878F8a77a7b7ec
+[INFO] MinterSetPriceERC20V5 approved globally on minter filter at 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+[INFO] Verifying MinterSetPriceERC20V5 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceERC20V5.sol:MinterSetPriceERC20V5 at 0x11515aE3f510D8BFEDD2B60B4A878F8a77a7b7ec
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceERC20V5 on Etherscan.
+https://etherscan.io/address/0x11515aE3f510D8BFEDD2B60B4A878F8a77a7b7ec#code
+[INFO] MinterSetPriceERC20V5 contract verified on Etherscan at 0x11515aE3f510D8BFEDD2B60B4A878F8a77a7b7ec
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/mainnet/DEPLOYMENTS.md
+[INFO] MinterSetPriceHolderV5 deployed at 0x69f04FDDF0c4c32642B22E68b867282d5074A98a
+[INFO] MinterSetPriceHolderV5 approved globally on minter filter at 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+[INFO] Verifying MinterSetPriceHolderV5 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceHolderV5.sol:MinterSetPriceHolderV5 at 0x69f04FDDF0c4c32642B22E68b867282d5074A98a
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceHolderV5 on Etherscan.
+https://etherscan.io/address/0x69f04FDDF0c4c32642B22E68b867282d5074A98a#code
+[INFO] MinterSetPriceHolderV5 contract verified on Etherscan at 0x69f04FDDF0c4c32642B22E68b867282d5074A98a
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/mainnet/DEPLOYMENTS.md
+[INFO] MinterSetPriceMerkleV5 deployed at 0xa19Bf77719A9B6E7daa3c33b3AAC119AF865e1c4
+[INFO] MinterSetPriceMerkleV5 approved globally on minter filter at 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+[INFO] Verifying MinterSetPriceMerkleV5 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceMerkleV5.sol:MinterSetPriceMerkleV5 at 0xa19Bf77719A9B6E7daa3c33b3AAC119AF865e1c4
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceMerkleV5 on Etherscan.
+https://etherscan.io/address/0xa19Bf77719A9B6E7daa3c33b3AAC119AF865e1c4#code
+[INFO] MinterSetPriceMerkleV5 contract verified on Etherscan at 0xa19Bf77719A9B6E7daa3c33b3AAC119AF865e1c4
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/mainnet/DEPLOYMENTS.md
+[INFO] MinterSetPricePolyptychV5 deployed at 0xef8e3EB6F0b9cDedE7ed333cbe67D5A2068D89e3
+[INFO] MinterSetPricePolyptychV5 approved globally on minter filter at 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+[INFO] Verifying MinterSetPricePolyptychV5 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPricePolyptychV5.sol:MinterSetPricePolyptychV5 at 0xef8e3EB6F0b9cDedE7ed333cbe67D5A2068D89e3
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPricePolyptychV5 on Etherscan.
+https://etherscan.io/address/0xef8e3EB6F0b9cDedE7ed333cbe67D5A2068D89e3#code
+[INFO] MinterSetPricePolyptychV5 contract verified on Etherscan at 0xef8e3EB6F0b9cDedE7ed333cbe67D5A2068D89e3
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/mainnet/DEPLOYMENTS.md
+[INFO] MinterSetPricePolyptychERC20V5 deployed at 0x72f4ed8AEadD991162D97506F320018C5d85C142
+[INFO] MinterSetPricePolyptychERC20V5 approved globally on minter filter at 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+[INFO] Verifying MinterSetPricePolyptychERC20V5 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPricePolyptychERC20V5.sol:MinterSetPricePolyptychERC20V5 at 0x72f4ed8AEadD991162D97506F320018C5d85C142
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPricePolyptychERC20V5 on Etherscan.
+https://etherscan.io/address/0x72f4ed8AEadD991162D97506F320018C5d85C142#code
+[INFO] MinterSetPricePolyptychERC20V5 contract verified on Etherscan at 0x72f4ed8AEadD991162D97506F320018C5d85C142
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/mainnet/DEPLOYMENTS.md
+[INFO] MinterDAExpV5 deployed at 0x7E6F7Aa281133e394041b5fEA1f3Be7a00D7201F
+[INFO] MinterDAExpV5 approved globally on minter filter at 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+[INFO] Verifying MinterDAExpV5 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDAExpV5.sol:MinterDAExpV5 at 0x7E6F7Aa281133e394041b5fEA1f3Be7a00D7201F
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpV5 on Etherscan.
+https://etherscan.io/address/0x7E6F7Aa281133e394041b5fEA1f3Be7a00D7201F#code
+[INFO] MinterDAExpV5 contract verified on Etherscan at 0x7E6F7Aa281133e394041b5fEA1f3Be7a00D7201F
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/mainnet/DEPLOYMENTS.md
+[INFO] MinterDALinV5 deployed at 0x7b03Ec8ee63740642ca76b5Fe169978f2077ca08
+[INFO] MinterDALinV5 approved globally on minter filter at 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+[INFO] Verifying MinterDALinV5 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDALinV5.sol:MinterDALinV5 at 0x7b03Ec8ee63740642ca76b5Fe169978f2077ca08
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDALinV5 on Etherscan.
+https://etherscan.io/address/0x7b03Ec8ee63740642ca76b5Fe169978f2077ca08#code
+[INFO] MinterDALinV5 contract verified on Etherscan at 0x7b03Ec8ee63740642ca76b5Fe169978f2077ca08
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/mainnet/DEPLOYMENTS.md
+[INFO] MinterDAExpSettlementV3 deployed at 0x6caFC1B007F16f171B34eE45Fc61B378ad58F592
+[INFO] MinterDAExpSettlementV3 approved globally on minter filter at 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+[INFO] Verifying MinterDAExpSettlementV3 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDAExpSettlementV3.sol:MinterDAExpSettlementV3 at 0x6caFC1B007F16f171B34eE45Fc61B378ad58F592
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpSettlementV3 on Etherscan.
+https://etherscan.io/address/0x6caFC1B007F16f171B34eE45Fc61B378ad58F592#code
+[INFO] MinterDAExpSettlementV3 contract verified on Etherscan at 0x6caFC1B007F16f171B34eE45Fc61B378ad58F592
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/mainnet/DEPLOYMENTS.md
+[INFO] MinterDAExpHolderV5 deployed at 0xe7Acf1AAB43deb805eBD7A90f34572EF6818Af02
+[INFO] MinterDAExpHolderV5 approved globally on minter filter at 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+[INFO] Verifying MinterDAExpHolderV5 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDAExpHolderV5.sol:MinterDAExpHolderV5 at 0xe7Acf1AAB43deb805eBD7A90f34572EF6818Af02
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpHolderV5 on Etherscan.
+https://etherscan.io/address/0xe7Acf1AAB43deb805eBD7A90f34572EF6818Af02#code
+[INFO] MinterDAExpHolderV5 contract verified on Etherscan at 0xe7Acf1AAB43deb805eBD7A90f34572EF6818Af02
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/mainnet/DEPLOYMENTS.md
+[INFO] MinterDALinHolderV5 deployed at 0x733c849D0174f009A993268eF258f7E829f62523
+[INFO] MinterDALinHolderV5 approved globally on minter filter at 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+[INFO] Verifying MinterDALinHolderV5 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDALinHolderV5.sol:MinterDALinHolderV5 at 0x733c849D0174f009A993268eF258f7E829f62523
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDALinHolderV5 on Etherscan.
+https://etherscan.io/address/0x733c849D0174f009A993268eF258f7E829f62523#code
+[INFO] MinterDALinHolderV5 contract verified on Etherscan at 0x733c849D0174f009A993268eF258f7E829f62523
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/mainnet/DEPLOYMENTS.md
+[INFO] Done!

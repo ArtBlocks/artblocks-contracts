@@ -1,0 +1,20 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-02T18:37:41.021Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/randomizer/mainnet/shared-randomizer-deploy-config.mainnet.ts
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-02T18:40:03.779Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/randomizer/mainnet/shared-randomizer-deploy-config.mainnet.ts
+[INFO] pseudorandom atomic contract PseudorandomAtomic deployed at 0x29c2931a018A9298208ccFF4659730CC1b87F1C9
+[INFO] SharedRandomizerV0 deployed at 0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91
+[INFO] Verifying SharedRandomizerV0 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/randomizer/shared/SharedRandomizerV0.sol:SharedRandomizerV0 at 0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract SharedRandomizerV0 on Etherscan.
+https://etherscan.io/address/0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91#code
+[INFO] SharedRandomizerV0 contract verified on Etherscan at 0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/randomizer/mainnet/DEPLOYMENTS.md
+[INFO] Done!
+[INFO] No contracts were migrated to use the new shared randomizers. Each contract must be migrated individually.
