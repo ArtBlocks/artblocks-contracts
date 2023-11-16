@@ -5,6 +5,11 @@ import contractsQueryResult from "./engine-contracts-staging.json";
 // contracts that have been deployed to a network. It is a one-off script that should be ran with:
 // `yarn hardhat run --network <network> scripts/one-off/backfill-engine-contracts.ts`
 
+// NOTE: Only V3+ core contracts should be registered on the core registry. V1 and V2
+// contracts should not be registered on the core registry, because they do not integrate
+// with the shared minter suite, and the Core Registry acts as the allowlist for the shared minter
+// filter.
+
 /**
  * Converts a query of our indexed data to a calldata array for the core registry
  * `registerContracts` function. This is a one-off script to backfill the core registry
