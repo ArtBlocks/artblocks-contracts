@@ -80,3 +80,36 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0xb5B7fb32C42c2c1c49285D54A35aa70793404b1F, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-17T22:52:49.143Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/unit-london-flex/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98
+[INFO] Using shared Randomizer at 0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2
+[INFO] Registered core contract 0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2 on core registry 0x2eE7B9bB2E038bE7323A119701A191c030A61ec6
+[INFO] Updated the Minter Filter on the Core contract to 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0xfD4539D06B39250c67207E1928e107b534f5eF13.
+[INFO] Verifying core contract contract deployment...
+The contract 0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2 has already been verified
+[INFO] Core contract verified on Etherscan at 0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98
+Created s3 bucket for https://unit-london-mainnet.s3.amazonaws.com
+[INFO] Created image bucket unit-london-mainnet
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/unit-london-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x5d8efdc20272cd3e24a27dfe7f25795a107c99a2",
+  "name": "Unit London",
+  "bucket_name": "unit-london-mainnet",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] AdminACL's superAdmin address is 0xfD4539D06B39250c67207E1928e107b534f5eF13, don't forget to update if requred.

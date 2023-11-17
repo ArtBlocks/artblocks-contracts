@@ -84,3 +84,42 @@ Date: 2023-05-26T21:16:47.862Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-11-17T22:54:26.917Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/unit-london-flex/deployment-config.mainnet.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://etherscan.io/address/0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2#code
+
+**AdminACLV1:** https://etherscan.io/address/0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98#code
+
+**Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+
+**Shared Minter Filter:** https://etherscan.io/address/0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Unit London
+- **Token Ticker:** UNITLDN
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** 0x33b15a0395D95c768c22897D3b74D63089B47f2F
+- **Platform Provider Address, Primary Sales:** 0xfD4539D06B39250c67207E1928e107b534f5eF13
+- **BytecodeStorageReader Library:** 0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** unit-london-mainnet
+
+---
+

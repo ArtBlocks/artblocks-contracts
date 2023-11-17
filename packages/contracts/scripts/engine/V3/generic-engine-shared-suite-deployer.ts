@@ -617,10 +617,12 @@ Date: ${new Date().toISOString()}
     // FOLLOW-ON ACTIONS BEGINS HERE
     //////////////////////////////////////////////////////////////////////////////
 
-    // Reminder to update provider payment addresses that are left as the deployer for now.
-    console.log(
-      `[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: ${deployer.address}. Update later as needed.`
-    );
+    // Reminder to update provider payment addresses if left as deployer.
+    if (deployDetails.renderProviderAddress.toLowerCase() == "deployer") {
+      console.log(
+        `[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: ${deployer.address}. Update later as needed.`
+      );
+    }
 
     // Reminder to update adminACL superAdmin if needed
     const adminACLSuperAdmin = await adminACL.superAdmin();
