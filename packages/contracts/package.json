@@ -71,7 +71,7 @@
     "@openzeppelin/test-helpers": "^0.5.16",
     "@remix-project/remixd": "^0.6.18",
     "@typechain/ethers-v5": "^11.1.2",
-    "@types/jest": "^29.5.7",
+    "@types/jest": "^29.5.8",
     "@types/mocha": "^10.0.3",
     "@types/prompt": "^1.1.7",
     "@typescript-eslint/eslint-plugin": "^6.11.0",
@@ -113,6 +113,6 @@
     "@openzeppelin-4.8/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@4.8.0",
     "@urql/exchange-retry": "^1.2.0",
     "graphql": "^16.8.1",
-    "urql": "^4.0.5"
+    "urql": "^4.0.6"
   }
 }
