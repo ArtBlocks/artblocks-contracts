@@ -1,0 +1,46 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-17T22:31:24.658Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/noble-gallery/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x6a5976391E708fBf918c3786cd1FcbB88732fbc1
+[INFO] Using shared Randomizer at 0xC91CFC2062D8B4Ff53A7c8836CAEf925a7C78c81
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98
+[INFO] Registered core contract 0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98 on core registry 0x4B5f26A0Bd22bB28F9E3aD15fFA5fB23fC791786
+[INFO] Updated the Minter Filter on the Core contract to 0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0xf8e90D2D2f6f67A13D0a04374e22624A80a1e918.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine_Flex.sol:GenArt721CoreV3_Engine_Flex at 0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex on Etherscan.
+https://goerli.etherscan.io/address/0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98#code
+[INFO] Core contract verified on Etherscan at 0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98}
+[INFO] Verifying AdminACL contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/AdminACLV1.sol:AdminACLV1 at 0x6a5976391E708fBf918c3786cd1FcbB88732fbc1
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV1 on Etherscan.
+https://goerli.etherscan.io/address/0x6a5976391E708fBf918c3786cd1FcbB88732fbc1#code
+[INFO] AdminACL contract verified on Etherscan at 0x6a5976391E708fBf918c3786cd1FcbB88732fbc1
+Created s3 bucket for https://noble-generative-goerli.s3.amazonaws.com
+[INFO] Created image bucket noble-generative-goerli
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/noble-gallery/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x9b2e24bcb09aada3e8ee4f56d77713453afd8a98",
+  "name": "Noble Generative",
+  "bucket_name": "noble-generative-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xf8e90D2D2f6f67A13D0a04374e22624A80a1e918, don't forget to update if requred.
