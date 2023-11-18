@@ -2,6 +2,7 @@ import prompt from "prompt";
 import fs from "fs";
 import path from "path";
 var util = require("util");
+import { ethers } from "hardhat";
 
 export function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -58,6 +59,9 @@ export type DeployConfigDetails = {
   renderProviderSplitPercentagePrimary?: number;
   renderProviderSplitBPSSecondary?: number;
   defaultVerticalName?: string;
+  // flagship core fields
+  artblocksPrimarySalesAddress?: string;
+  artblocksSecondarySalesAddress?: string;
 };
 
 export async function getConfigInputs(
@@ -108,4 +112,18 @@ export async function getConfigInputs(
     `[INFO] Deployment configuration file: ${fullDeploymentConfigPath}`
   );
   return { deployConfigDetailsArray, deploymentConfigFile, inputFileDirectory };
+}
+
+export async function getNetworkName() {
+  const network = await ethers.provider.getNetwork();
+  let networkName = network.name;
+  if (networkName === "homestead") {
+    networkName = "mainnet";
+  } else if (networkName === "unknown" && network.chainId === 421614) {
+    // The arbitrum-sepolia rpc currently only returns a chainId
+    // for arbitrum-sepolia so we need to manually set the name here
+    networkName = "arbitrum-sepolia";
+  }
+
+  return networkName;
 }

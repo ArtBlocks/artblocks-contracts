@@ -1,0 +1,93 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-08T00:44:35.606Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/flagship/V3/dev-sepolia/deployment-config.dev.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: dev
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-08T00:54:30.826Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/flagship/V3/dev-sepolia/deployment-config.dev.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: dev
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-08T00:57:37.057Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/flagship/V3/dev-sepolia/deployment-config.dev.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: dev
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-08T00:59:05.969Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/flagship/V3/dev-sepolia/deployment-config.dev.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: dev
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-08T01:06:08.939Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/flagship/V3/dev-sepolia/deployment-config.dev.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: dev
+GenArt721Core deployed at 0xEC5DaE4b11213290B2dBe5295093f75920bD2982
+[INFO] Registered core contract 0xEC5DaE4b11213290B2dBe5295093f75920bD2982 on core registry 0x985C11541ff1fe763822Dc8f71B581C688B979EE
+[INFO] Updated the Minter Filter on the Core contract.
+[INFO] artblocks primary sales payment address remains as deployer addresses: 0x2246475beddf9333b6a6D9217194576E7617Afd1.
+[INFO] artblocks secondary sales payment address remains as deployer addresses: 0x2246475beddf9333b6a6D9217194576E7617Afd1.
+[INFO] Added initial project Art Blocks Core V3 Dev (Sepolia) on core contract at 0xEC5DaE4b11213290B2dBe5295093f75920bD2982.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/GenArt721CoreV3.sol:GenArt721CoreV3 at 0xEC5DaE4b11213290B2dBe5295093f75920bD2982
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3 on Etherscan.
+https://sepolia.etherscan.io/address/0xEC5DaE4b11213290B2dBe5295093f75920bD2982#code
+[INFO] Core contract verified on Etherscan at 0xEC5DaE4b11213290B2dBe5295093f75920bD2982}
+[ERROR] Failed to create image bucket
+[INFO] Deployment details written to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/flagship/V3/dev-sepolia/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xec5dae4b11213290b2dbe5295093f75920bd2982",
+  "name": "Art Blocks Core V3 Dev (Sepolia)",
+  "bucket_name": "TBD",
+  "default_vertical_name": "presents"
+}
+Successfully upserted 1 contract
+Upserting 1 project...
+Projects metadata upsert input:
+{
+  "id": "0xec5dae4b11213290b2dbe5295093f75920bd2982-0",
+  "contract_address": "0xec5dae4b11213290b2dbe5295093f75920bd2982",
+  "project_id": "0",
+  "artist_address": "0x2246475beddf9333b6a6d9217194576e7617afd1",
+  "vertical_name": "presents"
+}
+Error upserting project: [GraphQL] Foreign key violation. insert or update on table "projects_metadata" violates foreign key constraint "projects_metadata_artist_address_fkey"
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-08T01:21:54.623Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/flagship/V3/dev-sepolia/deployment-config.dev.ts
+[ERROR] Failed to create image bucket
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-08T01:24:06.835Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/flagship/V3/dev-sepolia/deployment-config.dev.ts
+Created s3 bucket for https://art-blocks-core-v3-dev-sepolia-sepolia.s3.amazonaws.com
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-08T01:28:43.132Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/flagship/V3/dev-sepolia/deployment-config.dev.ts
+art-blocks-core-v3-dev-sepolia-sepolia
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-08T01:29:42.714Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/flagship/V3/dev-sepolia/deployment-config.dev.ts
+sepolia-sepolia
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-08T01:31:10.983Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/flagship/V3/dev-sepolia/deployment-config.dev.ts
+sepolia-sepolia
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-08T01:32:47.240Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/flagship/V3/dev-sepolia/deployment-config.dev.ts
+sepolia-sepolia
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-08T01:33:18.517Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/flagship/V3/dev-sepolia/deployment-config.dev.ts
+sepolia-sepolia
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-08T01:35:32.488Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/flagship/V3/dev-sepolia/deployment-config.dev.ts
+Created s3 bucket for https://art-blocks-core-v3-dev-sepolia.s3.amazonaws.com
