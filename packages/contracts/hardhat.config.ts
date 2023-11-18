@@ -5,7 +5,7 @@ import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-contract-sizer";
-import "@nomiclabs/hardhat-etherscan";
+import "@nomicfoundation/hardhat-verify";
 import "hardhat-docgen";
 import "@openzeppelin/hardhat-upgrades";
 import { solidityConfig } from "./hardhat.solidity-config";
@@ -118,6 +118,16 @@ module.exports = {
       "arbitrum-sepolia": ARBISCAN_API_KEY,
       "arbitrum-goerli": ARBISCAN_API_KEY,
     },
+    customChains: [
+      {
+        network: "arbitrum-sepolia",
+        chainId: 421614,
+        urls: {
+          apiURL: "https://api-sepolia.arbiscan.io/api",
+          browserURL: "https://sepolia.arbiscan.io",
+        },
+      },
+    ],
   },
   contractSizer: {
     alphaSort: true,
