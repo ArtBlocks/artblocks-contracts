@@ -15,6 +15,8 @@ const supportedNetworks = [
   "goerli",
   "arbitrum-goerli",
   "arbitrum",
+  "sepolia",
+  "arbitrum-sepolia",
 ];
 
 const ethereumAWSCreds = {

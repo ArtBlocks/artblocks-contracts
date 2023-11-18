@@ -1,0 +1,176 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-11T01:48:18.919Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/arbitrum-sepolia-staging/shared-minter-deploy-config.staging.ts
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-11T01:49:11.372Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/arbitrum-sepolia-staging/shared-minter-deploy-config.staging.ts
+[INFO] MinterSetPriceV5 deployed at 0x7497909537cE00fDda93c12d5083D8647C593c67
+[INFO] MinterSetPriceV5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterSetPriceV5 contract deployment...
+[WARN] Etherscan verification of MinterSetPriceV5 failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+[ACTION] Verify MinterSetPriceV5 contract deployment with:
+yarn hardhat verify --network arbitrum-sepolia 0x7497909537cE00fDda93c12d5083D8647C593c67 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/arbitrum-sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterSetPriceERC20V5 deployed at 0x422f493D257e8eFab558137299a509d5a2702BBc
+[INFO] MinterSetPriceERC20V5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterSetPriceERC20V5 contract deployment...
+[WARN] Etherscan verification of MinterSetPriceERC20V5 failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-11T02:01:04.102Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/arbitrum-sepolia-staging/shared-minter-deploy-config.staging.ts
+[INFO] MinterSetPriceV5 deployed at 0x5C8C93998023556950174D97b311d2C6B653f586
+[INFO] MinterSetPriceV5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterSetPriceV5 contract deployment...
+[WARN] Etherscan verification of MinterSetPriceV5 failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+[ACTION] Verify MinterSetPriceV5 contract deployment with:
+yarn hardhat verify --network arbitrum-sepolia 0x5C8C93998023556950174D97b311d2C6B653f586 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/arbitrum-sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterSetPriceERC20V5 deployed at 0x14ff6f834a2a00E6E5611962B5db6cD23AF401e9
+[INFO] MinterSetPriceERC20V5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterSetPriceERC20V5 contract deployment...
+[WARN] Etherscan verification of MinterSetPriceERC20V5 failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+[ACTION] Verify MinterSetPriceERC20V5 contract deployment with:
+yarn hardhat verify --network arbitrum-sepolia 0x14ff6f834a2a00E6E5611962B5db6cD23AF401e9 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/arbitrum-sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterSetPriceHolderV5 deployed at 0xDd06d8483868Cd0C5E69C24eEaA2A5F2bEaFd42b
+[INFO] MinterSetPriceHolderV5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterSetPriceHolderV5 contract deployment...
+[WARN] Etherscan verification of MinterSetPriceHolderV5 failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+[ACTION] Verify MinterSetPriceHolderV5 contract deployment with:
+yarn hardhat verify --network arbitrum-sepolia 0xDd06d8483868Cd0C5E69C24eEaA2A5F2bEaFd42b 0xa07f47c30C262adcC263A4D44595972c50e04db7 0x00000000000076A84feF008CDAbe6409d2FE638B
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/arbitrum-sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterSetPriceMerkleV5 deployed at 0x2146A41F2c1432895d6D0ADF9c60BF0a226Bac0e
+[INFO] MinterSetPriceMerkleV5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterSetPriceMerkleV5 contract deployment...
+[WARN] Etherscan verification of MinterSetPriceMerkleV5 failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+[ACTION] Verify MinterSetPriceMerkleV5 contract deployment with:
+yarn hardhat verify --network arbitrum-sepolia 0x2146A41F2c1432895d6D0ADF9c60BF0a226Bac0e 0xa07f47c30C262adcC263A4D44595972c50e04db7 0x00000000000076A84feF008CDAbe6409d2FE638B
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/arbitrum-sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterSetPricePolyptychV5 deployed at 0xE8394175365Fd746Bb1179244a6F8e3398aa22FF
+[INFO] MinterSetPricePolyptychV5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterSetPricePolyptychV5 contract deployment...
+[WARN] Etherscan verification of MinterSetPricePolyptychV5 failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+[ACTION] Verify MinterSetPricePolyptychV5 contract deployment with:
+yarn hardhat verify --network arbitrum-sepolia 0xE8394175365Fd746Bb1179244a6F8e3398aa22FF 0xa07f47c30C262adcC263A4D44595972c50e04db7 0x00000000000076A84feF008CDAbe6409d2FE638B
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/arbitrum-sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterSetPricePolyptychERC20V5 deployed at 0x1c207b57D3FF22f58CE5aD702A2a89F09CE19366
+[INFO] MinterSetPricePolyptychERC20V5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterSetPricePolyptychERC20V5 contract deployment...
+[WARN] Etherscan verification of MinterSetPricePolyptychERC20V5 failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+[ACTION] Verify MinterSetPricePolyptychERC20V5 contract deployment with:
+yarn hardhat verify --network arbitrum-sepolia 0x1c207b57D3FF22f58CE5aD702A2a89F09CE19366 0xa07f47c30C262adcC263A4D44595972c50e04db7 0x00000000000076A84feF008CDAbe6409d2FE638B
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/arbitrum-sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterDAExpV5 deployed at 0xA6AE3B1c0177C9addA7E9f57Bb96686F892aFe10
+[INFO] MinterDAExpV5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterDAExpV5 contract deployment...
+[WARN] Etherscan verification of MinterDAExpV5 failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+[ACTION] Verify MinterDAExpV5 contract deployment with:
+yarn hardhat verify --network arbitrum-sepolia 0xA6AE3B1c0177C9addA7E9f57Bb96686F892aFe10 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/arbitrum-sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterDALinV5 deployed at 0x06Bdff0A69d1b8E18C5B27b03945f024d3490691
+[INFO] MinterDALinV5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterDALinV5 contract deployment...
+[WARN] Etherscan verification of MinterDALinV5 failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+[ACTION] Verify MinterDALinV5 contract deployment with:
+yarn hardhat verify --network arbitrum-sepolia 0x06Bdff0A69d1b8E18C5B27b03945f024d3490691 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/arbitrum-sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterDAExpSettlementV3 deployed at 0xa319C382a702682129fcbF55d514E61a16f97f9c
+[INFO] MinterDAExpSettlementV3 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterDAExpSettlementV3 contract deployment...
+[WARN] Etherscan verification of MinterDAExpSettlementV3 failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+[ACTION] Verify MinterDAExpSettlementV3 contract deployment with:
+yarn hardhat verify --network arbitrum-sepolia 0xa319C382a702682129fcbF55d514E61a16f97f9c 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/arbitrum-sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterDAExpHolderV5 deployed at 0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A
+[INFO] MinterDAExpHolderV5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterDAExpHolderV5 contract deployment...
+[WARN] Etherscan verification of MinterDAExpHolderV5 failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+[ACTION] Verify MinterDAExpHolderV5 contract deployment with:
+yarn hardhat verify --network arbitrum-sepolia 0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A 0xa07f47c30C262adcC263A4D44595972c50e04db7 0x00000000000076A84feF008CDAbe6409d2FE638B
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/arbitrum-sepolia-staging/DEPLOYMENTS.md
+[INFO] MinterDALinHolderV5 deployed at 0x6feb0aB02A85d2C3c5a79B822f0a00061cBBb040
+[INFO] MinterDALinHolderV5 approved globally on minter filter at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying MinterDALinHolderV5 contract deployment...
+[WARN] Etherscan verification of MinterDALinHolderV5 failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+[ACTION] Verify MinterDALinHolderV5 contract deployment with:
+yarn hardhat verify --network arbitrum-sepolia 0x6feb0aB02A85d2C3c5a79B822f0a00061cBBb040 0xa07f47c30C262adcC263A4D44595972c50e04db7 0x00000000000076A84feF008CDAbe6409d2FE638B
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/arbitrum-sepolia-staging/DEPLOYMENTS.md
+[INFO] Done!
