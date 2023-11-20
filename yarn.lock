@@ -6896,10 +6896,10 @@
   resolved "https://registry.yarnpkg.com/@types/prettier/-/prettier-2.7.2.tgz#6c2324641cc4ba050a8c710b2b251b377581fbf0"
   integrity sha512-KufADq8uQqo1pYKVIYzfKbJfBAc0sOeXqGbFaSpv8MRmC/zXgowNZmFcbngndGk922QDmOASEXUZCaY48gs4cg==
 
-"@types/prompt@^1.1.7":
-  version "1.1.7"
-  resolved "https://registry.yarnpkg.com/@types/prompt/-/prompt-1.1.7.tgz#f1d23f279dc8785acc1eaa6fdbff8297173b46ca"
-  integrity sha512-RNOOfuVLljqRTeYpBZ12P+7mDnbEtDmsoPlOnCM+Yv2qo7+rgGZ5Q0tlqNq5OMkBKM7nGjWwlXoiTeDIjYgcdw==
+"@types/prompt@^1.1.8":
+  version "1.1.8"
+  resolved "https://registry.yarnpkg.com/@types/prompt/-/prompt-1.1.8.tgz#86de7d677026e7499e4a7b7f1a99a9d2401fd686"
+  integrity sha512-CF39wIJrSUJ291/M3rXyjQ7gWZfY8qyGw/zraQmFyq72CaJXRWBeQ2BS5FueFRGy38JhaBM08+Nlk/qcqSm72w==
   dependencies:
     "@types/node" "*"
     "@types/revalidator" "*"
