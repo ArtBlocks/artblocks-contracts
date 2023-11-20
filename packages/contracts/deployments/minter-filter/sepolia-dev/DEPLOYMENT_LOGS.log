@@ -1,0 +1,36 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-01T23:24:14.410Z
+[INFO] Deployment configuration file: /Users/benlyaunzon/Documents/ab/artblocks-contracts/packages/contracts/deployments/minter-filter/sepolia-dev/shared-minter-filter-deploy-config.dev.ts
+[INFO] Admin ACL contract AdminACLV0 deployed at 0x2a37fD7c5eAf4149B811796ab00769dE0F6B5569
+[INFO] Core Registry contract CoreRegistryV1 deployed at 0x985C11541ff1fe763822Dc8f71B581C688B979EE
+[INFO] MinterFilterV2 deployed at 0x29e9f09244497503f304FA549d50eFC751D818d2
+[INFO] Verifying AdminACLV0 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/AdminACLV0.sol:AdminACLV0 at 0x2a37fD7c5eAf4149B811796ab00769dE0F6B5569
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV0 on Etherscan.
+https://sepolia.etherscan.io/address/0x2a37fD7c5eAf4149B811796ab00769dE0F6B5569#code
+[INFO] AdminACLV0 contract verified on Etherscan at 0x2a37fD7c5eAf4149B811796ab00769dE0F6B5569
+[INFO] Verifying CoreRegistryV1 contract deployment...
+Compiled 260 Solidity files successfully
+Successfully submitted source code for contract
+contracts/engine-registry/CoreRegistryV1.sol:CoreRegistryV1 at 0x985C11541ff1fe763822Dc8f71B581C688B979EE
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract CoreRegistryV1 on Etherscan.
+https://sepolia.etherscan.io/address/0x985C11541ff1fe763822Dc8f71B581C688B979EE#code
+[INFO] CoreRegistryV1 contract verified on Etherscan at 0x985C11541ff1fe763822Dc8f71B581C688B979EE
+[INFO] Verifying MinterFilterV2 contract deployment...
+Compiled 260 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/MinterFilter/MinterFilterV2.sol:MinterFilterV2 at 0x29e9f09244497503f304FA549d50eFC751D818d2
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterFilterV2 on Etherscan.
+https://sepolia.etherscan.io/address/0x29e9f09244497503f304FA549d50eFC751D818d2#code
+[INFO] MinterFilterV2 contract verified on Etherscan at 0x29e9f09244497503f304FA549d50eFC751D818d2
+[INFO] Deployment details written/appended to /Users/benlyaunzon/Documents/ab/artblocks-contracts/packages/contracts/deployments/minter-filter/sepolia-dev/DEPLOYMENTS.md
+[INFO] Done!
+[INFO] Ensure any superAdmin migration actions are performed before proceeding to use the deployed contracts.

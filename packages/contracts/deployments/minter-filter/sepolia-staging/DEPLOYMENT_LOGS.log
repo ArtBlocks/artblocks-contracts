@@ -1,0 +1,30 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-06T21:34:27.180Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minter-filter/sepolia-staging/shared-minter-filter-deploy-config.staging.ts
+[INFO] Admin ACL contract AdminACLV0 deployed at 0x3b30d421a6dA95694EaaE09971424F15Eb375269
+[INFO] Core Registry contract CoreRegistryV1 deployed at 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] MinterFilterV2 deployed at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Verifying AdminACLV0 contract deployment...
+The contract 0x3b30d421a6dA95694EaaE09971424F15Eb375269 has already been verified
+[INFO] AdminACLV0 contract verified on Etherscan at 0x3b30d421a6dA95694EaaE09971424F15Eb375269
+[INFO] Verifying CoreRegistryV1 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine-registry/CoreRegistryV1.sol:CoreRegistryV1 at 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract CoreRegistryV1 on Etherscan.
+https://sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+[INFO] CoreRegistryV1 contract verified on Etherscan at 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Verifying MinterFilterV2 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/MinterFilter/MinterFilterV2.sol:MinterFilterV2 at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterFilterV2 on Etherscan.
+https://sepolia.etherscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+[INFO] MinterFilterV2 contract verified on Etherscan at 0xa07f47c30C262adcC263A4D44595972c50e04db7
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minter-filter/sepolia-staging/DEPLOYMENTS.md
+[INFO] Done!
+[INFO] Ensure any superAdmin migration actions are performed before proceeding to use the deployed contracts.

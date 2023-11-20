@@ -1,0 +1,123 @@
+[INFO] Datetime of deployment: 2023-11-08T18:29:56.552Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/shared-minter-deploy-config.dev.ts
+[INFO] MinterSetPriceV5 deployed at 0x42c250c81cd2D38143a89A21cab6434092c2F52b
+[INFO] MinterSetPriceV5 approved globally on minter filter at 0x29e9f09244497503f304FA549d50eFC751D818d2
+[INFO] Verifying MinterSetPriceV5 contract deployment...
+The contract 0x42c250c81cd2D38143a89A21cab6434092c2F52b has already been verified
+[INFO] MinterSetPriceV5 contract verified on Etherscan at 0x42c250c81cd2D38143a89A21cab6434092c2F52b
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/DEPLOYMENTS.md
+[INFO] MinterSetPriceERC20V5 deployed at 0xfA66dAA16268E9e0D7D11A3d45982077241ACdb8
+[INFO] MinterSetPriceERC20V5 approved globally on minter filter at 0x29e9f09244497503f304FA549d50eFC751D818d2
+[INFO] Verifying MinterSetPriceERC20V5 contract deployment...
+The contract 0xfA66dAA16268E9e0D7D11A3d45982077241ACdb8 has already been verified
+[INFO] MinterSetPriceERC20V5 contract verified on Etherscan at 0xfA66dAA16268E9e0D7D11A3d45982077241ACdb8
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/DEPLOYMENTS.md
+[INFO] MinterSetPriceHolderV5 deployed at 0x2c9939F0829f3111fd4499221f6d2a88996F6899
+[INFO] MinterSetPriceHolderV5 approved globally on minter filter at 0x29e9f09244497503f304FA549d50eFC751D818d2
+[INFO] Verifying MinterSetPriceHolderV5 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceHolderV5.sol:MinterSetPriceHolderV5 at 0x2c9939F0829f3111fd4499221f6d2a88996F6899
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceHolderV5 on Etherscan.
+https://sepolia.etherscan.io/address/0x2c9939F0829f3111fd4499221f6d2a88996F6899#code
+[INFO] MinterSetPriceHolderV5 contract verified on Etherscan at 0x2c9939F0829f3111fd4499221f6d2a88996F6899
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/DEPLOYMENTS.md
+[INFO] MinterSetPriceMerkleV5 deployed at 0x522FA6Bd096787b9aD5E96cD8c6CC1ECAe582044
+[INFO] MinterSetPriceMerkleV5 approved globally on minter filter at 0x29e9f09244497503f304FA549d50eFC751D818d2
+[INFO] Verifying MinterSetPriceMerkleV5 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceMerkleV5.sol:MinterSetPriceMerkleV5 at 0x522FA6Bd096787b9aD5E96cD8c6CC1ECAe582044
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceMerkleV5 on Etherscan.
+https://sepolia.etherscan.io/address/0x522FA6Bd096787b9aD5E96cD8c6CC1ECAe582044#code
+[INFO] MinterSetPriceMerkleV5 contract verified on Etherscan at 0x522FA6Bd096787b9aD5E96cD8c6CC1ECAe582044
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/DEPLOYMENTS.md
+[INFO] MinterSetPricePolyptychV5 deployed at 0xA863523C0147e82B365991f4D23aCe8c1FCd93A9
+[INFO] MinterSetPricePolyptychV5 approved globally on minter filter at 0x29e9f09244497503f304FA549d50eFC751D818d2
+[INFO] Verifying MinterSetPricePolyptychV5 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPricePolyptychV5.sol:MinterSetPricePolyptychV5 at 0xA863523C0147e82B365991f4D23aCe8c1FCd93A9
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPricePolyptychV5 on Etherscan.
+https://sepolia.etherscan.io/address/0xA863523C0147e82B365991f4D23aCe8c1FCd93A9#code
+[INFO] MinterSetPricePolyptychV5 contract verified on Etherscan at 0xA863523C0147e82B365991f4D23aCe8c1FCd93A9
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/DEPLOYMENTS.md
+[INFO] MinterSetPricePolyptychERC20V5 deployed at 0xf5c43CBeF349787CF54422742471c770C61074a0
+[INFO] MinterSetPricePolyptychERC20V5 approved globally on minter filter at 0x29e9f09244497503f304FA549d50eFC751D818d2
+[INFO] Verifying MinterSetPricePolyptychERC20V5 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPricePolyptychERC20V5.sol:MinterSetPricePolyptychERC20V5 at 0xf5c43CBeF349787CF54422742471c770C61074a0
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPricePolyptychERC20V5 on Etherscan.
+https://sepolia.etherscan.io/address/0xf5c43CBeF349787CF54422742471c770C61074a0#code
+[INFO] MinterSetPricePolyptychERC20V5 contract verified on Etherscan at 0xf5c43CBeF349787CF54422742471c770C61074a0
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/DEPLOYMENTS.md
+[INFO] MinterDAExpV5 deployed at 0x7856a8AEf94c7d73d764E3fd71f76A44ba79F78e
+[INFO] MinterDAExpV5 approved globally on minter filter at 0x29e9f09244497503f304FA549d50eFC751D818d2
+[INFO] Verifying MinterDAExpV5 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDAExpV5.sol:MinterDAExpV5 at 0x7856a8AEf94c7d73d764E3fd71f76A44ba79F78e
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpV5 on Etherscan.
+https://sepolia.etherscan.io/address/0x7856a8AEf94c7d73d764E3fd71f76A44ba79F78e#code
+[INFO] MinterDAExpV5 contract verified on Etherscan at 0x7856a8AEf94c7d73d764E3fd71f76A44ba79F78e
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/DEPLOYMENTS.md
+[INFO] MinterDALinV5 deployed at 0xb7Ab729eA2e3E2884d3fF0bCbEbcfeb0359144e2
+[INFO] MinterDALinV5 approved globally on minter filter at 0x29e9f09244497503f304FA549d50eFC751D818d2
+[INFO] Verifying MinterDALinV5 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDALinV5.sol:MinterDALinV5 at 0xb7Ab729eA2e3E2884d3fF0bCbEbcfeb0359144e2
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDALinV5 on Etherscan.
+https://sepolia.etherscan.io/address/0xb7Ab729eA2e3E2884d3fF0bCbEbcfeb0359144e2#code
+[INFO] MinterDALinV5 contract verified on Etherscan at 0xb7Ab729eA2e3E2884d3fF0bCbEbcfeb0359144e2
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/DEPLOYMENTS.md
+[INFO] MinterDAExpSettlementV3 deployed at 0x38c0Ab6a9DcAd4dae17b75079D8f5D3b99C97D10
+[INFO] MinterDAExpSettlementV3 approved globally on minter filter at 0x29e9f09244497503f304FA549d50eFC751D818d2
+[INFO] Verifying MinterDAExpSettlementV3 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDAExpSettlementV3.sol:MinterDAExpSettlementV3 at 0x38c0Ab6a9DcAd4dae17b75079D8f5D3b99C97D10
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpSettlementV3 on Etherscan.
+https://sepolia.etherscan.io/address/0x38c0Ab6a9DcAd4dae17b75079D8f5D3b99C97D10#code
+[INFO] MinterDAExpSettlementV3 contract verified on Etherscan at 0x38c0Ab6a9DcAd4dae17b75079D8f5D3b99C97D10
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/DEPLOYMENTS.md
+[INFO] MinterDAExpHolderV5 deployed at 0x1aDE06149C3C4992F81692447eF305D6eF82A984
+[INFO] MinterDAExpHolderV5 approved globally on minter filter at 0x29e9f09244497503f304FA549d50eFC751D818d2
+[INFO] Verifying MinterDAExpHolderV5 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDAExpHolderV5.sol:MinterDAExpHolderV5 at 0x1aDE06149C3C4992F81692447eF305D6eF82A984
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpHolderV5 on Etherscan.
+https://sepolia.etherscan.io/address/0x1aDE06149C3C4992F81692447eF305D6eF82A984#code
+[INFO] MinterDAExpHolderV5 contract verified on Etherscan at 0x1aDE06149C3C4992F81692447eF305D6eF82A984
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/DEPLOYMENTS.md
+[INFO] MinterDALinHolderV5 deployed at 0x725b18673125Bb1384c65a558D24A13fbb88D812
+[INFO] MinterDALinHolderV5 approved globally on minter filter at 0x29e9f09244497503f304FA549d50eFC751D818d2
+[INFO] Verifying MinterDALinHolderV5 contract deployment...
+Compiled 263 Solidity files successfully (evm targets: istanbul, london, paris).
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDALinHolderV5.sol:MinterDALinHolderV5 at 0x725b18673125Bb1384c65a558D24A13fbb88D812
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDALinHolderV5 on Etherscan.
+https://sepolia.etherscan.io/address/0x725b18673125Bb1384c65a558D24A13fbb88D812#code
+[INFO] MinterDALinHolderV5 contract verified on Etherscan at 0x725b18673125Bb1384c65a558D24A13fbb88D812
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/DEPLOYMENTS.md
+[INFO] Done!

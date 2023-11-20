@@ -13,7 +13,7 @@ Logger.setLogLevel(Logger.levels.ERROR);
 import prompt from "prompt";
 
 // delay to avoid issues with reorgs and tx failures
-import { delay, getAppPath } from "../../util/utils";
+import { delay, getAppPath, getNetworkName } from "../../util/utils";
 import {
   DELEGATION_REGISTRY_ADDRESSES,
   WETH_ADDRESSES,
@@ -81,8 +81,7 @@ async function main() {
     //////////////////////////////////////////////////////////////////////////////
 
     // verify intended network
-    const network = await ethers.provider.getNetwork();
-    const networkName = network.name == "homestead" ? "mainnet" : network.name;
+    const networkName = await getNetworkName();
     if (networkName != deployDetails.network) {
       throw new Error(
         `[ERROR] This script is intended to be run on network ${deployDetails.network} only, but is being run on ${networkName}`

@@ -158,9 +158,11 @@ BytecodeStorageReader (currently on V1 version) is public library for reading fr
 Given that it is an externally linked library with a shared public deployment, the deployment addresses for these shared deployments are referenced in our shared deployments `constants.ts` util (in the `BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES` constant) so that they may be linked at time of deployment and are also linked here below for shared reference:
 
 - V1 `BytecodeStorageReader` (goerli): https://goerli.etherscan.io/address/0xB8B806A10d16cc80dB788552B54B3ECb4A2A3C3D#code
+- V1 `BytecodeStorageReader` (sepolia): https://sepolia.etherscan.io/address/0x7497909537cE00fDda93c12d5083D8647C593c67#code
 - V1 `BytecodeStorageReader` (mainnet): https://etherscan.io/address/0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5#code
 - V1 `BytecodeStorageReader` (arbitrum-goerli): https://goerli.arbiscan.io/address/0x681861cD4fC92d70aE57745385065ef862954662#code
 - V1 `BytecodeStorageReader` (arbitrum): https://arbiscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+- V1 `BytecodeStorageReader` (arbitrum-sepolia): https://sepolia.arbiscan.io/address/0xb219C04128c9749b597c35D416b9988bEa9E1114#code
 
 ## Shared Randomizers
 
@@ -172,8 +174,8 @@ The most recent version of the Shared Randomizer contract is deployed at the fol
 
 - Mainnet: `0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91`
 - Goerli Staging: `0xC91CFC2062D8B4Ff53A7c8836CAEf925a7C78c81`
-- Arbitrum One: TBD
-- Arbitrum Goerli: TBD
+- Arbitrum One: `0x6a5976391E708fBf918c3786cd1FcbB88732fbc1`
+- Arbitrum Sepolia: `0x28f2D3805652FB5d359486dFfb7D08320D403240`
 
 ## Contract Source Code Verification
 

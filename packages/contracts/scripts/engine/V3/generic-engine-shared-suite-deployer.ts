@@ -25,7 +25,7 @@ import { tryVerify } from "../../util/verification";
 // image bucket creation
 import { createEngineBucket } from "../../util/aws_s3";
 // delay to avoid issues with reorgs and tx failures
-import { delay, getConfigInputs } from "../../util/utils";
+import { delay, getConfigInputs, getNetworkName } from "../../util/utils";
 
 const ONE_HUNDRED_PERCENT = BigNumber.from(100);
 const TEN_THOUSAND_BASIS_POINTS = BigNumber.from(10000);
@@ -66,8 +66,7 @@ async function main() {
     const deployDetails = deployConfigDetailsArray[index];
 
     // verify intended network
-    const network = await ethers.provider.getNetwork();
-    const networkName = network.name == "homestead" ? "mainnet" : network.name;
+    const networkName = await getNetworkName();
     if (networkName != deployDetails.network) {
       throw new Error(
         `[ERROR] This script is intended to be run on network ${deployDetails.network} only, but is being run on ${networkName}`
@@ -167,8 +166,7 @@ async function main() {
   // Perform the following steps for each to-be-deployed contract
   for (let index = 0; index < deployConfigDetailsArray.length; index++) {
     const deployDetails = deployConfigDetailsArray[index];
-    const network = await ethers.provider.getNetwork();
-    const networkName = network.name == "homestead" ? "mainnet" : network.name;
+    const networkName = await getNetworkName();
     const bytecodeStorageLibraryAddress =
       BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES[networkName];
     const activeCoreRegistryAddress = await getActiveCoreRegistry(
@@ -617,10 +615,12 @@ Date: ${new Date().toISOString()}
     // FOLLOW-ON ACTIONS BEGINS HERE
     //////////////////////////////////////////////////////////////////////////////
 
-    // Reminder to update provider payment addresses that are left as the deployer for now.
-    console.log(
-      `[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: ${deployer.address}. Update later as needed.`
-    );
+    // Reminder to update provider payment addresses if left as deployer.
+    if (deployDetails.renderProviderAddress.toLowerCase() == "deployer") {
+      console.log(
+        `[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: ${deployer.address}. Update later as needed.`
+      );
+    }
 
     // Reminder to update adminACL superAdmin if needed
     const adminACLSuperAdmin = await adminACL.superAdmin();

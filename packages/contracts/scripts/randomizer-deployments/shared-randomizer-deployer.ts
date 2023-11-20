@@ -11,7 +11,7 @@ import { Logger } from "@ethersproject/logger";
 Logger.setLogLevel(Logger.levels.ERROR);
 
 // delay to avoid issues with reorgs and tx failures
-import { delay, getConfigInputs } from "../util/utils";
+import { delay, getConfigInputs, getNetworkName } from "../util/utils";
 import { EXTRA_DELAY_BETWEEN_TX } from "../util/constants";
 
 /**
@@ -29,8 +29,7 @@ async function main() {
 
   // get accounts and network
   const [deployer] = await ethers.getSigners();
-  const network = await ethers.provider.getNetwork();
-  const networkName = network.name == "homestead" ? "mainnet" : network.name;
+  const networkName = await getNetworkName();
 
   //////////////////////////////////////////////////////////////////////////////
   // INPUT VERIFICATION BEGINS HERE
@@ -46,8 +45,13 @@ async function main() {
         `[ERROR] config file's network ${deployDetails.network} does not match the network you are deploying to ${networkName}`
       );
     }
-    // warn mainnet to use pre-deployed pseudorandomAtomicContract
-    if (networkName != "goerli" && networkName != "arbitrum-goerli") {
+    // ensure mainnet uses pre-deployed pseudorandomAtomicContract
+    if (
+      networkName != "goerli" &&
+      networkName != "arbitrum-goerli" &&
+      networkName != "sepolia" &&
+      networkName != "arbitrum-sepolia"
+    ) {
       // deploying on a mainnet
       if (!deployDetails.pseudorandomAtomicContractAddress) {
         console.warn(

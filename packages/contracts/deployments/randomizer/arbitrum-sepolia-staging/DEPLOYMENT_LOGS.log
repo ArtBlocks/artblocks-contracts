@@ -1,0 +1,18 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-11T01:32:48.683Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/randomizer/arbitrum-sepolia-staging/shared-randomizer-deploy-config.staging.ts
+[INFO] pseudorandom atomic contract PseudorandomAtomic deployed at 0xA1631F64d95b7dF046Ca3b00690A5e45DAe9527a
+[INFO] SharedRandomizerV0 deployed at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Verifying SharedRandomizerV0 contract deployment...
+[WARN] Etherscan verification of SharedRandomizerV0 failed: NomicLabsHardhatPluginError: Trying to verify a contract in a network with chain id 421614, but the plugin doesn't recognize it as a supported chain.
+
+You can manually add support for it by following these instructions: https://hardhat.org/verify-custom-networks
+
+To see the list of supported networks, run this command:
+
+  npx hardhat verify --list-networks
+[ACTION] Verify SharedRandomizerV0 contract deployment with:
+yarn hardhat verify --network arbitrum-sepolia 0x28f2D3805652FB5d359486dFfb7D08320D403240 0xA1631F64d95b7dF046Ca3b00690A5e45DAe9527a
+[INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/randomizer/arbitrum-sepolia-staging/DEPLOYMENTS.md
+[INFO] Done!
+[INFO] No contracts were migrated to use the new shared randomizers. Each contract must be migrated individually.
