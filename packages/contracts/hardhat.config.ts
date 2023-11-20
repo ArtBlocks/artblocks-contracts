@@ -10,28 +10,38 @@ import "hardhat-docgen";
 import "@openzeppelin/hardhat-upgrades";
 import { solidityConfig } from "./hardhat.solidity-config";
 
-const MAINNET_JSON_RPC_PROVIDER_URL = process.env.MAINNET_JSON_RPC_PROVIDER_URL;
-const SEPOLIA_JSON_RPC_PROVIDER_URL = process.env.SEPOLIA_JSON_RPC_PROVIDER_URL;
-const GOERLI_JSON_RPC_PROVIDER_URL = process.env.GOERLI_JSON_RPC_PROVIDER_URL;
-const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY;
-const TESTNET_PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
+// @dev load environment variables, falling back to defaults if not set to
+// enable running tests without a populated .env file
+const MAINNET_JSON_RPC_PROVIDER_URL =
+  process.env.MAINNET_JSON_RPC_PROVIDER_URL || "";
+const SEPOLIA_JSON_RPC_PROVIDER_URL =
+  process.env.SEPOLIA_JSON_RPC_PROVIDER_URL || "";
+const GOERLI_JSON_RPC_PROVIDER_URL =
+  process.env.GOERLI_JSON_RPC_PROVIDER_URL || "";
+// @dev private keys fallback to dummy default values for testing purposes
+const MAINNET_PRIVATE_KEY =
+  process.env.MAINNET_PRIVATE_KEY ||
+  "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+const TESTNET_PRIVATE_KEY =
+  process.env.TESTNET_PRIVATE_KEY ||
+  "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
-const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
-const ARBISCAN_API_KEY = process.env.ARBISCAN_API_KEY;
+const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "";
+const ARBISCAN_API_KEY = process.env.ARBISCAN_API_KEY || "";
 
 // L2 Configuration
 const ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL =
-  process.env.ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL;
+  process.env.ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL || "";
 const ARBITRUM_SEPOLIA_JSON_RPC_PROVIDER_URL =
-  process.env.ARBITRUM_SEPOLIA_JSON_RPC_PROVIDER_URL;
+  process.env.ARBITRUM_SEPOLIA_JSON_RPC_PROVIDER_URL || "";
 const ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL =
-  process.env.ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL;
+  process.env.ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL || "";
 
 // Sidechain Configuration
 const PALM_MAINNET_JSON_RPC_PROVIDER_URL =
-  process.env.PALM_MAINNET_JSON_RPC_PROVIDER_URL;
+  process.env.PALM_MAINNET_JSON_RPC_PROVIDER_URL || "";
 const PALM_TESTNET_JSON_RPC_PROVIDER_URL =
-  process.env.PALM_TESTNET_JSON_RPC_PROVIDER_URL;
+  process.env.PALM_TESTNET_JSON_RPC_PROVIDER_URL || "";
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more

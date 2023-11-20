@@ -5312,10 +5312,10 @@
     picocolors "^1.0.0"
     tslib "^2.6.0"
 
-"@remix-project/remixd@^0.6.18":
-  version "0.6.18"
-  resolved "https://registry.yarnpkg.com/@remix-project/remixd/-/remixd-0.6.18.tgz#230a06e509752a326b4814a73c25a58363a44606"
-  integrity sha512-7wvRdOMukKhbUmsDJ4AL6Frx2J9/cBsoKMP5sVUNAn4huO/UXy/cr3lwKxeoBOYxXK+V6cgSeorfLHj0pEYZkw==
+"@remix-project/remixd@^0.6.19":
+  version "0.6.19"
+  resolved "https://registry.yarnpkg.com/@remix-project/remixd/-/remixd-0.6.19.tgz#481c6b3366ef658488ed895bfa641e9c3f1bea44"
+  integrity sha512-VVyqyYFHH8n2uP8g2y0MgNNS1F2V8A5rgTMaRv79jOmOx3nPK+Wctv2Hn85m46kTILuPI4+Akc9VsIA26Cd5yw==
   dependencies:
     "@remixproject/plugin" "0.3.33"
     "@remixproject/plugin-api" "0.3.33"
@@ -6896,10 +6896,10 @@
   resolved "https://registry.yarnpkg.com/@types/prettier/-/prettier-2.7.2.tgz#6c2324641cc4ba050a8c710b2b251b377581fbf0"
   integrity sha512-KufADq8uQqo1pYKVIYzfKbJfBAc0sOeXqGbFaSpv8MRmC/zXgowNZmFcbngndGk922QDmOASEXUZCaY48gs4cg==
 
-"@types/prompt@^1.1.7":
-  version "1.1.7"
-  resolved "https://registry.yarnpkg.com/@types/prompt/-/prompt-1.1.7.tgz#f1d23f279dc8785acc1eaa6fdbff8297173b46ca"
-  integrity sha512-RNOOfuVLljqRTeYpBZ12P+7mDnbEtDmsoPlOnCM+Yv2qo7+rgGZ5Q0tlqNq5OMkBKM7nGjWwlXoiTeDIjYgcdw==
+"@types/prompt@^1.1.8":
+  version "1.1.8"
+  resolved "https://registry.yarnpkg.com/@types/prompt/-/prompt-1.1.8.tgz#86de7d677026e7499e4a7b7f1a99a9d2401fd686"
+  integrity sha512-CF39wIJrSUJ291/M3rXyjQ7gWZfY8qyGw/zraQmFyq72CaJXRWBeQ2BS5FueFRGy38JhaBM08+Nlk/qcqSm72w==
   dependencies:
     "@types/node" "*"
     "@types/revalidator" "*"
@@ -16101,10 +16101,10 @@ prettier-plugin-solidity@^1.1.1:
   resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.8.8.tgz#e8c5d7e98a4305ffe3de2e1fc4aca1a71c28b1da"
   integrity sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==
 
-prettier@^3.0.3:
-  version "3.0.3"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.0.3.tgz#432a51f7ba422d1469096c0fdc28e235db8f9643"
-  integrity sha512-L/4pUDMxcNa8R/EthV08Zt42WBO4h1rarVtK0K+QJG0X187OLo7l699jWw0GKuwzkPQ//jMFA/8Xm6Fh3J/DAg==
+prettier@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.1.0.tgz#c6d16474a5f764ea1a4a373c593b779697744d5e"
+  integrity sha512-TQLvXjq5IAibjh8EpBIkNKxO749UEWABoiIZehEPiY4GNpVdhaFKqSTu+QrlU6D2dPAfubRmtJTi4K4YkQ5eXw==
 
 pretty-error@^4.0.0:
   version "4.0.0"
@@ -18379,10 +18379,10 @@ tsort@0.0.1:
   resolved "https://registry.yarnpkg.com/tsort/-/tsort-0.0.1.tgz#e2280f5e817f8bf4275657fd0f9aebd44f5a2786"
   integrity sha512-Tyrf5mxF8Ofs1tNoxA13lFeZ2Zrbd6cKbuH3V+MQ5sb6DtBj5FjrXVsRWT8YvNAQTqNoz66dz1WsbigI22aEnw==
 
-tsup@^7.3.0:
-  version "7.3.0"
-  resolved "https://registry.yarnpkg.com/tsup/-/tsup-7.3.0.tgz#c7776e08c7ef55ed69def2c6e7ba4719005f5abd"
-  integrity sha512-Ja1eaSRrE+QarmATlNO5fse2aOACYMBX+IZRKy1T+gpyH+jXgRrl5l4nHIQJQ1DoDgEjHDTw8cpE085UdBZuWQ==
+tsup@^8.0.0:
+  version "8.0.0"
+  resolved "https://registry.yarnpkg.com/tsup/-/tsup-8.0.0.tgz#8e6c24c1ba88200ad54ab274259041b140dc1d59"
+  integrity sha512-9rOGn8LsFn2iAg2pCB1jnH7ygVuGjlzIomjw0jKXUxAii3iL5cXgm0jZMPKfFH1bSAjQovJ1DUVPSw+oDuIu8A==
   dependencies:
     bundle-require "^4.0.0"
     cac "^6.7.12"
