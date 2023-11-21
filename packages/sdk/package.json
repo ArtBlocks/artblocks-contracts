@@ -9,7 +9,7 @@
   "devDependencies": {
     "@babel/core": "^7.23.2",
     "@babel/preset-env": "^7.23.3",
-    "@babel/preset-typescript": "^7.23.2",
+    "@babel/preset-typescript": "^7.23.3",
     "@jest/globals": "^29.7.0",
     "@typechain/ethers-v5": "^11.1.2",
     "eslint-config-custom": "*",
@@ -19,9 +19,9 @@
     "lint-staged": "^15.1.0",
     "prettier": "^3.1.0",
     "tsconfig": "*",
-    "tsup": "^8.0.0",
+    "tsup": "^8.0.1",
     "typechain": "^8.3.2",
-    "typescript": "^5.2.2"
+    "typescript": "^5.3.2"
   },
   "scripts": {
     "build": "tsup src/index.ts --dts",
