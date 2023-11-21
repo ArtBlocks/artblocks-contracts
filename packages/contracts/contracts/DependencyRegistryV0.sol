@@ -21,7 +21,7 @@ import "./libs/v0.8.x/Bytes32Strings.sol";
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
  * Permissions managed by ACL contract. If/when we ever call
- * renounceOwnership() this will becom a frozen, immutable registry
+ * renounceOwnership() this will become a frozen, immutable registry
  * as no upgrades will be possible.
  * This contract is intended to be an auxiliary reference registry
  * to our non-upgradeable and immutable ERC-721 conforming core contracts,
@@ -629,8 +629,8 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Returns a list of registered depenency types.
-     * @return List of registered depenency types.
+     * @notice Returns a list of registered dependency types.
+     * @return List of registered dependency types.
      * @dev This is only intended to be called outside of block
      * execution where there is no gas limit.
      */
@@ -638,8 +638,11 @@ contract DependencyRegistryV0 is
         uint256 numDependencyTypes = _dependencyTypes.length();
         string[] memory dependencyTypes = new string[](numDependencyTypes);
 
-        for (uint256 i = 0; i < numDependencyTypes; i++) {
+        for (uint256 i; i < numDependencyTypes; ) {
             dependencyTypes[i] = _dependencyTypes.at(i).toString();
+            unchecked {
+                ++i;
+            }
         }
         return dependencyTypes;
     }
@@ -653,7 +656,7 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Returns registered depenedency type at index `_index`.
+     * @notice Returns registered dependency type at index `_index`.
      * @return Registered dependency at `_index`, relative to the overall length of the dependency type set.
      */
     function getDependencyType(
@@ -673,8 +676,11 @@ contract DependencyRegistryV0 is
         uint256 numLicenseTypes = _licenseTypes.length();
         string[] memory licenseTypes = new string[](numLicenseTypes);
 
-        for (uint256 i = 0; i < numLicenseTypes; i++) {
+        for (uint256 i; i < numLicenseTypes; ) {
             licenseTypes[i] = _licenseTypes.at(i).toString();
+            unchecked {
+                ++i;
+            }
         }
         return licenseTypes;
     }
@@ -699,7 +705,7 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Returns details for a given depedency type `_dependencyType`.
+     * @notice Returns details for a given dependency type `_dependencyType`.
      * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @return typeAndVersion String representation of `_dependencyType`.
      *                        (e.g. "p5js(atSymbol)1.0.0")
@@ -795,8 +801,11 @@ contract DependencyRegistryV0 is
             supportedCoreContractCount
         );
 
-        for (uint256 i = 0; i < supportedCoreContractCount; i++) {
+        for (uint256 i; i < supportedCoreContractCount; ) {
             supportedCoreContracts[i] = _supportedCoreContracts.at(i);
+            unchecked {
+                ++i;
+            }
         }
 
         return supportedCoreContracts;
