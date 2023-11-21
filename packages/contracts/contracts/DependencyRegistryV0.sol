@@ -638,7 +638,7 @@ contract DependencyRegistryV0 is
         uint256 numDependencyTypes = _dependencyTypes.length();
         string[] memory dependencyTypes = new string[](numDependencyTypes);
 
-        for (uint256 i; i < numDependencyTypes;) {
+        for (uint256 i; i < numDependencyTypes; ) {
             dependencyTypes[i] = _dependencyTypes.at(i).toString();
             unchecked {
                 ++i;
@@ -676,7 +676,7 @@ contract DependencyRegistryV0 is
         uint256 numLicenseTypes = _licenseTypes.length();
         string[] memory licenseTypes = new string[](numLicenseTypes);
 
-        for (uint256 i; i < numLicenseTypes;) {
+        for (uint256 i; i < numLicenseTypes; ) {
             licenseTypes[i] = _licenseTypes.at(i).toString();
             unchecked {
                 ++i;
@@ -801,7 +801,7 @@ contract DependencyRegistryV0 is
             supportedCoreContractCount
         );
 
-        for (uint256 i; i < supportedCoreContractCount;) {
+        for (uint256 i; i < supportedCoreContractCount; ) {
             supportedCoreContracts[i] = _supportedCoreContracts.at(i);
             unchecked {
                 ++i;
