@@ -1,4 +1,7 @@
 require("dotenv").config();
+var readlineSync = require("readline-sync");
+import { readFileSync } from "fs";
+import { ethers } from "ethers";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-truffle5";
 import "hardhat-gas-reporter";
@@ -10,6 +13,48 @@ import "hardhat-docgen";
 import "@openzeppelin/hardhat-upgrades";
 import { solidityConfig } from "./hardhat.solidity-config";
 
+// ----- WALLET CONFIGURATION -----
+
+// enable loading wallet from an encrypted keystore file
+// default to dummy private key if no wallet keystore file is provided
+const DUMMY_PRIVATE_KEY =
+  "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+let PRIVATE_KEY = DUMMY_PRIVATE_KEY;
+const WALLET_FILE = process.env.WALLET_FILE || null;
+if (WALLET_FILE) {
+  if (!WALLET_FILE.endsWith(".encrypted-keystore.json")) {
+    // safety mechanism for clarity
+    throw new Error(
+      "WALLET_FILE env variable must end with '.encrypted-keystore.json'"
+    );
+  }
+  if (!WALLET_FILE.startsWith("./wallets/")) {
+    // safety mechanism for alginment with .gitignore
+    throw new Error("WALLET_FILE env variable must start with './wallets/'");
+  }
+  console.log("Loading wallet from file: ", WALLET_FILE);
+  const walletContents = readFileSync(WALLET_FILE).toString();
+  const walletPassword = readlineSync.question("Wallet password: ", {
+    hideEchoBack: true,
+    mask: "",
+  });
+  const wallet = ethers.Wallet.fromEncryptedJsonSync(
+    walletContents,
+    walletPassword
+  );
+  console.log("Wallet Address: ", wallet.address);
+  PRIVATE_KEY = wallet.privateKey.substring(2); // remove leading 0x
+} else {
+  console.warn(
+    `WALLET_FILE env variable not set, falling back to dummy default private key ${DUMMY_PRIVATE_KEY}`
+  );
+}
+
+// ----- API KEYS -----
+
+const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "";
+const ARBISCAN_API_KEY = process.env.ARBISCAN_API_KEY || "";
+
 // @dev load environment variables, falling back to defaults if not set to
 // enable running tests without a populated .env file
 const MAINNET_JSON_RPC_PROVIDER_URL =
@@ -18,16 +63,6 @@ const SEPOLIA_JSON_RPC_PROVIDER_URL =
   process.env.SEPOLIA_JSON_RPC_PROVIDER_URL || "";
 const GOERLI_JSON_RPC_PROVIDER_URL =
   process.env.GOERLI_JSON_RPC_PROVIDER_URL || "";
-// @dev private keys fallback to dummy default values for testing purposes
-const MAINNET_PRIVATE_KEY =
-  process.env.MAINNET_PRIVATE_KEY ||
-  "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
-const TESTNET_PRIVATE_KEY =
-  process.env.TESTNET_PRIVATE_KEY ||
-  "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
-
-const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "";
-const ARBISCAN_API_KEY = process.env.ARBISCAN_API_KEY || "";
 
 // L2 Configuration
 const ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL =
@@ -60,56 +95,56 @@ module.exports = {
     },
     mainnet: {
       url: MAINNET_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${MAINNET_PRIVATE_KEY}`],
+      accounts: [`0x${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.75,
       maxNominalGasPriceGwei: 50,
     },
     sepolia: {
       url: SEPOLIA_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+      accounts: [`0x${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 4.0,
       maxNominalGasPriceGwei: 200,
     },
     goerli: {
       url: GOERLI_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+      accounts: [`0x${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 10.0,
       maxNominalGasPriceGwei: 200,
     },
     palm_mainnet: {
       url: PALM_MAINNET_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${MAINNET_PRIVATE_KEY}`],
+      accounts: [`0x${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 50,
     },
     palm_testnet: {
       url: PALM_TESTNET_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+      accounts: [`0x${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 200,
     },
     arbitrum: {
       url: ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${MAINNET_PRIVATE_KEY}`],
+      accounts: [`0x${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 50,
     },
     "arbitrum-sepolia": {
       url: ARBITRUM_SEPOLIA_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+      accounts: [`0x${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 200,
     },
     "arbitrum-goerli": {
       url: ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+      accounts: [`0x${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 200,
