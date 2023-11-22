@@ -18,22 +18,27 @@ import { solidityConfig } from "./hardhat.solidity-config";
 // enable loading wallet from an encrypted keystore file
 // default to dummy private key if no wallet keystore file is provided
 const DUMMY_PRIVATE_KEY =
-  "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+  "DEAD000000000000000000000000000000000000000000000000000000000000";
 let PRIVATE_KEY = DUMMY_PRIVATE_KEY;
-const WALLET_FILE = process.env.WALLET_FILE || null;
-if (WALLET_FILE) {
-  if (!WALLET_FILE.endsWith(".encrypted-keystore.json")) {
+const WALLET_ENCRYPTED_KEYSTORE_FILE =
+  process.env.WALLET_ENCRYPTED_KEYSTORE_FILE || null;
+if (WALLET_ENCRYPTED_KEYSTORE_FILE) {
+  if (!WALLET_ENCRYPTED_KEYSTORE_FILE.endsWith(".encrypted-keystore.json")) {
     // safety mechanism for clarity
     throw new Error(
-      "WALLET_FILE env variable must end with '.encrypted-keystore.json'"
+      "WALLET_ENCRYPTED_KEYSTORE_FILE env variable must end with '.encrypted-keystore.json'"
     );
   }
-  if (!WALLET_FILE.startsWith("./wallets/")) {
+  if (!WALLET_ENCRYPTED_KEYSTORE_FILE.startsWith("./wallets/")) {
     // safety mechanism for alginment with .gitignore
-    throw new Error("WALLET_FILE env variable must start with './wallets/'");
+    throw new Error(
+      "WALLET_ENCRYPTED_KEYSTORE_FILE env variable must start with './wallets/'"
+    );
   }
-  console.log("Loading wallet from file: ", WALLET_FILE);
-  const walletContents = readFileSync(WALLET_FILE).toString();
+  console.log("Loading wallet from file: ", WALLET_ENCRYPTED_KEYSTORE_FILE);
+  const walletContents = readFileSync(
+    WALLET_ENCRYPTED_KEYSTORE_FILE
+  ).toString();
   const walletPassword = readlineSync.question("Wallet password: ", {
     hideEchoBack: true,
     mask: "",
@@ -46,7 +51,7 @@ if (WALLET_FILE) {
   PRIVATE_KEY = wallet.privateKey.substring(2); // remove leading 0x
 } else {
   console.warn(
-    `WALLET_FILE env variable not set, falling back to dummy default private key ${DUMMY_PRIVATE_KEY}`
+    `WALLET_ENCRYPTED_KEYSTORE_FILE env variable not set, falling back to dummy default private key ${DUMMY_PRIVATE_KEY}`
   );
 }
 
