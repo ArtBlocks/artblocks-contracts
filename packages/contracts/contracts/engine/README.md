@@ -4,7 +4,7 @@ This directory is intended to contain all common Art Blocks Engine smart contrac
 
 ## Forked Engine Contracts
 
-We welcome submission of forked versions of our engine contracts. If you would like to fork our contracts, please create a new directory in this directory with the name of your project. Please include a CHANGELOG.md file with a description the changes implemnted in the fork.
+We welcome submission of forked versions of our engine contracts. If you would like to fork our contracts, please create a new directory in this directory with the name of your project. Please include a CHANGELOG.md file with a description of the changes implemented in the fork.
 
 Additionally, the following requirements must be met for all forked contracts:
 
