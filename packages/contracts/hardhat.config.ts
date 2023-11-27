@@ -12,12 +12,12 @@ import { solidityConfig } from "./hardhat.solidity-config";
 import { getDeployerWallet } from "./scripts/util/get-deployer-wallet";
 
 // ----- WALLET CONFIGURATION -----
-const DUMMY_PRIVATE_KEY =
+// initialize with dummy fallback private key
+let PRIVATE_KEY: string =
   "DEAD000000000000000000000000000000000000000000000000000000000000";
-let PRIVATE_KEY: string = DUMMY_PRIVATE_KEY;
 // if process argument "run" is present, use the deployer wallet
 // @dev use arg "run" check to avoid wallet nuisance when hardhat
-// runs pre-checks such as "compile" prior to running scripts
+// runs pre-processes such as "compile" prior to running scripts
 if (process.argv.includes("run")) {
   // override default wallet with loaded deployer wallet if available
   const deployerWallet = getDeployerWallet();
