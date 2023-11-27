@@ -1,7 +1,4 @@
 require("dotenv").config();
-var readlineSync = require("readline-sync");
-import { readFileSync } from "fs";
-import { ethers } from "ethers";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-truffle5";
 import "hardhat-gas-reporter";
@@ -12,47 +9,21 @@ import "@nomicfoundation/hardhat-verify";
 import "hardhat-docgen";
 import "@openzeppelin/hardhat-upgrades";
 import { solidityConfig } from "./hardhat.solidity-config";
+import { getDeployerWallet } from "./scripts/util/get-deployer-wallet";
 
 // ----- WALLET CONFIGURATION -----
-
-// enable loading wallet from an encrypted keystore file
-// default to dummy private key if no wallet keystore file is provided
 const DUMMY_PRIVATE_KEY =
   "DEAD000000000000000000000000000000000000000000000000000000000000";
-let PRIVATE_KEY = DUMMY_PRIVATE_KEY;
-const WALLET_ENCRYPTED_KEYSTORE_FILE =
-  process.env.WALLET_ENCRYPTED_KEYSTORE_FILE || null;
-if (WALLET_ENCRYPTED_KEYSTORE_FILE) {
-  if (!WALLET_ENCRYPTED_KEYSTORE_FILE.endsWith(".encrypted-keystore.json")) {
-    // safety mechanism for clarity
-    throw new Error(
-      "WALLET_ENCRYPTED_KEYSTORE_FILE env variable must end with '.encrypted-keystore.json'"
-    );
+let PRIVATE_KEY: string = DUMMY_PRIVATE_KEY;
+// if process argument "run" is present, use the deployer wallet
+// @dev use arg "run" check to avoid wallet nuisance when hardhat
+// runs pre-checks such as "compile" prior to running scripts
+if (process.argv.includes("run")) {
+  // override default wallet with loaded deployer wallet if available
+  const deployerWallet = getDeployerWallet();
+  if (deployerWallet) {
+    PRIVATE_KEY = deployerWallet.privateKey;
   }
-  if (!WALLET_ENCRYPTED_KEYSTORE_FILE.startsWith("./wallets/")) {
-    // safety mechanism for alginment with .gitignore
-    throw new Error(
-      "WALLET_ENCRYPTED_KEYSTORE_FILE env variable must start with './wallets/'"
-    );
-  }
-  console.log("Loading wallet from file: ", WALLET_ENCRYPTED_KEYSTORE_FILE);
-  const walletContents = readFileSync(
-    WALLET_ENCRYPTED_KEYSTORE_FILE
-  ).toString();
-  const walletPassword = readlineSync.question("Wallet password: ", {
-    hideEchoBack: true,
-    mask: "",
-  });
-  const wallet = ethers.Wallet.fromEncryptedJsonSync(
-    walletContents,
-    walletPassword
-  );
-  console.log("Wallet Address: ", wallet.address);
-  PRIVATE_KEY = wallet.privateKey.substring(2); // remove leading 0x
-} else {
-  console.warn(
-    `WALLET_ENCRYPTED_KEYSTORE_FILE env variable not set, falling back to dummy default private key ${DUMMY_PRIVATE_KEY}`
-  );
 }
 
 // ----- API KEYS -----
@@ -85,7 +56,6 @@ const PALM_TESTNET_JSON_RPC_PROVIDER_URL =
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
-
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */

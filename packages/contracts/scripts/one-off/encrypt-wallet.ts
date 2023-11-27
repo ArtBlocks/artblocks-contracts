@@ -4,7 +4,7 @@ import { writeFileSync } from "fs";
 
 /**
  * saves an input private key to encrypted keystore file
- * note: env var WALLET_FILE does not affect this script
+ * note: env var WALLET_ENCRYPTED_KEYSTORE_FILE does not affect this script
  */
 async function encryptWallets() {
   console.warn(
