@@ -88,7 +88,11 @@ contract DependencyRegistryV0 is
 
     function _onlyAdminACL(bytes4 selector) internal {
         require(
-            adminACLAllowed(msg.sender, address(this), selector),
+            adminACLAllowed({
+                sender: msg.sender,
+                contract_: address(this),
+                selector: selector
+            }),
             "Only Admin ACL allowed"
         );
     }
