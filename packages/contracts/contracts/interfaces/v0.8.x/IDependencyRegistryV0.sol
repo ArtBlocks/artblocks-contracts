@@ -79,7 +79,7 @@ interface IDependencyRegistryV0 {
 
     /**
      * @notice Returns address with bytecode containing script for
-     * dependency type `_dependencyNameAndVersions` at script index `_index`.
+     * dependency type `dependencyNameAndVersions` at script index `_index`.
      */
     function getDependencyScriptBytecodeAddress(
         bytes32 dependencyNameAndVersion,
