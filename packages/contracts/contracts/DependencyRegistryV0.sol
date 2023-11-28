@@ -76,7 +76,7 @@ contract DependencyRegistryV0 is
     // The first key is the address of the core contract, the second key is the project ID,
     // and the value is the bytes32 representation of the dependency name and version (i.e. name@version).
     // This allows for specific projects to use different versions of dependencies than what's stored on the core contract.
-    mapping(address => mapping(uint256 => bytes32)) projectDependencyOverrides;
+    mapping(address coreContract => mapping(uint256 projectId => bytes32 dependencyNameAndVersion)) projectDependencyOverrides;
 
     function _onlyNonZeroAddress(address address_) internal pure {
         require(address_ != address(0), "Must input non-zero address");
