@@ -1,5 +1,5 @@
 require("dotenv").config();
-var readlineSync = require("readline-sync");
+const readlineSync = require("readline-sync");
 import { readFileSync } from "fs";
 import { Wallet, ethers } from "ethers";
 
@@ -8,10 +8,10 @@ import { Wallet, ethers } from "ethers";
 // file, defined by env var `WALLET_ENCRYPTED_KEYSTORE_FILE`. If this env var
 // is not set, null is returned, and a warning will be logged.
 // @dev use closure to only ever ask for password once
-export var getDeployerWallet = ((): (() => Wallet | null) => {
-  var _wallet: Wallet | null = null;
+export const getDeployerWallet = ((): (() => Wallet | null) => {
+  let _wallet: Wallet | null = null;
 
-  var _getDeployerWallet: () => Wallet = function (): Wallet {
+  const _getDeployerWallet: () => Wallet = function (): Wallet {
     if (_wallet) {
       // only load wallet once
       return _wallet;
