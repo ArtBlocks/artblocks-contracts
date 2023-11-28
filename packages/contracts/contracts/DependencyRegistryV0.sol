@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 // Created By: Art Blocks Inc.
 
+import "./DependencyRegistryV0Storage.sol";
 import "./interfaces/v0.8.x/IAdminACLV0.sol";
 import "./interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
 import "./interfaces/v0.8.x/IDependencyRegistryV0.sol";
@@ -31,7 +32,8 @@ import "./libs/v0.8.x/Bytes32Strings.sol";
 contract DependencyRegistryV0 is
     Initializable,
     OwnableUpgradeable,
-    IDependencyRegistryV0
+    IDependencyRegistryV0,
+    DependencyRegistryV0Storage
 {
     using BytecodeStorageWriter for string;
     using Bytes32Strings for bytes32;
@@ -41,42 +43,6 @@ contract DependencyRegistryV0 is
     using SafeCast for uint24;
 
     uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
-
-    /// admin ACL contract
-    IAdminACLV0 public adminACLContract;
-
-    struct Dependency {
-        bytes32 licenseType;
-        string preferredCDN;
-        // mapping from additional CDN index to CDN URLr
-        mapping(uint256 => string) additionalCDNs;
-        string preferredRepository;
-        // mapping from additional repository index to repository URL
-        mapping(uint256 => string) additionalRepositories;
-        string website;
-        // mapping from script index to address storing script in bytecode
-        mapping(uint256 => address) scriptBytecodeAddresses;
-        uint24 additionalCDNCount;
-        uint24 additionalRepositoryCount;
-        uint24 scriptCount;
-    }
-
-    // dependency ID's are bytes32 of the format "name@version"
-    EnumerableSet.Bytes32Set private _dependencyNameVersionIds;
-    // mapping from dependencyNameAndVersion to Dependency, which stores the properties of each dependency
-    mapping(bytes32 dependencyNameAndVersion => Dependency) dependencyRecords;
-    // source code license types, MIT, GPL, etc.
-    EnumerableSet.Bytes32Set private _licenseTypes;
-
-    // Set of addresses for the core contracts that are supported by the DependencyRegistry.
-    // Each address represents a unique core contract in the Art Blocks ecosystem.
-    EnumerableSet.AddressSet private _supportedCoreContracts;
-
-    // Mapping that allows for the overriding of project dependencies.
-    // The first key is the address of the core contract, the second key is the project ID,
-    // and the value is the bytes32 representation of the dependency name and version (i.e. name@version).
-    // This allows for specific projects to use different versions of dependencies than what's stored on the core contract.
-    mapping(address coreContract => mapping(uint256 projectId => bytes32 dependencyNameAndVersion)) projectDependencyOverrides;
 
     function _onlyNonZeroAddress(address address_) internal pure {
         require(address_ != address(0), "Must input non-zero address");
@@ -215,6 +181,8 @@ contract DependencyRegistryV0 is
         );
 
         _dependencyNameVersionIds.remove(dependencyNameAndVersion);
+        // @dev all of the arrays in the dependency struct are required to be empty
+        // before this function can be called, so we don't need to delete them here
         delete dependencyRecords[dependencyNameAndVersion];
 
         emit DependencyRemoved(dependencyNameAndVersion);
