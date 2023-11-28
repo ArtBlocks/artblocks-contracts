@@ -16,9 +16,9 @@ import { getDeployerWallet } from "./scripts/util/get-deployer-wallet";
 let PRIVATE_KEY: string =
   "DEAD000000000000000000000000000000000000000000000000000000000000";
 // if process argument "run" is present, use the deployer wallet
-// @dev use arg "run" check to avoid wallet nuisance when hardhat
+// @dev use argv length check to avoid wallet nuisance when hardhat
 // runs pre-processes such as "compile" prior to running scripts
-if (process.argv.includes("run")) {
+if (process.argv.length == 2) {
   // override default wallet with loaded deployer wallet if available
   const deployerWallet = getDeployerWallet();
   if (deployerWallet) {
@@ -70,56 +70,56 @@ module.exports = {
     },
     mainnet: {
       url: MAINNET_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${PRIVATE_KEY}`],
+      accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.75,
       maxNominalGasPriceGwei: 50,
     },
     sepolia: {
       url: SEPOLIA_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${PRIVATE_KEY}`],
+      accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 4.0,
       maxNominalGasPriceGwei: 200,
     },
     goerli: {
       url: GOERLI_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${PRIVATE_KEY}`],
+      accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 10.0,
       maxNominalGasPriceGwei: 200,
     },
     palm_mainnet: {
       url: PALM_MAINNET_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${PRIVATE_KEY}`],
+      accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 50,
     },
     palm_testnet: {
       url: PALM_TESTNET_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${PRIVATE_KEY}`],
+      accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 200,
     },
     arbitrum: {
       url: ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${PRIVATE_KEY}`],
+      accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 50,
     },
     "arbitrum-sepolia": {
       url: ARBITRUM_SEPOLIA_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${PRIVATE_KEY}`],
+      accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 200,
     },
     "arbitrum-goerli": {
       url: ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${PRIVATE_KEY}`],
+      accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 200,
