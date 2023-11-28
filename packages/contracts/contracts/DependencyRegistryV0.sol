@@ -105,15 +105,16 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Adds a new license type that can be used by dependencies.
+     * @param licenseType License type to be added.
      */
     function addLicenseType(bytes32 licenseType) external {
         _onlyAdminACL(this.addLicenseType.selector);
-        // @dev the add function returns false if set already contains value
-        require(_licenseTypes.add(licenseType), "License type already exists");
         require(
             licenseType != bytes32(""),
             "License type cannot be empty string"
         );
+        // @dev the add function returns false if set already contains value
+        require(_licenseTypes.add(licenseType), "License type already exists");
         emit LicenseTypeAdded(licenseType);
     }
 
@@ -684,8 +685,8 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Returns number of registered license types
-     * @return Number of registered license types.
+     * @notice Returns array of registered license types
+     * @return Array of registered license types.
      * @dev This is only intended to be called outside of block
      * execution where there is no gas limit.
      */
@@ -719,6 +720,122 @@ contract DependencyRegistryV0 is
     ) external view returns (string memory) {
         _onlyInRangeIndex({index: index, length: _licenseTypes.length()});
         return _licenseTypes.at(index).toString();
+    }
+
+    /**
+     * @notice Adds a full license text to license `licenseType`, by way of
+     *         providing a string to write to bytecode storage.
+     * @param licenseType Name of license type (e.g. "MIT") used to identify license.
+     * @param text Text to be added. Required to be a non-empty string,
+     *                but no further validation is performed.
+     */
+    function addLicenseText(bytes32 licenseType, string memory text) external {
+        _onlyAdminACL(this.addLicenseText.selector);
+        _onlyNonEmptyString(text);
+        _onlyExistingLicenseType(licenseType);
+        License storage licenseEntry = allLicenses[licenseType];
+        // store license chunk in contract bytecode
+        licenseEntry.licenseBytecodeAddresses[
+            licenseEntry.licenseChunkCount
+        ] = text.writeToBytecode();
+        licenseEntry.licenseChunkCount = licenseEntry.licenseChunkCount + 1;
+
+        emit LicenseTextUpdated(licenseType);
+    }
+
+    /**
+     * @notice Updates the license text for license `licenseType` at index `_index`,
+     *         by way of providing a string to write to bytecode storage.
+     * @param licenseType Name of license type (e.g. "MIT") used to identify license.
+     * @param index The index of a given license text chunk, relative to the overall `licenseChunkCount`.
+     * @param text The updated license text value. Required to be a non-empty
+     *                string, but no further validation is performed.
+     */
+    function updateLicenseText(
+        bytes32 licenseType,
+        uint256 index,
+        string memory text
+    ) external {
+        _onlyAdminACL(this.updateLicenseText.selector);
+        _onlyNonEmptyString(text);
+        _onlyExistingLicenseType(licenseType);
+        License storage licenseEntry = allLicenses[licenseType];
+        _onlyInRangeIndex({
+            index: index,
+            length: licenseEntry.licenseChunkCount
+        });
+        // store license text chunk in contract bytecode, replacing reference address from
+        // the contract that is no longer referenced with the newly created one
+        licenseEntry.licenseBytecodeAddresses[index] = text.writeToBytecode();
+
+        emit LicenseTextUpdated(licenseType);
+    }
+
+    /**
+     * @notice Removes the last license text chunk from license `licenseType`.
+     * @param licenseType Name of license type (e.g. "MIT") used to identify license.
+     */
+    function removeLicenseLastText(bytes32 licenseType) external {
+        _onlyAdminACL(this.removeLicenseLastText.selector);
+        _onlyExistingLicenseType(licenseType);
+        License storage licenseEntry = allLicenses[licenseType];
+        uint24 licenseChunkCount = licenseEntry.licenseChunkCount;
+        require(licenseChunkCount > 0, "There is no license text to remove");
+        // delete reference to old storage contract address
+        delete licenseEntry.licenseBytecodeAddresses[licenseChunkCount - 1];
+        unchecked {
+            licenseEntry.licenseChunkCount = licenseChunkCount - 1;
+        }
+
+        emit LicenseTextUpdated(licenseType);
+    }
+
+    /**
+     * @notice Returns license text for license `licenseType` at script index `index`.
+     * @param licenseType Name of license type (e.g. "MIT") used to identify license.
+     * @param index The index of a given script, relative to the overall `licenseChunkCount`.
+     * @return A string containing the license text content at the given script chunk index for a given license.
+     * @dev This method attempts to introspectively determine which library version of
+     *      `BytecodeStorage` was used to write the stored script string that is being
+     *      read back, in order to use the proper read approach. If the version is
+     *      non-determinate, a fall-back to reading using the assumption that the bytes
+     *      were written with `SSTORE2` is used.
+     *      Also note that in this `SSTORE2` fallback handling, the approach of casting bytes to string
+     *      can cause failure (e.g. unexpected continuation byte).
+     */
+    function getLicenseText(
+        bytes32 licenseType,
+        uint256 index
+    ) external view returns (string memory) {
+        License storage licenseEntry = allLicenses[licenseType];
+        _onlyInRangeIndex({
+            index: index,
+            length: licenseEntry.licenseChunkCount
+        });
+
+        address licenseAddress = licenseEntry.licenseBytecodeAddresses[index];
+        bytes32 storageVersion = BytecodeStorageReader
+            .getLibraryVersionForBytecode(licenseAddress);
+        if (storageVersion == BytecodeStorageReader.UNKNOWN_VERSION_STRING) {
+            return
+                string(
+                    BytecodeStorageReader.readBytesFromSSTORE2Bytecode(
+                        licenseAddress
+                    )
+                );
+        } else {
+            return BytecodeStorageReader.readFromBytecode(licenseAddress);
+        }
+    }
+
+    /**
+     * @notice Returns the count of license chunks for license `licenseType`.
+     * @param licenseType Name of license type (e.g. "MIT") used to identify dependency.
+     */
+    function getLicenseTextChunkCount(
+        bytes32 licenseType
+    ) external view returns (uint256) {
+        return allLicenses[licenseType].licenseChunkCount;
     }
 
     /**

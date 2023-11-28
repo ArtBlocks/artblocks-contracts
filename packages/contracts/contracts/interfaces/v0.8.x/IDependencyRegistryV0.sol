@@ -20,6 +20,8 @@ interface IDependencyRegistryV0 {
 
     event LicenseTypeAdded(bytes32 indexed licenseType);
 
+    event LicenseTextUpdated(bytes32 indexed licenseType);
+
     event DependencyAdded(
         bytes32 indexed dependencyNameAndVersion,
         bytes32 indexed licenseType,

@@ -19,6 +19,12 @@ contract DependencyRegistryV0Storage {
     /// admin ACL contract
     IAdminACLV0 public adminACLContract;
 
+    struct License {
+        // mapping from license index to address storing script in bytecode
+        mapping(uint256 => address) licenseBytecodeAddresses;
+        uint24 licenseChunkCount;
+    }
+
     struct Dependency {
         bytes32 licenseType;
         string preferredCDN;
@@ -41,6 +47,8 @@ contract DependencyRegistryV0Storage {
     mapping(bytes32 dependencyNameAndVersion => Dependency) dependencyRecords;
     // source code license types, MIT, GPL, etc.
     EnumerableSet.Bytes32Set internal _licenseTypes;
+    // mapping from licenseTypes to License, which stores the properties of each license
+    mapping(bytes32 => License) allLicenses;
 
     // Set of addresses for the core contracts that are supported by the DependencyRegistry.
     // Each address represents a unique core contract in the Art Blocks ecosystem.
