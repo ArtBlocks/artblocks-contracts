@@ -50,7 +50,7 @@ Date: 2023-11-02
 
 ## **Environment:** mainnet
 
-**Deployment Input File:** `deployments/engine/V3/partners/hackatao-flex/deployment-config.mainnet.ts`
+**Deployment Input File:** `deployments/engine/V3/partners/squiggle-dao/deployment-config.mainnet.ts`
 
 **GenArt721CoreV3_Engine_Flex:** https://etherscan.io/address/0x77D4b54e91822E9799AB0900876D6B1cdA752706#code
 
