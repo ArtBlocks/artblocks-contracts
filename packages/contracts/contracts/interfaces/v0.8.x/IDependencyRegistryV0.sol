@@ -87,7 +87,7 @@ interface IDependencyRegistryV0 {
     ) external view returns (address);
 
     /**
-     * @notice Returns script for dependency type `_dependencyNameAndVersion` at script index `_index`.
+     * @notice Returns script for dependency type `dependencyNameAndVersion` at script index `_index`.
      * @param dependencyNameAndVersion Dependency type to be queried.
      * @param index Index of script to be queried.
      */
