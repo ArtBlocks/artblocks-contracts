@@ -9,6 +9,27 @@ import "@nomicfoundation/hardhat-verify";
 import "hardhat-docgen";
 import "@openzeppelin/hardhat-upgrades";
 import { solidityConfig } from "./hardhat.solidity-config";
+import { getDeployerWallet } from "./scripts/util/get-deployer-wallet";
+
+// ----- WALLET CONFIGURATION -----
+// initialize with dummy fallback private key
+let PRIVATE_KEY: string =
+  "DEAD000000000000000000000000000000000000000000000000000000000000";
+// if process argument "run" is present, use the deployer wallet
+// @dev use argv length check to avoid wallet nuisance when hardhat
+// runs pre-processes such as "compile" prior to running scripts
+if (process.argv.length == 2) {
+  // override default wallet with loaded deployer wallet if available
+  const deployerWallet = getDeployerWallet();
+  if (deployerWallet) {
+    PRIVATE_KEY = deployerWallet.privateKey;
+  }
+}
+
+// ----- API KEYS -----
+
+const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "";
+const ARBISCAN_API_KEY = process.env.ARBISCAN_API_KEY || "";
 
 // @dev load environment variables, falling back to defaults if not set to
 // enable running tests without a populated .env file
@@ -18,16 +39,6 @@ const SEPOLIA_JSON_RPC_PROVIDER_URL =
   process.env.SEPOLIA_JSON_RPC_PROVIDER_URL || "";
 const GOERLI_JSON_RPC_PROVIDER_URL =
   process.env.GOERLI_JSON_RPC_PROVIDER_URL || "";
-// @dev private keys fallback to dummy default values for testing purposes
-const MAINNET_PRIVATE_KEY =
-  process.env.MAINNET_PRIVATE_KEY ||
-  "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
-const TESTNET_PRIVATE_KEY =
-  process.env.TESTNET_PRIVATE_KEY ||
-  "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
-
-const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "";
-const ARBISCAN_API_KEY = process.env.ARBISCAN_API_KEY || "";
 
 // L2 Configuration
 const ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL =
@@ -45,7 +56,6 @@ const PALM_TESTNET_JSON_RPC_PROVIDER_URL =
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
-
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -60,56 +70,56 @@ module.exports = {
     },
     mainnet: {
       url: MAINNET_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${MAINNET_PRIVATE_KEY}`],
+      accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.75,
       maxNominalGasPriceGwei: 50,
     },
     sepolia: {
       url: SEPOLIA_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+      accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 4.0,
       maxNominalGasPriceGwei: 200,
     },
     goerli: {
       url: GOERLI_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+      accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 10.0,
       maxNominalGasPriceGwei: 200,
     },
     palm_mainnet: {
       url: PALM_MAINNET_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${MAINNET_PRIVATE_KEY}`],
+      accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 50,
     },
     palm_testnet: {
       url: PALM_TESTNET_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+      accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 200,
     },
     arbitrum: {
       url: ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${MAINNET_PRIVATE_KEY}`],
+      accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 50,
     },
     "arbitrum-sepolia": {
       url: ARBITRUM_SEPOLIA_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+      accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 200,
     },
     "arbitrum-goerli": {
       url: ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+      accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 200,
