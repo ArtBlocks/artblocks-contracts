@@ -54,3 +54,10 @@ constructor-args.js
 
 # generated files
 generated/
+
+# encrypted wallet keystore files
+wallets/
+
+# skip any accidental other wallet files
+*wallet*.json
+*keystore*.json
