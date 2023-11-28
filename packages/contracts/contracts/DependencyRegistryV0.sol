@@ -64,7 +64,7 @@ contract DependencyRegistryV0 is
     // dependency ID's are bytes32 of the format "name@version"
     EnumerableSet.Bytes32Set private _dependencyNameVersionIds;
     // mapping from dependencyNameAndVersion to Dependency, which stores the properties of each dependency
-    mapping(bytes32 => Dependency) dependencyRecords;
+    mapping(bytes32 dependencyNameAndVersion => Dependency) dependencyRecords;
     // source code license types, MIT, GPL, etc.
     EnumerableSet.Bytes32Set private _licenseTypes;
 
