@@ -45,11 +45,6 @@ jobs:
           echo "PALM_TESTNET_JSON_RPC_PROVIDER_URL=https://palm-testnet.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
           echo "ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL=https://arbitrum-mainnet.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
           echo "ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL=https://arbitrum-goerli.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
-          # dummy private keys (not connected to accounts)
-          echo "MAINNET_PRIVATE_KEY=DEAD000000000000000000000000000000000000000000000000000000000000" >> $GITHUB_ENV
-          echo "TESTNET_PRIVATE_KEY=DEAD000000000000000000000000000000000000000000000000000000000000" >> $GITHUB_ENV
-          echo "TESTNET_PRIVATE_KEY2=DEAD000000000000000000000000000000000000000000000000000000000000" >> $GITHUB_ENV
-          echo "TESTNET_PRIVATE_KEY3=DEAD000000000000000000000000000000000000000000000000000000000000" >> $GITHUB_ENV
       - name: build docs
         run: yarn workspace @artblocks/contracts run docgen
       - name: upload docs artifact
