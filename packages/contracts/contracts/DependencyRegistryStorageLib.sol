@@ -52,7 +52,7 @@ library DependencyRegistryStorageLib {
 
     function s() internal pure returns (Storage storage storageStruct) {
         bytes32 position = DIAMOND_STORAGE_POSITION;
-        assembly {
+        assembly ("memory-safe") {
             storageStruct.slot := position
         }
     }
