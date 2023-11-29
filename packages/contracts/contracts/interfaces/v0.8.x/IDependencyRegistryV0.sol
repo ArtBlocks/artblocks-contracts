@@ -59,7 +59,7 @@ interface IDependencyRegistryV0 {
     );
 
     event DependencyAdditionalRepositoryUpdated(
-        bytes32 indexed _ependencyType,
+        bytes32 indexed dependencyNameAndVersion,
         string additionalRepository,
         uint256 additionalRepositoryIndex
     );
