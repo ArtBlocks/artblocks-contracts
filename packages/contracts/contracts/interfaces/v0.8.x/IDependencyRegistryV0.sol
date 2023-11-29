@@ -27,14 +27,14 @@ interface IDependencyRegistryV0 {
         bytes32 indexed licenseType,
         string preferredCDN,
         string preferredRepository,
-        string referenceWebsite
+        string website
     );
 
     event DependencyRemoved(bytes32 indexed dependencyNameAndVersion);
 
     event DependencyWebsiteUpdated(
         bytes32 indexed dependencyNameAndVersion,
-        string referenceWebsite
+        string website
     );
 
     event DependencyPreferredCDNUpdated(
