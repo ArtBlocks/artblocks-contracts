@@ -1158,7 +1158,7 @@ contract GenArt721CoreV3 is
         require(bytesLength <= 11, "Aspect ratio format too long");
         bool hasSeenDecimalSeparator;
         bool hasSeenNumber;
-        for (uint256 i; i < bytesLength;) {
+        for (uint256 i; i < bytesLength; ++i) {
             bytes1 character = aspectRatioBytes[i];
             // Allow as many #s as desired.
             if (character >= 0x30 && character <= 0x39) {
@@ -1176,10 +1176,6 @@ contract GenArt721CoreV3 is
                 }
             }
             revert("Improperly formatted aspect ratio");
-
-            unchecked {
-                ++i;
-            }
         }
         require(hasSeenNumber, "Aspect ratio has no numbers");
 
