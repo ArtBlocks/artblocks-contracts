@@ -3,7 +3,18 @@
 
 pragma solidity ^0.8.0;
 
-interface ISharedMinterV0 {
+import {ISharedMinterRequired} from "./ISharedMinterRequired.sol";
+
+/**
+ * @title ISharedMinterV0
+ * @notice This interface extends the minimum required interface for a shared
+ * minter contract to add additional functionality that is generally available
+ * for all shared minter contracts on the shared minter filter.
+ * @dev Custom, one-off minter contracts that are not globally approved may
+ * choose to not implement this interface, but should still implement the
+ * ISharedMinterRequired interface.
+ */
+interface ISharedMinterV0 is ISharedMinterRequired {
     // Sets the local max invocations for a given project, checking that the provided max invocations is
     // less than or equal to the global max invocations for the project set on the core contract.
     // This does not impact the max invocations value defined on the core contract.
@@ -19,11 +30,6 @@ interface ISharedMinterV0 {
         uint256 projectId,
         address coreContract
     ) external;
-
-    // getter function of public variable
-    function minterType() external view returns (string memory);
-
-    function minterFilterAddress() external returns (address);
 
     // Gets if token price is configured, token price in wei, currency symbol,
     // and currency address, assuming this is project's minter.
