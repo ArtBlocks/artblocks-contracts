@@ -39,9 +39,16 @@ async function encryptWallets() {
       mask: "",
     }
   );
-  if (keystorePassword.length < 8) {
-    throw new Error("Password must be at least 8 characters");
+  // confirm password security
+  const securityCheckRegex = new RegExp(
+    "^(?=(.*[a-z]){3,})(?=(.*[A-Z]){2,})(?=(.*[0-9]){2,})(?=(.*[!@#$%^&*()-__+.]){1,}).{8,}$"
+  );
+  if (!securityCheckRegex.test(keystorePassword)) {
+    throw new Error(
+      "Password must contain at least 3 lowercase letters, 2 uppercase letters, 2 numbers, 1 special character, and be 8 characters long"
+    );
   }
+
   const keystorePasswordConfirm = readlineSync.question("Confirm password: ", {
     hideEchoBack: true,
     mask: "",
