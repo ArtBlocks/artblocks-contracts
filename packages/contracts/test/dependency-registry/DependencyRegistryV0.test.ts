@@ -27,6 +27,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 const ONLY_ADMIN_ACL_ERROR = "Only Admin ACL allowed";
 const ONLY_EXISTING_DEPENDENCY_TYPE_ERROR = "Dependency does not exist";
+const ONLY_EXISTING_LICENSE_TYPE_ERROR = "License type does not exist";
 const ONLY_NON_EMPTY_STRING_ERROR = "Must input non-empty string";
 const ONLY_NON_ZERO_ADDRESS_ERROR = "Must input non-zero address";
 const INDEX_OUT_OF_RANGE_ERROR = "Index out of range";
@@ -53,6 +54,8 @@ describe(`DependencyRegistryV0`, async function () {
   );
   const licenseType = "MIT";
   const licenseTypeBytes = ethers.utils.formatBytes32String(licenseType);
+  const licenseText =
+    "Copyright (c) 1995-2023 Lorem Ipsum Dolor Sit Amet Foundation. Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.";
   const preferredCDN =
     "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/p5.min.js";
   const preferredRepository = "https://github.com/processing/p5.js";
@@ -2357,6 +2360,215 @@ describe(`DependencyRegistryV0`, async function () {
       });
     });
   });
+  describe("license scripts", function () {
+    this.beforeEach(async function () {
+      const config = await loadFixture(_beforeEach);
+      await config.dependencyRegistry
+        .connect(config.accounts.deployer)
+        .addDependency(
+          dependencyNameAndVersionBytes,
+          licenseTypeBytes,
+          preferredCDN,
+          preferredRepository,
+          dependencyWebsite
+        );
+      // pass config to tests in this describe block
+      this.config = config;
+    });
+    describe("addLicenseText", function () {
+      it("does not allow non-admins to add license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.artist)
+            .addLicenseText(licenseTypeBytes, licenseText),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+      it("does not allow adding license text for a license that does not exist", async function () {
+        const config = await loadFixture(_beforeEach);
+        // admin can update
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addLicenseText(
+              ethers.utils.formatBytes32String("nonExistentLicenseType"),
+              licenseText
+            ),
+          ONLY_EXISTING_LICENSE_TYPE_ERROR
+        );
+      });
+      it("does not allow adding empty string as license text", async function () {
+        const config = await loadFixture(_beforeEach);
+        // admin can update
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addLicenseText(licenseTypeBytes, ""),
+          ONLY_NON_EMPTY_STRING_ERROR
+        );
+      });
+      it("allows admin to add license text", async function () {
+        const config = await loadFixture(_beforeEach);
+        // admin can update
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addLicenseText(licenseTypeBytes, licenseText)
+        )
+          .to.emit(config.dependencyRegistry, "LicenseTextUpdated")
+          .withArgs(licenseTypeBytes);
+
+        const storedLicenseText =
+          await config.dependencyRegistry.getLicenseText(licenseTypeBytes, 0);
+        expect(storedLicenseText).to.eq(licenseText);
+      });
+    });
+    describe("removeLicenseLastText", function () {
+      it("does not allow non-admins to remove license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.user)
+            .removeLicenseLastText(licenseTypeBytes),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+
+      it("does not allow removing license text from a license that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeLicenseLastText(
+              ethers.utils.formatBytes32String("nonExistentLicenseType")
+            ),
+          ONLY_EXISTING_LICENSE_TYPE_ERROR
+        );
+      });
+
+      it("does not allow removing the last license text if non-existent", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeLicenseLastText(licenseTypeBytes),
+          "There is no license text to remove"
+        );
+      });
+
+      it("allows admin to remove last license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addLicenseText(licenseTypeBytes, licenseText);
+
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeLicenseLastText(licenseTypeBytes)
+        )
+          .to.emit(config.dependencyRegistry, "LicenseTextUpdated")
+          .withArgs(licenseTypeBytes);
+
+        const textChunkCount =
+          await config.dependencyRegistry.getLicenseTextChunkCount(
+            licenseTypeBytes
+          );
+        expect(textChunkCount).to.eq(0);
+
+        await expectRevert(
+          config.dependencyRegistry.getLicenseText(licenseTypeBytes, 0),
+          INDEX_OUT_OF_RANGE_ERROR
+        );
+      });
+    });
+
+    describe("updateLicenseText", function () {
+      it("does not allow non-admins to update license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.artist)
+            .updateLicenseText(licenseTypeBytes, 0, "new license text"),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+
+      it("does not allow updating license text for a license that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateLicenseText(
+              ethers.utils.formatBytes32String("nonExistentLicenseType"),
+              0,
+              "new license text"
+            ),
+          ONLY_EXISTING_LICENSE_TYPE_ERROR
+        );
+      });
+
+      it("does not allow updating a license text chunk that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateLicenseText(licenseTypeBytes, 0, "new license text"),
+          INDEX_OUT_OF_RANGE_ERROR
+        );
+      });
+
+      it("does not allow updating an empty string as a license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addLicenseText(licenseTypeBytes, licenseText);
+
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateLicenseText(licenseTypeBytes, 0, ""),
+          ONLY_NON_EMPTY_STRING_ERROR
+        );
+      });
+
+      it("allows admin to update license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addLicenseText(licenseTypeBytes, licenseText);
+
+        const updatedText = "updated license text";
+
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateLicenseText(licenseTypeBytes, 0, updatedText)
+        )
+          .to.emit(config.dependencyRegistry, "LicenseTextUpdated")
+          .withArgs(licenseTypeBytes);
+
+        const storedLicenseText =
+          await config.dependencyRegistry.getLicenseText(licenseTypeBytes, 0);
+        expect(storedLicenseText).to.eq(updatedText);
+      });
+    });
+  });
+
   describe("adminACLContract", function () {
     it("returns expected adminACLContract address", async function () {
       const config = await loadFixture(_beforeEach);
