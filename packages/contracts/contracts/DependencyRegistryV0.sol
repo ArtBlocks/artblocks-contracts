@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 // Created By: Art Blocks Inc.
 
-import "./DependencyRegistryStorageLib.sol";
 import "./interfaces/v0.8.x/IAdminACLV0.sol";
 import "./interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
 import "./interfaces/v0.8.x/IDependencyRegistryV0.sol";
@@ -14,6 +13,7 @@ import "@openzeppelin-4.8/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin-4.8/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
 
+import "./libs/v0.8.x/DependencyRegistryStorageLib.sol";
 import "./libs/v0.8.x/BytecodeStorageV1.sol";
 import "./libs/v0.8.x/Bytes32Strings.sol";
 
@@ -65,11 +65,10 @@ contract DependencyRegistryV0 is
     function _onlySupportedCoreContract(
         address coreContractAddress
     ) internal view {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
         require(
-            ds.supportedCoreContracts.contains(coreContractAddress),
+            DependencyRegistryStorageLib.s().supportedCoreContracts.contains(
+                coreContractAddress
+            ),
             "Core contract not supported"
         );
     }
@@ -77,11 +76,10 @@ contract DependencyRegistryV0 is
     function _onlyExistingDependency(
         bytes32 dependencyNameAndVersion
     ) internal view {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
         require(
-            ds.dependencyNameVersionIds.contains(dependencyNameAndVersion),
+            DependencyRegistryStorageLib.s().dependencyNameVersionIds.contains(
+                dependencyNameAndVersion
+            ),
             "Dependency does not exist"
         );
     }
@@ -91,11 +89,8 @@ contract DependencyRegistryV0 is
     }
 
     function _onlyExistingLicenseType(bytes32 licenseType) internal view {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
         require(
-            ds.licenseTypes.contains(licenseType),
+            DependencyRegistryStorageLib.s().licenseTypes.contains(licenseType),
             "License type does not exist"
         );
     }
@@ -123,12 +118,9 @@ contract DependencyRegistryV0 is
             "License type cannot be empty string"
         );
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
         // @dev the add function returns false if set already contains value
         require(
-            ds.licenseTypes.add(licenseType),
+            DependencyRegistryStorageLib.s().licenseTypes.add(licenseType),
             "License type already exists"
         );
         emit LicenseTypeAdded(licenseType);
@@ -227,11 +219,10 @@ contract DependencyRegistryV0 is
         _onlyNonEmptyString(script);
         _onlyExistingDependency(dependencyNameAndVersion);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.Dependency storage dependency = ds
-            .dependencyRecords[dependencyNameAndVersion];
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
         // store script in contract bytecode
         dependency.scriptBytecodeAddresses[dependency.scriptCount] = script
             .writeToBytecode();
@@ -257,11 +248,10 @@ contract DependencyRegistryV0 is
         _onlyNonEmptyString(script);
         _onlyExistingDependency(dependencyNameAndVersion);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.Dependency storage dependency = ds
-            .dependencyRecords[dependencyNameAndVersion];
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
         _onlyInRangeIndex({index: index, length: dependency.scriptCount});
         // store script in contract bytecode, replacing reference address from
         // the contract that no longer exists with the newly created one
@@ -285,11 +275,10 @@ contract DependencyRegistryV0 is
         _onlyNonZeroAddress(scriptPointer);
         _onlyExistingDependency(dependencyNameAndVersion);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.Dependency storage dependency = ds
-            .dependencyRecords[dependencyNameAndVersion];
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
         // store script in contract bytecode
         dependency.scriptBytecodeAddresses[
             dependency.scriptCount
@@ -316,11 +305,10 @@ contract DependencyRegistryV0 is
         _onlyNonZeroAddress(scriptPointer);
         _onlyExistingDependency(dependencyNameAndVersion);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.Dependency storage dependency = ds
-            .dependencyRecords[dependencyNameAndVersion];
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
         _onlyInRangeIndex({index: index, length: dependency.scriptCount});
         dependency.scriptBytecodeAddresses[index] = scriptPointer;
 
@@ -337,11 +325,10 @@ contract DependencyRegistryV0 is
         _onlyAdminACL(this.removeDependencyLastScript.selector);
         _onlyExistingDependency(dependencyNameAndVersion);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.Dependency storage dependency = ds
-            .dependencyRecords[dependencyNameAndVersion];
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
         require(dependency.scriptCount > 0, "there are no scripts to remove");
         // delete reference to old storage contract address
         delete dependency.scriptBytecodeAddresses[dependency.scriptCount - 1];
@@ -364,9 +351,8 @@ contract DependencyRegistryV0 is
         _onlyAdminACL(this.updateDependencyPreferredCDN.selector);
         _onlyExistingDependency(dependencyNameAndVersion);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-        ds
+        DependencyRegistryStorageLib
+            .s()
             .dependencyRecords[dependencyNameAndVersion]
             .preferredCDN = preferredCDN;
 
@@ -388,10 +374,8 @@ contract DependencyRegistryV0 is
         _onlyAdminACL(this.updateDependencyPreferredRepository.selector);
         _onlyExistingDependency(dependencyNameAndVersion);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        ds
+        DependencyRegistryStorageLib
+            .s()
             .dependencyRecords[dependencyNameAndVersion]
             .preferredRepository = preferredRepository;
 
@@ -413,10 +397,8 @@ contract DependencyRegistryV0 is
         _onlyAdminACL(this.updateDependencyWebsite.selector);
         _onlyExistingDependency(dependencyNameAndVersion);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        ds
+        DependencyRegistryStorageLib
+            .s()
             .dependencyRecords[dependencyNameAndVersion]
             .website = dependencyWebsite;
 
@@ -440,11 +422,10 @@ contract DependencyRegistryV0 is
         _onlyNonEmptyString(additionalCDN);
         _onlyExistingDependency(dependencyNameAndVersion);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.Dependency storage dependency = ds
-            .dependencyRecords[dependencyNameAndVersion];
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
 
         uint256 additionalCDNCount = uint256(dependency.additionalCDNCount);
         dependency.additionalCDNs[additionalCDNCount] = additionalCDN;
@@ -471,11 +452,10 @@ contract DependencyRegistryV0 is
         _onlyAdminACL(this.removeDependencyAdditionalCDN.selector);
         _onlyExistingDependency(dependencyNameAndVersion);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.Dependency storage dependency = ds
-            .dependencyRecords[dependencyNameAndVersion];
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
 
         uint256 additionalCDNCount = dependency.additionalCDNCount;
         _onlyInRangeIndex({index: index, length: additionalCDNCount});
@@ -507,11 +487,10 @@ contract DependencyRegistryV0 is
         _onlyNonEmptyString(additionalCDN);
         _onlyExistingDependency(dependencyNameAndVersion);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.Dependency storage dependency = ds
-            .dependencyRecords[dependencyNameAndVersion];
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
         _onlyInRangeIndex({
             index: index,
             length: dependency.additionalCDNCount
@@ -540,11 +519,10 @@ contract DependencyRegistryV0 is
         _onlyNonEmptyString(additionalRepository);
         _onlyExistingDependency(dependencyNameAndVersion);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.Dependency storage dependency = ds
-            .dependencyRecords[dependencyNameAndVersion];
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
         uint256 additionalRepositoryCount = uint256(
             dependency.additionalRepositoryCount
         );
@@ -615,11 +593,10 @@ contract DependencyRegistryV0 is
         _onlyNonEmptyString(additionalRepository);
         _onlyExistingDependency(dependencyNameAndVersion);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.Dependency storage dependency = ds
-            .dependencyRecords[dependencyNameAndVersion];
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
         _onlyInRangeIndex({
             index: index,
             length: dependency.additionalRepositoryCount
@@ -642,12 +619,11 @@ contract DependencyRegistryV0 is
         _onlyAdminACL(this.addSupportedCoreContract.selector);
         _onlyNonZeroAddress(contractAddress);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
         require(
             // @dev the add function returns false if set already contains value
-            ds.supportedCoreContracts.add(contractAddress),
+            DependencyRegistryStorageLib.s().supportedCoreContracts.add(
+                contractAddress
+            ),
             "Contract already supported"
         );
         emit SupportedCoreContractAdded(contractAddress);
@@ -659,13 +635,11 @@ contract DependencyRegistryV0 is
      */
     function removeSupportedCoreContract(address contractAddress) external {
         _onlyAdminACL(this.removeSupportedCoreContract.selector);
-
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
         require(
             // @dev the remove function returns false if set does not contain value
-            ds.supportedCoreContracts.remove(contractAddress),
+            DependencyRegistryStorageLib.s().supportedCoreContracts.remove(
+                contractAddress
+            ),
             "Core contract already removed or not in set"
         );
         emit SupportedCoreContractRemoved(contractAddress);
@@ -689,12 +663,9 @@ contract DependencyRegistryV0 is
         _onlyExistingDependency(dependencyNameAndVersion);
         _onlySupportedCoreContract(contractAddress);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        ds.projectDependencyOverrides[contractAddress][
-            projectId
-        ] = dependencyNameAndVersion;
+        DependencyRegistryStorageLib.s().projectDependencyOverrides[
+            contractAddress
+        ][projectId] = dependencyNameAndVersion;
 
         emit ProjectDependencyOverrideAdded(
             contractAddress,
@@ -758,10 +729,8 @@ contract DependencyRegistryV0 is
      * @return Number of registered dependencies.
      */
     function getDependencyCount() external view returns (uint256) {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        return ds.dependencyNameVersionIds.length();
+        return
+            DependencyRegistryStorageLib.s().dependencyNameVersionIds.length();
     }
 
     /**
@@ -808,10 +777,7 @@ contract DependencyRegistryV0 is
      * @return Number of registered license types.
      */
     function getLicenseTypeCount() external view returns (uint256) {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        return ds.licenseTypes.length();
+        return DependencyRegistryStorageLib.s().licenseTypes.length();
     }
 
     /**
@@ -840,11 +806,10 @@ contract DependencyRegistryV0 is
         _onlyNonEmptyString(text);
         _onlyExistingLicenseType(licenseType);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.License storage licenseEntry = ds
-            .allLicenses[licenseType];
+        DependencyRegistryStorageLib.License
+            storage licenseEntry = DependencyRegistryStorageLib.s().allLicenses[
+                licenseType
+            ];
         // store license chunk in contract bytecode
         licenseEntry.licenseBytecodeAddresses[
             licenseEntry.licenseChunkCount
@@ -871,11 +836,10 @@ contract DependencyRegistryV0 is
         _onlyNonEmptyString(text);
         _onlyExistingLicenseType(licenseType);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.License storage licenseEntry = ds
-            .allLicenses[licenseType];
+        DependencyRegistryStorageLib.License
+            storage licenseEntry = DependencyRegistryStorageLib.s().allLicenses[
+                licenseType
+            ];
         _onlyInRangeIndex({
             index: index,
             length: licenseEntry.licenseChunkCount
@@ -895,11 +859,10 @@ contract DependencyRegistryV0 is
         _onlyAdminACL(this.removeLicenseLastText.selector);
         _onlyExistingLicenseType(licenseType);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.License storage licenseEntry = ds
-            .allLicenses[licenseType];
+        DependencyRegistryStorageLib.License
+            storage licenseEntry = DependencyRegistryStorageLib.s().allLicenses[
+                licenseType
+            ];
         uint24 licenseChunkCount = licenseEntry.licenseChunkCount;
         require(licenseChunkCount > 0, "There is no license text to remove");
         // delete reference to old storage contract address
@@ -928,11 +891,10 @@ contract DependencyRegistryV0 is
         bytes32 licenseType,
         uint256 index
     ) external view returns (string memory) {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.License storage licenseEntry = ds
-            .allLicenses[licenseType];
+        DependencyRegistryStorageLib.License
+            storage licenseEntry = DependencyRegistryStorageLib.s().allLicenses[
+                licenseType
+            ];
         _onlyInRangeIndex({
             index: index,
             length: licenseEntry.licenseChunkCount
@@ -960,9 +922,11 @@ contract DependencyRegistryV0 is
     function getLicenseTextChunkCount(
         bytes32 licenseType
     ) external view returns (uint256) {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-        return ds.allLicenses[licenseType].licenseChunkCount;
+        return
+            DependencyRegistryStorageLib
+                .s()
+                .allLicenses[licenseType]
+                .licenseChunkCount;
     }
 
     /**
@@ -996,11 +960,10 @@ contract DependencyRegistryV0 is
             uint24 scriptCount
         )
     {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.Dependency storage dependency = ds
-            .dependencyRecords[dependencyNameAndVersion];
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
 
         return (
             dependencyNameAndVersion.toString(),
@@ -1020,10 +983,7 @@ contract DependencyRegistryV0 is
      * @return Number of supported core contracts.
      */
     function getSupportedCoreContractCount() external view returns (uint256) {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        return ds.supportedCoreContracts.length();
+        return DependencyRegistryStorageLib.s().supportedCoreContracts.length();
     }
 
     /**
@@ -1054,9 +1014,10 @@ contract DependencyRegistryV0 is
     function isSupportedCoreContract(
         address coreContractAddress
     ) external view returns (bool) {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-        return ds.supportedCoreContracts.contains(coreContractAddress);
+        return
+            DependencyRegistryStorageLib.s().supportedCoreContracts.contains(
+                coreContractAddress
+            );
     }
 
     /**
@@ -1097,11 +1058,10 @@ contract DependencyRegistryV0 is
         bytes32 dependencyNameAndVersion,
         uint256 index
     ) external view returns (string memory) {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.Dependency storage dependency = ds
-            .dependencyRecords[dependencyNameAndVersion];
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
         _onlyInRangeIndex({
             index: index,
             length: dependency.additionalCDNCount
@@ -1118,11 +1078,10 @@ contract DependencyRegistryV0 is
         bytes32 dependencyNameAndVersion,
         uint256 index
     ) external view returns (string memory) {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.Dependency storage dependency = ds
-            .dependencyRecords[dependencyNameAndVersion];
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
         _onlyInRangeIndex({
             index: index,
             length: dependency.additionalRepositoryCount
@@ -1137,10 +1096,11 @@ contract DependencyRegistryV0 is
     function getDependencyScriptCount(
         bytes32 dependencyNameAndVersion
     ) external view returns (uint256) {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        return ds.dependencyRecords[dependencyNameAndVersion].scriptCount;
+        return
+            DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion]
+                .scriptCount;
     }
 
     /**
@@ -1154,11 +1114,10 @@ contract DependencyRegistryV0 is
         bytes32 dependencyNameAndVersion,
         uint256 index
     ) external view returns (address) {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.Dependency storage dependency = ds
-            .dependencyRecords[dependencyNameAndVersion];
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
         _onlyInRangeIndex({index: index, length: dependency.scriptCount});
         return dependency.scriptBytecodeAddresses[index];
     }
@@ -1179,11 +1138,10 @@ contract DependencyRegistryV0 is
         bytes32 dependencyNameAndVersion,
         uint256 index
     ) external view returns (bytes32) {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.Dependency storage dependency = ds
-            .dependencyRecords[dependencyNameAndVersion];
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
         _onlyInRangeIndex({index: index, length: dependency.scriptCount});
         return
             BytecodeStorageReader.getLibraryVersionForBytecode(
@@ -1208,11 +1166,10 @@ contract DependencyRegistryV0 is
         bytes32 dependencyNameAndVersion,
         uint256 index
     ) external view returns (string memory) {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        DependencyRegistryStorageLib.Dependency storage dependency = ds
-            .dependencyRecords[dependencyNameAndVersion];
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
         _onlyInRangeIndex({index: index, length: dependency.scriptCount});
 
         address scriptAddress = dependency.scriptBytecodeAddresses[index];
@@ -1247,12 +1204,9 @@ contract DependencyRegistryV0 is
     ) external view returns (string memory) {
         _onlySupportedCoreContract(contractAddress);
 
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        bytes32 dependencyNameAndVersion = ds.projectDependencyOverrides[
-            contractAddress
-        ][projectId];
+        bytes32 dependencyNameAndVersion = DependencyRegistryStorageLib
+            .s()
+            .projectDependencyOverrides[contractAddress][projectId];
         if (dependencyNameAndVersion != bytes32(0)) {
             return dependencyNameAndVersion.toString();
         }
@@ -1293,12 +1247,13 @@ contract DependencyRegistryV0 is
         address contract_,
         bytes4 selector
     ) public returns (bool) {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
         return
             owner() != address(0) &&
-            ds.adminACLContract.allowed(sender, contract_, selector);
+            DependencyRegistryStorageLib.s().adminACLContract.allowed(
+                sender,
+                contract_,
+                selector
+            );
     }
 
     /**
@@ -1322,10 +1277,7 @@ contract DependencyRegistryV0 is
      * @return address Address of the admin ACL contract.
      */
     function adminACLContract() public view returns (address) {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        return address(ds.adminACLContract);
+        return address(DependencyRegistryStorageLib.s().adminACLContract);
     }
 
     /**
@@ -1337,9 +1289,9 @@ contract DependencyRegistryV0 is
      * also update adminACLContract for improved introspection.
      */
     function _transferOwnership(address newOwner) internal override {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
         OwnableUpgradeable._transferOwnership(newOwner);
-        ds.adminACLContract = IAdminACLV0(newOwner);
+        DependencyRegistryStorageLib.s().adminACLContract = IAdminACLV0(
+            newOwner
+        );
     }
 }
