@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.19;
 
 import "./interfaces/v0.8.x/IAdminACLV0.sol";
@@ -52,7 +52,7 @@ library DependencyRegistryStorageLib {
 
     function s() internal pure returns (Storage storage storageStruct) {
         bytes32 position = DIAMOND_STORAGE_POSITION;
-        assembly {
+        assembly ("memory-safe") {
             storageStruct.slot := position
         }
     }
