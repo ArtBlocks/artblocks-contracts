@@ -68,7 +68,7 @@
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/hardhat-upgrades": "^1.28.0",
     "@openzeppelin/test-helpers": "^0.5.16",
-    "@remix-project/remixd": "^0.6.19",
+    "@remix-project/remixd": "^0.6.20",
     "@typechain/ethers-v5": "^11.1.2",
     "@types/jest": "^29.5.10",
     "@types/mocha": "^10.0.6",
