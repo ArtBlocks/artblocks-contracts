@@ -3,96 +3,98 @@
 pragma solidity ^0.8.19;
 
 interface IDependencyRegistryV0 {
-    event SupportedCoreContractAdded(address indexed _coreContractAddress);
+    event SupportedCoreContractAdded(address indexed coreContractAddress);
 
-    event SupportedCoreContractRemoved(address indexed _coreContractAddress);
+    event SupportedCoreContractRemoved(address indexed coreContractAddress);
 
-    event ProjectDependencyTypeOverrideAdded(
-        address indexed _coreContractAddress,
-        uint256 indexed _projectId,
-        bytes32 _dependencyType
+    event ProjectDependencyOverrideAdded(
+        address indexed coreContractAddress,
+        uint256 indexed projectId,
+        bytes32 dependencyNameAndVersion
     );
 
-    event ProjectDependencyTypeOverrideRemoved(
-        address indexed _coreContractAddress,
-        uint256 indexed _projectId
+    event ProjectDependencyOverrideRemoved(
+        address indexed coreContractAddress,
+        uint256 indexed projectId
     );
 
-    event LicenseTypeAdded(bytes32 indexed _licenseType);
+    event LicenseTypeAdded(bytes32 indexed licenseType);
+
+    event LicenseTextUpdated(bytes32 indexed licenseType);
 
     event DependencyAdded(
-        bytes32 indexed _dependencyType,
-        bytes32 indexed _licenseType,
-        string _preferredCDN,
-        string _preferredRepository,
-        string _referenceWebsite
+        bytes32 indexed dependencyNameAndVersion,
+        bytes32 indexed licenseType,
+        string preferredCDN,
+        string preferredRepository,
+        string website
     );
 
-    event DependencyRemoved(bytes32 indexed _dependencyType);
+    event DependencyRemoved(bytes32 indexed dependencyNameAndVersion);
 
-    event DependencyReferenceWebsiteUpdated(
-        bytes32 indexed _dependencyType,
-        string _referenceWebsite
+    event DependencyWebsiteUpdated(
+        bytes32 indexed dependencyNameAndVersion,
+        string website
     );
 
     event DependencyPreferredCDNUpdated(
-        bytes32 indexed _dependencyType,
-        string _preferredCDN
+        bytes32 indexed dependencyNameAndVersion,
+        string preferredCDN
     );
 
     event DependencyPreferredRepositoryUpdated(
-        bytes32 indexed _dependencyType,
-        string _preferredRepository
+        bytes32 indexed dependencyNameAndVersion,
+        string preferredRepository
     );
 
     event DependencyAdditionalCDNUpdated(
-        bytes32 indexed _dependencyType,
-        string _additionalCDN,
-        uint256 _additionalCDNIndex
+        bytes32 indexed dependencyNameAndVersion,
+        string additionalCDN,
+        uint256 additionalCDNIndex
     );
 
     event DependencyAdditionalCDNRemoved(
-        bytes32 indexed _dependencyType,
-        uint256 indexed _additionalCDNIndex
+        bytes32 indexed dependencyNameAndVersion,
+        uint256 indexed additionalCDNIndex
     );
 
     event DependencyAdditionalRepositoryUpdated(
-        bytes32 indexed _dependencyType,
-        string _additionalRepository,
-        uint256 _additionalRepositoryIndex
+        bytes32 indexed dependencyNameAndVersion,
+        string additionalRepository,
+        uint256 additionalRepositoryIndex
     );
 
     event DependencyAdditionalRepositoryRemoved(
-        bytes32 indexed _dependencyType,
-        uint256 indexed _additionalRepositoryIndex
+        bytes32 indexed dependencyNameAndVersion,
+        uint256 indexed additionalRepositoryIndex
     );
 
-    event DependencyScriptUpdated(bytes32 indexed _dependencyType);
+    event DependencyScriptUpdated(bytes32 indexed dependencyNameAndVersion);
 
     /**
-     * @notice Returns the count of scripts for dependency `_dependencyType`.
-     * @param _dependencyType Dependency type to be queried.
+     * @notice Returns the count of scripts for dependency `dependencyNameAndVersion`.
+     * @param dependencyNameAndVersion Dependency type to be queried.
      */
     function getDependencyScriptCount(
-        bytes32 _dependencyType
+        bytes32 dependencyNameAndVersion
     ) external view returns (uint256);
 
     /**
      * @notice Returns address with bytecode containing script for
-     * dependency type `_dependencyTypes` at script index `_index`.
+     * dependency type `dependencyNameAndVersions` at script index `index`.
      */
     function getDependencyScriptBytecodeAddress(
-        bytes32 _dependencyType,
-        uint256 _index
+        bytes32 dependencyNameAndVersion,
+        uint256 index
     ) external view returns (address);
 
     /**
-     * @notice Returns script for dependency type `_dependencyType` at script index `_index`.
-     * @param _dependencyType Dependency type to be queried.
-     * @param _index Index of script to be queried.
+     * @notice Returns script for dependency type `dependencyNameAndVersion` at script index `index`.
+     * @param dependencyNameAndVersion Dependency type to be queried.
+     * @param index Index of script to be queried.
      */
     function getDependencyScript(
-        bytes32 _dependencyType,
-        uint256 _index
+        bytes32 dependencyNameAndVersion,
+        uint256 index
     ) external view returns (string memory);
 }
