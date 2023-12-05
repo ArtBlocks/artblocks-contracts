@@ -79,7 +79,7 @@
     "chai": "^4.3.10",
     "coveralls": "^3.1.1",
     "dotenv": "^16.3.1",
-    "eslint": "^8.54.0",
+    "eslint": "^8.55.0",
     "eslint-config-custom": "*",
     "eslint-plugin-mocha": "^10.2.0",
     "eslint-plugin-prettier": "^5.0.1",
