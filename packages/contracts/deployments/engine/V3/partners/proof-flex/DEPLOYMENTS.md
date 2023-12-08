@@ -1,4 +1,3 @@
-
 # Deployment
 
 Date: 2023-03-29T00:52:16.824Z
@@ -19,8 +18,6 @@ Date: 2023-03-29T00:52:16.824Z
 
 **Minters:**
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -37,7 +34,6 @@ Date: 2023-03-29T00:52:16.824Z
 - **Image Bucket:** proof-blocks-goerli
 
 ---
-
 
 # Deployment
 
@@ -59,8 +55,6 @@ Date: 2023-03-31T00:23:06.196Z
 
 **Minters:**
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -77,7 +71,6 @@ Date: 2023-03-31T00:23:06.196Z
 - **Image Bucket:** proof-blocks-mainnet
 
 ---
-
 
 # Deployment
 
@@ -99,8 +92,6 @@ Date: 2023-07-15T01:23:11.280Z
 
 **Minters:**
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -118,7 +109,6 @@ Date: 2023-07-15T01:23:11.280Z
 - **Image Bucket:** proof-blocks-2-mainnet
 
 ---
-
 
 # Minter Deployment
 
@@ -140,7 +130,6 @@ Date: 2023-10-19T21:34:13.524Z
 
 ---
 
-
 # Minter Deployment
 
 Date: 2023-10-19T21:56:32.810Z
@@ -160,7 +149,6 @@ Date: 2023-10-19T21:56:32.810Z
 **Deployment Args:** 0x5f53E89f060F6B45333b0CA809E126795Bd978E9,0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53,0x00000000000076A84feF008CDAbe6409d2FE638B
 
 ---
-
 
 # Minter Deployment
 
@@ -182,7 +170,6 @@ Date: 2023-10-19T22:04:38.573Z
 
 ---
 
-
 # Minter Deployment
 
 Date: 2023-10-19T22:05:24.971Z
@@ -203,3 +190,40 @@ Date: 2023-10-19T22:05:24.971Z
 
 ---
 
+# Deployment
+
+Date: 2023-12-08T00:55:49.658Z
+
+## **Network:** sepolia
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/sepolia/deployment-config-sepolia-migration.staging.ts`
+
+**GenArt721CoreV3_Engine_Flex_PROOF:** https://sepolia.etherscan.io/address/0x70F64Afe1fD8BE5c290f6fd07Ca06492799C1a26#code
+
+**AdminACLV1:** https://sepolia.etherscan.io/address/0x09a637F5b66A280834dB1A65648f621E27f03295#code
+
+**Core Registry:** https://sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**Shared Minter Filter:** https://sepolia.etherscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** PROOF Blocks
+- **Token Ticker:** PRFBLCKS
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0x4309ebddF4d56B5E6e91A2fc63b9564b162e467c
+- **BytecodeStorageReader Library:** 0x7497909537cE00fDda93c12d5083D8647C593c67
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** proof-blocks-sepolia
+
+---

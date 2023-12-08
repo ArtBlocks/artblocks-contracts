@@ -1,0 +1,21 @@
+export const deployConfigDetailsArray = [
+  {
+    name: "Vertu",
+    network: "sepolia",
+    environment: "staging",
+    adminACLContractName: "AdminACLV1",
+    genArt721CoreContractName: "GenArt721CoreV3_Engine_Flex",
+    tokenName: "Vertu Fine Art",
+    tokenTicker: "VFA",
+    startingProjectId: 0,
+    autoApproveArtistSplitProposals: true,
+    renderProviderAddress: "deployer",
+    platformProviderAddress: "0x57F1C8d52baFCbDDCAaa71BE11FEA6E48e11af11",
+    addInitialProject: false,
+    doTransferSuperAdmin: true,
+    newSuperAdminAddress: "0x57F1C8d52baFCbDDCAaa71BE11FEA6E48e11af11",
+    renderProviderSplitPercentagePrimary: 10,
+    renderProviderSplitBPSSecondary: 250,
+    defaultVerticalName: "flex",
+  },
+];

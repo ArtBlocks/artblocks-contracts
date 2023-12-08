@@ -1,4 +1,3 @@
-
 # Deployment
 
 Date: 2023-05-26T21:09:29.303Z
@@ -21,8 +20,6 @@ Date: 2023-05-26T21:09:29.303Z
 
 **MinterSetPriceV4:** https://goerli.etherscan.io/address/0xC66A38eBED9E225E4711DF5895195A13bde9f224#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -40,7 +37,6 @@ Date: 2023-05-26T21:09:29.303Z
 - **Image Bucket:** unit-london-goerli
 
 ---
-
 
 # Deployment
 
@@ -64,8 +60,6 @@ Date: 2023-05-26T21:16:47.862Z
 
 **MinterSetPriceV4:** https://goerli.etherscan.io/address/0x8cCD8bF96850369A2c279762000930e7c002125d#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -83,7 +77,6 @@ Date: 2023-05-26T21:16:47.862Z
 - **Image Bucket:** unit-london-v2-goerli
 
 ---
-
 
 # Deployment
 
@@ -123,3 +116,40 @@ Date: 2023-11-17T22:54:26.917Z
 
 ---
 
+# Deployment
+
+Date: 2023-12-08T01:06:27.762Z
+
+## **Network:** sepolia
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/sepolia/deployment-config-sepolia-migration.staging.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://sepolia.etherscan.io/address/0x96A83b48dE94E130Cf2AA81b28391c28EE33d253#code
+
+**AdminACLV1:** https://sepolia.etherscan.io/address/0xDa660c53BF80Ec39acbac12160B34c6583434F92#code
+
+**Core Registry:** https://sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**Shared Minter Filter:** https://sepolia.etherscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Unit London V2
+- **Token Ticker:** UNITLDN
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0xb5B7fb32C42c2c1c49285D54A35aa70793404b1F
+- **BytecodeStorageReader Library:** 0x7497909537cE00fDda93c12d5083D8647C593c67
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** unit-london-v2-sepolia
+
+---

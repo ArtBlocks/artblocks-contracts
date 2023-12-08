@@ -1,4 +1,3 @@
-
 # Deployment
 
 Date: 2023-04-13T23:16:39.370Z
@@ -25,8 +24,6 @@ Date: 2023-04-13T23:16:39.370Z
 
 **MinterMerkleV5:** https://goerli.etherscan.io/address/0x40cF4005847589BB8952aE3185DCe03FdF0F2e2F#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -43,7 +40,6 @@ Date: 2023-04-13T23:16:39.370Z
 - **Image Bucket:** vertu-fine-art-goerli
 
 ---
-
 
 # Deployment
 
@@ -71,8 +67,6 @@ Date: 2023-08-11T21:59:36.345Z
 
 **MinterMerkleV5:** https://etherscan.io/address/0x82B99bBA7E0A36634B99562fF8F2f9ca783043C9#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -91,3 +85,40 @@ Date: 2023-08-11T21:59:36.345Z
 
 ---
 
+# Deployment
+
+Date: 2023-12-08T01:17:49.524Z
+
+## **Network:** sepolia
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/sepolia/deployment-config-sepolia-migration.staging.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://sepolia.etherscan.io/address/0xb150434625A013A9D16AeDF1Ed559b8256C6a085#code
+
+**AdminACLV1:** https://sepolia.etherscan.io/address/0x68394Ce26421c9D2F9919E029563e3a813Bc6f10#code
+
+**Core Registry:** https://sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**Shared Minter Filter:** https://sepolia.etherscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Vertu Fine Art
+- **Token Ticker:** VFA
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0x57F1C8d52baFCbDDCAaa71BE11FEA6E48e11af11
+- **BytecodeStorageReader Library:** 0x7497909537cE00fDda93c12d5083D8647C593c67
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** vertu-fine-art-sepolia
+
+---

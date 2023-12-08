@@ -1,0 +1,21 @@
+export const deployConfigDetailsArray = [
+  {
+    name: "Audio Galleries",
+    network: "sepolia",
+    environment: "staging",
+    adminACLContractName: "AdminACLV1",
+    genArt721CoreContractName: "GenArt721CoreV3_Engine_Flex",
+    tokenName: "Audio Galleries Generator",
+    tokenTicker: "AGG",
+    startingProjectId: 0,
+    autoApproveArtistSplitProposals: true,
+    renderProviderAddress: "deployer",
+    platformProviderAddress: "0x0396D20242A85F877f58018228E345E398E4a969",
+    addInitialProject: false,
+    doTransferSuperAdmin: true,
+    newSuperAdminAddress: "0x0396D20242A85F877f58018228E345E398E4a969",
+    renderProviderSplitPercentagePrimary: 10,
+    renderProviderSplitBPSSecondary: 250,
+    defaultVerticalName: "flex",
+  },
+];

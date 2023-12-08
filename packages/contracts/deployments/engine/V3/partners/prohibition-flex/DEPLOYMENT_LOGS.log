@@ -277,3 +277,49 @@ Error: Unsupported network
 [INFO] Deploying to environment: arbitrum-staging
 [INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
 Created s3 bucket for https://prohibition-arbitrum-sepolia.s3.amazonaws.com
+----------------------------------------
+[INFO] Datetime of deployment: 2023-12-08T00:45:59.011Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/sepolia/deployment-config-sepolia-migration.staging.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV0_PROHIBITION deployed at address: 0x56b4e4420b3BDCEa8a92353aA307D16Ff95d91d6
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex_PROHIBITION deployed at 0xAE55346C7375F333B9869aE660692fc559A2dA9F
+[INFO] Registered core contract 0xAE55346C7375F333B9869aE660692fc559A2dA9F on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0xC430CE0184e536e341e04dCE0f4C37895a92b809.
+[INFO] Verifying core contract contract deployment...
+Successfully submitted source code for contract
+contracts/engine/V3/forks/PROHIBITION/GenArt721CoreV3_Engine_Flex_PROHIBITION.sol:GenArt721CoreV3_Engine_Flex_PROHIBITION at 0xAE55346C7375F333B9869aE660692fc559A2dA9F
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex_PROHIBITION on the block explorer.
+https://sepolia.etherscan.io/address/0xAE55346C7375F333B9869aE660692fc559A2dA9F#code
+
+[INFO] Core contract verified on Etherscan at 0xAE55346C7375F333B9869aE660692fc559A2dA9F}
+[INFO] Verifying AdminACL contract deployment...
+Successfully submitted source code for contract
+contracts/engine/V3/forks/PROHIBITION/AdminACLV0_PROHIBITION.sol:AdminACLV0_PROHIBITION at 0x56b4e4420b3BDCEa8a92353aA307D16Ff95d91d6
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV0_PROHIBITION on the block explorer.
+https://sepolia.etherscan.io/address/0x56b4e4420b3BDCEa8a92353aA307D16Ff95d91d6#code
+
+[INFO] AdminACL contract verified on Etherscan at 0x56b4e4420b3BDCEa8a92353aA307D16Ff95d91d6
+Created s3 bucket for https://prohibition-sepolia.s3.amazonaws.com
+[INFO] Created image bucket prohibition-sepolia
+[INFO] Deployment details written to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/sepolia/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xae55346c7375f333b9869ae660692fc559a2da9f",
+  "name": "Prohibition",
+  "bucket_name": "prohibition-sepolia",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xC430CE0184e536e341e04dCE0f4C37895a92b809, don't forget to update if requred.

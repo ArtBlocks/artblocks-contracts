@@ -1,4 +1,3 @@
-
 # Deployment
 
 Date: 2023-07-15T00:52:39.856Z
@@ -23,8 +22,6 @@ Date: 2023-07-15T00:52:39.856Z
 
 **MinterMerkleV5:** https://goerli.etherscan.io/address/0x2d262168BF0395639885e1dc08dfbebDf393469c#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -43,3 +40,40 @@ Date: 2023-07-15T00:52:39.856Z
 
 ---
 
+# Deployment
+
+Date: 2023-12-07T23:58:03.512Z
+
+## **Network:** sepolia
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/sepolia/deployment-config-sepolia-migration.staging.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://sepolia.etherscan.io/address/0xD1d1222f6d3e4F64dB1C025ECd0b314db8449AC4#code
+
+**AdminACLV1:** https://sepolia.etherscan.io/address/0xe35f98a29c37f805d4cFaD44d97562Dea3CcffA1#code
+
+**Core Registry:** https://sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**Shared Minter Filter:** https://sepolia.etherscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Bright Moments Flex
+- **Token Ticker:** MOMENT-FLEX
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0x18B7511938FBe2EE08ADf3d4A24edB00A5C9B783
+- **BytecodeStorageReader Library:** 0x7497909537cE00fDda93c12d5083D8647C593c67
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** bright-moments-flex-sepolia
+
+---

@@ -1,0 +1,21 @@
+export const deployConfigDetailsArray = [
+  {
+    name: "Proof",
+    network: "sepolia",
+    environment: "staging",
+    adminACLContractName: "AdminACLV1",
+    genArt721CoreContractName: "GenArt721CoreV3_Engine_Flex_PROOF",
+    tokenName: "PROOF Blocks",
+    tokenTicker: "PRFBLCKS",
+    startingProjectId: 0,
+    autoApproveArtistSplitProposals: true,
+    renderProviderAddress: "deployer",
+    platformProviderAddress: "0x4309ebddF4d56B5E6e91A2fc63b9564b162e467c",
+    addInitialProject: false,
+    doTransferSuperAdmin: true,
+    newSuperAdminAddress: "0x4309ebddF4d56B5E6e91A2fc63b9564b162e467c",
+    renderProviderSplitPercentagePrimary: 10,
+    renderProviderSplitBPSSecondary: 250,
+    defaultVerticalName: "flex",
+  },
+];

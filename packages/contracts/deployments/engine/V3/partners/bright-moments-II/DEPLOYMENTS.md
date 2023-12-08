@@ -1,4 +1,3 @@
-
 # Deployment
 
 Date: 2023-03-29T01:33:15.420Z
@@ -21,8 +20,6 @@ Date: 2023-03-29T01:33:15.420Z
 
 **MinterSetPriceV4:** https://goerli.etherscan.io/address/0xB4Fe7B2e924C5Fd069f4f2D767e8AC50f8299fba#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -39,7 +36,6 @@ Date: 2023-03-29T01:33:15.420Z
 - **Image Bucket:** bright-moments-ii-goerli
 
 ---
-
 
 # Deployment
 
@@ -65,8 +61,6 @@ Date: 2023-06-12T23:42:02.938Z
 
 **MinterDAExpSettlementV1:** https://arbitrum-goerli.etherscan.io/address/0xa1577a3EB47CB49afB6b8F53cBcF0E9d613ABEB4#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -84,7 +78,6 @@ Date: 2023-06-12T23:42:02.938Z
 - **Image Bucket:** bright-moments-arbitrum-arbitrum-goerli
 
 ---
-
 
 # Deployment
 
@@ -110,8 +103,6 @@ Date: 2023-07-15T01:34:18.189Z
 
 **MinterMerkleV5:** https://etherscan.io/address/0x8aDadF5698E04ed346dc768238CFbD2a23F7143E#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -130,3 +121,40 @@ Date: 2023-07-15T01:34:18.189Z
 
 ---
 
+# Deployment
+
+Date: 2023-12-07T23:53:38.438Z
+
+## **Network:** sepolia
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/sepolia/deployment-config-sepolia-migration.staging.ts`
+
+**GenArt721CoreV3_Engine:** https://sepolia.etherscan.io/address/0x8651eFeBA58F94A3785113B6Bc60a50Aa305df4c#code
+
+**AdminACLV1:** https://sepolia.etherscan.io/address/0xfb66DA6a7069E9786a733C699dDAb6c74b7d644b#code
+
+**Core Registry:** https://sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**Shared Minter Filter:** https://sepolia.etherscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Bright Moments
+- **Token Ticker:** MOMENT
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0x18B7511938FBe2EE08ADf3d4A24edB00A5C9B783
+- **BytecodeStorageReader Library:** 0x7497909537cE00fDda93c12d5083D8647C593c67
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** bright-moments-sepolia
+
+---

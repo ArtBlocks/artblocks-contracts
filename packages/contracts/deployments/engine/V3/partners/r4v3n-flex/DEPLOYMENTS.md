@@ -1,4 +1,3 @@
-
 # Deployment
 
 Date: 2023-05-26T21:03:00.402Z
@@ -23,8 +22,6 @@ Date: 2023-05-26T21:03:00.402Z
 
 **MinterDAExpSettlementV1:** https://goerli.etherscan.io/address/0x95a0f2fad7e33474e1c9Cf8D66B036a7768e5F4B#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -42,7 +39,6 @@ Date: 2023-05-26T21:03:00.402Z
 - **Image Bucket:** r4v3n-goerli
 
 ---
-
 
 # Deployment
 
@@ -68,8 +64,6 @@ Date: 2023-09-08T00:13:29.190Z
 
 **MinterDAExpSettlementV1:** https://etherscan.io/address/0x6e130d81Bc8783285Ca7f679E4048326B1360492#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -88,3 +82,40 @@ Date: 2023-09-08T00:13:29.190Z
 
 ---
 
+# Deployment
+
+Date: 2023-12-08T00:57:15.088Z
+
+## **Network:** sepolia
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/sepolia/deployment-config-sepolia-migration.staging.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://sepolia.etherscan.io/address/0x8BdF282Aa9d8d5369945a1Fc27603D41349450e8#code
+
+**AdminACLV1:** https://sepolia.etherscan.io/address/0x5eAc5d6c737553DBb33D8F5dBd614f4403408122#code
+
+**Core Registry:** https://sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**Shared Minter Filter:** https://sepolia.etherscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** r4v3n
+- **Token Ticker:** R4V3N
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0xF2162BaCC9F76608bA4b11b1a6dac976ED463129
+- **BytecodeStorageReader Library:** 0x7497909537cE00fDda93c12d5083D8647C593c67
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** r4v3n-sepolia
+
+---

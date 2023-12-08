@@ -1,0 +1,21 @@
+export const deployConfigDetailsArray = [
+  {
+    name: "Shiseido",
+    network: "sepolia",
+    environment: "staging",
+    adminACLContractName: "AdminACLV1",
+    genArt721CoreContractName: "GenArt721CoreV3_Engine_Flex",
+    tokenName: "Shiseido x ABE",
+    tokenTicker: "SHIS - ABE",
+    startingProjectId: 0,
+    autoApproveArtistSplitProposals: true,
+    renderProviderAddress: "deployer",
+    platformProviderAddress: "0x88650550C572e691571CBDBC486916a5D85c6BBD",
+    addInitialProject: false,
+    doTransferSuperAdmin: true,
+    newSuperAdminAddress: "0x88650550C572e691571CBDBC486916a5D85c6BBD",
+    renderProviderSplitPercentagePrimary: 10,
+    renderProviderSplitBPSSecondary: 250,
+    defaultVerticalName: "flex",
+  },
+];

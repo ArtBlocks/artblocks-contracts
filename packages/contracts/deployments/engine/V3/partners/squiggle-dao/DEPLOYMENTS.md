@@ -83,3 +83,41 @@ Date: 2023-11-02
 - **Image Bucket:** squiggle-dao-studios-mainnet
 
 ---
+
+# Deployment
+
+Date: 2023-12-08T01:00:16.512Z
+
+## **Network:** sepolia
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/sepolia/deployment-config-sepolia-migration.staging.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://sepolia.etherscan.io/address/0xCc95866222D07bF2001e1BA89cE5FDbCcaDa7dcf#code
+
+**AdminACLV1:** https://sepolia.etherscan.io/address/0x4982D9A890BB286A0664A8af3b896bE8403DCca4#code
+
+**Core Registry:** https://sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**Shared Minter Filter:** https://sepolia.etherscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Squiggle DAO Studios
+- **Token Ticker:** SDAOS
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0xc904Af16BeDe828A7e2728923CD72DA1F73Fe186
+- **BytecodeStorageReader Library:** 0x7497909537cE00fDda93c12d5083D8647C593c67
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** squiggle-dao-studios-sepolia
+
+---
