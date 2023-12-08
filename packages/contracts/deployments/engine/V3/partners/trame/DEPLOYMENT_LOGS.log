@@ -1,0 +1,36 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-12-08T19:27:36.992Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/trame/deployment-config.sepolia-staging.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x2890c653D358EFC51CaaAC48f9a099a12b119Fa4
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x0053Fb573bbA1a27eB8C93299666cDaFe3806a67
+[INFO] Registered core contract 0x0053Fb573bbA1a27eB8C93299666cDaFe3806a67 on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x4C7D8c95a0ABE647E36a8570136cAe0BaA5288af.
+[INFO] Verifying core contract contract deployment...
+The contract 0x0053Fb573bbA1a27eB8C93299666cDaFe3806a67 has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x0053Fb573bbA1a27eB8C93299666cDaFe3806a67#code
+[INFO] Core contract verified on Etherscan at 0x0053Fb573bbA1a27eB8C93299666cDaFe3806a67}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x2890c653D358EFC51CaaAC48f9a099a12b119Fa4 has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x2890c653D358EFC51CaaAC48f9a099a12b119Fa4#code
+[INFO] AdminACL contract verified on Etherscan at 0x2890c653D358EFC51CaaAC48f9a099a12b119Fa4
+Created s3 bucket for https://tramexcpg-sepolia.s3.amazonaws.com
+[INFO] Created image bucket tramexcpg-sepolia
+[INFO] Deployment details written to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/trame/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x0053fb573bba1a27eb8c93299666cdafe3806a67",
+  "name": "TRAMExCPG",
+  "bucket_name": "tramexcpg-sepolia",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x4C7D8c95a0ABE647E36a8570136cAe0BaA5288af, don't forget to update if requred.

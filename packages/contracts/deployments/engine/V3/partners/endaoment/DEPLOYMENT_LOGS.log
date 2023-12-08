@@ -1,0 +1,36 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-12-08T19:23:44.702Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/endaoment/deployment-config.sepolia-staging.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x064E6b98C53A2fED3C6D9e16da4da7A8669455f2
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xBfD90e8Ab13D933FCdAABB43113242fe0cC92c5E
+[INFO] Registered core contract 0xBfD90e8Ab13D933FCdAABB43113242fe0cC92c5E on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0xC121cdb13F4E67D5563beA5257f35B1609a4c423.
+[INFO] Verifying core contract contract deployment...
+The contract 0xBfD90e8Ab13D933FCdAABB43113242fe0cC92c5E has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0xBfD90e8Ab13D933FCdAABB43113242fe0cC92c5E#code
+[INFO] Core contract verified on Etherscan at 0xBfD90e8Ab13D933FCdAABB43113242fe0cC92c5E}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x064E6b98C53A2fED3C6D9e16da4da7A8669455f2 has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x064E6b98C53A2fED3C6D9e16da4da7A8669455f2#code
+[INFO] AdminACL contract verified on Etherscan at 0x064E6b98C53A2fED3C6D9e16da4da7A8669455f2
+Created s3 bucket for https://endaoment-gallery-for-good-sepolia.s3.amazonaws.com
+[INFO] Created image bucket endaoment-gallery-for-good-sepolia
+[INFO] Deployment details written to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/endaoment/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xbfd90e8ab13d933fcdaabb43113242fe0cc92c5e",
+  "name": "Endaoment Gallery for Good",
+  "bucket_name": "endaoment-gallery-for-good-sepolia",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xC121cdb13F4E67D5563beA5257f35B1609a4c423, don't forget to update if requred.
