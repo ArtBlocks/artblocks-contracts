@@ -131,7 +131,7 @@ Date: 2023-12-08T01:15:04.479Z
 
 ## **Environment:** staging
 
-**Deployment Input File:** `deployments/engine/V3/partners/sepolia/deployment-config-sepolia-migration.staging.ts`
+**Deployment Input File:** `deployments/engine/V3/partners/vca-flex/deployment-config.sepolia-staging.ts`
 
 **GenArt721CoreV3_Engine_Flex:** https://sepolia.etherscan.io/address/0x381233D5584fDb42e46b4D9ba91876479AAb7AcD#code
 

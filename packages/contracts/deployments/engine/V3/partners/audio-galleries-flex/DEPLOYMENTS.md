@@ -47,7 +47,7 @@ Date: 2023-12-07T23:40:32.774Z
 
 ## **Environment:** staging
 
-**Deployment Input File:** `deployments/engine/V3/partners/sepolia/deployment-config-sepolia-migration.staging.ts`
+**Deployment Input File:** `deployments/engine/V3/partners/audio-galleries-flex/deployment-config.sepolia-staging.ts`
 
 **GenArt721CoreV3_Engine_Flex:** https://sepolia.etherscan.io/address/0x569cDfECFD848a02Ad3e74175a1A4a74484Ef944#code
 

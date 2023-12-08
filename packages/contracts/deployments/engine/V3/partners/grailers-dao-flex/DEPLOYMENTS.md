@@ -112,7 +112,7 @@ Date: 2023-12-08T00:02:42.895Z
 
 ## **Environment:** staging
 
-**Deployment Input File:** `deployments/engine/V3/partners/sepolia/deployment-config-sepolia-migration.staging.ts`
+**Deployment Input File:** `deployments/engine/V3/partners/grailers-dao-flex/deployment-config.sepolia-staging.ts`
 
 **GenArt721CoreV3_Engine_Flex:** https://sepolia.etherscan.io/address/0x0D39AB55664007ff2d089A25480f169C6D0597Bb#code
 

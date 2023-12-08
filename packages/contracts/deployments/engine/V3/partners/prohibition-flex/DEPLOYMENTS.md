@@ -211,7 +211,7 @@ Date: 2023-12-08T00:50:24.375Z
 
 ## **Environment:** staging
 
-**Deployment Input File:** `deployments/engine/V3/partners/sepolia/deployment-config-sepolia-migration.staging.ts`
+**Deployment Input File:** `deployments/engine/V3/partners/prohibition-flex/deployment-config.sepolia-staging.ts`
 
 **GenArt721CoreV3_Engine_Flex_PROHIBITION:** https://sepolia.etherscan.io/address/0xAE55346C7375F333B9869aE660692fc559A2dA9F#code
 
