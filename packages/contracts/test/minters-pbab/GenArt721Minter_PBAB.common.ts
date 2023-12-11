@@ -76,17 +76,27 @@ export const GenArt721Minter_PBAB_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, {
-            value: config.pricePerTokenInWei,
-          }),
+          .purchase(
+            config.projectZero,
+            config.pricePerTokenInWei,
+            constants.ZERO_ADDRESS,
+            {
+              value: config.pricePerTokenInWei,
+            }
+          ),
         needMoreValueErrorMessage
       );
       // can purchase token at higher price
       await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectZero, {
-          value: config.higherPricePerTokenInWei,
-        });
+        .purchase(
+          config.projectZero,
+          config.higherPricePerTokenInWei,
+          constants.ZERO_ADDRESS,
+          {
+            value: config.higherPricePerTokenInWei,
+          }
+        );
     });
 
     it("enforces price update only on desired project", async function () {
@@ -103,17 +113,27 @@ export const GenArt721Minter_PBAB_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, {
-            value: config.pricePerTokenInWei,
-          }),
+          .purchase(
+            config.projectZero,
+            config.pricePerTokenInWei,
+            constants.ZERO_ADDRESS,
+            {
+              value: config.pricePerTokenInWei,
+            }
+          ),
         needMoreValueErrorMessage
       );
       // can purchase project one token at lower price
       await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectOne, {
-          value: config.pricePerTokenInWei,
-        });
+        .purchase(
+          config.projectOne,
+          config.pricePerTokenInWei,
+          constants.ZERO_ADDRESS,
+          {
+            value: config.pricePerTokenInWei,
+          }
+        );
     });
   });
 
@@ -178,10 +198,15 @@ export const GenArt721Minter_PBAB_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, {
-            value: config.pricePerTokenInWei,
-          }),
-        "this project accepts a different currency and cannot accept ETH"
+          .purchase(
+            config.projectZero,
+            config.pricePerTokenInWei,
+            constants.ZERO_ADDRESS,
+            {
+              value: config.pricePerTokenInWei,
+            }
+          ),
+        "Currency addresses must match"
       );
       // approve contract and able to mint with Mock token
       await config.ERC20Mock.connect(config.accounts.user).approve(
@@ -190,7 +215,11 @@ export const GenArt721Minter_PBAB_Common = async (
       );
       await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectZero);
+        .purchase(
+          config.projectZero,
+          config.pricePerTokenInWei,
+          config.ERC20Mock.address
+        );
       // cannot purchase token with ERC20 token when insufficient balance
       await config.ERC20Mock.connect(config.accounts.user).transfer(
         config.accounts.artist.address,
@@ -199,7 +228,11 @@ export const GenArt721Minter_PBAB_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero),
+          .purchase(
+            config.projectZero,
+            config.pricePerTokenInWei,
+            config.ERC20Mock.address
+          ),
         "Insufficient balance"
       );
       // artist changes back to ETH
@@ -213,14 +246,18 @@ export const GenArt721Minter_PBAB_Common = async (
       // able to mint with ETH
       await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectZero, {
-          value: config.pricePerTokenInWei,
-        });
+        .purchase(
+          config.projectZero,
+          config.pricePerTokenInWei,
+          constants.ZERO_ADDRESS,
+          {
+            value: config.pricePerTokenInWei,
+          }
+        );
     });
 
     it("enforces currency update only on desired project", async function () {
       const config = await loadFixture(_beforeEach);
-      const needMoreValueErrorMessage = "Must send minimum value to mint!";
       // artist changes currency info for project zero
       await config.genArt721Core
         .connect(config.accounts.artist)
@@ -232,9 +269,14 @@ export const GenArt721Minter_PBAB_Common = async (
       // can purchase project one token with ETH
       await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectOne, {
-          value: config.pricePerTokenInWei,
-        });
+        .purchase(
+          config.projectOne,
+          config.pricePerTokenInWei,
+          constants.ZERO_ADDRESS,
+          {
+            value: config.pricePerTokenInWei,
+          }
+        );
     });
   });
 
@@ -244,18 +286,28 @@ export const GenArt721Minter_PBAB_Common = async (
       for (let i = 0; i < 15; i++) {
         await config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, {
-            value: config.pricePerTokenInWei,
-          });
+          .purchase(
+            config.projectZero,
+            config.pricePerTokenInWei,
+            constants.ZERO_ADDRESS,
+            {
+              value: config.pricePerTokenInWei,
+            }
+          );
       }
 
       const userBalance = await config.accounts.user.getBalance();
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, {
-            value: config.pricePerTokenInWei,
-          }),
+          .purchase(
+            config.projectZero,
+            config.pricePerTokenInWei,
+            constants.ZERO_ADDRESS,
+            {
+              value: config.pricePerTokenInWei,
+            }
+          ),
         "Must not exceed max invocations"
       );
     });
@@ -265,9 +317,14 @@ export const GenArt721Minter_PBAB_Common = async (
       // Try without setProjectMaxInvocations, store gas cost
       const tx = await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectZero, {
-          value: config.pricePerTokenInWei,
-        });
+        .purchase(
+          config.projectZero,
+          config.pricePerTokenInWei,
+          constants.ZERO_ADDRESS,
+          {
+            value: config.pricePerTokenInWei,
+          }
+        );
 
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
       let gasCostNoMaxInvocations: any = receipt.effectiveGasPrice
@@ -284,9 +341,14 @@ export const GenArt721Minter_PBAB_Common = async (
 
       const maxSetTx = await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectOne, {
-          value: config.pricePerTokenInWei,
-        });
+        .purchase(
+          config.projectOne,
+          config.pricePerTokenInWei,
+          constants.ZERO_ADDRESS,
+          {
+            value: config.pricePerTokenInWei,
+          }
+        );
       const receipt2 = await ethers.provider.getTransactionReceipt(
         maxSetTx.hash
       );
@@ -319,17 +381,27 @@ export const GenArt721Minter_PBAB_Common = async (
       for (let i = 0; i < 15; i++) {
         await config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, {
-            value: config.pricePerTokenInWei,
-          });
+          .purchase(
+            config.projectZero,
+            config.pricePerTokenInWei,
+            constants.ZERO_ADDRESS,
+            {
+              value: config.pricePerTokenInWei,
+            }
+          );
       }
       const userBalanceNoMaxSet = await config.accounts.user.getBalance();
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, {
-            value: config.pricePerTokenInWei,
-          }),
+          .purchase(
+            config.projectZero,
+            config.pricePerTokenInWei,
+            constants.ZERO_ADDRESS,
+            {
+              value: config.pricePerTokenInWei,
+            }
+          ),
         "Must not exceed max invocations"
       );
       const userDeltaNoMaxSet = userBalanceNoMaxSet.sub(
@@ -343,9 +415,14 @@ export const GenArt721Minter_PBAB_Common = async (
       for (let i = 0; i < 15; i++) {
         await config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectOne, {
-            value: config.pricePerTokenInWei,
-          });
+          .purchase(
+            config.projectOne,
+            config.pricePerTokenInWei,
+            constants.ZERO_ADDRESS,
+            {
+              value: config.pricePerTokenInWei,
+            }
+          );
       }
       const userBalanceMaxSet = BigNumber.from(
         await config.accounts.user.getBalance()
@@ -353,9 +430,14 @@ export const GenArt721Minter_PBAB_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectOne, {
-            value: config.pricePerTokenInWei,
-          }),
+          .purchase(
+            config.projectOne,
+            config.pricePerTokenInWei,
+            constants.ZERO_ADDRESS,
+            {
+              value: config.pricePerTokenInWei,
+            }
+          ),
         "Maximum number of invocations reached"
       );
       const userDeltaMaxSet = userBalanceMaxSet.sub(
@@ -382,9 +464,15 @@ export const GenArt721Minter_PBAB_Common = async (
       const config = await loadFixture(_beforeEach);
       await config.minter
         .connect(config.accounts.user)
-        .purchaseTo(config.accounts.additional.address, config.projectOne, {
-          value: config.pricePerTokenInWei,
-        });
+        .purchaseTo(
+          config.accounts.additional.address,
+          config.projectOne,
+          config.pricePerTokenInWei,
+          constants.ZERO_ADDRESS,
+          {
+            value: config.pricePerTokenInWei,
+          }
+        );
     });
   });
 
@@ -411,8 +499,9 @@ export const GenArt721Minter_PBAB_Common = async (
     it("does not allow reentrant purchaseTo", async function () {
       const config = await loadFixture(_beforeEach);
       // attacker deploys reentrancy contract
-      const reentrancyMockFactory =
-        await ethers.getContractFactory("ReentrancyMock");
+      const reentrancyMockFactory = await ethers.getContractFactory(
+        "ReentrancyGenArt721MinterMock"
+      );
       const reentrancyMock = await reentrancyMockFactory
         .connect(config.accounts.deployer)
         .deploy();
@@ -428,6 +517,7 @@ export const GenArt721Minter_PBAB_Common = async (
             config.minter.address,
             config.projectOne,
             config.higherPricePerTokenInWei,
+            constants.ZERO_ADDRESS,
             {
               value: totalValue,
             }
@@ -446,6 +536,7 @@ export const GenArt721Minter_PBAB_Common = async (
             config.minter.address,
             config.projectOne,
             config.higherPricePerTokenInWei,
+            constants.ZERO_ADDRESS,
             {
               value: config.higherPricePerTokenInWei,
             }

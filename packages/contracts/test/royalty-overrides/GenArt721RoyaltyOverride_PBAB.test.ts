@@ -134,11 +134,15 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
 
     await config.minterA
       .connect(config.royaltyAccounts.anyone)
-      .purchase(projectZero, { value: pricePerTokenInWei });
+      .purchase(projectZero, pricePerTokenInWei, addressZero, {
+        value: pricePerTokenInWei,
+      });
 
     await config.minterA
       .connect(config.royaltyAccounts.anyone)
-      .purchase(projectOne, { value: pricePerTokenInWei });
+      .purchase(projectOne, pricePerTokenInWei, addressZero, {
+        value: pricePerTokenInWei,
+      });
 
     // deploy second core contract with two more projects
     config.tokenB = await artblocksFactory_PBAB
@@ -201,11 +205,15 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
 
     await config.minterB
       .connect(config.royaltyAccounts.anyone)
-      .purchase(projectZero, { value: pricePerTokenInWei });
+      .purchase(projectZero, pricePerTokenInWei, addressZero, {
+        value: pricePerTokenInWei,
+      });
 
     await config.minterB
       .connect(config.royaltyAccounts.anyone)
-      .purchase(projectOne, { value: pricePerTokenInWei });
+      .purchase(projectOne, pricePerTokenInWei, addressZero, {
+        value: pricePerTokenInWei,
+      });
 
     // deploy PBAB royalty override
     const royaltyOverrideFactory_PBAB = await ethers.getContractFactory(

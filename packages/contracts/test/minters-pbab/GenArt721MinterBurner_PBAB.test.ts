@@ -162,7 +162,11 @@ describe("GenArt721MinterBurner_PBAB", async function () {
       );
       await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectZero);
+        .purchase(
+          config.projectZero,
+          config.pricePerTokenInWei,
+          config.ERC20Mock.address
+        );
       // artist balance of ERC20 token should be > than before
       const balanceAfter: BigNumber = await config.ERC20Mock.balanceOf(
         config.accounts.artist.address
@@ -195,7 +199,11 @@ describe("GenArt721MinterBurner_PBAB", async function () {
       );
       await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectZero);
+        .purchase(
+          config.projectZero,
+          config.pricePerTokenInWei,
+          config.ERC20Mock.address
+        );
       // artist balance of ERC20 token should be same as before
       const balanceAfter: BigNumber = await config.ERC20Mock.balanceOf(
         config.accounts.artist.address
@@ -233,7 +241,11 @@ describe("GenArt721MinterBurner_PBAB", async function () {
       );
       await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectZero);
+        .purchase(
+          config.projectZero,
+          config.pricePerTokenInWei,
+          config.ERC20Mock.address
+        );
       // artist balance of ERC20 token should be > than before
       const balanceAfter: BigNumber = await config.ERC20Mock.balanceOf(
         config.accounts.artist.address

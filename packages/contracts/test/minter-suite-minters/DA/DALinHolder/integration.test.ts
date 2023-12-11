@@ -37,6 +37,8 @@ const runForEach = [
   },
 ];
 
+const addressZero = "0x0000000000000000000000000000000000000000";
+
 runForEach.forEach((params) => {
   describe(`${TARGET_MINTER_NAME} Integration w/ core ${params.core}`, async function () {
     async function _beforeEach() {
@@ -763,9 +765,15 @@ runForEach.forEach((params) => {
           const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
           await pbabMinter
             .connect(config.accounts.artist)
-            .purchaseTo(config.accounts.additional.address, 0, {
-              value: config.pricePerTokenInWei,
-            });
+            .purchaseTo(
+              config.accounts.additional.address,
+              0,
+              config.pricePerTokenInWei,
+              addressZero,
+              {
+                value: config.pricePerTokenInWei,
+              }
+            );
 
           // expect failure when using PBAB token because it is not allowlisted for config.projectTwo
           await expectRevert(
@@ -790,9 +798,15 @@ runForEach.forEach((params) => {
           const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
           await pbabMinter
             .connect(config.accounts.artist)
-            .purchaseTo(config.accounts.additional.address, 0, {
-              value: config.pricePerTokenInWei,
-            });
+            .purchaseTo(
+              config.accounts.additional.address,
+              0,
+              config.pricePerTokenInWei,
+              addressZero,
+              {
+                value: config.pricePerTokenInWei,
+              }
+            );
 
           // allow holders of PBAB project 0 to purchase tokens on config.projectTwo
           await config.minter

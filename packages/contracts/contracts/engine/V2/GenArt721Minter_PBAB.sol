@@ -178,12 +178,22 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
     /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
+     * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places. Required if currency is ERC20.
+     * @param _currencyAddress Currency address of token.
      * @return _tokenId Token ID of minted token
      */
     function purchase(
-        uint256 _projectId
+        uint256 _projectId,
+        uint256 _maxPricePerToken,
+        address _currencyAddress
     ) public payable returns (uint256 _tokenId) {
-        return purchaseTo(msg.sender, _projectId);
+        return
+            purchaseTo(
+                msg.sender,
+                _projectId,
+                _maxPricePerToken,
+                _currencyAddress
+            );
     }
 
     /**
@@ -191,11 +201,15 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
+     * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places
+     * @param _currencyAddress Currency address of token.
      * @return _tokenId Token ID of minted token
      */
     function purchaseTo(
         address _to,
-        uint256 _projectId
+        uint256 _projectId,
+        uint256 _maxPricePerToken,
+        address _currencyAddress
     ) public payable nonReentrant returns (uint256 _tokenId) {
         // CHECKS
         require(
@@ -206,6 +220,14 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
         if (contractFilterProject[_projectId]) {
             require(msg.sender == tx.origin, "No Contract Buys");
         }
+
+        address configuredCurrencyAddress = genArtCoreContract
+            .projectIdToCurrencyAddress(_projectId);
+        // validate that the currency address matches the project configured currency
+        require(
+            _currencyAddress == configuredCurrencyAddress,
+            "Currency addresses must match"
+        );
 
         // limit mints per address by project
         if (projectMintLimit[_projectId] > 0) {
@@ -251,6 +273,14 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
                 )
             ) != keccak256(abi.encodePacked("ETH"))
         ) {
+            uint256 pricePerTokenInWei = genArtCoreContract
+                .projectIdToPricePerTokenInWei(_projectId);
+            // validate that the specified maximum price is greater than or equal to the price per token
+            require(
+                _maxPricePerToken >= pricePerTokenInWei,
+                "Only max price gte token price"
+            );
+
             require(
                 msg.value == 0,
                 "this project accepts a different currency and cannot accept ETH"

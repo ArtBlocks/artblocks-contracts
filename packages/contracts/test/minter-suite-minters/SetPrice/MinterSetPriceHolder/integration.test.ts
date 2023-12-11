@@ -16,6 +16,8 @@ Logger.setLogLevel(Logger.levels.ERROR);
 const TARGET_MINTER_NAME = "MinterSetPriceHolderV5";
 const TARGET_MINTER_VERSION = "v5.0.0";
 
+const addressZero = "0x0000000000000000000000000000000000000000";
+
 const runForEach = [
   {
     core: "GenArt721CoreV3",
@@ -432,9 +434,15 @@ runForEach.forEach((params) => {
           const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
           await pbabMinter
             .connect(config.accounts.artist)
-            .purchaseTo(config.accounts.additional.address, 0, {
-              value: config.pricePerTokenInWei,
-            });
+            .purchaseTo(
+              config.accounts.additional.address,
+              0,
+              config.pricePerTokenInWei,
+              addressZero,
+              {
+                value: config.pricePerTokenInWei,
+              }
+            );
 
           // configure price per token to be zero
           await config.minter
@@ -467,9 +475,15 @@ runForEach.forEach((params) => {
           const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
           await pbabMinter
             .connect(config.accounts.artist)
-            .purchaseTo(config.accounts.additional.address, 0, {
-              value: config.pricePerTokenInWei,
-            });
+            .purchaseTo(
+              config.accounts.additional.address,
+              0,
+              config.pricePerTokenInWei,
+              addressZero,
+              {
+                value: config.pricePerTokenInWei,
+              }
+            );
 
           // allow holders of PBAB project 0 to purchase tokens on config.projectTwo
           await config.minter
