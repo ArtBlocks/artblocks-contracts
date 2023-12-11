@@ -1,0 +1,21 @@
+export const deployConfigDetailsArray = [
+  {
+    name: "GrailersDAO",
+    network: "sepolia",
+    environment: "staging",
+    adminACLContractName: "AdminACLV1",
+    genArt721CoreContractName: "GenArt721CoreV3_Engine_Flex",
+    tokenName: "GrailersDAO",
+    tokenTicker: "GRAILS",
+    startingProjectId: 0,
+    autoApproveArtistSplitProposals: true,
+    renderProviderAddress: "deployer",
+    platformProviderAddress: "0x2329FD5F1924b0d6Df643eeEA4Fbf816f415C879",
+    addInitialProject: false,
+    doTransferSuperAdmin: true,
+    newSuperAdminAddress: "0x2329FD5F1924b0d6Df643eeEA4Fbf816f415C879",
+    renderProviderSplitPercentagePrimary: 10,
+    renderProviderSplitBPSSecondary: 250,
+    defaultVerticalName: "flex",
+  },
+];

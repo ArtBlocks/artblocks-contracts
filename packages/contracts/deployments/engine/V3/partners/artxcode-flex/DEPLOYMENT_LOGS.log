@@ -40,3 +40,49 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-12-07T23:27:29.648Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/sepolia/deployment-config-sepolia-migration.staging.ts
+[INFO] Deploying to network: sepolia
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xE89b16B4e5Cb619772894E29650437dee9779933
+[INFO] Registered core contract 0xE89b16B4e5Cb619772894E29650437dee9779933 on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0xC3989DDDae38f59510bAf51A65EC7d1D3dE0A17e.
+[INFO] Verifying core contract contract deployment...
+[ACTION] Save the following constructor args config file to a constructor-args.js file, then verify core contract deployment with:
+module.exports = [
+        "ARTXCODE", // name
+        "ARTXCODE", // ticker
+        "0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef", // render provider
+        "0xC3989DDDae38f59510bAf51A65EC7d1D3dE0A17e", // platform provider
+        "0x28f2D3805652FB5d359486dFfb7D08320D403240", // randomizer
+        "0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5", // admin acl
+        0, // starting project id
+        true, // auto approve artist split proposals
+      ];
+yarn hardhat verify --network sepolia --constructor-args constructor-args.js 0xE89b16B4e5Cb619772894E29650437dee9779933
+[INFO] Verifying AdminACL contract deployment...
+[WARN] Etherscan verification of AdminACL failed: UnexpectedError: An unexpected error occurred during the verification process.
+Please report this issue to the Hardhat team.
+Error Details: Invalid API Key
+[ACTION] Verify AdminACL contract deployment with:
+yarn hardhat verify --network sepolia 0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5 
+Created s3 bucket for https://artxcode-sepolia.s3.amazonaws.com
+[INFO] Created image bucket artxcode-sepolia
+[INFO] Deployment details written to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/sepolia/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xe89b16b4e5cb619772894e29650437dee9779933",
+  "name": "ARTXCODE",
+  "bucket_name": "artxcode-sepolia",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xC3989DDDae38f59510bAf51A65EC7d1D3dE0A17e, don't forget to update if requred.

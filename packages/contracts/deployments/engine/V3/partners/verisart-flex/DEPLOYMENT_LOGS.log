@@ -62,3 +62,37 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0x97FD319E3d5283296583035C5AdDef1e99e21a2E, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-12-08T00:51:29.837Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/sepolia/deployment-config-sepolia-migration.staging.ts
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x732C060EbF93cfF0314CABCCc1BF04904B53E9fB
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x5306e34B7437200E0189CbC5F80B0990E49DCBE7
+[INFO] Registered core contract 0x5306e34B7437200E0189CbC5F80B0990E49DCBE7 on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x97FD319E3d5283296583035C5AdDef1e99e21a2E.
+[INFO] Verifying core contract contract deployment...
+The contract 0x5306e34B7437200E0189CbC5F80B0990E49DCBE7 has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x5306e34B7437200E0189CbC5F80B0990E49DCBE7#code
+[INFO] Core contract verified on Etherscan at 0x5306e34B7437200E0189CbC5F80B0990E49DCBE7}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x732C060EbF93cfF0314CABCCc1BF04904B53E9fB has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x732C060EbF93cfF0314CABCCc1BF04904B53E9fB#code
+[INFO] AdminACL contract verified on Etherscan at 0x732C060EbF93cfF0314CABCCc1BF04904B53E9fB
+Created s3 bucket for https://verisart-test-sepolia.s3.amazonaws.com
+[INFO] Created image bucket verisart-test-sepolia
+[INFO] Deployment details written to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/sepolia/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x5306e34b7437200e0189cbc5f80b0990e49dcbe7",
+  "name": "Verisart Test",
+  "bucket_name": "verisart-test-sepolia",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x97FD319E3d5283296583035C5AdDef1e99e21a2E, don't forget to update if requred.

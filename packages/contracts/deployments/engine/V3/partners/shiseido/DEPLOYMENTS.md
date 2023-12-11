@@ -1,4 +1,3 @@
-
 # Deployment
 
 Date: 2023-10-06T19:27:53.382Z
@@ -21,8 +20,6 @@ Date: 2023-10-06T19:27:53.382Z
 
 **MinterSetPriceV4:** https://etherscan.io/address/0x5aC686630c2aA04f814b316E225b12ff314FaD89#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 1
@@ -40,7 +37,6 @@ Date: 2023-10-06T19:27:53.382Z
 - **Image Bucket:** shiseido-abe-mainnet
 
 ---
-
 
 # Deployment
 
@@ -64,8 +60,6 @@ Date: 2023-10-06T19:58:26.431Z
 
 **MinterSetPriceV4:** https://goerli.etherscan.io/address/0xc4cbC7Cf4068858fE32E36fBbFe857bDEc4C1dEF#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 1
@@ -84,3 +78,40 @@ Date: 2023-10-06T19:58:26.431Z
 
 ---
 
+# Deployment
+
+Date: 2023-12-08T00:06:53.644Z
+
+## **Network:** sepolia
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/shiseido/deployment-config.sepolia-staging.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://sepolia.etherscan.io/address/0xd168B708a5385a1CB50cf13f5FBD63149Ccc08ab#code
+
+**AdminACLV1:** https://sepolia.etherscan.io/address/0xb3dFE7EDeD7f19D859A60f65dADeBda24465bE72#code
+
+**Core Registry:** https://sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**Shared Minter Filter:** https://sepolia.etherscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Shiseido x ABE
+- **Token Ticker:** SHIS - ABE
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0x88650550C572e691571CBDBC486916a5D85c6BBD
+- **BytecodeStorageReader Library:** 0x7497909537cE00fDda93c12d5083D8647C593c67
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** shiseido-abe-sepolia
+
+---
