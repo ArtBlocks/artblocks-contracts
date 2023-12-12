@@ -184,3 +184,42 @@ Successfully verified contract MinterDAExpSettlementV1 on Etherscan.
 https://arbiscan.io/address/0xA84E2eFFfCFd1cbE01785Bd10aaEE520A68CD3DD#code
 [INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0xA84E2eFFfCFd1cbE01785Bd10aaEE520A68CD3DD}
 Created s3 bucket for https://concentric-art-arbitrum.s3.amazonaws.com
+----------------------------------------
+[INFO] Datetime of deployment: 2023-12-08T00:51:29.837Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/sepolia/deployment-config-sepolia-migration.staging.ts
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x8e0C9751BE63B23e5795b6f68ed3a654F0D44162
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine deployed at 0xE18F2247FE4A69c0E2210331B0604F6D10FecE9E
+[INFO] Registered core contract 0xE18F2247FE4A69c0E2210331B0604F6D10FecE9E on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x61F1Ca3F65EA947B01bC66379bc4a7C5a07a8A3F.
+[INFO] Verifying core contract contract deployment...
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0xE18F2247FE4A69c0E2210331B0604F6D10FecE9E
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine on the block explorer.
+https://sepolia.etherscan.io/address/0xE18F2247FE4A69c0E2210331B0604F6D10FecE9E#code
+
+[INFO] Core contract verified on Etherscan at 0xE18F2247FE4A69c0E2210331B0604F6D10FecE9E}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x8e0C9751BE63B23e5795b6f68ed3a654F0D44162 has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x8e0C9751BE63B23e5795b6f68ed3a654F0D44162#code
+[INFO] AdminACL contract verified on Etherscan at 0x8e0C9751BE63B23e5795b6f68ed3a654F0D44162
+Created s3 bucket for https://concentric-art-sepolia.s3.amazonaws.com
+[INFO] Created image bucket concentric-art-sepolia
+[INFO] Deployment details written to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/sepolia/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xe18f2247fe4a69c0e2210331b0604f6d10fece9e",
+  "name": "Concentric Art",
+  "bucket_name": "concentric-art-sepolia",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x61F1Ca3F65EA947B01bC66379bc4a7C5a07a8A3F, don't forget to update if requred.

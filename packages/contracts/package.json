@@ -52,8 +52,8 @@
     "deploy:deprecated:mainnet:non-shared-minter": "yarn require-low-gas mainnet && yarn hardhat run --network mainnet scripts/minter-deployments/V3/generic-minter-deployer-v3core.ts"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.468.0",
-    "@aws-sdk/credential-providers": "^3.468.0",
+    "@aws-sdk/client-s3": "^3.470.0",
+    "@aws-sdk/credential-providers": "^3.470.0",
     "@defi-wonderland/smock": "^2.3.5",
     "@gnosis.pm/safe-contracts": "^1.3.0",
     "@gnosis.pm/safe-core-sdk": "^2.1.0",
@@ -73,7 +73,7 @@
     "@types/jest": "^29.5.11",
     "@types/mocha": "^10.0.6",
     "@types/prompt": "^1.1.8",
-    "@typescript-eslint/eslint-plugin": "^6.13.2",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.13.2",
     "aws-sdk-client-mock": "^3.0.0",
     "chai": "^4.3.10",
@@ -93,7 +93,7 @@
     "istanbul-combine": "^0.3.0",
     "keccak256": "^1.0.6",
     "merkletreejs": "^0.3.11",
-    "prettier": "^3.1.0",
+    "prettier": "^3.1.1",
     "prettier-plugin-solidity": "^1.2.0",
     "prompt": "^1.3.0",
     "prompt-sync": "^4.2.0",

@@ -1,4 +1,3 @@
-
 # Deployment
 
 Date: 2023-04-28T00:38:40.052Z
@@ -23,8 +22,6 @@ Date: 2023-04-28T00:38:40.052Z
 
 **MinterDALinV4:** https://goerli.etherscan.io/address/0xbDDd9a4131c05Fec76eAB9F89ef849cC1D018E8F#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -41,7 +38,6 @@ Date: 2023-04-28T00:38:40.052Z
 - **Image Bucket:** prohibition-goerli
 
 ---
-
 
 # Deployment
 
@@ -67,8 +63,6 @@ Date: 2023-05-12T23:31:46.763Z
 
 **MinterDALinV4:** https://goerli.etherscan.io/address/0x599D042450F7aB6b08ABD1ab4b0011969Dc71344#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -86,7 +80,6 @@ Date: 2023-05-12T23:31:46.763Z
 - **Image Bucket:** prohibitionv1-1-goerli
 
 ---
-
 
 # Deployment
 
@@ -112,8 +105,6 @@ Date: 2023-06-12T23:24:49.728Z
 
 **MinterDALinV4:** https://arbitrum-goerli.etherscan.io/address/0xd9F14781F6cBA1F4FFB0743BcFd5fC860d1da847#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -131,7 +122,6 @@ Date: 2023-06-12T23:24:49.728Z
 - **Image Bucket:** prohibition-arbitrum-goerli
 
 ---
-
 
 # Deployment
 
@@ -157,8 +147,6 @@ Date: 2023-06-27T02:19:17.077Z
 
 **MinterDALinV4:** https://arbitrum.etherscan.io/address/0x1c207b57D3FF22f58CE5aD702A2a89F09CE19366#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -176,7 +164,6 @@ Date: 2023-06-27T02:19:17.077Z
 - **Image Bucket:** prohibition-arbitrum
 
 ---
-
 
 # Deployment
 
@@ -216,3 +203,40 @@ Date: 2023-11-13T20:19:09.456Z
 
 ---
 
+# Deployment
+
+Date: 2023-12-08T00:50:24.375Z
+
+## **Network:** sepolia
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/prohibition-flex/deployment-config.sepolia-staging.ts`
+
+**GenArt721CoreV3_Engine_Flex_PROHIBITION:** https://sepolia.etherscan.io/address/0xAE55346C7375F333B9869aE660692fc559A2dA9F#code
+
+**AdminACLV0_PROHIBITION:** https://sepolia.etherscan.io/address/0x56b4e4420b3BDCEa8a92353aA307D16Ff95d91d6#code
+
+**Core Registry:** https://sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**Shared Minter Filter:** https://sepolia.etherscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Prohibition
+- **Token Ticker:** PRHBTN
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0xC430CE0184e536e341e04dCE0f4C37895a92b809
+- **BytecodeStorageReader Library:** 0x7497909537cE00fDda93c12d5083D8647C593c67
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** prohibition-sepolia
+
+---

@@ -1,0 +1,21 @@
+export const deployConfigDetailsArray = [
+  {
+    name: "artXcode",
+    network: "sepolia",
+    environment: "staging",
+    adminACLContractName: "AdminACLV1",
+    genArt721CoreContractName: "GenArt721CoreV3_Engine_Flex",
+    tokenName: "ARTXCODE",
+    tokenTicker: "ARTXCODE",
+    startingProjectId: 0,
+    autoApproveArtistSplitProposals: true,
+    renderProviderAddress: "deployer",
+    platformProviderAddress: "0xC3989DDDae38f59510bAf51A65EC7d1D3dE0A17e",
+    addInitialProject: false,
+    doTransferSuperAdmin: true,
+    newSuperAdminAddress: "0xC3989DDDae38f59510bAf51A65EC7d1D3dE0A17e",
+    renderProviderSplitPercentagePrimary: 10,
+    renderProviderSplitBPSSecondary: 250,
+    defaultVerticalName: "flex",
+  },
+];

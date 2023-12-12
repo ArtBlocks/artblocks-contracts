@@ -1,0 +1,21 @@
+export const deployConfigDetailsArray = [
+  {
+    name: "SquiggleDAO",
+    network: "sepolia",
+    environment: "staging",
+    adminACLContractName: "AdminACLV1",
+    genArt721CoreContractName: "GenArt721CoreV3_Engine_Flex",
+    tokenName: "Squiggle DAO Studios",
+    tokenTicker: "SDAOS",
+    startingProjectId: 0,
+    autoApproveArtistSplitProposals: true,
+    renderProviderAddress: "deployer",
+    platformProviderAddress: "0xc904Af16BeDe828A7e2728923CD72DA1F73Fe186",
+    addInitialProject: false,
+    doTransferSuperAdmin: true,
+    newSuperAdminAddress: "0xc904Af16BeDe828A7e2728923CD72DA1F73Fe186",
+    renderProviderSplitPercentagePrimary: 10,
+    renderProviderSplitBPSSecondary: 250,
+    defaultVerticalName: "flex",
+  },
+];
