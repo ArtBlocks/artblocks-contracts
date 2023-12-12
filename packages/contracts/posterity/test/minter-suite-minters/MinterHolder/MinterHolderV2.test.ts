@@ -21,8 +21,6 @@ const coreContractsToTest = [
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
 ];
 
-const addressZero = "0x0000000000000000000000000000000000000000";
-
 /**
  * These tests intended to ensure Filtered Minter integrates properly with V3
  * core contract.
@@ -493,15 +491,9 @@ for (const coreContractName of coreContractsToTest) {
         const { pbabToken, pbabMinter } = await deployAndGetPBAB.bind(this)();
         await pbabMinter
           .connect(this.accounts.artist)
-          .purchaseTo(
-            tokenOwner.address,
-            0,
-            this.pricePerTokenInWei,
-            addressZero,
-            {
-              value: this.pricePerTokenInWei,
-            }
-          );
+          ["purchaseTo(address,uint256)"](tokenOwner.address, 0, {
+            value: this.pricePerTokenInWei,
+          });
         // register the PBAB token on our minter
         await this.minter
           .connect(this.accounts.deployer)

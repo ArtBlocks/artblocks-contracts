@@ -23,8 +23,6 @@ import { getGnosisSafe } from "../../../util/GnosisSafeNetwork";
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
 
-const addressZero = "0x0000000000000000000000000000000000000000";
-
 export const MinterHolder_Common = async (
   _beforeEach: () => Promise<T_Config>
 ) => {
@@ -222,15 +220,9 @@ export const MinterHolder_Common = async (
       const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
       await pbabMinter
         .connect(config.accounts.artist)
-        .purchaseTo(
-          config.accounts.additional.address,
-          0,
-          config.pricePerTokenInWei,
-          addressZero,
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        ["purchaseTo(address,uint256)"](config.accounts.additional.address, 0, {
+          value: config.pricePerTokenInWei,
+        });
       // allow holders of PBAB project 0 to purchase tokens on config.projectTwo
       await expectRevert(
         config.minter
@@ -700,11 +692,9 @@ export const MinterHolder_Common = async (
         const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
         await pbabMinter
           .connect(config.accounts.artist)
-          .purchaseTo(
+          ["purchaseTo(address,uint256)"](
             config.accounts.additional.address,
             0,
-            config.pricePerTokenInWei,
-            addressZero,
             {
               value: config.pricePerTokenInWei,
             }
@@ -739,11 +729,9 @@ export const MinterHolder_Common = async (
         const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
         await pbabMinter
           .connect(config.accounts.artist)
-          .purchaseTo(
+          ["purchaseTo(address,uint256)"](
             config.accounts.additional.address,
             0,
-            config.pricePerTokenInWei,
-            addressZero,
             {
               value: config.pricePerTokenInWei,
             }

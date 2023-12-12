@@ -210,15 +210,9 @@ export const MinterHolder_Common = async () => {
       const { pbabToken, pbabMinter } = await deployAndGetPBAB.bind(this)();
       await pbabMinter
         .connect(this.accounts.artist)
-        .purchaseTo(
-          this.accounts.additional.address,
-          0,
-          this.pricePerTokenInWei,
-          addressZero,
-          {
-            value: this.pricePerTokenInWei,
-          }
-        );
+        ["purchaseTo(address,uint256)"](this.accounts.additional.address, 0, {
+          value: this.pricePerTokenInWei,
+        });
       // allow holders of PBAB project 0 to purchase tokens on this.projectTwo
       await expectRevert(
         this.minter
@@ -657,15 +651,9 @@ export const MinterHolder_Common = async () => {
         const { pbabToken, pbabMinter } = await deployAndGetPBAB.bind(this)();
         await pbabMinter
           .connect(this.accounts.artist)
-          .purchaseTo(
-            this.accounts.additional.address,
-            0,
-            this.pricePerTokenInWei,
-            addressZero,
-            {
-              value: this.pricePerTokenInWei,
-            }
-          );
+          ["purchaseTo(address,uint256)"](this.accounts.additional.address, 0, {
+            value: this.pricePerTokenInWei,
+          });
         // register the PBAB token on our minter
         await this.minter
           .connect(this.accounts.deployer)
@@ -695,15 +683,9 @@ export const MinterHolder_Common = async () => {
         const { pbabToken, pbabMinter } = await deployAndGetPBAB.bind(this)();
         await pbabMinter
           .connect(this.accounts.artist)
-          .purchaseTo(
-            this.accounts.additional.address,
-            0,
-            this.pricePerTokenInWei,
-            addressZero,
-            {
-              value: this.pricePerTokenInWei,
-            }
-          );
+          ["purchaseTo(address,uint256)"](this.accounts.additional.address, 0, {
+            value: this.pricePerTokenInWei,
+          });
         // register the PBAB token on our minter
         await this.minter
           .connect(this.accounts.deployer)

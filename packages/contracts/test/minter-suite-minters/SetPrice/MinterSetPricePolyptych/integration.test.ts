@@ -476,11 +476,9 @@ runForEach.forEach((params) => {
           const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
           await pbabMinter
             .connect(config.accounts.artist)
-            .purchaseTo(
+            ["purchaseTo(address,uint256)"](
               config.accounts.additional.address,
               0,
-              config.pricePerTokenInWei,
-              addressZero,
               {
                 value: config.pricePerTokenInWei,
               }

@@ -134,13 +134,13 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
 
     await config.minterA
       .connect(config.royaltyAccounts.anyone)
-      .purchase(projectZero, pricePerTokenInWei, addressZero, {
+      ["purchase(uint256)"](projectZero, {
         value: pricePerTokenInWei,
       });
 
     await config.minterA
       .connect(config.royaltyAccounts.anyone)
-      .purchase(projectOne, pricePerTokenInWei, addressZero, {
+      ["purchase(uint256)"](projectOne, {
         value: pricePerTokenInWei,
       });
 
@@ -205,13 +205,13 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
 
     await config.minterB
       .connect(config.royaltyAccounts.anyone)
-      .purchase(projectZero, pricePerTokenInWei, addressZero, {
+      ["purchase(uint256)"](projectZero, {
         value: pricePerTokenInWei,
       });
 
     await config.minterB
       .connect(config.royaltyAccounts.anyone)
-      .purchase(projectOne, pricePerTokenInWei, addressZero, {
+      ["purchase(uint256)"](projectOne, {
         value: pricePerTokenInWei,
       });
 

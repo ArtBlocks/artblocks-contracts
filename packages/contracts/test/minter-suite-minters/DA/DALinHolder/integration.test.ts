@@ -37,8 +37,6 @@ const runForEach = [
   },
 ];
 
-const addressZero = "0x0000000000000000000000000000000000000000";
-
 runForEach.forEach((params) => {
   describe(`${TARGET_MINTER_NAME} Integration w/ core ${params.core}`, async function () {
     async function _beforeEach() {
@@ -765,11 +763,9 @@ runForEach.forEach((params) => {
           const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
           await pbabMinter
             .connect(config.accounts.artist)
-            .purchaseTo(
+            ["purchaseTo(address,uint256)"](
               config.accounts.additional.address,
               0,
-              config.pricePerTokenInWei,
-              addressZero,
               {
                 value: config.pricePerTokenInWei,
               }
@@ -798,11 +794,9 @@ runForEach.forEach((params) => {
           const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
           await pbabMinter
             .connect(config.accounts.artist)
-            .purchaseTo(
+            ["purchaseTo(address,uint256)"](
               config.accounts.additional.address,
               0,
-              config.pricePerTokenInWei,
-              addressZero,
               {
                 value: config.pricePerTokenInWei,
               }
