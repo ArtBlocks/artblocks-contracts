@@ -201,7 +201,7 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
-     * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places. Required if currency is ERC20.
+     * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places.```
      * @param _currencyAddress Currency address of token.
      * @return _tokenId Token ID of minted token
      */
