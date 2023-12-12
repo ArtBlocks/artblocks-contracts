@@ -7,7 +7,7 @@
   "author": "Art Blocks, Inc. <privacy@artblocks.io>",
   "license": "MIT",
   "devDependencies": {
-    "@babel/core": "^7.23.5",
+    "@babel/core": "^7.23.6",
     "@babel/preset-env": "^7.23.6",
     "@babel/preset-typescript": "^7.23.3",
     "@jest/globals": "^29.7.0",
