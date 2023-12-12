@@ -200,7 +200,7 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
      * @notice Purchases a token from project `_projectId` with ETH or any ERC-20 token.
      * @param _projectId Project ID to mint a token on.
      * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places. Required if currency is ERC20.
-     * @param _currencyAddress Currency address of token.
+     * @param _currencyAddress Currency address of token. `address(0)` if minting with ETH.
      * @return _tokenId Token ID of minted token
      */
     function purchase(
@@ -241,7 +241,7 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places.
-     * @param _currencyAddress Currency address of token.
+     * @param _currencyAddress Currency address of token. `address(0)` if minting with ETH.
      * @return _tokenId Token ID of minted token
      */
     function purchaseTo(
