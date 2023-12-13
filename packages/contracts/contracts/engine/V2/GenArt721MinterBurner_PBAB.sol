@@ -313,7 +313,7 @@ contract GenArt721MinterBurner_PBAB is ReentrancyGuard {
         if (configuredCurrencyAddress == address(0)) {
             require(
                 msg.value == _maxPricePerToken,
-                "Must send value gte token price"
+                "inconsistent msg.value"
             );
         }
 
