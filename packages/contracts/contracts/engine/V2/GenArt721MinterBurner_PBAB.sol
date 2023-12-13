@@ -309,7 +309,7 @@ contract GenArt721MinterBurner_PBAB is ReentrancyGuard {
             "Currency addresses must match"
         );
 
-        // if configured currency is ETH validate that the value sent is greater than or equal to the price per token
+        // if configured currency is ETH validate that msg.value is the same as max price per token
         if (configuredCurrencyAddress == address(0)) {
             require(
                 msg.value == _maxPricePerToken,
