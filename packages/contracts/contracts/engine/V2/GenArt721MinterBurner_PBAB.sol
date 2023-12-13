@@ -238,7 +238,7 @@ contract GenArt721MinterBurner_PBAB is ReentrancyGuard {
     /**
      * @notice Purchases a token from project `_projectId` with ETH or any ERC-20 token.
      * @param _projectId Project ID to mint a token on.
-     * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places. Required if currency is ERC20.
+     * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places.
      * @param _currencyAddress Currency address of token.
      * @return _tokenId Token ID of minted token
      */
