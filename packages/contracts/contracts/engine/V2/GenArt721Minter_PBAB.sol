@@ -199,7 +199,7 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
     /**
      * @notice Purchases a token from project `_projectId` with ETH or any ERC-20 token.
      * @param _projectId Project ID to mint a token on.
-     * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places. Required if currency is ERC20.
+     * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places.
      * @param _currencyAddress Currency address of token. `address(0)` if minting with ETH.
      * @return _tokenId Token ID of minted token
      */
@@ -240,7 +240,7 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
-     * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places.
+     * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places. Required if currency is ERC20.
      * @param _currencyAddress Currency address of token. `address(0)` if minting with ETH.
      * @return _tokenId Token ID of minted token
      */
@@ -270,12 +270,9 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
             "Currency addresses must match"
         );
 
-        // if configured currency is ETH validate that the value sent is greater than or equal to the price per token
+        // if configured currency is ETH validate that msg.value is the same as max price per token
         if (configuredCurrencyAddress == address(0)) {
-            require(
-                msg.value == _maxPricePerToken,
-                "Must send value gte token price"
-            );
+            require(msg.value == _maxPricePerToken, "inconsistent msg.value");
         }
         // limit mints per address by project
         if (projectMintLimit[_projectId] > 0) {

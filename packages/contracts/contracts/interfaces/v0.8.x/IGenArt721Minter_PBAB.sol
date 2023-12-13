@@ -36,7 +36,13 @@ interface IGenArt721Minter_PBAB {
 
     function minterFilterAddress() external returns (address);
 
-    // Triggers a purchase of a token from the desired project, to the
+    // Triggers a purchase of a token from the desired project with ETH, to the
+    // TX-sending address.
+    function purchase(
+        uint256 _projectId
+    ) external payable returns (uint256 tokenId);
+
+    // Triggers a purchase of a token from the desired project with ETH or any ERC-20 token, to the
     // TX-sending address.
     function purchase(
         uint256 _projectId,
@@ -44,7 +50,14 @@ interface IGenArt721Minter_PBAB {
         address _currencyAddress
     ) external payable returns (uint256 tokenId);
 
-    // Triggers a purchase of a token from the desired project, to the specified
+    // Triggers a purchase of a token from the desired project with ETH, to the specified
+    // receiving address.
+    function purchaseTo(
+        address _to,
+        uint256 _projectId
+    ) external payable returns (uint256 tokenId);
+
+    // Triggers a purchase of a token from the desired project with ETH or any ERC-20 token, to the specified
     // receiving address.
     function purchaseTo(
         address _to,

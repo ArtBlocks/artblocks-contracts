@@ -175,13 +175,27 @@ export const GenArt721Minter_PBAB_Common = async (
           "MOCK",
           config.ERC20Mock.address
         );
-      // cannot purchase token with ETH
+      // cannot purchase token with ETH - auto-forwarded purchase call
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
           ["purchase(uint256)"](config.projectZero, {
             value: config.pricePerTokenInWei,
           }),
+        "Currency addresses must match"
+      );
+      // cannot purchase token with ETH - explicitly passing currency address through
+      await expectRevert(
+        config.minter
+          .connect(config.accounts.user)
+          ["purchase(uint256,uint256,address)"](
+            config.projectZero,
+            config.pricePerTokenInWei,
+            constants.ZERO_ADDRESS,
+            {
+              value: config.pricePerTokenInWei,
+            }
+          ),
         "Currency addresses must match"
       );
       // approve contract and able to mint with Mock token
@@ -225,8 +239,18 @@ export const GenArt721Minter_PBAB_Common = async (
         ["purchase(uint256)"](config.projectZero, {
           value: config.pricePerTokenInWei,
         });
+      // unable to mint with ERC-20
+      await expectRevert(
+        config.minter
+          .connect(config.accounts.user)
+          ["purchase(uint256,uint256,address)"](
+            config.projectZero,
+            config.pricePerTokenInWei,
+            config.ERC20Mock.address
+          ),
+        "Currency addresses must match"
+      );
     });
-
     it("enforces currency update only on desired project", async function () {
       const config = await loadFixture(_beforeEach);
       // artist changes currency info for project zero
@@ -243,6 +267,106 @@ export const GenArt721Minter_PBAB_Common = async (
         ["purchase(uint256)"](config.projectOne, {
           value: config.pricePerTokenInWei,
         });
+    });
+    it("allows purchase with ETH with or without explicitly passing the currency address through if project is configured to accept ETH", async function () {
+      const config = await loadFixture(_beforeEach);
+      // artist changes currency info for project zero to ETH
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectCurrencyInfo(
+          config.projectZero,
+          "ETH",
+          constants.ZERO_ADDRESS
+        );
+      // can purchase project zero token with ETH, auto-forwarding currency address
+      await config.minter
+        .connect(config.accounts.user)
+        ["purchase(uint256)"](config.projectZero, {
+          value: config.pricePerTokenInWei,
+        });
+
+      // can purchase project zero token with ETH, explicitly passing in currency address
+      await config.minter
+        .connect(config.accounts.user)
+        ["purchase(uint256,uint256,address)"](
+          config.projectZero,
+          config.pricePerTokenInWei,
+          constants.ZERO_ADDRESS,
+          {
+            value: config.pricePerTokenInWei,
+          }
+        );
+
+      // cannot not purchase project zero with ETH without including msg.value
+      await expectRevert(
+        config.minter
+          .connect(config.accounts.user)
+          ["purchase(uint256,uint256,address)"](
+            config.projectZero,
+            config.pricePerTokenInWei,
+            constants.ZERO_ADDRESS
+          ),
+        "inconsistent msg.value"
+      );
+
+      // can not purchase project zero token with ERC-20
+      await expectRevert(
+        config.minter
+          .connect(config.accounts.user)
+          ["purchase(uint256,uint256,address)"](
+            config.projectZero,
+            config.pricePerTokenInWei,
+            config.ERC20Mock.address
+          ),
+        "Currency addresses must match"
+      );
+    });
+    it("enforces currency address and price per token to be passed explicitly for ERC-20 configured projects", async function () {
+      const config = await loadFixture(_beforeEach);
+      // artist changes currency info for project zero
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectCurrencyInfo(
+          config.projectZero,
+          "MOCK",
+          config.ERC20Mock.address
+        );
+      // approve contract and able to mint with Mock token
+      await config.ERC20Mock.connect(config.accounts.user).approve(
+        config.minter.address,
+        ethers.utils.parseEther("100")
+      );
+      // cannot purchase project zero token with ETH
+      await expectRevert(
+        config.minter
+          .connect(config.accounts.user)
+          ["purchase(uint256)"](config.projectZero, {
+            value: config.pricePerTokenInWei,
+          }),
+        "Currency addresses must match"
+      );
+      // can purchase project zero with ERC-20
+      await config.minter
+        .connect(config.accounts.user)
+        ["purchase(uint256,uint256,address)"](
+          config.projectZero,
+          config.pricePerTokenInWei,
+          config.ERC20Mock.address
+        );
+      // cannot send ETH when purchasing with ERC-20
+      await expectRevert(
+        config.minter
+          .connect(config.accounts.user)
+          ["purchase(uint256,uint256,address)"](
+            config.projectZero,
+            config.pricePerTokenInWei,
+            config.ERC20Mock.address,
+            {
+              value: config.pricePerTokenInWei,
+            }
+          ),
+        "this project accepts a different currency and cannot accept ETH"
+      );
     });
   });
 

@@ -222,24 +222,21 @@ contract GenArt721MinterBurner_PBAB is ReentrancyGuard {
     function purchase(
         uint256 _projectId
     ) public payable returns (uint256 _tokenId) {
-        // pass currency address as ETH
-        address _currencyAddress = address(0);
-        uint256 _maxPricePerToken = msg.value;
-
+        // pass max price as msg.value, currency address as ETH
         return
-            purchaseTo(
-                msg.sender,
-                _projectId,
-                _maxPricePerToken,
-                _currencyAddress
-            );
+            purchaseTo({
+                _to: msg.sender,
+                _projectId: _projectId,
+                _maxPricePerToken: msg.value,
+                _currencyAddress: address(0)
+            });
     }
 
     /**
      * @notice Purchases a token from project `_projectId` with ETH or any ERC-20 token.
      * @param _projectId Project ID to mint a token on.
      * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places.
-     * @param _currencyAddress Currency address of token.
+     * @param _currencyAddress Currency address of token. `address(0)` if minting with ETH.
      * @return _tokenId Token ID of minted token
      */
     function purchase(
@@ -248,12 +245,12 @@ contract GenArt721MinterBurner_PBAB is ReentrancyGuard {
         address _currencyAddress
     ) public payable returns (uint256 _tokenId) {
         return
-            purchaseTo(
-                msg.sender,
-                _projectId,
-                _maxPricePerToken,
-                _currencyAddress
-            );
+            purchaseTo({
+                _to: msg.sender,
+                _projectId: _projectId,
+                _maxPricePerToken: _maxPricePerToken,
+                _currencyAddress: _currencyAddress
+            });
     }
 
     /**
@@ -267,11 +264,14 @@ contract GenArt721MinterBurner_PBAB is ReentrancyGuard {
         address _to,
         uint256 _projectId
     ) public payable returns (uint256 _tokenId) {
-        // pass currency address as ETH
-        address _currencyAddress = address(0);
-        uint256 _maxPricePerToken = msg.value;
-
-        return purchaseTo(_to, _projectId, _maxPricePerToken, _currencyAddress);
+        // pass max price as msg.value, currency address as ETH
+        return
+            purchaseTo({
+                _to: _to,
+                _projectId: _projectId,
+                _maxPricePerToken: msg.value,
+                _currencyAddress: address(0)
+            });
     }
 
     /**
@@ -280,7 +280,7 @@ contract GenArt721MinterBurner_PBAB is ReentrancyGuard {
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places. Required if currency is ERC20.
-     * @param _currencyAddress Currency address of token.
+     * @param _currencyAddress Currency address of token. `address(0)` if minting with ETH.
      * @return _tokenId Token ID of minted token
      */
     function purchaseTo(
@@ -311,10 +311,7 @@ contract GenArt721MinterBurner_PBAB is ReentrancyGuard {
 
         // if configured currency is ETH validate that msg.value is the same as max price per token
         if (configuredCurrencyAddress == address(0)) {
-            require(
-                msg.value == _maxPricePerToken,
-                "inconsistent msg.value"
-            );
+            require(msg.value == _maxPricePerToken, "inconsistent msg.value");
         }
 
         // limit mints per address by project
