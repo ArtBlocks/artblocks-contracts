@@ -11,7 +11,7 @@ import { Logger } from "@ethersproject/logger";
 Logger.setLogLevel(Logger.levels.ERROR);
 
 // delay to avoid issues with reorgs and tx failures
-import { delay, getConfigInputs } from "../util/utils";
+import { delay, getConfigInputs, getNetworkName } from "../util/utils";
 import { EXTRA_DELAY_BETWEEN_TX } from "../util/constants";
 
 /**
@@ -29,8 +29,7 @@ async function main() {
 
   // get accounts and network
   const [deployer] = await ethers.getSigners();
-  const network = await ethers.provider.getNetwork();
-  const networkName = network.name == "homestead" ? "mainnet" : network.name;
+  const networkName = await getNetworkName();
 
   //////////////////////////////////////////////////////////////////////////////
   // INPUT VERIFICATION BEGINS HERE
@@ -47,11 +46,16 @@ async function main() {
       );
     }
     // ensure mainnet uses pre-deployed pseudorandomAtomicContract
-    if (networkName != "goerli" && networkName != "arbitrum-goerli") {
+    if (
+      networkName != "goerli" &&
+      networkName != "arbitrum-goerli" &&
+      networkName != "sepolia" &&
+      networkName != "arbitrum-sepolia"
+    ) {
       // deploying on a mainnet
       if (!deployDetails.pseudorandomAtomicContractAddress) {
-        throw new Error(
-          "[ERROR] pseudorandomAtomicContractAddress must be defined when deploying to mainnet, because it should already have been deployed"
+        console.warn(
+          "[WARN] consider using a hardened pseudorandom atomic contract"
         );
       }
     }

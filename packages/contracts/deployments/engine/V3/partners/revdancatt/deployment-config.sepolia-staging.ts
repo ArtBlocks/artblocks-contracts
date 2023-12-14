@@ -1,0 +1,21 @@
+export const deployConfigDetailsArray = [
+  {
+    name: "Revdancatt",
+    network: "sepolia",
+    environment: "staging",
+    adminACLContractName: "AdminACLV1",
+    genArt721CoreContractName: "GenArt721CoreV3_Engine",
+    tokenName: "Pop Catt",
+    tokenTicker: "CATT",
+    startingProjectId: 0,
+    autoApproveArtistSplitProposals: true,
+    renderProviderAddress: "deployer",
+    platformProviderAddress: "0x29B2f895343CAdfB3f5101BEF6484B1F01c83Dc9",
+    addInitialProject: false,
+    doTransferSuperAdmin: true,
+    newSuperAdminAddress: "0x29B2f895343CAdfB3f5101BEF6484B1F01c83Dc9",
+    renderProviderSplitPercentagePrimary: 10,
+    renderProviderSplitBPSSecondary: 250,
+    defaultVerticalName: "fullyonchain",
+  },
+];

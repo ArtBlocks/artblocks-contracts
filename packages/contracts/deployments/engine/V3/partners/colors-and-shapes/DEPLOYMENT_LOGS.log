@@ -1,0 +1,36 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-12-08T19:19:52.995Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/colors-and-shapes/deployment-config.sepolia-staging.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xf5733268d28DDe96fC32f2bA8E1267Eb64120875
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x723EBF276f95E992480D009bC132c9820A39B58F
+[INFO] Registered core contract 0x723EBF276f95E992480D009bC132c9820A39B58F on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x7f5a0A6847fD0FA05C13CBC02f435047b429E37C.
+[INFO] Verifying core contract contract deployment...
+The contract 0x723EBF276f95E992480D009bC132c9820A39B58F has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x723EBF276f95E992480D009bC132c9820A39B58F#code
+[INFO] Core contract verified on Etherscan at 0x723EBF276f95E992480D009bC132c9820A39B58F}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xf5733268d28DDe96fC32f2bA8E1267Eb64120875 has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0xf5733268d28DDe96fC32f2bA8E1267Eb64120875#code
+[INFO] AdminACL contract verified on Etherscan at 0xf5733268d28DDe96fC32f2bA8E1267Eb64120875
+Created s3 bucket for https://colors-and-shapes-sepolia.s3.amazonaws.com
+[INFO] Created image bucket colors-and-shapes-sepolia
+[INFO] Deployment details written to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/colors-and-shapes/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x723ebf276f95e992480d009bc132c9820a39b58f",
+  "name": "Colors And Shapes",
+  "bucket_name": "colors-and-shapes-sepolia",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x7f5a0A6847fD0FA05C13CBC02f435047b429E37C, don't forget to update if requred.

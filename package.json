@@ -25,6 +25,6 @@
     "release": "yarn build && yarn changeset publish"
   },
   "dependencies": {
-    "@changesets/cli": "^2.26.2"
+    "@changesets/cli": "^2.27.1"
   }
 }

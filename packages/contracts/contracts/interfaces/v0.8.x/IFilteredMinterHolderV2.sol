@@ -14,6 +14,4 @@ pragma solidity ^0.8.0;
 interface IFilteredMinterHolderV2 is
     IFilteredMinterHolderV1,
     IFilteredMinterV2
-{
-
-}
+{}

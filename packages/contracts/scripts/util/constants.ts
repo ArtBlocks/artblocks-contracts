@@ -9,15 +9,20 @@ export const DELEGATION_REGISTRY_ADDRESSES = {
   // note: same address for goerli and mainnet
   goerli: "0x00000000000076A84feF008CDAbe6409d2FE638B",
   mainnet: "0x00000000000076A84feF008CDAbe6409d2FE638B",
+  sepolia: "0x00000000000076A84feF008CDAbe6409d2FE638B",
+  arbitrum: "0x00000000000076A84feF008CDAbe6409d2FE638B",
+  "arbitrum-sepolia": "0x00000000000076A84feF008CDAbe6409d2FE638B",
 };
 
 // BytecodeStorageReader library addresses on supported networks
 export const BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES = {
   // note: _different_ address for goerli and mainnet
   "arbitrum-goerli": "0x681861cD4fC92d70aE57745385065ef862954662",
+  "arbitrum-sepolia": "0xb219C04128c9749b597c35D416b9988bEa9E1114",
   arbitrum: "0xa07f47c30C262adcC263A4D44595972c50e04db7",
   goerli: "0xB8B806A10d16cc80dB788552B54B3ECb4A2A3C3D",
   mainnet: "0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5",
+  sepolia: "0x7497909537cE00fDda93c12d5083D8647C593c67",
 };
 
 /**
@@ -40,24 +45,30 @@ export function getActiveSharedMinterFilter(
   }
   return activeMinterFilter;
 }
-// TODO: add addresses when deployed
 // Active shared minter filter contracts being used for the shared minter
 // suite, on each network and environment.
 // format is [network]: { [environment]: [minter filter address] }
 const ACTIVE_SHARED_MINTER_FILTERS = {
   goerli: {
-    dev: "0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208",
-    staging: "0xcF5FD12fec18D4A714Fe701345cefD3Aafb71559",
+    dev: "0x15B337C090170D56e45124ebd2Ce278a5b6Ff101",
+    staging: "0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824",
   },
   mainnet: {
-    mainnet: "0xTBD",
+    mainnet: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
   },
   "arbitrum-goerli": {
     dev: "0xTBD",
     staging: "0xTBD",
   },
+  "arbitrum-sepolia": {
+    "arbitrum-staging": "0xa07f47c30C262adcC263A4D44595972c50e04db7",
+  },
   arbitrum: {
-    mainnet: "0xTBD",
+    mainnet: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
+  },
+  sepolia: {
+    dev: "0x29e9f09244497503f304FA549d50eFC751D818d2",
+    staging: "0xa07f47c30C262adcC263A4D44595972c50e04db7",
   },
 };
 
@@ -81,24 +92,30 @@ export function getActiveSharedRandomizer(
   }
   return activeSharedRandomizer;
 }
-// TODO: add addresses when deployed
 // Active shared randomizer contracts being used for the shared minter
 // suite, on each network and environment.
 // format is [network]: { [environment]: [randomizer address] }
 const ACTIVE_SHARED_RANDOMIZERS = {
   goerli: {
-    dev: "0xD023790a7Bf5Dd71414409dc62008B8a190e0C28",
-    staging: "0x88293a3eef2516855BE0F798630e141D14333423",
+    dev: "0x16D3b6164E7F05869287CC0fE57f3EA2572178A0",
+    staging: "0xC91CFC2062D8B4Ff53A7c8836CAEf925a7C78c81",
   },
   mainnet: {
-    mainnet: "0xTBD",
+    mainnet: "0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91",
   },
   "arbitrum-goerli": {
     dev: "0xTBD",
     staging: "0xTBD",
   },
+  "arbitrum-sepolia": {
+    "arbitrum-staging": "0x28f2D3805652FB5d359486dFfb7D08320D403240",
+  },
   arbitrum: {
-    mainnet: "0xTBD",
+    mainnet: "0x6a5976391E708fBf918c3786cd1FcbB88732fbc1",
+  },
+  sepolia: {
+    dev: "0xA6F7e62F3B52552f79b2Baa2858a1DB18016c09B",
+    staging: "0x28f2D3805652FB5d359486dFfb7D08320D403240",
   },
 };
 

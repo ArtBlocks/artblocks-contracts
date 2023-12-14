@@ -11,6 +11,4 @@ pragma solidity ^0.8.0;
  * add support for manually setting project max invocations.
  * @author Art Blocks Inc.
  */
-interface IFilteredMinterDAExpV1 is IFilteredMinterDAExpV0, IFilteredMinterV2 {
-
-}
+interface IFilteredMinterDAExpV1 is IFilteredMinterDAExpV0, IFilteredMinterV2 {}

@@ -1,0 +1,27 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-11-08T01:44:54.674Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/flagship/V3/staging-sepolia/deployment-config.staging.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: staging
+GenArt721Core deployed at 0xd9F14781F6cBA1F4FFB0743BcFd5fC860d1da847
+[INFO] Registered core contract 0xd9F14781F6cBA1F4FFB0743BcFd5fC860d1da847 on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract.
+[INFO] artblocks primary sales payment address remains as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63.
+[INFO] artblocks secondary sales payment address remains as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63.
+Did not add an initial project.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/GenArt721CoreV3.sol:GenArt721CoreV3 at 0xd9F14781F6cBA1F4FFB0743BcFd5fC860d1da847
+for verification on the block explorer. Waiting for verification result...
+
+[ACTION] Save the following constructor args config file to a constructor-args.js file, then verify core contract deployment with:
+module.exports = [
+      "Art Blocks Core V3 Staging (Sepolia)", // name
+      "BLOCKS_CORE_V3_STAGING_SEPOLIA", // ticker
+      "0x28f2D3805652FB5d359486dFfb7D08320D403240", // randomizer
+      "0x3b30d421a6dA95694EaaE09971424F15Eb375269", // admin acl
+      0, // starting project id
+    ];
+yarn hardhat verify --network sepolia --constructor-args constructor-args.js 0xd9F14781F6cBA1F4FFB0743BcFd5fC860d1da847
+Created s3 bucket for https://art-blocks-core-v3-staging-sepolia.s3.amazonaws.com

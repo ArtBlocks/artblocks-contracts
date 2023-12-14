@@ -725,7 +725,8 @@ contract MinterDAExpSettlementV3 is
             to: to,
             projectId: projectId,
             coreContract: coreContract,
-            purchaserAddress: msg.sender
+            purchaserAddress: msg.sender,
+            doSendFunds: true
         });
     }
 
@@ -765,12 +766,14 @@ contract MinterDAExpSettlementV3 is
         // the receipt in storage
         uint256 excessSettlementFunds;
         for (uint256 i; i < projectIdsLength; ) {
-            SettlementExpLib.reclaimProjectExcessSettlementFundsTo({
-                to: to,
-                projectId: projectIds[i],
-                coreContract: coreContracts[i],
-                purchaserAddress: msg.sender
-            });
+            excessSettlementFunds += SettlementExpLib
+                .reclaimProjectExcessSettlementFundsTo({
+                    to: to,
+                    projectId: projectIds[i],
+                    coreContract: coreContracts[i],
+                    purchaserAddress: msg.sender,
+                    doSendFunds: false // do not send funds, just tally
+                });
 
             // gas efficiently increment i
             // won't overflow due to for loop, as well as gas limts
@@ -782,9 +785,10 @@ contract MinterDAExpSettlementV3 is
         // INTERACTIONS
         // send excess settlement funds in a single chunk for all
         // projects
-        bool success_;
-        (success_, ) = to.call{value: excessSettlementFunds}("");
-        require(success_, "Reclaiming failed");
+        if (excessSettlementFunds > 0) {
+            (bool success_, ) = to.call{value: excessSettlementFunds}("");
+            require(success_, "Reclaiming failed");
+        }
     }
 
     /**
@@ -849,7 +853,7 @@ contract MinterDAExpSettlementV3 is
 
         // verify token invocation is valid given local minter max invocations,
         // update local maxHasBeenInvoked
-        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+        MaxInvocationsLib.validateMintEffectsInvocations({
             tokenId: tokenId,
             coreContract: coreContract
         });

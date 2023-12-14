@@ -26,7 +26,8 @@ import {
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 const ONLY_ADMIN_ACL_ERROR = "Only Admin ACL allowed";
-const ONLY_EXISTING_DEPENDENCY_TYPE_ERROR = "Dependency type does not exist";
+const ONLY_EXISTING_DEPENDENCY_TYPE_ERROR = "Dependency does not exist";
+const ONLY_EXISTING_LICENSE_TYPE_ERROR = "License type does not exist";
 const ONLY_NON_EMPTY_STRING_ERROR = "Must input non-empty string";
 const ONLY_NON_ZERO_ADDRESS_ERROR = "Must input non-zero address";
 const INDEX_OUT_OF_RANGE_ERROR = "Index out of range";
@@ -47,14 +48,18 @@ interface DependencyRegistryV0TestContext extends Mocha.Context {
  * Tests for V3 core dealing with configuring projects.
  */
 describe(`DependencyRegistryV0`, async function () {
-  const dependencyType = "p5js@1.0.0";
-  const dependencyTypeBytes = ethers.utils.formatBytes32String(dependencyType);
+  const dependencyNameAndVersion = "p5js@1.0.0";
+  const dependencyNameAndVersionBytes = ethers.utils.formatBytes32String(
+    dependencyNameAndVersion
+  );
   const licenseType = "MIT";
   const licenseTypeBytes = ethers.utils.formatBytes32String(licenseType);
+  const licenseText =
+    "Copyright (c) 1995-2023 Lorem Ipsum Dolor Sit Amet Foundation. Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.";
   const preferredCDN =
     "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/p5.min.js";
   const preferredRepository = "https://github.com/processing/p5.js";
-  const referenceWebsite = "https://p5js.org/";
+  const dependencyWebsite = "https://p5js.org/";
 
   // Helper that retrieves writes content to blockchain bytecode storage using SSTORE2,
   // and returns the address of that content.
@@ -243,7 +248,7 @@ describe(`DependencyRegistryV0`, async function () {
               licenseTypeBytes,
               preferredCDN,
               preferredRepository,
-              referenceWebsite
+              dependencyWebsite
             ),
           "Only Admin ACL allowed"
         );
@@ -260,7 +265,7 @@ describe(`DependencyRegistryV0`, async function () {
               licenseTypeBytes,
               preferredCDN,
               preferredRepository,
-              referenceWebsite
+              dependencyWebsite
             ),
           "must contain exactly one @"
         );
@@ -272,7 +277,7 @@ describe(`DependencyRegistryV0`, async function () {
               licenseTypeBytes,
               preferredCDN,
               preferredRepository,
-              referenceWebsite
+              dependencyWebsite
             ),
           "must contain exactly one @"
         );
@@ -285,11 +290,11 @@ describe(`DependencyRegistryV0`, async function () {
           config.dependencyRegistry
             .connect(config.accounts.deployer)
             .addDependency(
-              dependencyTypeBytes,
+              dependencyNameAndVersionBytes,
               ethers.utils.formatBytes32String("nonExistentLicenseType"),
               preferredCDN,
               preferredRepository,
-              referenceWebsite
+              dependencyWebsite
             ),
           "License type does not exist"
         );
@@ -302,46 +307,48 @@ describe(`DependencyRegistryV0`, async function () {
           config.dependencyRegistry
             .connect(config.accounts.deployer)
             .addDependency(
-              dependencyTypeBytes,
+              dependencyNameAndVersionBytes,
               licenseTypeBytes,
               preferredCDN,
               preferredRepository,
-              referenceWebsite
+              dependencyWebsite
             )
         )
           .to.emit(config.dependencyRegistry, "DependencyAdded")
           .withArgs(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             licenseTypeBytes,
             preferredCDN,
             preferredRepository,
-            referenceWebsite
+            dependencyWebsite
           );
 
         const registeredDependencyCount =
-          await config.dependencyRegistry.getDependencyTypeCount();
+          await config.dependencyRegistry.getDependencyCount();
         expect(registeredDependencyCount).to.eq(1);
 
         const storedDepType =
-          await config.dependencyRegistry.getDependencyType(0);
-        expect(storedDepType).to.eq(dependencyType);
+          await config.dependencyRegistry.getDependencyNameAndVersion(0);
+        expect(storedDepType).to.eq(dependencyNameAndVersion);
 
-        const dependencyTypes =
-          await config.dependencyRegistry.getDependencyTypes();
-        expect(dependencyTypes).to.deep.eq([dependencyType]);
+        const dependencyNameAndVersions =
+          await config.dependencyRegistry.getDependencyNamesAndVersions();
+        expect(dependencyNameAndVersions).to.deep.eq([
+          dependencyNameAndVersion,
+        ]);
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetails(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
         expect(dependencyDetails).to.deep.eq([
-          dependencyType, // type@version
+          dependencyNameAndVersion, // type@version
           licenseType, // licenseType
           preferredCDN, // preferredCDN
           0, // aadditionalCDNCount
           preferredRepository, // preferredRepository
           0, // additionalRepositoryCount
-          referenceWebsite, // referenceWebsite
+          dependencyWebsite, // dependencyWebsite
           false, // availableOnChain
           0, // scriptCount
         ]);
@@ -354,17 +361,17 @@ describe(`DependencyRegistryV0`, async function () {
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
           .addDependency(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             licenseTypeBytes,
             preferredCDN,
             preferredRepository,
-            referenceWebsite
+            dependencyWebsite
           );
 
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.user)
-            .removeDependency(dependencyTypeBytes),
+            .removeDependency(dependencyNameAndVersionBytes),
           ONLY_ADMIN_ACL_ERROR
         );
       });
@@ -374,7 +381,9 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeDependency(ethers.utils.formatBytes32String(dependencyType)),
+            .removeDependency(
+              ethers.utils.formatBytes32String(dependencyNameAndVersion)
+            ),
           ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
         );
       });
@@ -388,70 +397,72 @@ describe(`DependencyRegistryV0`, async function () {
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
           .addDependency(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             licenseTypeBytes,
             preferredCDN,
             preferredRepository,
-            referenceWebsite
+            dependencyWebsite
           );
 
         // Cannot remove with additional CDNs
         await config.dependencyRegistry.addDependencyAdditionalCDN(
-          dependencyTypeBytes,
+          dependencyNameAndVersionBytes,
           "https://additionalCDN.com"
         );
 
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeDependency(dependencyTypeBytes),
+            .removeDependency(dependencyNameAndVersionBytes),
           noAssociatedDataError
         );
 
         // Remove additional CDNs
         await config.dependencyRegistry.removeDependencyAdditionalCDN(
-          dependencyTypeBytes,
+          dependencyNameAndVersionBytes,
           0
         );
 
         // Cannot remove with additional repositories
         await config.dependencyRegistry.addDependencyAdditionalRepository(
-          dependencyTypeBytes,
+          dependencyNameAndVersionBytes,
           "https://additionalRepository.com"
         );
 
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeDependency(dependencyTypeBytes),
+            .removeDependency(dependencyNameAndVersionBytes),
           noAssociatedDataError
         );
 
         // Remove additional repositories
         await config.dependencyRegistry.removeDependencyAdditionalRepository(
-          dependencyTypeBytes,
+          dependencyNameAndVersionBytes,
           0
         );
 
         // Cannot remove with scripts
         await config.dependencyRegistry.addDependencyScript(
-          dependencyTypeBytes,
+          dependencyNameAndVersionBytes,
           "on-chain script"
         );
 
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeDependency(dependencyTypeBytes),
+            .removeDependency(dependencyNameAndVersionBytes),
           noAssociatedDataError
         );
 
         // Remove scripts
         await config.dependencyRegistry.removeDependencyLastScript(
-          dependencyTypeBytes
+          dependencyNameAndVersionBytes
         );
 
-        await config.dependencyRegistry.removeDependency(dependencyTypeBytes);
+        await config.dependencyRegistry.removeDependency(
+          dependencyNameAndVersionBytes
+        );
       });
 
       it("allows admin to remove a dependency", async function () {
@@ -459,26 +470,28 @@ describe(`DependencyRegistryV0`, async function () {
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
           .addDependency(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             licenseTypeBytes,
             preferredCDN,
             preferredRepository,
-            referenceWebsite
+            dependencyWebsite
           );
 
         await expect(
-          config.dependencyRegistry.removeDependency(dependencyTypeBytes)
+          config.dependencyRegistry.removeDependency(
+            dependencyNameAndVersionBytes
+          )
         )
           .to.emit(config.dependencyRegistry, "DependencyRemoved")
-          .withArgs(dependencyTypeBytes);
+          .withArgs(dependencyNameAndVersionBytes);
 
         const registeredDependencyCount =
-          await config.dependencyRegistry.getDependencyTypeCount();
+          await config.dependencyRegistry.getDependencyCount();
         expect(registeredDependencyCount).to.eq(0);
 
-        const dependencyTypes =
-          await config.dependencyRegistry.getDependencyTypes();
-        expect(dependencyTypes).to.deep.eq([]);
+        const dependencyNameAndVersions =
+          await config.dependencyRegistry.getDependencyNamesAndVersions();
+        expect(dependencyNameAndVersions).to.deep.eq([]);
       });
     });
     describe("update", function () {
@@ -487,11 +500,11 @@ describe(`DependencyRegistryV0`, async function () {
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
           .addDependency(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             licenseTypeBytes,
             preferredCDN,
             preferredRepository,
-            referenceWebsite
+            dependencyWebsite
           );
         // pass config to tests in this describe block
         this.config = config;
@@ -505,7 +518,7 @@ describe(`DependencyRegistryV0`, async function () {
             config.dependencyRegistry
               .connect(config.accounts.user)
               .updateDependencyPreferredCDN(
-                dependencyTypeBytes,
+                dependencyNameAndVersionBytes,
                 "https://cdn.com"
               ),
             ONLY_ADMIN_ACL_ERROR
@@ -529,22 +542,25 @@ describe(`DependencyRegistryV0`, async function () {
           const config = this.config;
           await config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .addDependencyAdditionalCDN(dependencyTypeBytes, "https://cdn.com");
+            .addDependencyAdditionalCDN(
+              dependencyNameAndVersionBytes,
+              "https://cdn.com"
+            );
 
           await expect(
             config.dependencyRegistry
               .connect(config.accounts.deployer)
               .updateDependencyPreferredCDN(
-                dependencyTypeBytes,
+                dependencyNameAndVersionBytes,
                 "https://cdn2.com"
               )
           )
             .to.emit(config.dependencyRegistry, "DependencyPreferredCDNUpdated")
-            .withArgs(dependencyTypeBytes, "https://cdn2.com");
+            .withArgs(dependencyNameAndVersionBytes, "https://cdn2.com");
 
           const dependencyDetails =
             await config.dependencyRegistry.getDependencyDetails(
-              dependencyTypeBytes
+              dependencyNameAndVersionBytes
             );
 
           expect(dependencyDetails.preferredCDN).to.eq("https://cdn2.com");
@@ -558,7 +574,7 @@ describe(`DependencyRegistryV0`, async function () {
             config.dependencyRegistry
               .connect(config.accounts.user)
               .updateDependencyPreferredRepository(
-                dependencyTypeBytes,
+                dependencyNameAndVersionBytes,
                 "https://github.com"
               ),
             ONLY_ADMIN_ACL_ERROR
@@ -584,7 +600,7 @@ describe(`DependencyRegistryV0`, async function () {
             config.dependencyRegistry
               .connect(config.accounts.deployer)
               .updateDependencyPreferredRepository(
-                dependencyTypeBytes,
+                dependencyNameAndVersionBytes,
                 "https://github.com"
               )
           )
@@ -592,11 +608,11 @@ describe(`DependencyRegistryV0`, async function () {
               config.dependencyRegistry,
               "DependencyPreferredRepositoryUpdated"
             )
-            .withArgs(dependencyTypeBytes, "https://github.com");
+            .withArgs(dependencyNameAndVersionBytes, "https://github.com");
 
           const dependencyDetails =
             await config.dependencyRegistry.getDependencyDetails(
-              dependencyTypeBytes
+              dependencyNameAndVersionBytes
             );
 
           expect(dependencyDetails.preferredRepository).to.eq(
@@ -611,8 +627,8 @@ describe(`DependencyRegistryV0`, async function () {
           await expectRevert(
             config.dependencyRegistry
               .connect(config.accounts.user)
-              .updateDependencyReferenceWebsite(
-                dependencyTypeBytes,
+              .updateDependencyWebsite(
+                dependencyNameAndVersionBytes,
                 "https://reference.com"
               ),
             ONLY_ADMIN_ACL_ERROR
@@ -624,7 +640,7 @@ describe(`DependencyRegistryV0`, async function () {
           await expectRevert(
             config.dependencyRegistry
               .connect(config.accounts.deployer)
-              .updateDependencyReferenceWebsite(
+              .updateDependencyWebsite(
                 ethers.utils.formatBytes32String("nonExistentDependencyType"),
                 "https://reference.com"
               ),
@@ -637,23 +653,20 @@ describe(`DependencyRegistryV0`, async function () {
           await expect(
             config.dependencyRegistry
               .connect(config.accounts.deployer)
-              .updateDependencyReferenceWebsite(
-                dependencyTypeBytes,
+              .updateDependencyWebsite(
+                dependencyNameAndVersionBytes,
                 "https://reference.com"
               )
           )
-            .to.emit(
-              config.dependencyRegistry,
-              "DependencyReferenceWebsiteUpdated"
-            )
-            .withArgs(dependencyTypeBytes, "https://reference.com");
+            .to.emit(config.dependencyRegistry, "DependencyWebsiteUpdated")
+            .withArgs(dependencyNameAndVersionBytes, "https://reference.com");
 
           const dependencyDetails =
             await config.dependencyRegistry.getDependencyDetails(
-              dependencyTypeBytes
+              dependencyNameAndVersionBytes
             );
 
-          expect(dependencyDetails.referenceWebsite).to.eq(
+          expect(dependencyDetails.dependencyWebsite).to.eq(
             "https://reference.com"
           );
         });
@@ -666,11 +679,11 @@ describe(`DependencyRegistryV0`, async function () {
       await config.dependencyRegistry
         .connect(config.accounts.deployer)
         .addDependency(
-          dependencyTypeBytes,
+          dependencyNameAndVersionBytes,
           licenseTypeBytes,
           preferredCDN,
           preferredRepository,
-          referenceWebsite
+          dependencyWebsite
         );
       // pass config to tests in this describe block
       this.config = config;
@@ -683,7 +696,10 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.user)
-            .addDependencyScript(dependencyTypeBytes, "on-chain script"),
+            .addDependencyScript(
+              dependencyNameAndVersionBytes,
+              "on-chain script"
+            ),
           ONLY_ADMIN_ACL_ERROR
         );
       });
@@ -708,7 +724,7 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .addDependencyScript(dependencyTypeBytes, ""),
+            .addDependencyScript(dependencyNameAndVersionBytes, ""),
           ONLY_NON_EMPTY_STRING_ERROR
         );
       });
@@ -719,29 +735,29 @@ describe(`DependencyRegistryV0`, async function () {
         const script = "on-chain script";
         await expect(
           config.dependencyRegistry.addDependencyScript(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             script
           )
         )
           .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
-          .withArgs(dependencyTypeBytes);
+          .withArgs(dependencyNameAndVersionBytes);
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetails(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
 
         expect(dependencyDetails.scriptCount).to.eq(1);
 
         const scriptCount =
           await config.dependencyRegistry.getDependencyScriptCount(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
         expect(scriptCount).to.eq(1);
 
         const storedScript =
           await config.dependencyRegistry.getDependencyScript(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           );
         expect(storedScript).to.eq(script);
@@ -755,7 +771,7 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.user)
-            .removeDependencyLastScript(dependencyTypeBytes),
+            .removeDependencyLastScript(dependencyNameAndVersionBytes),
           ONLY_ADMIN_ACL_ERROR
         );
       });
@@ -779,7 +795,7 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeDependencyLastScript(dependencyTypeBytes),
+            .removeDependencyLastScript(dependencyNameAndVersionBytes),
           "there are no scripts to remove"
         );
       });
@@ -791,31 +807,34 @@ describe(`DependencyRegistryV0`, async function () {
 
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
-          .addDependencyScript(dependencyTypeBytes, script);
+          .addDependencyScript(dependencyNameAndVersionBytes, script);
 
         await expect(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeDependencyLastScript(dependencyTypeBytes)
+            .removeDependencyLastScript(dependencyNameAndVersionBytes)
         )
           .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
-          .withArgs(dependencyTypeBytes);
+          .withArgs(dependencyNameAndVersionBytes);
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetails(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
 
         expect(dependencyDetails.scriptCount).to.eq(0);
 
         const scriptCount =
           await config.dependencyRegistry.getDependencyScriptCount(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
         expect(scriptCount).to.eq(0);
 
         await expectRevert(
-          config.dependencyRegistry.getDependencyScript(dependencyTypeBytes, 0),
+          config.dependencyRegistry.getDependencyScript(
+            dependencyNameAndVersionBytes,
+            0
+          ),
           INDEX_OUT_OF_RANGE_ERROR
         );
       });
@@ -828,7 +847,11 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.user)
-            .updateDependencyScript(dependencyTypeBytes, 0, "on-chain script"),
+            .updateDependencyScript(
+              dependencyNameAndVersionBytes,
+              0,
+              "on-chain script"
+            ),
           ONLY_ADMIN_ACL_ERROR
         );
       });
@@ -854,7 +877,11 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .updateDependencyScript(dependencyTypeBytes, 0, "on-chain script"),
+            .updateDependencyScript(
+              dependencyNameAndVersionBytes,
+              0,
+              "on-chain script"
+            ),
           INDEX_OUT_OF_RANGE_ERROR
         );
       });
@@ -866,12 +893,12 @@ describe(`DependencyRegistryV0`, async function () {
 
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
-          .addDependencyScript(dependencyTypeBytes, script);
+          .addDependencyScript(dependencyNameAndVersionBytes, script);
 
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .updateDependencyScript(dependencyTypeBytes, 0, ""),
+            .updateDependencyScript(dependencyNameAndVersionBytes, 0, ""),
           ONLY_NON_EMPTY_STRING_ERROR
         );
       });
@@ -883,34 +910,38 @@ describe(`DependencyRegistryV0`, async function () {
 
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
-          .addDependencyScript(dependencyTypeBytes, script);
+          .addDependencyScript(dependencyNameAndVersionBytes, script);
 
         const updatedScript = "updated on-chain script";
 
         await expect(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .updateDependencyScript(dependencyTypeBytes, 0, updatedScript)
+            .updateDependencyScript(
+              dependencyNameAndVersionBytes,
+              0,
+              updatedScript
+            )
         )
           .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
-          .withArgs(dependencyTypeBytes);
+          .withArgs(dependencyNameAndVersionBytes);
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetails(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
 
         expect(dependencyDetails.scriptCount).to.eq(1);
 
         const scriptCount =
           await config.dependencyRegistry.getDependencyScriptCount(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
         expect(scriptCount).to.eq(1);
 
         const storedScript =
           await config.dependencyRegistry.getDependencyScript(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           );
         expect(storedScript).to.eq(updatedScript);
@@ -931,7 +962,10 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.user)
-            .addDependencyScriptPointer(dependencyTypeBytes, contentAddress),
+            .addDependencyScriptPointer(
+              dependencyNameAndVersionBytes,
+              contentAddress
+            ),
           ONLY_ADMIN_ACL_ERROR
         );
       });
@@ -964,7 +998,7 @@ describe(`DependencyRegistryV0`, async function () {
           config.dependencyRegistry
             .connect(config.accounts.deployer)
             .addDependencyScriptPointer(
-              dependencyTypeBytes,
+              dependencyNameAndVersionBytes,
               constants.ZERO_ADDRESS
             ),
           ONLY_NON_ZERO_ADDRESS_ERROR
@@ -983,29 +1017,29 @@ describe(`DependencyRegistryV0`, async function () {
 
         await expect(
           config.dependencyRegistry.addDependencyScriptPointer(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             contentAddress
           )
         )
           .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
-          .withArgs(dependencyTypeBytes);
+          .withArgs(dependencyNameAndVersionBytes);
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetails(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
 
         expect(dependencyDetails.scriptCount).to.eq(1);
 
         const scriptCount =
           await config.dependencyRegistry.getDependencyScriptCount(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
         expect(scriptCount).to.eq(1);
 
         const storedScript =
           await config.dependencyRegistry.getDependencyScript(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           );
         expect(storedScript).to.eq(script);
@@ -1023,29 +1057,29 @@ describe(`DependencyRegistryV0`, async function () {
 
         await expect(
           config.dependencyRegistry.addDependencyScriptPointer(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             contentAddress
           )
         )
           .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
-          .withArgs(dependencyTypeBytes);
+          .withArgs(dependencyNameAndVersionBytes);
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetails(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
 
         expect(dependencyDetails.scriptCount).to.eq(1);
 
         const scriptCount =
           await config.dependencyRegistry.getDependencyScriptCount(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
         expect(scriptCount).to.eq(1);
 
         const storedScript =
           await config.dependencyRegistry.getDependencyScript(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           );
         expect(storedScript).to.eq(script);
@@ -1067,7 +1101,7 @@ describe(`DependencyRegistryV0`, async function () {
           config.dependencyRegistry
             .connect(config.accounts.user)
             .updateDependencyScriptPointer(
-              dependencyTypeBytes,
+              dependencyNameAndVersionBytes,
               0,
               contentAddress
             ),
@@ -1111,7 +1145,7 @@ describe(`DependencyRegistryV0`, async function () {
           config.dependencyRegistry
             .connect(config.accounts.deployer)
             .updateDependencyScriptPointer(
-              dependencyTypeBytes,
+              dependencyNameAndVersionBytes,
               0,
               contentAddress
             ),
@@ -1126,7 +1160,7 @@ describe(`DependencyRegistryV0`, async function () {
           config.dependencyRegistry
             .connect(config.accounts.deployer)
             .updateDependencyScriptPointer(
-              dependencyTypeBytes,
+              dependencyNameAndVersionBytes,
               0,
               constants.ZERO_ADDRESS
             ),
@@ -1148,34 +1182,34 @@ describe(`DependencyRegistryV0`, async function () {
         const garbledScript = script.split("").reverse().join("");
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
-          .addDependencyScript(dependencyTypeBytes, garbledScript);
+          .addDependencyScript(dependencyNameAndVersionBytes, garbledScript);
 
         await expect(
           config.dependencyRegistry.updateDependencyScriptPointer(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0,
             contentAddress
           )
         )
           .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
-          .withArgs(dependencyTypeBytes);
+          .withArgs(dependencyNameAndVersionBytes);
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetails(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
 
         expect(dependencyDetails.scriptCount).to.eq(1);
 
         const scriptCount =
           await config.dependencyRegistry.getDependencyScriptCount(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
         expect(scriptCount).to.eq(1);
 
         const storedScript =
           await config.dependencyRegistry.getDependencyScript(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           );
         expect(storedScript).to.eq(script);
@@ -1196,34 +1230,34 @@ describe(`DependencyRegistryV0`, async function () {
         const garbledScript = script.split("").reverse().join("");
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
-          .addDependencyScript(dependencyTypeBytes, garbledScript);
+          .addDependencyScript(dependencyNameAndVersionBytes, garbledScript);
 
         await expect(
           config.dependencyRegistry.updateDependencyScriptPointer(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0,
             contentAddress
           )
         )
           .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
-          .withArgs(dependencyTypeBytes);
+          .withArgs(dependencyNameAndVersionBytes);
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetails(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
 
         expect(dependencyDetails.scriptCount).to.eq(1);
 
         const scriptCount =
           await config.dependencyRegistry.getDependencyScriptCount(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
         expect(scriptCount).to.eq(1);
 
         const storedScript =
           await config.dependencyRegistry.getDependencyScript(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           );
         expect(storedScript).to.eq(script);
@@ -1239,11 +1273,11 @@ describe(`DependencyRegistryV0`, async function () {
 
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
-          .addDependencyScript(dependencyTypeBytes, script);
+          .addDependencyScript(dependencyNameAndVersionBytes, script);
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetails(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
 
         expect(dependencyDetails.scriptCount).to.eq(1);
@@ -1257,11 +1291,11 @@ describe(`DependencyRegistryV0`, async function () {
 
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
-          .addDependencyScript(dependencyTypeBytes, script);
+          .addDependencyScript(dependencyNameAndVersionBytes, script);
 
         const storedScript =
           await config.dependencyRegistry.getDependencyScript(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           );
         expect(storedScript).to.eq(script);
@@ -1274,11 +1308,11 @@ describe(`DependencyRegistryV0`, async function () {
 
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
-          .addDependencyScript(dependencyTypeBytes, script);
+          .addDependencyScript(dependencyNameAndVersionBytes, script);
 
         const storedScriptByteCodeAddress =
           await config.dependencyRegistry.getDependencyScriptBytecodeAddress(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           );
 
@@ -1301,13 +1335,13 @@ describe(`DependencyRegistryV0`, async function () {
         );
 
         await config.dependencyRegistry.addDependencyScriptPointer(
-          dependencyTypeBytes,
+          dependencyNameAndVersionBytes,
           contentAddress
         );
 
         const bytecodeStorageVersionBytes =
           await config.dependencyRegistry.getDependencyScriptBytecodeStorageVersion(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           );
         let bytecodeStorageVersionUTF8 = ethers.utils.toUtf8String(
@@ -1329,13 +1363,13 @@ describe(`DependencyRegistryV0`, async function () {
         );
 
         await config.dependencyRegistry.addDependencyScriptPointer(
-          dependencyTypeBytes,
+          dependencyNameAndVersionBytes,
           contentAddress
         );
 
         const bytecodeStorageVersionBytes =
           await config.dependencyRegistry.getDependencyScriptBytecodeStorageVersion(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           );
 
@@ -1354,11 +1388,11 @@ describe(`DependencyRegistryV0`, async function () {
       await config.dependencyRegistry
         .connect(config.accounts.deployer)
         .addDependency(
-          dependencyTypeBytes,
+          dependencyNameAndVersionBytes,
           licenseTypeBytes,
           preferredCDN,
           preferredRepository,
-          referenceWebsite
+          dependencyWebsite
         );
       // pass config to tests in this describe block
       this.config = config;
@@ -1371,7 +1405,10 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.user)
-            .addDependencyAdditionalCDN(dependencyTypeBytes, "https://cdn.com"),
+            .addDependencyAdditionalCDN(
+              dependencyNameAndVersionBytes,
+              "https://cdn.com"
+            ),
           ONLY_ADMIN_ACL_ERROR
         );
       });
@@ -1396,7 +1433,7 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .addDependencyAdditionalCDN(dependencyTypeBytes, ""),
+            .addDependencyAdditionalCDN(dependencyNameAndVersionBytes, ""),
           ONLY_NON_EMPTY_STRING_ERROR
         );
       });
@@ -1407,21 +1444,24 @@ describe(`DependencyRegistryV0`, async function () {
         await expect(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .addDependencyAdditionalCDN(dependencyTypeBytes, "https://cdn.com")
+            .addDependencyAdditionalCDN(
+              dependencyNameAndVersionBytes,
+              "https://cdn.com"
+            )
         )
           .to.emit(config.dependencyRegistry, "DependencyAdditionalCDNUpdated")
-          .withArgs(dependencyTypeBytes, "https://cdn.com", 0);
+          .withArgs(dependencyNameAndVersionBytes, "https://cdn.com", 0);
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetails(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
 
         expect(dependencyDetails.additionalCDNCount).to.eq(1);
 
         const storedCDN =
           await config.dependencyRegistry.getDependencyAdditionalCDN(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           );
         expect(storedCDN).to.eq("https://cdn.com");
@@ -1434,7 +1474,7 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.user)
-            .removeDependencyAdditionalCDN(dependencyTypeBytes, 0),
+            .removeDependencyAdditionalCDN(dependencyNameAndVersionBytes, 0),
           ONLY_ADMIN_ACL_ERROR
         );
       });
@@ -1459,7 +1499,7 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeDependencyAdditionalCDN(dependencyTypeBytes, 0),
+            .removeDependencyAdditionalCDN(dependencyNameAndVersionBytes, 0),
           INDEX_OUT_OF_RANGE_ERROR
         );
       });
@@ -1469,26 +1509,29 @@ describe(`DependencyRegistryV0`, async function () {
         const config = this.config;
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
-          .addDependencyAdditionalCDN(dependencyTypeBytes, "https://cdn.com");
+          .addDependencyAdditionalCDN(
+            dependencyNameAndVersionBytes,
+            "https://cdn.com"
+          );
 
         await expect(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeDependencyAdditionalCDN(dependencyTypeBytes, 0)
+            .removeDependencyAdditionalCDN(dependencyNameAndVersionBytes, 0)
         )
           .to.emit(config.dependencyRegistry, "DependencyAdditionalCDNRemoved")
-          .withArgs(dependencyTypeBytes, 0);
+          .withArgs(dependencyNameAndVersionBytes, 0);
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetails(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
 
         expect(dependencyDetails.additionalCDNCount).to.eq(0);
 
         expectRevert(
           config.dependencyRegistry.getDependencyAdditionalCDN(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           ),
           INDEX_OUT_OF_RANGE_ERROR
@@ -1504,7 +1547,7 @@ describe(`DependencyRegistryV0`, async function () {
           config.dependencyRegistry
             .connect(config.accounts.user)
             .updateDependencyAdditionalCDN(
-              dependencyTypeBytes,
+              dependencyNameAndVersionBytes,
               0,
               "https://cdn.com"
             ),
@@ -1532,7 +1575,7 @@ describe(`DependencyRegistryV0`, async function () {
           config.dependencyRegistry
             .connect(config.accounts.deployer)
             .updateDependencyAdditionalCDN(
-              dependencyTypeBytes,
+              dependencyNameAndVersionBytes,
               0,
               "https://cdn.com"
             ),
@@ -1545,7 +1588,11 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .updateDependencyAdditionalCDN(dependencyTypeBytes, 0, ""),
+            .updateDependencyAdditionalCDN(
+              dependencyNameAndVersionBytes,
+              0,
+              ""
+            ),
           ONLY_NON_EMPTY_STRING_ERROR
         );
       });
@@ -1554,30 +1601,33 @@ describe(`DependencyRegistryV0`, async function () {
         const config = this.config;
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
-          .addDependencyAdditionalCDN(dependencyTypeBytes, "https://cdn.com");
+          .addDependencyAdditionalCDN(
+            dependencyNameAndVersionBytes,
+            "https://cdn.com"
+          );
 
         await expect(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
             .updateDependencyAdditionalCDN(
-              dependencyTypeBytes,
+              dependencyNameAndVersionBytes,
               0,
               "https://cdn2.com"
             )
         )
           .to.emit(config.dependencyRegistry, "DependencyAdditionalCDNUpdated")
-          .withArgs(dependencyTypeBytes, "https://cdn2.com", 0);
+          .withArgs(dependencyNameAndVersionBytes, "https://cdn2.com", 0);
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetails(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
 
         expect(dependencyDetails.additionalCDNCount).to.eq(1);
 
         const storedCDN =
           await config.dependencyRegistry.getDependencyAdditionalCDN(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           );
         expect(storedCDN).to.eq("https://cdn2.com");
@@ -1589,11 +1639,14 @@ describe(`DependencyRegistryV0`, async function () {
         const config = this.config;
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
-          .addDependencyAdditionalCDN(dependencyTypeBytes, "https://cdn.com");
+          .addDependencyAdditionalCDN(
+            dependencyNameAndVersionBytes,
+            "https://cdn.com"
+          );
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetails(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
 
         expect(dependencyDetails.additionalCDNCount).to.eq(1);
@@ -1604,11 +1657,14 @@ describe(`DependencyRegistryV0`, async function () {
         const config = this.config;
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
-          .addDependencyAdditionalCDN(dependencyTypeBytes, "https://cdn.com");
+          .addDependencyAdditionalCDN(
+            dependencyNameAndVersionBytes,
+            "https://cdn.com"
+          );
 
         const storedCDN =
           await config.dependencyRegistry.getDependencyAdditionalCDN(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           );
         expect(storedCDN).to.eq("https://cdn.com");
@@ -1621,11 +1677,11 @@ describe(`DependencyRegistryV0`, async function () {
       await config.dependencyRegistry
         .connect(config.accounts.deployer)
         .addDependency(
-          dependencyTypeBytes,
+          dependencyNameAndVersionBytes,
           licenseTypeBytes,
           preferredCDN,
           preferredRepository,
-          referenceWebsite
+          dependencyWebsite
         );
       // pass config to tests in this describe block
       this.config = config;
@@ -1639,7 +1695,7 @@ describe(`DependencyRegistryV0`, async function () {
           config.dependencyRegistry
             .connect(config.accounts.user)
             .addDependencyAdditionalRepository(
-              dependencyTypeBytes,
+              dependencyNameAndVersionBytes,
               "https://github.com"
             ),
           ONLY_ADMIN_ACL_ERROR
@@ -1664,7 +1720,10 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .addDependencyAdditionalRepository(dependencyTypeBytes, ""),
+            .addDependencyAdditionalRepository(
+              dependencyNameAndVersionBytes,
+              ""
+            ),
           ONLY_NON_EMPTY_STRING_ERROR
         );
       });
@@ -1675,7 +1734,7 @@ describe(`DependencyRegistryV0`, async function () {
           config.dependencyRegistry
             .connect(config.accounts.deployer)
             .addDependencyAdditionalRepository(
-              dependencyTypeBytes,
+              dependencyNameAndVersionBytes,
               "https://github.com"
             )
         )
@@ -1683,18 +1742,18 @@ describe(`DependencyRegistryV0`, async function () {
             config.dependencyRegistry,
             "DependencyAdditionalRepositoryUpdated"
           )
-          .withArgs(dependencyTypeBytes, "https://github.com", 0);
+          .withArgs(dependencyNameAndVersionBytes, "https://github.com", 0);
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetails(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
 
         expect(dependencyDetails.additionalRepositoryCount).to.eq(1);
 
         const storedRepository =
           await config.dependencyRegistry.getDependencyAdditionalRepository(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           );
         expect(storedRepository).to.eq("https://github.com");
@@ -1707,7 +1766,10 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.user)
-            .removeDependencyAdditionalRepository(dependencyTypeBytes, 0),
+            .removeDependencyAdditionalRepository(
+              dependencyNameAndVersionBytes,
+              0
+            ),
           ONLY_ADMIN_ACL_ERROR
         );
       });
@@ -1730,7 +1792,10 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeDependencyAdditionalRepository(dependencyTypeBytes, 1),
+            .removeDependencyAdditionalRepository(
+              dependencyNameAndVersionBytes,
+              1
+            ),
           INDEX_OUT_OF_RANGE_ERROR
         );
       });
@@ -1740,31 +1805,34 @@ describe(`DependencyRegistryV0`, async function () {
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
           .addDependencyAdditionalRepository(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             "https://github.com"
           );
 
         await expect(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeDependencyAdditionalRepository(dependencyTypeBytes, 0)
+            .removeDependencyAdditionalRepository(
+              dependencyNameAndVersionBytes,
+              0
+            )
         )
           .to.emit(
             config.dependencyRegistry,
             "DependencyAdditionalRepositoryRemoved"
           )
-          .withArgs(dependencyTypeBytes, 0);
+          .withArgs(dependencyNameAndVersionBytes, 0);
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetails(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
 
         expect(dependencyDetails.additionalRepositoryCount).to.eq(0);
 
         expectRevert(
           config.dependencyRegistry.getDependencyAdditionalRepository(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           ),
           INDEX_OUT_OF_RANGE_ERROR
@@ -1779,7 +1847,7 @@ describe(`DependencyRegistryV0`, async function () {
           config.dependencyRegistry
             .connect(config.accounts.user)
             .updateDependencyAdditionalRepository(
-              dependencyTypeBytes,
+              dependencyNameAndVersionBytes,
               0,
               "https://github.com"
             ),
@@ -1807,7 +1875,7 @@ describe(`DependencyRegistryV0`, async function () {
           config.dependencyRegistry
             .connect(config.accounts.deployer)
             .updateDependencyAdditionalRepository(
-              dependencyTypeBytes,
+              dependencyNameAndVersionBytes,
               1,
               "https://github.com"
             ),
@@ -1820,7 +1888,11 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .updateDependencyAdditionalRepository(dependencyTypeBytes, 0, ""),
+            .updateDependencyAdditionalRepository(
+              dependencyNameAndVersionBytes,
+              0,
+              ""
+            ),
           ONLY_NON_EMPTY_STRING_ERROR
         );
       });
@@ -1830,7 +1902,7 @@ describe(`DependencyRegistryV0`, async function () {
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
           .addDependencyAdditionalRepository(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             "https://github.com"
           );
 
@@ -1838,7 +1910,7 @@ describe(`DependencyRegistryV0`, async function () {
           config.dependencyRegistry
             .connect(config.accounts.deployer)
             .updateDependencyAdditionalRepository(
-              dependencyTypeBytes,
+              dependencyNameAndVersionBytes,
               0,
               "https://bitbucket.com"
             )
@@ -1847,11 +1919,11 @@ describe(`DependencyRegistryV0`, async function () {
             config.dependencyRegistry,
             "DependencyAdditionalRepositoryUpdated"
           )
-          .withArgs(dependencyTypeBytes, "https://bitbucket.com", 0);
+          .withArgs(dependencyNameAndVersionBytes, "https://bitbucket.com", 0);
 
         const storedRepository =
           await config.dependencyRegistry.getDependencyAdditionalRepository(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           );
         expect(storedRepository).to.eq("https://bitbucket.com");
@@ -1865,13 +1937,13 @@ describe(`DependencyRegistryV0`, async function () {
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
           .addDependencyAdditionalRepository(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             "https://github.com"
           );
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetails(
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
 
         expect(dependencyDetails.additionalRepositoryCount).to.eq(1);
@@ -1882,13 +1954,13 @@ describe(`DependencyRegistryV0`, async function () {
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
           .addDependencyAdditionalRepository(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             "https://github.com"
           );
 
         const storedRepository =
           await config.dependencyRegistry.getDependencyAdditionalRepository(
-            dependencyTypeBytes,
+            dependencyNameAndVersionBytes,
             0
           );
         expect(storedRepository).to.eq("https://github.com");
@@ -1901,11 +1973,11 @@ describe(`DependencyRegistryV0`, async function () {
       await config.dependencyRegistry
         .connect(config.accounts.deployer)
         .addDependency(
-          dependencyTypeBytes,
+          dependencyNameAndVersionBytes,
           licenseTypeBytes,
           preferredCDN,
           preferredRepository,
-          referenceWebsite
+          dependencyWebsite
         );
       // pass config to tests in this describe block
       this.config = config;
@@ -2056,17 +2128,17 @@ describe(`DependencyRegistryV0`, async function () {
         expect(isSupportedCoreContract).to.eq(false);
       });
     });
-    describe("addProjectDependencyTypeOverride", function () {
+    describe("addProjectDependencyOverride", function () {
       it("does not allow non-admins to add project dependency override", async function () {
         // get config from beforeEach
         const config = this.config;
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.user)
-            .addProjectDependencyTypeOverride(
+            .addProjectDependencyOverride(
               config.genArt721Core.address,
               0,
-              dependencyTypeBytes
+              dependencyNameAndVersionBytes
             ),
           ONLY_ADMIN_ACL_ERROR
         );
@@ -2077,12 +2149,12 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .addProjectDependencyTypeOverride(
+            .addProjectDependencyOverride(
               config.genArt721Core.address,
               0,
               ethers.utils.formatBytes32String("not@registered")
             ),
-          "Dependency type does not exist"
+          ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
         );
       });
       it("does not allow adding override for a project that is not on a supported core contract", async function () {
@@ -2091,10 +2163,10 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .addProjectDependencyTypeOverride(
+            .addProjectDependencyOverride(
               config.genArt721Core.address,
               0,
-              dependencyTypeBytes
+              dependencyNameAndVersionBytes
             ),
           "Core contract not supported"
         );
@@ -2109,37 +2181,35 @@ describe(`DependencyRegistryV0`, async function () {
         await expect(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .addProjectDependencyTypeOverride(
+            .addProjectDependencyOverride(
               config.genArt721Core.address,
               0,
-              dependencyTypeBytes
+              dependencyNameAndVersionBytes
             )
         )
-          .to.emit(
-            config.dependencyRegistry,
-            "ProjectDependencyTypeOverrideAdded"
-          )
-          .withArgs(config.genArt721Core.address, 0, dependencyTypeBytes);
+          .to.emit(config.dependencyRegistry, "ProjectDependencyOverrideAdded")
+          .withArgs(
+            config.genArt721Core.address,
+            0,
+            dependencyNameAndVersionBytes
+          );
 
         const storedDependencyType =
-          await config.dependencyRegistry.getDependencyTypeForProject(
+          await config.dependencyRegistry.getDependencyNameAndVersionForProject(
             config.genArt721Core.address,
             0
           );
-        expect(storedDependencyType).to.eq(dependencyType);
+        expect(storedDependencyType).to.eq(dependencyNameAndVersion);
       });
     });
-    describe("removeProjectDependencyTypeOverride", function () {
+    describe("removeProjectDependencyOverride", function () {
       it("does not allow non-admins to remove project dependency override", async function () {
         // get config from beforeEach
         const config = this.config;
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.user)
-            .removeProjectDependencyTypeOverride(
-              config.genArt721Core.address,
-              0
-            ),
+            .removeProjectDependencyOverride(config.genArt721Core.address, 0),
           ONLY_ADMIN_ACL_ERROR
         );
       });
@@ -2149,10 +2219,7 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeProjectDependencyTypeOverride(
-              config.genArt721Core.address,
-              0
-            ),
+            .removeProjectDependencyOverride(config.genArt721Core.address, 0),
           "No override set for project"
         );
       });
@@ -2165,40 +2232,37 @@ describe(`DependencyRegistryV0`, async function () {
 
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
-          .addProjectDependencyTypeOverride(
+          .addProjectDependencyOverride(
             config.genArt721Core.address,
             0,
-            dependencyTypeBytes
+            dependencyNameAndVersionBytes
           );
 
         await expect(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeProjectDependencyTypeOverride(
-              config.genArt721Core.address,
-              0
-            )
+            .removeProjectDependencyOverride(config.genArt721Core.address, 0)
         )
           .to.emit(
             config.dependencyRegistry,
-            "ProjectDependencyTypeOverrideRemoved"
+            "ProjectDependencyOverrideRemoved"
           )
           .withArgs(config.genArt721Core.address, 0);
 
         const storedDependencyType =
-          await config.dependencyRegistry.getDependencyTypeForProject(
+          await config.dependencyRegistry.getDependencyNameAndVersionForProject(
             config.genArt721Core.address,
             0
           );
         expect(storedDependencyType).to.eq("");
       });
     });
-    describe("getDependencyTypeForProject", function () {
+    describe("getDependencyNameAndVersionForProject", function () {
       it("reverts if core contract is not supported", async function () {
         // get config from beforeEach
         const config = this.config;
         await expectRevert(
-          config.dependencyRegistry.getDependencyTypeForProject(
+          config.dependencyRegistry.getDependencyNameAndVersionForProject(
             config.genArt721Core.address,
             0
           ),
@@ -2230,7 +2294,7 @@ describe(`DependencyRegistryV0`, async function () {
           .addSupportedCoreContract(genArt721CoreV1.address);
 
         await expectRevert(
-          config.dependencyRegistry.getDependencyTypeForProject(
+          config.dependencyRegistry.getDependencyNameAndVersionForProject(
             genArt721CoreV1.address,
             0
           ),
@@ -2253,17 +2317,17 @@ describe(`DependencyRegistryV0`, async function () {
             ethers.utils.formatBytes32String(coreDepType)
           );
 
-        const override = dependencyType;
+        const override = dependencyNameAndVersion;
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
-          .addProjectDependencyTypeOverride(
+          .addProjectDependencyOverride(
             config.genArt721Core.address,
             0,
             ethers.utils.formatBytes32String(override)
           );
 
         const regDepType =
-          await config.dependencyRegistry.getDependencyTypeForProject(
+          await config.dependencyRegistry.getDependencyNameAndVersionForProject(
             config.genArt721Core.address,
             0
           );
@@ -2287,7 +2351,7 @@ describe(`DependencyRegistryV0`, async function () {
           );
 
         const regDepType =
-          await config.dependencyRegistry.getDependencyTypeForProject(
+          await config.dependencyRegistry.getDependencyNameAndVersionForProject(
             config.genArt721Core.address,
             0
           );
@@ -2296,6 +2360,215 @@ describe(`DependencyRegistryV0`, async function () {
       });
     });
   });
+  describe("license scripts", function () {
+    this.beforeEach(async function () {
+      const config = await loadFixture(_beforeEach);
+      await config.dependencyRegistry
+        .connect(config.accounts.deployer)
+        .addDependency(
+          dependencyNameAndVersionBytes,
+          licenseTypeBytes,
+          preferredCDN,
+          preferredRepository,
+          dependencyWebsite
+        );
+      // pass config to tests in this describe block
+      this.config = config;
+    });
+    describe("addLicenseText", function () {
+      it("does not allow non-admins to add license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.artist)
+            .addLicenseText(licenseTypeBytes, licenseText),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+      it("does not allow adding license text for a license that does not exist", async function () {
+        const config = await loadFixture(_beforeEach);
+        // admin can update
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addLicenseText(
+              ethers.utils.formatBytes32String("nonExistentLicenseType"),
+              licenseText
+            ),
+          ONLY_EXISTING_LICENSE_TYPE_ERROR
+        );
+      });
+      it("does not allow adding empty string as license text", async function () {
+        const config = await loadFixture(_beforeEach);
+        // admin can update
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addLicenseText(licenseTypeBytes, ""),
+          ONLY_NON_EMPTY_STRING_ERROR
+        );
+      });
+      it("allows admin to add license text", async function () {
+        const config = await loadFixture(_beforeEach);
+        // admin can update
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addLicenseText(licenseTypeBytes, licenseText)
+        )
+          .to.emit(config.dependencyRegistry, "LicenseTextUpdated")
+          .withArgs(licenseTypeBytes);
+
+        const storedLicenseText =
+          await config.dependencyRegistry.getLicenseText(licenseTypeBytes, 0);
+        expect(storedLicenseText).to.eq(licenseText);
+      });
+    });
+    describe("removeLicenseLastText", function () {
+      it("does not allow non-admins to remove license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.user)
+            .removeLicenseLastText(licenseTypeBytes),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+
+      it("does not allow removing license text from a license that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeLicenseLastText(
+              ethers.utils.formatBytes32String("nonExistentLicenseType")
+            ),
+          ONLY_EXISTING_LICENSE_TYPE_ERROR
+        );
+      });
+
+      it("does not allow removing the last license text if non-existent", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeLicenseLastText(licenseTypeBytes),
+          "There is no license text to remove"
+        );
+      });
+
+      it("allows admin to remove last license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addLicenseText(licenseTypeBytes, licenseText);
+
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeLicenseLastText(licenseTypeBytes)
+        )
+          .to.emit(config.dependencyRegistry, "LicenseTextUpdated")
+          .withArgs(licenseTypeBytes);
+
+        const textChunkCount =
+          await config.dependencyRegistry.getLicenseTextChunkCount(
+            licenseTypeBytes
+          );
+        expect(textChunkCount).to.eq(0);
+
+        await expectRevert(
+          config.dependencyRegistry.getLicenseText(licenseTypeBytes, 0),
+          INDEX_OUT_OF_RANGE_ERROR
+        );
+      });
+    });
+
+    describe("updateLicenseText", function () {
+      it("does not allow non-admins to update license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.artist)
+            .updateLicenseText(licenseTypeBytes, 0, "new license text"),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+
+      it("does not allow updating license text for a license that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateLicenseText(
+              ethers.utils.formatBytes32String("nonExistentLicenseType"),
+              0,
+              "new license text"
+            ),
+          ONLY_EXISTING_LICENSE_TYPE_ERROR
+        );
+      });
+
+      it("does not allow updating a license text chunk that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateLicenseText(licenseTypeBytes, 0, "new license text"),
+          INDEX_OUT_OF_RANGE_ERROR
+        );
+      });
+
+      it("does not allow updating an empty string as a license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addLicenseText(licenseTypeBytes, licenseText);
+
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateLicenseText(licenseTypeBytes, 0, ""),
+          ONLY_NON_EMPTY_STRING_ERROR
+        );
+      });
+
+      it("allows admin to update license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addLicenseText(licenseTypeBytes, licenseText);
+
+        const updatedText = "updated license text";
+
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateLicenseText(licenseTypeBytes, 0, updatedText)
+        )
+          .to.emit(config.dependencyRegistry, "LicenseTextUpdated")
+          .withArgs(licenseTypeBytes);
+
+        const storedLicenseText =
+          await config.dependencyRegistry.getLicenseText(licenseTypeBytes, 0);
+        expect(storedLicenseText).to.eq(updatedText);
+      });
+    });
+  });
+
   describe("adminACLContract", function () {
     it("returns expected adminACLContract address", async function () {
       const config = await loadFixture(_beforeEach);
@@ -2336,7 +2609,7 @@ describe(`DependencyRegistryV0`, async function () {
           ethers.utils.formatBytes32String("MIT"),
           "preferredCDN",
           "preferredRepository",
-          "referenceWebsite"
+          "dependencyWebsite"
         );
     });
 
@@ -2368,7 +2641,7 @@ describe(`DependencyRegistryV0`, async function () {
             ethers.utils.formatBytes32String("MIT"),
             "preferredCDN",
             "preferredRepository",
-            "referenceWebsite"
+            "dependencyWebsite"
           ),
         "Only Admin ACL allowed"
       );

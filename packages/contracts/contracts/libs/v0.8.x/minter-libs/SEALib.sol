@@ -151,11 +151,16 @@ library SEALib {
     // for this library
     bytes32 constant SEA_LIB_STORAGE_POSITION = keccak256("sealib.storage");
 
-    uint256 constant ONE_MILLION = 1_000_000;
-
     // project-specific parameters
     struct SEAProjectConfig {
+        // bool to indicate if next token number has been populated, or is
+        // still default value of 0
+        // @dev required to handle edge case where next token number is 0
+        bool nextTokenNumberIsPopulated;
+        // timestamp at/after which new auctions may be created
         uint64 timestampStart;
+        //
+        // ---- Auction Factory Settings Start ----
         // duration of each new auction, before any extensions due to late bids
         // @dev for configured auctions, this will be gt 0, so it may be used
         // to determine if an auction is configured
@@ -173,12 +178,10 @@ library SEALib {
         // be derived from this value in combination with project ID
         // max uint24 ~= 1.6e7, > max possible project invocations of 1e6
         uint24 nextTokenNumber;
-        // bool to indicate if next token number has been populated, or is
-        // still default value of 0
-        // @dev required to handle edge case where next token number is 0
-        bool nextTokenNumberIsPopulated;
         // reserve price, i.e. minimum starting bid price, in wei
         uint256 basePrice;
+        // ---- Auction Factory Settings End ----
+        //
         // active auction for project
         Auction activeAuction;
     }
@@ -264,6 +267,13 @@ library SEALib {
             projectId: projectId,
             coreContract: coreContract
         });
+        // base price of zero breaks auction system as percent min increase
+        // makes no sense
+        require(basePrice != 0, "Only non-zero");
+        // midBidIncrementPercentage of zero would allow a bidder to "outbid"
+        // previous users without posting more, so don't allow it
+        require(minBidIncrementPercentage != 0, "Only non-zero");
+
         require(
             timestampStart == 0 || block.timestamp < timestampStart,
             "Only future start times or 0"
@@ -279,7 +289,7 @@ library SEALib {
             projectId: projectId,
             coreContract: coreContract,
             timestampStart: uint64(timestampStart), // @dev safe-casting already previously checked
-            auctionDurationSeconds: auctionDurationSeconds.toUint32(),
+            auctionDurationSeconds: uint32(auctionDurationSeconds), // @dev safe-casting already previously checked
             basePrice: basePrice,
             minBidIncrementPercentage: minBidIncrementPercentage
         });
@@ -378,7 +388,7 @@ library SEALib {
      *   - there is an auction for a different token ID on the project
      *     (likely due to a front-run)
      * This function reverts if the auction for `tokenId` exists, but has not
-     * yet ended.
+     * yet ended. Function also reverts if there is no initialized auction.
      * @param tokenId Token ID to settle auction for.
      * @param coreContract Core contract address for the given token.
      */
@@ -393,8 +403,6 @@ library SEALib {
         address currentBidder = auction.currentBidder;
         uint256 currentBid = auction.currentBid;
         // CHECKS
-        // @dev this check is not strictly necessary, but is included for
-        // clear error messaging
         require(auctionIsInitialized(auction), "Auction not initialized");
         if (auction.settled || (auction.tokenId != tokenId)) {
             // auction already settled or is for a different token ID, so
@@ -605,7 +613,7 @@ library SEALib {
             );
         }
         // update local maxHasBeenInvoked value if necessary
-        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+        MaxInvocationsLib.validateMintEffectsInvocations({
             tokenId: nextTokenId,
             coreContract: coreContract
         });
@@ -650,12 +658,12 @@ library SEALib {
     }
 
     /**
-     * @notice Function returns bool representing if an auction is accepting bids above base
-     * price. It is accepting bids if it is initialized and has not reached its
-     * end time.
+     * @notice Function returns bool representing if an auction is live and
+     * accepting bids above base price. It is live if it is initialized and
+     * has not reached its end time.
      * @param auction The auction to check.
      */
-    function auctionIsAcceptingIncreasingBids(
+    function isAuctionLive(
         Auction storage auction
     ) internal view returns (bool isAcceptingBids) {
         // auction is accepting bids if it is initialized and has not reached
@@ -713,9 +721,7 @@ library SEALib {
         Auction storage auction = SEAProjectConfig_.activeAuction;
         // if project has an active token auction that is not settled, return
         // that token ID
-        if (
-            auctionIsInitialized(auction) && (auction.endTime > block.timestamp)
-        ) {
+        if (isAuctionLive(auction)) {
             return auction.tokenId;
         }
         // otherwise, return the next expected token ID to be auctioned.
@@ -742,10 +748,10 @@ library SEALib {
             "Next token not populated"
         );
 
-        // @dev overflow automatically checked in Solidity ^0.8.0
-        nextTokenId =
-            (projectId * ONE_MILLION) +
-            SEAProjectConfig_.nextTokenNumber;
+        nextTokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
+            projectId: projectId,
+            tokenNumber: SEAProjectConfig_.nextTokenNumber
+        });
     }
 
     /**
@@ -776,21 +782,15 @@ library SEALib {
             coreContract: coreContract
         });
         Auction storage auction = SEAProjectConfig_.activeAuction;
-        // base price of zero not allowed when configuring auctions, so use it
-        // as indicator of whether auctions are configured for the project
         bool projectIsConfigured_ = projectIsConfigured({
             projectId: projectId,
             coreContract: coreContract
         });
-        bool auctionIsAcceptingIncreasingBids_ = auctionIsAcceptingIncreasingBids(
-                auction
-            );
-        isConfigured =
-            projectIsConfigured_ ||
-            auctionIsAcceptingIncreasingBids_;
+        bool isAuctionLive_ = isAuctionLive(auction);
+        isConfigured = projectIsConfigured_ || isAuctionLive_;
         // only return non-zero price if auction is configured
         if (isConfigured) {
-            if (auctionIsAcceptingIncreasingBids_) {
+            if (isAuctionLive_) {
                 // return minimum next bid, given current bid
                 tokenPriceInWei = getMinimumNextBid(auction);
             } else {
@@ -858,8 +858,6 @@ library SEALib {
         Auction storage auction = SEAProjectConfig_.activeAuction;
         // CHECKS
         // ensure project auctions are configured
-        // @dev base price of zero indicates auctions are not configured
-        // because only base price of gt zero is allowed when configuring
         require(
             projectIsConfigured({
                 projectId: projectId,
@@ -903,7 +901,7 @@ library SEALib {
 
         // EFFECTS
         // create new auction, overwriting previous auction if it exists
-        uint64 endTime = overwriteProjectActiveAuction({
+        uint64 endTime = _overwriteProjectActiveAuction({
             SEAProjectConfig_: SEAProjectConfig_,
             targetTokenId: targetTokenId,
             bidAmount: msg.value,
@@ -938,37 +936,6 @@ library SEALib {
     }
 
     /**
-     * @notice Function to overwrite the active auction for a project with a new auction.
-     * @dev This function is used to initialize a new auction. Care must be
-     * taken to ensure that the existing auction is fully complete and settled.
-     * @param SEAProjectConfig_ SEAProjectConfig to update
-     * @param targetTokenId token ID to create the auction for
-     * @param bidAmount initial bid amount
-     * @param bidder initial bidder's payable address
-     * @return endTime end time of the newly created auction
-     */
-    function overwriteProjectActiveAuction(
-        SEAProjectConfig storage SEAProjectConfig_,
-        uint256 targetTokenId,
-        uint256 bidAmount,
-        address payable bidder
-    ) private returns (uint64 endTime) {
-        // calculate auction end time
-        endTime = (block.timestamp + SEAProjectConfig_.auctionDurationSeconds)
-            .toUint64();
-        // set active auction on SEAProjectConfig
-        SEAProjectConfig_.activeAuction = Auction({
-            tokenId: targetTokenId,
-            currentBid: bidAmount,
-            currentBidder: bidder,
-            endTime: endTime,
-            minBidIncrementPercentage: SEAProjectConfig_
-                .minBidIncrementPercentage,
-            settled: false
-        });
-    }
-
-    /**
      * Loads the SEAProjectConfig for a given project and core
      * contract.
      * @param projectId Project Id to get config for
@@ -991,5 +958,36 @@ library SEALib {
         assembly ("memory-safe") {
             storageStruct.slot := position
         }
+    }
+
+    /**
+     * @notice Function to overwrite the active auction for a project with a new auction.
+     * @dev This function is used to initialize a new auction. Care must be
+     * taken to ensure that the existing auction is fully complete and settled.
+     * @param SEAProjectConfig_ SEAProjectConfig to update
+     * @param targetTokenId token ID to create the auction for
+     * @param bidAmount initial bid amount
+     * @param bidder initial bidder's payable address
+     * @return endTime end time of the newly created auction
+     */
+    function _overwriteProjectActiveAuction(
+        SEAProjectConfig storage SEAProjectConfig_,
+        uint256 targetTokenId,
+        uint256 bidAmount,
+        address payable bidder
+    ) private returns (uint64 endTime) {
+        // calculate auction end time
+        endTime = (block.timestamp + SEAProjectConfig_.auctionDurationSeconds)
+            .toUint64();
+        // set active auction on SEAProjectConfig
+        SEAProjectConfig_.activeAuction = Auction({
+            tokenId: targetTokenId,
+            currentBid: bidAmount,
+            currentBidder: bidder,
+            endTime: endTime,
+            minBidIncrementPercentage: SEAProjectConfig_
+                .minBidIncrementPercentage,
+            settled: false
+        });
     }
 }

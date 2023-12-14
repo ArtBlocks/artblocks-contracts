@@ -16,6 +16,4 @@ interface IFilteredMinterDAExpSettlementV1 is
     IFilteredMinterDAExpSettlement_Mixin,
     IFilteredMinterV2,
     IFilteredMinterDAExpV0
-{
-
-}
+{}

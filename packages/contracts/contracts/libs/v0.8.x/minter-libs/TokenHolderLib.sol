@@ -5,6 +5,8 @@ pragma solidity ^0.8.0;
 
 import {IERC721} from "@openzeppelin-4.7/contracts/token/ERC721/IERC721.sol";
 
+import {ABHelpers} from "../ABHelpers.sol";
+
 import {EnumerableSet} from "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 
 /**
@@ -70,9 +72,6 @@ library TokenHolderLib {
     // for this library
     bytes32 constant TOKEN_HOLDER_LIB_STORAGE_POSITION =
         keccak256("tokenholderlib.storage");
-
-    // Define one million to represent the base token ID for each project.
-    uint256 constant ONE_MILLION = 1_000_000;
 
     struct HolderProjectConfig {
         // projects whose holders are allowed to purchase a token on `projectId`
@@ -253,7 +252,9 @@ library TokenHolderLib {
                 projectId: projectId,
                 coreContract: coreContract
             });
-        uint256 ownedNFTProjectId = ownedNFTTokenId / ONE_MILLION;
+        uint256 ownedNFTProjectId = ABHelpers.tokenIdToProjectId(
+            ownedNFTTokenId
+        );
         return
             holderProjectConfig.allowedProjectHolders[ownedNFTAddress][
                 ownedNFTProjectId

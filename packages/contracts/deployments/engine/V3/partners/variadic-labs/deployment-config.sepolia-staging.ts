@@ -1,0 +1,21 @@
+export const deployConfigDetailsArray = [
+  {
+    name: "Variadic",
+    network: "sepolia",
+    environment: "staging",
+    adminACLContractName: "AdminACLV1",
+    genArt721CoreContractName: "GenArt721CoreV3_Engine",
+    tokenName: "Concentric Art",
+    tokenTicker: "CONCENTRIC",
+    startingProjectId: 0,
+    autoApproveArtistSplitProposals: true,
+    renderProviderAddress: "deployer",
+    platformProviderAddress: "0x61F1Ca3F65EA947B01bC66379bc4a7C5a07a8A3F",
+    addInitialProject: false,
+    doTransferSuperAdmin: true,
+    newSuperAdminAddress: "0x61F1Ca3F65EA947B01bC66379bc4a7C5a07a8A3F",
+    renderProviderSplitPercentagePrimary: 10,
+    renderProviderSplitBPSSecondary: 250,
+    defaultVerticalName: "fullyonchain",
+  },
+];

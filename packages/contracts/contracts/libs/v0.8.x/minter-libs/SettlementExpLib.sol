@@ -41,7 +41,7 @@ library SettlementExpLib {
     // position of Settlement Exp Lib storage, using a diamond storage pattern
     // for this library
     bytes32 constant SETTLEMENT_EXP_LIB_STORAGE_POSITION =
-        keccak256("settlementExpLib.storage");
+        keccak256("settlementexplib.storage");
 
     bytes32 internal constant CONFIG_CURRENT_SETTLED_PRICE =
         "currentSettledPrice";
@@ -107,58 +107,6 @@ library SettlementExpLib {
     }
 
     /**
-     * @notice This function updates the _receipt to include `msg.value` and increments
-     * the number of tokens purchased by 1. It then checks that the updated
-     * receipt is valid (i.e. sufficient funds have been posted for the
-     * number of tokens purchased on the updated receipt), and reverts if not.
-     * The new receipt net posted and num purchased are then returned to make
-     * the values available in a gas-efficient manner to the caller of this
-     * function.
-     * @param walletAddress Address of user to update receipt for
-     * @param projectId Project ID to update receipt for
-     * @param coreContract Core contract address
-     * @param currentPriceInWei current price of token in Wei
-     * @return netPosted total funds posted by user on project (that have not
-     * been yet settled), including the current transaction
-     * @return numPurchased total number of tokens purchased by user on
-     * project, including the current transaction
-     */
-    function _validateReceiptEffects(
-        address walletAddress,
-        uint256 projectId,
-        address coreContract,
-        uint256 currentPriceInWei
-    ) private returns (uint232 netPosted, uint24 numPurchased) {
-        Receipt storage receipt = getReceipt({
-            walletAddress: walletAddress,
-            projectId: projectId,
-            coreContract: coreContract
-        });
-        // in memory copy + update
-        netPosted = (receipt.netPosted + msg.value).toUint232();
-        numPurchased = receipt.numPurchased + 1;
-
-        // require sufficient payment on project
-        require(
-            netPosted >= numPurchased * currentPriceInWei,
-            "Min value to mint req."
-        );
-
-        // update Receipt in storage
-        receipt.netPosted = netPosted;
-        receipt.numPurchased = numPurchased;
-
-        // emit event indicating new receipt state
-        emit ReceiptUpdated({
-            purchaser: msg.sender,
-            projectId: projectId,
-            coreContract: coreContract,
-            numPurchased: numPurchased,
-            netPosted: netPosted
-        });
-    }
-
-    /**
      * @notice Distributes the net revenues from the project's auction, and
      * marks the auction as having had its revenues collected.
      * IMPORTANT - this affects state and distributes revenue funds, so it
@@ -193,9 +141,9 @@ library SettlementExpLib {
 
         // get the current net price of the auction - reverts if no auction
         // is configured.
-        // @dev we use _getPriceUnsafe here, since we just safely synced the
+        // @dev we use getPriceUnsafe here, since we just safely synced the
         // project's max invocations and maxHasBeenInvoked, which guarantees
-        // an accurate price calculation from _getPriceUnsafe, while being
+        // an accurate price calculation from getPriceUnsafe, while being
         // more gas efficient than getPriceSafe.
         // @dev price is guaranteed <= _projectConfig.latestPurchasePrice,
         // since this minter enforces monotonically decreasing purchase prices.
@@ -252,7 +200,8 @@ library SettlementExpLib {
         } else {
             // base price of zero indicates that the auction has not been configured,
             // since base price of zero is not allowed when configuring an auction.
-            // @dev no coverage else branch of following line because redundant
+            // @dev no coverage else branch of following line because redundant,
+            // acknowledge redundant check
             require(basePrice > 0, "Only latestPurchasePrice > 0");
             // if the price is base price, the auction is valid and may be claimed
             // update the latest purchase price to the base price, to ensure
@@ -309,13 +258,20 @@ library SettlementExpLib {
      * @param coreContract Core contract address
      * @param purchaserAddress Address to reclaim excess settlement funds for
      * @param to Address to send excess settlement funds to
+     * @param doSendFunds If true, sends funds to `to`. If false, only updates
+     * the receipt to reflect the new funds posted, and returns the amount of
+     * excess settlement funds that still need to be sent to `to`.
+     * @return remainingUnsentExcessSettlementFunds amount of excess settlement
+     * funds that still need to be sent to `to`, in wei. If doSendFunds, this
+     * value will be zero, because funds will have been sent to `to`.
      */
     function reclaimProjectExcessSettlementFundsTo(
         address payable to,
         uint256 projectId,
         address coreContract,
-        address purchaserAddress
-    ) internal {
+        address purchaserAddress,
+        bool doSendFunds
+    ) internal returns (uint256 remainingUnsentExcessSettlementFunds) {
         (
             uint256 excessSettlementFunds,
             uint256 requiredAmountPosted
@@ -353,9 +309,14 @@ library SettlementExpLib {
         });
 
         // INTERACTIONS
-        bool success_;
-        (success_, ) = to.call{value: excessSettlementFunds}("");
-        require(success_, "Reclaiming failed");
+        if (doSendFunds) {
+            bool success_;
+            (success_, ) = to.call{value: excessSettlementFunds}("");
+            require(success_, "Reclaiming failed");
+        } else {
+            // return unsent funds amount to caller
+            remainingUnsentExcessSettlementFunds = excessSettlementFunds;
+        }
     }
 
     /**
@@ -516,7 +477,7 @@ library SettlementExpLib {
     }
 
     /**
-     * Returns number of purchases that have been made on the minter, for a
+     * @notice Returns number of purchases that have been made on the minter, for a
      * given project.
      * @param projectId The id of the project.
      * @param coreContract The address of the core contract.
@@ -651,37 +612,25 @@ library SettlementExpLib {
         uint256 projectId,
         address coreContract
     ) internal view returns (uint256 tokenPriceInWei) {
-        // load the project's settlement auction config
-        SettlementAuctionProjectConfig
-            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig({
+        // get up-to-date maxHasBeenInvoked state from core contract
+        bool maxHasBeenInvokedSafe = MaxInvocationsLib
+            .projectMaxHasBeenInvokedSafe({
                 projectId: projectId,
                 coreContract: coreContract
             });
-        // accurately check if project has sold out
-        if (
-            MaxInvocationsLib.projectMaxHasBeenInvokedSafe({
-                projectId: projectId,
-                coreContract: coreContract
-            })
-        ) {
-            // max invocations have been reached, return the latest purchased
-            // price
-            tokenPriceInWei = settlementAuctionProjectConfig
-                .latestPurchasePrice;
-        } else {
-            // if not sold out, return the current price via getPriceUnsafe
-            tokenPriceInWei = getPriceUnsafe({
-                projectId: projectId,
-                coreContract: coreContract,
-                maxHasBeenInvoked: false // this branch is only reached if max invocations have not been reached
-            });
-        }
-        return tokenPriceInWei;
+        // get price using up-to-date maxHasBeenInvoked state
+        tokenPriceInWei = getPriceUnsafe({
+            projectId: projectId,
+            coreContract: coreContract,
+            maxHasBeenInvoked: maxHasBeenInvokedSafe
+        });
     }
 
     /**
      * @notice Returns if a new auction's start price is valid, given the current
      * state of the project's settlement auction configuration.
+     * @dev does not check for non-zero start price, since startPrice > basePrice
+     * is checked in DAExpLib.
      * @param projectId Project ID to check start price for
      * @param coreContract Core contract address to check start price for
      * @param startPrice starting price of new auction, in wei
@@ -702,13 +651,15 @@ library SettlementExpLib {
         // claiming logic. Since base price is always non-zero, if
         // latestPurchasePrice is zero, then no previous purchases have been
         // made, and startPrice may be set to any value.
+        // @dev DAExpLib checks that startPrice > basePrice, so no need to
+        // check for non-zero startPrice here.
         return (settlementAuctionProjectConfig.latestPurchasePrice == 0 || // never purchased
             startPrice <= settlementAuctionProjectConfig.latestPurchasePrice);
     }
 
     /**
-     * Loads the SettlementAuctionProjectConfig for a given project and core
-     * contract.
+     * @notice Loads the SettlementAuctionProjectConfig for a given project and
+     * core contract.
      * @param projectId Project Id to get config for
      * @param coreContract Core contract address to get config for
      */
@@ -720,7 +671,7 @@ library SettlementExpLib {
     }
 
     /**
-     * Loads the Receipt for a given user, project and core contract.
+     * @notice Loads the Receipt for a given user, project and core contract.
      * @param walletAddress User address to get receipt for
      * @param projectId Project Id to get config for
      * @param coreContract Core contract address to get config for
@@ -750,7 +701,7 @@ library SettlementExpLib {
     }
 
     /**
-     * Returns if all tokens to be auctioned were sold, for a given project.
+     * @notice Returns if all tokens to be auctioned were sold, for a given project.
      * Returns false if the number of tokens to be auctioned is zero, since
      * that is the default value for unconfigured values.
      * @param settlementAuctionProjectConfig The SettlementAuctionProjectConfig
@@ -766,5 +717,57 @@ library SettlementExpLib {
             numTokensToBeAuctioned > 0 &&
             settlementAuctionProjectConfig.numPurchasesOnMinter ==
             numTokensToBeAuctioned;
+    }
+
+    /**
+     * @notice This function updates the receipt to include `msg.value` and increments
+     * the number of tokens purchased by 1. It then checks that the updated
+     * receipt is valid (i.e. sufficient funds have been posted for the
+     * number of tokens purchased on the updated receipt), and reverts if not.
+     * The new receipt net posted and num purchased are then returned to make
+     * the values available in a gas-efficient manner to the caller of this
+     * function.
+     * @param walletAddress Address of user to update receipt for
+     * @param projectId Project ID to update receipt for
+     * @param coreContract Core contract address
+     * @param currentPriceInWei current price of token in Wei
+     * @return netPosted total funds posted by user on project (that have not
+     * been yet settled), including the current transaction
+     * @return numPurchased total number of tokens purchased by user on
+     * project, including the current transaction
+     */
+    function _validateReceiptEffects(
+        address walletAddress,
+        uint256 projectId,
+        address coreContract,
+        uint256 currentPriceInWei
+    ) private returns (uint232 netPosted, uint24 numPurchased) {
+        Receipt storage receipt = getReceipt({
+            walletAddress: walletAddress,
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // in memory copy + update
+        netPosted = (receipt.netPosted + msg.value).toUint232();
+        numPurchased = receipt.numPurchased + 1;
+
+        // require sufficient payment on project
+        require(
+            netPosted >= numPurchased * currentPriceInWei,
+            "Min value to mint req."
+        );
+
+        // update Receipt in storage
+        receipt.netPosted = netPosted;
+        receipt.numPurchased = numPurchased;
+
+        // emit event indicating new receipt state
+        emit ReceiptUpdated({
+            purchaser: msg.sender,
+            projectId: projectId,
+            coreContract: coreContract,
+            numPurchased: numPurchased,
+            netPosted: netPosted
+        });
     }
 }
