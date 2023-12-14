@@ -30,6 +30,10 @@ export function processValueForDisplay(
         );
       }
 
+      if (value === undefined || value === null) {
+        return "";
+      }
+
       return Number(
         formatEther(BigInt((value as string | number | bigint) ?? 0))
       );

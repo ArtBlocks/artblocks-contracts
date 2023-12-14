@@ -18,7 +18,7 @@ export interface AsyncData<T> {
   data?: T;
 }
 
-interface AsyncFunction<T> extends Function {
+interface AsyncFunction<T> {
   (): PromiseLike<AsyncData<T>>;
 }
 

@@ -79,10 +79,10 @@ export function processAuctionDetailsToHalfLifeSeconds(
   const basePrice: unknown = get(formValues, "base_price");
 
   if (
-    typeof startTime !== "string" ||
-    typeof endTime !== "string" ||
-    typeof startPrice !== "string" ||
-    typeof basePrice !== "string"
+    (typeof startTime !== "string" && !(startTime instanceof Date)) ||
+    (typeof endTime !== "string" && !(endTime instanceof Date)) ||
+    (typeof startPrice !== "number" && typeof startPrice !== "string") ||
+    (typeof basePrice !== "number" && typeof basePrice !== "string")
   ) {
     throw new Error("Unexpected form value for auction details.");
   }
