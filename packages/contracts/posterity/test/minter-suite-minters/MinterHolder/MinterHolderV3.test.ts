@@ -129,9 +129,8 @@ for (const coreContractName of coreContractsToTest) {
         .updatePricePerTokenInWei(this.projectOne, this.pricePerTokenInWei);
 
       // artist mints a token on this.projectZero to use as proof of ownership
-      const minterFactorySetPrice = await ethers.getContractFactory(
-        "MinterSetPriceV2"
-      );
+      const minterFactorySetPrice =
+        await ethers.getContractFactory("MinterSetPriceV2");
       this.minterSetPrice = await minterFactorySetPrice.deploy(
         this.genArt721Core.address,
         this.minterFilter.address
@@ -620,7 +619,7 @@ for (const coreContractName of coreContractsToTest) {
         const { pbabToken, pbabMinter } = await deployAndGetPBAB.bind(this)();
         await pbabMinter
           .connect(this.accounts.artist)
-          .purchaseTo(tokenOwner.address, 0, {
+          ["purchaseTo(address,uint256)"](tokenOwner.address, 0, {
             value: this.pricePerTokenInWei,
           });
         // register the PBAB token on our minter
