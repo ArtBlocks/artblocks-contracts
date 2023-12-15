@@ -22,7 +22,7 @@
     "codegen": "yarn --cwd=\"../..\" codegen:project contracts",
     "deploy:v3-engine:dev": "yarn codegen && yarn require-low-gas sepolia && NODE_ENV=dev yarn hardhat run --network sepolia scripts/engine/V3/generic-engine-shared-suite-deployer.ts",
     "deploy:v3-engine:dev-arbitrum": "yarn codegen && yarn require-low-gas arbitrum-sepolia && NODE_ENV=arbitrum-dev yarn hardhat run --network arbitrum-sepolia scripts/engine/V3/generic-engine-shared-suite-deployer.ts",
-    "deploy:v3-engine:staging-arbitrum:": "yarn codegen && yarn require-low-gas arbitrum-sepolia && NODE_ENV=arbitrum-staging yarn hardhat run --network arbitrum-sepolia scripts/engine/V3/generic-engine-shared-suite-deployer.ts",
+    "deploy:v3-engine:staging-arbitrum": "yarn codegen && yarn require-low-gas arbitrum-sepolia && NODE_ENV=arbitrum-staging yarn hardhat run --network arbitrum-sepolia scripts/engine/V3/generic-engine-shared-suite-deployer.ts",
     "deploy:v3-engine:arbitrum": "yarn codegen && yarn require-low-gas arbitrum && NODE_ENV=arbitrum yarn hardhat run --network arbitrum scripts/engine/V3/generic-engine-shared-suite-deployer.ts",
     "deploy:v3-engine:staging": "yarn codegen && yarn require-low-gas sepolia && NODE_ENV=staging yarn hardhat run --network sepolia scripts/engine/V3/generic-engine-shared-suite-deployer.ts",
     "deploy:v3-engine:mainnet": "yarn codegen && yarn require-low-gas mainnet && NODE_ENV=mainnet yarn hardhat run --network mainnet scripts/engine/V3/generic-engine-shared-suite-deployer.ts",
