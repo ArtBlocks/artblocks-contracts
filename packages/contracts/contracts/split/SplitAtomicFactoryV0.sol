@@ -8,8 +8,6 @@ pragma solidity 0.8.22;
 import {ISplitAtomicV0, Split} from "../interfaces/v0.8.x/ISplitAtomicV0.sol";
 import {ISplitAtomicFactoryV0} from "../interfaces/v0.8.x/ISplitAtomicFactoryV0.sol";
 
-import {Split} from "./SplitAtomicV0.sol";
-
 import {Clones} from "@openzeppelin-5.0/contracts/proxy/Clones.sol";
 
 /**
