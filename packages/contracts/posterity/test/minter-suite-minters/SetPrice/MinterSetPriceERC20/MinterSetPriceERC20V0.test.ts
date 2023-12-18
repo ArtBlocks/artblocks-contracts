@@ -16,6 +16,8 @@ import { MinterSetPriceERC20_Common } from "./MinterSetPriceERC20.common";
  * These tests intended to ensure this Filtered Minter integrates properly with
  * V1 core contract.
  */
+const addressZero = "0x0000000000000000000000000000000000000000";
+
 describe("MinterSetPriceERC20V0_V1Core", async function () {
   beforeEach(async function () {
     // standard accounts and constants
@@ -127,10 +129,30 @@ describe("MinterSetPriceERC20V0_V1Core", async function () {
     it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       const tx = await this.minter
         .connect(this.accounts.user)
-        .purchase(this.projectOne, {
+        ["purchase(uint256)"](this.projectOne, {
           value: this.pricePerTokenInWei,
         });
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
 
+      console.log(
+        "Gas cost for a successful ERC20 mint: ",
+        ethers.utils.formatUnits(txCost, "ether").toString(),
+        "ETH"
+      );
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0370837"));
+    });
+    it("mints and calculates gas values when passing currency and price through [ @skip-on-coverage ]", async function () {
+      const tx = await this.minter
+        .connect(this.accounts.user)
+        ["purchase(uint256,uint256,address)"](
+          this.projectOne,
+          this.pricePerTokenInWei,
+          addressZero,
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
       const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
 
@@ -151,17 +173,56 @@ describe("MinterSetPriceERC20V0_V1Core", async function () {
       await expectRevert(
         this.minter
           .connect(this.accounts.user)
-          .purchaseTo(this.accounts.additional.address, this.projectOne, {
-            value: this.pricePerTokenInWei,
-          }),
+          ["purchaseTo(address,uint256)"](
+            this.accounts.additional.address,
+            this.projectOne,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
         "No `purchaseTo` Allowed"
       );
       // still allows `purchaseTo` if destination matches sender.
       await this.minter
         .connect(this.accounts.user)
-        .purchaseTo(this.accounts.user.address, this.projectOne, {
-          value: this.pricePerTokenInWei,
-        });
+        ["purchaseTo(address,uint256)"](
+          this.accounts.user.address,
+          this.projectOne,
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
+    });
+    it("disallows `purchaseTo` if disallowed explicitly - passing currency and price through", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .togglePurchaseToDisabled(this.projectOne);
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchaseTo(address,uint256,uint256,address)"](
+            this.accounts.additional.address,
+            this.projectOne,
+            this.pricePerTokenInWei,
+            addressZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "No `purchaseTo` Allowed"
+      );
+      // still allows `purchaseTo` if destination matches sender.
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchaseTo(address,uint256,uint256,address)"](
+          this.accounts.user.address,
+          this.projectOne,
+          this.pricePerTokenInWei,
+          addressZero,
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
     });
 
     it("emits event when `purchaseTo` is toggled", async function () {

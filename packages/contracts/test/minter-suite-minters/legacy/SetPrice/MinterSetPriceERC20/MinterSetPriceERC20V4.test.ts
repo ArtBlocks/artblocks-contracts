@@ -191,7 +191,11 @@ for (const coreContractName of coreContractsToTest) {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero),
+            ["purchase(uint256,uint256,address)"](
+              config.projectZero,
+              config.pricePerTokenInWei,
+              config.ERC20Mock.address
+            ),
           "insufficient funds for intrinsic transaction cost"
         );
       });
@@ -243,7 +247,11 @@ for (const coreContractName of coreContractsToTest) {
         // expect successful purchase of token
         await config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero);
+          ["purchase(uint256,uint256,address)"](
+            config.projectZero,
+            config.pricePerTokenInWei,
+            config.ERC20Mock.address
+          );
       });
 
       it("Engine: handles ERC20 splits when every party receives revenues", async function () {
@@ -304,7 +312,11 @@ for (const coreContractName of coreContractsToTest) {
         // expect successful purchase of token
         await config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero);
+          ["purchase(uint256,uint256,address)"](
+            config.projectZero,
+            config.pricePerTokenInWei,
+            config.ERC20Mock.address
+          );
         // confirm balances
         const artistNewBalance = await config.ERC20Mock.balanceOf(
           config.accounts.artist.address
@@ -408,7 +420,11 @@ for (const coreContractName of coreContractsToTest) {
         // expect successful purchase of token
         await config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero);
+          ["purchase(uint256,uint256,address)"](
+            config.projectZero,
+            config.pricePerTokenInWei,
+            config.ERC20Mock.address
+          );
         // confirm balances
         const artistNewBalance = await config.ERC20Mock.balanceOf(
           config.accounts.artist.address
@@ -467,10 +483,9 @@ for (const coreContractName of coreContractsToTest) {
         // mint a token
         await config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, {
+          ["purchase(uint256)"](config.projectZero, {
             value: config.pricePerTokenInWei,
           });
-
         // expect projectMaxHasBeenInvoked to be true
         const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
           config.projectZero
@@ -531,10 +546,9 @@ for (const coreContractName of coreContractsToTest) {
 
         await config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, {
+          ["purchase(uint256)"](config.projectZero, {
             value: config.pricePerTokenInWei,
           });
-
         // expect projectMaxHasBeenInvoked to be true
         const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
           config.projectZero
@@ -604,7 +618,7 @@ for (const coreContractName of coreContractsToTest) {
           );
         await setPriceMinter
           .connect(config.accounts.artist)
-          .purchase(config.projectZero);
+          ["purchase(uint256)"](config.projectZero);
         // switch back to original minter
         await config.minterFilter
           .connect(config.accounts.artist)
@@ -612,7 +626,7 @@ for (const coreContractName of coreContractsToTest) {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero, {
+            ["purchase(uint256)"](config.projectZero, {
               value: config.pricePerTokenInWei,
             }),
           "Maximum invocations reached"
@@ -633,7 +647,7 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         const tx = await config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectOne, {
+          ["purchase(uint256)"](config.projectOne, {
             value: config.pricePerTokenInWei,
           });
 

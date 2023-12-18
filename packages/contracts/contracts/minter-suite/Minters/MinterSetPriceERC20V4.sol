@@ -320,14 +320,41 @@ contract MinterSetPriceERC20V4 is
     }
 
     /**
-     * @notice Purchases a token from project `_projectId`.
+     * @notice Purchases a token from project `_projectId` with ETH.
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
     function purchase(
         uint256 _projectId
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo_do6(msg.sender, _projectId);
+        // pass max price as msg.value, currency address as ETH
+        tokenId = purchaseTo_do6({
+            _to: msg.sender,
+            _projectId: _projectId,
+            _maxPricePerToken: msg.value,
+            _currencyAddress: address(0)
+        });
+        return tokenId;
+    }
+
+    /**
+     * @notice Purchases a token from project `_projectId` with ETH or any ERC-20 token.
+     * @param _projectId Project ID to mint a token on.
+     * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places.
+     * @param _currencyAddress Currency address of token. `address(0)` if minting with ETH.
+     * @return tokenId Token ID of minted token
+     */
+    function purchase(
+        uint256 _projectId,
+        uint256 _maxPricePerToken,
+        address _currencyAddress
+    ) external payable returns (uint256 tokenId) {
+        tokenId = purchaseTo_do6({
+            _to: msg.sender,
+            _projectId: _projectId,
+            _maxPricePerToken: _maxPricePerToken,
+            _currencyAddress: _currencyAddress
+        });
         return tokenId;
     }
 
@@ -337,12 +364,35 @@ contract MinterSetPriceERC20V4 is
     function purchase_H4M(
         uint256 _projectId
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo_do6(msg.sender, _projectId);
+        // pass max price as msg.value, currency address as ETH
+        tokenId = purchaseTo_do6({
+            _to: msg.sender,
+            _projectId: _projectId,
+            _maxPricePerToken: msg.value,
+            _currencyAddress: address(0)
+        });
         return tokenId;
     }
 
     /**
-     * @notice Purchases a token from project `_projectId` and sets
+     * @notice gas-optimized version of purchase(uint256,uint256,address).
+     */
+    function purchase_H4M(
+        uint256 _projectId,
+        uint256 _maxPricePerToken,
+        address _currencyAddress
+    ) external payable returns (uint256 tokenId) {
+        tokenId = purchaseTo_do6({
+            _to: msg.sender,
+            _projectId: _projectId,
+            _maxPricePerToken: _maxPricePerToken,
+            _currencyAddress: _currencyAddress
+        });
+        return tokenId;
+    }
+
+    /**
+     * @notice Purchases a token from project `_projectId` with ETH and sets
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
@@ -352,7 +402,39 @@ contract MinterSetPriceERC20V4 is
         address _to,
         uint256 _projectId
     ) external payable returns (uint256 tokenId) {
-        return purchaseTo_do6(_to, _projectId);
+        // pass max price as msg.value, currency address as ETH
+        return
+            purchaseTo_do6({
+                _to: _to,
+                _projectId: _projectId,
+                _maxPricePerToken: msg.value,
+                _currencyAddress: address(0)
+            });
+    }
+
+    /**
+     * @notice Purchases a token from project `_projectId` with ETH or any ERC-20 token and sets
+     * the token's owner to `_to`.
+     * @param _to Address to be the new token's owner.
+     * @param _projectId Project ID to mint a token on.
+     * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places. Required if currency is ERC20.
+     * @param _currencyAddress Currency address of token. `address(0)` if minting with ETH.
+     * @return tokenId Token ID of minted token
+     */
+    function purchaseTo(
+        address _to,
+        uint256 _projectId,
+        uint256 _maxPricePerToken,
+        address _currencyAddress
+    ) external payable returns (uint256 tokenId) {
+        // pass max price as msg.value, currency address as ETH
+        return
+            purchaseTo_do6({
+                _to: _to,
+                _projectId: _projectId,
+                _maxPricePerToken: _maxPricePerToken,
+                _currencyAddress: _currencyAddress
+            });
     }
 
     /**
@@ -361,6 +443,25 @@ contract MinterSetPriceERC20V4 is
     function purchaseTo_do6(
         address _to,
         uint256 _projectId
+    ) external payable returns (uint256 tokenId) {
+        // pass max price as msg.value, currency address as ETH
+        return
+            purchaseTo_do6({
+                _to: _to,
+                _projectId: _projectId,
+                _maxPricePerToken: msg.value,
+                _currencyAddress: address(0)
+            });
+    }
+
+    /**
+     * @notice gas-optimized version of purchaseTo(address, uint256, uint256, address).
+     */
+    function purchaseTo_do6(
+        address _to,
+        uint256 _projectId,
+        uint256 _maxPricePerToken,
+        address _currencyAddress
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
@@ -378,6 +479,20 @@ contract MinterSetPriceERC20V4 is
 
         // require artist to have configured price of token on this minter
         require(_projectConfig.priceIsConfigured, "Price not configured");
+
+        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
+        address configuredCurrencyAddress = _projectConfig.currencyAddress;
+
+        // validate that the currency address matches the project configured currency
+        require(
+            _currencyAddress == configuredCurrencyAddress,
+            "Currency addresses must match"
+        );
+
+        // if configured currency is ETH validate that msg.value is the same as max price per token
+        if (configuredCurrencyAddress == address(0)) {
+            require(msg.value == _maxPricePerToken, "inconsistent msg.value");
+        }
 
         // EFFECTS
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
@@ -406,27 +521,32 @@ contract MinterSetPriceERC20V4 is
         }
 
         // INTERACTIONS
-        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
-        address _currencyAddress = _projectConfig.currencyAddress;
-        if (_currencyAddress != address(0)) {
+        if (configuredCurrencyAddress != address(0)) {
+            // validate that the specified maximum price is greater than or equal to the price per token
+            require(
+                _maxPricePerToken >= pricePerTokenInWei,
+                "Only max price gte token price"
+            );
             require(
                 msg.value == 0,
                 "this project accepts a different currency and cannot accept ETH"
             );
             require(
-                IERC20(_currencyAddress).allowance(msg.sender, address(this)) >=
-                    pricePerTokenInWei,
+                IERC20(configuredCurrencyAddress).allowance(
+                    msg.sender,
+                    address(this)
+                ) >= pricePerTokenInWei,
                 "Insufficient Funds Approved for TX"
             );
             require(
-                IERC20(_currencyAddress).balanceOf(msg.sender) >=
+                IERC20(configuredCurrencyAddress).balanceOf(msg.sender) >=
                     pricePerTokenInWei,
                 "Insufficient balance."
             );
             splitFundsERC20(
                 _projectId,
                 pricePerTokenInWei,
-                _currencyAddress,
+                configuredCurrencyAddress,
                 genArt721CoreAddress
             );
         } else {
