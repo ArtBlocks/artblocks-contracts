@@ -165,6 +165,108 @@ describe("MinterSetPriceERC20V0_V1Core", async function () {
     });
   });
 
+  describe("purchase", async function () {
+    it("allows purchase with ETH with or without explicitly passing the currency address through if project is configured to accept ETH", async function () {
+      // Update projectOne currency to ETH
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(this.projectOne, "ETH", addressZero);
+
+      // can purchase project one token with ETH, auto-forwarding currency address
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchase(uint256)"](this.projectOne, {
+          value: this.pricePerTokenInWei,
+        });
+
+      // can purchase project one token with ETH, explicitly passing in currency address
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchase(uint256,uint256,address)"](
+          this.projectOne,
+          this.pricePerTokenInWei,
+          addressZero,
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
+
+      // cannot not purchase project one with ETH without including msg.value
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256,uint256,address)"](
+            this.projectOne,
+            this.pricePerTokenInWei,
+            addressZero
+          ),
+        "inconsistent msg.value"
+      );
+
+      // can not purchase project one token with ERC-20
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256,uint256,address)"](
+            this.projectOne,
+            this.pricePerTokenInWei,
+            this.ERC20Mock.address
+          ),
+        "Currency addresses must match"
+      );
+    });
+
+    it("enforces currency address and price per token to be passed explicitly for ERC-20 configured projects", async function () {
+      // artist changes currency info for project one
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(
+          this.projectOne,
+          "MOCK",
+          this.ERC20Mock.address
+        );
+
+      // approve contract and able to mint with Mock token
+      await this.ERC20Mock.connect(this.accounts.artist).approve(
+        this.minter.address,
+        ethers.utils.parseEther("100")
+      );
+
+      // cannot purchase project one token with ETH
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          ["purchase(uint256)"](this.projectOne, {
+            value: this.pricePerTokenInWei,
+          }),
+        "Currency addresses must match"
+      );
+
+      // can purchase project one with ERC-20
+      await this.minter
+        .connect(this.accounts.artist)
+        ["purchase(uint256,uint256,address)"](
+          this.projectOne,
+          this.pricePerTokenInWei,
+          this.ERC20Mock.address
+        );
+      // cannot send ETH when purchasing with ERC-20
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          ["purchase(uint256,uint256,address)"](
+            this.projectOne,
+            this.pricePerTokenInWei,
+            this.ERC20Mock.address,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "this project accepts a different currency and cannot accept ETH"
+      );
+    });
+  });
+
   describe("purchaseTo", async function () {
     it("disallows `purchaseTo` if disallowed explicitly", async function () {
       await this.minter
@@ -242,6 +344,107 @@ describe("MinterSetPriceERC20V0_V1Core", async function () {
       )
         .to.emit(this.minter, "PurchaseToDisabledUpdated")
         .withArgs(this.projectOne, false);
+    });
+    it("allows purchaseTo with ETH with or without explicitly passing the currency address through if project is configured to accept ETH", async function () {
+      // Update projectOne currency to ETH
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(this.projectOne, "ETH", addressZero);
+      // can purchase project one token with ETH, auto-forwarding currency address
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchaseTo(address,uint256)"](
+          this.accounts.additional.address,
+          this.projectOne,
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
+      // can purchase project one token with ETH, explicitly passing in currency address
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchaseTo(address,uint256,uint256,address)"](
+          this.accounts.additional.address,
+          this.projectOne,
+          this.pricePerTokenInWei,
+          addressZero,
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
+      // cannot not purchase project one with ETH without including msg.value
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchaseTo(address,uint256,uint256,address)"](
+            this.accounts.additional.address,
+            this.projectOne,
+            this.pricePerTokenInWei,
+            addressZero
+          ),
+        "inconsistent msg.value"
+      );
+      // can not purchase project one token with ERC-20
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchaseTo(address,uint256,uint256,address)"](
+            this.accounts.additional.address,
+            this.projectOne,
+            this.pricePerTokenInWei,
+            this.ERC20Mock.address
+          ),
+        "Currency addresses must match"
+      );
+    });
+    it("allows purchaseTo with ERC-20 when explicitly passing the currency address through if project is configured to accept ERC-20", async function () {
+      // Update projectOne currency to ETH
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(
+          this.projectOne,
+          "MOCK",
+          this.ERC20Mock.address
+        );
+      // can purchase project one token with ERC-20, explicitly passing currency address
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchaseTo(address,uint256,uint256,address)"](
+          this.accounts.additional.address,
+          this.projectOne,
+          this.pricePerTokenInWei,
+          this.ERC20Mock.address
+        );
+      // cannot not purchase project one with ETH
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchaseTo(address,uint256,uint256,address)"](
+            this.accounts.additional.address,
+            this.projectOne,
+            this.pricePerTokenInWei,
+            addressZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "Currency addresses must match"
+      );
+      // cannot not purchase project one with ERC-20 if msg.value is populated
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchaseTo(address,uint256,uint256,address)"](
+            this.accounts.additional.address,
+            this.projectOne,
+            this.pricePerTokenInWei,
+            this.ERC20Mock.address,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "this project accepts a different currency and cannot accept ETH"
+      );
     });
   });
 });
