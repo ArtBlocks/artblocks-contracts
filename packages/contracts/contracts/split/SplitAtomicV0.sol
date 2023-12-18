@@ -8,6 +8,7 @@ pragma solidity 0.8.22;
 import {ISplitAtomicV0, Split} from "../interfaces/v0.8.x/ISplitAtomicV0.sol";
 
 import {IERC20} from "@openzeppelin-5.0/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin-5.0/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title SplitAtomicV0
@@ -203,11 +204,14 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
             // later, but likely never worth the gas.
             uint256 splitValue = (value * split.basisPoints) / 10_000;
             // transfer ERC20 tokens
-            // @dev revert if ERC20 transfer returns false
-            require(
-                token.transfer({to: split.recipient, value: splitValue}),
-                "ERC20 Payment failed"
-            );
+            // @dev use SafeERC20 to only revert if ERC20 transfer returns
+            // false, not if it returns nothing (which is the behavior of some
+            // ERC20 tokens, and we don't want to forever lock those tokens)
+            SafeERC20.safeTransfer({
+                token: token,
+                to: split.recipient,
+                value: splitValue
+            });
             // @dev efficient unchecked increment
             unchecked {
                 ++i;
