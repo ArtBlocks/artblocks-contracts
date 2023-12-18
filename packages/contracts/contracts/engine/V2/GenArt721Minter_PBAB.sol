@@ -176,18 +176,49 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
     }
 
     /**
-     * @notice Purchases a token from project `_projectId`.
+     * @notice Purchases a token from project `_projectId` with ETH.
      * @param _projectId Project ID to mint a token on.
      * @return _tokenId Token ID of minted token
      */
     function purchase(
         uint256 _projectId
     ) public payable returns (uint256 _tokenId) {
-        return purchaseTo(msg.sender, _projectId);
+        // pass currency address as ETH
+        address _currencyAddress = address(0);
+        uint256 _maxPricePerToken = msg.value;
+
+        return
+            purchaseTo(
+                msg.sender,
+                _projectId,
+                _maxPricePerToken,
+                _currencyAddress
+            );
     }
 
     /**
-     * @notice Purchases a token from project `_projectId` and sets
+     * @notice Purchases a token from project `_projectId` with ETH or any ERC-20 token.
+     * @param _projectId Project ID to mint a token on.
+     * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places.
+     * @param _currencyAddress Currency address of token. `address(0)` if minting with ETH.
+     * @return _tokenId Token ID of minted token
+     */
+    function purchase(
+        uint256 _projectId,
+        uint256 _maxPricePerToken,
+        address _currencyAddress
+    ) public payable returns (uint256 _tokenId) {
+        return
+            purchaseTo(
+                msg.sender,
+                _projectId,
+                _maxPricePerToken,
+                _currencyAddress
+            );
+    }
+
+    /**
+     * @notice Purchases a token from project `_projectId` with ETH and sets
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
@@ -196,6 +227,28 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
     function purchaseTo(
         address _to,
         uint256 _projectId
+    ) public payable returns (uint256 _tokenId) {
+        // pass currency address as ETH
+        address _currencyAddress = address(0);
+        uint256 _maxPricePerToken = msg.value;
+
+        return purchaseTo(_to, _projectId, _maxPricePerToken, _currencyAddress);
+    }
+
+    /**
+     * @notice Purchases a token from project `_projectId` with ETH or any ERC-20 token and sets
+     * the token's owner to `_to`.
+     * @param _to Address to be the new token's owner.
+     * @param _projectId Project ID to mint a token on.
+     * @param _maxPricePerToken Maximum price of token being allowed by the purchaser, no decimal places. Required if currency is ERC20.
+     * @param _currencyAddress Currency address of token. `address(0)` if minting with ETH.
+     * @return _tokenId Token ID of minted token
+     */
+    function purchaseTo(
+        address _to,
+        uint256 _projectId,
+        uint256 _maxPricePerToken,
+        address _currencyAddress
     ) public payable nonReentrant returns (uint256 _tokenId) {
         // CHECKS
         require(
@@ -207,6 +260,20 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
             require(msg.sender == tx.origin, "No Contract Buys");
         }
 
+        uint256 pricePerTokenInWei = genArtCoreContract
+            .projectIdToPricePerTokenInWei(_projectId);
+        address configuredCurrencyAddress = genArtCoreContract
+            .projectIdToCurrencyAddress(_projectId);
+        // validate that the currency address matches the project configured currency
+        require(
+            _currencyAddress == configuredCurrencyAddress,
+            "Currency addresses must match"
+        );
+
+        // if configured currency is ETH validate that msg.value is the same as max price per token
+        if (configuredCurrencyAddress == address(0)) {
+            require(msg.value == _maxPricePerToken, "inconsistent msg.value");
+        }
         // limit mints per address by project
         if (projectMintLimit[_projectId] > 0) {
             require(
@@ -244,13 +311,13 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
         }
 
         // validate and split funds
-        if (
-            keccak256(
-                abi.encodePacked(
-                    genArtCoreContract.projectIdToCurrencySymbol(_projectId)
-                )
-            ) != keccak256(abi.encodePacked("ETH"))
-        ) {
+        if (configuredCurrencyAddress != address(0)) {
+            // validate that the specified maximum price is greater than or equal to the price per token
+            require(
+                _maxPricePerToken >= pricePerTokenInWei,
+                "Only max price gte token price"
+            );
+
             require(
                 msg.value == 0,
                 "this project accepts a different currency and cannot accept ETH"
@@ -258,28 +325,19 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
             require(
                 IERC20(
                     genArtCoreContract.projectIdToCurrencyAddress(_projectId)
-                ).allowance(msg.sender, address(this)) >=
-                    genArtCoreContract.projectIdToPricePerTokenInWei(
-                        _projectId
-                    ),
+                ).allowance(msg.sender, address(this)) >= pricePerTokenInWei,
                 "Insufficient Funds Approved for TX"
             );
             require(
                 IERC20(
                     genArtCoreContract.projectIdToCurrencyAddress(_projectId)
-                ).balanceOf(msg.sender) >=
-                    genArtCoreContract.projectIdToPricePerTokenInWei(
-                        _projectId
-                    ),
+                ).balanceOf(msg.sender) >= pricePerTokenInWei,
                 "Insufficient balance."
             );
             _splitFundsERC20(_projectId);
         } else {
             require(
-                msg.value >=
-                    genArtCoreContract.projectIdToPricePerTokenInWei(
-                        _projectId
-                    ),
+                msg.value >= pricePerTokenInWei,
                 "Must send minimum value to mint!"
             );
             _splitFundsETH(_projectId);

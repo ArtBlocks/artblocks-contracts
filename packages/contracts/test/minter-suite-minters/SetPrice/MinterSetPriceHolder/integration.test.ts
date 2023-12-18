@@ -432,9 +432,13 @@ runForEach.forEach((params) => {
           const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
           await pbabMinter
             .connect(config.accounts.artist)
-            .purchaseTo(config.accounts.additional.address, 0, {
-              value: config.pricePerTokenInWei,
-            });
+            ["purchaseTo(address,uint256)"](
+              config.accounts.additional.address,
+              0,
+              {
+                value: config.pricePerTokenInWei,
+              }
+            );
 
           // configure price per token to be zero
           await config.minter
@@ -467,9 +471,13 @@ runForEach.forEach((params) => {
           const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
           await pbabMinter
             .connect(config.accounts.artist)
-            .purchaseTo(config.accounts.additional.address, 0, {
-              value: config.pricePerTokenInWei,
-            });
+            ["purchaseTo(address,uint256)"](
+              config.accounts.additional.address,
+              0,
+              {
+                value: config.pricePerTokenInWei,
+              }
+            );
 
           // allow holders of PBAB project 0 to purchase tokens on config.projectTwo
           await config.minter
