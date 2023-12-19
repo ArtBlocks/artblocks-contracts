@@ -763,9 +763,13 @@ runForEach.forEach((params) => {
           const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
           await pbabMinter
             .connect(config.accounts.artist)
-            .purchaseTo(config.accounts.additional.address, 0, {
-              value: config.pricePerTokenInWei,
-            });
+            ["purchaseTo(address,uint256)"](
+              config.accounts.additional.address,
+              0,
+              {
+                value: config.pricePerTokenInWei,
+              }
+            );
 
           // expect failure when using PBAB token because it is not allowlisted for config.projectTwo
           await expectRevert(
@@ -790,9 +794,13 @@ runForEach.forEach((params) => {
           const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
           await pbabMinter
             .connect(config.accounts.artist)
-            .purchaseTo(config.accounts.additional.address, 0, {
-              value: config.pricePerTokenInWei,
-            });
+            ["purchaseTo(address,uint256)"](
+              config.accounts.additional.address,
+              0,
+              {
+                value: config.pricePerTokenInWei,
+              }
+            );
 
           // allow holders of PBAB project 0 to purchase tokens on config.projectTwo
           await config.minter

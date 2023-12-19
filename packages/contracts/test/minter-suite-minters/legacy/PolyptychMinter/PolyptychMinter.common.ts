@@ -15,6 +15,7 @@ import { getGnosisSafe } from "../../../util/GnosisSafeNetwork";
  * These tests are intended to check common PolyptychMinter functionality.
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
+
 export const PolyptychMinter_Common = async (
   _beforeEach: () => Promise<T_Config>
 ) => {
@@ -389,7 +390,7 @@ export const PolyptychMinter_Common = async (
       const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
       await pbabMinter
         .connect(config.accounts.artist)
-        .purchaseTo(config.accounts.additional.address, 0, {
+        ["purchaseTo(address,uint256)"](config.accounts.additional.address, 0, {
           value: config.pricePerTokenInWei,
         });
       // allow holders of PBAB project 0 to purchase tokens on config.projectTwo
@@ -869,9 +870,13 @@ export const PolyptychMinter_Common = async (
         const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
         await pbabMinter
           .connect(config.accounts.artist)
-          .purchaseTo(config.accounts.additional.address, 0, {
-            value: config.pricePerTokenInWei,
-          });
+          ["purchaseTo(address,uint256)"](
+            config.accounts.additional.address,
+            0,
+            {
+              value: config.pricePerTokenInWei,
+            }
+          );
         // register the PBAB token on our minter
         await expectRevert.unspecified(
           config.minter
