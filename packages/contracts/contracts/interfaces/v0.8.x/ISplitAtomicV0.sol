@@ -42,4 +42,10 @@ interface ISplitAtomicV0 {
      * @notice Returns the configured `splits`.
      */
     function getSplits() external view returns (Split[] memory);
+
+    /**
+     * @notice Indicates the type of the contract, e.g. `SplitAtomicV0`.
+     * @return type_ The type of the contract.
+     */
+    function type_() external pure returns (bytes32);
 }

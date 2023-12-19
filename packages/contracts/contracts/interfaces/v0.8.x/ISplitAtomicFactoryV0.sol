@@ -35,4 +35,10 @@ interface ISplitAtomicFactoryV0 {
      * split atomic contracts.
      */
     function splitAtomicImplementation() external view returns (address);
+
+    /**
+     * @notice Indicates the type of the contract, e.g. `SplitAtomicFactoryV0`.
+     * @return type_ The type of the contract.
+     */
+    function type_() external pure returns (bytes32);
 }
