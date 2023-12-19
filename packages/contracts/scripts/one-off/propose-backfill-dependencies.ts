@@ -39,10 +39,12 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
   return result;
 }
 
+// Fill these out before running
 const config = {
   network: "",
   dependencyRegistryAddress: "",
   safeAddress: "",
+  transactionServiceUrl: "",
 };
 
 const TRANSACTION_CHUNK_SIZE = 50;
@@ -60,7 +62,6 @@ async function main() {
   // Ethers adapter reuires a signer with a provider so create one here
   const deployerWallet = getDeployerWallet();
   const walletWithProvider = deployerWallet.connect(ethers.provider);
-  console.log(walletWithProvider.provider);
 
   // Gnosis sdk setup
   const ethAdapter = new EthersAdapter({
@@ -69,7 +70,7 @@ async function main() {
   });
 
   const safeApiKit = new SafeApiKit({
-    txServiceUrl: "https://safe-transaction-sepolia.safe.global/",
+    txServiceUrl: config.transactionServiceUrl,
     ethAdapter,
   });
 
