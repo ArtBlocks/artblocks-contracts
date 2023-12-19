@@ -107,9 +107,8 @@ const DEPENDENCIES: {
 ];
 
 /**
- * This script was created to deploy the DependencyRegistryV0 contract on Goerli.
- * It uses the hardhat-upgrades plugin to deploy the contract with a proxy. It assigns
- * the existing dev admin ACL contract as the owner of the DependencyRegistryV0 contract.
+ * This script was created to add the initial dependencies to the dependency registry.
+ * Initial dependencies are the dependencies that were used before the dependency registry was created.
  */
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
