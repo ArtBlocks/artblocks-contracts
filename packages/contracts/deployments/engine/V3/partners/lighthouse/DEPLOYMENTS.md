@@ -76,3 +76,42 @@ Date: 2023-12-19T23:25:40.851Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-12-19T23:36:30.121Z
+
+## **Network:** arbitrum
+
+## **Environment:** arbitrum
+
+**Deployment Input File:** `deployments/engine/V3/partners/lighthouse/deployment-config.arbitrum.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://arbitrum.etherscan.io/address/0xD1d1222f6d3e4F64dB1C025ECd0b314db8449AC4#code
+
+**AdminACLV1:** https://arbitrum.etherscan.io/address/0xe35f98a29c37f805d4cFaD44d97562Dea3CcffA1#code
+
+**Core Registry:** https://arbitrum.etherscan.io/address/0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2#code
+
+**Shared Minter Filter:** https://arbitrum.etherscan.io/address/0x94560abECb897f359ee1A6Ed0E922315Da11752d#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 1
+- **Token Name:** Light House
+- **Token Ticker:** LIGHT
+- **Auto Approve Artist Split Proposals:** false
+- **Render Provider Address, Primary Sales:** 0x89151206E5bdf6284D3Bf01f7FdFed5A98750CBb
+- **Platform Provider Address, Primary Sales:** 0x07d4Fae4c883C022b76d4a2fD4354fD75c148489
+- **BytecodeStorageReader Library:** 0xa07f47c30C262adcC263A4D44595972c50e04db7
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** light-house-arbitrum
+
+---
+

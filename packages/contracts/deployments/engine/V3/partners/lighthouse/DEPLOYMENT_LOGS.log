@@ -69,3 +69,60 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0x73D834090da6bD2F03f34C50840487BEF31e3Eca, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-12-19T23:28:15.476Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/lighthouse/deployment-config.arbitrum.ts
+[INFO] Deploying to network: arbitrum
+----------------------------------------
+[INFO] Datetime of deployment: 2023-12-19T23:30:11.756Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/lighthouse/deployment-config.arbitrum.ts
+[INFO] Deploying to network: arbitrum
+----------------------------------------
+[INFO] Datetime of deployment: 2023-12-19T23:33:25.620Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/lighthouse/deployment-config.arbitrum.ts
+[INFO] Deploying to network: arbitrum
+----------------------------------------
+[INFO] Datetime of deployment: 2023-12-19T23:33:58.467Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/lighthouse/deployment-config.arbitrum.ts
+[INFO] Deploying to network: arbitrum
+[INFO] Deploying to environment: arbitrum
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xe35f98a29c37f805d4cFaD44d97562Dea3CcffA1
+[INFO] Using shared Randomizer at 0x6a5976391E708fBf918c3786cd1FcbB88732fbc1
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xD1d1222f6d3e4F64dB1C025ECd0b314db8449AC4
+[INFO] Registered core contract 0xD1d1222f6d3e4F64dB1C025ECd0b314db8449AC4 on core registry 0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2
+[INFO] Updated the Minter Filter on the Core contract to 0x94560abECb897f359ee1A6Ed0E922315Da11752d.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x07d4Fae4c883C022b76d4a2fD4354fD75c148489.
+[INFO] Verifying core contract contract deployment...
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine_Flex.sol:GenArt721CoreV3_Engine_Flex at 0xD1d1222f6d3e4F64dB1C025ECd0b314db8449AC4
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex on the block explorer.
+https://arbiscan.io/address/0xD1d1222f6d3e4F64dB1C025ECd0b314db8449AC4#code
+
+[INFO] Core contract verified on Etherscan at 0xD1d1222f6d3e4F64dB1C025ECd0b314db8449AC4}
+[INFO] Verifying AdminACL contract deployment...
+Successfully submitted source code for contract
+contracts/AdminACLV1.sol:AdminACLV1 at 0xe35f98a29c37f805d4cFaD44d97562Dea3CcffA1
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV1 on the block explorer.
+https://arbiscan.io/address/0xe35f98a29c37f805d4cFaD44d97562Dea3CcffA1#code
+
+[INFO] AdminACL contract verified on Etherscan at 0xe35f98a29c37f805d4cFaD44d97562Dea3CcffA1
+Created s3 bucket for https://light-house-arbitrum.s3.amazonaws.com
+[INFO] Created image bucket light-house-arbitrum
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/lighthouse/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xd1d1222f6d3e4f64db1c025ecd0b314db8449ac4",
+  "name": "Light House",
+  "bucket_name": "light-house-arbitrum",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] AdminACL's superAdmin address is 0x07d4Fae4c883C022b76d4a2fD4354fD75c148489, don't forget to update if requred.

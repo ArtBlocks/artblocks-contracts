@@ -56,15 +56,11 @@ const ACTIVE_SHARED_MINTER_FILTERS = {
   mainnet: {
     mainnet: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
   },
-  "arbitrum-goerli": {
-    dev: "0xTBD",
-    staging: "0xTBD",
-  },
   "arbitrum-sepolia": {
     "arbitrum-staging": "0xa07f47c30C262adcC263A4D44595972c50e04db7",
   },
   arbitrum: {
-    mainnet: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
+    arbitrum: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
   },
   sepolia: {
     dev: "0x29e9f09244497503f304FA549d50eFC751D818d2",
@@ -103,15 +99,11 @@ const ACTIVE_SHARED_RANDOMIZERS = {
   mainnet: {
     mainnet: "0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91",
   },
-  "arbitrum-goerli": {
-    dev: "0xTBD",
-    staging: "0xTBD",
-  },
   "arbitrum-sepolia": {
     "arbitrum-staging": "0x28f2D3805652FB5d359486dFfb7D08320D403240",
   },
   arbitrum: {
-    mainnet: "0x6a5976391E708fBf918c3786cd1FcbB88732fbc1",
+    arbitrum: "0x6a5976391E708fBf918c3786cd1FcbB88732fbc1",
   },
   sepolia: {
     dev: "0xA6F7e62F3B52552f79b2Baa2858a1DB18016c09B",
