@@ -126,7 +126,7 @@ async function main() {
           [
             contractAddress,
             projectId,
-            ethers.utils.formatBytes32String(project.script_type_and_version),
+            ethers.utils.formatBytes32String(dependencyNameAndVersion),
           ]
         );
         return {
