@@ -37,3 +37,42 @@ Date: 2023-12-15T05:31:54.907Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-12-19T23:25:40.851Z
+
+## **Network:** arbitrum-sepolia
+
+## **Environment:** arbitrum-staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/lighthouse/deployment-config.arbitrum-sepolia.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://arbitrum-sepolia.etherscan.io/address/0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5#code
+
+**AdminACLV1:** https://arbitrum-sepolia.etherscan.io/address/0xe2bC24f74ed326CA4deB75753942731A566ebC83#code
+
+**Core Registry:** https://arbitrum-sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**Shared Minter Filter:** https://arbitrum-sepolia.etherscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 1
+- **Token Name:** Light House
+- **Token Ticker:** LIGHT
+- **Auto Approve Artist Split Proposals:** false
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0x73D834090da6bD2F03f34C50840487BEF31e3Eca
+- **BytecodeStorageReader Library:** 0xb219C04128c9749b597c35D416b9988bEa9E1114
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** light-house-arbitrum-sepolia
+
+---
+
