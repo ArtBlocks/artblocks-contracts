@@ -6,7 +6,16 @@ pragma solidity ^0.8.0;
 import {Split} from "./ISplitAtomicV0.sol";
 
 interface ISplitAtomicFactoryV0 {
-    event ImplementationSet(address indexed implementation);
+    /**
+     * @notice This contract was deployed.
+     * @param implementation address with the implementation of the contract
+     * @param type_ type of this contract
+     */
+    event Deployed(address indexed implementation, bytes32 indexed type_);
+    /**
+     * @notice New split atomic contract was created.
+     * @param splitAtomic address of the newly created split atomic contract
+     */
     event SplitAtomicCreated(address indexed splitAtomic);
 
     /**

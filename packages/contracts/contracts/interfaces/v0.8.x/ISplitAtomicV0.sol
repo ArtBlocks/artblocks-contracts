@@ -13,8 +13,9 @@ struct Split {
 interface ISplitAtomicV0 {
     /**
      * @notice Indicates that the contract has been initialized.
+     * @param type_ The type of the contract.
      */
-    event Initialized();
+    event Initialized(bytes32 type_);
 
     /**
      * @notice Initializes the contract with the provided `splits`.

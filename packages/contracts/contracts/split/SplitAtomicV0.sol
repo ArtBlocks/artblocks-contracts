@@ -38,6 +38,9 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
     uint256 private constant _NOT_INITIALIZED = 0;
     uint256 private _status; // initial value: _NOT_INITIALIZED (0)
 
+    // public type
+    bytes32 public constant type_ = "SplitAtomicV0";
+
     // private array of Splits
     Split[] private _splits;
 
@@ -100,7 +103,7 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
         }
         require(totalBasisPoints == 10_000, "Invalid total basis points");
         // emit initialized event
-        emit Initialized();
+        emit Initialized(type_);
     }
 
     /**

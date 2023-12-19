@@ -15,6 +15,9 @@ import {Clones} from "@openzeppelin-5.0/contracts/proxy/Clones.sol";
  * @author Art Blocks Inc.
  */
 contract SplitAtomicFactoryV0 is ISplitAtomicFactoryV0 {
+    // public type
+    bytes32 public constant type_ = "SplitAtomicFactoryV0";
+    // public immutable implementation contract
     address public immutable splitAtomicImplementation;
 
     /**
@@ -24,7 +27,10 @@ contract SplitAtomicFactoryV0 is ISplitAtomicFactoryV0 {
      */
     constructor(address splitAtomicImplementation_) {
         splitAtomicImplementation = splitAtomicImplementation_;
-        emit ImplementationSet(splitAtomicImplementation_);
+        emit Deployed({
+            implementation: splitAtomicImplementation_,
+            type_: type_
+        });
     }
 
     function createSplit(
