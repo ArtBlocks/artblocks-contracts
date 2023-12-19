@@ -328,7 +328,7 @@ contract MinterSetPriceERC20V4 is
         uint256 _projectId
     ) external payable returns (uint256 tokenId) {
         // pass max price as msg.value, currency address as ETH
-        tokenId = purchaseTo_do6({
+        tokenId = purchaseTo({
             _to: msg.sender,
             _projectId: _projectId,
             _maxPricePerToken: msg.value,
@@ -349,7 +349,7 @@ contract MinterSetPriceERC20V4 is
         uint256 _maxPricePerToken,
         address _currencyAddress
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo_do6({
+        tokenId = purchaseTo({
             _to: msg.sender,
             _projectId: _projectId,
             _maxPricePerToken: _maxPricePerToken,
@@ -365,28 +365,11 @@ contract MinterSetPriceERC20V4 is
         uint256 _projectId
     ) external payable returns (uint256 tokenId) {
         // pass max price as msg.value, currency address as ETH
-        tokenId = purchaseTo_do6({
+        tokenId = purchaseTo({
             _to: msg.sender,
             _projectId: _projectId,
             _maxPricePerToken: msg.value,
             _currencyAddress: address(0)
-        });
-        return tokenId;
-    }
-
-    /**
-     * @notice gas-optimized version of purchase(uint256,uint256,address).
-     */
-    function purchase_H4M(
-        uint256 _projectId,
-        uint256 _maxPricePerToken,
-        address _currencyAddress
-    ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo_do6({
-            _to: msg.sender,
-            _projectId: _projectId,
-            _maxPricePerToken: _maxPricePerToken,
-            _currencyAddress: _currencyAddress
         });
         return tokenId;
     }
@@ -404,7 +387,7 @@ contract MinterSetPriceERC20V4 is
     ) external payable returns (uint256 tokenId) {
         // pass max price as msg.value, currency address as ETH
         return
-            purchaseTo_do6({
+            purchaseTo({
                 _to: _to,
                 _projectId: _projectId,
                 _maxPricePerToken: msg.value,
@@ -422,42 +405,6 @@ contract MinterSetPriceERC20V4 is
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
-        address _to,
-        uint256 _projectId,
-        uint256 _maxPricePerToken,
-        address _currencyAddress
-    ) external payable returns (uint256 tokenId) {
-        // pass max price as msg.value, currency address as ETH
-        return
-            purchaseTo_do6({
-                _to: _to,
-                _projectId: _projectId,
-                _maxPricePerToken: _maxPricePerToken,
-                _currencyAddress: _currencyAddress
-            });
-    }
-
-    /**
-     * @notice gas-optimized version of purchaseTo(address, uint256).
-     */
-    function purchaseTo_do6(
-        address _to,
-        uint256 _projectId
-    ) external payable returns (uint256 tokenId) {
-        // pass max price as msg.value, currency address as ETH
-        return
-            purchaseTo_do6({
-                _to: _to,
-                _projectId: _projectId,
-                _maxPricePerToken: msg.value,
-                _currencyAddress: address(0)
-            });
-    }
-
-    /**
-     * @notice gas-optimized version of purchaseTo(address, uint256, uint256, address).
-     */
-    function purchaseTo_do6(
         address _to,
         uint256 _projectId,
         uint256 _maxPricePerToken,
