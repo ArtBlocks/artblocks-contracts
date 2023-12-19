@@ -34,9 +34,7 @@ export function processValueForDisplay(
         return "";
       }
 
-      return Number(
-        formatEther(BigInt((value as string | number | bigint) ?? 0))
-      );
+      return Number(formatEther(BigInt(value as string | number | bigint)));
     }
     case "unixTimestampToDatetime": {
       if (value && valueType !== "number" && valueType !== "string") {
