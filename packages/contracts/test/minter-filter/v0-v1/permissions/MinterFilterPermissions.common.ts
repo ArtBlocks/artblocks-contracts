@@ -9,6 +9,8 @@ import { ethers } from "hardhat";
  * MinterFilter contracts.
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
+const addressZero = "0x0000000000000000000000000000000000000000";
+
 export const MinterFilterPermissions_Common = async (
   _beforeEach: () => Promise<T_Config>
 ) => {
@@ -472,9 +474,25 @@ export const MinterFilterPermissions_Common = async (
         });
       // revert when minting from minterB
       await expectRevert(
-        minterB.connect(config.accounts.artist).purchase(config.projectZero, {
-          value: pricePerTokenInWei,
-        }),
+        minterB
+          .connect(config.accounts.artist)
+          ["purchase(uint256)"](config.projectZero, {
+            value: pricePerTokenInWei,
+          }),
+        assignedMinterError
+      );
+      // revert when minting from minterB - passing currency and price through
+      await expectRevert(
+        minterB
+          .connect(config.accounts.artist)
+          ["purchase(uint256,uint256,address)"](
+            config.projectZero,
+            pricePerTokenInWei,
+            addressZero,
+            {
+              value: pricePerTokenInWei,
+            }
+          ),
         assignedMinterError
       );
       // remove A from project
