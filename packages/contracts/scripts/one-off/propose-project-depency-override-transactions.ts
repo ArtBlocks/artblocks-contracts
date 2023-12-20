@@ -14,6 +14,7 @@ import SafeApiKit from "@safe-global/api-kit";
 import { getDeployerWallet } from "../util/get-deployer-wallet";
 import { MetaTransactionData } from "@gnosis.pm/safe-core-sdk-types";
 import { getNetworkName } from "../util/utils";
+import { chunkArray } from "../util/utils";
 
 const supportedDependencies = [
   "aframe@1.2.0",
@@ -30,14 +31,6 @@ const supportedDependencies = [
   "twemoji@14.0.2",
   "zdog@1.1.2",
 ];
-
-function chunkArray<T>(array: T[], chunkSize: number): T[][] {
-  const result: T[][] = [];
-  for (let i = 0; i < array.length; i += chunkSize) {
-    result.push(array.slice(i, i + chunkSize));
-  }
-  return result;
-}
 
 // Fill these out before running
 const config = {
@@ -145,9 +138,13 @@ async function main() {
   );
 
   // Propose each chunk of transactions as a multi-send transaction
+  let nonce = await protocolKit.getNonce();
   for (const transactions of chunkedTransactions) {
     const safeTransaction = await protocolKit.createTransaction({
       safeTransactionData: transactions,
+      options: {
+        nonce: nonce++,
+      },
     });
     const senderAddress = await deployer.getAddress();
     const safeTxHash = await protocolKit.getTransactionHash(safeTransaction);
