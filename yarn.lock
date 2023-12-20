@@ -11617,10 +11617,10 @@ hardhat-gas-reporter@^1.0.9:
     eth-gas-reporter "^0.2.25"
     sha1 "^1.1.1"
 
-hardhat@^2.19.2:
-  version "2.19.2"
-  resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.19.2.tgz#815819e4efd234941d495decb718b358d572e2c8"
-  integrity sha512-CRU3+0Cc8Qh9UpxKd8cLADDPes7ZDtKj4dTK+ERtLBomEzhRPLWklJn4VKOwjre9/k8GNd/e9DYxpfuzcxbXPQ==
+hardhat@^2.19.3:
+  version "2.19.3"
+  resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.19.3.tgz#fe3b28b889e34a074ea5b740c227e3c8d4ce56e8"
+  integrity sha512-zUvfILiu1O7W1a+t5E1nCJ6z1danRLNizQkSEQCCgDYcRx13AGXtH1MVZajKmdLmXIjKAPReTp/8JQQ4ZHaX3g==
   dependencies:
     "@ethersproject/abi" "^5.1.2"
     "@metamask/eth-sig-util" "^4.0.0"
