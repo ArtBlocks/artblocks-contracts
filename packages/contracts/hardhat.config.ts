@@ -71,11 +71,12 @@ module.exports = {
     },
     mainnet: {
       url: MAINNET_JSON_RPC_PROVIDER_URL,
-      // accounts: [`${PRIVATE_KEY}`],
+      // must only use one of the following two options
+      accounts: [`${PRIVATE_KEY}`],
+      // ledgerAccounts: ["0x"],
       gasPrice: "auto",
       gasMultiplier: 1.75,
       maxNominalGasPriceGwei: 50,
-      ledgerAccounts: ["0xd76F73CF199aDA315b8b474770fA6943190c8f6e"],
     },
     sepolia: {
       url: SEPOLIA_JSON_RPC_PROVIDER_URL,
