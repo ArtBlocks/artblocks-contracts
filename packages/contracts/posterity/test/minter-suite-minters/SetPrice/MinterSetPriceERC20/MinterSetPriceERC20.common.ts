@@ -67,15 +67,19 @@ export const MinterSetPriceERC20_Common = async () => {
         );
       // cannot purchase token at lower price
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-          value: this.pricePerTokenInWei,
-        }),
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256)"](this.projectZero, {
+            value: this.pricePerTokenInWei,
+          }),
         needMoreValueErrorMessage
       );
       // can purchase token at higher price
-      await this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-        value: this.higherPricePerTokenInWei,
-      });
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchase(uint256)"](this.projectZero, {
+          value: this.higherPricePerTokenInWei,
+        });
     });
 
     it("enforces price update only on desired project", async function () {
@@ -89,15 +93,19 @@ export const MinterSetPriceERC20_Common = async () => {
         );
       // cannot purchase project zero token at lower price
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-          value: this.pricePerTokenInWei,
-        }),
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256)"](this.projectZero, {
+            value: this.pricePerTokenInWei,
+          }),
         needMoreValueErrorMessage
       );
       // can purchase project one token at lower price
-      await this.minter.connect(this.accounts.user).purchase(this.projectOne, {
-        value: this.pricePerTokenInWei,
-      });
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchase(uint256)"](this.projectOne, {
+          value: this.pricePerTokenInWei,
+        });
     });
 
     it("emits event upon price update", async function () {
@@ -186,10 +194,12 @@ export const MinterSetPriceERC20_Common = async () => {
         );
       // cannot purchase token with ETH
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-          value: this.pricePerTokenInWei,
-        }),
-        "this project accepts a different currency and cannot accept ETH"
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256)"](this.projectZero, {
+            value: this.pricePerTokenInWei,
+          }),
+        "Currency addresses must match"
       );
       // approve contract and able to mint with Mock token
       await this.ERC20Mock.connect(this.accounts.user).approve(
@@ -203,7 +213,13 @@ export const MinterSetPriceERC20_Common = async () => {
         ethers.utils.parseEther("100").sub(this.pricePerTokenInWei)
       );
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero),
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256,uint256,address)"](
+            this.projectZero,
+            this.pricePerTokenInWei,
+            this.ERC20Mock.address
+          ),
         "Insufficient balance"
       );
       // artist changes back to ETH
@@ -215,9 +231,11 @@ export const MinterSetPriceERC20_Common = async () => {
           constants.ZERO_ADDRESS
         );
       // able to mint with ETH
-      await this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-        value: this.pricePerTokenInWei,
-      });
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchase(uint256)"](this.projectZero, {
+          value: this.pricePerTokenInWei,
+        });
     });
 
     it("enforces currency update only on desired project", async function () {
@@ -231,9 +249,11 @@ export const MinterSetPriceERC20_Common = async () => {
           this.ERC20Mock.address
         );
       // can purchase project one token with ETH
-      await this.minter.connect(this.accounts.user).purchase(this.projectOne, {
-        value: this.pricePerTokenInWei,
-      });
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchase(uint256)"](this.projectOne, {
+          value: this.pricePerTokenInWei,
+        });
     });
 
     it("emits event upon currency update", async function () {
@@ -255,9 +275,11 @@ export const MinterSetPriceERC20_Common = async () => {
   describe("purchase", async function () {
     it("does not allow purchase prior to configuring price", async function () {
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectTwo, {
-          value: this.pricePerTokenInWei,
-        }),
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256)"](this.projectTwo, {
+            value: this.pricePerTokenInWei,
+          }),
         "Price not configured"
       );
     });
@@ -266,16 +288,18 @@ export const MinterSetPriceERC20_Common = async () => {
       for (let i = 0; i < 15; i++) {
         await this.minter
           .connect(this.accounts.user)
-          .purchase(this.projectZero, {
+          ["purchase(uint256)"](this.projectZero, {
             value: this.pricePerTokenInWei,
           });
       }
 
       const userBalance = await this.accounts.user.getBalance();
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-          value: this.pricePerTokenInWei,
-        }),
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256)"](this.projectZero, {
+            value: this.pricePerTokenInWei,
+          }),
         "Must not exceed max invocations"
       );
     });
@@ -283,7 +307,7 @@ export const MinterSetPriceERC20_Common = async () => {
     it("doesnt add too much gas if setProjectMaxInvocations is set", async function () {
       const tx = await this.minter
         .connect(this.accounts.user)
-        .purchase(this.projectZero, {
+        ["purchase(uint256)"](this.projectZero, {
           value: this.pricePerTokenInWei,
         });
 
@@ -302,7 +326,7 @@ export const MinterSetPriceERC20_Common = async () => {
 
       const maxSetTx = await this.minter
         .connect(this.accounts.user)
-        .purchase(this.projectOne, {
+        ["purchase(uint256)"](this.projectOne, {
           value: this.pricePerTokenInWei,
         });
       const receipt2 = await ethers.provider.getTransactionReceipt(
@@ -336,7 +360,7 @@ export const MinterSetPriceERC20_Common = async () => {
       for (let i = 0; i < 15; i++) {
         await this.minter
           .connect(this.accounts.user)
-          .purchase(this.projectZero, {
+          ["purchase(uint256)"](this.projectZero, {
             value: this.pricePerTokenInWei,
           });
       }
@@ -344,9 +368,11 @@ export const MinterSetPriceERC20_Common = async () => {
         await this.accounts.user.getBalance()
       );
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-          value: this.pricePerTokenInWei,
-        }),
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256)"](this.projectZero, {
+            value: this.pricePerTokenInWei,
+          }),
         "Must not exceed max invocations"
       );
       const userDeltaNoMaxSet = userBalanceNoMaxSet.sub(
@@ -360,7 +386,7 @@ export const MinterSetPriceERC20_Common = async () => {
       for (let i = 0; i < 15; i++) {
         await this.minter
           .connect(this.accounts.user)
-          .purchase(this.projectOne, {
+          ["purchase(uint256)"](this.projectOne, {
             value: this.pricePerTokenInWei,
           });
       }
@@ -368,9 +394,11 @@ export const MinterSetPriceERC20_Common = async () => {
         await this.accounts.user.getBalance()
       );
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectOne, {
-          value: this.pricePerTokenInWei,
-        }),
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256)"](this.projectOne, {
+            value: this.pricePerTokenInWei,
+          }),
         "Maximum number of invocations reached"
       );
       const userDeltaMaxSet = userBalanceMaxSet.sub(
@@ -397,9 +425,13 @@ export const MinterSetPriceERC20_Common = async () => {
       await expectRevert(
         this.minter
           .connect(this.accounts.user)
-          .purchaseTo(this.accounts.additional.address, this.projectTwo, {
-            value: this.pricePerTokenInWei,
-          }),
+          ["purchaseTo(address,uint256)"](
+            this.accounts.additional.address,
+            this.projectTwo,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
         "Price not configured"
       );
     });
@@ -407,9 +439,13 @@ export const MinterSetPriceERC20_Common = async () => {
     it("allows `purchaseTo` by default", async function () {
       await this.minter
         .connect(this.accounts.user)
-        .purchaseTo(this.accounts.additional.address, this.projectOne, {
-          value: this.pricePerTokenInWei,
-        });
+        ["purchaseTo(address,uint256)"](
+          this.accounts.additional.address,
+          this.projectOne,
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
     });
   });
 

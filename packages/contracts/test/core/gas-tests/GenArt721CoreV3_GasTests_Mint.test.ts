@@ -151,7 +151,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       for (let index = 0; index < numMintsToAverage; index++) {
         const tx = await config.minter
           .connect(config.accounts.user)
-          .purchase_H4M(config.projectThree, {
+          ["purchase_H4M(uint256)"](config.projectThree, {
             value: config.pricePerTokenInWei,
           });
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
@@ -207,7 +207,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       for (let index = 0; index < numMintsToAverage; index++) {
         const tx = await config.minterSetPriceERC20
           .connect(config.accounts.user)
-          .purchase_H4M(config.projectThree, {
+          ["purchase_H4M(uint256)"](config.projectThree, {
             value: config.pricePerTokenInWei,
           });
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
