@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+import hre, { ethers } from "hardhat";
 import { DependencyRegistryV0 } from "./contracts";
 import { DependencyRegistryV0__factory } from "./contracts/factories/DependencyRegistryV0__factory";
 import fs from "fs";
@@ -8,7 +8,6 @@ import Graphemer from "graphemer";
 import Safe from "@safe-global/protocol-kit";
 import { EthersAdapter } from "@safe-global/protocol-kit";
 import SafeApiKit from "@safe-global/api-kit";
-import { getDeployerWallet } from "./util/get-deployer-wallet";
 import { MetaTransactionData } from "@gnosis.pm/safe-core-sdk-types";
 import { getNetworkName } from "./util/utils";
 import { chunkArray } from "./util/utils";
@@ -119,22 +118,22 @@ async function main() {
   }
 
   // Validate network
-  const [signer] = await ethers.getSigners();
   const networkName = await getNetworkName();
-  if (networkName != config.network) {
+  if (networkName !== config.network) {
     throw new Error(
       `This script is intended to be run on ${config.network} but is being run on ${networkName}`
     );
   }
 
   // Ethers adapter reuires a signer with a provider so create one here
-  const deployerWallet = getDeployerWallet();
-  const walletWithProvider = deployerWallet.connect(ethers.provider);
+  const ledgerAddress = hre.network.config.ledgerAccounts[0];
+  const ledgerSigner = await ethers.getSigner(ledgerAddress);
+  console.log("using wallet", await ledgerSigner.getAddress());
 
   // Gnosis sdk setup
   const ethAdapter = new EthersAdapter({
     ethers,
-    signerOrProvider: walletWithProvider,
+    signerOrProvider: ledgerSigner,
   });
 
   const safeApiKit = new SafeApiKit({
@@ -170,7 +169,10 @@ async function main() {
 
   // Get dependency registry contract to create transaction data
   const dependencyRegistry: DependencyRegistryV0 =
-    DependencyRegistryV0__factory.connect(dependencyRegistryAddress, signer);
+    DependencyRegistryV0__factory.connect(
+      dependencyRegistryAddress,
+      ledgerSigner
+    );
 
   // Create transactions to send in multi-send transaction
   const addDependencyScriptTransactionData: MetaTransactionData[] =
@@ -215,7 +217,7 @@ async function main() {
           nonce: nonce++,
         },
       });
-      const senderAddress = await signer.getAddress();
+      const senderAddress = await ledgerSigner.getAddress();
       const safeTxHash = await protocolKit.getTransactionHash(safeTransaction);
       const signature = await protocolKit.signTransactionHash(safeTxHash);
       await safeApiKit.proposeTransaction({
