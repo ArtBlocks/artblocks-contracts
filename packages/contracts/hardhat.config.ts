@@ -8,6 +8,7 @@ import "hardhat-contract-sizer";
 import "@nomicfoundation/hardhat-verify";
 import "hardhat-docgen";
 import "@openzeppelin/hardhat-upgrades";
+import "@nomicfoundation/hardhat-ledger";
 import { solidityConfig } from "./hardhat.solidity-config";
 import { getDeployerWallet } from "./scripts/util/get-deployer-wallet";
 
@@ -70,7 +71,9 @@ module.exports = {
     },
     mainnet: {
       url: MAINNET_JSON_RPC_PROVIDER_URL,
+      // must only use one of the following two options
       accounts: [`${PRIVATE_KEY}`],
+      // ledgerAccounts: ["0x"],
       gasPrice: "auto",
       gasMultiplier: 1.75,
       maxNominalGasPriceGwei: 50,

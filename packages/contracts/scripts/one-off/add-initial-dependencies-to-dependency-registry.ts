@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import hre, { ethers, upgrades } from "hardhat";
+import hre, { ethers } from "hardhat";
 import { DependencyRegistryV0__factory } from "../contracts/factories/DependencyRegistryV0__factory";
 
 const readlineSync = require("readline-sync");
@@ -31,6 +31,13 @@ const DEPENDENCIES: {
   },
   {
     nameAndVersion: "js@na",
+    preferredCdn: "",
+    preferredRepository: "",
+    licenseType: "NA",
+    website: "",
+  },
+  {
+    nameAndVersion: "custom@na",
     preferredCdn: "",
     preferredRepository: "",
     licenseType: "NA",
