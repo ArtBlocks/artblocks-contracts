@@ -31,9 +31,13 @@ export const MinterSetPriceV1V2V3V4_Common = async (
       // still allows `purchaseTo`.
       await config.minter
         .connect(config.accounts.user)
-        .purchaseTo(config.accounts.artist.address, config.projectZero, {
-          value: config.pricePerTokenInWei,
-        });
+        ["purchaseTo(address,uint256)"](
+          config.accounts.artist.address,
+          config.projectZero,
+          {
+            value: config.pricePerTokenInWei,
+          }
+        );
     });
 
     it("doesn't support `purchaseTo` toggling", async function () {
@@ -106,9 +110,9 @@ export const MinterSetPriceV1V2V3V4_Common = async (
       const safeAddress = safeSdk.getAddress();
 
       // create a transaction
-      const unsignedTx = await config.minter.populateTransaction.purchase(
-        config.projectZero
-      );
+      const unsignedTx = await config.minter.populateTransaction[
+        "purchase(uint256)"
+      ](config.projectZero);
       const transaction: SafeTransactionDataPartial = {
         to: config.minter.address,
         data: unsignedTx.data,

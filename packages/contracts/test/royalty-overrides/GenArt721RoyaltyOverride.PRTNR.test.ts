@@ -151,11 +151,15 @@ describe("GenArt721RoyaltyOverride_PRTNR", async function () {
 
     await config.minterA
       .connect(config.royaltyAccounts.anyone)
-      .purchase(projectZero, { value: pricePerTokenInWei });
+      ["purchase(uint256)"](projectZero, {
+        value: pricePerTokenInWei,
+      });
 
     await config.minterA
       .connect(config.royaltyAccounts.anyone)
-      .purchase(projectOne, { value: pricePerTokenInWei });
+      ["purchase(uint256)"](projectOne, {
+        value: pricePerTokenInWei,
+      });
 
     // deploy second core contract with two more projects
     config.tokenB = await artblocksFactory
@@ -234,11 +238,15 @@ describe("GenArt721RoyaltyOverride_PRTNR", async function () {
 
     await config.minterB
       .connect(config.royaltyAccounts.anyone)
-      .purchase(projectZero, { value: pricePerTokenInWei });
+      ["purchase(uint256)"](projectZero, {
+        value: pricePerTokenInWei,
+      });
 
     await config.minterB
       .connect(config.royaltyAccounts.anyone)
-      .purchase(projectOne, { value: pricePerTokenInWei });
+      ["purchase(uint256)"](projectOne, {
+        value: pricePerTokenInWei,
+      });
 
     // deploy royalty override
     const royaltyOverrideFactory = await ethers.getContractFactory(
