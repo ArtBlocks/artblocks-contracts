@@ -11,7 +11,6 @@ import {
 import Safe from "@safe-global/protocol-kit";
 import { EthersAdapter } from "@safe-global/protocol-kit";
 import SafeApiKit from "@safe-global/api-kit";
-import { getDeployerWallet } from "../util/get-deployer-wallet";
 import { MetaTransactionData } from "@gnosis.pm/safe-core-sdk-types";
 import { getNetworkName } from "../util/utils";
 import { chunkArray } from "../util/utils";
@@ -34,16 +33,15 @@ const supportedDependencies = [
 
 // Fill these out before running
 const config = {
-  network: "",
-  dependencyRegistryAddress: "",
-  safeAddress: "",
-  transactionServiceUrl: "",
+  network: "mainnet",
+  dependencyRegistryAddress: "0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF",
+  safeAddress: "0x---",
+  transactionServiceUrl: "https://safe-transaction-mainnet.safe.global",
 };
 
-const TRANSACTION_CHUNK_SIZE = 50;
+const TRANSACTION_CHUNK_SIZE = 200;
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
   const networkName = await getNetworkName();
 
   if (networkName !== config.network) {
@@ -53,13 +51,14 @@ async function main() {
   }
 
   // Ethers adapter reuires a signer with a provider so create one here
-  const deployerWallet = getDeployerWallet();
-  const walletWithProvider = deployerWallet.connect(ethers.provider);
+  const ledgerAddress = hre.network.config.ledgerAccounts[0];
+  const ledgerSigner = await ethers.getSigner(ledgerAddress);
+  console.log("using wallet", await ledgerSigner.getAddress());
 
   // Gnosis sdk setup
   const ethAdapter = new EthersAdapter({
     ethers,
-    signerOrProvider: walletWithProvider,
+    signerOrProvider: ledgerSigner,
   });
 
   const safeApiKit = new SafeApiKit({
@@ -75,7 +74,7 @@ async function main() {
   // Get contract to create transactions
   const dependencyRegistry = DependencyRegistryV0__factory.connect(
     config.dependencyRegistryAddress,
-    deployer
+    ledgerSigner
   );
 
   // Fetch all pre-v3 projects from Hasura
@@ -146,7 +145,7 @@ async function main() {
         nonce: nonce++,
       },
     });
-    const senderAddress = await deployer.getAddress();
+    const senderAddress = await ledgerSigner.getAddress();
     const safeTxHash = await protocolKit.getTransactionHash(safeTransaction);
     const signature = await protocolKit.signTransactionHash(safeTxHash);
     await safeApiKit.proposeTransaction({
