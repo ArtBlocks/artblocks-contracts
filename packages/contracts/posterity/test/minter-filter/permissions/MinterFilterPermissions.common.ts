@@ -417,6 +417,7 @@ export const MinterFilterPermissions_Common = async () => {
       const minterFactory = await ethers.getContractFactory(
         "MinterSetPriceERC20V0"
       );
+      const addressZero = "0x0000000000000000000000000000000000000000";
       const minterB = await minterFactory.deploy(
         this.genArt721Core.address,
         this.minterFilter.address
@@ -434,9 +435,25 @@ export const MinterFilterPermissions_Common = async () => {
       });
       // revert when minting from minterB
       await expectRevert(
-        minterB.connect(this.accounts.artist).purchase(this.projectZero, {
-          value: pricePerTokenInWei,
-        }),
+        minterB
+          .connect(this.accounts.artist)
+          ["purchase(uint256)"](this.projectZero, {
+            value: pricePerTokenInWei,
+          }),
+        assignedMinterError
+      );
+      // revert when minting from minterB passing currency and price through
+      await expectRevert(
+        minterB
+          .connect(this.accounts.artist)
+          ["purchase(uint256,uint256,address)"](
+            this.projectZero,
+            pricePerTokenInWei,
+            addressZero,
+            {
+              value: pricePerTokenInWei,
+            }
+          ),
         assignedMinterError
       );
       // remove A from project

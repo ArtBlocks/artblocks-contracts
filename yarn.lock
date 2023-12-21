@@ -10484,7 +10484,7 @@ hardhat-gas-reporter@^1.0.9:
     eth-gas-reporter "^0.2.25"
     sha1 "^1.1.1"
 
-hardhat@^2.19.2:
+hardhat@^2.19.3:
   version "2.19.3"
   resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.19.3.tgz#fe3b28b889e34a074ea5b740c227e3c8d4ce56e8"
   integrity sha512-zUvfILiu1O7W1a+t5E1nCJ6z1danRLNizQkSEQCCgDYcRx13AGXtH1MVZajKmdLmXIjKAPReTp/8JQQ4ZHaX3g==
