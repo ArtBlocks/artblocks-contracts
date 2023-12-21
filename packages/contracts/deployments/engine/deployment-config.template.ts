@@ -20,7 +20,7 @@ export const deployConfigDetailsArray = [
     // set to true if you want to add an initial project to the core contract
     addInitialProject: false,
     // set to true if you want to transfer the superAdmin role to a different address
-    doTransferSuperAdmin: false,
+    doTransferSuperAdmin: true,
     // set to the address you want to transfer the superAdmin role to
     // (this will only work if you have set doTransferSuperAdmin to true, can be undefined if you are not transferring)
     newSuperAdminAddress: undefined, // use either "0x..." or undefined if not transferring
