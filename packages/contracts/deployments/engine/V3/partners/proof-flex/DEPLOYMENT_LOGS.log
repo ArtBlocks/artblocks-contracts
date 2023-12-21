@@ -151,3 +151,47 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0x32220f07DBcd18149f619F28cD09FD911cc0372D, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-12-08T00:51:29.837Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/sepolia/deployment-config-sepolia-migration.staging.ts
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x09a637F5b66A280834dB1A65648f621E27f03295
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex_PROOF deployed at 0x70F64Afe1fD8BE5c290f6fd07Ca06492799C1a26
+[INFO] Registered core contract 0x70F64Afe1fD8BE5c290f6fd07Ca06492799C1a26 on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x4309ebddF4d56B5E6e91A2fc63b9564b162e467c.
+[INFO] Verifying core contract contract deployment...
+Successfully submitted source code for contract
+contracts/engine/V3/forks/GenArt721CoreV3_Engine_Flex_PROOF.sol:GenArt721CoreV3_Engine_Flex_PROOF at 0x70F64Afe1fD8BE5c290f6fd07Ca06492799C1a26
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex_PROOF on the block explorer.
+https://sepolia.etherscan.io/address/0x70F64Afe1fD8BE5c290f6fd07Ca06492799C1a26#code
+
+[INFO] Core contract verified on Etherscan at 0x70F64Afe1fD8BE5c290f6fd07Ca06492799C1a26}
+[INFO] Verifying AdminACL contract deployment...
+Successfully submitted source code for contract
+contracts/AdminACLV1.sol:AdminACLV1 at 0x09a637F5b66A280834dB1A65648f621E27f03295
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV1 on the block explorer.
+https://sepolia.etherscan.io/address/0x09a637F5b66A280834dB1A65648f621E27f03295#code
+
+[INFO] AdminACL contract verified on Etherscan at 0x09a637F5b66A280834dB1A65648f621E27f03295
+Created s3 bucket for https://proof-blocks-sepolia.s3.amazonaws.com
+[INFO] Created image bucket proof-blocks-sepolia
+[INFO] Deployment details written to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/sepolia/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x70f64afe1fd8be5c290f6fd07ca06492799c1a26",
+  "name": "PROOF Blocks",
+  "bucket_name": "proof-blocks-sepolia",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x4309ebddF4d56B5E6e91A2fc63b9564b162e467c, don't forget to update if requred.

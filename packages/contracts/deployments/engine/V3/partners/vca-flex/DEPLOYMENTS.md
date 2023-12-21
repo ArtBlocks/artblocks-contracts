@@ -1,4 +1,3 @@
-
 # Deployment
 
 Date: 2023-03-29T03:13:22.264Z
@@ -23,8 +22,6 @@ Date: 2023-03-29T03:13:22.264Z
 
 **MinterDAExpSettlementV2:** https://goerli.etherscan.io/address/0x9fA04a3B1b1F24Bc7236F2CD196BacB54B965cA0#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -41,7 +38,6 @@ Date: 2023-03-29T03:13:22.264Z
 - **Image Bucket:** verticalcrypto-gen-art-v3-goerli
 
 ---
-
 
 # Minter Deployment
 
@@ -62,7 +58,6 @@ Date: 2023-09-07T23:50:35.712Z
 **Deployment Args:** 0xAf40b66072Fe00CAcF5A25Cd1b7F1688Cde20f2F,0x13a8Fca80084Bb968EDE9AA69E38b0cF59Ba603f,0x00000000000076A84feF008CDAbe6409d2FE638B
 
 ---
-
 
 # Deployment
 
@@ -90,8 +85,6 @@ Date: 2023-09-08T00:08:20.765Z
 
 **MinterMerkleV5:** https://etherscan.io/address/0x9447Bd8e7aAa3e605D533004429520023144D0b2#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -109,7 +102,6 @@ Date: 2023-09-08T00:08:20.765Z
 - **Image Bucket:** vertical-gen-art-mainnet
 
 ---
-
 
 # Minter Deployment
 
@@ -131,3 +123,40 @@ Date: 2023-09-11T23:30:13.482Z
 
 ---
 
+# Deployment
+
+Date: 2023-12-08T01:15:04.479Z
+
+## **Network:** sepolia
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/vca-flex/deployment-config.sepolia-staging.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://sepolia.etherscan.io/address/0x381233D5584fDb42e46b4D9ba91876479AAb7AcD#code
+
+**AdminACLV1:** https://sepolia.etherscan.io/address/0x1188B781667a19836a14582E57351167AC2E8C9B#code
+
+**Core Registry:** https://sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**Shared Minter Filter:** https://sepolia.etherscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** VerticalCrypto Gen Art V3
+- **Token Ticker:** VCAG3
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0x65FEca334780160e3420B097590fd6D02dE663f0
+- **BytecodeStorageReader Library:** 0x7497909537cE00fDda93c12d5083D8647C593c67
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** verticalcrypto-gen-art-v3-sepolia
+
+---

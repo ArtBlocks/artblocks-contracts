@@ -15,6 +15,7 @@ Logger.setLogLevel(Logger.levels.ERROR);
 
 const TARGET_MINTER_NAME = "MinterSetPricePolyptychERC20V5";
 const TARGET_MINTER_VERSION = "v5.0.0";
+const addressZero = "0x0000000000000000000000000000000000000000";
 
 const runForEach = [
   {
@@ -599,9 +600,13 @@ runForEach.forEach((params) => {
           const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
           await pbabMinter
             .connect(config.accounts.artist)
-            .purchaseTo(config.accounts.additional.address, 0, {
-              value: config.pricePerTokenInWei,
-            });
+            ["purchaseTo(address,uint256)"](
+              config.accounts.additional.address,
+              0,
+              {
+                value: config.pricePerTokenInWei,
+              }
+            );
 
           // configure price per token to be zero
           await config.minter

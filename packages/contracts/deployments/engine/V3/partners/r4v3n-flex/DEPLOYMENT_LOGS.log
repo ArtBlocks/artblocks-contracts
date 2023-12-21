@@ -105,3 +105,88 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] AdminACL's superAdmin address is 0xF2162BaCC9F76608bA4b11b1a6dac976ED463129, don't forget to update if required.
 [ACTION] Subgraph: Add Minter Filter and Minter contracts to subgraph config if desire to index minter suite.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-12-08T00:51:29.837Z
+[INFO] Deployment configuration file: /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/sepolia/deployment-config-sepolia-migration.staging.ts
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x5eAc5d6c737553DBb33D8F5dBd614f4403408122
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x8BdF282Aa9d8d5369945a1Fc27603D41349450e8
+[INFO] Registered core contract 0x8BdF282Aa9d8d5369945a1Fc27603D41349450e8 on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0xF2162BaCC9F76608bA4b11b1a6dac976ED463129.
+[INFO] Verifying core contract contract deployment...
+The contract 0x8BdF282Aa9d8d5369945a1Fc27603D41349450e8 has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x8BdF282Aa9d8d5369945a1Fc27603D41349450e8#code
+[INFO] Core contract verified on Etherscan at 0x8BdF282Aa9d8d5369945a1Fc27603D41349450e8}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x5eAc5d6c737553DBb33D8F5dBd614f4403408122 has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x5eAc5d6c737553DBb33D8F5dBd614f4403408122#code
+[INFO] AdminACL contract verified on Etherscan at 0x5eAc5d6c737553DBb33D8F5dBd614f4403408122
+Created s3 bucket for https://r4v3n-sepolia.s3.amazonaws.com
+[INFO] Created image bucket r4v3n-sepolia
+[INFO] Deployment details written to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/sepolia/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x8bdf282aa9d8d5369945a1fc27603d41349450e8",
+  "name": "r4v3n",
+  "bucket_name": "r4v3n-sepolia",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-12-15T05:12:21.336Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/r4v3n-flex/deployment-config.arbitrum-staging.ts
+[INFO] Deploying to network: arbitrum-sepolia
+[INFO] Deploying to environment: arbitrum-staging
+----------------------------------------
+[INFO] Datetime of deployment: 2023-12-15T05:22:41.963Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/r4v3n-flex/deployment-config.arbitrum-staging.ts
+[INFO] Deploying to network: arbitrum-sepolia
+[INFO] Deploying to environment: arbitrum-staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x978a664f23f30d3FFD20093144C8eC6aBc60753f
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x6a5976391E708fBf918c3786cd1FcbB88732fbc1
+[INFO] Registered core contract 0x6a5976391E708fBf918c3786cd1FcbB88732fbc1 on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0xf2162bacc9f76608ba4b11b1a6dac976ed463129.
+[INFO] Verifying core contract contract deployment...
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine_Flex.sol:GenArt721CoreV3_Engine_Flex at 0x6a5976391E708fBf918c3786cd1FcbB88732fbc1
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex on the block explorer.
+https://sepolia.arbiscan.io/address/0x6a5976391E708fBf918c3786cd1FcbB88732fbc1#code
+
+[INFO] Core contract verified on Etherscan at 0x6a5976391E708fBf918c3786cd1FcbB88732fbc1}
+[INFO] Verifying AdminACL contract deployment...
+Successfully submitted source code for contract
+contracts/AdminACLV1.sol:AdminACLV1 at 0x978a664f23f30d3FFD20093144C8eC6aBc60753f
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV1 on the block explorer.
+https://sepolia.arbiscan.io/address/0x978a664f23f30d3FFD20093144C8eC6aBc60753f#code
+
+[INFO] AdminACL contract verified on Etherscan at 0x978a664f23f30d3FFD20093144C8eC6aBc60753f
+Created s3 bucket for https://r4v3n-l2-arbitrum-sepolia.s3.amazonaws.com
+[INFO] Created image bucket r4v3n-l2-arbitrum-sepolia
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/r4v3n-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x6a5976391e708fbf918c3786cd1fcbb88732fbc1",
+  "name": "r4v3n l2",
+  "bucket_name": "r4v3n-l2-arbitrum-sepolia",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xF2162BaCC9F76608bA4b11b1a6dac976ED463129, don't forget to update if requred.

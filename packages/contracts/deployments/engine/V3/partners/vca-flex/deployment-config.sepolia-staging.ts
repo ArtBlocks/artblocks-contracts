@@ -1,0 +1,21 @@
+export const deployConfigDetailsArray = [
+  {
+    name: "VCA",
+    network: "sepolia",
+    environment: "staging",
+    adminACLContractName: "AdminACLV1",
+    genArt721CoreContractName: "GenArt721CoreV3_Engine_Flex",
+    tokenName: "VerticalCrypto Gen Art V3",
+    tokenTicker: "VCAG3",
+    startingProjectId: 0,
+    autoApproveArtistSplitProposals: true,
+    renderProviderAddress: "deployer",
+    platformProviderAddress: "0x65FEca334780160e3420B097590fd6D02dE663f0",
+    addInitialProject: false,
+    doTransferSuperAdmin: true,
+    newSuperAdminAddress: "0x65FEca334780160e3420B097590fd6D02dE663f0",
+    renderProviderSplitPercentagePrimary: 10,
+    renderProviderSplitBPSSecondary: 250,
+    defaultVerticalName: "flex",
+  },
+];

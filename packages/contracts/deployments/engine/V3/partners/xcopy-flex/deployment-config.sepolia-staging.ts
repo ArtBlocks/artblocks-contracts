@@ -1,0 +1,21 @@
+export const deployConfigDetailsArray = [
+  {
+    name: "Xcopy",
+    network: "sepolia",
+    environment: "staging",
+    adminACLContractName: "AdminACLV1",
+    genArt721CoreContractName: "GenArt721CoreV3_Engine_Flex",
+    tokenName: "XCORE",
+    tokenTicker: "XCORE",
+    startingProjectId: 0,
+    autoApproveArtistSplitProposals: true,
+    renderProviderAddress: "deployer",
+    platformProviderAddress: "0xAAF803b757d97E2BD9392B54FFBb591B44428b4F",
+    addInitialProject: false,
+    doTransferSuperAdmin: true,
+    newSuperAdminAddress: "0xAAF803b757d97E2BD9392B54FFBb591B44428b4F",
+    renderProviderSplitPercentagePrimary: 10,
+    renderProviderSplitBPSSecondary: 250,
+    defaultVerticalName: "flex",
+  },
+];

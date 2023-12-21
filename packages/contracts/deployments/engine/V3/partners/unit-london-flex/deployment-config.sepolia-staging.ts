@@ -1,0 +1,21 @@
+export const deployConfigDetailsArray = [
+  {
+    name: "Unit London",
+    network: "sepolia",
+    environment: "staging",
+    adminACLContractName: "AdminACLV1",
+    genArt721CoreContractName: "GenArt721CoreV3_Engine_Flex",
+    tokenName: "Unit London V2",
+    tokenTicker: "UNITLDN",
+    startingProjectId: 0,
+    autoApproveArtistSplitProposals: true,
+    renderProviderAddress: "deployer",
+    platformProviderAddress: "0xb5B7fb32C42c2c1c49285D54A35aa70793404b1F",
+    addInitialProject: false,
+    doTransferSuperAdmin: true,
+    newSuperAdminAddress: "0xb5B7fb32C42c2c1c49285D54A35aa70793404b1F",
+    renderProviderSplitPercentagePrimary: 10,
+    renderProviderSplitBPSSecondary: 250,
+    defaultVerticalName: "flex",
+  },
+];

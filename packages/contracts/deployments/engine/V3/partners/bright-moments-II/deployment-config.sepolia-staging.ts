@@ -1,0 +1,21 @@
+export const deployConfigDetailsArray = [
+  {
+    name: "Bright Moments",
+    network: "sepolia",
+    environment: "staging",
+    adminACLContractName: "AdminACLV1",
+    genArt721CoreContractName: "GenArt721CoreV3_Engine",
+    tokenName: "Bright Moments",
+    tokenTicker: "MOMENT",
+    startingProjectId: 0,
+    autoApproveArtistSplitProposals: true,
+    renderProviderAddress: "deployer",
+    platformProviderAddress: "0x18B7511938FBe2EE08ADf3d4A24edB00A5C9B783",
+    addInitialProject: false,
+    doTransferSuperAdmin: true,
+    newSuperAdminAddress: "0x18B7511938FBe2EE08ADf3d4A24edB00A5C9B783",
+    renderProviderSplitPercentagePrimary: 10,
+    renderProviderSplitBPSSecondary: 250,
+    defaultVerticalName: "fullyonchain",
+  },
+];

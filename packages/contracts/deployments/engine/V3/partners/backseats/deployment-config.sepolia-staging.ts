@@ -1,0 +1,20 @@
+export const deployConfigDetailsArray = [
+  {
+    network: "sepolia",
+    environment: "staging",
+    adminACLContractName: "AdminACLV1",
+    genArt721CoreContractName: "GenArt721CoreV3_Engine_Flex",
+    tokenName: "White Hot Memphis Night",
+    tokenTicker: "WHMN",
+    startingProjectId: 0,
+    autoApproveArtistSplitProposals: true,
+    renderProviderAddress: "deployer",
+    platformProviderAddress: "0x3d7f75ff0cf322D43e39868BA3Ef4D2742Cc0384",
+    addInitialProject: false,
+    doTransferSuperAdmin: true,
+    newSuperAdminAddress: "0x3d7f75ff0cf322D43e39868BA3Ef4D2742Cc0384",
+    renderProviderSplitPercentagePrimary: 10,
+    renderProviderSplitBPSSecondary: 250,
+    defaultVerticalName: "flex",
+  },
+];

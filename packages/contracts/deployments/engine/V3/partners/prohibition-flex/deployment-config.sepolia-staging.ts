@@ -1,0 +1,21 @@
+export const deployConfigDetailsArray = [
+  {
+    name: "Prohibition",
+    network: "sepolia",
+    environment: "staging",
+    adminACLContractName: "AdminACLV0_PROHIBITION",
+    genArt721CoreContractName: "GenArt721CoreV3_Engine_Flex_PROHIBITION",
+    tokenName: "Prohibition",
+    tokenTicker: "PRHBTN",
+    startingProjectId: 0,
+    autoApproveArtistSplitProposals: true,
+    renderProviderAddress: "deployer",
+    platformProviderAddress: "0xC430CE0184e536e341e04dCE0f4C37895a92b809",
+    addInitialProject: false,
+    doTransferSuperAdmin: true,
+    newSuperAdminAddress: "0xC430CE0184e536e341e04dCE0f4C37895a92b809",
+    renderProviderSplitPercentagePrimary: 10,
+    renderProviderSplitBPSSecondary: 250,
+    defaultVerticalName: "flex",
+  },
+];
