@@ -18,6 +18,20 @@ interface ISplitAtomicV0 {
     event Initialized(bytes32 type_);
 
     /**
+     * @notice Indicates that the contract's balance manually was drained of
+     * ETH.
+     */
+    event DrainedETH();
+
+    /**
+     * @notice Indicates that the contract's balance manually was drained of
+     * ERC20 token at address `ERC20TokenAddress`.
+     * @param ERC20TokenAddress The address of the ERC20 token that was
+     * drained.
+     */
+    event DrainedERC20(address ERC20TokenAddress);
+
+    /**
      * @notice Initializes the contract with the provided `splits`.
      * Only callable once.
      * @param splits Splits to configure the contract with. Must add up to

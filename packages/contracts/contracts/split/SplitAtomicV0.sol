@@ -121,6 +121,7 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
             // @dev reverts if not initialized
             _splitETH(balance);
         }
+        emit DrainedETH();
     }
 
     /**
@@ -142,6 +143,7 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
             // @dev reverts if not initialized
             _splitERC20({ERC20TokenAddress: ERC20TokenAddress, value: balance});
         }
+        emit DrainedERC20(ERC20TokenAddress);
     }
 
     /**
