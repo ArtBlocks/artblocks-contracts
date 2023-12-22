@@ -10,13 +10,26 @@ interface ISplitAtomicFactoryV0 {
      * @notice This contract was deployed.
      * @param implementation address with the implementation of the contract
      * @param type_ type of this contract
+     * @param requiredSplitAddress address that must be included in all splits
+     * @param requiredSplitBasisPoints basis points that must be included in
+     * all splits
      */
-    event Deployed(address indexed implementation, bytes32 indexed type_);
+    event Deployed(
+        address indexed implementation,
+        bytes32 indexed type_,
+        address requiredSplitAddress,
+        uint16 requiredSplitBasisPoints
+    );
     /**
      * @notice New split atomic contract was created.
      * @param splitAtomic address of the newly created split atomic contract
      */
     event SplitAtomicCreated(address indexed splitAtomic);
+    /**
+     * @notice This contract was abandoned and no longer can be used to create
+     * new split atomic contracts.
+     */
+    event Abandoned();
 
     /**
      * @notice Initializes the contract with the provided `splits`.
