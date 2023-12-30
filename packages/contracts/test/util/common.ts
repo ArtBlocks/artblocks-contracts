@@ -83,6 +83,9 @@ export type T_Config = {
   coreRegistry?: Contract;
   minterSetPrice?: Contract;
   deadReceiver?: Contract;
+  splitterImplementation?: Contract;
+  splitterFactory?: Contract;
+  splitter?: Contract;
   // minter test details
   isEngine?: boolean;
   delegationRegistry?: Contract;

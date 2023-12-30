@@ -7,6 +7,12 @@ import {
   deployAndGet,
 } from "./common";
 
+import { ethers } from "hardhat";
+
+import { Contract } from "ethers";
+
+import { SplitAtomicV0__factory } from "../../scripts/contracts";
+
 /**
  * Fixture that sets up initial, default config.
  * Note: the starting project is set to zero.
@@ -47,5 +53,35 @@ export async function setupConfigWitMinterFilterV2Suite() {
   ]);
   // allowlist dummy shared minter on minter filter
   await config.minterFilter.approveMinterGlobally(config.minter.address);
+  return config;
+}
+
+export async function setupSplits() {
+  const config = await loadFixture(setupConfig);
+  // deploy splitter implementation
+  config.splitterImplementation = await deployAndGet(
+    config,
+    "SplitAtomicV0",
+    []
+  );
+  // deploy splitter factory
+  config.splitterFactory = await deployAndGet(config, "SplitAtomicFactoryV0", [
+    config.splitterImplementation.address,
+    config.accounts.deployer.address, // required split address
+    2222, // required split bps
+  ]);
+  // deploy splitter via factory
+  const tx = await config.splitterFactory.createSplit([
+    { recipient: config.accounts.deployer.address, basisPoints: 2222 },
+    { recipient: config.accounts.artist.address, basisPoints: 2778 },
+    { recipient: config.accounts.additional.address, basisPoints: 5000 },
+  ]);
+  const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+  // get splitter address from logs
+  const splitterCreationLog = receipt.logs[receipt.logs.length - 1];
+  const splitterAddress = ethers.utils.getAddress(
+    "0x" + splitterCreationLog.topics[1].slice(-40)
+  );
+  config.splitter = new Contract(splitterAddress, SplitAtomicV0__factory.abi);
   return config;
 }
