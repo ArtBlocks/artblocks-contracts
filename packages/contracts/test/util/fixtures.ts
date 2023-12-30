@@ -58,12 +58,15 @@ export async function setupConfigWitMinterFilterV2Suite() {
 
 export async function setupSplits() {
   const config = await loadFixture(setupConfig);
+  const targetSplits = [
+    { recipient: config.accounts.deployer.address, basisPoints: 2222 },
+    { recipient: config.accounts.artist.address, basisPoints: 2778 },
+    { recipient: config.accounts.additional.address, basisPoints: 5000 },
+  ];
   // deploy splitter implementation
-  config.splitterImplementation = await deployAndGet(
-    config,
-    "SplitAtomicV0",
-    []
-  );
+  config.splitterImplementation = await deployAndGet(config, "SplitAtomicV0", [
+    targetSplits,
+  ]);
   // deploy splitter factory
   config.splitterFactory = await deployAndGet(config, "SplitAtomicFactoryV0", [
     config.splitterImplementation.address,
@@ -71,11 +74,7 @@ export async function setupSplits() {
     2222, // required split bps
   ]);
   // deploy splitter via factory
-  const tx = await config.splitterFactory.createSplit([
-    { recipient: config.accounts.deployer.address, basisPoints: 2222 },
-    { recipient: config.accounts.artist.address, basisPoints: 2778 },
-    { recipient: config.accounts.additional.address, basisPoints: 5000 },
-  ]);
+  const tx = await config.splitterFactory.createSplit(targetSplits);
   const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
   // get splitter address from logs
   const splitterCreationLog = receipt.logs[receipt.logs.length - 1];

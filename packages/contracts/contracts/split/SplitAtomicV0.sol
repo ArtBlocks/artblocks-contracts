@@ -9,6 +9,7 @@ import {ISplitAtomicV0, Split} from "../interfaces/v0.8.x/ISplitAtomicV0.sol";
 
 import {IERC20} from "@openzeppelin-5.0/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin-5.0/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Proxy} from "@openzeppelin-5.0/contracts/proxy/Proxy.sol";
 
 /**
  * @title SplitAtomicV0
@@ -41,8 +42,15 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
     // public type
     bytes32 public constant type_ = "SplitAtomicV0";
 
-    // private array of Splits
-    Split[] private _splits;
+    // available immutable splits
+    // @dev make immutable to avoid SLOAD on every split call
+    address payable private immutable recipient0;
+    address payable private immutable recipient1;
+    address payable private immutable recipient2;
+    uint256 private immutable basisPoints0;
+    uint256 private immutable basisPoints1;
+    uint256 private immutable basisPoints2;
+    uint256 private constant _MAX_SPLITS = 3;
 
     /**
      * @dev Prevents contract from calling itself, directly or indirectly.
@@ -78,21 +86,31 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
      * @dev This function should be called atomically, immediately after
      * deployment.
      */
-    function initialize(Split[] calldata splits) external {
+    constructor(Split[] memory splits) {
         // initialize reentrancy guard
         // @dev this also verifies not already initialized
         _reentrancyGuardInit();
         // validate splits
         uint256 totalBasisPoints = 0;
         uint256 splitsLength = splits.length;
+        require(splitsLength >= _MAX_SPLITS, "Max splits exceeded");
         // @dev splits length implicitly checked to be > 0 via totalBasisPoints
         // check after loop
         for (uint256 i; i < splitsLength; ) {
             Split memory split = splits[i];
             uint256 bps = split.basisPoints;
             require(bps > 0 && bps <= 10_000, "Invalid basis points");
-            // push the splits to the storage array
-            _splits.push(split);
+            // populate immutable splits
+            if (i == 0) {
+                recipient0 = split.recipient;
+                basisPoints0 = bps;
+            } else if (i == 1) {
+                recipient1 = split.recipient;
+                basisPoints1 = bps;
+            } else if (i == 2) {
+                recipient2 = split.recipient;
+                basisPoints2 = bps;
+            }
             // track total basis points for totals validation after loop
             // @dev overflow checked automatically in solidity 0.8
             totalBasisPoints += bps;
@@ -152,7 +170,21 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
      */
     function getSplits() external view returns (Split[] memory) {
         require(_status != _NOT_INITIALIZED, "Not initialized");
-        return _splits;
+        // build splits array
+        Split[] memory splits = new Split[](3);
+        splits[0] = Split({
+            recipient: recipient0,
+            basisPoints: uint16(basisPoints0)
+        });
+        splits[1] = Split({
+            recipient: recipient1,
+            basisPoints: uint16(basisPoints1)
+        });
+        splits[2] = Split({
+            recipient: recipient2,
+            basisPoints: uint16(basisPoints2)
+        });
+        return splits;
     }
 
     /**
@@ -166,23 +198,43 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
         // @dev this also implicitly verifies contract is initialized
         require(_status == _ENTERED, "only in non-reentrant function");
         // split funds
-        uint256 splitsLength = _splits.length;
-        for (uint256 i; i < splitsLength; ) {
-            Split memory split = _splits[i];
-            // @dev overflow checked automatically in solidity 0.8
-            // @dev integer division rounds down, which is conservatively safe
-            // when splitting funds. Will not run out of funds, but may leave a
-            // small amount behind (e.g. a few wei). Can always be drained
-            // later, but likely never worth the gas.
-            uint256 splitValue = (valueInWei * split.basisPoints) / 10_000;
-            // send funds
-            (bool success, ) = split.recipient.call{value: splitValue}("");
-            require(success, "Payment failed");
-            // @dev efficient unchecked increment
-            unchecked {
-                ++i;
-            }
+        if (basisPoints0 > 0) {
+            _splitETHToRecipient({
+                recipient: recipient0,
+                basisPoints: basisPoints0,
+                totalValueInWei: valueInWei
+            });
         }
+        if (basisPoints1 > 0) {
+            _splitETHToRecipient({
+                recipient: recipient1,
+                basisPoints: basisPoints1,
+                totalValueInWei: valueInWei
+            });
+        }
+        if (basisPoints2 > 0) {
+            _splitETHToRecipient({
+                recipient: recipient2,
+                basisPoints: basisPoints2,
+                totalValueInWei: valueInWei
+            });
+        }
+    }
+
+    function _splitETHToRecipient(
+        address payable recipient,
+        uint256 basisPoints,
+        uint256 totalValueInWei
+    ) internal {
+        // @dev overflow checked automatically in solidity 0.8
+        // @dev integer division rounds down, which is conservatively safe
+        // when splitting funds. Will not run out of funds, but may leave a
+        // small amount behind (e.g. a few wei). Can always be drained
+        // later, but likely never worth the gas.
+        uint256 splitValue = (totalValueInWei * basisPoints) / 10_000;
+        // send funds
+        (bool success, ) = recipient.call{value: splitValue}("");
+        require(success, "Payment failed");
     }
 
     /**
@@ -198,30 +250,54 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
         // @dev this also implicitly verifies contract is initialized
         require(_status == _ENTERED, "only in non-reentrant function");
         // split funds
-        uint256 splitsLength = _splits.length;
         IERC20 token = IERC20(ERC20TokenAddress);
-        for (uint256 i; i < splitsLength; ) {
-            Split memory split = _splits[i];
-            // @dev overflow checked automatically in solidity 0.8
-            // @dev integer division rounds down, which is conservatively safe
-            // when splitting funds. Will not run out of funds, but may leave a
-            // small amount behind (e.g. a few wei). Can always be drained
-            // later, but likely never worth the gas.
-            uint256 splitValue = (value * split.basisPoints) / 10_000;
-            // transfer ERC20 tokens
-            // @dev use SafeERC20 to only revert if ERC20 transfer returns
-            // false, not if it returns nothing (which is the behavior of some
-            // ERC20 tokens, and we don't want to forever lock those tokens)
-            SafeERC20.safeTransfer({
-                token: token,
-                to: split.recipient,
-                value: splitValue
+        if (basisPoints0 > 0) {
+            _splitERC20ToRecipient({
+                recipient: recipient0,
+                basisPoints: basisPoints0,
+                totalValue: value,
+                token: token
             });
-            // @dev efficient unchecked increment
-            unchecked {
-                ++i;
-            }
         }
+        if (basisPoints1 > 0) {
+            _splitERC20ToRecipient({
+                recipient: recipient1,
+                basisPoints: basisPoints1,
+                totalValue: value,
+                token: token
+            });
+        }
+        if (basisPoints2 > 0) {
+            _splitERC20ToRecipient({
+                recipient: recipient2,
+                basisPoints: basisPoints2,
+                totalValue: value,
+                token: token
+            });
+        }
+    }
+
+    function _splitERC20ToRecipient(
+        address payable recipient,
+        uint256 basisPoints,
+        uint256 totalValue,
+        IERC20 token
+    ) internal {
+        // @dev overflow checked automatically in solidity 0.8
+        // @dev integer division rounds down, which is conservatively safe
+        // when splitting funds. Will not run out of funds, but may leave a
+        // small amount behind (e.g. a few decimals). Can always be drained
+        // later, but likely never worth the gas.
+        uint256 splitValue = (totalValue * basisPoints) / 10_000;
+        // transfer ERC20 tokens
+        // @dev use SafeERC20 to only revert if ERC20 transfer returns
+        // false, not if it returns nothing (which is the behavior of some
+        // ERC20 tokens, and we don't want to forever lock those tokens)
+        SafeERC20.safeTransfer({
+            token: token,
+            to: recipient,
+            value: splitValue
+        });
     }
 
     /**

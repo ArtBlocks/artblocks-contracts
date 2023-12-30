@@ -32,14 +32,6 @@ interface ISplitAtomicV0 {
     event DrainedERC20(address ERC20TokenAddress);
 
     /**
-     * @notice Initializes the contract with the provided `splits`.
-     * Only callable once.
-     * @param splits Splits to configure the contract with. Must add up to
-     * 10_000 BPS.
-     */
-    function initialize(Split[] calldata splits) external;
-
-    /**
      * @notice Drains the contract's balance to the configured `splits`.
      * Reverts if not initialized.
      */

@@ -5,10 +5,9 @@
 // source code verification purposes.
 pragma solidity 0.8.22;
 
+import {SplitAtomicV0} from "./SplitAtomicV0.sol";
 import {ISplitAtomicV0, Split} from "../interfaces/v0.8.x/ISplitAtomicV0.sol";
 import {ISplitAtomicFactoryV0} from "../interfaces/v0.8.x/ISplitAtomicFactoryV0.sol";
-
-import {Clones} from "@openzeppelin-5.0/contracts/proxy/Clones.sol";
 
 /**
  * @title SplitAtomicFactoryV0
@@ -68,10 +67,8 @@ contract SplitAtomicFactoryV0 is ISplitAtomicFactoryV0 {
                 splits[0].basisPoints == requiredSplitBasisPoints,
             "splits[0] must be required split"
         );
-        // Create the EIP 1167 split atomic contract
-        splitAtomic = Clones.clone({implementation: splitAtomicImplementation});
-        // initialize the new split atomic contract
-        ISplitAtomicV0(splitAtomic).initialize(splits);
+        // create the split atomic contract
+        splitAtomic = address(new SplitAtomicV0(splits));
         // emit event
         emit SplitAtomicCreated(splitAtomic);
     }
@@ -91,13 +88,7 @@ contract SplitAtomicFactoryV0 is ISplitAtomicFactoryV0 {
                 splits[0].basisPoints == requiredSplitBasisPoints,
             "splits[0] must be required split"
         );
-        // Create the EIP 1167 split atomic contract
-        splitAtomic = Clones.cloneDeterministic({
-            implementation: splitAtomicImplementation,
-            salt: salt
-        });
-        // initialize the new split atomic contract
-        ISplitAtomicV0(splitAtomic).initialize(splits);
+        // TODO
         // emit event
         emit SplitAtomicCreated(splitAtomic);
     }
@@ -111,13 +102,13 @@ contract SplitAtomicFactoryV0 is ISplitAtomicFactoryV0 {
         emit Abandoned();
     }
 
-    function predictDeterministicAddress(
-        bytes32 salt
-    ) external view returns (address) {
-        return
-            Clones.predictDeterministicAddress({
-                implementation: splitAtomicImplementation,
-                salt: salt
-            });
-    }
+    // function predictDeterministicAddress(
+    //     bytes32 salt
+    // ) external view returns (address) {
+    //     return
+    //         Clones.predictDeterministicAddress({
+    //             implementation: splitAtomicImplementation,
+    //             salt: salt
+    //         });
+    // }
 }
