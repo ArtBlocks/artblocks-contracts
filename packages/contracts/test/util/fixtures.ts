@@ -70,18 +70,26 @@ export async function setupSplits() {
     config.accounts.deployer.address, // required split address
     2222, // required split bps
   ]);
-  // deploy splitter via factory
-  const tx = await config.splitterFactory.createSplit([
+  // define valid and invalid splits
+  config.validSplit = [
     { recipient: config.accounts.deployer.address, basisPoints: 2222 },
     { recipient: config.accounts.artist.address, basisPoints: 2778 },
     { recipient: config.accounts.additional.address, basisPoints: 5000 },
-  ]);
+  ];
+  config.invalidSplit = [
+    { recipient: config.accounts.user.address, basisPoints: 2222 }, // missing required split
+    { recipient: config.accounts.artist.address, basisPoints: 2778 },
+    { recipient: config.accounts.additional.address, basisPoints: 5000 },
+  ];
+  // deploy valid splitter via factory
+  const tx = await config.splitterFactory.createSplit(config.validSplit);
   const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
   // get splitter address from logs
   const splitterCreationLog = receipt.logs[receipt.logs.length - 1];
-  const splitterAddress = ethers.utils.getAddress(
-    "0x" + splitterCreationLog.topics[1].slice(-40)
-  );
+  const splitterAddress = ethers.utils.defaultAbiCoder.decode(
+    ["address"],
+    splitterCreationLog.topics[1]
+  )[0];
   config.splitter = new Contract(splitterAddress, SplitAtomicV0__factory.abi);
   return config;
 }

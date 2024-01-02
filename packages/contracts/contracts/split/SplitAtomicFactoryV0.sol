@@ -41,6 +41,11 @@ contract SplitAtomicFactoryV0 is ISplitAtomicFactoryV0 {
         address requiredSplitAddress_,
         uint16 requiredSplitBasisPoints_
     ) {
+        // input validation
+        require(
+            requiredSplitBasisPoints_ <= 10_000,
+            "only reqd split BPS <= 10_000"
+        );
         splitAtomicImplementation = splitAtomicImplementation_;
         requiredSplitAddress = requiredSplitAddress_;
         requiredSplitBasisPoints = requiredSplitBasisPoints_;
@@ -73,6 +78,7 @@ contract SplitAtomicFactoryV0 is ISplitAtomicFactoryV0 {
     }
 
     function abandon() external {
+        require(!isAbandoned, "factory is abandoned");
         require(msg.sender == deployer, "only deployer may abandon");
         // set isAbandoned to true
         isAbandoned = true;

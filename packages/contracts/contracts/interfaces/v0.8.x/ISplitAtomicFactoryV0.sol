@@ -50,6 +50,29 @@ interface ISplitAtomicFactoryV0 {
     function splitAtomicImplementation() external view returns (address);
 
     /**
+     * @notice The address that must be included in all splits.
+     */
+    function requiredSplitAddress() external view returns (address);
+
+    /**
+     * @notice The basis points that must be included in all splits, for the
+     * required split address.
+     */
+    function requiredSplitBasisPoints() external view returns (uint16);
+
+    /**
+     * @notice The deployer of the contract.
+     */
+    function deployer() external view returns (address);
+
+    /**
+     * @notice Indicates whether the contract is abandoned.
+     * Once abandoned, the contract can no longer be used to create new split
+     * atomic contracts.
+     */
+    function isAbandoned() external view returns (bool);
+
+    /**
      * @notice Indicates the type of the contract, e.g. `SplitAtomicFactoryV0`.
      * @return type_ The type of the contract.
      */
