@@ -76,32 +76,6 @@ contract SplitAtomicFactoryV0 is ISplitAtomicFactoryV0 {
         emit SplitAtomicCreated(splitAtomic);
     }
 
-    function createSplitDeterministic(
-        Split[] calldata splits,
-        bytes32 salt
-    ) external returns (address splitAtomic) {
-        require(
-            // @dev use uint256 instead of bool for gas efficiency
-            isAbandoned == 0,
-            "factory is abandoned"
-        );
-        // validate first split is initial split
-        require(
-            splits[0].recipient == requiredSplitAddress &&
-                splits[0].basisPoints == requiredSplitBasisPoints,
-            "splits[0] must be required split"
-        );
-        // Create the EIP 1167 split atomic contract
-        splitAtomic = Clones.cloneDeterministic({
-            implementation: splitAtomicImplementation,
-            salt: salt
-        });
-        // initialize the new split atomic contract
-        ISplitAtomicV0(splitAtomic).initialize(splits);
-        // emit event
-        emit SplitAtomicCreated(splitAtomic);
-    }
-
     function abandon() external {
         require(msg.sender == deployer, "only deployer can abandon");
         // set isAbandoned to true
@@ -109,15 +83,5 @@ contract SplitAtomicFactoryV0 is ISplitAtomicFactoryV0 {
         isAbandoned = 1;
         // emit event
         emit Abandoned();
-    }
-
-    function predictDeterministicAddress(
-        bytes32 salt
-    ) external view returns (address) {
-        return
-            Clones.predictDeterministicAddress({
-                implementation: splitAtomicImplementation,
-                salt: salt
-            });
     }
 }
