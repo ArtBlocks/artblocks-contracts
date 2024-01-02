@@ -25,11 +25,11 @@ contract SplitAtomicFactoryV0 is ISplitAtomicFactoryV0 {
     address public immutable requiredSplitAddress;
     uint16 public immutable requiredSplitBasisPoints;
 
-    // abandon old factories that use abandoned required split addresses or bps
-    // @dev use uint256 instead of bool for gas efficiency
-    uint256 public isAbandoned; // default 0 (false)
-
+    // deployer of the contract is the only one who can abandon the contract
     address public immutable deployer;
+
+    // abandon old factories that use abandoned required split addresses or bps
+    bool public isAbandoned; // default false
 
     /**
      * @notice Initializes contract with the provided `splits`.
@@ -57,11 +57,7 @@ contract SplitAtomicFactoryV0 is ISplitAtomicFactoryV0 {
     function createSplit(
         Split[] calldata splits
     ) external returns (address splitAtomic) {
-        require(
-            // @dev use uint256 instead of bool for gas efficiency
-            isAbandoned == 0,
-            "factory is abandoned"
-        );
+        require(!isAbandoned, "factory is abandoned");
         // validate first split is initial split
         require(
             splits[0].recipient == requiredSplitAddress &&
@@ -77,10 +73,9 @@ contract SplitAtomicFactoryV0 is ISplitAtomicFactoryV0 {
     }
 
     function abandon() external {
-        require(msg.sender == deployer, "only deployer can abandon");
+        require(msg.sender == deployer, "only deployer may abandon");
         // set isAbandoned to true
-        // @dev use uint256 instead of bool for gas efficiency
-        isAbandoned = 1;
+        isAbandoned = true;
         // emit event
         emit Abandoned();
     }

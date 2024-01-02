@@ -80,7 +80,8 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
      */
     function initialize(Split[] calldata splits) external {
         // initialize reentrancy guard
-        // @dev this also verifies not already initialized
+        // @dev this reverts if already initialized, preventing this function
+        // from ever being called more than once
         _reentrancyGuardInit();
         // validate splits
         uint256 totalBasisPoints = 0;
