@@ -63,13 +63,15 @@ export async function setupSplits() {
     { recipient: config.accounts.artist.address, basisPoints: 2778 },
     { recipient: config.accounts.additional.address, basisPoints: 5000 },
   ];
-  // deploy splitter implementation
-  config.splitterImplementation = await deployAndGet(config, "SplitAtomicV0", [
-    targetSplits,
-  ]);
+  // deploy splitter helpers
+  config.splitterHelpers = await deployAndGet(
+    config,
+    "SplitAtomicV0Helpers",
+    []
+  );
   // deploy splitter factory
   config.splitterFactory = await deployAndGet(config, "SplitAtomicFactoryV0", [
-    config.splitterImplementation.address,
+    config.splitterHelpers.address,
     config.accounts.deployer.address, // required split address
     2222, // required split bps
   ]);

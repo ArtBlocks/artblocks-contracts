@@ -18,20 +18,6 @@ interface ISplitAtomicV0 {
     event Initialized(bytes32 type_);
 
     /**
-     * @notice Indicates that the contract's balance manually was drained of
-     * ETH.
-     */
-    event DrainedETH();
-
-    /**
-     * @notice Indicates that the contract's balance manually was drained of
-     * ERC20 token at address `ERC20TokenAddress`.
-     * @param ERC20TokenAddress The address of the ERC20 token that was
-     * drained.
-     */
-    event DrainedERC20(address ERC20TokenAddress);
-
-    /**
      * @notice Drains the contract's balance to the configured `splits`.
      * Reverts if not initialized.
      */
@@ -47,7 +33,7 @@ interface ISplitAtomicV0 {
     /**
      * @notice Returns the configured `splits`.
      */
-    function getSplits() external view returns (Split[] memory);
+    // function getSplits() external view returns (Split[] memory);
 
     /**
      * @notice Indicates the type of the contract, e.g. `SplitAtomicV0`.

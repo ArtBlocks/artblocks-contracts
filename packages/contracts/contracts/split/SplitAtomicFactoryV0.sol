@@ -68,7 +68,12 @@ contract SplitAtomicFactoryV0 is ISplitAtomicFactoryV0 {
             "splits[0] must be required split"
         );
         // create the split atomic contract
-        splitAtomic = address(new SplitAtomicV0(splits));
+        splitAtomic = address(
+            new SplitAtomicV0({
+                splitAtomicV0Helpers_: splitAtomicImplementation,
+                splits: splits
+            })
+        );
         // emit event
         emit SplitAtomicCreated(splitAtomic);
     }
