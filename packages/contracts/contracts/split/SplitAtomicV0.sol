@@ -165,6 +165,7 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
         // require only called in the context of a non-reentrant function
         // @dev this provides fault-tolerant behavior for reentrancy guards
         // @dev this also implicitly verifies contract is initialized
+        // @dev no cover on next line else banch due to fault-tolerant check
         require(_status == _ENTERED, "only in non-reentrant function");
         // split funds
         uint256 splitsLength = _splits.length;
@@ -198,6 +199,7 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
         // require only called in the context of a non-reentrant function
         // @dev this provides fault-tolerant behavior for reentrancy guards
         // @dev this also implicitly verifies contract is initialized
+        // @dev no cover on next line else banch due to fault-tolerant check
         require(_status == _ENTERED, "only in non-reentrant function");
         // split funds
         uint256 splitsLength = _splits.length;

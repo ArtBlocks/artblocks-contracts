@@ -31,9 +31,47 @@ describe(`SplitAtomicFactoryV0 Configure`, async function () {
     it("is not re-initializable", async function () {
       const config = await loadFixture(_beforeEach);
       // The created splitter factory should be initialized with the valid splits
-      expectRevert(
-        await config.splitter.getSplits(),
+      await expectRevert(
+        config.splitter
+          .connect(config.accounts.deployer)
+          .initialize(config.validSplit),
         revertMessages.alreadyInitialized
+      );
+    });
+
+    it("reverts if invalid split, invalid total bps", async function () {
+      const config = await loadFixture(_beforeEach);
+      await expectRevert(
+        config.splitterFactory.connect(config.accounts.user).createSplit([
+          { recipient: config.accounts.deployer.address, basisPoints: 2222 },
+          { recipient: config.accounts.artist.address, basisPoints: 2778 },
+          { recipient: config.accounts.additional.address, basisPoints: 4999 }, // invalid total bps of < 10_000
+        ]),
+        revertMessages.invalidTotalBasisPoints
+      );
+    });
+
+    it("reverts if invalid split, invalid single bps of 0", async function () {
+      const config = await loadFixture(_beforeEach);
+      await expectRevert(
+        config.splitterFactory.connect(config.accounts.user).createSplit([
+          { recipient: config.accounts.deployer.address, basisPoints: 2222 },
+          { recipient: config.accounts.artist.address, basisPoints: 0 }, // invalid single bps of zero
+          { recipient: config.accounts.additional.address, basisPoints: 7778 },
+        ]),
+        revertMessages.invalidBasisPoints
+      );
+    });
+
+    it("reverts if invalid split, invalid single bps of >10_000", async function () {
+      const config = await loadFixture(_beforeEach);
+      await expectRevert(
+        config.splitterFactory.connect(config.accounts.user).createSplit([
+          { recipient: config.accounts.deployer.address, basisPoints: 2222 },
+          { recipient: config.accounts.artist.address, basisPoints: 10_001 }, // invalid single bps of > 10_000
+          { recipient: config.accounts.additional.address, basisPoints: 7778 },
+        ]),
+        revertMessages.invalidBasisPoints
       );
     });
   });
