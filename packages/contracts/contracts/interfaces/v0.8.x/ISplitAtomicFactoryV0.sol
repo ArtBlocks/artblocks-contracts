@@ -44,7 +44,7 @@ interface ISplitAtomicFactoryV0 {
     ) external returns (address splitAtomic);
 
     /**
-     * @notice The implementation contract that is used when creating new
+     * @notice The implementation contract that is cloned when creating new
      * split atomic contracts.
      */
     function splitAtomicImplementation() external view returns (address);
@@ -69,6 +69,7 @@ interface ISplitAtomicFactoryV0 {
      * @notice Indicates whether the contract is abandoned.
      * Once abandoned, the contract can no longer be used to create new split
      * atomic contracts.
+     * @return bool True if the contract is abandoned, false otherwise.
      */
     function isAbandoned() external view returns (bool);
 

@@ -17,7 +17,7 @@ import {SafeERC20} from "@openzeppelin-5.0/contracts/token/ERC20/utils/SafeERC20
  * `splits`, which are immutably configured at initialization time.
  * Each split is defined as a `recipient` address and a `basisPoints` value.
  * The total of all `basisPoints` values must add up to 10_000 (100%), which
- * is verified at initialization time.
+ * is verified at initialization time. All splits must be non-zero.
  *
  * When the contract receives funds, it splits the funds according to the
  * configured `splits`. The contract can also manually split any funds that
@@ -50,7 +50,7 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
      * function is not supported. It is possible to prevent this from happening
      * by making the `nonReentrant` function external, and making it call a
      * `private` function that does the actual work.
-     * @dev prefer to use modifier here due to w
+     * @dev prefer to use modifier here due to wrapped function behavior
      */
     modifier nonReentrant() {
         _nonReentrantBefore();
@@ -62,6 +62,7 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
      * @notice receive function splits received funds according to the
      * configured `splits`.
      * Reverts if contract is not yet initialized.
+     * Non-reentrant function.
      * @dev This function automatically splits funds when the native token of a
      * blockchain is sent to the contract. It is important to note that this
      * function uses an unspecified amount of gas, and therefore sending funds
@@ -75,9 +76,11 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
     }
 
     /**
-     * @notice Initializes contract with the provided `splits`.
-     * @dev This function should be called atomically, immediately after
-     * deployment.
+     * @notice Initializes the contract with the provided `splits`.
+     * This function should be called atomically, immediately after deployment.
+     * Only callable once.
+     * @param splits Splits to configure the contract with. Must add up to
+     * 10_000 BPS.
      */
     function initialize(Split[] calldata splits) external {
         // initialize reentrancy guard
@@ -150,6 +153,7 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
 
     /**
      * @notice Returns the configured `splits`.
+     * @return Split[] memory The configured `splits`.
      */
     function getSplits() external view returns (Split[] memory) {
         return _splits;

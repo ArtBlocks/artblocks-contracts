@@ -13,11 +13,24 @@ import {Clones} from "@openzeppelin-5.0/contracts/proxy/Clones.sol";
 /**
  * @title SplitAtomicFactoryV0
  * @author Art Blocks Inc.
+ * @notice Factory contract for creating new split atomic contracts.
+ * @dev This contract is deployed once, and then used to create new split
+ * atomic contracts. The contract may be abandoned once it is no longer needed.
+ * Once abandoned, the contract can no longer be used to create new split
+ * atomic contracts.
+ * The contract is initialized with a required split address and basis points.
+ * All splits must include the required split address and basis points.
+ * The contract is initialized with an implementation contract, which is cloned
+ * when creating new split atomic contracts.
  */
 contract SplitAtomicFactoryV0 is ISplitAtomicFactoryV0 {
     // public type
     bytes32 public constant type_ = "SplitAtomicFactoryV0";
-    // public immutable implementation contract
+
+    /**
+     * The implementation contract that is cloned when creating new split
+     * atomic contracts.
+     */
     address public immutable splitAtomicImplementation;
 
     // required split address and basis points
@@ -25,16 +38,23 @@ contract SplitAtomicFactoryV0 is ISplitAtomicFactoryV0 {
     address public immutable requiredSplitAddress;
     uint16 public immutable requiredSplitBasisPoints;
 
-    // deployer of the contract is the only one who can abandon the contract
+    // deployer of the contract is the only one who may abandon the contract
     address public immutable deployer;
 
-    // abandon old factories that use abandoned required split addresses or bps
+    /**
+     * Indicates whether the contract is abandoned.
+     * Once abandoned, the contract can no longer be used to create new split
+     * atomic contracts.
+     */
     bool public isAbandoned; // default false
 
     /**
-     * @notice Initializes contract with the provided `splits`.
-     * @dev This function should be called atomically, immediately after
-     * deployment.
+     * @notice validates and assigns immutable configuration variables
+     * @param splitAtomicImplementation_ address of the split atomic
+     * implementation contract
+     * @param requiredSplitAddress_ address that must be included in all splits
+     * @param requiredSplitBasisPoints_ basis points that must be included in
+     * all splits, for the required split address. Must be <= 10_000.
      */
     constructor(
         address splitAtomicImplementation_,
@@ -59,6 +79,14 @@ contract SplitAtomicFactoryV0 is ISplitAtomicFactoryV0 {
         });
     }
 
+    /**
+     * @notice Creates a new split atomic contract with the provided `splits`.
+     * @param splits Splits to configure the contract with. Must add up to
+     * 10_000 BPS, and the first split must be the required split; reverts
+     * otherwise.
+     * @return splitAtomic The address of the newly created split atomic
+     * contract. The address is also emitted in the `SplitAtomicCreated` event.
+     */
     function createSplit(
         Split[] calldata splits
     ) external returns (address splitAtomic) {
@@ -77,6 +105,11 @@ contract SplitAtomicFactoryV0 is ISplitAtomicFactoryV0 {
         emit SplitAtomicCreated(splitAtomic);
     }
 
+    /**
+     * @notice Abandons the contract, preventing it from being used to create
+     * new split atomic contracts.
+     * Only callable by the deployer, and only once; reverts otherwise.
+     */
     function abandon() external {
         require(!isAbandoned, "factory is abandoned");
         require(msg.sender == deployer, "only deployer may abandon");

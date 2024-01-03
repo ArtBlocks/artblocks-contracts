@@ -3,6 +3,11 @@
 
 pragma solidity ^0.8.0;
 
+/**
+ * @notice Struct representing a split.
+ * @param recipient The address to send funds to.
+ * @param basisPoints The basis points to allocate to recipient (1-10_000).
+ */
 struct Split {
     // address to send funds to
     address payable recipient;
@@ -33,6 +38,7 @@ interface ISplitAtomicV0 {
 
     /**
      * @notice Initializes the contract with the provided `splits`.
+     * This function should be called atomically, immediately after deployment.
      * Only callable once.
      * @param splits Splits to configure the contract with. Must add up to
      * 10_000 BPS.
@@ -40,20 +46,21 @@ interface ISplitAtomicV0 {
     function initialize(Split[] calldata splits) external;
 
     /**
-     * @notice Drains the contract's balance to the configured `splits`.
+     * @notice Drains the contract's ETH balance to the configured `splits`.
      * Reverts if not initialized.
      */
     function drainETH() external;
 
     /**
      * @notice Drains the contract's balance of an input ERC20 token to the
-     * configured `splits`.
+     * configured `splits`. Reverts if not initialized.
      * @param ERC20TokenAddress The address of the ERC20 token to split.
      */
     function drainERC20(address ERC20TokenAddress) external;
 
     /**
      * @notice Returns the configured `splits`.
+     * @return Split[] memory The configured `splits`.
      */
     function getSplits() external view returns (Split[] memory);
 
