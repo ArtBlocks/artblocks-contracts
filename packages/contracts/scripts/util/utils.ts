@@ -62,6 +62,11 @@ export type DeployConfigDetails = {
   // flagship core fields
   artblocksPrimarySalesAddress?: string;
   artblocksSecondarySalesAddress?: string;
+  // splits fields
+  implementationName?: string;
+  factoryName?: string;
+  requiredSplitAddress?: string;
+  requiredSplitBPS?: number;
 };
 
 export async function getConfigInputs(
