@@ -196,6 +196,16 @@ The contract allows for the overriding of project dependencies. This means that 
   - V0 Implementation https://etherscan.io/address/0x2d3f8D5c5294B7934aFBe4B901EEb5E7B48a4e97#code
   - AdminACLV0 https://etherscan.io/address/0x569cDfECFD848a02Ad3e74175a1A4a74484Ef944#code
 
+## Splitter Factories
+
+In some instances, splitter contracts may be used by projects to split revenue between multiple parties. For flagship, sometimes splitter contracts deployed using a factory contract are used. The factory contracts deployed for flagship are listed below:
+
+| Network | Environment | Factory Address                            | Implementation Address                     |
+| ------- | ----------- | ------------------------------------------ | ------------------------------------------ |
+| Sepolia | Dev         | 0x39D9580445A3Fcf486c6AD0d06F66fe0d42230eC | 0xDaf4BB19982927aBEACd9bCd1cE070f188ddb26E |
+| Sepolia | Staging     | TBD                                        | TBD                                        |
+| Mainnet | Prod        | TBD                                        | TBD                                        |
+
 ## Contract Source Code Verification
 
 All mainnet deployments of contracts developed in this repositiory are verified on Etherscan. To protect against centralized source code verification failures (for example, if Etherscan were to dissappear), the PR history of this repository may be used to determine the commit at which a given deployment was performed, and source code verification may be submitted by anyone to a different source code verification service. Deployment details are recorded in the `deployments/` directory.

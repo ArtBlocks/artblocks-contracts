@@ -1,0 +1,25 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2024-01-03T05:24:08.948Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/splits/sepolia-dev/splits-deploy-config.dev.ts
+[INFO] SplitAtomicV0 deployed at 0xDaf4BB19982927aBEACd9bCd1cE070f188ddb26E
+[INFO] SplitAtomicFactoryV0 deployed at 0x39D9580445A3Fcf486c6AD0d06F66fe0d42230eC
+[INFO] Verifying SplitAtomicV0 contract deployment...
+Successfully submitted source code for contract
+contracts/split/SplitAtomicV0.sol:SplitAtomicV0 at 0xDaf4BB19982927aBEACd9bCd1cE070f188ddb26E
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract SplitAtomicV0 on the block explorer.
+https://sepolia.etherscan.io/address/0xDaf4BB19982927aBEACd9bCd1cE070f188ddb26E#code
+
+[INFO] SplitAtomicV0 contract verified on Etherscan at 0xDaf4BB19982927aBEACd9bCd1cE070f188ddb26E
+[INFO] Verifying SplitAtomicFactoryV0 contract deployment...
+Successfully submitted source code for contract
+contracts/split/SplitAtomicFactoryV0.sol:SplitAtomicFactoryV0 at 0x39D9580445A3Fcf486c6AD0d06F66fe0d42230eC
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract SplitAtomicFactoryV0 on the block explorer.
+https://sepolia.etherscan.io/address/0x39D9580445A3Fcf486c6AD0d06F66fe0d42230eC#code
+
+[INFO] SplitAtomicFactoryV0 contract verified on Etherscan at 0x39D9580445A3Fcf486c6AD0d06F66fe0d42230eC
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/splits/sepolia-dev/DEPLOYMENTS.md
+[INFO] Done!

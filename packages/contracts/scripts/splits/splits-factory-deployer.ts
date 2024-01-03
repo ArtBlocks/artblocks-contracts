@@ -103,7 +103,7 @@ async function main() {
       ethers.utils.getAddress(deployDetails.requiredSplitAddress), // required split address
       deployDetails.requiredSplitBPS, // required split bps
     ];
-    const factory = await factoryFactory.deploy(factoryConstructorArgs);
+    const factory = await factoryFactory.deploy(...factoryConstructorArgs);
     await factory.deployed();
     const factoryAddress = factory.address;
     console.log(
