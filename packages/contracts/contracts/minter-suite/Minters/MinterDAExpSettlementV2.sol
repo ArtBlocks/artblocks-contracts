@@ -727,7 +727,7 @@ contract MinterDAExpSettlementV2 is
 
     /**
      * @notice Reclaims the sender's payment above current settled price for
-     * project `_projectId`. The current settled price is the the price paid
+     * project `_projectId`. The current settled price is the price paid
      * for the most recently purchased token, or the base price if the artist
      * has withdrawn revenues after the auction reached base price.
      * This function is callable at any point, but is expected to typically be
@@ -743,7 +743,7 @@ contract MinterDAExpSettlementV2 is
 
     /**
      * @notice Reclaims the sender's payment above current settled price for
-     * project `_projectId`. The current settled price is the the price paid
+     * project `_projectId`. The current settled price is the price paid
      * for the most recently purchased token, or the base price if the artist
      * has withdrawn revenues after the auction reached base price.
      * This function is callable at any point, but is expected to typically be
@@ -799,7 +799,7 @@ contract MinterDAExpSettlementV2 is
 
     /**
      * @notice Reclaims the sender's payment above current settled price for
-     * projects in `_projectIds`. The current settled price is the the price
+     * projects in `_projectIds`. The current settled price is the price
      * paid for the most recently purchased token, or the base price if the
      * artist has withdrawn revenues after the auction reached base price.
      * This function is callable at any point, but is expected to typically be
@@ -823,7 +823,7 @@ contract MinterDAExpSettlementV2 is
 
     /**
      * @notice Reclaims the sender's payment above current settled price for
-     * projects in `_projectIds`. The current settled price is the the price
+     * projects in `_projectIds`. The current settled price is the price
      * paid for the most recently purchased token, or the base price if the
      * artist has withdrawn revenues after the auction reached base price.
      * This function is callable at any point, but is expected to typically be
