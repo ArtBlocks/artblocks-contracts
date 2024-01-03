@@ -203,7 +203,7 @@ In some instances, splitter contracts may be used by projects to split revenue b
 | Network | Environment | Factory Address                            | Implementation Address                     |
 | ------- | ----------- | ------------------------------------------ | ------------------------------------------ |
 | Sepolia | Dev         | 0x39D9580445A3Fcf486c6AD0d06F66fe0d42230eC | 0xDaf4BB19982927aBEACd9bCd1cE070f188ddb26E |
-| Sepolia | Staging     | TBD                                        | TBD                                        |
+| Sepolia | Staging     | 0xe3D5373D2dc56948737E79244C8C6C856336BF1A | 0xc673EdD8c29Fbb6462Ff48ce61803fa6d7f4d7A3 |
 | Mainnet | Prod        | TBD                                        | TBD                                        |
 
 ## Contract Source Code Verification
