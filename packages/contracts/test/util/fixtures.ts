@@ -90,6 +90,9 @@ export async function setupSplits() {
     ["address"],
     splitterCreationLog.topics[1]
   )[0];
-  config.splitter = new Contract(splitterAddress, SplitAtomicV0__factory.abi);
+  config.splitter = SplitAtomicV0__factory.connect(
+    splitterAddress,
+    ethers.provider
+  );
   return config;
 }

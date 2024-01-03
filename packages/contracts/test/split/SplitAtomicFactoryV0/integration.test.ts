@@ -11,7 +11,7 @@ Logger.setLogLevel(Logger.levels.ERROR);
 import { revertMessages } from "./constants";
 import { revertMessages as splitterRevertMessages } from "../SplitAtomicV0/constants";
 
-describe(`SplitAtomicFactoryV0 Configure`, async function () {
+describe(`SplitAtomicFactoryV0 Integration`, async function () {
   async function _beforeEach() {
     // deploy new splitter factory
     const config = await loadFixture(setupSplits);

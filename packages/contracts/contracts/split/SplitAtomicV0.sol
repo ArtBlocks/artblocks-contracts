@@ -50,6 +50,7 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
      * function is not supported. It is possible to prevent this from happening
      * by making the `nonReentrant` function external, and making it call a
      * `private` function that does the actual work.
+     * @dev prefer to use modifier here due to w
      */
     modifier nonReentrant() {
         _nonReentrantBefore();
@@ -149,10 +150,8 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
 
     /**
      * @notice Returns the configured `splits`.
-     * Reverts if not initialized.
      */
     function getSplits() external view returns (Split[] memory) {
-        require(_status != _NOT_INITIALIZED, "Not initialized");
         return _splits;
     }
 
@@ -164,6 +163,7 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
      */
     function _splitETH(uint256 valueInWei) internal {
         // require only called in the context of a non-reentrant function
+        // @dev this provides fault-tolerant behavior for reentrancy guards
         // @dev this also implicitly verifies contract is initialized
         require(_status == _ENTERED, "only in non-reentrant function");
         // split funds
@@ -196,6 +196,7 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
      */
     function _splitERC20(address ERC20TokenAddress, uint256 value) internal {
         // require only called in the context of a non-reentrant function
+        // @dev this provides fault-tolerant behavior for reentrancy guards
         // @dev this also implicitly verifies contract is initialized
         require(_status == _ENTERED, "only in non-reentrant function");
         // split funds
@@ -241,9 +242,7 @@ contract SplitAtomicV0 is ISplitAtomicV0 {
      * Reverts if the guard is already entered.
      */
     function _nonReentrantBefore() private {
-        // On the first call to nonReentrant, _status will be _NOT_ENTERED
         require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
-
         // Any calls to nonReentrant after this point will fail
         _status = _ENTERED;
     }

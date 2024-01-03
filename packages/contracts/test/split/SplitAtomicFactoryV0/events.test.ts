@@ -1,20 +1,15 @@
 import { ethers } from "hardhat";
-import { expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setupSplits } from "../../util/fixtures";
-import { deployAndGet } from "../../util/common";
 
 import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
 
-import { revertMessages } from "./constants";
-import { revertMessages as splitterRevertMessages } from "../SplitAtomicV0/constants";
-
 const TARGET_TYPE = "SplitAtomicFactoryV0";
 
-describe(`SplitAtomicFactoryV0 Configure`, async function () {
+describe(`SplitAtomicFactoryV0 Events`, async function () {
   async function _beforeEach() {
     // deploy new splitter factory
     const config = await loadFixture(setupSplits);
