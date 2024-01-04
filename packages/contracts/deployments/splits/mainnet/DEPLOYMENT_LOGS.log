@@ -1,0 +1,25 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2024-01-03T05:58:44.942Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/splits/mainnet/splits-deploy-config.mainnet.ts
+[INFO] SplitAtomicV0 deployed at 0x853a03Ec9CCbf8203DF0C40926398B959d81AFd2
+[INFO] SplitAtomicFactoryV0 deployed at 0xb26aaD97B0e1d250dB131CD4133c11629EBB4ef7
+[INFO] Verifying SplitAtomicV0 contract deployment...
+Successfully submitted source code for contract
+contracts/split/SplitAtomicV0.sol:SplitAtomicV0 at 0x853a03Ec9CCbf8203DF0C40926398B959d81AFd2
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract SplitAtomicV0 on the block explorer.
+https://etherscan.io/address/0x853a03Ec9CCbf8203DF0C40926398B959d81AFd2#code
+
+[INFO] SplitAtomicV0 contract verified on Etherscan at 0x853a03Ec9CCbf8203DF0C40926398B959d81AFd2
+[INFO] Verifying SplitAtomicFactoryV0 contract deployment...
+Successfully submitted source code for contract
+contracts/split/SplitAtomicFactoryV0.sol:SplitAtomicFactoryV0 at 0xb26aaD97B0e1d250dB131CD4133c11629EBB4ef7
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract SplitAtomicFactoryV0 on the block explorer.
+https://etherscan.io/address/0xb26aaD97B0e1d250dB131CD4133c11629EBB4ef7#code
+
+[INFO] SplitAtomicFactoryV0 contract verified on Etherscan at 0xb26aaD97B0e1d250dB131CD4133c11629EBB4ef7
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/splits/mainnet/DEPLOYMENTS.md
+[INFO] Done!
