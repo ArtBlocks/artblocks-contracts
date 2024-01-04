@@ -5,6 +5,11 @@
 **GenArt721CoreV2:** https://etherscan.io/address/0x0A1BBD57033F57E7B6743621b79fCB9Eb2CE3676#code
 **GenArt721Minter:** https://etherscan.io/address/0x7b9a45E278b5B374bb2d96C65665d4360C97BF01#code
 
+## Sepolia
+
+**GenArt721CoreV2:** https://sepolia.etherscan.io/address/0x6Ceab51Fc8EE931Df84d3db66E747b617EB7dE21#code
+**GenArt721Minter:** https://sepolia.etherscan.io/address/0x6e755400470844a50A76Fc1161F21A1b0d78Ba14#code
+
 ## Goerli
 
 ### Upload 0
