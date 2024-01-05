@@ -157,3 +157,42 @@ Date: 2023-12-15T05:26:33.185Z
 - **Image Bucket:** r4v3n-l2-arbitrum-sepolia
 
 ---
+
+# Deployment
+
+Date: 2023-12-21T23:18:17.528Z
+
+## **Network:** arbitrum
+
+## **Environment:** arbitrum
+
+**Deployment Input File:** `deployments/engine/V3/partners/r4v3n-flex/deployment-config.arbitrum.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://arbitrum.etherscan.io/address/0x0D39AB55664007ff2d089A25480f169C6D0597Bb#code
+
+**AdminACLV1:** https://arbitrum.etherscan.io/address/0xea46ca9Eaf449B8c16305887f66019e9B1c72392#code
+
+**Core Registry:** https://arbitrum.etherscan.io/address/0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2#code
+
+**Shared Minter Filter:** https://arbitrum.etherscan.io/address/0x94560abECb897f359ee1A6Ed0E922315Da11752d#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** r4v3n l2
+- **Token Ticker:** R4V3NL2
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** 0x9D909728BF582196AB3612148B7C4Fe3c790d467
+- **Platform Provider Address, Primary Sales:** 0xF2162BaCC9F76608bA4b11b1a6dac976ED463129
+- **BytecodeStorageReader Library:** 0xa07f47c30C262adcC263A4D44595972c50e04db7
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** r4v3n-l2-arbitrum
+
+---
+
