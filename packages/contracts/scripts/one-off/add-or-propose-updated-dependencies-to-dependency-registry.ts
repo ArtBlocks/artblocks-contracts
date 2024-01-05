@@ -153,10 +153,10 @@ async function main() {
   }
 
   //////////////////////////////////////////////////////////////////////////////
-  // DEPLOYMENT BEGINS HERE
+  // ACTION BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
 
-  // Deploy dependency registry contract and proxy
+  // Connect to dependency registry contract
   const dependencyRegistry = DependencyRegistryV0__factory.connect(
     config.dependencyRegistryAddress,
     signer
@@ -224,6 +224,7 @@ async function main() {
       senderAddress,
       senderSignature: signature.data,
     });
+    console.log("Proposed transactions sent to gnosis safe");
   }
 }
 
