@@ -342,7 +342,7 @@ contract MinterDAExpSettlementV3 is
     /**
      * @notice Reclaims the sender's payment above current settled price for
      * project `projectId` on core contract `coreContract`.
-     * The current settled price is the the price paid for the most recently
+     * The current settled price is the price paid for the most recently
      * purchased token, or the base price if the artist has withdrawn revenues
      * after the auction reached base price.
      * This function is callable at any point, but is expected to typically be
@@ -366,7 +366,7 @@ contract MinterDAExpSettlementV3 is
 
     /**
      * @notice Reclaims the sender's payment above current settled price for
-     * projects in `projectIds`. The current settled price is the the price
+     * projects in `projectIds`. The current settled price is the price
      * paid for the most recently purchased token, or the base price if the
      * artist has withdrawn revenues after the auction reached base price.
      * This function is callable at any point, but is expected to typically be
@@ -702,7 +702,7 @@ contract MinterDAExpSettlementV3 is
     /**
      * @notice Reclaims the sender's payment above current settled price for
      * project `projectId` on core contract `coreContract`.
-     * The current settled price is the the price paid for the most recently
+     * The current settled price is the price paid for the most recently
      * purchased token, or the base price if the artist has withdrawn revenues
      * after the auction reached base price.
      * This function is callable at any point, but is expected to typically be
@@ -732,7 +732,7 @@ contract MinterDAExpSettlementV3 is
 
     /**
      * @notice Reclaims the sender's payment above current settled price for
-     * projects in `projectIds`. The current settled price is the the price
+     * projects in `projectIds`. The current settled price is the price
      * paid for the most recently purchased token, or the base price if the
      * artist has withdrawn revenues after the auction reached base price.
      * This function is callable at any point, but is expected to typically be

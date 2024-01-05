@@ -119,23 +119,23 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
 
     // minter-wide, admin-configurable parameters
     // ----------------------------------------
-    // minimum inital auction length, in seconds; configurable by admin
+    // minimum initial auction length, in seconds; configurable by admin
     // max uint32 ~= 4.3e9 sec ~= 136 years
     // @dev enforced only when artist configures a project
     // @dev default to 10 minutes
     uint32 minAuctionDurationSeconds = 600;
-    // maximum inital auction length, in seconds; configurable by admin
+    // maximum initial auction length, in seconds; configurable by admin
     // @dev enforced only when artist configures a project
     // @dev default to 1 month (1/12 of a year)
     uint32 maxAuctionDurationSeconds = 2_629_746;
     // the minimum percent increase for new bids above the current bid
-    // configureable by admin
+    // configurable by admin
     // max uint8 ~= 255, > 100 percent
     // @dev used when determining the increment percentage for any new bid on
     // the minter, across all projects
     uint8 minterMinBidIncrementPercentage = 5;
     // minimum time remaining in auction after a new bid is placed
-    // configureable by admin
+    // configurable by admin
     // max uint32 ~= 4.3e9 sec ~= 136 years
     // @dev used when determining the buffer time for any new bid on the
     // minter, across all projects
@@ -406,7 +406,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * @param _projectId Project ID to set future auction details for.
      * @param _timestampStart Timestamp after which new auctions may be
      * started. Note that this is not the timestamp of the auction start, but
-     * rather the timestamp after which a auction may be started. Also note
+     * rather the timestamp after which an auction may be started. Also note
      * that the passed value here must either be in the future, or `0` (which
      * indicates that auctions are immediately startable).
      * @param _auctionDurationSeconds Duration of new auctions, in seconds,
@@ -499,7 +499,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * has a "next token" assigned to a project, but the project has been reset
      * via `resetAuctionDetails`, and the artist does not want an auction to be
      * started for the "next token". This function also protects against the
-     * unforseen case where the minter is in an unexpected state where it has a
+     * unforeseen case where the minter is in an unexpected state where it has a
      * "next token" assigned to a project, but for some reason the project is
      * unable to begin a new auction due to a bug.
      * @dev only a single token may be actively assigned to a project's "next
@@ -541,11 +541,11 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
 
     /**
      * @notice Emergency, Artist-only function that attempts to mint a new
-     * token and set it as the the next token to be auctioned for project
+     * token and set it as the next token to be auctioned for project
      * `_projectId`.
-     * Note: This function is only included for emergency, unforseen use cases,
+     * Note: This function is only included for emergency, unforeseen use cases,
      * and should not be used in normal operation. It is here only for
-     * redundant protection against an unforseen edge case where the minter
+     * redundant protection against an unforeseen edge case where the minter
      * does not have a populated "next token", but there are still invocations
      * remaining on the project.
      * This function reverts if the project is not configured on this minter.

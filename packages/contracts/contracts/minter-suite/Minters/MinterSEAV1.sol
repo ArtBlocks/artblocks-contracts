@@ -727,7 +727,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
 
     /**
      * @notice Emergency, Artist-only function that attempts to mint a new
-     * token and set it as the the next token to be auctioned for project
+     * token and set it as the next token to be auctioned for project
      * `projectId`.
      * Note: This function is only included for emergency, unforseen use cases,
      * and should not be used in normal operation. It is here only for
