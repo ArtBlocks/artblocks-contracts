@@ -76,7 +76,7 @@ module.exports = {
       // ledgerAccounts: ["0x"],
       gasPrice: "auto",
       gasMultiplier: 1.75,
-      maxNominalGasPriceGwei: 50,
+      maxNominalGasPriceGwei: 75,
     },
     sepolia: {
       url: SEPOLIA_JSON_RPC_PROVIDER_URL,

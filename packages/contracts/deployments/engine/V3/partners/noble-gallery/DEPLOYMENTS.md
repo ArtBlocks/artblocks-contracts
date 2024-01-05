@@ -37,3 +37,42 @@ Date: 2023-11-17T22:36:55.949Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-12-05T21:56:45.317Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/noble-gallery/deployment-config.mainnet.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://etherscan.io/address/0x440E1B5A98332BcA7564DbffA4146f976CE75397#code
+
+**AdminACLV1:** https://etherscan.io/address/0xE89b16B4e5Cb619772894E29650437dee9779933#code
+
+**Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+
+**Shared Minter Filter:** https://etherscan.io/address/0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Noble Generative
+- **Token Ticker:** NGEN
+- **Auto Approve Artist Split Proposals:** false
+- **Render Provider Address, Primary Sales:** 0x3f71770894bD542c8e6e227FcFbeb4455A550DDa
+- **Platform Provider Address, Primary Sales:** 0xf8e90D2D2f6f67A13D0a04374e22624A80a1e918
+- **BytecodeStorageReader Library:** 0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** noble-generative-mainnet
+
+---
+

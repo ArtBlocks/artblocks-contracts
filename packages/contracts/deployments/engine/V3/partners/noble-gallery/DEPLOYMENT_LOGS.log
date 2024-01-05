@@ -44,3 +44,38 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0xf8e90D2D2f6f67A13D0a04374e22624A80a1e918, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-12-05T21:55:16.827Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/noble-gallery/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xE89b16B4e5Cb619772894E29650437dee9779933
+[INFO] Using shared Randomizer at 0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x440E1B5A98332BcA7564DbffA4146f976CE75397
+[INFO] Registered core contract 0x440E1B5A98332BcA7564DbffA4146f976CE75397 on core registry 0x2eE7B9bB2E038bE7323A119701A191c030A61ec6
+[INFO] Updated the Minter Filter on the Core contract to 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0xf8e90D2D2f6f67A13D0a04374e22624A80a1e918.
+[INFO] Verifying core contract contract deployment...
+The contract 0x440E1B5A98332BcA7564DbffA4146f976CE75397 has already been verified on Etherscan.
+https://etherscan.io/address/0x440E1B5A98332BcA7564DbffA4146f976CE75397#code
+[INFO] Core contract verified on Etherscan at 0x440E1B5A98332BcA7564DbffA4146f976CE75397}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xE89b16B4e5Cb619772894E29650437dee9779933 has already been verified on Etherscan.
+https://etherscan.io/address/0xE89b16B4e5Cb619772894E29650437dee9779933#code
+[INFO] AdminACL contract verified on Etherscan at 0xE89b16B4e5Cb619772894E29650437dee9779933
+Created s3 bucket for https://noble-generative-mainnet.s3.amazonaws.com
+[INFO] Created image bucket noble-generative-mainnet
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/noble-gallery/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x440e1b5a98332bca7564dbffa4146f976ce75397",
+  "name": "Noble Generative",
+  "bucket_name": "noble-generative-mainnet",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] AdminACL's superAdmin address is 0xf8e90D2D2f6f67A13D0a04374e22624A80a1e918, don't forget to update if requred.
