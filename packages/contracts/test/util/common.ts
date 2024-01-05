@@ -38,6 +38,8 @@ export type SharedMinterFilterSuite = {
   coreRegistry: Contract;
 };
 
+type T_Split = Array<{ recipient: string; basisPoints: number }>;
+
 export type T_Config = {
   // standard hardhat accounts
   accounts: TestAccountsArtBlocks;
@@ -83,6 +85,12 @@ export type T_Config = {
   coreRegistry?: Contract;
   minterSetPrice?: Contract;
   deadReceiver?: Contract;
+  splitterImplementation?: Contract;
+  splitterFactory?: Contract;
+  splitter?: Contract;
+  // split configs
+  validSplit?: T_Split;
+  invalidSplit?: T_Split;
   // minter test details
   isEngine?: boolean;
   delegationRegistry?: Contract;
