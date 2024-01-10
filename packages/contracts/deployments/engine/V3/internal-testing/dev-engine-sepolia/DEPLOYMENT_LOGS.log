@@ -1,0 +1,40 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2024-01-10T17:25:41.302Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/dev-engine-sepolia/deployment-config.dev.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: dev
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x1308D49D5105f661E0Ba85711710d2373BEa318d
+[INFO] Using shared Randomizer at 0xA6F7e62F3B52552f79b2Baa2858a1DB18016c09B
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x0e4E004E1F31B40BF4d7Eefbd99d376A23065122
+[INFO] Registered core contract 0x0e4E004E1F31B40BF4d7Eefbd99d376A23065122 on core registry 0x985C11541ff1fe763822Dc8f71B581C688B979EE
+[INFO] Updated the Minter Filter on the Core contract to 0x29e9f09244497503f304FA549d50eFC751D818d2.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4.
+[INFO] Verifying core contract contract deployment...
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0x0e4E004E1F31B40BF4d7Eefbd99d376A23065122
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine on the block explorer.
+https://sepolia.etherscan.io/address/0x0e4E004E1F31B40BF4d7Eefbd99d376A23065122#code
+
+[INFO] Core contract verified on Etherscan at 0x0e4E004E1F31B40BF4d7Eefbd99d376A23065122}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x1308D49D5105f661E0Ba85711710d2373BEa318d has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x1308D49D5105f661E0Ba85711710d2373BEa318d#code
+[INFO] AdminACL contract verified on Etherscan at 0x1308D49D5105f661E0Ba85711710d2373BEa318d
+Created s3 bucket for https://dev-engine-testing-sepolia.s3.amazonaws.com
+[INFO] Created image bucket dev-engine-testing-sepolia
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/dev-engine-sepolia/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x0e4e004e1f31b40bf4d7eefbd99d376a23065122",
+  "name": "Dev-Engine-Testing",
+  "bucket_name": "dev-engine-testing-sepolia",
+  "default_vertical_name": "fullyonchain"
+}
+Error upserting contracts: [GraphQL] invalid x-hasura-admin-secret/x-hasura-access-key
+[MANUAL] Ohlsen: I had an env var issue here, but manually updated db with the above input
