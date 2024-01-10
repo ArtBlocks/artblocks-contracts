@@ -56,16 +56,16 @@ interface GenArt721GeneratorV0TestConfig extends T_Config {
 }
 
 describe(`GenArt721GeneratorV0`, async function () {
-  const dependencyNameAndVersion = "p5js@1.0.0";
-  const dependencyNameAndVersionBytes = ethers.utils.formatBytes32String(
-    dependencyNameAndVersion
-  );
+  const p5NameAndVersion = "p5js@1.0.0";
+  const p5NameAndVersionBytes =
+    ethers.utils.formatBytes32String(p5NameAndVersion);
   const licenseType = "MIT";
   const licenseTypeBytes = ethers.utils.formatBytes32String(licenseType);
   const preferredCDN =
     "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/p5.min.js";
-  const preferredRepository = "https://github.com/processing/p5.js";
-  const dependencyWebsite = "https://p5js.org/";
+  const p5PreferredRepository = "https://github.com/processing/p5.js";
+  const p5DependencyWebsite = "https://p5js.org/";
+  // Arbitrary dependency script to test with
   const compressedDepScript = zlib
     .gzipSync(
       new Uint8Array(Buffer.from('let blah = "hello";let bleh = "goodbye";'))
@@ -97,20 +97,20 @@ describe(`GenArt721GeneratorV0`, async function () {
 
     // Add p5 to registry
     await config.dependencyRegistry.addDependency(
-      dependencyNameAndVersionBytes,
+      p5NameAndVersionBytes,
       licenseTypeBytes,
       preferredCDN,
-      preferredRepository,
-      dependencyWebsite
+      p5PreferredRepository,
+      p5DependencyWebsite
     );
 
     // Add compressed dependency script to registry in two parts
     await config.dependencyRegistry.addDependencyScript(
-      dependencyNameAndVersionBytes,
+      p5NameAndVersionBytes,
       compressedDepScript.slice(0, Math.floor(compressedDepScript.length / 2))
     );
     await config.dependencyRegistry.addDependencyScript(
-      dependencyNameAndVersionBytes,
+      p5NameAndVersionBytes,
       compressedDepScript.slice(Math.floor(compressedDepScript.length / 2))
     );
 
@@ -182,7 +182,7 @@ describe(`GenArt721GeneratorV0`, async function () {
         .addProjectDependencyOverride(
           genArt721CoreV0.address,
           0,
-          dependencyNameAndVersionBytes
+          p5NameAndVersionBytes
         );
 
       // Get token html
@@ -276,7 +276,7 @@ describe(`GenArt721GeneratorV0`, async function () {
         .addProjectDependencyOverride(
           genArt721CoreV1.address,
           projectId,
-          dependencyNameAndVersionBytes
+          p5NameAndVersionBytes
         );
 
       // Get token html
@@ -340,7 +340,7 @@ describe(`GenArt721GeneratorV0`, async function () {
         .addProjectDependencyOverride(
           genArt721CoreV2.address,
           projectId,
-          dependencyNameAndVersionBytes
+          p5NameAndVersionBytes
         );
 
       // Get token html
@@ -409,7 +409,7 @@ describe(`GenArt721GeneratorV0`, async function () {
         .addProjectScript(projectId, projectScript);
       await genArt721CoreV3
         .connect(config.accounts.artist)
-        .updateProjectScriptType(projectId, dependencyNameAndVersionBytes);
+        .updateProjectScriptType(projectId, p5NameAndVersionBytes);
 
       // Mint token 0
       await minterFilter
@@ -462,16 +462,17 @@ describe(`GenArt721GeneratorV0`, async function () {
   it("gets html for a given V3 core contract token with dependency script not on-chain", async function () {
     const config = await loadFixture(_beforeEach);
 
-    const depNameAndVersion = "test@0.0.0";
-    const depNameAndVersionBytes =
-      ethers.utils.formatBytes32String(depNameAndVersion);
-    const depCDN = "https://test.com/test.js";
+    const threeNameAndVersion = "three@0.124.0";
+    const threeNameAndVersionBytes =
+      ethers.utils.formatBytes32String(threeNameAndVersion);
+    const threePreferredCDN =
+      "https://cdnjs.cloudflare.com/ajax/libs/three.js/r124/three.min.js";
 
     // Add new dependency without script
     await config.dependencyRegistry.addDependency(
-      depNameAndVersionBytes,
+      threeNameAndVersionBytes,
       licenseTypeBytes,
-      depCDN,
+      threePreferredCDN,
       "",
       ""
     );
@@ -501,14 +502,13 @@ describe(`GenArt721GeneratorV0`, async function () {
       .connect(config.accounts.deployer)
       .addProject("name", config.accounts.artist.address);
 
-    const projectScript =
-      "console.log(tokenData); console.log(blah); console.log(bleh);";
+    const projectScript = "console.log(tokenData); console.log(THREE);";
     await genArt721CoreV3
       .connect(config.accounts.artist)
       .addProjectScript(projectId, projectScript);
     await genArt721CoreV3
       .connect(config.accounts.artist)
-      .updateProjectScriptType(projectId, depNameAndVersionBytes);
+      .updateProjectScriptType(projectId, threeNameAndVersionBytes);
 
     // Mint token 0
     await minterFilter
@@ -540,7 +540,7 @@ describe(`GenArt721GeneratorV0`, async function () {
     // Default style
     expect(tokenHtml).to.include(STYLE_TAG);
     // Dependency cdn script
-    expect(tokenHtml).to.include(getScriptTagWithSrc(depCDN));
+    expect(tokenHtml).to.include(getScriptTagWithSrc(threePreferredCDN));
     // Gunzip script
     expect(tokenHtml).to.include(
       getScriptBase64DataUriScriptTag(GUNZIP_SCRIPT_BASE64)
