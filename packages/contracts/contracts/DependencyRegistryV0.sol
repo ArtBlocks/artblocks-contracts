@@ -930,7 +930,7 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Returns details for a given depedency type `dependencyNameAndVersion`.
+     * @notice Returns details for a given dependency type `dependencyNameAndVersion`.
      * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
      * @return nameAndVersion String representation of `dependencyNameAndVersion`.
      *                        (e.g. "p5js(atSymbol)1.0.0")

@@ -338,7 +338,7 @@ export const MinterDASettlementV1V2_Common = async (
       const config = await loadFixture(_beforeEach);
       // achieve a state that splits revenues at time of sale.
       await completeAuctionWithoutSellingOut(config, config.projectZero);
-      // attacker is must be priviliged artist or admin, making config a somewhat
+      // attacker is must be privileged artist or admin, making config a somewhat
       // silly reentrancy attack. Still worth testing to ensure nonReentrant
       // modifier is working.
       const reentrancyMockFactory =

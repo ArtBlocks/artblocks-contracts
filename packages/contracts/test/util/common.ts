@@ -525,7 +525,7 @@ export async function advanceEVMByTime(_timeSeconds: number) {
   await ethers.provider.send("evm_mine", []);
 }
 
-// utility funciton to compare Big Numbers, expecting them to be within x%, +/-
+// utility function to compare Big Numbers, expecting them to be within x%, +/-
 export function requireBigNumberIsClose(
   actual: BigNumber,
   expected: BigNumber,
