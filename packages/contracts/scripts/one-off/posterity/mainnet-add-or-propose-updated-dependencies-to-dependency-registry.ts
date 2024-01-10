@@ -2,10 +2,10 @@
 // Created By: Art Blocks Inc.
 
 import hre, { ethers } from "hardhat";
-import { DependencyRegistryV0__factory } from "../contracts/factories/DependencyRegistryV0__factory";
-import { getNetworkName } from "../util/utils";
+import { DependencyRegistryV0__factory } from "../../contracts/factories/DependencyRegistryV0__factory";
+import { getNetworkName } from "../../util/utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { getDeployerWallet } from "../util/get-deployer-wallet";
+import { getDeployerWallet } from "../../util/get-deployer-wallet";
 import { Wallet } from "ethers";
 import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 import SafeApiKit from "@safe-global/api-kit";
@@ -78,10 +78,12 @@ type Config = GnosisSafeConfig | NoGnosisSafeConfig;
 
 // Fill this out before running the script
 const config: Config = {
-  network: "",
-  dependencyRegistryAddress: "",
-  useLedgerSigner: false,
-  useGnosisSafe: false,
+  network: "mainnet",
+  dependencyRegistryAddress: "0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF",
+  useLedgerSigner: true,
+  useGnosisSafe: true,
+  safeAddress: "<safe address>",
+  transactionServiceUrl: "https://safe-transaction-mainnet.safe.global",
 };
 
 //////////////////////////////////////////////////////////////////////////////
