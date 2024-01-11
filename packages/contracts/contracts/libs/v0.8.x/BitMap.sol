@@ -35,4 +35,16 @@ library BitMaps256 {
         uint256 mask = 1 << (index & 0xff);
         return bitMap & ~mask;
     }
+
+    function minBitSet(
+        uint256 bitMap,
+        uint8 startIndex
+    ) internal pure returns (uint8 minIndex) {
+        minIndex = startIndex;
+        // TODO make this more efficient
+        // @dev this is a linear search, worst case 256 iterations in memory
+        while (minIndex < 256 && !get(bitMap, minIndex)) {
+            minIndex++;
+        }
+    }
 }
