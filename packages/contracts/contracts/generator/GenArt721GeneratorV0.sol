@@ -1,19 +1,26 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import "./DependencyRegistryV0.sol";
-import "./interfaces/v0.8.x/IGenArt721CoreProjectScriptV0.sol";
-import "./interfaces/v0.8.x/IGenArt721CoreProjectScriptV1.sol";
-import "./interfaces/v0.8.x/IGenArt721CoreTokenHashProviderV0.sol";
-import "./interfaces/v0.8.x/IGenArt721CoreTokenHashProviderV1.sol";
-import "./libs/v0.8.x/Bytes32Strings.sol";
-import "./libs/v0.8.x/BytecodeStorageV1.sol";
+import "../DependencyRegistryV0.sol";
+import "../interfaces/v0.8.x/IGenArt721CoreProjectScriptV0.sol";
+import "../interfaces/v0.8.x/IGenArt721CoreProjectScriptV1.sol";
+import "../interfaces/v0.8.x/IGenArt721CoreTokenHashProviderV0.sol";
+import "../interfaces/v0.8.x/IGenArt721CoreTokenHashProviderV1.sol";
+import "../libs/v0.8.x/Bytes32Strings.sol";
+import "../libs/v0.8.x/BytecodeStorageV1.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 
 import {AddressChunks} from "./AddressChunks.sol";
 import {IScriptyBuilderV2, HTMLRequest, HTMLTagType, HTMLTag} from "scripty.sol/contracts/scripty/interfaces/IScriptyBuilderV2.sol";
 
+/**
+ * @title GenArt721GeneratorV0
+ * @author Art Blocks Inc.
+ * @notice This contract is used to generate the HTML for Art Blocks tokens
+ * by combining the dependency script, project script, token data. It utilizes
+ * the ScriptyBuilder contract to generate the HTML.
+ */
 contract GenArt721GeneratorV0 {
     using Bytes32Strings for bytes32;
     using Bytes32Strings for string;
@@ -24,6 +31,25 @@ contract GenArt721GeneratorV0 {
     IScriptyBuilderV2 public scriptyBuilder;
     address public ethFS;
 
+    function _onlySupportedCoreContract(
+        address coreContractAddress
+    ) internal view {
+        require(
+            dependencyRegistry.isSupportedCoreContract(coreContractAddress),
+            "Unsupported core contract"
+        );
+    }
+
+    /**
+     * @notice Constructor for the GenArt721GeneratorV0 contract.
+     * @param _dependencyRegistry The address of the DependencyRegistry
+     * contract to be used for retrieving dependency scripts.
+     * @param _scriptyBuilder The address of the ScriptyBuilderV2 contract
+     * to be used for generating the HTML for tokens.
+     * @param _ethFS The address of the EthFSFileStorage contract to retrieve
+     * the gunzipScripts-0.0.1.js script from used to gunzip the dependency
+     * scripts.
+     */
     constructor(
         address _dependencyRegistry,
         address _scriptyBuilder,
@@ -34,15 +60,15 @@ contract GenArt721GeneratorV0 {
         ethFS = _ethFS;
     }
 
-    function _onlySupportedCoreContract(
-        address coreContractAddress
-    ) internal view {
-        require(
-            dependencyRegistry.isSupportedCoreContract(coreContractAddress),
-            "Unsupported core contract"
-        );
-    }
-
+    /**
+     * @notice Get the dependency script for a given dependency name and version.
+     * @param dependencyNameAndVersion The name and version of the dependency
+     * to retrieve the script for.
+     * @return The dependency script stiched together from all of the script chunks.
+     * @dev This function will revert if the dependency name and version is not
+     * supported by the DependencyRegistry or if the script storage version is
+     * not supported.
+     */
     function getDependencyScript(
         bytes32 dependencyNameAndVersion
     ) external view returns (bytes memory) {
@@ -79,6 +105,17 @@ contract GenArt721GeneratorV0 {
         return AddressChunks.mergeChunks(scriptBytecodeAddresses, offset);
     }
 
+    /**
+     * @notice Get the project script for a given core contract address and
+     * project ID.
+     * @param coreContractAddress The address of the core contract to retrieve
+     * the project script from.
+     * @param projectId The ID of the project to retrieve the script for.
+     * @return The project script stiched together from all of the script chunks.
+     * @dev This function will revert if the core contract address is not
+     * supported by the DependencyRegistry or if the contract at the address
+     * does not implement the IGenArt721CoreProjectScriptV0 or IGenArt721CoreProjectScriptV1.
+     */
     function getProjectScript(
         address coreContractAddress,
         uint256 projectId
@@ -144,6 +181,12 @@ contract GenArt721GeneratorV0 {
         }
     }
 
+    /**
+     * @notice Get the HTMLRequest for a given token.
+     * @param coreContractAddress The core contract address the token belongs to.
+     * @param tokenId The ID of the token to retrieve the HTMLRequest for.
+     * @return The HTMLRequest for the token.
+     */
     function getTokenHtmlRequest(
         address coreContractAddress,
         uint256 tokenId
@@ -247,6 +290,12 @@ contract GenArt721GeneratorV0 {
         return htmlRequest;
     }
 
+    /**
+     * @notice Get the data URI for the HTML for a given token (e.g. data:text/html;base64,[html])
+     * @param coreContractAddress The address of the core contract the token belongs to.
+     * @param tokenId The ID of the token to retrieve the HTML for.
+     * @return The data URI for the HTML for the token.
+     */
     function getTokenHtmlBase64EncodedDataUri(
         address coreContractAddress,
         uint256 tokenId
@@ -261,6 +310,12 @@ contract GenArt721GeneratorV0 {
         return base64EncodedHTMLDataURI;
     }
 
+    /**
+     * @notice Get the HTML for a given token.
+     * @param coreContractAddress The address of the core contract the token belongs to.
+     * @param tokenId The ID of the token to retrieve the HTML for.
+     * @return The HTML for the token.
+     */
     function getTokenHtml(
         address coreContractAddress,
         uint256 tokenId
