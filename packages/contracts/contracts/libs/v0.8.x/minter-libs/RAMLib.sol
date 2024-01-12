@@ -24,6 +24,13 @@ library RAMLib {
     using SafeCast for uint256;
     using BitMaps256 for uint256;
 
+    /**
+     * @notice Admin-controlled refund gas limit updated
+     * @param refundGasLimit Gas limit to use when refunding the previous
+     * highest bidder, prior to using fallback force-send to refund
+     */
+    event MinterRefundGasLimitUpdated(uint24 refundGasLimit);
+
     // position of RAM Lib storage, using a diamond storage pattern
     // for this library
     bytes32 constant RAM_LIB_STORAGE_POSITION = keccak256("ramlib.storage");
