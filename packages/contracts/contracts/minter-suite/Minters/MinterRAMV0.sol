@@ -111,6 +111,13 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     /// @notice minter version for this minter
     string public constant minterVersion = "v1.0.0";
 
+    /** @notice Gas limit for refunding ETH to bidders
+     * configurable by admin, default to 30,000
+     * max uint24 ~= 16 million gas, more than enough for a refund
+     * @dev SENDALL fallback is used to refund ETH if this limit is exceeded
+     */
+    uint24 internal _minterRefundGasLimit = 30_000;
+
     /**
      * @notice Initializes contract to be a shared, filtered minter for
      * minter filter `minterFilter`
@@ -164,20 +171,58 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * between 7,000 and max uint24 (~16M).
      */
     function updateRefundGasLimit(uint24 minterRefundGasLimit) external {
-        // // CHECKS
-        // AuthLib.onlyMinterFilterAdminACL({
-        //     minterFilterAddress: minterFilterAddress,
-        //     sender: msg.sender,
-        //     contract_: address(this),
-        //     selector: this.updateRefundGasLimit.selector
+        // CHECKS
+        AuthLib.onlyMinterFilterAdminACL({
+            minterFilterAddress: minterFilterAddress,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.updateRefundGasLimit.selector
+        });
+        // @dev max gas limit implicitly checked by using uint24 input arg
+        // @dev min gas limit is based on rounding up current cost to send ETH
+        // to a Gnosis Safe wallet, which accesses cold address and emits event
+        require(minterRefundGasLimit >= 7_000, "Only gte 7_000");
+        // EFFECTS
+        _minterRefundGasLimit = minterRefundGasLimit;
+        emit RAMLib.MinterRefundGasLimitUpdated(minterRefundGasLimit);
+    }
+
+    /**
+     * @notice Sets auction details for project `projectId`.
+     * @param projectId Project ID to set auction details for.
+     * @param coreContract Core contract address for the given project.
+     * @param auctionTimestampStart Timestamp at which to start the auction.
+     * @param startPrice Price at which to start the auction, in Wei.
+     * @param basePrice Resting price of the auction, in Wei.
+     * @dev Note that a basePrice of `0` will cause the transaction to revert.
+     */
+    function setAuctionDetails(
+        uint256 projectId,
+        address coreContract,
+        uint40 auctionTimestampStart,
+        uint256 startPrice,
+        uint256 basePrice
+    ) external {
+        AuthLib.onlyArtist({
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
+        });
+        // CHECKS
+        // TODO
+
+        // EFFECTS
+        // TODO implement this
+        revert("Not implemented");
+        // RAMLib.setAuctionDetails({
+        //     projectId: projectId,
+        //     coreContract: coreContract,
+        //     auctionTimestampStart: auctionTimestampStart,
+        //     startPrice: startPrice.toUint88(),
+        //     basePrice: basePrice.toUint88()
         // });
-        // // @dev max gas limit implicitly checked by using uint24 input arg
-        // // @dev min gas limit is based on rounding up current cost to send ETH
-        // // to a Gnosis Safe wallet, which accesses cold address and emits event
-        // require(minterRefundGasLimit >= 7_000, "Only gte 7_000");
-        // // EFFECTS
-        // _minterRefundGasLimit = minterRefundGasLimit;
-        // emit SEALib.MinterRefundGasLimitUpdated(minterRefundGasLimit);
+
+        // TODO refresh max invocations?
     }
 
     // /**
@@ -350,6 +395,24 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         // currencyAddress = address(0);
     }
 
+    function getMinBidValue(
+        uint256 projectId,
+        address coreContract
+    ) external view returns (uint256) {
+        RAMLib.Bid storage minBid = RAMLib.getMinBid({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        return
+            RAMLib.bidValueFromSlotIndex(
+                RAMLib.getRAMProjectConfig({
+                    projectId: projectId,
+                    coreContract: coreContract
+                }),
+                minBid.slotIndex
+            );
+    }
+
     /**
      * @notice Syncs local maximum invocations of project `projectId` based on
      * the value currently defined in the core contract.
@@ -412,8 +475,21 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      */
     function createBid(
         uint256 projectId,
-        address coreContract
+        address coreContract,
+        uint8 slotIndex
     ) public payable nonReentrant {
-        // TODO
+        // CHECKS
+        // TODO - make this an actual check that verifies slotIndex
+        // @dev temporarily adding different check for gas testing purposes
+        require(msg.value > 0, "Must bid more than 0");
+        // get slot index for bid
+
+        RAMLib.placeBid({
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndex: slotIndex,
+            bidder: msg.sender,
+            minterRefundGasLimit: _minterRefundGasLimit
+        });
     }
 }
