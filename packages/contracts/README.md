@@ -89,7 +89,7 @@ Art Blocks has developed a shared Minter Suite that can be used to mint tokens. 
 
 A legacy, non-shared minter suite is also currently used by many partners, and is still in use by many partners during migration to the shared minter suite.
 
-For details on the Art Blocks Minter Suite, see the [minter suite documenation](./MINTER_SUITE.md).
+For details on the Art Blocks Minter Suite, see the [minter suite documentation](./MINTER_SUITE.md).
 
 # Deployments
 
@@ -208,7 +208,7 @@ In some instances, splitter contracts may be used by projects to split revenue b
 
 ## Contract Source Code Verification
 
-All mainnet deployments of contracts developed in this repositiory are verified on Etherscan. To protect against centralized source code verification failures (for example, if Etherscan were to dissappear), the PR history of this repository may be used to determine the commit at which a given deployment was performed, and source code verification may be submitted by anyone to a different source code verification service. Deployment details are recorded in the `deployments/` directory.
+All mainnet deployments of contracts developed in this repository are verified on Etherscan. To protect against centralized source code verification failures (for example, if Etherscan were to disappear), the PR history of this repository may be used to determine the commit at which a given deployment was performed, and source code verification may be submitted by anyone to a different source code verification service. Deployment details are recorded in the `deployments/` directory.
 
 # Royalties
 
