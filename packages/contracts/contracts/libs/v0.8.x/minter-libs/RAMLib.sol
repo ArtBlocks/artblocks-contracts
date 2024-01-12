@@ -70,23 +70,6 @@ library RAMLib {
         mapping(address coreContract => mapping(uint256 projectId => RAMProjectConfig)) RAMProjectConfigs;
     }
 
-    function getMinBid(
-        uint256 projectId,
-        address coreContract
-    ) internal view returns (Bid storage minBid) {
-        // get first slot with an active bid
-        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
-            projectId: projectId,
-            coreContract: coreContract
-        });
-        uint256 minBidIndex = RAMProjectConfig_.minBidIndex;
-        // get the bids array for that slot
-        Bid[] storage bids = RAMProjectConfig_.bidsBySlot[minBidIndex];
-        // get the last active bid in the array
-        // @dev get last because earlier bids (lower index) have priority
-        minBid = bids[bids.length - 1];
-    }
-
     // TODO must limit to only active auctions, etc.
     function placeBid(
         uint256 projectId,
@@ -208,6 +191,23 @@ library RAMLib {
     ) internal view returns (uint256 amount) {
         // TODO - update this
         return 22222222;
+    }
+
+    function getMinBid(
+        uint256 projectId,
+        address coreContract
+    ) internal view returns (Bid storage minBid) {
+        // get first slot with an active bid
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        uint256 minBidIndex = RAMProjectConfig_.minBidIndex;
+        // get the bids array for that slot
+        Bid[] storage bids = RAMProjectConfig_.bidsBySlot[minBidIndex];
+        // get the last active bid in the array
+        // @dev get last because earlier bids (lower index) have priority
+        minBid = bids[bids.length - 1];
     }
 
     /**
