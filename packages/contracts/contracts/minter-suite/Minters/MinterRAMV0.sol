@@ -192,7 +192,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @param projectId Project ID to set auction details for.
      * @param coreContract Core contract address for the given project.
      * @param auctionTimestampStart Timestamp at which to start the auction.
-     * @param startPrice Price at which to start the auction, in Wei.
+     * @param maxPrice Maximum price of the auction, in Wei.
      * @param basePrice Resting price of the auction, in Wei.
      * @dev Note that a basePrice of `0` will cause the transaction to revert.
      */
@@ -200,7 +200,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         uint256 projectId,
         address coreContract,
         uint40 auctionTimestampStart,
-        uint256 startPrice,
+        uint256 maxPrice,
         uint256 basePrice
     ) external {
         AuthLib.onlyArtist({
@@ -212,17 +212,33 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         // TODO
 
         // EFFECTS
-        // TODO implement this
-        revert("Not implemented");
-        // RAMLib.setAuctionDetails({
-        //     projectId: projectId,
-        //     coreContract: coreContract,
-        //     auctionTimestampStart: auctionTimestampStart,
-        //     startPrice: startPrice.toUint88(),
-        //     basePrice: basePrice.toUint88()
-        // });
+        // TODO - update this to be much safer for max invocation checking
+        // first refresh max invocations
+        MaxInvocationsLib.refreshMaxInvocations({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // then get max invocations
+        uint256 maxInvocations = MaxInvocationsLib.getMaxInvocations({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        (uint256 coreInvocations, ) = MaxInvocationsLib
+            .coreContractInvocationData({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+        uint256 numTokensInAuction = maxInvocations - coreInvocations;
+        RAMLib.setAuctionDetails({
+            projectId: projectId,
+            coreContract: coreContract,
+            auctionTimestampStart: auctionTimestampStart,
+            maxPrice: maxPrice.toUint88(),
+            basePrice: basePrice.toUint88(),
+            numTokensInAuction: uint24(numTokensInAuction) // TODO note why this is safe to cast
+        });
 
-        // TODO refresh max invocations?
+        // TODO ...
     }
 
     // /**
@@ -479,9 +495,16 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         uint8 slotIndex
     ) public payable nonReentrant {
         // CHECKS
-        // TODO - make this an actual check that verifies slotIndex
+        // TODO many more checks required
         // @dev temporarily adding different check for gas testing purposes
-        require(msg.value > 0, "Must bid more than 0");
+        uint256 targetBidValue = RAMLib.bidValueFromSlotIndex(
+            RAMLib.getRAMProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            }),
+            slotIndex
+        );
+        require(msg.value == targetBidValue, "msg.value must equal slot value");
         // get slot index for bid
 
         RAMLib.placeBid({

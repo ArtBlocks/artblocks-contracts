@@ -51,9 +51,12 @@ library RAMLib {
         uint24 maxUnmintedBidArrayIndex;
         // --- auction parameters ---
         // @dev max uint24 is 16,777,215 > 1_000_000 max project size
-        uint24 maxActiveBids;
+        uint24 numTokensInAuction;
         uint24 numActiveBids;
         // TODO start time, end time, min bid, bid spacing, etc.
+        uint40 timestampStart;
+        uint88 maxPrice;
+        uint88 basePrice;
         // --- auction state ---
         bool allWinningBidsSettled; // default false
     }
@@ -68,6 +71,26 @@ library RAMLib {
     // Diamond storage pattern is used in this library
     struct RAMLibStorage {
         mapping(address coreContract => mapping(uint256 projectId => RAMProjectConfig)) RAMProjectConfigs;
+    }
+
+    function setAuctionDetails(
+        uint256 projectId,
+        address coreContract,
+        uint40 auctionTimestampStart,
+        uint88 maxPrice,
+        uint88 basePrice,
+        uint24 numTokensInAuction
+    ) internal {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // set auction details
+        RAMProjectConfig_.numTokensInAuction = numTokensInAuction;
+        RAMProjectConfig_.timestampStart = auctionTimestampStart;
+        RAMProjectConfig_.maxPrice = maxPrice;
+        RAMProjectConfig_.basePrice = basePrice;
     }
 
     // TODO must limit to only active auctions, etc.
@@ -85,7 +108,7 @@ library RAMLib {
         });
         // determine if have reached max bids
         bool reachedMaxBids = RAMProjectConfig_.numActiveBids ==
-            RAMProjectConfig_.maxActiveBids;
+            RAMProjectConfig_.numTokensInAuction;
         if (reachedMaxBids) {
             // remove + refund the minimum Bid
             uint8 removedSlotIndex = removeMinBid({
@@ -189,8 +212,11 @@ library RAMLib {
         RAMProjectConfig storage RAMProjectConfig_,
         uint8 slotIndex
     ) internal view returns (uint256 amount) {
-        // TODO - update this
-        return 22222222;
+        // TODO - update this with an exponential spacing function
+        uint256 range = RAMProjectConfig_.maxPrice -
+            RAMProjectConfig_.basePrice;
+        // TODO linear for now
+        return ((range * 256) / (1 + slotIndex)) + RAMProjectConfig_.basePrice;
     }
 
     function getMinBid(

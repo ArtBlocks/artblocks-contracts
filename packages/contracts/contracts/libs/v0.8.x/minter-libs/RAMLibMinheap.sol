@@ -45,8 +45,10 @@ library RAMLib {
         mapping(bytes32 id => Bid bid) bids;
         // --- auction parameters ---
         // @dev max uint24 is 16,777,215 > 1_000_000 max project size
-        uint24 maxActiveBids;
+        uint24 numTokensInAuction;
         // TODO start time, end time, min bid, bid spacing, etc.
+        uint40 timestampStart;
+        uint88 basePrice;
         // --- auction state ---
         // track number of bids settled to determine if all bids have been settled
         uint24 numBidsSettled;
@@ -65,19 +67,22 @@ library RAMLib {
         mapping(address coreContract => mapping(uint256 projectId => RAMProjectConfig)) RAMProjectConfigs;
     }
 
-    function getMinBid(
+    function setAuctionDetails(
         uint256 projectId,
-        address coreContract
-    ) internal view returns (Bid storage minBid) {
+        address coreContract,
+        uint40 auctionTimestampStart,
+        uint88 basePrice,
+        uint24 numTokensInAuction
+    ) internal {
         // load project config
         RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
             projectId: projectId,
             coreContract: coreContract
         });
-        // get the minimum bid ID
-        bytes32 minBidId = RAMProjectConfig_.minHeap.peek().id;
-        // get the bid
-        minBid = RAMProjectConfig_.bids[minBidId];
+        // set auction details
+        RAMProjectConfig_.numTokensInAuction = numTokensInAuction;
+        RAMProjectConfig_.timestampStart = auctionTimestampStart;
+        RAMProjectConfig_.basePrice = basePrice;
     }
 
     // TODO must limit to only active auctions, etc.
@@ -97,7 +102,7 @@ library RAMLib {
         });
         // determine if have reached max bids
         bool reachedMaxBids = RAMProjectConfig_.minHeap.numElements() ==
-            RAMProjectConfig_.maxActiveBids;
+            RAMProjectConfig_.numTokensInAuction;
         if (reachedMaxBids) {
             // remove + refund the minimum Bid
             MinHeapLib.Node memory removedMinBid = RAMProjectConfig_
@@ -125,6 +130,21 @@ library RAMLib {
         RAMProjectConfig_.minHeap.insert(
             MinHeapLib.Node({value: bidValue, id: bidId})
         );
+    }
+
+    function getMinBid(
+        uint256 projectId,
+        address coreContract
+    ) internal view returns (Bid storage minBid) {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // get the minimum bid ID
+        bytes32 minBidId = RAMProjectConfig_.minHeap.peek().id;
+        // get the bid
+        minBid = RAMProjectConfig_.bids[minBidId];
     }
 
     function bidIdFromInputs(
