@@ -206,7 +206,7 @@ runForEach.forEach((params) => {
           .withArgs(config.projectZero, config.genArt721Core.address);
       });
 
-      it("emits when a muliple project minters are removed", async function () {
+      it("emits when multiple project minters are removed", async function () {
         const config = await loadFixture(_beforeEach);
         // set project zero minter
         await config.minterFilter
