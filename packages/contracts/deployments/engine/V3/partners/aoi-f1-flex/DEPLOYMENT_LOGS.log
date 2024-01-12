@@ -102,3 +102,39 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] AdminACL's superAdmin address is 0xD533F117a926244974ac2690145Ed04829e72a39, don't forget to update if required.
 [ACTION] Subgraph: Add Minter Filter and Minter contracts to subgraph config if desire to index minter suite.
+----------------------------------------
+[INFO] Datetime of deployment: 2024-01-12T15:44:05.485Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/aoi-f1-flex/deployment-config.sepolia-staging.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x687Bb8a6D45F5141141C16D24123C88846B2cD90
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x6278C9ec3BAcf39DdaE3ada20e38a1A0C193976A
+[INFO] Registered core contract 0x6278C9ec3BAcf39DdaE3ada20e38a1A0C193976A on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x4a8557FFC313a398904daE6e5561eE216a04602D.
+[INFO] Verifying core contract contract deployment...
+The contract 0x6278C9ec3BAcf39DdaE3ada20e38a1A0C193976A has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x6278C9ec3BAcf39DdaE3ada20e38a1A0C193976A#code
+[INFO] Core contract verified on Etherscan at 0x6278C9ec3BAcf39DdaE3ada20e38a1A0C193976A}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x687Bb8a6D45F5141141C16D24123C88846B2cD90 has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x687Bb8a6D45F5141141C16D24123C88846B2cD90#code
+[INFO] AdminACL contract verified on Etherscan at 0x687Bb8a6D45F5141141C16D24123C88846B2cD90
+Created s3 bucket for https://aoi-engine-sepolia.s3.amazonaws.com
+[INFO] Created image bucket aoi-engine-sepolia
+[INFO] Deployment details written to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/aoi-f1-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x6278c9ec3bacf39ddae3ada20e38a1a0c193976a",
+  "name": "AOI Engine",
+  "bucket_name": "aoi-engine-sepolia",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef, don't forget to update if requred.

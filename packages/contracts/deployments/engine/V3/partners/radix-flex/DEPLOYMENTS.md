@@ -43,3 +43,42 @@ Date: 2023-05-12T23:04:17.081Z
 
 ---
 
+
+# Deployment
+
+Date: 2024-01-12T16:23:27.660Z
+
+## **Network:** sepolia
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/radix-flex/deployment-config.sepolia-staging.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://sepolia.etherscan.io/address/0x50EaF55271F20117946CFA638634F53E977bDf0F#code
+
+**AdminACLV1:** https://sepolia.etherscan.io/address/0xb92400d7068162dC409f3d210d2A57629eaaC10F#code
+
+**Core Registry:** https://sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**Shared Minter Filter:** https://sepolia.etherscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Pedestal
+- **Token Ticker:** PEDSTL
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0x4a8557FFC313a398904daE6e5561eE216a04602D
+- **BytecodeStorageReader Library:** 0x7497909537cE00fDda93c12d5083D8647C593c67
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** pedestal-sepolia
+
+---
+
