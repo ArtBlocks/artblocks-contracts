@@ -53,6 +53,8 @@ library RAMLib {
         // track number of bids settled to determine if all bids have been settled
         uint24 numBidsSettled;
         bool allWinningBidsSettled; // default false
+        // bid nonces of bidders
+        mapping(address bidder => uint24 nextBidderNonce) bidderProjectNonces;
     }
 
     struct Bid {
@@ -91,7 +93,6 @@ library RAMLib {
         address coreContract,
         uint256 bidValue,
         address bidder,
-        uint24 bidderProjectNonce,
         uint256 minBidPercentIncrease,
         uint256 minterRefundGasLimit
     ) internal {
@@ -125,11 +126,28 @@ library RAMLib {
             coreContract: coreContract,
             projectId: projectId,
             bidder: bidder,
-            bidderProjectNonce: bidderProjectNonce
+            bidderProjectNonce: claimNewBidderProjectNonce({
+                RAMProjectConfig_: RAMProjectConfig_,
+                bidder: bidder
+            })
         });
         RAMProjectConfig_.minHeap.insert(
             MinHeapLib.Node({value: bidValue, id: bidId})
         );
+    }
+
+    function getNextBidderProjectNonce(
+        uint256 projectId,
+        address coreContract,
+        address bidder
+    ) internal view returns (uint24) {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // get the next bidder project nonce, increment it, and return it
+        return RAMProjectConfig_.bidderProjectNonces[bidder];
     }
 
     function getMinBid(
@@ -162,6 +180,14 @@ library RAMLib {
                     bidderProjectNonce
                 )
             );
+    }
+
+    function claimNewBidderProjectNonce(
+        RAMProjectConfig storage RAMProjectConfig_,
+        address bidder
+    ) private returns (uint24) {
+        // get the next bidder project nonce, increment it, and return it
+        return RAMProjectConfig_.bidderProjectNonces[bidder]++;
     }
 
     /**
