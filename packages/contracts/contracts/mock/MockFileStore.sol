@@ -9,7 +9,7 @@ contract MockFileStore is IContractScript {
     function getScript(
         string calldata name,
         bytes memory
-    ) external view returns (bytes memory script) {
+    ) external pure returns (bytes memory script) {
         if (
             keccak256(abi.encodePacked(name)) ==
             keccak256(abi.encodePacked(GUNZIP_SCRIPT_NAME))
