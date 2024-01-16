@@ -69,6 +69,7 @@ library Bytes32Strings {
      * https://ethereum.stackexchange.com/a/9152
      * @param source string to be converted.
      * @return result bytes32 representation of string.
+     * @dev If string is longer than 32 bytes, it truncates to the right.
      */
     function stringToBytes32(
         string memory source

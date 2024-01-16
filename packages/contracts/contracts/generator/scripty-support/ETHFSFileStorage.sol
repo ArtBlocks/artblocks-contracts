@@ -27,12 +27,12 @@ contract ETHFSFileStorage is IContractScript {
     /**
      * @notice Get the full script from ethfs's FileStore contract
      * @param name - Name given to the script. Eg: threejs.min.js_r148
-     * @param data - Arbitrary data. Not used by this contract.
+     * @param - Arbitrary data. Not used by this contract.
      * @return script - Full script from merged chunks
      */
     function getScript(
         string calldata name,
-        bytes memory data
+        bytes memory /*data*/
     ) external view returns (bytes memory script) {
         return bytes(fileStore.getFile(name).read());
     }

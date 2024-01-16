@@ -8,10 +8,11 @@ import "../interfaces/v0.8.x/IGenArt721CoreTokenHashProviderV0.sol";
 import "../interfaces/v0.8.x/IGenArt721CoreTokenHashProviderV1.sol";
 import "../libs/v0.8.x/Bytes32Strings.sol";
 import "../libs/v0.8.x/BytecodeStorageV1.sol";
+import {ABHelpers} from "../libs/v0.8.x/ABHelpers.sol";
+import {AddressChunks} from "./AddressChunks.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 
-import {AddressChunks} from "./AddressChunks.sol";
 import {IScriptyBuilderV2, HTMLRequest, HTMLTagType, HTMLTag} from "scripty.sol/contracts/scripty/interfaces/IScriptyBuilderV2.sol";
 
 /**
@@ -24,8 +25,6 @@ import {IScriptyBuilderV2, HTMLRequest, HTMLTagType, HTMLTag} from "scripty.sol/
 contract GenArt721GeneratorV0 {
     using Bytes32Strings for bytes32;
     using Bytes32Strings for string;
-
-    uint256 constant ONE_MILLION = 1_000_000;
 
     DependencyRegistryV0 public dependencyRegistry;
     IScriptyBuilderV2 public scriptyBuilder;
@@ -69,9 +68,9 @@ contract GenArt721GeneratorV0 {
      * supported by the DependencyRegistry or if the script storage version is
      * not supported.
      */
-    function getDependencyScript(
+    function getDependencyScriptBytes(
         bytes32 dependencyNameAndVersion
-    ) external view returns (bytes memory) {
+    ) internal view returns (bytes memory) {
         uint256 scriptCount = dependencyRegistry.getDependencyScriptCount(
             dependencyNameAndVersion
         );
@@ -102,7 +101,28 @@ contract GenArt721GeneratorV0 {
             revert("Unsupported storage version");
         }
 
+        // @dev We concatenate the script chunks together with assembly
+        // in AddressChunks for gas efficiency.
         return AddressChunks.mergeChunks(scriptBytecodeAddresses, offset);
+    }
+
+    /**
+     * @notice Get the dependency script for a given dependency name and version string.
+     * @param dependencyNameAndVersion The name and version of the dependency
+     * to retrieve the script for.
+     * @return The dependency script stiched together from all of the script chunks as a string.
+     * @dev This function will revert if the dependency name and version is not
+     * supported by the DependencyRegistry or if the script storage version is
+     * not supported.
+     */
+    function getDependencyScript(
+        string memory dependencyNameAndVersion
+    ) external view returns (string memory) {
+        bytes memory dependencyScript = getDependencyScriptBytes(
+            dependencyNameAndVersion.stringToBytes32()
+        );
+
+        return string(dependencyScript);
     }
 
     /**
@@ -116,12 +136,13 @@ contract GenArt721GeneratorV0 {
      * supported by the DependencyRegistry or if the contract at the address
      * does not implement the IGenArt721CoreProjectScriptV0 or IGenArt721CoreProjectScriptV1.
      */
-    function getProjectScript(
+    function getProjectScriptBytes(
         address coreContractAddress,
         uint256 projectId
-    ) external view returns (bytes memory) {
+    ) internal view returns (bytes memory) {
         _onlySupportedCoreContract(coreContractAddress);
 
+        // @dev Attempt to get project script info from V3 and up core contracts first.
         try
             IGenArt721CoreProjectScriptV1(coreContractAddress)
                 .projectScriptDetails(projectId)
@@ -154,11 +175,15 @@ contract GenArt721GeneratorV0 {
                 revert("Unsupported storage version");
             }
 
+            // @dev We concatenate the script chunks together with assembly
+            // in AddressChunks for gas efficiency.
             return AddressChunks.mergeChunks(scriptBytecodeAddresses, offset);
         } catch {
             // Noop try again for older contracts.
         }
 
+        // @dev If we failed to get the project script info try again using the interface
+        // for V2 and older core contracts.
         try
             IGenArt721CoreProjectScriptV0(coreContractAddress)
                 .projectScriptInfo(projectId)
@@ -175,10 +200,33 @@ contract GenArt721GeneratorV0 {
                 script = string.concat(script, scriptChunk);
             }
 
-            return abi.encodePacked(script);
+            return bytes(script);
         } catch {
             revert("Unable to retrieve project script info");
         }
+    }
+
+    /**
+     * @notice Get the project script for a given core contract address and
+     * project ID.
+     * @param coreContractAddress The address of the core contract to retrieve
+     * the project script from.
+     * @param projectId The ID of the project to retrieve the script for.
+     * @return The project script stiched together from all of the script chunks as a string.
+     * @dev This function will revert if the core contract address is not
+     * supported by the DependencyRegistry or if the contract at the address
+     * does not implement the IGenArt721CoreProjectScriptV0 or IGenArt721CoreProjectScriptV1.
+     */
+    function getProjectScript(
+        address coreContractAddress,
+        uint256 projectId
+    ) external view returns (string memory) {
+        bytes memory projectScript = getProjectScriptBytes(
+            coreContractAddress,
+            projectId
+        );
+
+        return string(projectScript);
     }
 
     /**
@@ -193,7 +241,7 @@ contract GenArt721GeneratorV0 {
     ) internal view returns (HTMLRequest memory) {
         _onlySupportedCoreContract(coreContractAddress);
 
-        uint256 projectId = tokenId / ONE_MILLION;
+        uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
         // This will revert for older contracts that do not have an override set.
         bytes32 dependencyNameAndVersion = dependencyRegistry
             .getDependencyNameAndVersionForProject(
@@ -203,17 +251,18 @@ contract GenArt721GeneratorV0 {
             .stringToBytes32();
 
         bytes32 tokenHash;
-        if (tokenHash == bytes32(0)) {
-            try
-                IGenArt721CoreTokenHashProviderV1(coreContractAddress)
-                    .tokenIdToHash(tokenId)
-            returns (bytes32 _tokenHash) {
-                tokenHash = _tokenHash;
-            } catch {
-                // Noop try again for older contracts.
-            }
+        // @dev Attempt to get token hash from V1 and up core contracts first.
+        try
+            IGenArt721CoreTokenHashProviderV1(coreContractAddress)
+                .tokenIdToHash(tokenId)
+        returns (bytes32 _tokenHash) {
+            tokenHash = _tokenHash;
+        } catch {
+            // Noop try again for older contracts.
         }
 
+        // @dev If we failed to get the token hash try again using the interface
+        // for V0 core contracts.
         if (tokenHash == bytes32(0)) {
             try
                 IGenArt721CoreTokenHashProviderV0(coreContractAddress)
@@ -265,18 +314,20 @@ contract GenArt721GeneratorV0 {
             bodyTags[0].tagContent = "// Noop"; // ScriptyBuilder requires scriptContent for this to work
             bodyTags[0].tagClose = "</script>";
         } else {
-            bytes memory dependencyScript = this.getDependencyScript(
+            bytes memory dependencyScript = getDependencyScriptBytes(
                 dependencyNameAndVersion
             );
             bodyTags[0].tagContent = dependencyScript;
             bodyTags[0].tagType = HTMLTagType.scriptGZIPBase64DataURI; // <script type="text/javascript+gzip" src="data:text/javascript;base64,[script]"></script>
         }
 
+        // @dev We expect all of our dependencies to be added gzip'd and base64 encoded
+        // so we need to include this so we can gunzip them in the browser.
         bodyTags[1].name = "gunzipScripts-0.0.1.js";
         bodyTags[1].tagType = HTMLTagType.scriptBase64DataURI; // <script src="data:text/javascript;base64,[script]"></script>
         bodyTags[1].contractAddress = ethFS;
 
-        bytes memory projectScript = this.getProjectScript(
+        bytes memory projectScript = getProjectScriptBytes(
             coreContractAddress,
             projectId
         );
