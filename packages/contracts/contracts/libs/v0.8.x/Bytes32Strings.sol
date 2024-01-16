@@ -78,7 +78,7 @@ library Bytes32Strings {
             return 0x0;
         }
 
-        assembly {
+        assembly ("memory-safe") {
             result := mload(add(source, 32))
         }
     }
