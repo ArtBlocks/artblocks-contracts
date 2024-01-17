@@ -12,6 +12,7 @@ import {IMinterFilterV1} from "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 import {ABHelpers} from "../../libs/v0.8.x/ABHelpers.sol";
 import {AuthLib} from "../../libs/v0.8.x/AuthLib.sol";
 import {RAMLib} from "../../libs/v0.8.x/minter-libs/RAMLibMinheap.sol";
+import {MinHeapLib} from "../../libs/v0.8.x/MinHeapLib.sol";
 import {SplitFundsLib} from "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import {MaxInvocationsLib} from "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 
@@ -242,6 +243,26 @@ contract MinterRAMMinHeapV0 is
         // TODO ...
     }
 
+    function getAuctionDetails(
+        uint256 projectId,
+        address coreContract
+    )
+        external
+        view
+        returns (
+            uint24 numTokensInAuction,
+            uint40 timestampStart,
+            uint88 basePrice,
+            uint24 numBidsSettled
+        )
+    {
+        (numTokensInAuction, timestampStart, basePrice, numBidsSettled) = RAMLib
+            .getAuctionDetails({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+    }
+
     // /**
     //  * @notice View function to return the current minter-level configuration
     //  * details.
@@ -421,6 +442,28 @@ contract MinterRAMMinHeapV0 is
             coreContract: coreContract
         });
         return minBid.amount;
+    }
+
+    function getMinimumNextBid(
+        uint256 projectId,
+        address coreContract
+    ) external view returns (uint256) {
+        RAMLib.Bid storage minBid = RAMLib.getMinBid({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        return ((minBid.amount * (100 + 5)) / 100);
+    }
+
+    function getHeapArray(
+        uint256 projectId,
+        address coreContract
+    ) external view returns (MinHeapLib.Node[] memory) {
+        return
+            RAMLib.getHeapArray({
+                projectId: projectId,
+                coreContract: coreContract
+            });
     }
 
     /**

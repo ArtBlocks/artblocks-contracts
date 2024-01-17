@@ -33,10 +33,13 @@ library MinHeapLib {
         // insert value at end of array
         heap.push(node);
 
-        // bubble up to correct position
         uint256 currentIndex = heap.length - 1;
+        // base case - heap has one element, and is therfore sorted
+        if (currentIndex == 0) {
+            return;
+        }
+        // bubble up to correct position
         // @dev int division rounds down, so no need to floor
-        // @dev need to handle zero currentIndex
         uint256 parentIndex = (currentIndex - 1) / 2;
         while (
             currentIndex > 0 &&
@@ -52,6 +55,10 @@ library MinHeapLib {
 
             // update indices
             currentIndex = parentIndex;
+            // base case - at top of heap
+            if (currentIndex == 0) {
+                break;
+            }
             parentIndex = (currentIndex - 1) / 2;
         }
     }
@@ -136,5 +143,12 @@ library MinHeapLib {
         MinHeap storage minHeap
     ) internal view returns (uint256) {
         return minHeap.heap.length;
+    }
+
+    // O(1) access to heap array
+    function getHeapArray(
+        MinHeap storage minHeap
+    ) internal view returns (Node[] storage) {
+        return minHeap.heap;
     }
 }

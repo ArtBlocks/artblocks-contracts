@@ -143,6 +143,8 @@ library RAMLib {
                 isMinted: false
             })
         );
+        // update number of active bids
+        RAMProjectConfig_.numActiveBids++;
         // update metadata if first bid for this slot
         // @dev assumes minting has not yet started
         if (bids.length == 1) {
@@ -182,6 +184,7 @@ library RAMLib {
         // @dev appropriate because earlier bids (lower index) have priority;
         // TODO: gas-optimize this by only editing array length since once remove a bid, will never re-add on that slot
         bids.pop();
+        RAMProjectConfig_.numActiveBids--;
         // record the slot index of the removed bid as return value
         removedSlotIndex = minBidIndex;
         // update metadata if no more active bids for this slot
@@ -216,7 +219,7 @@ library RAMLib {
         uint256 range = RAMProjectConfig_.maxPrice -
             RAMProjectConfig_.basePrice;
         // TODO linear for now
-        return ((range * 256) / (1 + slotIndex)) + RAMProjectConfig_.basePrice;
+        return ((range * slotIndex) / 255) + RAMProjectConfig_.basePrice;
     }
 
     function getMinBid(
@@ -234,6 +237,33 @@ library RAMLib {
         // get the last active bid in the array
         // @dev get last because earlier bids (lower index) have priority
         minBid = bids[bids.length - 1];
+    }
+
+    function getAuctionDetails(
+        uint256 projectId,
+        address coreContract
+    )
+        internal
+        view
+        returns (
+            uint40 auctionTimestampStart,
+            uint88 maxPrice,
+            uint88 basePrice,
+            uint24 numTokensInAuction,
+            uint24 numActiveBids
+        )
+    {
+        // get project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // get auction details
+        auctionTimestampStart = RAMProjectConfig_.timestampStart;
+        maxPrice = RAMProjectConfig_.maxPrice;
+        basePrice = RAMProjectConfig_.basePrice;
+        numTokensInAuction = RAMProjectConfig_.numTokensInAuction;
+        numActiveBids = RAMProjectConfig_.numActiveBids;
     }
 
     /**

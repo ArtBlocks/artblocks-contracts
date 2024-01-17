@@ -285,6 +285,27 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             });
     }
 
+    function getAuctionDetails(
+        uint256 projectId,
+        address coreContract
+    )
+        external
+        view
+        returns (
+            uint40 auctionTimestampStart,
+            uint88 maxPrice,
+            uint88 basePrice,
+            uint24 numTokensInAuction,
+            uint24 numActiveBids
+        )
+    {
+        return
+            RAMLib.getAuctionDetails({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+    }
+
     /**
      * @notice projectId => has project reached its maximum number of
      * invocations? Note that this returns a local cache of the core contract's

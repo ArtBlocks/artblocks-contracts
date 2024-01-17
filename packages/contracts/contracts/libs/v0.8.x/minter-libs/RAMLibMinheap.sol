@@ -116,8 +116,11 @@ library RAMLib {
             });
             // require new bid value is greater than removed minimum bid
             // @dev overflow checked automatically in Solidity 0.8
+            // @dev mid bid percent increase always >0, so no need to check
+            // for divide by zero
             require(
-                bidValue > (removedMinBid.value * 100) / minBidPercentIncrease,
+                bidValue >=
+                    (removedMinBid.value * (100 + minBidPercentIncrease)) / 100,
                 "Insufficient bid value"
             );
         }
@@ -134,6 +137,12 @@ library RAMLib {
         RAMProjectConfig_.minHeap.insert(
             MinHeapLib.Node({value: bidValue, id: bidId})
         );
+        RAMProjectConfig_.bids[bidId] = Bid({
+            amount: bidValue,
+            bidder: bidder,
+            isSettled: false,
+            isMinted: false
+        });
     }
 
     function getNextBidderProjectNonce(
@@ -165,6 +174,19 @@ library RAMLib {
         minBid = RAMProjectConfig_.bids[minBidId];
     }
 
+    function getHeapArray(
+        uint256 projectId,
+        address coreContract
+    ) internal view returns (MinHeapLib.Node[] memory) {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // get the heap array
+        return RAMProjectConfig_.minHeap.getHeapArray();
+    }
+
     function bidIdFromInputs(
         address coreContract,
         uint256 projectId,
@@ -188,6 +210,31 @@ library RAMLib {
     ) private returns (uint24) {
         // get the next bidder project nonce, increment it, and return it
         return RAMProjectConfig_.bidderProjectNonces[bidder]++;
+    }
+
+    function getAuctionDetails(
+        uint256 projectId,
+        address coreContract
+    )
+        internal
+        view
+        returns (
+            uint24 numTokensInAuction,
+            uint40 timestampStart,
+            uint88 basePrice,
+            uint24 numBidsSettled
+        )
+    {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // get auction details
+        numTokensInAuction = RAMProjectConfig_.numTokensInAuction;
+        timestampStart = RAMProjectConfig_.timestampStart;
+        basePrice = RAMProjectConfig_.basePrice;
+        numBidsSettled = RAMProjectConfig_.numBidsSettled;
     }
 
     /**
