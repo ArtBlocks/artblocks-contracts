@@ -223,9 +223,9 @@ async function main() {
   ) {
     await genArt721Core
       .connect(deployer)
-      ["updateArtblocksSecondarySalesAddress(address)"](
-        deployDetails.artblocksSecondarySalesAddress
-      );
+      [
+        "updateArtblocksSecondarySalesAddress(address)"
+      ](deployDetails.artblocksSecondarySalesAddress);
     console.log(
       `[INFO] Updated the artblocks secondary sales payment address to: ${deployDetails.artblocksSecondarySalesAddress}.`
     );

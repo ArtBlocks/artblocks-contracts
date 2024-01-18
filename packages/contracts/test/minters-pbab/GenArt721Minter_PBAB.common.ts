@@ -188,14 +188,11 @@ export const GenArt721Minter_PBAB_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,uint256,address)"](
-            config.projectZero,
-            config.pricePerTokenInWei,
-            constants.ZERO_ADDRESS,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchase(uint256,uint256,address)"
+          ](config.projectZero, config.pricePerTokenInWei, constants.ZERO_ADDRESS, {
+            value: config.pricePerTokenInWei,
+          }),
         "Currency addresses must match"
       );
       // approve contract and able to mint with Mock token
@@ -205,11 +202,9 @@ export const GenArt721Minter_PBAB_Common = async (
       );
       await config.minter
         .connect(config.accounts.user)
-        ["purchase(uint256,uint256,address)"](
-          config.projectZero,
-          config.pricePerTokenInWei,
-          config.ERC20Mock.address
-        );
+        [
+          "purchase(uint256,uint256,address)"
+        ](config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address);
       // cannot purchase token with ERC20 token when insufficient balance
       await config.ERC20Mock.connect(config.accounts.user).transfer(
         config.accounts.artist.address,
@@ -218,11 +213,9 @@ export const GenArt721Minter_PBAB_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,uint256,address)"](
-            config.projectZero,
-            config.pricePerTokenInWei,
-            config.ERC20Mock.address
-          ),
+          [
+            "purchase(uint256,uint256,address)"
+          ](config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address),
         "Insufficient balance"
       );
       // artist changes back to ETH
@@ -243,11 +236,9 @@ export const GenArt721Minter_PBAB_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,uint256,address)"](
-            config.projectZero,
-            config.pricePerTokenInWei,
-            config.ERC20Mock.address
-          ),
+          [
+            "purchase(uint256,uint256,address)"
+          ](config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address),
         "Currency addresses must match"
       );
     });
@@ -288,24 +279,19 @@ export const GenArt721Minter_PBAB_Common = async (
       // can purchase project zero token with ETH, explicitly passing in currency address
       await config.minter
         .connect(config.accounts.user)
-        ["purchase(uint256,uint256,address)"](
-          config.projectZero,
-          config.pricePerTokenInWei,
-          constants.ZERO_ADDRESS,
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        [
+          "purchase(uint256,uint256,address)"
+        ](config.projectZero, config.pricePerTokenInWei, constants.ZERO_ADDRESS, {
+          value: config.pricePerTokenInWei,
+        });
 
       // cannot not purchase project zero with ETH without including msg.value
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,uint256,address)"](
-            config.projectZero,
-            config.pricePerTokenInWei,
-            constants.ZERO_ADDRESS
-          ),
+          [
+            "purchase(uint256,uint256,address)"
+          ](config.projectZero, config.pricePerTokenInWei, constants.ZERO_ADDRESS),
         "inconsistent msg.value"
       );
 
@@ -313,11 +299,9 @@ export const GenArt721Minter_PBAB_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,uint256,address)"](
-            config.projectZero,
-            config.pricePerTokenInWei,
-            config.ERC20Mock.address
-          ),
+          [
+            "purchase(uint256,uint256,address)"
+          ](config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address),
         "Currency addresses must match"
       );
     });
@@ -348,23 +332,18 @@ export const GenArt721Minter_PBAB_Common = async (
       // can purchase project zero with ERC-20
       await config.minter
         .connect(config.accounts.user)
-        ["purchase(uint256,uint256,address)"](
-          config.projectZero,
-          config.pricePerTokenInWei,
-          config.ERC20Mock.address
-        );
+        [
+          "purchase(uint256,uint256,address)"
+        ](config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address);
       // cannot send ETH when purchasing with ERC-20
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,uint256,address)"](
-            config.projectZero,
-            config.pricePerTokenInWei,
-            config.ERC20Mock.address,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchase(uint256,uint256,address)"
+          ](config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address, {
+            value: config.pricePerTokenInWei,
+          }),
         "this project accepts a different currency and cannot accept ETH"
       );
     });
@@ -514,13 +493,11 @@ export const GenArt721Minter_PBAB_Common = async (
       const config = await loadFixture(_beforeEach);
       await config.minter
         .connect(config.accounts.user)
-        ["purchaseTo(address,uint256)"](
-          config.accounts.additional.address,
-          config.projectOne,
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        [
+          "purchaseTo(address,uint256)"
+        ](config.accounts.additional.address, config.projectOne, {
+          value: config.pricePerTokenInWei,
+        });
     });
   });
 

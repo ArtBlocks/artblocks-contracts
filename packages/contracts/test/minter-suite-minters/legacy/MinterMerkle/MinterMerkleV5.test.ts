@@ -260,13 +260,11 @@ for (const coreContractName of coreContractsToTest) {
         );
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectZero,
-            userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectZero, userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          });
 
         // expect projectMaxHasBeenInvoked to be true
         const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
@@ -331,13 +329,11 @@ for (const coreContractName of coreContractsToTest) {
         );
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectZero,
-            userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectZero, userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          });
 
         // expect projectMaxHasBeenInvoked to be true
         const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
@@ -439,13 +435,11 @@ for (const coreContractName of coreContractsToTest) {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            ["purchase(uint256,bytes32[])"](
-              config.projectZero,
-              config.userMerkleProofZero,
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
+            [
+              "purchase(uint256,bytes32[])"
+            ](config.projectZero, config.userMerkleProofZero, {
+              value: config.pricePerTokenInWei,
+            }),
           "Render Provider payment failed"
         );
       });
@@ -468,13 +462,11 @@ for (const coreContractName of coreContractsToTest) {
           await expectRevert(
             config.minter
               .connect(config.accounts.user)
-              ["purchase(uint256,bytes32[])"](
-                config.projectZero,
-                config.userMerkleProofZero,
-                {
-                  value: config.pricePerTokenInWei,
-                }
-              ),
+              [
+                "purchase(uint256,bytes32[])"
+              ](config.projectZero, config.userMerkleProofZero, {
+                value: config.pricePerTokenInWei,
+              }),
             "Platform Provider payment failed"
           );
         } else {
@@ -496,13 +488,11 @@ for (const coreContractName of coreContractsToTest) {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            ["purchase(uint256,bytes32[])"](
-              config.projectZero,
-              config.userMerkleProofZero,
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
+            [
+              "purchase(uint256,bytes32[])"
+            ](config.projectZero, config.userMerkleProofZero, {
+              value: config.pricePerTokenInWei,
+            }),
           "Artist payment failed"
         );
       });
@@ -533,13 +523,11 @@ for (const coreContractName of coreContractsToTest) {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            ["purchase(uint256,bytes32[])"](
-              config.projectZero,
-              config.userMerkleProofZero,
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
+            [
+              "purchase(uint256,bytes32[])"
+            ](config.projectZero, config.userMerkleProofZero, {
+              value: config.pricePerTokenInWei,
+            }),
           "Additional Payee payment failed"
         );
       });
@@ -580,13 +568,11 @@ for (const coreContractName of coreContractsToTest) {
         // expect successful purchase
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectZero,
-            config.userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectZero, config.userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          });
       });
     });
 
@@ -613,13 +599,11 @@ for (const coreContractName of coreContractsToTest) {
 
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectOne,
-            userMerkleProofOne,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectOne, userMerkleProofOne, {
+            value: config.pricePerTokenInWei,
+          });
       });
     });
 
@@ -681,14 +665,11 @@ for (const coreContractName of coreContractsToTest) {
             );
             await config.minter
               .connect(config.accounts.user)
-              ["purchaseTo(address,uint256,bytes32[])"](
-                config.userVault.address,
-                config.projectOne,
-                userMerkleProofOne,
-                {
-                  value: config.pricePerTokenInWei,
-                }
-              );
+              [
+                "purchaseTo(address,uint256,bytes32[])"
+              ](config.userVault.address, config.projectOne, userMerkleProofOne, {
+                value: config.pricePerTokenInWei,
+              });
           });
 
           it("does not allow purchases with an incorrect proof", async function () {
@@ -934,13 +915,11 @@ for (const coreContractName of coreContractsToTest) {
         );
         const tx = await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectOne,
-            userMerkleProofOne,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectOne, userMerkleProofOne, {
+            value: config.pricePerTokenInWei,
+          });
 
         const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
         const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed);

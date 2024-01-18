@@ -89,3 +89,42 @@ Date: 2023-06-08T23:20:55.291Z
 
 ---
 
+
+# Deployment
+
+Date: 2024-01-12T16:30:26.748Z
+
+## **Network:** sepolia
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/sothebys-flex/deployment-config.sepolia-staging.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://sepolia.etherscan.io/address/0xcbaF8eB29Bc1b14f89179e53f59a1a00CE5ed6eD#code
+
+**AdminACLV1:** https://sepolia.etherscan.io/address/0xF25743d24316FEf6F5bcFA2C3678c633ec1BA99f#code
+
+**Core Registry:** https://sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**Shared Minter Filter:** https://sepolia.etherscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Sothebys Gen Art
+- **Token Ticker:** STBYS
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0x4a8557FFC313a398904daE6e5561eE216a04602D
+- **BytecodeStorageReader Library:** 0x7497909537cE00fDda93c12d5083D8647C593c67
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** sothebys-gen-art-sepolia
+
+---
+

@@ -157,3 +157,39 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0x6E9cb366000470626Ee0b4103Dc9F77CcA19243B, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2024-01-12T16:28:36.605Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/sothebys-flex/deployment-config.sepolia-staging.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xF25743d24316FEf6F5bcFA2C3678c633ec1BA99f
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xcbaF8eB29Bc1b14f89179e53f59a1a00CE5ed6eD
+[INFO] Registered core contract 0xcbaF8eB29Bc1b14f89179e53f59a1a00CE5ed6eD on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x4a8557FFC313a398904daE6e5561eE216a04602D.
+[INFO] Verifying core contract contract deployment...
+The contract 0xcbaF8eB29Bc1b14f89179e53f59a1a00CE5ed6eD has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0xcbaF8eB29Bc1b14f89179e53f59a1a00CE5ed6eD#code
+[INFO] Core contract verified on Etherscan at 0xcbaF8eB29Bc1b14f89179e53f59a1a00CE5ed6eD}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xF25743d24316FEf6F5bcFA2C3678c633ec1BA99f has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0xF25743d24316FEf6F5bcFA2C3678c633ec1BA99f#code
+[INFO] AdminACL contract verified on Etherscan at 0xF25743d24316FEf6F5bcFA2C3678c633ec1BA99f
+Created s3 bucket for https://sothebys-gen-art-sepolia.s3.amazonaws.com
+[INFO] Created image bucket sothebys-gen-art-sepolia
+[INFO] Deployment details written to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/sothebys-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xcbaf8eb29bc1b14f89179e53f59a1a00ce5ed6ed",
+  "name": "Sothebys Gen Art",
+  "bucket_name": "sothebys-gen-art-sepolia",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef, don't forget to update if requred.

@@ -270,14 +270,11 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,address,bytes32[])"](
-            config.projectZero,
-            config.genArt721Core.address,
-            userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,bytes32[])"
+          ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          });
         let result = await config.minter.projectMaxHasBeenInvoked(
           config.projectZero,
           config.genArt721Core.address
@@ -302,14 +299,11 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,address,bytes32[])"](
-            config.projectZero,
-            config.genArt721Core.address,
-            userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,bytes32[])"
+          ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          });
         const isEngineView = await config.minter
           .connect(config.accounts.artist)
           .isEngineView(config.genArt721Core.address);
@@ -385,14 +379,11 @@ runForEach.forEach((params) => {
         // mint two tokens
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,address,bytes32[])"](
-            config.projectZero,
-            config.genArt721Core.address,
-            userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,bytes32[])"
+          ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          });
         const projectUserMintInvocations = await config.minter
           .connect(config.accounts.artist)
           .projectUserMintInvocations(
@@ -549,14 +540,11 @@ runForEach.forEach((params) => {
         // mint a token
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,address,bytes32[])"](
-            config.projectZero,
-            config.genArt721Core.address,
-            userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,bytes32[])"
+          ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          });
         // user should have 0 remaining invocations
         const projectRemainingInvocationsForAddress_ = await config.minter
           .connect(config.accounts.user)
@@ -611,14 +599,11 @@ runForEach.forEach((params) => {
         // still false after user mints a token
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,address,bytes32[])"](
-            config.projectZero,
-            config.genArt721Core.address,
-            userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,bytes32[])"
+          ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          });
         // check remaining invocations response
         projectRemainingInvocationsForAddress_ = await config.minter
           .connect(config.accounts.user)
@@ -674,14 +659,11 @@ runForEach.forEach((params) => {
         for (let i = 0; i < 2; i++) {
           await config.minter
             .connect(config.accounts.user)
-            ["purchase(uint256,address,bytes32[])"](
-              config.projectZero,
-              config.genArt721Core.address,
-              userMerkleProofZero,
-              {
-                value: config.pricePerTokenInWei,
-              }
-            );
+            [
+              "purchase(uint256,address,bytes32[])"
+            ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+              value: config.pricePerTokenInWei,
+            });
         }
         // check remaining invocations response
         projectRemainingInvocationsForAddress_ = await config.minter
