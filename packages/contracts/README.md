@@ -89,7 +89,7 @@ Art Blocks has developed a shared Minter Suite that can be used to mint tokens. 
 
 A legacy, non-shared minter suite is also currently used by many partners, and is still in use by many partners during migration to the shared minter suite.
 
-For details on the Art Blocks Minter Suite, see the [minter suite documenation](./MINTER_SUITE.md).
+For details on the Art Blocks Minter Suite, see the [minter suite documentation](./MINTER_SUITE.md).
 
 # Deployments
 
@@ -177,9 +177,38 @@ The most recent version of the Shared Randomizer contract is deployed at the fol
 - Arbitrum One: `0x6a5976391E708fBf918c3786cd1FcbB88732fbc1`
 - Arbitrum Sepolia: `0x28f2D3805652FB5d359486dFfb7D08320D403240`
 
+## DependencyRegistry
+
+The DependencyRegistry is an upgradeable contract that manages the dependencies for projects on the Art Blocks platform. It maintains a registry of dependencies, licenses, supported core contracts, and project dependency overrides.
+
+Each dependency is identified by a unique name and version (in the format "name@version"), and is associated with a specific license type (e.g., MIT, GPL). The DependencyRegistry also stores additional information for each dependency, such as the preferred Content Delivery Network (CDN), repository, and website.
+
+The contract allows for the overriding of project dependencies. This means that specific projects can use different versions of dependencies than what's stored on the core contract. The override is defined by the address of the core contract, the project ID, and the bytes32 representation of the dependency name and version.
+
+- `DependencyRegistry` (sepolia dev):
+  - TransparentUpgradeableProxy https://sepolia.etherscan.io/address/0x5Fcc415BCFb164C5F826B5305274749BeB684e9b#code
+  - V0 Implementation https://sepolia.etherscan.io/address/0x2B0EaC9FBdD487e09f3326BB616EeAD72ade9876#code
+- `DependencyRegistry` (sepolia staging):
+  - TransparentUpgradeableProxy https://sepolia.etherscan.io/address/0xEFA7Ef074A6E90a99fba8bAd4dCf337ef298387f#code
+  - V0 Implementation https://sepolia.etherscan.io/address/0x2B0EaC9FBdD487e09f3326BB616EeAD72ade9876#code
+- `DependencyRegistry` (mainnet)
+  - TransparentUpgradeableProxy https://etherscan.io/address/0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF#code
+  - V0 Implementation https://etherscan.io/address/0x2d3f8D5c5294B7934aFBe4B901EEb5E7B48a4e97#code
+  - AdminACLV0 https://etherscan.io/address/0x569cDfECFD848a02Ad3e74175a1A4a74484Ef944#code
+
+## Splitter Factories
+
+In some instances, splitter contracts may be used by projects to split revenue between multiple parties. For flagship, sometimes splitter contracts deployed using a factory contract are used. The factory contracts deployed for flagship are listed below:
+
+| Network | Environment | Factory Address                            | Implementation Address                     |
+| ------- | ----------- | ------------------------------------------ | ------------------------------------------ |
+| Sepolia | Dev         | 0x39D9580445A3Fcf486c6AD0d06F66fe0d42230eC | 0xDaf4BB19982927aBEACd9bCd1cE070f188ddb26E |
+| Sepolia | Staging     | 0xe3D5373D2dc56948737E79244C8C6C856336BF1A | 0xc673EdD8c29Fbb6462Ff48ce61803fa6d7f4d7A3 |
+| Mainnet | Prod        | 0xb26aaD97B0e1d250dB131CD4133c11629EBB4ef7 | 0x853a03Ec9CCbf8203DF0C40926398B959d81AFd2 |
+
 ## Contract Source Code Verification
 
-All mainnet deployments of contracts developed in this repositiory are verified on Etherscan. To protect against centralized source code verification failures (for example, if Etherscan were to dissappear), the PR history of this repository may be used to determine the commit at which a given deployment was performed, and source code verification may be submitted by anyone to a different source code verification service. Deployment details are recorded in the `deployments/` directory.
+All mainnet deployments of contracts developed in this repository are verified on Etherscan. To protect against centralized source code verification failures (for example, if Etherscan were to disappear), the PR history of this repository may be used to determine the commit at which a given deployment was performed, and source code verification may be submitted by anyone to a different source code verification service. Deployment details are recorded in the `deployments/` directory.
 
 # Royalties
 

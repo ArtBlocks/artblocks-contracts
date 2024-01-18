@@ -17,6 +17,8 @@ import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
 import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
 
+const addressZero = "0x0000000000000000000000000000000000000000";
+
 /**
  * These tests are intended to check common MinterHolder functionality.
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
@@ -208,7 +210,7 @@ export const MinterHolder_Common = async () => {
       const { pbabToken, pbabMinter } = await deployAndGetPBAB.bind(this)();
       await pbabMinter
         .connect(this.accounts.artist)
-        .purchaseTo(this.accounts.additional.address, 0, {
+        ["purchaseTo(address,uint256)"](this.accounts.additional.address, 0, {
           value: this.pricePerTokenInWei,
         });
       // allow holders of PBAB project 0 to purchase tokens on this.projectTwo
@@ -649,7 +651,7 @@ export const MinterHolder_Common = async () => {
         const { pbabToken, pbabMinter } = await deployAndGetPBAB.bind(this)();
         await pbabMinter
           .connect(this.accounts.artist)
-          .purchaseTo(this.accounts.additional.address, 0, {
+          ["purchaseTo(address,uint256)"](this.accounts.additional.address, 0, {
             value: this.pricePerTokenInWei,
           });
         // register the PBAB token on our minter
@@ -681,7 +683,7 @@ export const MinterHolder_Common = async () => {
         const { pbabToken, pbabMinter } = await deployAndGetPBAB.bind(this)();
         await pbabMinter
           .connect(this.accounts.artist)
-          .purchaseTo(this.accounts.additional.address, 0, {
+          ["purchaseTo(address,uint256)"](this.accounts.additional.address, 0, {
             value: this.pricePerTokenInWei,
           });
         // register the PBAB token on our minter

@@ -24,7 +24,7 @@ export const MinterSetPriceV4_Common = async (
       const config = await loadFixture(_beforeEach);
       await config.minter
         .connect(config.accounts.user)
-        .purchase_H4M(config.projectZero, {
+        ["purchase_H4M(uint256)"](config.projectZero, {
           value: config.pricePerTokenInWei,
         });
     });
@@ -64,7 +64,7 @@ export const MinterSetPriceV4_Common = async (
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero, {
+            ["purchase(uint256)"](config.projectZero, {
               value: config.pricePerTokenInWei,
             }),
           "Render Provider payment failed"
@@ -87,13 +87,11 @@ export const MinterSetPriceV4_Common = async (
           await expectRevert(
             config.minter
               .connect(config.accounts.user)
-              .purchaseTo(
-                config.accounts.additional.address,
-                config.projectZero,
-                {
-                  value: config.pricePerTokenInWei,
-                }
-              ),
+              [
+                "purchaseTo(address,uint256)"
+              ](config.accounts.additional.address, config.projectZero, {
+                value: config.pricePerTokenInWei,
+              }),
             "Platform Provider payment failed"
           );
         } else {
@@ -115,7 +113,7 @@ export const MinterSetPriceV4_Common = async (
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero, {
+            ["purchase(uint256)"](config.projectZero, {
               value: config.pricePerTokenInWei,
             }),
           "Artist payment failed"
@@ -148,7 +146,7 @@ export const MinterSetPriceV4_Common = async (
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero, {
+            ["purchase(uint256)"](config.projectZero, {
               value: config.pricePerTokenInWei,
             }),
           "Additional Payee payment failed"
@@ -191,7 +189,7 @@ export const MinterSetPriceV4_Common = async (
         // expect successful purchase
         await config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, {
+          ["purchase(uint256)"](config.projectZero, {
             value: config.pricePerTokenInWei,
           });
       });
@@ -218,7 +216,7 @@ export const MinterSetPriceV4_Common = async (
 
       await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectZero, {
+        ["purchase(uint256)"](config.projectZero, {
           value: config.pricePerTokenInWei,
         });
     });

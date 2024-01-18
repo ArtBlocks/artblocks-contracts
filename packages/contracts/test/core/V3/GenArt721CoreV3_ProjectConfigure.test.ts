@@ -1229,11 +1229,9 @@ for (const coreContractName of coreContractsToTest) {
         await expectRevert(
           config.genArt721Core
             .connect(config.accounts.artist)
-            ["safeTransferFrom(address,address,uint256)"](
-              config.accounts.artist.address,
-              scriptAddress,
-              config.projectZeroTokenZero.toNumber()
-            ),
+            [
+              "safeTransferFrom(address,address,uint256)"
+            ](config.accounts.artist.address, scriptAddress, config.projectZeroTokenZero.toNumber()),
           "ERC721: transfer to non ERC721Receiver implementer"
         );
 

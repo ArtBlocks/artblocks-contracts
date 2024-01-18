@@ -75,7 +75,7 @@ export const MinterSetPriceERC20_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, {
+          ["purchase(uint256)"](config.projectZero, {
             value: config.pricePerTokenInWei,
           }),
         needMoreValueErrorMessage
@@ -83,7 +83,7 @@ export const MinterSetPriceERC20_Common = async (
       // can purchase token at higher price
       await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectZero, {
+        ["purchase(uint256)"](config.projectZero, {
           value: config.higherPricePerTokenInWei,
         });
     });
@@ -102,7 +102,7 @@ export const MinterSetPriceERC20_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, {
+          ["purchase(uint256)"](config.projectZero, {
             value: config.pricePerTokenInWei,
           }),
         needMoreValueErrorMessage
@@ -110,7 +110,7 @@ export const MinterSetPriceERC20_Common = async (
       // can purchase project one token at lower price
       await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectOne, {
+        ["purchase(uint256)"](config.projectOne, {
           value: config.pricePerTokenInWei,
         });
     });
@@ -207,10 +207,10 @@ export const MinterSetPriceERC20_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, {
+          ["purchase(uint256)"](config.projectZero, {
             value: config.pricePerTokenInWei,
           }),
-        "this project accepts a different currency and cannot accept ETH"
+        "Currency addresses must match"
       );
       // approve contract and able to mint with Mock token
       await config.ERC20Mock.connect(config.accounts.user).approve(
@@ -219,7 +219,9 @@ export const MinterSetPriceERC20_Common = async (
       );
       await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectZero);
+        [
+          "purchase(uint256,uint256,address)"
+        ](config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address);
       // cannot purchase token with ERC20 token when insufficient balance
       await config.ERC20Mock.connect(config.accounts.user).transfer(
         config.accounts.artist.address,
@@ -228,7 +230,9 @@ export const MinterSetPriceERC20_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero),
+          [
+            "purchase(uint256,uint256,address)"
+          ](config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address),
         "Insufficient balance"
       );
       // artist changes back to ETH
@@ -242,7 +246,7 @@ export const MinterSetPriceERC20_Common = async (
       // able to mint with ETH
       await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectZero, {
+        ["purchase(uint256)"](config.projectZero, {
           value: config.pricePerTokenInWei,
         });
     });
@@ -261,7 +265,7 @@ export const MinterSetPriceERC20_Common = async (
       // can purchase project one token with ETH
       await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectOne, {
+        ["purchase(uint256)"](config.projectOne, {
           value: config.pricePerTokenInWei,
         });
     });
@@ -289,7 +293,7 @@ export const MinterSetPriceERC20_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectTwo, {
+          ["purchase(uint256)"](config.projectTwo, {
             value: config.pricePerTokenInWei,
           }),
         "Price not configured"
@@ -301,7 +305,7 @@ export const MinterSetPriceERC20_Common = async (
       for (let i = 0; i < 15; i++) {
         await config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, {
+          ["purchase(uint256)"](config.projectZero, {
             value: config.pricePerTokenInWei,
           });
       }
@@ -311,7 +315,7 @@ export const MinterSetPriceERC20_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, {
+          ["purchase(uint256)"](config.projectZero, {
             value: config.pricePerTokenInWei,
           }),
         "Maximum number of invocations reached"
@@ -328,7 +332,7 @@ export const MinterSetPriceERC20_Common = async (
 
       const tx = await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectZero, {
+        ["purchase(uint256)"](config.projectZero, {
           value: config.pricePerTokenInWei,
         });
 
@@ -347,7 +351,7 @@ export const MinterSetPriceERC20_Common = async (
 
       const maxSetTx = await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectOne, {
+        ["purchase(uint256)"](config.projectOne, {
           value: config.pricePerTokenInWei,
         });
       const receipt2 = await ethers.provider.getTransactionReceipt(
@@ -382,7 +386,9 @@ export const MinterSetPriceERC20_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          .purchaseTo(config.accounts.additional.address, config.projectTwo, {
+          [
+            "purchaseTo(address,uint256)"
+          ](config.accounts.additional.address, config.projectTwo, {
             value: config.pricePerTokenInWei,
           }),
         "Price not configured"
@@ -393,7 +399,9 @@ export const MinterSetPriceERC20_Common = async (
       const config = await loadFixture(_beforeEach);
       await config.minter
         .connect(config.accounts.user)
-        .purchaseTo(config.accounts.additional.address, config.projectOne, {
+        [
+          "purchaseTo(address,uint256)"
+        ](config.accounts.additional.address, config.projectOne, {
           value: config.pricePerTokenInWei,
         });
     });

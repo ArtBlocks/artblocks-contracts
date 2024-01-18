@@ -62,6 +62,11 @@ export type DeployConfigDetails = {
   // flagship core fields
   artblocksPrimarySalesAddress?: string;
   artblocksSecondarySalesAddress?: string;
+  // splits fields
+  implementationName?: string;
+  factoryName?: string;
+  requiredSplitAddress?: string;
+  requiredSplitBPS?: number;
 };
 
 export async function getConfigInputs(
@@ -126,4 +131,12 @@ export async function getNetworkName() {
   }
 
   return networkName;
+}
+
+export function chunkArray<T>(array: T[], chunkSize: number): T[][] {
+  const result: T[][] = [];
+  for (let i = 0; i < array.length; i += chunkSize) {
+    result.push(array.slice(i, i + chunkSize));
+  }
+  return result;
 }

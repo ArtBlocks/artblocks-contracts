@@ -43,7 +43,7 @@ import "../libs/v0.8.x/Bytes32Strings.sol";
  * - forbidNewProjects (forever forbidding new projects)
  * - updateDefaultBaseURI (used to initialize new project base URIs)
  * ----------------------------------------------------------------------------
- * The following functions are restricted to either the the Artist address or
+ * The following functions are restricted to either the Artist address or
  * the Admin ACL contract, only when the project is not locked:
  * - updateProjectName
  * - updateProjectArtistName
@@ -408,7 +408,7 @@ contract GenArt721CoreV3_Explorations is
         unchecked {
             // invocationsBefore is uint24 << max uint256. In production use,
             // _projectId * ONE_MILLION must be << max uint256, otherwise
-            // tokenIdToProjectId function become invalid.
+            // tokenIdToProjectId function becomes invalid.
             // Therefore, no risk of overflow
             thisTokenId = (_projectId * ONE_MILLION) + invocationsBefore;
         }

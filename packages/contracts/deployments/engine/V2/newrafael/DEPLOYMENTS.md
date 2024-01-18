@@ -7,6 +7,15 @@
 
 `0x0F441cFaD93287109F5eF834bF52F4aaaa8d8ffa` set as minter owner, whitelisted on core contract, and admin of core contract.
 
+## Sepolia
+
+### Upload 0
+
+**GenArt721CoreV2:** https://sepolia.etherscan.io/address/0xaDe9dF7D1F38299b26266af80c9679d97Dd1F0CC#code
+**GenArt721Minter:** https://sepolia.etherscan.io/address/0x898a945005e602d268E874537C502190B925532a#code
+
+`0x0F441cFaD93287109F5eF834bF52F4aaaa8d8ffa` set as minter owner, whitelisted on core contract, and admin of core contract.
+
 ## Goerli
 
 ### Upload 0

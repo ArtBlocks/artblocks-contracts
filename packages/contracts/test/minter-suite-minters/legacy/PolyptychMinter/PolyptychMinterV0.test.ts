@@ -292,14 +292,11 @@ for (const coreContractName of coreContractsToTest) {
         // mint a token
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          });
 
         expect(
           await config.minter
@@ -335,14 +332,11 @@ for (const coreContractName of coreContractsToTest) {
         // mint a token
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          });
 
         // expect projectMaxHasBeenInvoked to be true
         const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
@@ -405,14 +399,11 @@ for (const coreContractName of coreContractsToTest) {
         // mint a token
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          });
 
         // expect projectMaxHasBeenInvoked to be true
         const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
@@ -672,14 +663,11 @@ for (const coreContractName of coreContractsToTest) {
 
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          });
       });
     });
 
@@ -753,15 +741,11 @@ for (const coreContractName of coreContractsToTest) {
               await expectRevert(
                 config.minter
                   .connect(config.accounts.artist)
-                  ["purchaseTo(address,uint256,address,uint256)"](
-                    config.accounts.additional.address,
-                    config.projectZero,
-                    config.genArt721Core.address,
-                    config.projectZeroTokenZero.toNumber(),
-                    {
-                      value: config.pricePerTokenInWei,
-                    }
-                  ),
+                  [
+                    "purchaseTo(address,uint256,address,uint256)"
+                  ](config.accounts.additional.address, config.projectZero, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+                    value: config.pricePerTokenInWei,
+                  }),
                 "Only owner of NFT"
               );
             });
@@ -928,14 +912,11 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         const tx = await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          });
 
         const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
         const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed);

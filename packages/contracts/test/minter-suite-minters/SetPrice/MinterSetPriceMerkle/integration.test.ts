@@ -301,14 +301,11 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            ["purchase(uint256,address,bytes32[])"](
-              config.projectZero,
-              config.genArt721Core.address,
-              userMerkleProofZero,
-              {
-                value: config.higherPricePerTokenInWei,
-              }
-            ),
+            [
+              "purchase(uint256,address,bytes32[])"
+            ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+              value: config.higherPricePerTokenInWei,
+            }),
           revertMessages.maximumInvocationsReached
         );
       });
@@ -321,14 +318,11 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            ["purchase(uint256,address,bytes32[])"](
-              config.projectZero,
-              config.genArt721Core.address,
-              userMerkleProofZero,
-              {
-                value: config.higherPricePerTokenInWei,
-              }
-            ),
+            [
+              "purchase(uint256,address,bytes32[])"
+            ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+              value: config.higherPricePerTokenInWei,
+            }),
           revertMessages.priceNotConfigured
         );
       });
@@ -348,14 +342,11 @@ runForEach.forEach((params) => {
         for (let i = 0; i < 15; i++) {
           await config.minter
             .connect(config.accounts.user)
-            ["purchase(uint256,address,bytes32[])"](
-              config.projectZero,
-              config.genArt721Core.address,
-              userMerkleProofZero,
-              {
-                value: config.higherPricePerTokenInWei,
-              }
-            );
+            [
+              "purchase(uint256,address,bytes32[])"
+            ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+              value: config.higherPricePerTokenInWei,
+            });
         }
         // switch to different minter
         const setPriceMinter = await deployAndGet(config, "MinterSetPriceV5", [
@@ -459,14 +450,11 @@ runForEach.forEach((params) => {
           await expectRevert(
             config.minter
               .connect(config.accounts.user)
-              ["purchase(uint256,address,bytes32[])"](
-                config.projectZero,
-                config.genArt721Core.address,
-                userMerkleProofZero,
-                {
-                  value: config.pricePerTokenInWei,
-                }
-              ),
+              [
+                "purchase(uint256,address,bytes32[])"
+              ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+                value: config.pricePerTokenInWei,
+              }),
             "Render Provider payment failed"
           );
         });
@@ -542,14 +530,11 @@ runForEach.forEach((params) => {
           await expectRevert(
             config.minter
               .connect(config.accounts.user)
-              ["purchase(uint256,address,bytes32[])"](
-                config.projectZero,
-                config.genArt721Core.address,
-                userMerkleProofZero,
-                {
-                  value: config.higherPricePerTokenInWei,
-                }
-              ),
+              [
+                "purchase(uint256,address,bytes32[])"
+              ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+                value: config.higherPricePerTokenInWei,
+              }),
             "Artist payment failed"
           );
         });
@@ -590,14 +575,11 @@ runForEach.forEach((params) => {
           await expectRevert(
             config.minter
               .connect(config.accounts.user)
-              ["purchase(uint256,address,bytes32[])"](
-                config.projectZero,
-                config.genArt721Core.address,
-                userMerkleProofZero,
-                {
-                  value: config.higherPricePerTokenInWei,
-                }
-              ),
+              [
+                "purchase(uint256,address,bytes32[])"
+              ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+                value: config.higherPricePerTokenInWei,
+              }),
             "Additional Payee payment failed"
           );
         });
@@ -648,14 +630,11 @@ runForEach.forEach((params) => {
           );
           await config.minter
             .connect(config.accounts.user)
-            ["purchase(uint256,address,bytes32[])"](
-              config.projectZero,
-              config.genArt721Core.address,
-              userMerkleProofZero,
-              {
-                value: config.higherPricePerTokenInWei,
-              }
-            );
+            [
+              "purchase(uint256,address,bytes32[])"
+            ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+              value: config.higherPricePerTokenInWei,
+            });
         });
       });
 
@@ -1017,15 +996,11 @@ runForEach.forEach((params) => {
             );
             await config.minter
               .connect(config.accounts.user)
-              ["purchaseTo(address,uint256,address,bytes32[])"](
-                config.userVault.address,
-                config.projectOne,
-                config.genArt721Core.address,
-                userMerkleProofOne,
-                {
-                  value: config.pricePerTokenInWei,
-                }
-              );
+              [
+                "purchaseTo(address,uint256,address,bytes32[])"
+              ](config.userVault.address, config.projectOne, config.genArt721Core.address, userMerkleProofOne, {
+                value: config.pricePerTokenInWei,
+              });
           });
 
           it("does not allow purchases with an incorrect proof", async function () {

@@ -43,7 +43,7 @@ import "../../libs/v0.8.x/Bytes32Strings.sol";
  * - forbidNewProjects (forever forbidding new projects)
  * - updateDefaultBaseURI (used to initialize new project base URIs)
  * ----------------------------------------------------------------------------
- * The following functions are restricted to either the the Artist address or
+ * The following functions are restricted to either the Artist address or
  * the Admin ACL contract, only when the project is not locked:
  * - updateProjectName
  * - updateProjectArtistName
