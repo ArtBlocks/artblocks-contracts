@@ -62,7 +62,6 @@ library RAMLib {
     }
 
     struct Bid {
-        uint8 slotIndex;
         address bidder;
         bool isSettled; // TODO: could remove this if amount is changed when settling
         bool isMinted; // TODO: determine if this is needed
@@ -135,14 +134,7 @@ library RAMLib {
     ) private {
         // add the new Bid
         Bid[] storage bids = RAMProjectConfig_.bidsBySlot[slotIndex];
-        bids.push(
-            Bid({
-                slotIndex: slotIndex,
-                bidder: bidder,
-                isSettled: false,
-                isMinted: false
-            })
-        );
+        bids.push(Bid({bidder: bidder, isSettled: false, isMinted: false}));
         // update number of active bids
         RAMProjectConfig_.numActiveBids++;
         // update metadata if first bid for this slot
@@ -225,15 +217,15 @@ library RAMLib {
     function getMinBid(
         uint256 projectId,
         address coreContract
-    ) internal view returns (Bid storage minBid) {
+    ) internal view returns (Bid storage minBid, uint8 minSlotIndex) {
         // get first slot with an active bid
         RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
             projectId: projectId,
             coreContract: coreContract
         });
-        uint256 minBidIndex = RAMProjectConfig_.minBidIndex;
+        minSlotIndex = RAMProjectConfig_.minBidIndex;
         // get the bids array for that slot
-        Bid[] storage bids = RAMProjectConfig_.bidsBySlot[minBidIndex];
+        Bid[] storage bids = RAMProjectConfig_.bidsBySlot[minSlotIndex];
         // get the last active bid in the array
         // @dev get last because earlier bids (lower index) have priority
         minBid = bids[bids.length - 1];

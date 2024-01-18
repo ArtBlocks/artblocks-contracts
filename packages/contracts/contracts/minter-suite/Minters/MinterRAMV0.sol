@@ -436,7 +436,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         uint256 projectId,
         address coreContract
     ) external view returns (uint256) {
-        RAMLib.Bid storage minBid = RAMLib.getMinBid({
+        (, uint8 minBidSlotIndex) = RAMLib.getMinBid({
             projectId: projectId,
             coreContract: coreContract
         });
@@ -446,7 +446,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
                     projectId: projectId,
                     coreContract: coreContract
                 }),
-                minBid.slotIndex
+                minBidSlotIndex
             );
     }
 
