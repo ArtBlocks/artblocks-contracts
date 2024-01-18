@@ -127,13 +127,11 @@ describe(`${CORE_NAME} Gas Tests`, async function () {
     for (let i = 0; i < NUM_INITIAL_MINTS; i++) {
       await config.minter
         .connect(config.accounts.user)
-        ["purchase(uint256,bytes32[])"](
-          config.projectOne,
-          config.userMerkleProofOne,
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        [
+          "purchase(uint256,bytes32[])"
+        ](config.projectOne, config.userMerkleProofOne, {
+          value: config.pricePerTokenInWei,
+        });
     }
     return config;
   }
@@ -250,14 +248,11 @@ describe(`${CORE_NAME} Gas Tests`, async function () {
     for (let i = 0; i < NUM_INITIAL_MINTS; i++) {
       await config.minter
         .connect(config.accounts.user)
-        ["purchase(uint256,address,bytes32[])"](
-          config.projectOne,
-          config.genArt721Core.address,
-          config.userMerkleProofOne,
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        [
+          "purchase(uint256,address,bytes32[])"
+        ](config.projectOne, config.genArt721Core.address, config.userMerkleProofOne, {
+          value: config.pricePerTokenInWei,
+        });
     }
 
     return config;
@@ -272,13 +267,11 @@ describe(`${CORE_NAME} Gas Tests`, async function () {
       for (let index = 0; index < NUM_MINTS_TO_AVERAGE; index++) {
         const tx = await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectOne,
-            config.userMerkleProofOne,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectOne, config.userMerkleProofOne, {
+            value: config.pricePerTokenInWei,
+          });
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
       }
       const gasUseds = receipts.map((receipt) => receipt.gasUsed);
@@ -310,14 +303,11 @@ describe(`${CORE_NAME} Gas Tests`, async function () {
       for (let index = 0; index < NUM_MINTS_TO_AVERAGE; index++) {
         const tx = await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,address,bytes32[])"](
-            config.projectOne,
-            config.genArt721Core.address,
-            config.userMerkleProofOne,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,bytes32[])"
+          ](config.projectOne, config.genArt721Core.address, config.userMerkleProofOne, {
+            value: config.pricePerTokenInWei,
+          });
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
       }
       const gasUseds = receipts.map((receipt) => receipt.gasUsed);

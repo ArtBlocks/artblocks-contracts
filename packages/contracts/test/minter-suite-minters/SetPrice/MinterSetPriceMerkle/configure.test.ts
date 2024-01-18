@@ -248,27 +248,21 @@ runForEach.forEach((params) => {
         );
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,address,bytes32[])"](
-            config.projectZero,
-            config.genArt721Core.address,
-            userMerkleProofZero,
-            {
-              value: config.higherPricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,bytes32[])"
+          ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+            value: config.higherPricePerTokenInWei,
+          });
 
         // cannot purchase token at lower price
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            ["purchase(uint256,address,bytes32[])"](
-              config.projectZero,
-              config.genArt721Core.address,
-              userMerkleProofZero,
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
+            [
+              "purchase(uint256,address,bytes32[])"
+            ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+              value: config.pricePerTokenInWei,
+            }),
           revertMessages.needMoreValue
         );
       });
@@ -302,27 +296,21 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            ["purchase(uint256,address,bytes32[])"](
-              config.projectOne,
-              config.genArt721Core.address,
-              userMerkleProofOne,
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
+            [
+              "purchase(uint256,address,bytes32[])"
+            ](config.projectOne, config.genArt721Core.address, userMerkleProofOne, {
+              value: config.pricePerTokenInWei,
+            }),
           revertMessages.needMoreValue
         );
         // can purchase project zero token at lower price
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,address,bytes32[])"](
-            config.projectZero,
-            config.genArt721Core.address,
-            userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,bytes32[])"
+          ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          });
       });
     });
 
@@ -359,14 +347,11 @@ runForEach.forEach((params) => {
         // mint a token
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,address,bytes32[])"](
-            config.projectZero,
-            config.genArt721Core.address,
-            userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,bytes32[])"
+          ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          });
 
         // expect projectMaxHasBeenInvoked to be true
         const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
@@ -435,14 +420,11 @@ runForEach.forEach((params) => {
         // mint a token
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,address,bytes32[])"](
-            config.projectZero,
-            config.genArt721Core.address,
-            userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,bytes32[])"
+          ](config.projectZero, config.genArt721Core.address, userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          });
 
         // expect projectMaxHasBeenInvoked to be true
         const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(

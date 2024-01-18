@@ -31,13 +31,11 @@ export const MinterSetPriceV1V2V3V4_Common = async (
       // still allows `purchaseTo`.
       await config.minter
         .connect(config.accounts.user)
-        ["purchaseTo(address,uint256)"](
-          config.accounts.artist.address,
-          config.projectZero,
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        [
+          "purchaseTo(address,uint256)"
+        ](config.accounts.artist.address, config.projectZero, {
+          value: config.pricePerTokenInWei,
+        });
     });
 
     it("doesn't support `purchaseTo` toggling", async function () {

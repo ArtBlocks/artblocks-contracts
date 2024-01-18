@@ -151,25 +151,21 @@ export const MinterMerkle_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectZero,
-            userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectZero, userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          }),
         needMoreValueErrorMessage
       );
       // can purchase genArt721Core at higher price
       await config.minter
         .connect(config.accounts.user)
-        ["purchase(uint256,bytes32[])"](
-          config.projectZero,
-          userMerkleProofZero,
-          {
-            value: config.higherPricePerTokenInWei,
-          }
-        );
+        [
+          "purchase(uint256,bytes32[])"
+        ](config.projectZero, userMerkleProofZero, {
+          value: config.higherPricePerTokenInWei,
+        });
     });
 
     it("enforces price update only on desired project", async function () {
@@ -192,13 +188,11 @@ export const MinterMerkle_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectZero,
-            userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectZero, userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          }),
         needMoreValueErrorMessage
       );
       // can purchase project one genArt721Core at lower price
@@ -407,13 +401,11 @@ export const MinterMerkle_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.additional)
-          ["purchase(uint256,bytes32[])"](
-            config.projectTwo,
-            config.additionalMerkleProofTwo,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectTwo, config.additionalMerkleProofTwo, {
+            value: config.pricePerTokenInWei,
+          }),
         "Invalid Merkle proof"
       );
       // expect revert if given an empty proof
@@ -434,13 +426,11 @@ export const MinterMerkle_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.additional)
-          ["purchase(uint256,bytes32[])"](
-            config.projectTwo,
-            config.additionalMerkleProofTwo,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectTwo, config.additionalMerkleProofTwo, {
+            value: config.pricePerTokenInWei,
+          }),
         "Price not configured"
       );
     });
@@ -460,10 +450,9 @@ export const MinterMerkle_Common = async (
       // allow purchase when intentionally configured price of zero
       await config.minter
         .connect(config.accounts.additional)
-        ["purchase(uint256,bytes32[])"](
-          config.projectTwo,
-          config.additionalMerkleProofTwo
-        );
+        [
+          "purchase(uint256,bytes32[])"
+        ](config.projectTwo, config.additionalMerkleProofTwo);
     });
 
     it("enforces mint limit per address when default limit of one is used", async function () {
@@ -471,24 +460,20 @@ export const MinterMerkle_Common = async (
       const config = this.config;
       await config.minter
         .connect(config.accounts.user)
-        ["purchase(uint256,bytes32[])"](
-          config.projectZero,
-          config.userMerkleProofZero,
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        [
+          "purchase(uint256,bytes32[])"
+        ](config.projectZero, config.userMerkleProofZero, {
+          value: config.pricePerTokenInWei,
+        });
       // expect revert after account hits default invocations per address limit of one
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectZero,
-            config.userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectZero, config.userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          }),
         "Maximum number of invocations per address reached"
       );
     });
@@ -504,13 +489,11 @@ export const MinterMerkle_Common = async (
       for (let i = 0; i < 15; i++) {
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectZero,
-            config.userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectZero, config.userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          });
       }
     });
 
@@ -525,25 +508,21 @@ export const MinterMerkle_Common = async (
       for (let i = 0; i < 5; i++) {
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectZero,
-            config.userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectZero, config.userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          });
       }
       // expect revert after account hits >5 invocations
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectZero,
-            config.userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectZero, config.userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          }),
         "Maximum number of invocations per address reached"
       );
     });
@@ -559,13 +538,11 @@ export const MinterMerkle_Common = async (
       for (let i = 0; i < 5; i++) {
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectZero,
-            config.userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectZero, config.userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          });
       }
       // artist allows five mints per address
       await config.minter
@@ -575,13 +552,11 @@ export const MinterMerkle_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectZero,
-            config.userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectZero, config.userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          }),
         "Maximum number of invocations per address reached"
       );
     });
@@ -597,13 +572,11 @@ export const MinterMerkle_Common = async (
       for (let i = 0; i < 5; i++) {
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectZero,
-            config.userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectZero, config.userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          });
       }
       // artist allows one mint per address
       await config.minter
@@ -613,13 +586,11 @@ export const MinterMerkle_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectZero,
-            config.userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectZero, config.userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          }),
         "Maximum number of invocations per address reached"
       );
     });
@@ -632,13 +603,11 @@ export const MinterMerkle_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectZero,
-            config.userMerkleProofOne,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectZero, config.userMerkleProofOne, {
+            value: config.pricePerTokenInWei,
+          }),
         "Invalid Merkle proof"
       );
     });
@@ -652,26 +621,22 @@ export const MinterMerkle_Common = async (
       for (let i = 0; i < 15; i++) {
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectZero,
-            config.userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectZero, config.userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          });
       }
 
       // since auto-configured, we should see the minter's revert message
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectZero,
-            config.userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectZero, config.userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          }),
         "Maximum number of invocations reached"
       );
     });
@@ -688,13 +653,11 @@ export const MinterMerkle_Common = async (
 
       const tx = await config.minter
         .connect(config.accounts.user)
-        ["purchase(uint256,bytes32[])"](
-          config.projectZero,
-          config.userMerkleProofZero,
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        [
+          "purchase(uint256,bytes32[])"
+        ](config.projectZero, config.userMerkleProofZero, {
+          value: config.pricePerTokenInWei,
+        });
 
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
       let gasCostNoMaxInvocations: any = receipt.effectiveGasPrice
@@ -710,13 +673,11 @@ export const MinterMerkle_Common = async (
         .setProjectMaxInvocations(config.projectOne);
       const maxSetTx = await config.minter
         .connect(config.accounts.user)
-        ["purchase(uint256,bytes32[])"](
-          config.projectOne,
-          config.userMerkleProofOne,
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        [
+          "purchase(uint256,bytes32[])"
+        ](config.projectOne, config.userMerkleProofOne, {
+          value: config.pricePerTokenInWei,
+        });
       const receipt2 = await ethers.provider.getTransactionReceipt(
         maxSetTx.hash
       );
@@ -751,13 +712,11 @@ export const MinterMerkle_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.additional)
-          ["purchaseTo(address,uint256)"](
-            config.accounts.user.address,
-            config.projectZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchaseTo(address,uint256)"
+          ](config.accounts.user.address, config.projectZero, {
+            value: config.pricePerTokenInWei,
+          }),
         "Must provide Merkle proof"
       );
     });
@@ -776,13 +735,11 @@ export const MinterMerkle_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.additional)
-          ["purchase(uint256,bytes32[])"](
-            config.projectTwo,
-            additionalMerkleProofTwo,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectTwo, additionalMerkleProofTwo, {
+            value: config.pricePerTokenInWei,
+          }),
         "Price not configured"
       );
     });
@@ -794,14 +751,11 @@ export const MinterMerkle_Common = async (
       );
       await config.minter
         .connect(config.accounts.user)
-        ["purchaseTo(address,uint256,bytes32[])"](
-          config.accounts.additional.address,
-          config.projectOne,
-          userMerkleProofOne,
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        [
+          "purchaseTo(address,uint256,bytes32[])"
+        ](config.accounts.additional.address, config.projectOne, userMerkleProofOne, {
+          value: config.pricePerTokenInWei,
+        });
     });
 
     it("does not support toggling of `purchaseTo`", async function () {
@@ -966,13 +920,11 @@ export const MinterMerkle_Common = async (
       // mint a token
       await config.minter
         .connect(config.accounts.user)
-        ["purchase(uint256,bytes32[])"](
-          config.projectZero,
-          config.userMerkleProofZero,
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        [
+          "purchase(uint256,bytes32[])"
+        ](config.projectZero, config.userMerkleProofZero, {
+          value: config.pricePerTokenInWei,
+        });
       // user should have 0 remaining invocations
       const projectRemainingInvocationsForAddress_ = await config.minter
         .connect(config.accounts.user)
@@ -1010,13 +962,11 @@ export const MinterMerkle_Common = async (
       // still false after user mints a token
       await config.minter
         .connect(config.accounts.user)
-        ["purchase(uint256,bytes32[])"](
-          config.projectZero,
-          config.userMerkleProofZero,
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        [
+          "purchase(uint256,bytes32[])"
+        ](config.projectZero, config.userMerkleProofZero, {
+          value: config.pricePerTokenInWei,
+        });
       // check remaining invocations response
       projectRemainingInvocationsForAddress_ = await config.minter
         .connect(config.accounts.user)
@@ -1055,13 +1005,11 @@ export const MinterMerkle_Common = async (
       for (let i = 0; i < 2; i++) {
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            config.projectZero,
-            config.userMerkleProofZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,bytes32[])"
+          ](config.projectZero, config.userMerkleProofZero, {
+            value: config.pricePerTokenInWei,
+          });
       }
       // check remaining invocations response
       projectRemainingInvocationsForAddress_ = await config.minter
