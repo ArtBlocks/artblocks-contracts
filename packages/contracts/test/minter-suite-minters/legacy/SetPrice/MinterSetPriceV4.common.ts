@@ -87,13 +87,11 @@ export const MinterSetPriceV4_Common = async (
           await expectRevert(
             config.minter
               .connect(config.accounts.user)
-              ["purchaseTo(address,uint256)"](
-                config.accounts.additional.address,
-                config.projectZero,
-                {
-                  value: config.pricePerTokenInWei,
-                }
-              ),
+              [
+                "purchaseTo(address,uint256)"
+              ](config.accounts.additional.address, config.projectZero, {
+                value: config.pricePerTokenInWei,
+              }),
             "Platform Provider payment failed"
           );
         } else {

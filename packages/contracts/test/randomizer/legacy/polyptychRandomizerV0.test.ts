@@ -282,14 +282,11 @@ describe("PolyptychRandomizerV0 w/V3 core", async function () {
       await expectRevert(
         config.minterPolyptych
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            0,
-            {
-              value: 0,
-            }
-          ),
+          [
+            "purchase(uint256,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, 0, {
+            value: 0,
+          }),
         "Cannot have an empty hash seed to copy."
       );
 
@@ -298,14 +295,11 @@ describe("PolyptychRandomizerV0 w/V3 core", async function () {
       // mint a token
       await config.minterPolyptych
         .connect(config.accounts.artist)
-        ["purchase(uint256,address,uint256)"](
-          config.projectZero,
-          config.genArt721Core.address,
-          0,
-          {
-            value: 0,
-          }
-        );
+        [
+          "purchase(uint256,address,uint256)"
+        ](config.projectZero, config.genArt721Core.address, 0, {
+          value: 0,
+        });
     });
   });
 
