@@ -14,6 +14,11 @@
       "address": "0xEFA7Ef074A6E90a99fba8bAd4dCf337ef298387f",
       "txHash": "0xee1ad6b97bf1819837293f000948d2802b325faa261f9d7d8dd277f999150658",
       "kind": "transparent"
+    },
+    {
+      "address": "0xdC862938cA0a2D8dcabe5733C23e54ac7aAFFF27",
+      "txHash": "0x51a4238afeca59f44439f0303bb99bbc728d07993ad7bcfefb688585e4243770",
+      "kind": "transparent"
     }
   ],
   "impls": {
@@ -91,6 +96,79 @@
             "numberOfBytes": "1"
           }
         }
+      }
+    },
+    "1b6033ccc3bed545b5ceb14d868b4e11f3b6ec5a05a6b7628923f382bec23202": {
+      "address": "0x34a5F30D34EF69102DcAFeCb062605F3E3f57D93",
+      "txHash": "0x7bb2f060c373ed2af9f7733870de8fbf781e87bb97556e7277c0ce5d0369e18a",
+      "layout": {
+        "solcVersion": "0.8.19",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin-4.8/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin-4.8/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "dependencyRegistry",
+            "offset": 2,
+            "slot": "0",
+            "type": "t_contract(DependencyRegistryV0)4223",
+            "contract": "GenArt721GeneratorV0",
+            "src": "contracts/generator/GenArt721GeneratorV0.sol:31"
+          },
+          {
+            "label": "scriptyBuilder",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_contract(IScriptyBuilderV2)6462",
+            "contract": "GenArt721GeneratorV0",
+            "src": "contracts/generator/GenArt721GeneratorV0.sol:32"
+          },
+          {
+            "label": "gunzipScriptAddress",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_address",
+            "contract": "GenArt721GeneratorV0",
+            "src": "contracts/generator/GenArt721GeneratorV0.sol:33"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_contract(DependencyRegistryV0)4223": {
+            "label": "contract DependencyRegistryV0",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IScriptyBuilderV2)6462": {
+            "label": "contract IScriptyBuilderV2",
+            "numberOfBytes": "20"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        },
+        "namespaces": {}
       }
     }
   }

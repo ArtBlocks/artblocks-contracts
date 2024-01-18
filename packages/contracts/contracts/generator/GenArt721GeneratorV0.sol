@@ -12,6 +12,7 @@ import {ABHelpers} from "../libs/v0.8.x/ABHelpers.sol";
 import {AddressChunks} from "./AddressChunks.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
+import "@openzeppelin-4.8/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import {IScriptyBuilderV2, HTMLRequest, HTMLTagType, HTMLTag} from "scripty.sol/contracts/scripty/interfaces/IScriptyBuilderV2.sol";
 
@@ -22,13 +23,14 @@ import {IScriptyBuilderV2, HTMLRequest, HTMLTagType, HTMLTag} from "scripty.sol/
  * by combining the dependency script, project script, token data. It utilizes
  * the ScriptyBuilder contract to generate the HTML.
  */
-contract GenArt721GeneratorV0 {
+contract GenArt721GeneratorV0 is Initializable {
     using Bytes32Strings for bytes32;
     using Bytes32Strings for string;
+    using BytecodeStorageWriter for string;
 
     DependencyRegistryV0 public dependencyRegistry;
     IScriptyBuilderV2 public scriptyBuilder;
-    address public ethFS;
+    address public gunzipScriptAddress;
 
     function _onlySupportedCoreContract(
         address coreContractAddress
@@ -39,24 +41,74 @@ contract GenArt721GeneratorV0 {
         );
     }
 
+    function _onlyDependencyRegistryAdminACL(bytes4 selector) internal {
+        require(
+            dependencyRegistry.adminACLAllowed(
+                msg.sender,
+                address(this),
+                selector
+            ),
+            "Only DependencyRegistry AdminACL"
+        );
+    }
+
     /**
-     * @notice Constructor for the GenArt721GeneratorV0 contract.
+     * @notice Initializer for the GenArt721GeneratorV0 contract.
      * @param _dependencyRegistry The address of the DependencyRegistry
      * contract to be used for retrieving dependency scripts.
      * @param _scriptyBuilder The address of the ScriptyBuilderV2 contract
      * to be used for generating the HTML for tokens.
-     * @param _ethFS The address of the EthFSFileStorage contract to retrieve
-     * the gunzipScripts-0.0.1.js script from used to gunzip the dependency
-     * scripts.
+     * @param _gunzipScriptAddress The address of the gunzip script bytecode
+     * storage contract used to gunzip the dependency scripts in the browser.
      */
-    constructor(
+    function initialize(
         address _dependencyRegistry,
         address _scriptyBuilder,
-        address _ethFS
-    ) {
+        address _gunzipScriptAddress
+    ) public initializer {
         dependencyRegistry = DependencyRegistryV0(_dependencyRegistry);
         scriptyBuilder = IScriptyBuilderV2(_scriptyBuilder);
-        ethFS = _ethFS;
+        gunzipScriptAddress = _gunzipScriptAddress;
+    }
+
+    /**
+     * @notice Set the DependencyRegistry contract address.
+     * @param _dependencyRegistry The address of the DependencyRegistry
+     * contract to be used for retrieving dependency scripts.
+     * @dev This function is gated to only the DependencyRegistry AdminACL.
+     * If an address is passed that does not implement the adminACLAllowed
+     * function, we will lose access to the write functions on this contract.
+     */
+    function updateDependencyRegistry(address _dependencyRegistry) external {
+        _onlyDependencyRegistryAdminACL(this.updateDependencyRegistry.selector);
+
+        dependencyRegistry = DependencyRegistryV0(_dependencyRegistry);
+    }
+
+    /**
+     * @notice Set the ScriptyBuilder contract address.
+     * @param _scriptyBuilder The address of the ScriptyBuilderV2 contract
+     * to be used for generating the HTML for tokens.
+     * @dev This function is gated to only the DependencyRegistry AdminACL.
+     */
+    function updateScriptyBuilder(address _scriptyBuilder) external {
+        _onlyDependencyRegistryAdminACL(this.updateScriptyBuilder.selector);
+
+        scriptyBuilder = IScriptyBuilderV2(_scriptyBuilder);
+    }
+
+    /**
+     * @notice Set the gunzip script address.
+     * @param _gunzipScriptAddress The address of the gunzip script bytecode
+     * storage contract used to gunzip the dependency scripts in the browser.
+     * @dev This function is gated to only the DependencyRegistry AdminACL.
+     */
+    function updateGunzipScriptAddress(address _gunzipScriptAddress) external {
+        _onlyDependencyRegistryAdminACL(
+            this.updateGunzipScriptAddress.selector
+        );
+
+        gunzipScriptAddress = _gunzipScriptAddress;
     }
 
     /**
@@ -325,7 +377,9 @@ contract GenArt721GeneratorV0 {
         // so we need to include this so we can gunzip them in the browser.
         bodyTags[1].name = "gunzipScripts-0.0.1.js";
         bodyTags[1].tagType = HTMLTagType.scriptBase64DataURI; // <script src="data:text/javascript;base64,[script]"></script>
-        bodyTags[1].contractAddress = ethFS;
+        bodyTags[1].tagContent = bytes(
+            BytecodeStorageReader.readFromBytecode(gunzipScriptAddress)
+        );
 
         bytes memory projectScript = getProjectScriptBytes(
             coreContractAddress,

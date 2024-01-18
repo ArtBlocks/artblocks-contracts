@@ -3,6 +3,7 @@ import { ethers } from "hardhat";
 import { Contract } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import zlib from "zlib";
+import { expectRevert } from "@openzeppelin/test-helpers";
 
 import {
   AdminACLV0,
@@ -10,6 +11,7 @@ import {
   MinterSetPriceV2,
   GenArt721GeneratorV0,
   GenArt721,
+  BytecodeStorageV1Writer,
 } from "../../scripts/contracts";
 
 import {
@@ -21,9 +23,15 @@ import {
   deployCoreWithMinterFilter,
   deployAndGetPBAB,
 } from "../util/common";
+import { StorageContractCreatedEvent } from "../../scripts/contracts/BytecodeStorageV1Writer";
 
 const NO_OVERRIDE_ERROR =
   "Contract does not implement projectScriptDetails and has no override set.";
+const ONLY_DEPENDENCY_REGISTRY_ADMIN_ACL_ERROR =
+  "Only DependencyRegistry AdminACL";
+const INVALID_DEPENDENCY_REGISTRY_ERROR =
+  "Contract at the provided address is not a valid DependencyRegistry";
+
 const ONE_MILLION = 1000000;
 
 // Default styles injected by genArt721Generator
@@ -114,8 +122,33 @@ describe(`GenArt721GeneratorV0`, async function () {
       compressedDepScript.slice(Math.floor(compressedDepScript.length / 2))
     );
 
-    // Deploy mock file store which contains the gunzip script
-    const mockFs = await deployAndGet(config, "MockFileStore");
+    // Deploy BytecodeStorageV1Writer contract
+    const bytecodeStorageV1Writer = (await deployAndGet(
+      config,
+      "BytecodeStorageV1Writer"
+    )) as BytecodeStorageV1Writer;
+
+    // Use BytecodeStorageV1Writer to upload gunzip script
+    const gunzipUploadTransaction =
+      await bytecodeStorageV1Writer.writeStringToBytecodeStorage(
+        GUNZIP_SCRIPT_BASE64
+      );
+
+    // Get address of gunzip storage contract from StorageContractCreated event
+    const gunzipUploadReceipt = await gunzipUploadTransaction.wait();
+    const storageContractCreatedEvent = gunzipUploadReceipt.events?.find(
+      (event) => {
+        if (event.event === "StorageContractCreated") {
+          return true;
+        }
+      }
+    );
+    if (!storageContractCreatedEvent) {
+      throw new Error("Failed to find StorageContractCreated event");
+    }
+    const gunzipStorageContractAddress = (
+      storageContractCreatedEvent as StorageContractCreatedEvent
+    ).args.storageContract;
 
     // Deploy scripty builder
     config.scriptyBuilder = await deployAndGet(config, "ScriptyBuilderV2");
@@ -123,13 +156,13 @@ describe(`GenArt721GeneratorV0`, async function () {
     // Deploy GenArt721GeneratorV0
     config.genArt721Generator = (await deployWithStorageLibraryAndGet(
       config,
-      "GenArt721GeneratorV0",
-      [
-        config.dependencyRegistry.address,
-        config.scriptyBuilder.address,
-        mockFs.address,
-      ]
+      "GenArt721GeneratorV0"
     )) as GenArt721GeneratorV0;
+    await config.genArt721Generator!.initialize(
+      config.dependencyRegistry.address,
+      config.scriptyBuilder.address,
+      gunzipStorageContractAddress
+    );
 
     return config as GenArt721GeneratorV0TestConfig;
   }
@@ -552,5 +585,101 @@ describe(`GenArt721GeneratorV0`, async function () {
     expect(encodedTokenHtml).to.equal(
       `data:text/html;base64,${Buffer.from(tokenHtml).toString("base64")}`
     );
+  });
+
+  describe("updateDependencyRegistry", function () {
+    it("updates dependencyRegistry", async function () {
+      const config = await loadFixture(_beforeEach);
+
+      const newDependencyRegistry = (await deployWithStorageLibraryAndGet(
+        config,
+        "DependencyRegistryV0"
+      )) as DependencyRegistryV0;
+
+      await newDependencyRegistry
+        .connect(config.accounts.deployer)
+        .initialize(config.adminACL!.address);
+
+      await config.genArt721Generator
+        .connect(config.accounts.deployer)
+        .updateDependencyRegistry(newDependencyRegistry.address);
+
+      expect(await config.genArt721Generator.dependencyRegistry()).to.equal(
+        newDependencyRegistry.address
+      );
+    });
+    it("reverts if not called by admin", async function () {
+      const config = await loadFixture(_beforeEach);
+
+      const newDependencyRegistry = (await deployWithStorageLibraryAndGet(
+        config,
+        "DependencyRegistryV0"
+      )) as DependencyRegistryV0;
+
+      await newDependencyRegistry
+        .connect(config.accounts.deployer)
+        .initialize(config.adminACL!.address);
+
+      await expectRevert(
+        config.genArt721Generator
+          .connect(config.accounts.artist)
+          .updateDependencyRegistry(newDependencyRegistry.address),
+        ONLY_DEPENDENCY_REGISTRY_ADMIN_ACL_ERROR
+      );
+    });
+  });
+  describe("updateScriptyBuilder", function () {
+    it("updates scriptyBuilder", async function () {
+      const config = await loadFixture(_beforeEach);
+      // Arbitrary address for testing
+      const newScriptyBuilderAddress = config.accounts.artist.address;
+
+      await config.genArt721Generator
+        .connect(config.accounts.deployer)
+        .updateScriptyBuilder(newScriptyBuilderAddress);
+
+      expect(await config.genArt721Generator.scriptyBuilder()).to.equal(
+        newScriptyBuilderAddress
+      );
+    });
+    it("reverts if not called by admin", async function () {
+      const config = await loadFixture(_beforeEach);
+      // Arbitrary address for testing
+      const newScriptyBuilderAddress = config.accounts.artist.address;
+
+      await expectRevert(
+        config.genArt721Generator
+          .connect(config.accounts.artist)
+          .updateScriptyBuilder(newScriptyBuilderAddress),
+        ONLY_DEPENDENCY_REGISTRY_ADMIN_ACL_ERROR
+      );
+    });
+  });
+  describe("updateGunzipStorageContract", function () {
+    it("updates gunzipStorageContract", async function () {
+      const config = await loadFixture(_beforeEach);
+      // Arbitrary address for testing
+      const newGunzipStorageContractAddress = config.accounts.artist.address;
+
+      await config.genArt721Generator
+        .connect(config.accounts.deployer)
+        .updateGunzipScriptAddress(newGunzipStorageContractAddress);
+
+      expect(await config.genArt721Generator.gunzipScriptAddress()).to.equal(
+        newGunzipStorageContractAddress
+      );
+    });
+    it("reverts if not called by admin", async function () {
+      const config = await loadFixture(_beforeEach);
+      // Arbitrary address for testing
+      const newGunzipStorageContractAddress = config.accounts.artist.address;
+
+      await expectRevert(
+        config.genArt721Generator
+          .connect(config.accounts.artist)
+          .updateGunzipScriptAddress(newGunzipStorageContractAddress),
+        ONLY_DEPENDENCY_REGISTRY_ADMIN_ACL_ERROR
+      );
+    });
   });
 });
