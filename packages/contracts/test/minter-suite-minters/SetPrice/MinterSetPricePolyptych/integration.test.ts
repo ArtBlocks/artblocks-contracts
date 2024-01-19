@@ -238,15 +238,11 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.additional)
-            ["purchase(uint256,address,address,uint256)"](
-              config.projectTwo,
-              config.genArt721Core.address,
-              config.genArt721Core.address,
-              config.projectTwoTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
+            [
+              "purchase(uint256,address,address,uint256)"
+            ](config.projectTwo, config.genArt721Core.address, config.genArt721Core.address, config.projectTwoTokenZero.toNumber(), {
+              value: config.pricePerTokenInWei,
+            }),
           "Price not configured"
         );
       });
@@ -264,30 +260,22 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.additional)
-            ["purchase(uint256,address,address,uint256)"](
-              config.projectOne,
-              config.genArt721Core.address,
-              config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: 0,
-              }
-            ),
+            [
+              "purchase(uint256,address,address,uint256)"
+            ](config.projectOne, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+              value: 0,
+            }),
           revertMessages.needMoreValue
         );
         // expect revert due when sending funds less than price
         await expectRevert(
           config.minter
             .connect(config.accounts.additional)
-            ["purchase(uint256,address,address,uint256)"](
-              config.projectOne,
-              config.genArt721Core.address,
-              config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei.sub(1),
-              }
-            ),
+            [
+              "purchase(uint256,address,address,uint256)"
+            ](config.projectOne, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+              value: config.pricePerTokenInWei.sub(1),
+            }),
           revertMessages.needMoreValue
         );
       });
@@ -316,15 +304,11 @@ runForEach.forEach((params) => {
           await expectRevert(
             config.minter
               .connect(config.accounts.additional)
-              ["purchase(uint256,address,address,uint256)"](
-                config.projectTwo,
-                config.genArt721Core.address,
-                config.genArt721Core.address,
-                config.projectZeroTokenZero.toNumber(),
-                {
-                  value: config.pricePerTokenInWei,
-                }
-              ),
+              [
+                "purchase(uint256,address,address,uint256)"
+              ](config.projectTwo, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+                value: config.pricePerTokenInWei,
+              }),
             "Only allowlisted NFTs"
           );
         });
@@ -354,15 +338,11 @@ runForEach.forEach((params) => {
           await expectRevert(
             config.minter
               .connect(config.accounts.additional)
-              ["purchase(uint256,address,address,uint256)"](
-                config.projectTwo,
-                config.genArt721Core.address,
-                config.genArt721Core.address,
-                config.projectZeroTokenZero.toNumber(),
-                {
-                  value: config.pricePerTokenInWei,
-                }
-              ),
+              [
+                "purchase(uint256,address,address,uint256)"
+              ](config.projectTwo, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+                value: config.pricePerTokenInWei,
+              }),
             "Only allowlisted NFTs"
           );
         });
@@ -389,15 +369,11 @@ runForEach.forEach((params) => {
           // does allow purchase when holder token in config.projectZero is used as pass
           await config.minter
             .connect(config.accounts.artist)
-            ["purchase(uint256,address,address,uint256)"](
-              config.projectTwo,
-              config.genArt721Core.address,
-              config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei,
-              }
-            );
+            [
+              "purchase(uint256,address,address,uint256)"
+            ](config.projectTwo, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+              value: config.pricePerTokenInWei,
+            });
         });
 
         it("does allow purchase when using token of allowed project (when set in bulk)", async function () {
@@ -424,15 +400,11 @@ runForEach.forEach((params) => {
           // does allow purchase when holder token in config.projectZero is used as pass
           await config.minter
             .connect(config.accounts.artist)
-            ["purchase(uint256,address,address,uint256)"](
-              config.projectTwo,
-              config.genArt721Core.address,
-              config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei,
-              }
-            );
+            [
+              "purchase(uint256,address,address,uint256)"
+            ](config.projectTwo, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+              value: config.pricePerTokenInWei,
+            });
         });
 
         it("does not allow purchase when using token not owned", async function () {
@@ -458,15 +430,11 @@ runForEach.forEach((params) => {
           await expectRevert(
             config.minter
               .connect(config.accounts.additional)
-              ["purchase(uint256,address,address,uint256)"](
-                config.projectTwo,
-                config.genArt721Core.address,
-                config.genArt721Core.address,
-                config.projectZeroTokenZero.toNumber(),
-                {
-                  value: config.pricePerTokenInWei,
-                }
-              ),
+              [
+                "purchase(uint256,address,address,uint256)"
+              ](config.projectTwo, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+                value: config.pricePerTokenInWei,
+              }),
             "Only owner of NFT"
           );
         });
@@ -476,13 +444,11 @@ runForEach.forEach((params) => {
           const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
           await pbabMinter
             .connect(config.accounts.artist)
-            ["purchaseTo(address,uint256)"](
-              config.accounts.additional.address,
-              0,
-              {
-                value: config.pricePerTokenInWei,
-              }
-            );
+            [
+              "purchaseTo(address,uint256)"
+            ](config.accounts.additional.address, 0, {
+              value: config.pricePerTokenInWei,
+            });
 
           // configure price per token to be zero
           await config.minter
@@ -496,15 +462,11 @@ runForEach.forEach((params) => {
           await expectRevert(
             config.minter
               .connect(config.accounts.additional)
-              ["purchase(uint256,address,address,uint256)"](
-                config.projectTwo,
-                config.genArt721Core.address,
-                pbabToken.address,
-                0,
-                {
-                  value: config.pricePerTokenInWei,
-                }
-              ),
+              [
+                "purchase(uint256,address,address,uint256)"
+              ](config.projectTwo, config.genArt721Core.address, pbabToken.address, 0, {
+                value: config.pricePerTokenInWei,
+              }),
             "Only allowlisted NFTs"
           );
         });
@@ -532,15 +494,11 @@ runForEach.forEach((params) => {
         // allow purchase when intentionally configured price of zero
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
-            config.projectTwo,
-            config.genArt721Core.address,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,address,uint256)"
+          ](config.projectTwo, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          });
       });
 
       it("auto-configures if setProjectMaxInvocations is not called (fails correctly)", async function () {
@@ -564,15 +522,11 @@ runForEach.forEach((params) => {
         for (let i = 0; i < config.maxInvocations; i++) {
           await config.minter
             .connect(config.accounts.artist)
-            ["purchase(uint256,address,address,uint256)"](
-              config.projectOne,
-              config.genArt721Core.address,
-              config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei,
-              }
-            );
+            [
+              "purchase(uint256,address,address,uint256)"
+            ](config.projectOne, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+              value: config.pricePerTokenInWei,
+            });
           // increment polyptych panel to allow repeat tokenId in next loop
           await config.minter
             .connect(config.accounts.artist)
@@ -586,15 +540,11 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.artist)
-            ["purchase(uint256,address,address,uint256)"](
-              config.projectOne,
-              config.genArt721Core.address,
-              config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
+            [
+              "purchase(uint256,address,address,uint256)"
+            ](config.projectOne, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+              value: config.pricePerTokenInWei,
+            }),
           revertMessages.maximumInvocationsReached
         );
       });
@@ -617,15 +567,11 @@ runForEach.forEach((params) => {
           );
         const tx = await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          });
 
         const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
         let gasCostNoMaxInvocations: any = receipt.effectiveGasPrice
@@ -650,15 +596,11 @@ runForEach.forEach((params) => {
           );
         const maxSetTx = await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          });
         const receipt2 = await ethers.provider.getTransactionReceipt(
           maxSetTx.hash
         );
@@ -767,16 +709,11 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.artist)
-          ["purchaseTo(address,uint256,address,address,uint256)"](
-            config.accounts.artist.address,
-            config.projectZero,
-            config.genArt721Core.address,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchaseTo(address,uint256,address,address,uint256)"
+          ](config.accounts.artist.address, config.projectZero, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          });
       });
     });
 
@@ -863,16 +800,11 @@ runForEach.forEach((params) => {
                 );
               await config.minter
                 .connect(config.accounts.artist)
-                ["purchaseTo(address,uint256,address,address,uint256)"](
-                  config.accounts.artist.address,
-                  config.projectZero,
-                  config.genArt721Core.address,
-                  config.genArt721Core.address,
-                  config.projectZeroTokenZero.toNumber(),
-                  {
-                    value: config.pricePerTokenInWei,
-                  }
-                );
+                [
+                  "purchaseTo(address,uint256,address,address,uint256)"
+                ](config.accounts.artist.address, config.projectZero, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+                  value: config.pricePerTokenInWei,
+                });
             });
 
             it("does not allow purchases with an incorrect token", async function () {

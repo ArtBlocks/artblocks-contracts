@@ -219,11 +219,9 @@ export const MinterSetPriceERC20_Common = async (
       );
       await config.minter
         .connect(config.accounts.user)
-        ["purchase(uint256,uint256,address)"](
-          config.projectZero,
-          config.pricePerTokenInWei,
-          config.ERC20Mock.address
-        );
+        [
+          "purchase(uint256,uint256,address)"
+        ](config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address);
       // cannot purchase token with ERC20 token when insufficient balance
       await config.ERC20Mock.connect(config.accounts.user).transfer(
         config.accounts.artist.address,
@@ -232,11 +230,9 @@ export const MinterSetPriceERC20_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,uint256,address)"](
-            config.projectZero,
-            config.pricePerTokenInWei,
-            config.ERC20Mock.address
-          ),
+          [
+            "purchase(uint256,uint256,address)"
+          ](config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address),
         "Insufficient balance"
       );
       // artist changes back to ETH
@@ -390,13 +386,11 @@ export const MinterSetPriceERC20_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.user)
-          ["purchaseTo(address,uint256)"](
-            config.accounts.additional.address,
-            config.projectTwo,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchaseTo(address,uint256)"
+          ](config.accounts.additional.address, config.projectTwo, {
+            value: config.pricePerTokenInWei,
+          }),
         "Price not configured"
       );
     });
@@ -405,13 +399,11 @@ export const MinterSetPriceERC20_Common = async (
       const config = await loadFixture(_beforeEach);
       await config.minter
         .connect(config.accounts.user)
-        ["purchaseTo(address,uint256)"](
-          config.accounts.additional.address,
-          config.projectOne,
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        [
+          "purchaseTo(address,uint256)"
+        ](config.accounts.additional.address, config.projectOne, {
+          value: config.pricePerTokenInWei,
+        });
     });
   });
 

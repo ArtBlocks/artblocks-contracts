@@ -5,6 +5,15 @@
 **GenArt721CoreV2_ENGINE:** https://etherscan.io/address/TODO#code
 **GenArt721Minter:** https://etherscan.io/address/TODO#code
 
+## Sepolia
+
+### Upload 0
+
+**GenArt721CoreV2_ENGINE:** sepolia.etherscan.io/address/0xB8A5222C33289f8A6ee42a215bC1CA886365b4f8#code
+**GenArt721Minter:** https://sepolia.etherscan.io/address/0x290aE2d361a2Ed7a578B10925A13bDA3Ad78d9B5#code
+
+`3c6412fee019f5c50d6f03aa6f5045d99d9748c4.` set as minter owner, whitelisted on core contract, and admin of core contract.
+
 ## Goerli
 
 ### Upload 0

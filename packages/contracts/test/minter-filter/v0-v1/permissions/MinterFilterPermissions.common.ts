@@ -485,14 +485,11 @@ export const MinterFilterPermissions_Common = async (
       await expectRevert(
         minterB
           .connect(config.accounts.artist)
-          ["purchase(uint256,uint256,address)"](
-            config.projectZero,
-            pricePerTokenInWei,
-            addressZero,
-            {
-              value: pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchase(uint256,uint256,address)"
+          ](config.projectZero, pricePerTokenInWei, addressZero, {
+            value: pricePerTokenInWei,
+          }),
         assignedMinterError
       );
       // remove A from project
