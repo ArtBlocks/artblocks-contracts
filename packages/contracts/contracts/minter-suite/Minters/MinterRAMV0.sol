@@ -53,39 +53,68 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  * TODO: Update this for RAM
  * This contract is designed to be managed, with limited powers.
  * Privileged roles and abilities are controlled by the core contract's Admin
- * ACL contract and a project's artist. Both of these roles hold extensive
- * power and can modify minter details.
+ * ACL contract a project's artist, and auction winners. The Admin ACL and
+ * project's artist roles hold extensive power and can modify minter details.
  * Care must be taken to ensure that the admin ACL contract and artist
  * addresses are secure behind a multi-sig or other access control mechanism.
- * ----------------------------------------------------------------------------
- * TODO: update priviliged function info for RAM
- * The following functions are restricted to the core contract's Admin ACL
- * contract:
- * - ejectNextTokenTo
- * ----------------------------------------------------------------------------
- * The following functions are restricted to this minter's minter filter's
- * Admin ACL contract:
- * - updateMinterTimeBufferSeconds
- * - updateRefundGasLimit
- * ----------------------------------------------------------------------------
- * The following functions are restricted to a project's artist:
- * - syncProjectMaxInvocationsToCore
- * - manuallyLimitProjectMaxInvocations
- * - configureFutureAuctions
- * - tryPopulateNextToken
- * ----------------------------------------------------------------------------
- * The following functions are restricted to a project's artist or the core
- * contract's Admin ACL contract:
- * - resetFutureAuctionDetails
- * ----------------------------------------------------------------------------
+ *
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
+ * ----------------------------------------------------------------------------
+ * Project-Minter STATE, FLAG, and ERROR Summary
+ * Note: STATEs are mutually exclusive and are in-order
+ * -------------
+ * STATE A: Pre-Auction
+ * abilities:
+ *  - (artist) configure project max invocations
+ *  - (artist) configure project auction
+ * -------------
+ * STATE B: Live-Auction
+ * abilities:
+ *  - create bid (only if minter filter's current minter)
+ *  - top-up bid (only if minter filter's current minter)
+ *  - (admin) emergency increase auction end time by up to 48 hr (in cases of frontend downtime, etc.)
+ *  - (admin/artist) refresh (reduce-only) max invocations (preemtively try to limit future error state)
+ *  - (artist) reduce min bid price or reduce auction length
+ * -------------
+ * STATE C: Post-Auction, not all bids handled, 24h
+ * abilities:
+ *  - (admin) mint tokens to winners
+ *  - (winner) collect settlement
+ *  - (FLAG F1) purchase remaining tokens for auction minimum price (base price), behaves like fixed price minter
+ *  - (ERROR E1)(admin) refund winning bids that cannot receive tokens due to max invocations error. These should be the lowest bids.
+ * -------------
+ * STATE D: Post-Auction, not all bids handled, post-24h
+ * abilities:
+ *  - (winner | admin) mint tokens to winners
+ *  - (winner) collect settlement
+ *  - (FLAG F1) purchase remaining tokens for auction minimum price (base price), behaves like fixed price minter
+ *  - (ERROR E1)(admin) refund winning bids that cannot receive tokens due to max invocations error. These should be the lowest bids.
+ * -------------
+ * STATE E: Post-Auction, all bids handled
+ * note: "all bids handled" guarantees not in ERROR E1
+ *  - (artist | admin) collect revenues
+ *  - (winner) collect settlement (TODO - only if  minting doesn't also push out settlement)
+ *  - (FLAG F1) purchase remaining tokens for auction minimum price (base price), behaves like fixed price minter
+ * -------------
+ * FLAGS
+ * F1: tokens owed < invocations available
+ *     occurs when an auction ends before selling out, so there are tokens left to mint
+ *     note: also occurrs during live auction, so state F1 can occur with state B, but should not enable direct purchases
+ * -------------
+ * ERRORS
+ * E1: Tokens owed > invocations available
+ *     occurs when tokens minted on different minter or core max invocations were reduced after auction bidding began.
+ *     indicates operational error occurred.
+ *     resolution: when all winning bids have either been fully refunded or received a token
+ *     note: error state does not affect minimum winning bid price, and therefore does not affect settlement amount due to any
+ *     winning bids.
  * ----------------------------------------------------------------------------
  * @notice Caution: While Engine projects must be registered on the Art Blocks
  * Core Registry to assign this minter, this minter does not enforce that a
  * project is registered when configured or queried. This is primarily for gas
  * optimization purposes. It is, therefore, possible that fake projects may be
- * configured on this minter, but they will not be able to mint tokens due to
+ * configured on this minter, but bids will not be able to be placed due to
  * checks performed by this minter's Minter Filter.
  *
  * @dev Note that while this minter makes use of `block.timestamp` and it is
@@ -200,6 +229,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         uint256 projectId,
         address coreContract,
         uint40 auctionTimestampStart,
+        uint40 auctionTimestampEnd,
         uint256 maxPrice,
         uint256 basePrice
     ) external {
@@ -233,6 +263,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             projectId: projectId,
             coreContract: coreContract,
             auctionTimestampStart: auctionTimestampStart,
+            auctionTimestampEnd: auctionTimestampEnd,
             maxPrice: maxPrice.toUint88(),
             basePrice: basePrice.toUint88(),
             numTokensInAuction: uint24(numTokensInAuction) // TODO note why this is safe to cast
@@ -293,10 +324,11 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         view
         returns (
             uint40 auctionTimestampStart,
+            uint40 auctionTimestampEnd,
             uint88 maxPrice,
             uint88 basePrice,
             uint24 numTokensInAuction,
-            uint24 numActiveBids
+            uint24 numBids
         )
     {
         return

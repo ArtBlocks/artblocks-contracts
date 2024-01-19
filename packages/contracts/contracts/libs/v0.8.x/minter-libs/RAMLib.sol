@@ -35,6 +35,17 @@ library RAMLib {
     // for this library
     bytes32 constant RAM_LIB_STORAGE_POSITION = keccak256("ramlib.storage");
 
+    // 60 sec/min * 60 min/hr * 24 hr
+    uint256 constant TWENTY_FOUR_HOURS = 60 * 60 * 24;
+
+    enum ProjectMinterStates {
+        A, // Pre-Auction
+        B, // Live-Auction
+        C, // Post-Auction, not all bids handled, 24h
+        D, // Post-Auction, not all bids handled, post-24h
+        E // Post-Auction, all bids handled
+    }
+
     // project-specific parameters
     struct RAMProjectConfig {
         // array of bids for each slot
@@ -52,9 +63,12 @@ library RAMLib {
         // --- auction parameters ---
         // @dev max uint24 is 16,777,215 > 1_000_000 max project size
         uint24 numTokensInAuction;
-        uint24 numActiveBids;
+        uint24 numBids;
+        uint24 numBidsMintedTokens;
+        uint24 numBidsErrorRefunded;
         // TODO start time, end time, min bid, bid spacing, etc.
         uint40 timestampStart;
+        uint40 timestampEnd;
         uint88 maxPrice;
         uint88 basePrice;
         // --- auction state ---
@@ -76,6 +90,7 @@ library RAMLib {
         uint256 projectId,
         address coreContract,
         uint40 auctionTimestampStart,
+        uint40 auctionTimestampEnd,
         uint88 maxPrice,
         uint88 basePrice,
         uint24 numTokensInAuction
@@ -88,6 +103,7 @@ library RAMLib {
         // set auction details
         RAMProjectConfig_.numTokensInAuction = numTokensInAuction;
         RAMProjectConfig_.timestampStart = auctionTimestampStart;
+        RAMProjectConfig_.timestampEnd = auctionTimestampEnd;
         RAMProjectConfig_.maxPrice = maxPrice;
         RAMProjectConfig_.basePrice = basePrice;
     }
@@ -106,7 +122,7 @@ library RAMLib {
             coreContract: coreContract
         });
         // determine if have reached max bids
-        bool reachedMaxBids = RAMProjectConfig_.numActiveBids ==
+        bool reachedMaxBids = RAMProjectConfig_.numBids ==
             RAMProjectConfig_.numTokensInAuction;
         if (reachedMaxBids) {
             // remove + refund the minimum Bid
@@ -136,7 +152,7 @@ library RAMLib {
         Bid[] storage bids = RAMProjectConfig_.bidsBySlot[slotIndex];
         bids.push(Bid({bidder: bidder, isSettled: false, isMinted: false}));
         // update number of active bids
-        RAMProjectConfig_.numActiveBids++;
+        RAMProjectConfig_.numBids++;
         // update metadata if first bid for this slot
         // @dev assumes minting has not yet started
         if (bids.length == 1) {
@@ -176,7 +192,7 @@ library RAMLib {
         // @dev appropriate because earlier bids (lower index) have priority;
         // TODO: gas-optimize this by only editing array length since once remove a bid, will never re-add on that slot
         bids.pop();
-        RAMProjectConfig_.numActiveBids--;
+        RAMProjectConfig_.numBids--;
         // record the slot index of the removed bid as return value
         removedSlotIndex = minBidIndex;
         // update metadata if no more active bids for this slot
@@ -239,10 +255,11 @@ library RAMLib {
         view
         returns (
             uint40 auctionTimestampStart,
+            uint40 auctionTimestampEnd,
             uint88 maxPrice,
             uint88 basePrice,
             uint24 numTokensInAuction,
-            uint24 numActiveBids
+            uint24 numBids
         )
     {
         // get project config
@@ -252,10 +269,121 @@ library RAMLib {
         });
         // get auction details
         auctionTimestampStart = RAMProjectConfig_.timestampStart;
+        auctionTimestampEnd = RAMProjectConfig_.timestampEnd;
         maxPrice = RAMProjectConfig_.maxPrice;
         basePrice = RAMProjectConfig_.basePrice;
         numTokensInAuction = RAMProjectConfig_.numTokensInAuction;
-        numActiveBids = RAMProjectConfig_.numActiveBids;
+        numBids = RAMProjectConfig_.numBids;
+    }
+
+    function getState(
+        uint256 projectId,
+        address coreContract
+    ) internal view returns (ProjectMinterStates) {
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // State A: Pre-Auction
+        // @dev load to memory for gas efficiency
+        uint256 timestampStart = RAMProjectConfig_.timestampStart;
+        // helper value(s) for readability
+        bool auctionIsConfigured = timestampStart > 0;
+        bool isPreAuction = block.timestamp < timestampStart;
+        // confirm that auction is either not configured or is pre-auction
+        if ((!auctionIsConfigured) || isPreAuction) {
+            return ProjectMinterStates.A;
+        }
+        // State B: Live-Auction
+        // @dev auction is configured due to previous State A return
+        // helper value(s) for readability
+        // @dev load to memory for gas efficiency
+        uint256 timestampEnd = RAMProjectConfig_.timestampEnd;
+        bool isPostAuction = block.timestamp > timestampEnd;
+        bool isLiveAuction = !(isPreAuction || isPostAuction);
+        if (isLiveAuction) {
+            return ProjectMinterStates.B;
+        }
+        // States C, D, E: Post-Auction, not all winners sent tokens, 24h
+        // @dev auction is configured and post auction due to previous States A, B returns
+        // all winners sent tokens means all bids have either been minted tokens or refunded if error state occurred
+        bool allBidsHandled = RAMProjectConfig_.numBidsMintedTokens +
+            RAMProjectConfig_.numBidsErrorRefunded ==
+            RAMProjectConfig_.numBids;
+        if (allBidsHandled) {
+            // State E: Post-Auction, all bids handled
+            return ProjectMinterStates.E;
+        }
+        // @dev all bids not handled due to previous State E return
+        // helper value(s) for readability
+        bool within24h = block.timestamp < timestampEnd + TWENTY_FOUR_HOURS;
+        if (within24h) {
+            // State C: Post-Auction, not all bids handled, 24h
+            return ProjectMinterStates.C;
+        }
+        // State D: Post-Auction, not all bids handled, post-24h
+        // @dev states are mutually exclusive, so must be in final remaining state
+        return ProjectMinterStates.D;
+    }
+
+    /**
+     * @notice Returns if project minter is in FLAG state F1.
+     * F1: tokens owed < invocations available
+     * Occurs when: auction ends before selling out
+     * @param projectId Project Id to query
+     * @param coreContract Core contract address to query
+     */
+    function isFlagF1(
+        uint256 projectId,
+        address coreContract
+    ) internal view returns (bool) {
+        // get project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // F1: Tokens owed < invocations available
+        // @dev underflow impossible given what the parameters represent
+        uint256 tokensOwed = RAMProjectConfig_.numBids -
+            (RAMProjectConfig_.numBidsMintedTokens +
+                RAMProjectConfig_.numBidsErrorRefunded);
+        uint256 invocationsAvailable = MaxInvocationsLib
+            .getInvocationsAvailable({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+        return tokensOwed < invocationsAvailable;
+    }
+
+    /**
+     * @notice Returns if project minter is in ERROR state E1.
+     * E1: Tokens owed > invocations available
+     * Occurs when: tokens are minted on different minter after auction begins,
+     * or when core contract max invocations are reduced after auction begins.
+     * Resolution: Admin must refund the lowest bids after auction ends.
+     * @param projectId Project Id to query
+     * @param coreContract Core contract address to query
+     */
+    function isErrorE1(
+        uint256 projectId,
+        address coreContract
+    ) internal view returns (bool) {
+        // get project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // E1: Tokens owed > invocations available
+        // @dev underflow impossible given what the parameters represent
+        uint256 tokensOwed = RAMProjectConfig_.numBids -
+            (RAMProjectConfig_.numBidsMintedTokens +
+                RAMProjectConfig_.numBidsErrorRefunded);
+        uint256 invocationsAvailable = MaxInvocationsLib
+            .getInvocationsAvailable({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+        return tokensOwed > invocationsAvailable;
     }
 
     /**
