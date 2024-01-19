@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity ^0.8.0;
+pragma solidity 0.8.19;
 
 import "../DependencyRegistryV0.sol";
 import "../interfaces/v0.8.x/IGenArt721CoreProjectScriptV0.sol";
@@ -28,26 +28,33 @@ contract GenArt721GeneratorV0 is Initializable {
     using Bytes32Strings for string;
     using BytecodeStorageWriter for string;
 
+    // @dev This is an upgradable contract so we need to maintain
+    // the order of the variables to ensure we don't overwrite
+    // storage when upgrading.
     DependencyRegistryV0 public dependencyRegistry;
     IScriptyBuilderV2 public scriptyBuilder;
-    address public gunzipScriptAddress;
+    address public gunzipScriptBytecodeAddress;
 
-    function _onlySupportedCoreContract(
-        address coreContractAddress
-    ) internal view {
+    event DependencyRegistryUpdated(address indexed _dependencyRegistry);
+    event ScriptyBuilderUpdated(address indexed _scriptyBuilder);
+    event GunzipScriptBytecodeAddressUpdated(
+        address indexed _gunzipScriptBytecodeAddress
+    );
+
+    function _onlySupportedCoreContract(address coreContract) internal view {
         require(
-            dependencyRegistry.isSupportedCoreContract(coreContractAddress),
+            dependencyRegistry.isSupportedCoreContract(coreContract),
             "Unsupported core contract"
         );
     }
 
     function _onlyDependencyRegistryAdminACL(bytes4 selector) internal {
         require(
-            dependencyRegistry.adminACLAllowed(
-                msg.sender,
-                address(this),
-                selector
-            ),
+            dependencyRegistry.adminACLAllowed({
+                sender: msg.sender,
+                contract_: address(this),
+                selector: selector
+            }),
             "Only DependencyRegistry AdminACL"
         );
     }
@@ -58,17 +65,21 @@ contract GenArt721GeneratorV0 is Initializable {
      * contract to be used for retrieving dependency scripts.
      * @param _scriptyBuilder The address of the ScriptyBuilderV2 contract
      * to be used for generating the HTML for tokens.
-     * @param _gunzipScriptAddress The address of the gunzip script bytecode
+     * @param _gunzipScriptBytecodeAddress The address of the gunzip script bytecode
      * storage contract used to gunzip the dependency scripts in the browser.
      */
     function initialize(
         address _dependencyRegistry,
         address _scriptyBuilder,
-        address _gunzipScriptAddress
+        address _gunzipScriptBytecodeAddress
     ) public initializer {
         dependencyRegistry = DependencyRegistryV0(_dependencyRegistry);
         scriptyBuilder = IScriptyBuilderV2(_scriptyBuilder);
-        gunzipScriptAddress = _gunzipScriptAddress;
+        gunzipScriptBytecodeAddress = _gunzipScriptBytecodeAddress;
+
+        emit DependencyRegistryUpdated(_dependencyRegistry);
+        emit ScriptyBuilderUpdated(_scriptyBuilder);
+        emit GunzipScriptBytecodeAddressUpdated(_gunzipScriptBytecodeAddress);
     }
 
     /**
@@ -83,6 +94,7 @@ contract GenArt721GeneratorV0 is Initializable {
         _onlyDependencyRegistryAdminACL(this.updateDependencyRegistry.selector);
 
         dependencyRegistry = DependencyRegistryV0(_dependencyRegistry);
+        emit DependencyRegistryUpdated(_dependencyRegistry);
     }
 
     /**
@@ -95,20 +107,24 @@ contract GenArt721GeneratorV0 is Initializable {
         _onlyDependencyRegistryAdminACL(this.updateScriptyBuilder.selector);
 
         scriptyBuilder = IScriptyBuilderV2(_scriptyBuilder);
+        emit ScriptyBuilderUpdated(_scriptyBuilder);
     }
 
     /**
      * @notice Set the gunzip script address.
-     * @param _gunzipScriptAddress The address of the gunzip script bytecode
+     * @param _gunzipScriptBytecodeAddress The address of the gunzip script bytecode
      * storage contract used to gunzip the dependency scripts in the browser.
      * @dev This function is gated to only the DependencyRegistry AdminACL.
      */
-    function updateGunzipScriptAddress(address _gunzipScriptAddress) external {
+    function updateGunzipScriptBytecodeAddress(
+        address _gunzipScriptBytecodeAddress
+    ) external {
         _onlyDependencyRegistryAdminACL(
-            this.updateGunzipScriptAddress.selector
+            this.updateGunzipScriptBytecodeAddress.selector
         );
 
-        gunzipScriptAddress = _gunzipScriptAddress;
+        gunzipScriptBytecodeAddress = _gunzipScriptBytecodeAddress;
+        emit GunzipScriptBytecodeAddressUpdated(_gunzipScriptBytecodeAddress);
     }
 
     /**
@@ -144,6 +160,9 @@ contract GenArt721GeneratorV0 is Initializable {
         bytes32 storageVersion = BytecodeStorageReader
             .getLibraryVersionForBytecode(scriptBytecodeAddresses[0]);
 
+        // @dev In order to properly stitch the script chunks together we need
+        // to know the offset of the script content in the bytecode. This is
+        // different for each storage version.
         uint256 offset;
         if (storageVersion == BytecodeStorageReader.V0_VERSION_STRING) {
             offset = 104;
@@ -180,7 +199,7 @@ contract GenArt721GeneratorV0 is Initializable {
     /**
      * @notice Get the project script for a given core contract address and
      * project ID.
-     * @param coreContractAddress The address of the core contract to retrieve
+     * @param coreContract The address of the core contract to retrieve
      * the project script from.
      * @param projectId The ID of the project to retrieve the script for.
      * @return The project script stiched together from all of the script chunks.
@@ -189,15 +208,16 @@ contract GenArt721GeneratorV0 is Initializable {
      * does not implement the IGenArt721CoreProjectScriptV0 or IGenArt721CoreProjectScriptV1.
      */
     function getProjectScriptBytes(
-        address coreContractAddress,
+        address coreContract,
         uint256 projectId
     ) internal view returns (bytes memory) {
-        _onlySupportedCoreContract(coreContractAddress);
+        _onlySupportedCoreContract(coreContract);
 
         // @dev Attempt to get project script info from V3 and up core contracts first.
         try
-            IGenArt721CoreProjectScriptV1(coreContractAddress)
-                .projectScriptDetails(projectId)
+            IGenArt721CoreProjectScriptV1(coreContract).projectScriptDetails(
+                projectId
+            )
         returns (string memory, string memory, uint256 scriptCount) {
             if (scriptCount == 0) {
                 return "";
@@ -209,7 +229,7 @@ contract GenArt721GeneratorV0 is Initializable {
 
             for (uint256 i = 0; i < scriptCount; i++) {
                 scriptBytecodeAddresses[i] = IGenArt721CoreProjectScriptV1(
-                    coreContractAddress
+                    coreContract
                 ).projectScriptBytecodeAddressByIndex(projectId, i);
             }
 
@@ -237,8 +257,9 @@ contract GenArt721GeneratorV0 is Initializable {
         // @dev If we failed to get the project script info try again using the interface
         // for V2 and older core contracts.
         try
-            IGenArt721CoreProjectScriptV0(coreContractAddress)
-                .projectScriptInfo(projectId)
+            IGenArt721CoreProjectScriptV0(coreContract).projectScriptInfo(
+                projectId
+            )
         returns (string memory, uint256 scriptCount) {
             if (scriptCount == 0) {
                 return "";
@@ -247,7 +268,7 @@ contract GenArt721GeneratorV0 is Initializable {
             string memory script;
             for (uint256 i = 0; i < scriptCount; i++) {
                 string memory scriptChunk = IGenArt721CoreProjectScriptV0(
-                    coreContractAddress
+                    coreContract
                 ).projectScriptByIndex(projectId, i);
                 script = string.concat(script, scriptChunk);
             }
@@ -261,7 +282,7 @@ contract GenArt721GeneratorV0 is Initializable {
     /**
      * @notice Get the project script for a given core contract address and
      * project ID.
-     * @param coreContractAddress The address of the core contract to retrieve
+     * @param coreContract The address of the core contract to retrieve
      * the project script from.
      * @param projectId The ID of the project to retrieve the script for.
      * @return The project script stiched together from all of the script chunks as a string.
@@ -270,11 +291,11 @@ contract GenArt721GeneratorV0 is Initializable {
      * does not implement the IGenArt721CoreProjectScriptV0 or IGenArt721CoreProjectScriptV1.
      */
     function getProjectScript(
-        address coreContractAddress,
+        address coreContract,
         uint256 projectId
     ) external view returns (string memory) {
         bytes memory projectScript = getProjectScriptBytes(
-            coreContractAddress,
+            coreContract,
             projectId
         );
 
@@ -283,30 +304,28 @@ contract GenArt721GeneratorV0 is Initializable {
 
     /**
      * @notice Get the HTMLRequest for a given token.
-     * @param coreContractAddress The core contract address the token belongs to.
+     * @param coreContract The core contract address the token belongs to.
      * @param tokenId The ID of the token to retrieve the HTMLRequest for.
      * @return The HTMLRequest for the token.
      */
     function getTokenHtmlRequest(
-        address coreContractAddress,
+        address coreContract,
         uint256 tokenId
     ) internal view returns (HTMLRequest memory) {
-        _onlySupportedCoreContract(coreContractAddress);
+        _onlySupportedCoreContract(coreContract);
 
         uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
         // This will revert for older contracts that do not have an override set.
         bytes32 dependencyNameAndVersion = dependencyRegistry
-            .getDependencyNameAndVersionForProject(
-                coreContractAddress,
-                projectId
-            )
+            .getDependencyNameAndVersionForProject(coreContract, projectId)
             .stringToBytes32();
 
         bytes32 tokenHash;
         // @dev Attempt to get token hash from V1 and up core contracts first.
         try
-            IGenArt721CoreTokenHashProviderV1(coreContractAddress)
-                .tokenIdToHash(tokenId)
+            IGenArt721CoreTokenHashProviderV1(coreContract).tokenIdToHash(
+                tokenId
+            )
         returns (bytes32 _tokenHash) {
             tokenHash = _tokenHash;
         } catch {
@@ -317,8 +336,9 @@ contract GenArt721GeneratorV0 is Initializable {
         // for V0 core contracts.
         if (tokenHash == bytes32(0)) {
             try
-                IGenArt721CoreTokenHashProviderV0(coreContractAddress)
-                    .showTokenHashes(tokenId)
+                IGenArt721CoreTokenHashProviderV0(coreContract).showTokenHashes(
+                    tokenId
+                )
             returns (bytes32[] memory tokenHashes) {
                 tokenHash = tokenHashes[0];
             } catch {
@@ -378,11 +398,11 @@ contract GenArt721GeneratorV0 is Initializable {
         bodyTags[1].name = "gunzipScripts-0.0.1.js";
         bodyTags[1].tagType = HTMLTagType.scriptBase64DataURI; // <script src="data:text/javascript;base64,[script]"></script>
         bodyTags[1].tagContent = bytes(
-            BytecodeStorageReader.readFromBytecode(gunzipScriptAddress)
+            BytecodeStorageReader.readFromBytecode(gunzipScriptBytecodeAddress)
         );
 
         bytes memory projectScript = getProjectScriptBytes(
-            coreContractAddress,
+            coreContract,
             projectId
         );
         bodyTags[2].tagContent = projectScript;
@@ -397,16 +417,16 @@ contract GenArt721GeneratorV0 is Initializable {
 
     /**
      * @notice Get the data URI for the HTML for a given token (e.g. data:text/html;base64,[html])
-     * @param coreContractAddress The address of the core contract the token belongs to.
+     * @param coreContract The address of the core contract the token belongs to.
      * @param tokenId The ID of the token to retrieve the HTML for.
      * @return The data URI for the HTML for the token.
      */
     function getTokenHtmlBase64EncodedDataUri(
-        address coreContractAddress,
+        address coreContract,
         uint256 tokenId
     ) external view returns (string memory) {
         HTMLRequest memory htmlRequest = getTokenHtmlRequest(
-            coreContractAddress,
+            coreContract,
             tokenId
         );
         string memory base64EncodedHTMLDataURI = scriptyBuilder
@@ -417,16 +437,16 @@ contract GenArt721GeneratorV0 is Initializable {
 
     /**
      * @notice Get the HTML for a given token.
-     * @param coreContractAddress The address of the core contract the token belongs to.
+     * @param coreContract The address of the core contract the token belongs to.
      * @param tokenId The ID of the token to retrieve the HTML for.
      * @return The HTML for the token.
      */
     function getTokenHtml(
-        address coreContractAddress,
+        address coreContract,
         uint256 tokenId
     ) external view returns (string memory) {
         HTMLRequest memory htmlRequest = getTokenHtmlRequest(
-            coreContractAddress,
+            coreContract,
             tokenId
         );
         string memory html = scriptyBuilder.getHTMLString(htmlRequest);

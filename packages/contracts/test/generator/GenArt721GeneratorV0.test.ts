@@ -600,9 +600,13 @@ describe(`GenArt721GeneratorV0`, async function () {
         .connect(config.accounts.deployer)
         .initialize(config.adminACL!.address);
 
-      await config.genArt721Generator
-        .connect(config.accounts.deployer)
-        .updateDependencyRegistry(newDependencyRegistry.address);
+      await expect(
+        config.genArt721Generator
+          .connect(config.accounts.deployer)
+          .updateDependencyRegistry(newDependencyRegistry.address)
+      )
+        .to.emit(config.genArt721Generator, "DependencyRegistryUpdated")
+        .withArgs(newDependencyRegistry.address);
 
       expect(await config.genArt721Generator.dependencyRegistry()).to.equal(
         newDependencyRegistry.address
@@ -634,9 +638,13 @@ describe(`GenArt721GeneratorV0`, async function () {
       // Arbitrary address for testing
       const newScriptyBuilderAddress = config.accounts.artist.address;
 
-      await config.genArt721Generator
-        .connect(config.accounts.deployer)
-        .updateScriptyBuilder(newScriptyBuilderAddress);
+      await expect(
+        config.genArt721Generator
+          .connect(config.accounts.deployer)
+          .updateScriptyBuilder(newScriptyBuilderAddress)
+      )
+        .to.emit(config.genArt721Generator, "ScriptyBuilderUpdated")
+        .withArgs(newScriptyBuilderAddress);
 
       expect(await config.genArt721Generator.scriptyBuilder()).to.equal(
         newScriptyBuilderAddress
@@ -661,13 +669,20 @@ describe(`GenArt721GeneratorV0`, async function () {
       // Arbitrary address for testing
       const newGunzipStorageContractAddress = config.accounts.artist.address;
 
-      await config.genArt721Generator
-        .connect(config.accounts.deployer)
-        .updateGunzipScriptAddress(newGunzipStorageContractAddress);
+      await expect(
+        config.genArt721Generator
+          .connect(config.accounts.deployer)
+          .updateGunzipScriptBytecodeAddress(newGunzipStorageContractAddress)
+      )
+        .to.emit(
+          config.genArt721Generator,
+          "GunzipScriptBytecodeAddressUpdated"
+        )
+        .withArgs(newGunzipStorageContractAddress);
 
-      expect(await config.genArt721Generator.gunzipScriptAddress()).to.equal(
-        newGunzipStorageContractAddress
-      );
+      expect(
+        await config.genArt721Generator.gunzipScriptBytecodeAddress()
+      ).to.equal(newGunzipStorageContractAddress);
     });
     it("reverts if not called by admin", async function () {
       const config = await loadFixture(_beforeEach);
@@ -677,7 +692,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       await expectRevert(
         config.genArt721Generator
           .connect(config.accounts.artist)
-          .updateGunzipScriptAddress(newGunzipStorageContractAddress),
+          .updateGunzipScriptBytecodeAddress(newGunzipStorageContractAddress),
         ONLY_DEPENDENCY_REGISTRY_ADMIN_ACL_ERROR
       );
     });
