@@ -71,39 +71,39 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  * -------------
  * STATE B: Live-Auction
  * abilities:
- *  - create bid (only if minter filter's current minter)
- *  - top-up bid (only if minter filter's current minter)
+ *  - (minter active) create bid
+ *  - (minter active) top-up bid
  *  - (admin) emergency increase auction end time by up to 48 hr (in cases of frontend downtime, etc.)
- *  - (admin/artist) refresh (reduce-only) max invocations (preemtively try to limit future error state)
+ *  - (admin | artist) refresh (reduce-only) max invocations (preemptively limit E1 state)
  *  - (artist) reduce min bid price or reduce auction length
  * -------------
  * STATE C: Post-Auction, not all bids handled, 24h
  * abilities:
  *  - (admin) mint tokens to winners
  *  - (winner) collect settlement
- *  - (FLAG F1) purchase remaining tokens for auction minimum price (base price), behaves like fixed price minter
- *  - (ERROR E1)(admin) refund winning bids that cannot receive tokens due to max invocations error. These should be the lowest bids.
+ *  - (FLAG F1) purchase remaining tokens for auction min price (base price), like fixed price minter
+ *  - (ERROR E1)(admin) refund winning bids that cannot receive tokens due to max invocations error
  * -------------
  * STATE D: Post-Auction, not all bids handled, post-24h
  * abilities:
  *  - (winner | admin) mint tokens to winners
  *  - (winner) collect settlement
- *  - (FLAG F1) purchase remaining tokens for auction minimum price (base price), behaves like fixed price minter
- *  - (ERROR E1)(admin) refund winning bids that cannot receive tokens due to max invocations error. These should be the lowest bids.
+ *  - (FLAG F1) purchase remaining tokens for auction min price (base price), like fixed price minter
+ *  - (ERROR E1)(admin) refund lowest winning bids that cannot receive tokens due to max invocations error
  * -------------
  * STATE E: Post-Auction, all bids handled
  * note: "all bids handled" guarantees not in ERROR E1
  *  - (artist | admin) collect revenues
  *  - (winner) collect settlement (TODO - only if  minting doesn't also push out settlement)
- *  - (FLAG F1) purchase remaining tokens for auction minimum price (base price), behaves like fixed price minter
+ *  - (FLAG F1) purchase remaining tokens for auction min price (base price), like fixed price minter
  * -------------
  * FLAGS
  * F1: tokens owed < invocations available
- *     occurs when an auction ends before selling out, so there are tokens left to mint
- *     note: also occurrs during live auction, so state F1 can occur with state B, but should not enable direct purchases
+ *     occurs when an auction ends before selling out, so tokens are aviailable to be purchased
+ *     note: also occurs during Pre and Live auction, so FLAG F1 can occur with STATE A, B, but should not enable purchases
  * -------------
  * ERRORS
- * E1: Tokens owed > invocations available
+ * E1: tokens owed > invocations available
  *     occurs when tokens minted on different minter or core max invocations were reduced after auction bidding began.
  *     indicates operational error occurred.
  *     resolution: when all winning bids have either been fully refunded or received a token
