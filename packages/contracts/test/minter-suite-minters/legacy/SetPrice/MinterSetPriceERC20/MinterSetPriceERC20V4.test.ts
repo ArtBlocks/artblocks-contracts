@@ -193,11 +193,9 @@ for (const coreContractName of coreContractsToTest) {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            ["purchase(uint256,uint256,address)"](
-              config.projectZero,
-              config.pricePerTokenInWei,
-              config.ERC20Mock.address
-            ),
+            [
+              "purchase(uint256,uint256,address)"
+            ](config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address),
           "insufficient funds for intrinsic transaction cost"
         );
       });
@@ -249,11 +247,9 @@ for (const coreContractName of coreContractsToTest) {
         // expect successful purchase of token
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,uint256,address)"](
-            config.projectZero,
-            config.pricePerTokenInWei,
-            config.ERC20Mock.address
-          );
+          [
+            "purchase(uint256,uint256,address)"
+          ](config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address);
       });
 
       it("Engine: handles ERC20 splits when every party receives revenues", async function () {
@@ -314,11 +310,9 @@ for (const coreContractName of coreContractsToTest) {
         // expect successful purchase of token
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,uint256,address)"](
-            config.projectZero,
-            config.pricePerTokenInWei,
-            config.ERC20Mock.address
-          );
+          [
+            "purchase(uint256,uint256,address)"
+          ](config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address);
         // confirm balances
         const artistNewBalance = await config.ERC20Mock.balanceOf(
           config.accounts.artist.address
@@ -422,11 +416,9 @@ for (const coreContractName of coreContractsToTest) {
         // expect successful purchase of token
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,uint256,address)"](
-            config.projectZero,
-            config.pricePerTokenInWei,
-            config.ERC20Mock.address
-          );
+          [
+            "purchase(uint256,uint256,address)"
+          ](config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address);
         // confirm balances
         const artistNewBalance = await config.ERC20Mock.balanceOf(
           config.accounts.artist.address
@@ -651,24 +643,19 @@ for (const coreContractName of coreContractsToTest) {
         // can purchase project one token with ETH, explicitly passing in currency address
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,uint256,address)"](
-            config.projectZero,
-            config.pricePerTokenInWei,
-            addressZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,uint256,address)"
+          ](config.projectZero, config.pricePerTokenInWei, addressZero, {
+            value: config.pricePerTokenInWei,
+          });
 
         // cannot not purchase project one with ETH without including msg.value
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            ["purchase(uint256,uint256,address)"](
-              config.projectZero,
-              config.pricePerTokenInWei,
-              addressZero
-            ),
+            [
+              "purchase(uint256,uint256,address)"
+            ](config.projectZero, config.pricePerTokenInWei, addressZero),
           "inconsistent msg.value"
         );
 
@@ -676,11 +663,9 @@ for (const coreContractName of coreContractsToTest) {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            ["purchase(uint256,uint256,address)"](
-              config.projectZero,
-              config.pricePerTokenInWei,
-              config.ERC20Mock.address
-            ),
+            [
+              "purchase(uint256,uint256,address)"
+            ](config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address),
           "Currency addresses must match"
         );
       });
@@ -715,23 +700,18 @@ for (const coreContractName of coreContractsToTest) {
         // can purchase project one with ERC-20
         await config.minter
           .connect(config.accounts.user)
-          ["purchase(uint256,uint256,address)"](
-            config.projectZero,
-            config.pricePerTokenInWei,
-            config.ERC20Mock.address
-          );
+          [
+            "purchase(uint256,uint256,address)"
+          ](config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address);
         // cannot send ETH when purchasing with ERC-20
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            ["purchase(uint256,uint256,address)"](
-              config.projectZero,
-              config.pricePerTokenInWei,
-              config.ERC20Mock.address,
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
+            [
+              "purchase(uint256,uint256,address)"
+            ](config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address, {
+              value: config.pricePerTokenInWei,
+            }),
           "this project accepts a different currency and cannot accept ETH"
         );
       });
@@ -779,47 +759,35 @@ for (const coreContractName of coreContractsToTest) {
         // can purchase project one token with ETH, auto-forwarding currency address
         await config.minter
           .connect(config.accounts.user)
-          ["purchaseTo(address,uint256)"](
-            config.accounts.additional.address,
-            config.projectZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchaseTo(address,uint256)"
+          ](config.accounts.additional.address, config.projectZero, {
+            value: config.pricePerTokenInWei,
+          });
         // can purchase project one token with ETH, explicitly passing in currency address
         await config.minter
           .connect(config.accounts.user)
-          ["purchaseTo(address,uint256,uint256,address)"](
-            config.accounts.additional.address,
-            config.projectZero,
-            config.pricePerTokenInWei,
-            addressZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchaseTo(address,uint256,uint256,address)"
+          ](config.accounts.additional.address, config.projectZero, config.pricePerTokenInWei, addressZero, {
+            value: config.pricePerTokenInWei,
+          });
         // cannot not purchase project one with ETH without including msg.value
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            ["purchaseTo(address,uint256,uint256,address)"](
-              config.accounts.additional.address,
-              config.projectZero,
-              config.pricePerTokenInWei,
-              addressZero
-            ),
+            [
+              "purchaseTo(address,uint256,uint256,address)"
+            ](config.accounts.additional.address, config.projectZero, config.pricePerTokenInWei, addressZero),
           "inconsistent msg.value"
         );
         // can not purchase project one token with ERC-20
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            ["purchaseTo(address,uint256,uint256,address)"](
-              config.accounts.additional.address,
-              config.projectZero,
-              config.pricePerTokenInWei,
-              config.ERC20Mock.address
-            ),
+            [
+              "purchaseTo(address,uint256,uint256,address)"
+            ](config.accounts.additional.address, config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address),
           "Currency addresses must match"
         );
       });
@@ -841,40 +809,29 @@ for (const coreContractName of coreContractsToTest) {
         // can purchase project one token with ERC-20, explicitly passing currency address
         await config.minter
           .connect(config.accounts.user)
-          ["purchaseTo(address,uint256,uint256,address)"](
-            config.accounts.additional.address,
-            config.projectZero,
-            config.pricePerTokenInWei,
-            config.ERC20Mock.address
-          );
+          [
+            "purchaseTo(address,uint256,uint256,address)"
+          ](config.accounts.additional.address, config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address);
         // cannot not purchase project one with ETH
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            ["purchaseTo(address,uint256,uint256,address)"](
-              config.accounts.additional.address,
-              config.projectZero,
-              config.pricePerTokenInWei,
-              addressZero,
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
+            [
+              "purchaseTo(address,uint256,uint256,address)"
+            ](config.accounts.additional.address, config.projectZero, config.pricePerTokenInWei, addressZero, {
+              value: config.pricePerTokenInWei,
+            }),
           "Currency addresses must match"
         );
         // cannot not purchase project one with ERC-20 if msg.value is populated
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            ["purchaseTo(address,uint256,uint256,address)"](
-              config.accounts.additional.address,
-              config.projectZero,
-              config.pricePerTokenInWei,
-              config.ERC20Mock.address,
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
+            [
+              "purchaseTo(address,uint256,uint256,address)"
+            ](config.accounts.additional.address, config.projectZero, config.pricePerTokenInWei, config.ERC20Mock.address, {
+              value: config.pricePerTokenInWei,
+            }),
           "this project accepts a different currency and cannot accept ETH"
         );
       });
