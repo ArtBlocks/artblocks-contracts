@@ -58,7 +58,9 @@ These are the smart contracts that receive funds, and split them between the art
 #### MinterSetPriceERC20 (Set Price with ERC20)
 
 - V0 (deprecated): [0x48742D38a0809135EFd643c1150BfC13768C3907](https://etherscan.io/address/0x48742D38a0809135EFd643c1150BfC13768C3907#code)
+- V0 (updated, deprecated):[0x8BdF282Aa9d8d5369945a1Fc27603D41349450e8](https://etherscan.io/address/0x8BdF282Aa9d8d5369945a1Fc27603D41349450e8#code)
 - V1: [0x0BbB93c5d118D1dee49e96BCAdc161403f4F8612](https://etherscan.io/address/0x0BbB93c5d118D1dee49e96BCAdc161403f4F8612#code)
+- V1: (updated) [0xd325c6e3ffb2da48594fc10aaa42d3c00f9eeefa] (https://etherscan.io/address/0xd325c6e3ffb2da48594fc10aaa42d3c00f9eeefa#code)
 - V2: [0xe4c6EeF13649e9C4Ad8ae8A9C7fA9A7F26B4287a](https://etherscan.io/address/0xe4c6EeF13649e9C4Ad8ae8A9C7fA9A7F26B4287a#code)
 - V3: N/A, never used in prod.
 - V4: [0x9fEcd2FbC6D890fB93632DcE9b1a01c4090A7E2d](https://etherscan.io/address/0x9fEcd2FbC6D890fB93632DcE9b1a01c4090A7E2d#code)
