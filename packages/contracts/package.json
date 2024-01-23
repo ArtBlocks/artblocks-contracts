@@ -37,6 +37,7 @@
     "deploy:shared-minter-filter:arbitrum-goerli": "yarn require-low-gas arbitrum-goerli && yarn hardhat run --network arbitrum-goerli scripts/minter-filter-deployments/shared-minter-filter-deployer.ts",
     "deploy:shared-minter-filter:arbitrum": "yarn require-low-gas arbitrum && yarn hardhat run --network arbitrum scripts/minter-filter-deployments/shared-minter-filter-deployer.ts",
     "deploy:shared-minters:goerli": "yarn require-low-gas goerli && yarn hardhat run --network goerli scripts/minter-deployments/shared-minters-deployer.ts",
+    "deploy:shared-minters:sepolia": "yarn require-low-gas sepolia && yarn hardhat run --network sepolia scripts/minter-deployments/shared-minters-deployer.ts",
     "deploy:shared-minters:mainnet": "yarn require-low-gas mainnet && yarn hardhat run --network mainnet scripts/minter-deployments/shared-minters-deployer.ts",
     "deploy:shared-minters:arbitrum-goerli": "yarn require-low-gas arbitrum-goerli && yarn hardhat run --network arbitrum-goerli scripts/minter-deployments/shared-minters-deployer.ts",
     "deploy:shared-minters:arbitrum": "yarn require-low-gas arbitrum && yarn hardhat run --network arbitrum scripts/minter-deployments/shared-minters-deployer.ts",
