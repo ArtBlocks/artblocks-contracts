@@ -10,6 +10,7 @@ pragma solidity ^0.8.0;
 interface ISharedMinterRAMV0 {
     function createBid(
         uint256 projectId,
-        address coreContract
+        address coreContract,
+        uint8 slotIndex
     ) external payable;
 }

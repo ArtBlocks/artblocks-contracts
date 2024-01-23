@@ -53,39 +53,68 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  * TODO: Update this for RAM
  * This contract is designed to be managed, with limited powers.
  * Privileged roles and abilities are controlled by the core contract's Admin
- * ACL contract and a project's artist. Both of these roles hold extensive
- * power and can modify minter details.
+ * ACL contract a project's artist, and auction winners. The Admin ACL and
+ * project's artist roles hold extensive power and can modify minter details.
  * Care must be taken to ensure that the admin ACL contract and artist
  * addresses are secure behind a multi-sig or other access control mechanism.
- * ----------------------------------------------------------------------------
- * TODO: update priviliged function info for RAM
- * The following functions are restricted to the core contract's Admin ACL
- * contract:
- * - ejectNextTokenTo
- * ----------------------------------------------------------------------------
- * The following functions are restricted to this minter's minter filter's
- * Admin ACL contract:
- * - updateMinterTimeBufferSeconds
- * - updateRefundGasLimit
- * ----------------------------------------------------------------------------
- * The following functions are restricted to a project's artist:
- * - syncProjectMaxInvocationsToCore
- * - manuallyLimitProjectMaxInvocations
- * - configureFutureAuctions
- * - tryPopulateNextToken
- * ----------------------------------------------------------------------------
- * The following functions are restricted to a project's artist or the core
- * contract's Admin ACL contract:
- * - resetFutureAuctionDetails
- * ----------------------------------------------------------------------------
+ *
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
+ * ----------------------------------------------------------------------------
+ * Project-Minter STATE, FLAG, and ERROR Summary
+ * Note: STATEs are mutually exclusive and are in-order
+ * -------------
+ * STATE A: Pre-Auction
+ * abilities:
+ *  - (artist) configure project max invocations
+ *  - (artist) configure project auction
+ * -------------
+ * STATE B: Live-Auction
+ * abilities:
+ *  - (minter active) create bid
+ *  - (minter active) top-up bid
+ *  - (admin) emergency increase auction end time by up to 48 hr (in cases of frontend downtime, etc.)
+ *  - (admin | artist) refresh (reduce-only) max invocations (preemptively limit E1 state)
+ *  - (artist) reduce min bid price or reduce auction length
+ * -------------
+ * STATE C: Post-Auction, not all bids handled, 24h
+ * abilities:
+ *  - (admin) mint tokens to winners
+ *  - (winner) collect settlement
+ *  - (FLAG F1) purchase remaining tokens for auction min price (base price), like fixed price minter
+ *  - (ERROR E1)(admin) refund winning bids that cannot receive tokens due to max invocations error
+ * -------------
+ * STATE D: Post-Auction, not all bids handled, post-24h
+ * abilities:
+ *  - (winner | admin) mint tokens to winners
+ *  - (winner) collect settlement
+ *  - (FLAG F1) purchase remaining tokens for auction min price (base price), like fixed price minter
+ *  - (ERROR E1)(admin) refund lowest winning bids that cannot receive tokens due to max invocations error
+ * -------------
+ * STATE E: Post-Auction, all bids handled
+ * note: "all bids handled" guarantees not in ERROR E1
+ *  - (artist | admin) collect revenues
+ *  - (winner) collect settlement (TODO - only if  minting doesn't also push out settlement)
+ *  - (FLAG F1) purchase remaining tokens for auction min price (base price), like fixed price minter
+ * -------------
+ * FLAGS
+ * F1: tokens owed < invocations available
+ *     occurs when an auction ends before selling out, so tokens are aviailable to be purchased
+ *     note: also occurs during Pre and Live auction, so FLAG F1 can occur with STATE A, B, but should not enable purchases
+ * -------------
+ * ERRORS
+ * E1: tokens owed > invocations available
+ *     occurs when tokens minted on different minter or core max invocations were reduced after auction bidding began.
+ *     indicates operational error occurred.
+ *     resolution: when all winning bids have either been fully refunded or received a token
+ *     note: error state does not affect minimum winning bid price, and therefore does not affect settlement amount due to any
+ *     winning bids.
  * ----------------------------------------------------------------------------
  * @notice Caution: While Engine projects must be registered on the Art Blocks
  * Core Registry to assign this minter, this minter does not enforce that a
  * project is registered when configured or queried. This is primarily for gas
  * optimization purposes. It is, therefore, possible that fake projects may be
- * configured on this minter, but they will not be able to mint tokens due to
+ * configured on this minter, but bids will not be able to be placed due to
  * checks performed by this minter's Minter Filter.
  *
  * @dev Note that while this minter makes use of `block.timestamp` and it is
@@ -110,6 +139,13 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
 
     /// @notice minter version for this minter
     string public constant minterVersion = "v1.0.0";
+
+    /** @notice Gas limit for refunding ETH to bidders
+     * configurable by admin, default to 30,000
+     * max uint24 ~= 16 million gas, more than enough for a refund
+     * @dev SENDALL fallback is used to refund ETH if this limit is exceeded
+     */
+    uint24 internal _minterRefundGasLimit = 30_000;
 
     /**
      * @notice Initializes contract to be a shared, filtered minter for
@@ -164,20 +200,76 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * between 7,000 and max uint24 (~16M).
      */
     function updateRefundGasLimit(uint24 minterRefundGasLimit) external {
-        // // CHECKS
-        // AuthLib.onlyMinterFilterAdminACL({
-        //     minterFilterAddress: minterFilterAddress,
-        //     sender: msg.sender,
-        //     contract_: address(this),
-        //     selector: this.updateRefundGasLimit.selector
-        // });
-        // // @dev max gas limit implicitly checked by using uint24 input arg
-        // // @dev min gas limit is based on rounding up current cost to send ETH
-        // // to a Gnosis Safe wallet, which accesses cold address and emits event
-        // require(minterRefundGasLimit >= 7_000, "Only gte 7_000");
-        // // EFFECTS
-        // _minterRefundGasLimit = minterRefundGasLimit;
-        // emit SEALib.MinterRefundGasLimitUpdated(minterRefundGasLimit);
+        // CHECKS
+        AuthLib.onlyMinterFilterAdminACL({
+            minterFilterAddress: minterFilterAddress,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.updateRefundGasLimit.selector
+        });
+        // @dev max gas limit implicitly checked by using uint24 input arg
+        // @dev min gas limit is based on rounding up current cost to send ETH
+        // to a Gnosis Safe wallet, which accesses cold address and emits event
+        require(minterRefundGasLimit >= 7_000, "Only gte 7_000");
+        // EFFECTS
+        _minterRefundGasLimit = minterRefundGasLimit;
+        emit RAMLib.MinterRefundGasLimitUpdated(minterRefundGasLimit);
+    }
+
+    /**
+     * @notice Sets auction details for project `projectId`.
+     * @param projectId Project ID to set auction details for.
+     * @param coreContract Core contract address for the given project.
+     * @param auctionTimestampStart Timestamp at which to start the auction.
+     * @param maxPrice Maximum price of the auction, in Wei.
+     * @param basePrice Resting price of the auction, in Wei.
+     * @dev Note that a basePrice of `0` will cause the transaction to revert.
+     */
+    function setAuctionDetails(
+        uint256 projectId,
+        address coreContract,
+        uint40 auctionTimestampStart,
+        uint40 auctionTimestampEnd,
+        uint256 maxPrice,
+        uint256 basePrice
+    ) external {
+        AuthLib.onlyArtist({
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
+        });
+        // CHECKS
+        // TODO
+
+        // EFFECTS
+        // TODO - update this to be much safer for max invocation checking
+        // first refresh max invocations
+        MaxInvocationsLib.refreshMaxInvocations({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // then get max invocations
+        uint256 maxInvocations = MaxInvocationsLib.getMaxInvocations({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        (uint256 coreInvocations, ) = MaxInvocationsLib
+            .coreContractInvocationData({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+        uint256 numTokensInAuction = maxInvocations - coreInvocations;
+        RAMLib.setAuctionDetails({
+            projectId: projectId,
+            coreContract: coreContract,
+            auctionTimestampStart: auctionTimestampStart,
+            auctionTimestampEnd: auctionTimestampEnd,
+            maxPrice: maxPrice.toUint88(),
+            basePrice: basePrice.toUint88(),
+            numTokensInAuction: uint24(numTokensInAuction) // TODO note why this is safe to cast
+        });
+
+        // TODO ...
     }
 
     // /**
@@ -219,6 +311,28 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     {
         return
             MaxInvocationsLib.getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+    }
+
+    function getAuctionDetails(
+        uint256 projectId,
+        address coreContract
+    )
+        external
+        view
+        returns (
+            uint40 auctionTimestampStart,
+            uint40 auctionTimestampEnd,
+            uint88 maxPrice,
+            uint88 basePrice,
+            uint24 numTokensInAuction,
+            uint24 numBids
+        )
+    {
+        return
+            RAMLib.getAuctionDetails({
                 projectId: projectId,
                 coreContract: coreContract
             });
@@ -350,6 +464,24 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         // currencyAddress = address(0);
     }
 
+    function getMinBidValue(
+        uint256 projectId,
+        address coreContract
+    ) external view returns (uint256) {
+        (, uint8 minBidSlotIndex) = RAMLib.getMinBid({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        return
+            RAMLib.bidValueFromSlotIndex(
+                RAMLib.getRAMProjectConfig({
+                    projectId: projectId,
+                    coreContract: coreContract
+                }),
+                minBidSlotIndex
+            );
+    }
+
     /**
      * @notice Syncs local maximum invocations of project `projectId` based on
      * the value currently defined in the core contract.
@@ -412,8 +544,28 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      */
     function createBid(
         uint256 projectId,
-        address coreContract
+        address coreContract,
+        uint8 slotIndex
     ) public payable nonReentrant {
-        // TODO
+        // CHECKS
+        // TODO many more checks required
+        // @dev temporarily adding different check for gas testing purposes
+        uint256 targetBidValue = RAMLib.bidValueFromSlotIndex(
+            RAMLib.getRAMProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            }),
+            slotIndex
+        );
+        require(msg.value == targetBidValue, "msg.value must equal slot value");
+        // get slot index for bid
+
+        RAMLib.placeBid({
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndex: slotIndex,
+            bidder: msg.sender,
+            minterRefundGasLimit: _minterRefundGasLimit
+        });
     }
 }

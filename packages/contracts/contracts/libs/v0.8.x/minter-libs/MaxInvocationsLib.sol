@@ -383,6 +383,46 @@ library MaxInvocationsLib {
     }
 
     /**
+     * @notice Function returns the number of invocations available for a given
+     * project. Function checks the core contract's invocations and max
+     * invocations, ensuring that the most limiting value is used, even if the
+     * local minter max invocations is stale.
+     * @param projectId The id of the project.
+     * @param coreContract The address of the core contract.
+     * @return uint256 The number of invocations available for the project.
+     */
+    function getInvocationsAvailable(
+        uint256 projectId,
+        address coreContract
+    ) internal view returns (uint256) {
+        // get max invocations from core contract
+        (
+            uint256 coreInvocations,
+            uint256 coreMaxInvocations
+        ) = coreContractInvocationData({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+        MaxInvocationsProjectConfig
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+        uint256 limitingMaxInvocations = Math.min(
+            coreMaxInvocations,
+            maxInvocationsProjectConfig.maxInvocations // local max invocations
+        );
+        // if core invocations are greater than the limiting max invocations,
+        // return 0 since no invocations remain
+        if (coreInvocations >= limitingMaxInvocations) {
+            return 0;
+        }
+        // otherwise, return the number of invocations remaining
+        // @dev will not undeflow due to previous check
+        return limitingMaxInvocations - coreInvocations;
+    }
+
+    /**
      * @notice Refreshes max invocations to account for core contract max
      * invocations state, without imposing any additional restrictions on the
      * minter's max invocations state.
