@@ -11,14 +11,14 @@ import {
  * Polls the database to check if the minter configuration for a given project
  * has been updated and synced after a specified transaction confirmation time.
  *
- * @param {ArtBlocksSDK} sdk - The SDK instance for making API calls.
- * @param {string} projectId - The ID of the project whose minter config needs to be polled.
- * @param {Date} transactionConfirmedAt - The time at which the on-chain transaction was confirmed.
- * @param {string[]} updateProperties - An array of property names to check for updates.
+ * @param sdk - The SDK instance for making API calls.
+ * @param projectId - The ID of the project whose minter config needs to be polled.
+ * @param transactionConfirmedAt - The time at which the on-chain transaction was confirmed.
+ * @param updateProperties - An array of property names to check for updates.
  *
- * @returns {Promise<AsyncData<GetProjectMinterConfigurationUpdatesQuery["projects_metadata_by_pk"]>>} - A promise that resolves to an object indicating whether the polling is done and if so, includes the project data.
+ * @returns - A promise that resolves to an object indicating whether the polling is done and if so, includes the project data.
  *
- * @throws {Error} Throws an error if the project cannot be found or if there's an API error.
+ * @throws Throws an error if the project cannot be found or if there's an API error.
  *
  * @example
  * const isSynced = await pollForSyncedMinterConfigUpdates(sdk, '0x000000-0', new Date(), ['extra_minter_details.auctionStartTime']);

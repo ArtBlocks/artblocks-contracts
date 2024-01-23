@@ -52,9 +52,9 @@ function calculateHalfLifeSecondsFromAuctionDetails(
  * precondition is that form values have already been transformed to fit these expected types.
  * Throws an error if any of the required form values are not in the expected string format.
  *
- * @param {TransformProjectMinterConfigurationFormValuesArgs} args - An object containing
+ * @param args - An object containing
  *        the form values to be processed.
- * @returns {string} The calculated half-life as a string representing the number of seconds.
+ * @returns The calculated half-life as a string representing the number of seconds.
  */
 export function processAuctionDetailsToHalfLifeSeconds(
   args: TransformProjectMinterConfigurationFormValuesArgs

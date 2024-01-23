@@ -11,11 +11,11 @@ import { WalletClient, Hex, PublicClient } from "viem";
  * The function maps the `schemaArgs` to their corresponding values in `formValues`, appending
  * `projectIndex` and `coreContractAddress` as needed to construct a properly ordered argument array.
  *
- * @param {string[]} schemaArgs - Names of arguments as expected by the contract function.
- * @param {Record<string, any>} formValues - The current values of the form fields.
- * @param {number} projectIndex - An identifier for the project, passed explicitly.
- * @param {string} coreContractAddress - The contract address, passed explicitly.
- * @returns {(string | number)[]} An ordered array of arguments for the web3 transaction.
+ * @param schemaArgs - Names of arguments as expected by the contract function.
+ * @param formValues - The current values of the form fields.
+ * @param projectIndex - An identifier for the project, passed explicitly.
+ * @param coreContractAddress - The contract address, passed explicitly.
+ * @returns An ordered array of arguments for the web3 transaction.
  */
 export function mapFormValuesToArgs(
   schemaArgs: string[],

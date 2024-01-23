@@ -100,6 +100,7 @@ export async function processAllowlistFileToMerkleRoot(
   // is only ever available off-chain. We save it as a pending value until
   // we can confirm the synced merkle root matches the merkle root we generated
   // from the pending list.
+  // TODO: Handle error if the mutation fails
   await request(
     sdk.graphqlEndpoint,
     updateOffChainExtraMinterDetailsMutationDocument,

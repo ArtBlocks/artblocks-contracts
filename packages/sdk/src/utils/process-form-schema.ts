@@ -8,8 +8,8 @@ import { BaseFormFieldSchema, FormFieldSchema } from "../json-schema";
  * Any remaining fields not specified in 'ui:order' are appended at the end.
  * If 'ui:order' is not specified, the original order is retained but nested objects are checked.
  *
- * @param {BaseFormFieldSchema} schema - The JSON schema to be ordered.
- * @returns {BaseFormFieldSchema} - The ordered JSON schema.
+ * @param schema - The JSON schema to be ordered.
+ * @returns - The ordered JSON schema.
  */
 function orderJsonSchema<T extends BaseFormFieldSchema>(schema: T): T {
   if (schema.type !== "object" || !schema.properties) {
@@ -71,8 +71,8 @@ function orderJsonSchema<T extends BaseFormFieldSchema>(schema: T): T {
  * context of the form so we don't need to ask the user for them. It also orders the
  * schema using the 'orderJsonSchema' function.
  *
- * @param {FormFieldSchema} schema - The form schema to be processed.
- * @returns {FormFieldSchema} - The processed form schema.
+ * @param schema - The form schema to be processed.
+ * @returns - The processed form schema.
  */
 export function processFormSchema(schema: FormFieldSchema): FormFieldSchema {
   // If properties are defined, remove projectId

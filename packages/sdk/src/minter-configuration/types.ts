@@ -1,7 +1,6 @@
 import ArtBlocksSDK from "..";
 import {
   GetProjectMinterConfigurationQuery,
-  Maybe,
   ProjectMinterConfigurationDetailsFragment,
 } from "../generated/graphql";
 import { FormFieldSchema } from "../json-schema";
@@ -36,19 +35,6 @@ export type ProjectWithMinterFilter = NonNullable<
 
 export type ProjectMinterConfigurationData =
   GetProjectMinterConfigurationQuery["projects_metadata_by_pk"];
-
-export type AvailableMinter = {
-  address: string;
-  type: string;
-};
-
-export type SelectedMinter = AvailableMinter & {
-  basePrice: Maybe<string>;
-  currencyAddress: Maybe<string>;
-  currencySymbol: Maybe<string>;
-  extraMinterDetails: any;
-  configurationForms: FormBlueprint[];
-};
 
 export type TransformProjectMinterConfigurationFormValuesArgs =
   GenerateProjectMinterConfigurationFormsContext & {

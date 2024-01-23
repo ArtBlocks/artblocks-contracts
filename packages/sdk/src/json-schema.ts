@@ -35,31 +35,6 @@ export type TransactionDetails = {
 };
 
 /**
- * ArrayTransactionDetails contains information required to call a smart contract functions that mutate an array on the blockchain.
- */
-export type ArrayTransactionDetails = {
-  /** The transaction details to add to the array */
-  ADD: TransactionDetails;
-
-  /** The transaction details to update an existing item in the array */
-  UPDATE: TransactionDetails;
-
-  /** The transaction to remove an item from the array, usually only the last item. */
-  REMOVE: TransactionDetails;
-};
-
-/**
- * Represents a single option for an array field.
- */
-interface Option {
-  /** The name of the option. */
-  name?: string;
-
-  /** The display name of the option. */
-  display_name?: string;
-}
-
-/**
  * ValidationConditions is a constant object that defines the possible conditions for validation.
  * These conditions can be used to determine the validity of a field's value.
  */
@@ -98,25 +73,14 @@ interface ValidationDependency {
  * BaseFormFieldAttributes extends ConfigurationSchema7 to describe a basic property in the schema.
  */
 export interface BaseFormFieldSchema extends JSONSchema7 {
-  /** Optional display label corresponding to the enum value. */
-  displayLabels?: string[];
-
-  /** An array of options for the property. Only relevant to array properties. */
-  options?: Option[];
-
   /** The name of another property that this property depends on. */
   dependsOn?: string;
 
   /** Optional property indicating how a field should be transformed before submitting. */
-  submissionProcessing?:
-    | "merkleRoot"
-    | "tokenHolderAllowlist"
-    | "ethToWei"
-    | "datetimeToUnixTimestamp"
-    | "auctionEndDatetimeToHalfLifeSeconds";
+  submissionProcessing?: "string";
 
   /** Optional property indicating how a field should be transformed before being displayed. */
-  displayProcessing?: "weiToEth" | "unixTimestampToDatetime";
+  displayProcessing?: "string";
 
   validationDependency?: ValidationDependency;
 
@@ -184,7 +148,7 @@ export type OnChainNonArrayFormFieldSchema = FormFieldProperties &
 export type OnChainArrayFormFieldSchema = Partial<FormFieldProperties> &
   ArrayFormFieldSchema & {
     onChain: true;
-    transactionDetails: ArrayTransactionDetails;
+    transactionDetails: TransactionDetails;
   };
 export type OnChainCompoundNonArrayFormFieldSchema = FormFieldProperties &
   CompoundNonArrayFormFieldSchema & {
@@ -194,14 +158,11 @@ export type OnChainCompoundNonArrayFormFieldSchema = FormFieldProperties &
 export type OnChainCompoundArrayFormFieldSchema = Partial<FormFieldProperties> &
   CompoundArrayFormFieldSchema & {
     onChain: true;
-    transactionDetails: ArrayTransactionDetails;
+    transactionDetails: TransactionDetails;
   };
-
 export type OnChainFormFieldSchema =
   | OnChainNonArrayFormFieldSchema
-  | OnChainArrayFormFieldSchema
-  | OnChainCompoundNonArrayFormFieldSchema
-  | OnChainCompoundArrayFormFieldSchema;
+  | OnChainCompoundNonArrayFormFieldSchema;
 
 export type OffChainNonArrayFormFieldSchema = FormFieldProperties &
   NonArrayFormFieldSchema & { onChain: false };
@@ -242,8 +203,8 @@ export interface ConfigurationSchema extends JSONSchema7 {
 /**
  * Type guard, checks if a property is a top level property meaning its value is not part of a compound property.
  *
- * @param {FormFieldSchema | BaseFormFieldSchema | undefined} property - The property to check.
- * @returns {boolean} - Returns true if the property is a top-level property; otherwise, false.
+ * @param property - The property to check.
+ * @returns - Returns true if the property is a top-level property; otherwise, false.
  */
 export function isTopLevelFormField(
   property: FormFieldSchema | BaseFormFieldSchema | undefined
@@ -269,30 +230,5 @@ export function isCompoundFormFieldSchema(
   return Boolean(
     (property as CompoundNonArrayFormFieldSchema | CompoundArrayFormFieldSchema)
       ?.compound
-  );
-}
-
-export function isOnChainArrayFormFieldSchema(
-  schema: FormFieldSchema | BaseFormFieldSchema | undefined
-): schema is OnChainArrayFormFieldSchema & FormFieldProperties {
-  return (
-    schema !== undefined &&
-    "onChain" in schema &&
-    schema.onChain === true &&
-    "type" in schema &&
-    schema.type === "array" &&
-    "transactionDetails" in schema &&
-    "items" in schema
-  );
-}
-
-export function isTransactionDetails(
-  transactionDetails: TransactionDetails | ArrayTransactionDetails | undefined
-): transactionDetails is TransactionDetails {
-  return (
-    transactionDetails !== undefined &&
-    "args" in transactionDetails &&
-    "functionName" in transactionDetails &&
-    "abi" in transactionDetails
   );
 }

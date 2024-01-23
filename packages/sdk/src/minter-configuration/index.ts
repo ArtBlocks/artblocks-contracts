@@ -40,8 +40,6 @@ import {
 import {
   ConfigurationSchema,
   FormFieldSchema,
-  OnChainArrayFormFieldSchema,
-  TransactionDetails,
   isOnChainFormFieldSchema,
 } from "../json-schema";
 
@@ -112,7 +110,10 @@ export async function generateProjectMinterConfigurationForms(
   const minterConfigurationSchema: ConfigurationSchema =
     minterConfiguration.minter.type?.project_configuration_schema;
 
-  if (!minterConfigurationSchema) {
+  if (
+    !minterConfigurationSchema ||
+    Object.keys(minterConfigurationSchema).length === 0
+  ) {
     console.warn("No minter configuration schema found for project", projectId);
     return { data: project, forms: configurationForms };
   }
@@ -299,24 +300,12 @@ function generateMinterForm(args: GenerateMinterFormArgs): FormBlueprint {
         throw new Error("Invalid form configuration");
       }
 
-      // Throw an error if the schema is for an on chain array form
-      if (
-        (processedFormSchema as OnChainArrayFormFieldSchema).transactionDetails
-          .ADD
-      ) {
-        throw new Error(
-          "On chain array form schemas are not currently supported"
-        );
-      }
-
       // Narrow the type of processedFormSchema.transactionDetails
-      const transactionDetails =
-        processedFormSchema.transactionDetails as TransactionDetails;
+      const transactionDetails = processedFormSchema.transactionDetails;
 
       onProgress?.(SubmissionStatusEnum.SIMULATING_TRANSACTION);
 
-      // Check if any of the form values should be transformed before submitting the transaction
-      // const transformedForm;
+      // Transform the form values to the format expected by the smart contract
       const transformedFormValues =
         await processProjectMinterConfigurationFormValuesForSubmission({
           ...args,

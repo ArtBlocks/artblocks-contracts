@@ -10,8 +10,8 @@ import { processValueForDisplay } from "../display-processing";
  * If a value for a property is present in the project's minter configuration, it is used as the initial value.
  * Otherwise, the default value specified in the schema is used.
  *
- * @param {FormFieldSchema} formField - The form field for which to generate initial values.
- * @param {ProjectMinterConfigurationDetailsFragment | null} projectMinterConfiguration - The minter configuration of the project.
+ * @param formField - The form field for which to generate initial values.
+ * @param projectMinterConfiguration - The minter configuration of the project.
  *
  * @returns {Record<string, any>} - An object containing the initial values for each property of the form field.
  */
