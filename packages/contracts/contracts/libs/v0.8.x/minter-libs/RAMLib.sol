@@ -51,14 +51,20 @@ library RAMLib {
         // array of bids for each slot
         mapping(uint256 slot => Bid[] bids) bidsBySlot;
         // --- slot metadata for efficiency ---
-        // bitmap with index set only if one or more active bids exist for the corresponding slot
-        uint256 slotsBitmap;
+        // two bitmaps with index set only if one or more active bids exist for
+        // the corresponding slot. The first bitmap (A) is for slots 0-255, the
+        // second bitmap (B) is for slots 256-511.
+        uint256 slotsBitmapA;
+        uint256 slotsBitmapB;
         // minimum bitmap index with an active bid
-        uint8 minBidIndex;
+        // @dev max uint16 >> max possible value of 511
+        uint16 minBidSlotIndex;
         // maximum bitmap index with an unminted bid
         // TODO - this could be populated when finishing auction via function input, bitshifting to verify...
-        uint8 maxUnmintedBidSlotIndex;
+        // @dev max uint16 >> max possible value of 511
+        uint16 maxUnmintedBidSlotIndex;
         // TODO - determine if this should be updated on insertion/removal, or initialized when finishing auction
+        // @dev max uint24 is 16,777,215 > 1_000_000 max project size
         uint24 maxUnmintedBidArrayIndex;
         // --- auction parameters ---
         // @dev max uint24 is 16,777,215 > 1_000_000 max project size
@@ -126,7 +132,7 @@ library RAMLib {
             RAMProjectConfig_.numTokensInAuction;
         if (reachedMaxBids) {
             // remove + refund the minimum Bid
-            uint8 removedSlotIndex = removeMinBid({
+            uint16 removedSlotIndex = removeMinBid({
                 projectId: projectId,
                 coreContract: coreContract,
                 minterRefundGasLimit: minterRefundGasLimit
@@ -145,7 +151,7 @@ library RAMLib {
     // TODO: add assumptions/protections about max bids, active auction, etc.
     function insertBid(
         RAMProjectConfig storage RAMProjectConfig_,
-        uint8 slotIndex,
+        uint16 slotIndex,
         address bidder
     ) private {
         // add the new Bid
@@ -157,12 +163,13 @@ library RAMLib {
         // @dev assumes minting has not yet started
         if (bids.length == 1) {
             // set the slot in the bitmap
-            RAMProjectConfig_.slotsBitmap = RAMProjectConfig_.slotsBitmap.set(
-                slotIndex
-            );
+            setBitmapSlot({
+                RAMProjectConfig_: RAMProjectConfig_,
+                slotIndex: slotIndex
+            });
             // update bitmap metadata - reduce min bid index if necessary
-            if (slotIndex < RAMProjectConfig_.minBidIndex) {
-                RAMProjectConfig_.minBidIndex = slotIndex;
+            if (slotIndex < RAMProjectConfig_.minBidSlotIndex) {
+                RAMProjectConfig_.minBidSlotIndex = slotIndex;
             }
             // update bitmap metadata - increase max unminted bid index if necessary
             if (slotIndex > RAMProjectConfig_.maxUnmintedBidSlotIndex) {
@@ -175,16 +182,16 @@ library RAMLib {
         uint256 projectId,
         address coreContract,
         uint256 minterRefundGasLimit
-    ) private returns (uint8 removedSlotIndex) {
+    ) private returns (uint16 removedSlotIndex) {
         // get project config
         RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
             projectId: projectId,
             coreContract: coreContract
         });
         // get the minimum bid
-        uint8 minBidIndex = RAMProjectConfig_.minBidIndex;
+        removedSlotIndex = RAMProjectConfig_.minBidSlotIndex;
         // get the bids array for that slot
-        Bid[] storage bids = RAMProjectConfig_.bidsBySlot[minBidIndex];
+        Bid[] storage bids = RAMProjectConfig_.bidsBySlot[removedSlotIndex];
         // record the previous min bidder
         address removedBidder = bids[bids.length - 1].bidder;
         // pop the last active bid in the array
@@ -193,19 +200,21 @@ library RAMLib {
         // TODO: gas-optimize this by only editing array length since once remove a bid, will never re-add on that slot
         bids.pop();
         RAMProjectConfig_.numBids--;
-        // record the slot index of the removed bid as return value
-        removedSlotIndex = minBidIndex;
         // update metadata if no more active bids for this slot
         if (bids.length == 0) {
-            // clear the slot from the bitmap
-            RAMProjectConfig_.slotsBitmap = RAMProjectConfig_.slotsBitmap.unset(
-                minBidIndex
-            );
-            // update minBidIndex, efficiently starting at minBidIndex + 1
+            // unset the slot in the bitmap
+            // update minBidIndex, efficiently starting at minBidSlotIndex + 1
+            unsetBitmapSlot({
+                RAMProjectConfig_: RAMProjectConfig_,
+                slotIndex: removedSlotIndex
+            });
             // @dev intentionally reverts due to overflow if removing from the last slot
-            RAMProjectConfig_.minBidIndex = uint8(
-                RAMProjectConfig_.slotsBitmap.minBitSet(removedSlotIndex + 1)
-            );
+            RAMProjectConfig_.minBidSlotIndex = getMinSlotWithBid({
+                RAMProjectConfig_: RAMProjectConfig_,
+                startSlotIndex: removedSlotIndex + 1
+            });
+            // RAMProjectConfig_.slotsBitmap.minBitSet(removedSlotIndex + 1)
+            // );
         }
         // refund the removed bidder
         uint256 removedBidAmount = bidValueFromSlotIndex({
@@ -221,7 +230,7 @@ library RAMLib {
 
     function bidValueFromSlotIndex(
         RAMProjectConfig storage RAMProjectConfig_,
-        uint8 slotIndex
+        uint16 slotIndex
     ) internal view returns (uint256 amount) {
         // TODO - update this with an exponential spacing function
         uint256 range = RAMProjectConfig_.maxPrice -
@@ -230,16 +239,17 @@ library RAMLib {
         return ((range * slotIndex) / 255) + RAMProjectConfig_.basePrice;
     }
 
+    // TODO - handle case where there are no bids
     function getMinBid(
         uint256 projectId,
         address coreContract
-    ) internal view returns (Bid storage minBid, uint8 minSlotIndex) {
-        // get first slot with an active bid
+    ) internal view returns (Bid storage minBid, uint16 minSlotIndex) {
         RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
             projectId: projectId,
             coreContract: coreContract
         });
-        minSlotIndex = RAMProjectConfig_.minBidIndex;
+        // get first slot with an active bid
+        minSlotIndex = RAMProjectConfig_.minBidSlotIndex;
         // get the bids array for that slot
         Bid[] storage bids = RAMProjectConfig_.bidsBySlot[minSlotIndex];
         // get the last active bid in the array
@@ -404,10 +414,109 @@ library RAMLib {
      * uses a diamond storage pattern when managing storage.
      * @return storageStruct The SEALibStorage struct.
      */
-    function s() internal pure returns (RAMLibStorage storage storageStruct) {
+    function s() private pure returns (RAMLibStorage storage storageStruct) {
         bytes32 position = RAM_LIB_STORAGE_POSITION;
         assembly ("memory-safe") {
             storageStruct.slot := position
+        }
+    }
+
+    /**
+     * @notice Helper function to handle setting slot in 512-bit bitmap
+     * @dev WARN Assumes slotIndex is between 0 and 511, function will cast
+     * incorrectly if >=512
+     * @param slotIndex Index of slot to set (between 0 and 511)
+     * @param RAMProjectConfig_ RAMProjectConfig to update
+     */
+    function setBitmapSlot(
+        RAMProjectConfig storage RAMProjectConfig_,
+        uint256 slotIndex
+    ) private {
+        // set the slot in the bitmap
+        if (slotIndex < 256) {
+            // @dev <256 conditional ensures no overflow when casting to uint8
+            RAMProjectConfig_.slotsBitmapA = RAMProjectConfig_.slotsBitmapA.set(
+                uint8(slotIndex)
+            );
+        } else {
+            // @dev <512 assumption results in no overflow when casting to
+            // uint8, but NOT guaranteed by any means in this function
+            RAMProjectConfig_.slotsBitmapB = RAMProjectConfig_.slotsBitmapB.set(
+                // @dev casting to uint8 intentional overflow instead of
+                // subtracting 256 from slotIndex
+                uint8(slotIndex)
+            );
+        }
+    }
+
+    /**
+     * @notice Helper function to handle unsetting slot in 512-bit bitmap
+     * @dev WARN Assumes slotIndex is between 0 and 511, function will cast
+     * incorrectly if >=512
+     * @param slotIndex Index of slot to set (between 0 and 511)
+     * @param RAMProjectConfig_ RAMProjectConfig to update
+     */
+    function unsetBitmapSlot(
+        RAMProjectConfig storage RAMProjectConfig_,
+        uint256 slotIndex
+    ) private {
+        // set the slot in the bitmap
+        if (slotIndex < 256) {
+            // @dev <256 conditional ensures no overflow when casting to uint8
+            RAMProjectConfig_.slotsBitmapA = RAMProjectConfig_
+                .slotsBitmapA
+                .unset(uint8(slotIndex));
+        } else {
+            // @dev <512 assumption results in no overflow when casting to
+            // uint8, but NOT guaranteed by any means in this function
+            // @dev casting to uint8 intentional overflow instead of
+            // subtracting 256 from slotIndex
+            RAMProjectConfig_.slotsBitmapB = RAMProjectConfig_
+                .slotsBitmapB
+                .unset(
+                    // @dev casting to uint8 intentional overflow instead of
+                    // subtracting 256 from slotIndex
+                    uint8(slotIndex)
+                );
+        }
+    }
+
+    function getMinSlotWithBid(
+        RAMProjectConfig storage RAMProjectConfig_,
+        uint16 startSlotIndex
+    ) private view returns (uint16 minSlotWithBid) {
+        // start at startSlotIndex
+        if (startSlotIndex > 255) {
+            // @dev <512 assumption results in no overflow when casting to
+            // uint8, but NOT guaranteed by any means in this function
+            minSlotWithBid = uint16(
+                256 +
+                    RAMProjectConfig_.slotsBitmapB.minBitSet(
+                        // @dev casting to uint8 intentional overflow instead of
+                        // subtracting 256 from slotIndex
+                        uint8(startSlotIndex)
+                    )
+            );
+        } else {
+            // @dev <256 conditional ensures no overflow when casting to uint8
+            minSlotWithBid = uint16(
+                RAMProjectConfig_.slotsBitmapA.minBitSet(uint8(startSlotIndex))
+            );
+            // if no bids in first bitmap, check second bitmap
+            // @dev behavior of library's minBitSet is to return 256 if no bits
+            // are set
+            if (minSlotWithBid == 256) {
+                // @dev <512 assumption results in no overflow when casting to
+                // uint8, but NOT guaranteed by any means in this function
+                minSlotWithBid = uint16(
+                    256 +
+                        RAMProjectConfig_.slotsBitmapB.minBitSet(
+                            // @dev casting to uint8 intentional overflow instead of
+                            // subtracting 256 from slotIndex
+                            uint8(startSlotIndex)
+                        )
+                );
+            }
         }
     }
 }

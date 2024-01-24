@@ -36,14 +36,21 @@ library BitMaps256 {
         return bitMap & ~mask;
     }
 
+    /**
+     * @notice Finds the index of the first bit that is set in the bit map
+     * starting from a given index.
+     * Returns 256 if no bits are set.
+     * @param bitMap BitMap to search
+     * @param startIndex Index to start searching from, inclusive
+     */
     function minBitSet(
         uint256 bitMap,
         uint8 startIndex
-    ) internal pure returns (uint8 minIndex) {
+    ) internal pure returns (uint256 minIndex) {
         minIndex = startIndex;
         // TODO make this more efficient
         // @dev this is a linear search, worst case 256 iterations in memory
-        while (minIndex < 256 && !get(bitMap, minIndex)) {
+        while (minIndex < 256 && !get(bitMap, uint8(minIndex))) {
             minIndex++;
         }
     }
