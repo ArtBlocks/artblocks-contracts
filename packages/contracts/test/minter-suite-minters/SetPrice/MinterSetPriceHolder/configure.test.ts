@@ -192,28 +192,20 @@ runForEach.forEach((params) => {
         // can purchase token at higher price
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.higherPricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.higherPricePerTokenInWei,
+          });
         // cannot purchase token at lower price
         await expectRevert(
           config.minter
             .connect(config.accounts.artist)
-            ["purchase(uint256,address,address,uint256)"](
-              config.projectZero,
-              config.genArt721Core.address,
-              config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
+            [
+              "purchase(uint256,address,address,uint256)"
+            ](config.projectZero, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+              value: config.pricePerTokenInWei,
+            }),
           revertMessages.needMoreValue
         );
       });
@@ -241,29 +233,21 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.artist)
-            ["purchase(uint256,address,address,uint256)"](
-              config.projectOne,
-              config.genArt721Core.address,
-              config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
+            [
+              "purchase(uint256,address,address,uint256)"
+            ](config.projectOne, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+              value: config.pricePerTokenInWei,
+            }),
           revertMessages.needMoreValue
         );
         // can purchase project two token at lower price
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          });
       });
     });
 
@@ -297,15 +281,11 @@ runForEach.forEach((params) => {
         // mint a token
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          });
 
         // expect projectMaxHasBeenInvoked to be true
         const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
@@ -370,15 +350,11 @@ runForEach.forEach((params) => {
         // mint a token
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          });
 
         // expect projectMaxHasBeenInvoked to be true
         const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(

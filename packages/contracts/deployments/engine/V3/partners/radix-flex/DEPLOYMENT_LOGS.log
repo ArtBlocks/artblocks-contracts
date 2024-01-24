@@ -65,3 +65,39 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0x273E70Be4522Bf31F30F80310D5015a7A26C40BD, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2024-01-12T16:22:09.324Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/radix-flex/deployment-config.sepolia-staging.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xb92400d7068162dC409f3d210d2A57629eaaC10F
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x50EaF55271F20117946CFA638634F53E977bDf0F
+[INFO] Registered core contract 0x50EaF55271F20117946CFA638634F53E977bDf0F on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x4a8557FFC313a398904daE6e5561eE216a04602D.
+[INFO] Verifying core contract contract deployment...
+The contract 0x50EaF55271F20117946CFA638634F53E977bDf0F has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x50EaF55271F20117946CFA638634F53E977bDf0F#code
+[INFO] Core contract verified on Etherscan at 0x50EaF55271F20117946CFA638634F53E977bDf0F}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xb92400d7068162dC409f3d210d2A57629eaaC10F has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0xb92400d7068162dC409f3d210d2A57629eaaC10F#code
+[INFO] AdminACL contract verified on Etherscan at 0xb92400d7068162dC409f3d210d2A57629eaaC10F
+Created s3 bucket for https://pedestal-sepolia.s3.amazonaws.com
+[INFO] Created image bucket pedestal-sepolia
+[INFO] Deployment details written to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/radix-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x50eaf55271f20117946cfa638634f53e977bdf0f",
+  "name": "Pedestal",
+  "bucket_name": "pedestal-sepolia",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x4a8557FFC313a398904daE6e5561eE216a04602D, don't forget to update if requred.

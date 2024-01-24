@@ -219,15 +219,11 @@ runForEach.forEach((params) => {
         // mint a token
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.startingPrice,
-            }
-          );
+          [
+            "purchase(uint256,address,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.startingPrice,
+          });
         // expect projectMaxHasBeenInvoked to be true
         const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
           config.projectZero,
@@ -281,15 +277,11 @@ runForEach.forEach((params) => {
         // mint a token
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.startingPrice,
-            }
-          );
+          [
+            "purchase(uint256,address,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.startingPrice,
+          });
 
         // expect projectMaxHasBeenInvoked to be true
         const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
@@ -363,15 +355,11 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.artist)
-            ["purchase(uint256,address,address,uint256)"](
-              config.projectZero,
-              config.genArt721Core.address,
-              config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.startingPrice,
-              }
-            ),
+            [
+              "purchase(uint256,address,address,uint256)"
+            ](config.projectZero, config.genArt721Core.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+              value: config.startingPrice,
+            }),
           revertMessages.maximumInvocationsReached
         );
       });

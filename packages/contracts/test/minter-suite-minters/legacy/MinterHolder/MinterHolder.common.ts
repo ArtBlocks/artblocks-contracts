@@ -88,27 +88,21 @@ export const MinterHolder_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchase(uint256,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          }),
         needMoreValueErrorMessage
       );
       // can purchase token at higher price
       await config.minter
         .connect(config.accounts.artist)
-        ["purchase(uint256,address,uint256)"](
-          config.projectZero,
-          config.genArt721Core.address,
-          config.projectZeroTokenZero.toNumber(),
-          {
-            value: config.higherPricePerTokenInWei,
-          }
-        );
+        [
+          "purchase(uint256,address,uint256)"
+        ](config.projectZero, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+          value: config.higherPricePerTokenInWei,
+        });
     });
 
     it("emits event upon price update", async function () {
@@ -494,14 +488,11 @@ export const MinterHolder_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.additional)
-          ["purchase(uint256,address,uint256)"](
-            config.projectTwo,
-            config.genArt721Core.address,
-            config.projectTwoTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchase(uint256,address,uint256)"
+          ](config.projectTwo, config.genArt721Core.address, config.projectTwoTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          }),
         "Price not configured"
       );
     });
@@ -512,28 +503,22 @@ export const MinterHolder_Common = async (
       await expectRevert(
         config.minter
           .connect(config.accounts.additional)
-          ["purchase(uint256,address,uint256)"](
-            config.projectOne,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: 0,
-            }
-          ),
+          [
+            "purchase(uint256,address,uint256)"
+          ](config.projectOne, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: 0,
+          }),
         "Must send minimum value to mint"
       );
       // expect revert due when sending funds less than price
       await expectRevert(
         config.minter
           .connect(config.accounts.additional)
-          ["purchase(uint256,address,uint256)"](
-            config.projectOne,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei.sub(1),
-            }
-          ),
+          [
+            "purchase(uint256,address,uint256)"
+          ](config.projectOne, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei.sub(1),
+          }),
         "Must send minimum value to mint"
       );
     });
@@ -557,14 +542,11 @@ export const MinterHolder_Common = async (
         await expectRevert(
           config.minter
             .connect(config.accounts.additional)
-            ["purchase(uint256,address,uint256)"](
-              config.projectTwo,
-              config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
+            [
+              "purchase(uint256,address,uint256)"
+            ](config.projectTwo, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+              value: config.pricePerTokenInWei,
+            }),
           "Only allowlisted NFTs"
         );
       });
@@ -589,14 +571,11 @@ export const MinterHolder_Common = async (
         await expectRevert(
           config.minter
             .connect(config.accounts.additional)
-            ["purchase(uint256,address,uint256)"](
-              config.projectTwo,
-              config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
+            [
+              "purchase(uint256,address,uint256)"
+            ](config.projectTwo, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+              value: config.pricePerTokenInWei,
+            }),
           "Only allowlisted NFTs"
         );
       });
@@ -618,14 +597,11 @@ export const MinterHolder_Common = async (
         // does allow purchase when holder token in config.projectZero is used as pass
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,uint256)"](
-            config.projectTwo,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,uint256)"
+          ](config.projectTwo, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          });
       });
 
       it("does allow purchase when using token of allowed project (when set in bulk)", async function () {
@@ -647,14 +623,11 @@ export const MinterHolder_Common = async (
         // does allow purchase when holder token in config.projectZero is used as pass
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,uint256)"](
-            config.projectTwo,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,uint256)"
+          ](config.projectTwo, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          });
       });
 
       it("does not allow purchase when using token not owned", async function () {
@@ -675,14 +648,11 @@ export const MinterHolder_Common = async (
         await expectRevert(
           config.minter
             .connect(config.accounts.additional)
-            ["purchase(uint256,address,uint256)"](
-              config.projectTwo,
-              config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
+            [
+              "purchase(uint256,address,uint256)"
+            ](config.projectTwo, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+              value: config.pricePerTokenInWei,
+            }),
           "Only owner of NFT"
         );
       });
@@ -692,13 +662,11 @@ export const MinterHolder_Common = async (
         const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
         await pbabMinter
           .connect(config.accounts.artist)
-          ["purchaseTo(address,uint256)"](
-            config.accounts.additional.address,
-            0,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchaseTo(address,uint256)"
+          ](config.accounts.additional.address, 0, {
+            value: config.pricePerTokenInWei,
+          });
         // register the PBAB token on our minter
         await config.minter
           .connect(config.accounts.deployer)
@@ -711,14 +679,11 @@ export const MinterHolder_Common = async (
         await expectRevert(
           config.minter
             .connect(config.accounts.additional)
-            ["purchase(uint256,address,uint256)"](
-              config.projectTwo,
-              pbabToken.address,
-              0,
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
+            [
+              "purchase(uint256,address,uint256)"
+            ](config.projectTwo, pbabToken.address, 0, {
+              value: config.pricePerTokenInWei,
+            }),
           "Only allowlisted NFTs"
         );
       });
@@ -729,13 +694,11 @@ export const MinterHolder_Common = async (
         const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
         await pbabMinter
           .connect(config.accounts.artist)
-          ["purchaseTo(address,uint256)"](
-            config.accounts.additional.address,
-            0,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchaseTo(address,uint256)"
+          ](config.accounts.additional.address, 0, {
+            value: config.pricePerTokenInWei,
+          });
         // register the PBAB token on our minter
         await config.minter
           .connect(config.accounts.deployer)
@@ -751,14 +714,11 @@ export const MinterHolder_Common = async (
         // does allow purchase when holder of token in PBAB config.projectZero is used as pass
         await config.minter
           .connect(config.accounts.additional)
-          ["purchase(uint256,address,uint256)"](
-            config.projectTwo,
-            pbabToken.address,
-            0,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,uint256)"
+          ](config.projectTwo, pbabToken.address, 0, {
+            value: config.pricePerTokenInWei,
+          });
       });
     });
 
@@ -779,14 +739,11 @@ export const MinterHolder_Common = async (
       // allow purchase when intentionally configured price of zero
       await config.minter
         .connect(config.accounts.artist)
-        ["purchase(uint256,address,uint256)"](
-          config.projectTwo,
-          config.genArt721Core.address,
-          config.projectZeroTokenZero.toNumber(),
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        [
+          "purchase(uint256,address,uint256)"
+        ](config.projectTwo, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+          value: config.pricePerTokenInWei,
+        });
     });
 
     it("auto-configures if setProjectMaxInvocations is not called (fails correctly)", async function () {
@@ -802,28 +759,22 @@ export const MinterHolder_Common = async (
       for (let i = 0; i < config.maxInvocations; i++) {
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,uint256)"](
-            config.projectOne,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          );
+          [
+            "purchase(uint256,address,uint256)"
+          ](config.projectOne, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          });
       }
 
       // since auto-configured, we should see the minter's revert message
       await expectRevert(
         config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,uint256)"](
-            config.projectOne,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
+          [
+            "purchase(uint256,address,uint256)"
+          ](config.projectOne, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+            value: config.pricePerTokenInWei,
+          }),
         "Maximum number of invocations reached"
       );
     });
@@ -839,14 +790,11 @@ export const MinterHolder_Common = async (
 
       const tx = await config.minter
         .connect(config.accounts.artist)
-        ["purchase(uint256,address,uint256)"](
-          config.projectZero,
-          config.genArt721Core.address,
-          config.projectZeroTokenZero.toNumber(),
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        [
+          "purchase(uint256,address,uint256)"
+        ](config.projectZero, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+          value: config.pricePerTokenInWei,
+        });
 
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
       let gasCostNoMaxInvocations: any = receipt.effectiveGasPrice
@@ -862,14 +810,11 @@ export const MinterHolder_Common = async (
         .setProjectMaxInvocations(config.projectZero);
       const maxSetTx = await config.minter
         .connect(config.accounts.artist)
-        ["purchase(uint256,address,uint256)"](
-          config.projectZero,
-          config.genArt721Core.address,
-          config.projectZeroTokenZero.toNumber(),
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        [
+          "purchase(uint256,address,uint256)"
+        ](config.projectZero, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+          value: config.pricePerTokenInWei,
+        });
       const receipt2 = await ethers.provider.getTransactionReceipt(
         maxSetTx.hash
       );
@@ -902,15 +847,11 @@ export const MinterHolder_Common = async (
       const config = await loadFixture(_beforeEach);
       await config.minter
         .connect(config.accounts.artist)
-        ["purchaseTo(address,uint256,address,uint256)"](
-          config.accounts.additional.address,
-          config.projectZero,
-          config.genArt721Core.address,
-          config.projectZeroTokenZero.toNumber(),
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        [
+          "purchaseTo(address,uint256,address,uint256)"
+        ](config.accounts.additional.address, config.projectZero, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+          value: config.pricePerTokenInWei,
+        });
     });
 
     it("does not support toggling of `purchaseToDisabled`", async function () {
@@ -924,15 +865,11 @@ export const MinterHolder_Common = async (
       // still allows `purchaseTo`.
       await config.minter
         .connect(config.accounts.artist)
-        ["purchaseTo(address,uint256,address,uint256)"](
-          config.accounts.additional.address,
-          config.projectZero,
-          config.genArt721Core.address,
-          config.projectZeroTokenZero.toNumber(),
-          {
-            value: config.pricePerTokenInWei,
-          }
-        );
+        [
+          "purchaseTo(address,uint256,address,uint256)"
+        ](config.accounts.additional.address, config.projectZero, config.genArt721Core.address, config.projectZeroTokenZero.toNumber(), {
+          value: config.pricePerTokenInWei,
+        });
     });
   });
 

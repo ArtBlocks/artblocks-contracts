@@ -242,14 +242,9 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,uint256,address,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            config.pricePerTokenInWei,
-            config.ERC20.address,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber()
-          );
+          [
+            "purchase(uint256,address,uint256,address,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, config.pricePerTokenInWei, config.ERC20.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber());
         let result = await config.minter.projectMaxHasBeenInvoked(
           config.projectZero,
           config.genArt721Core.address
@@ -272,14 +267,9 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,uint256,address,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            config.pricePerTokenInWei,
-            config.ERC20.address,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber()
-          );
+          [
+            "purchase(uint256,address,uint256,address,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, config.pricePerTokenInWei, config.ERC20.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber());
         const isEngineView = await config.minter
           .connect(config.accounts.artist)
           .isEngineView(config.genArt721Core.address);
@@ -384,14 +374,9 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.artist)
-          ["purchase(uint256,address,uint256,address,address,uint256)"](
-            config.projectZero,
-            config.genArt721Core.address,
-            config.pricePerTokenInWei,
-            config.ERC20.address,
-            config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber()
-          );
+          [
+            "purchase(uint256,address,uint256,address,address,uint256)"
+          ](config.projectZero, config.genArt721Core.address, config.pricePerTokenInWei, config.ERC20.address, config.genArt721Core.address, config.projectZeroTokenZero.toNumber());
         // validate view response after hash seed is used
         const resultAfter =
           await config.minter.getPolyptychPanelHashSeedIsMinted(

@@ -4,12 +4,15 @@
 
 ### Upload 0
 
+**Updated GenArt721Minter:** https://etherscan.io/address/0xc3F0418eD513b988ece236Ca477E3b6ac1AF60a4#code
+
 **Randomizer:** https://etherscan.io/address/0x3b30d421a6da95694eaae09971424f15eb375269
 **GenArt721CoreV2:** https://etherscan.io/address/0x28f2d3805652fb5d359486dffb7d08320d403240#code
 **GenArt721Minter:** https://etherscan.io/address/0x7497909537ce00fdda93c12d5083d8647c593c67#code
 
 ### "MARILYN" Upload
 
+**Updated GenArt721Minter:** https://etherscan.io/address/0x46841060EA6f3C87f0d4BF79B0276127bBcD7F5E#code
 **GenArt721CoreV2:** https://etherscan.io/address/0xFF124D975c7792E706552b18ec9DA24781751CAb#code
 **GenArt721Minter:** https://etherscan.io/address/0xfB8fEc1DC1A54B7F9edB46Ab979998C9Bc175454#code
 
@@ -27,7 +30,6 @@
 This was removed at ref tx: [`0xed39aa299451e44b123cb4cbffc746f53f011c77cd2e334f086ac0e2d580ec11`](https://etherscan.io/tx/0xed39aa299451e44b123cb4cbffc746f53f011c77cd2e334f086ac0e2d580ec11) and Doodle Labs is now using a MODIFIED minter: https://etherscan.io/address/0x4f598212d55415D83A7024Ddb48d9FcA1AFe4edf#code.
 
 Additionally due to complexity of `.transfer()` out of gas errors caused by the changes in EIP-2930, the "renderer payment address" for Art Blocks was updated to be hardware wallet `0x66c5bfa1c8C8352eACb1E8dD22E3575f804f51df` for the second mint onward. The original multi-sig wallet only has 0.1 MOOK in it.
-
 
 ## Goerli
 
