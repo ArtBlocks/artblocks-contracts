@@ -35,6 +35,9 @@ library RAMLib {
     // for this library
     bytes32 constant RAM_LIB_STORAGE_POSITION = keccak256("ramlib.storage");
 
+    // pricing assumes maxPrice = minPrice * 2^8, pseudo-exponential curve
+    uint256 constant SLOTS_PER_PRICE_DOUBLE = 512 / 8; // 64 slots per double
+
     // 60 sec/min * 60 min/hr * 24 hr
     uint256 constant TWENTY_FOUR_HOURS = 60 * 60 * 24;
 
@@ -72,10 +75,12 @@ library RAMLib {
         uint24 numBids;
         uint24 numBidsMintedTokens;
         uint24 numBidsErrorRefunded;
-        // TODO start time, end time, min bid, bid spacing, etc.
+        // pricing and timing
+        // @dev max uint40 ~= 1.1e12 sec ~= 34 thousand years
         uint40 timestampStart;
         uint40 timestampEnd;
-        uint88 maxPrice;
+        // @dev max uint88 ~= 3e26 Wei = ~300 million ETH, which is well above
+        // the expected prices of any NFT mint in the foreseeable future.
         uint88 basePrice;
         // --- auction state ---
         bool allWinningBidsSettled; // default false
@@ -97,7 +102,6 @@ library RAMLib {
         address coreContract,
         uint40 auctionTimestampStart,
         uint40 auctionTimestampEnd,
-        uint88 maxPrice,
         uint88 basePrice,
         uint24 numTokensInAuction
     ) internal {
@@ -110,7 +114,6 @@ library RAMLib {
         RAMProjectConfig_.numTokensInAuction = numTokensInAuction;
         RAMProjectConfig_.timestampStart = auctionTimestampStart;
         RAMProjectConfig_.timestampEnd = auctionTimestampEnd;
-        RAMProjectConfig_.maxPrice = maxPrice;
         RAMProjectConfig_.basePrice = basePrice;
     }
 
@@ -213,12 +216,10 @@ library RAMLib {
                 RAMProjectConfig_: RAMProjectConfig_,
                 startSlotIndex: removedSlotIndex + 1
             });
-            // RAMProjectConfig_.slotsBitmap.minBitSet(removedSlotIndex + 1)
-            // );
         }
         // refund the removed bidder
-        uint256 removedBidAmount = bidValueFromSlotIndex({
-            RAMProjectConfig_: RAMProjectConfig_,
+        uint256 removedBidAmount = slotIndexToBidValue({
+            basePrice: RAMProjectConfig_.basePrice,
             slotIndex: removedSlotIndex
         });
         SplitFundsLib.forceSafeTransferETH({
@@ -228,15 +229,27 @@ library RAMLib {
         });
     }
 
-    function bidValueFromSlotIndex(
-        RAMProjectConfig storage RAMProjectConfig_,
+    /**
+     * @notice Returns the value of a bid in a given slot, in Wei.
+     * @dev returns 0 if base price is zero
+     * @param basePrice Base price (or reserve price) of the auction, in Wei
+     * @param slotIndex Slot index to query
+     * @return slotBidValue Value of a bid in the slot, in Wei
+     */
+    function slotIndexToBidValue(
+        uint256 basePrice,
         uint16 slotIndex
-    ) internal view returns (uint256 amount) {
-        // TODO - update this with an exponential spacing function
-        uint256 range = RAMProjectConfig_.maxPrice -
-            RAMProjectConfig_.basePrice;
-        // TODO linear for now
-        return ((range * slotIndex) / 255) + RAMProjectConfig_.basePrice;
+    ) internal pure returns (uint256 slotBidValue) {
+        // use pseud-exponential pricing curve
+        // multiply by two (via bit-shifting) for the number of entire
+        // slots-per-price-double associated with the slot index
+        slotBidValue = basePrice << (slotIndex / SLOTS_PER_PRICE_DOUBLE);
+        // perform a linear interpolation between partial half-life points, to
+        // approximate the current place on a perfect exponential curve.
+        // @dev overflow automatically checked in solidity 0.8, not expected
+        slotBidValue +=
+            (slotBidValue * (slotIndex % SLOTS_PER_PRICE_DOUBLE)) /
+            SLOTS_PER_PRICE_DOUBLE;
     }
 
     // TODO - handle case where there are no bids
@@ -266,7 +279,6 @@ library RAMLib {
         returns (
             uint40 auctionTimestampStart,
             uint40 auctionTimestampEnd,
-            uint88 maxPrice,
             uint88 basePrice,
             uint24 numTokensInAuction,
             uint24 numBids
@@ -280,13 +292,12 @@ library RAMLib {
         // get auction details
         auctionTimestampStart = RAMProjectConfig_.timestampStart;
         auctionTimestampEnd = RAMProjectConfig_.timestampEnd;
-        maxPrice = RAMProjectConfig_.maxPrice;
         basePrice = RAMProjectConfig_.basePrice;
         numTokensInAuction = RAMProjectConfig_.numTokensInAuction;
         numBids = RAMProjectConfig_.numBids;
     }
 
-    function getState(
+    function getProjectMinterState(
         uint256 projectId,
         address coreContract
     ) internal view returns (ProjectMinterStates) {

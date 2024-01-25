@@ -181,6 +181,13 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             coreContract: coreContract,
             sender: msg.sender
         });
+        // CHECKS
+        RAMLib.ProjectMinterStates currentState = RAMLib.getProjectMinterState({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        require(currentState == RAMLib.ProjectMinterStates.A, "Only state A");
+        // EFFECTS
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
             projectId: projectId,
             coreContract: coreContract,
@@ -221,7 +228,6 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @param projectId Project ID to set auction details for.
      * @param coreContract Core contract address for the given project.
      * @param auctionTimestampStart Timestamp at which to start the auction.
-     * @param maxPrice Maximum price of the auction, in Wei.
      * @param basePrice Resting price of the auction, in Wei.
      * @dev Note that a basePrice of `0` will cause the transaction to revert.
      */
@@ -230,7 +236,6 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         address coreContract,
         uint40 auctionTimestampStart,
         uint40 auctionTimestampEnd,
-        uint256 maxPrice,
         uint256 basePrice
     ) external {
         AuthLib.onlyArtist({
@@ -239,7 +244,12 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             sender: msg.sender
         });
         // CHECKS
-        // TODO
+        RAMLib.ProjectMinterStates currentState = RAMLib.getProjectMinterState({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        require(currentState == RAMLib.ProjectMinterStates.A, "Only state A");
+        // TODO check min auction duration
 
         // EFFECTS
         // TODO - update this to be much safer for max invocation checking
@@ -264,7 +274,6 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             coreContract: coreContract,
             auctionTimestampStart: auctionTimestampStart,
             auctionTimestampEnd: auctionTimestampEnd,
-            maxPrice: maxPrice.toUint88(),
             basePrice: basePrice.toUint88(),
             numTokensInAuction: uint24(numTokensInAuction) // TODO note why this is safe to cast
         });
@@ -325,7 +334,6 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         returns (
             uint40 auctionTimestampStart,
             uint40 auctionTimestampEnd,
-            uint88 maxPrice,
             uint88 basePrice,
             uint24 numTokensInAuction,
             uint24 numBids
@@ -472,14 +480,17 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             projectId: projectId,
             coreContract: coreContract
         });
+        uint256 projectBasePrice = RAMLib
+            .getRAMProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            })
+            .basePrice;
         return
-            RAMLib.bidValueFromSlotIndex(
-                RAMLib.getRAMProjectConfig({
-                    projectId: projectId,
-                    coreContract: coreContract
-                }),
-                minBidSlotIndex
-            );
+            RAMLib.slotIndexToBidValue({
+                basePrice: projectBasePrice,
+                slotIndex: minBidSlotIndex
+            });
     }
 
     /**
@@ -550,11 +561,13 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         // CHECKS
         // TODO many more checks required
         // @dev temporarily adding different check for gas testing purposes
-        uint256 targetBidValue = RAMLib.bidValueFromSlotIndex(
-            RAMLib.getRAMProjectConfig({
-                projectId: projectId,
-                coreContract: coreContract
-            }),
+        uint256 targetBidValue = RAMLib.slotIndexToBidValue(
+            RAMLib
+                .getRAMProjectConfig({
+                    projectId: projectId,
+                    coreContract: coreContract
+                })
+                .basePrice,
             slotIndex
         );
         require(msg.value == targetBidValue, "msg.value must equal slot value");
