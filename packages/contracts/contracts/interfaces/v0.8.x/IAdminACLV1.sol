@@ -7,10 +7,16 @@ import {IAdminACLV0} from "./IAdminACLV0.sol";
 
 interface IAdminACLV1 is IAdminACLV0 {
     /// New address added to set of additional superAdmin addresses
-    event AdditionalSuperAdminAdded(address indexed additionalSuperAdmin);
+    event AdditionalSuperAdminAdded(
+        address indexed additionalSuperAdmin,
+        address[] genArt721CoreAddressesToUpdate
+    );
 
     /// Address removed from set of additional superAdmin addresses
-    event AdditionalSuperAdminRemoved(address indexed additionalSuperAdmin);
+    event AdditionalSuperAdminRemoved(
+        address indexed additionalSuperAdmin,
+        address[] genArt721CoreAddressesToUpdate
+    );
 
     function getAdditionalSuperAdmins()
         external

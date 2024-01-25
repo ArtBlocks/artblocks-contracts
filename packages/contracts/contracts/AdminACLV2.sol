@@ -116,13 +116,19 @@ contract AdminACLV2 is IAdminACLV1, ERC165 {
      * be in set.
      * @param additionalSuperAdmin Wallet to be added to additional superAdmin.
      */
-    function addAditionalSuperAdmin(address additionalSuperAdmin) external {
+    function addAditionalSuperAdmin(
+        address additionalSuperAdmin,
+        address[] calldata genArt721CoreAddressesToUpdate
+    ) external {
         require(msg.sender == superAdmin, "Only superAdmin");
         require(
             _additionalSuperAdmins.add(additionalSuperAdmin),
             "AdminACLV2: Already registered"
         );
-        emit AdditionalSuperAdminAdded(additionalSuperAdmin);
+        emit AdditionalSuperAdminAdded(
+            additionalSuperAdmin,
+            genArt721CoreAddressesToUpdate
+        );
     }
 
     /**
@@ -131,13 +137,19 @@ contract AdminACLV2 is IAdminACLV1, ERC165 {
      * superAdmin. Address must be in set.
      * @param additionalSuperAdmin NFT core address to be registered.
      */
-    function removeAdditionalSuperAdmin(address additionalSuperAdmin) external {
+    function removeAdditionalSuperAdmin(
+        address additionalSuperAdmin,
+        address[] calldata genArt721CoreAddressesToUpdate
+    ) external {
         require(msg.sender == superAdmin, "Only superAdmin");
         require(
             _additionalSuperAdmins.remove(additionalSuperAdmin),
             "AdminACLV2: Not registered"
         );
-        emit AdditionalSuperAdminRemoved(additionalSuperAdmin);
+        emit AdditionalSuperAdminRemoved(
+            additionalSuperAdmin,
+            genArt721CoreAddressesToUpdate
+        );
     }
 
     /**
