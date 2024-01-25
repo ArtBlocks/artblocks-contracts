@@ -77,14 +77,14 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  *  - (admin | artist) refresh (reduce-only) max invocations (preemptively limit E1 state)
  *  - (artist) reduce min bid price or reduce auction length
  * -------------
- * STATE C: Post-Auction, not all bids handled, 24h
+ * STATE C: Post-Auction, not all bids handled, admin-only mint period
  * abilities:
  *  - (admin) mint tokens to winners
  *  - (winner) collect settlement
  *  - (FLAG F1) purchase remaining tokens for auction min price (base price), like fixed price minter
  *  - (ERROR E1)(admin) refund winning bids that cannot receive tokens due to max invocations error
  * -------------
- * STATE D: Post-Auction, not all bids handled, post-24h
+ * STATE D: Post-Auction, not all bids handled, post-admin-only mint period
  * abilities:
  *  - (winner | admin) mint tokens to winners
  *  - (winner) collect settlement
@@ -140,6 +140,9 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     /// @notice minter version for this minter
     string public constant minterVersion = "v1.0.0";
 
+    /// @notice Minimum auction duration
+    uint256 public constant MIN_AUCTION_DURATION_SECONDS = 60 * 10; // 10 minutes
+
     /** @notice Gas limit for refunding ETH to bidders
      * configurable by admin, default to 30,000
      * max uint24 ~= 16 million gas, more than enough for a refund
@@ -156,7 +159,17 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         minterFilterAddress = minterFilter;
         _minterFilter = IMinterFilterV1(minterFilter);
         // emit events indicating default minter configuration values
-        // TODO
+        emit RAMLib.MinAuctionDurationSecondsUpdated({
+            minAuctionDurationSeconds: MIN_AUCTION_DURATION_SECONDS
+        });
+        emit RAMLib.MinterRefundGasLimitUpdated({
+            refundGasLimit: _minterRefundGasLimit
+        });
+        emit RAMLib.AuctionBufferTimeParamsUpdated({
+            auctionBufferSeconds: RAMLib.AUCTION_BUFFER_SECONDS,
+            maxAuctionExtraSeconds: RAMLib.MAX_AUCTION_EXTRA_SECONDS
+        });
+        emit RAMLib.NumSlotsUpdated({numSlots: RAMLib.NUM_SLOTS});
     }
 
     /**
@@ -176,12 +189,13 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         address coreContract,
         uint24 maxInvocations
     ) external {
+        // CHECKS
         AuthLib.onlyArtist({
             projectId: projectId,
             coreContract: coreContract,
             sender: msg.sender
         });
-        // CHECKS
+        // only project minter state A
         RAMLib.ProjectMinterStates currentState = RAMLib.getProjectMinterState({
             projectId: projectId,
             coreContract: coreContract
@@ -236,21 +250,23 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         address coreContract,
         uint40 auctionTimestampStart,
         uint40 auctionTimestampEnd,
-        uint256 basePrice
-    ) external {
+        uint256 basePrice,
+        bool allowExtraTime
+    ) external nonReentrant {
         AuthLib.onlyArtist({
             projectId: projectId,
             coreContract: coreContract,
             sender: msg.sender
         });
         // CHECKS
-        RAMLib.ProjectMinterStates currentState = RAMLib.getProjectMinterState({
-            projectId: projectId,
-            coreContract: coreContract
-        });
-        require(currentState == RAMLib.ProjectMinterStates.A, "Only state A");
-        // TODO check min auction duration
-
+        // @dev state check performed in RAMLib
+        // check min auction duration
+        // @dev underflow checked automatically in solidity 0.8
+        require(
+            auctionTimestampEnd - auctionTimestampStart >=
+                MIN_AUCTION_DURATION_SECONDS,
+            "Auction too short"
+        );
         // EFFECTS
         // TODO - update this to be much safer for max invocation checking
         // first refresh max invocations
@@ -275,7 +291,8 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             auctionTimestampStart: auctionTimestampStart,
             auctionTimestampEnd: auctionTimestampEnd,
             basePrice: basePrice.toUint88(),
-            numTokensInAuction: uint24(numTokensInAuction) // TODO note why this is safe to cast
+            numTokensInAuction: uint24(numTokensInAuction), // TODO note why this is safe to cast
+            allowExtraTime: allowExtraTime
         });
 
         // TODO ...

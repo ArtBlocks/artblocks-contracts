@@ -12,6 +12,7 @@ import {MaxInvocationsLib} from "./MaxInvocationsLib.sol";
 
 import {IERC721} from "@openzeppelin-5.0/contracts/token/ERC721/IERC721.sol";
 import {SafeCast} from "@openzeppelin-5.0/contracts/utils/math/SafeCast.sol";
+import {Math} from "@openzeppelin-5.0/contracts/utils/math/Math.sol";
 
 /**
  * @title Art Blocks RAM Minter Library
@@ -23,6 +24,12 @@ import {SafeCast} from "@openzeppelin-5.0/contracts/utils/math/SafeCast.sol";
 library RAMLib {
     using SafeCast for uint256;
     using BitMaps256 for uint256;
+    /**
+     * @notice Minimum auction length, in seconds, was updated to be the
+     * provided value.
+     * @param minAuctionDurationSeconds Minimum auction length, in seconds
+     */
+    event MinAuctionDurationSecondsUpdated(uint256 minAuctionDurationSeconds);
 
     /**
      * @notice Admin-controlled refund gas limit updated
@@ -31,21 +38,46 @@ library RAMLib {
      */
     event MinterRefundGasLimitUpdated(uint24 refundGasLimit);
 
+    /**
+     * @notice RAM auction buffer time parameters updated
+     * @param auctionBufferSeconds time period at end of auction when new bids
+     * can affect auction end time, updated to be this many seconds after the
+     * bid is placed.
+     * @param maxAuctionExtraSeconds maximum amount of time that can be added
+     * to the auction end time due to new bids.
+     */
+    event AuctionBufferTimeParamsUpdated(
+        uint256 auctionBufferSeconds,
+        uint256 maxAuctionExtraSeconds
+    );
+
+    /**
+     * @notice Number of slots used by this RAM minter
+     * @param numSlots Number of slots used by this RAM minter
+     */
+    event NumSlotsUpdated(uint256 numSlots);
+
     // position of RAM Lib storage, using a diamond storage pattern
     // for this library
     bytes32 constant RAM_LIB_STORAGE_POSITION = keccak256("ramlib.storage");
 
+    uint256 constant NUM_SLOTS = 512;
+
     // pricing assumes maxPrice = minPrice * 2^8, pseudo-exponential curve
     uint256 constant SLOTS_PER_PRICE_DOUBLE = 512 / 8; // 64 slots per double
 
+    // auction extension time constants
+    uint256 constant AUCTION_BUFFER_SECONDS = 5 * 60; // 5 minutes
+    uint256 constant MAX_AUCTION_EXTRA_SECONDS = 60 * 60; // 1 hour
+
     // 60 sec/min * 60 min/hr * 24 hr
-    uint256 constant TWENTY_FOUR_HOURS = 60 * 60 * 24;
+    uint256 constant ADMIN_ONLY_MINT_TIME_SECONDS = 60 * 60 * 72; // 72 hours
 
     enum ProjectMinterStates {
         A, // Pre-Auction
         B, // Live-Auction
-        C, // Post-Auction, not all bids handled, 24h
-        D, // Post-Auction, not all bids handled, post-24h
+        C, // Post-Auction, not all bids handled, admin-only mint period
+        D, // Post-Auction, not all bids handled, post-admin-only mint period
         E // Post-Auction, all bids handled
     }
 
@@ -78,7 +110,9 @@ library RAMLib {
         // pricing and timing
         // @dev max uint40 ~= 1.1e12 sec ~= 34 thousand years
         uint40 timestampStart;
+        uint40 timestampOriginalEnd;
         uint40 timestampEnd;
+        bool allowExtraTime;
         // @dev max uint88 ~= 3e26 Wei = ~300 million ETH, which is well above
         // the expected prices of any NFT mint in the foreseeable future.
         uint88 basePrice;
@@ -103,18 +137,40 @@ library RAMLib {
         uint40 auctionTimestampStart,
         uint40 auctionTimestampEnd,
         uint88 basePrice,
-        uint24 numTokensInAuction
+        uint24 numTokensInAuction,
+        bool allowExtraTime
     ) internal {
         // load project config
         RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
             projectId: projectId,
             coreContract: coreContract
         });
+        // CHECKS
+        // require State A (pre-auction)
+        require(
+            getProjectMinterState({
+                projectId: projectId,
+                coreContract: coreContract
+            }) == ProjectMinterStates.A,
+            "Only pre-auction"
+        );
+        // require base price >= 0.05 ETH
+        require(basePrice >= 0.05 ether, "Only base price gte 0.05 ETH");
+        // require end time after start time
+        // @dev no coverage, minter already checks via min auction length check
+        require(
+            auctionTimestampEnd > auctionTimestampStart,
+            "Only end time gt start time"
+        );
+
         // set auction details
         RAMProjectConfig_.numTokensInAuction = numTokensInAuction;
         RAMProjectConfig_.timestampStart = auctionTimestampStart;
         RAMProjectConfig_.timestampEnd = auctionTimestampEnd;
         RAMProjectConfig_.basePrice = basePrice;
+        RAMProjectConfig_.allowExtraTime = allowExtraTime;
+
+        // TODO emit state change event
     }
 
     // TODO must limit to only active auctions, etc.
@@ -142,6 +198,23 @@ library RAMLib {
             });
             // require new bid is greater than removed minimum bid
             require(slotIndex > removedSlotIndex, "Insufficient bid value");
+            // TODO? emit event for removed Bid
+
+            // apply auction extension time if needed
+            bool timeExtensionNeeded = RAMProjectConfig_.allowExtraTime &&
+                block.timestamp >
+                RAMProjectConfig_.timestampEnd - AUCTION_BUFFER_SECONDS;
+            if (timeExtensionNeeded) {
+                // extend auction end time to no longer than
+                // MAX_AUCTION_EXTRA_SECONDS after original end time
+                RAMProjectConfig_.timestampEnd = uint40(
+                    Math.min(
+                        RAMProjectConfig_.timestampOriginalEnd +
+                            MAX_AUCTION_EXTRA_SECONDS,
+                        block.timestamp + AUCTION_BUFFER_SECONDS
+                    )
+                );
+            }
         }
         // insert the new Bid
         insertBid({
@@ -325,7 +398,7 @@ library RAMLib {
         if (isLiveAuction) {
             return ProjectMinterStates.B;
         }
-        // States C, D, E: Post-Auction, not all winners sent tokens, 24h
+        // States C, D, E: Post-Auction
         // @dev auction is configured and post auction due to previous States A, B returns
         // all winners sent tokens means all bids have either been minted tokens or refunded if error state occurred
         bool allBidsHandled = RAMProjectConfig_.numBidsMintedTokens +
@@ -337,12 +410,13 @@ library RAMLib {
         }
         // @dev all bids not handled due to previous State E return
         // helper value(s) for readability
-        bool within24h = block.timestamp < timestampEnd + TWENTY_FOUR_HOURS;
-        if (within24h) {
-            // State C: Post-Auction, not all bids handled, 24h
+        bool adminOnlyMintPeriod = block.timestamp <
+            timestampEnd + ADMIN_ONLY_MINT_TIME_SECONDS;
+        if (adminOnlyMintPeriod) {
+            // State C: Post-Auction, not all bids handled, admin-only mint period
             return ProjectMinterStates.C;
         }
-        // State D: Post-Auction, not all bids handled, post-24h
+        // State D: Post-Auction, not all bids handled, post-admin-only mint period
         // @dev states are mutually exclusive, so must be in final remaining state
         return ProjectMinterStates.D;
     }
