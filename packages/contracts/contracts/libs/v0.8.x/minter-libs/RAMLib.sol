@@ -20,7 +20,6 @@ import {Math} from "@openzeppelin-5.0/contracts/utils/math/Math.sol";
  * Structs and functions that help with ranked auction minters.
  * @author Art Blocks Inc.
  */
-
 library RAMLib {
     using SafeCast for uint256;
     using BitMaps256 for uint256;
@@ -49,6 +48,60 @@ library RAMLib {
     event AuctionBufferTimeParamsUpdated(
         uint256 auctionBufferSeconds,
         uint256 maxAuctionExtraSeconds
+    );
+
+    /**
+     *
+     * @param coreContract Core contract address to update
+     * @param imposeConstraints bool representing if constraints should be
+     * imposed on this contract
+     * @param requireAdminOnlyMintPeriod bool representing if admin-only mint
+     * is required for all projects on this contract
+     * @param requireNoAdminOnlyMintPeriod bool representing if admin-only mint
+     * is not allowed for all projects on this contract
+     */
+    event ContractConfigUpdated(
+        address coreContract,
+        bool imposeConstraints,
+        bool requireAdminOnlyMintPeriod,
+        bool requireNoAdminOnlyMintPeriod
+    );
+
+    /**
+     * @notice Auction parameters updated
+     * @param projectId Project Id to update
+     * @param coreContract Core contract address to update
+     * @param timestampStart Auction start timestamp
+     * @param timestampEnd Auction end timestamp
+     * @param basePrice Auction base price
+     * @param allowExtraTime Auction allows extra time
+     * @param adminOnlyMintPeriodIfSellout Auction admin-only mint period if
+     * sellout
+     * @param numTokensInAuction Auction number of tokens in auction
+     */
+    event AuctionConfigUpdated(
+        uint256 projectId,
+        address coreContract,
+        uint256 timestampStart,
+        uint256 timestampEnd,
+        uint256 basePrice,
+        bool allowExtraTime,
+        bool adminOnlyMintPeriodIfSellout,
+        uint256 numTokensInAuction
+    );
+
+    /**
+     * @notice Number of tokens in auction updated
+     * @dev okay to not index this event if prior to AuctionConfigUpdated, as
+     * the state value will be emitted in another future event
+     * @param projectId Project Id to update
+     * @param coreContract Core contract address to update
+     * @param numTokensInAuction Number of tokens in auction
+     */
+    event NumTokensInAuctionUpdated(
+        uint256 projectId,
+        address coreContract,
+        uint256 numTokensInAuction
     );
 
     /**
@@ -147,6 +200,12 @@ library RAMLib {
         bool requireAdminOnlyMintPeriod,
         bool requireNoAdminOnlyMintPeriod
     ) internal {
+        // CHECKS
+        // require not both constraints set to true, since mutually exclusive
+        require(
+            !(requireAdminOnlyMintPeriod && requireNoAdminOnlyMintPeriod),
+            "Only one constraint can be set"
+        );
         // load contract config
         RAMContractConfig storage RAMContractConfig_ = getRAMContractConfig({
             coreContract: coreContract
@@ -158,16 +217,21 @@ library RAMLib {
         RAMContractConfig_
             .requireNoAdminOnlyMintPeriod = requireNoAdminOnlyMintPeriod;
         // emit event
-        // TODO emit event with three bools
+        emit ContractConfigUpdated({
+            coreContract: coreContract,
+            imposeConstraints: imposeConstraints,
+            requireAdminOnlyMintPeriod: requireAdminOnlyMintPeriod,
+            requireNoAdminOnlyMintPeriod: requireNoAdminOnlyMintPeriod
+        });
     }
 
+    // Reminder - note assumption of being in ProjectMinterState A
     function setAuctionDetails(
         uint256 projectId,
         address coreContract,
         uint40 auctionTimestampStart,
         uint40 auctionTimestampEnd,
         uint88 basePrice,
-        uint24 numTokensInAuction,
         bool allowExtraTime,
         bool adminOnlyMintPeriodIfSellout
     ) internal {
@@ -177,14 +241,7 @@ library RAMLib {
             coreContract: coreContract
         });
         // CHECKS
-        // require State A (pre-auction)
-        require(
-            getProjectMinterState({
-                projectId: projectId,
-                coreContract: coreContract
-            }) == ProjectMinterStates.A,
-            "Only pre-auction"
-        );
+        // @dev function assumes currently in ProjectMinterState A
         // require base price >= 0.05 ETH
         require(basePrice >= 0.05 ether, "Only base price gte 0.05 ETH");
         // require end time after start time
@@ -213,15 +270,53 @@ library RAMLib {
         }
 
         // set auction details
-        RAMProjectConfig_.numTokensInAuction = numTokensInAuction;
         RAMProjectConfig_.timestampStart = auctionTimestampStart;
         RAMProjectConfig_.timestampEnd = auctionTimestampEnd;
         RAMProjectConfig_.basePrice = basePrice;
         RAMProjectConfig_.allowExtraTime = allowExtraTime;
         RAMProjectConfig_
             .adminOnlyMintPeriodIfSellout = adminOnlyMintPeriodIfSellout;
+        // refresh numTokensInAuction
+        uint256 numTokensInAuction = refreshNumTokensInAuction({
+            projectId: projectId,
+            coreContract: coreContract
+        });
 
-        // TODO emit state change event
+        // emit state change event
+        emit AuctionConfigUpdated({
+            projectId: projectId,
+            coreContract: coreContract,
+            timestampStart: auctionTimestampStart,
+            timestampEnd: auctionTimestampEnd,
+            basePrice: basePrice,
+            allowExtraTime: allowExtraTime,
+            adminOnlyMintPeriodIfSellout: adminOnlyMintPeriodIfSellout,
+            numTokensInAuction: numTokensInAuction
+        });
+    }
+
+    function refreshNumTokensInAuction(
+        uint256 projectId,
+        address coreContract
+    ) internal returns (uint256 numTokensInAuction) {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // @dev safe to cast - max uint24 is 16_777_215 > 1_000_000 max project size
+        numTokensInAuction = MaxInvocationsLib.getInvocationsAvailable({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        RAMProjectConfig_.numTokensInAuction = uint24(numTokensInAuction);
+
+        // emit event for state change
+        emit NumTokensInAuctionUpdated({
+            projectId: projectId,
+            coreContract: coreContract,
+            numTokensInAuction: numTokensInAuction
+        });
     }
 
     // TODO must limit to only active auctions, etc.
@@ -237,6 +332,21 @@ library RAMLib {
             projectId: projectId,
             coreContract: coreContract
         });
+        // if first bid, refresh max invocations in case artist has reduced
+        // the core contract's max invocations after the auction was configured
+        // @dev this helps prevent E1 error state
+        if (RAMProjectConfig_.numBids == 0) {
+            // refresh max invocations
+            MaxInvocationsLib.refreshMaxInvocations({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+            // also refresh numTokensInAuction for RAM project config
+            refreshNumTokensInAuction({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+        }
         // determine if have reached max bids
         bool reachedMaxBids = RAMProjectConfig_.numBids ==
             RAMProjectConfig_.numTokensInAuction;

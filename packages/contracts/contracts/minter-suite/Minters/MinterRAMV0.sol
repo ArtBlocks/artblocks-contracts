@@ -173,43 +173,6 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * @notice Manually sets the local maximum invocations of project `projectId`
-     * with the provided `maxInvocations`, checking that `maxInvocations` is less
-     * than or equal to the value of project `project_id`'s maximum invocations that is
-     * set on the core contract.
-     * @dev Note that a `maxInvocations` of 0 can only be set if the current `invocations`
-     * value is also 0 and this would also set `maxHasBeenInvoked` to true, correctly short-circuiting
-     * this minter's purchase function, avoiding extra gas costs from the core contract's maxInvocations check.
-     * @param projectId Project ID to set the maximum invocations for.
-     * @param coreContract Core contract address for the given project.
-     * @param maxInvocations Maximum invocations to set for the project.
-     */
-    function manuallyLimitProjectMaxInvocations(
-        uint256 projectId,
-        address coreContract,
-        uint24 maxInvocations
-    ) external {
-        // CHECKS
-        AuthLib.onlyArtist({
-            projectId: projectId,
-            coreContract: coreContract,
-            sender: msg.sender
-        });
-        // only project minter state A
-        RAMLib.ProjectMinterStates currentState = RAMLib.getProjectMinterState({
-            projectId: projectId,
-            coreContract: coreContract
-        });
-        require(currentState == RAMLib.ProjectMinterStates.A, "Only state A");
-        // EFFECTS
-        MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
-            projectId: projectId,
-            coreContract: coreContract,
-            maxInvocations: maxInvocations
-        });
-    }
-
-    /**
      * @notice Sets the gas limit during ETH refunds when a collector is
      * outbid. This value should be set to a value that is high enough to
      * ensure that refunds are successful for commonly used wallets, but low
@@ -237,9 +200,18 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         emit RAMLib.MinterRefundGasLimitUpdated(minterRefundGasLimit);
     }
 
+    /**
+     * @notice Contract-Admin only function to update the requirements on if a
+     * post-auction admin-only mint period is required, for and-on configured
+     * projects.
+     * @param coreContract core contract to set the configuration for.
+     * @param requireAdminOnlyMintPeriod bool indicating if the minter should
+     * require an admin-only mint period after the auction ends.
+     * @param requireNoAdminOnlyMintPeriod bool indicating if the minter should
+     * require no admin-only mint period after the auction ends.
+     */
     function setContractConfig(
         address coreContract,
-        bool imposeConstraints,
         bool requireAdminOnlyMintPeriod,
         bool requireNoAdminOnlyMintPeriod
     ) external {
@@ -253,9 +225,103 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         // EFFECTS
         RAMLib.setContractConfig({
             coreContract: coreContract,
-            imposeConstraints: imposeConstraints,
+            imposeConstraints: true, // always true because we are configuring
             requireAdminOnlyMintPeriod: requireAdminOnlyMintPeriod,
             requireNoAdminOnlyMintPeriod: requireNoAdminOnlyMintPeriod
+        });
+    }
+
+    /**
+     * @notice Manually sets the local maximum invocations of project `projectId`
+     * with the provided `maxInvocations`, checking that `maxInvocations` is less
+     * than or equal to the value of project `project_id`'s maximum invocations that is
+     * set on the core contract.
+     * @dev Note that a `maxInvocations` of 0 can only be set if the current `invocations`
+     * value is also 0 and this would also set `maxHasBeenInvoked` to true, correctly short-circuiting
+     * this minter's purchase function, avoiding extra gas costs from the core contract's maxInvocations check.
+     * @param projectId Project ID to set the maximum invocations for.
+     * @param coreContract Core contract address for the given project.
+     * @param maxInvocations Maximum invocations to set for the project.
+     */
+    function manuallyLimitProjectMaxInvocations(
+        uint256 projectId,
+        address coreContract,
+        uint24 maxInvocations
+    ) external {
+        // CHECKS
+        AuthLib.onlyArtist({
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
+        });
+        // only project minter state A (Pre-Auction)
+        RAMLib.ProjectMinterStates currentState = RAMLib.getProjectMinterState({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        require(currentState == RAMLib.ProjectMinterStates.A, "Only state A");
+        // EFFECTS
+        MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
+            projectId: projectId,
+            coreContract: coreContract,
+            maxInvocations: maxInvocations
+        });
+        // also update number of tokens in auction
+        RAMLib.refreshNumTokensInAuction({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+    }
+
+    /**
+     * @notice Manually reduces the minter-local maximum invocations of project
+     * `projectId` with the provided `maxInvocations`, checking that
+     * `maxInvocations` is less than or equal to the value of project
+     * `project_id`'s maximum invocations set on the core contract, and checking
+     * that `maxInvocations` is less than the current number of invocations.
+     * @param projectId Project ID to set the maximum invocations for.
+     * @param coreContract Core contract address for the given project.
+     * @param maxInvocations Maximum invocations to set for the project.
+     */
+    function manuallyReduceProjectMaxInvocationsDuringAuction(
+        uint256 projectId,
+        address coreContract,
+        uint24 maxInvocations
+    ) external {
+        // CHECKS
+        AuthLib.onlyArtist({
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
+        });
+        // only project minter state B (Live Auction)
+        RAMLib.ProjectMinterStates currentState = RAMLib.getProjectMinterState({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        require(currentState == RAMLib.ProjectMinterStates.B, "Only state B");
+        // only reduce max invocations (for collector protection - no increase)
+        uint256 currentMaxInvocations = MaxInvocationsLib.getMaxInvocations({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        require(
+            maxInvocations < currentMaxInvocations,
+            "Only lt current max invocations"
+        );
+        // EFFECTS
+        // @dev this will revert if maxInvocations is greater than the current
+        // max invocations on the core contract, or less than current
+        // invocations
+        MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
+            projectId: projectId,
+            coreContract: coreContract,
+            maxInvocations: maxInvocations
+        });
+        // also update number of tokens in auction
+        RAMLib.refreshNumTokensInAuction({
+            projectId: projectId,
+            coreContract: coreContract
         });
     }
 
@@ -282,7 +348,14 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             sender: msg.sender
         });
         // CHECKS
-        // @dev state check performed in RAMLib
+        // require State A (pre-auction)
+        require(
+            RAMLib.getProjectMinterState({
+                projectId: projectId,
+                coreContract: coreContract
+            }) == RAMLib.ProjectMinterStates.A,
+            "Only pre-auction"
+        );
         // check min auction duration
         // @dev underflow checked automatically in solidity 0.8
         require(
@@ -291,30 +364,17 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             "Auction too short"
         );
         // EFFECTS
-        // TODO - update this to be much safer for max invocation checking
-        // first refresh max invocations
+        // refresh max invocations to eliminate any stale state
         MaxInvocationsLib.refreshMaxInvocations({
             projectId: projectId,
             coreContract: coreContract
         });
-        // then get max invocations
-        uint256 maxInvocations = MaxInvocationsLib.getMaxInvocations({
-            projectId: projectId,
-            coreContract: coreContract
-        });
-        (uint256 coreInvocations, ) = MaxInvocationsLib
-            .coreContractInvocationData({
-                projectId: projectId,
-                coreContract: coreContract
-            });
-        uint256 numTokensInAuction = maxInvocations - coreInvocations;
         RAMLib.setAuctionDetails({
             projectId: projectId,
             coreContract: coreContract,
             auctionTimestampStart: auctionTimestampStart,
             auctionTimestampEnd: auctionTimestampEnd,
             basePrice: basePrice.toUint88(),
-            numTokensInAuction: uint24(numTokensInAuction), // TODO note why this is safe to cast
             allowExtraTime: allowExtraTime,
             adminOnlyMintPeriodIfSellout: adminOnlyMintPeriodIfSellout
         });
