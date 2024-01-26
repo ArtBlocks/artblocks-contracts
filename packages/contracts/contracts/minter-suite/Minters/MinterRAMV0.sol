@@ -62,7 +62,7 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  * contracts that this minter integrates with.
  * ----------------------------------------------------------------------------
  * Project-Minter STATE, FLAG, and ERROR Summary
- * Note: STATEs are mutually exclusive and are in-order
+ * Note: STATEs are mutually exclusive and are in-order, State C potentially skipped
  * -------------
  * STATE A: Pre-Auction
  * abilities:
@@ -77,7 +77,7 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  *  - (admin | artist) refresh (reduce-only) max invocations (preemptively limit E1 state)
  *  - (artist) reduce min bid price or reduce auction length
  * -------------
- * STATE C: Post-Auction, not all bids handled, admin-only mint period
+ * STATE C: Post-Auction, not all bids handled, admin-only mint period (if applicable)
  * abilities:
  *  - (admin) mint tokens to winners
  *  - (winner) collect settlement
@@ -237,6 +237,28 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         emit RAMLib.MinterRefundGasLimitUpdated(minterRefundGasLimit);
     }
 
+    function setContractConfig(
+        address coreContract,
+        bool imposeConstraints,
+        bool requireAdminOnlyMintPeriod,
+        bool requireNoAdminOnlyMintPeriod
+    ) external {
+        // CHECKS
+        AuthLib.onlyCoreAdminACL({
+            coreContract: coreContract,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.setContractConfig.selector
+        });
+        // EFFECTS
+        RAMLib.setContractConfig({
+            coreContract: coreContract,
+            imposeConstraints: imposeConstraints,
+            requireAdminOnlyMintPeriod: requireAdminOnlyMintPeriod,
+            requireNoAdminOnlyMintPeriod: requireNoAdminOnlyMintPeriod
+        });
+    }
+
     /**
      * @notice Sets auction details for project `projectId`.
      * @param projectId Project ID to set auction details for.
@@ -251,7 +273,8 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         uint40 auctionTimestampStart,
         uint40 auctionTimestampEnd,
         uint256 basePrice,
-        bool allowExtraTime
+        bool allowExtraTime,
+        bool adminOnlyMintPeriodIfSellout
     ) external nonReentrant {
         AuthLib.onlyArtist({
             projectId: projectId,
@@ -292,7 +315,8 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             auctionTimestampEnd: auctionTimestampEnd,
             basePrice: basePrice.toUint88(),
             numTokensInAuction: uint24(numTokensInAuction), // TODO note why this is safe to cast
-            allowExtraTime: allowExtraTime
+            allowExtraTime: allowExtraTime,
+            adminOnlyMintPeriodIfSellout: adminOnlyMintPeriodIfSellout
         });
 
         // TODO ...

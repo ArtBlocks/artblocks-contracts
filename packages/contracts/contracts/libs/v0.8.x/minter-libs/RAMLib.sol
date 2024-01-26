@@ -113,6 +113,7 @@ library RAMLib {
         uint40 timestampOriginalEnd;
         uint40 timestampEnd;
         bool allowExtraTime;
+        bool adminOnlyMintPeriodIfSellout;
         // @dev max uint88 ~= 3e26 Wei = ~300 million ETH, which is well above
         // the expected prices of any NFT mint in the foreseeable future.
         uint88 basePrice;
@@ -126,9 +127,38 @@ library RAMLib {
         bool isMinted; // TODO: determine if this is needed
     }
 
+    // contract-specific parameters
+    // @dev may not be indexed, but does impose on-chain constraints
+    struct RAMContractConfig {
+        bool imposeConstraints; // default false
+        bool requireAdminOnlyMintPeriod;
+        bool requireNoAdminOnlyMintPeriod;
+    }
+
     // Diamond storage pattern is used in this library
     struct RAMLibStorage {
         mapping(address coreContract => mapping(uint256 projectId => RAMProjectConfig)) RAMProjectConfigs;
+        mapping(address coreContract => RAMContractConfig) RAMContractConfigs;
+    }
+
+    function setContractConfig(
+        address coreContract,
+        bool imposeConstraints,
+        bool requireAdminOnlyMintPeriod,
+        bool requireNoAdminOnlyMintPeriod
+    ) internal {
+        // load contract config
+        RAMContractConfig storage RAMContractConfig_ = getRAMContractConfig({
+            coreContract: coreContract
+        });
+        // set contract config
+        RAMContractConfig_.imposeConstraints = imposeConstraints;
+        RAMContractConfig_
+            .requireAdminOnlyMintPeriod = requireAdminOnlyMintPeriod;
+        RAMContractConfig_
+            .requireNoAdminOnlyMintPeriod = requireNoAdminOnlyMintPeriod;
+        // emit event
+        // TODO emit event with three bools
     }
 
     function setAuctionDetails(
@@ -138,7 +168,8 @@ library RAMLib {
         uint40 auctionTimestampEnd,
         uint88 basePrice,
         uint24 numTokensInAuction,
-        bool allowExtraTime
+        bool allowExtraTime,
+        bool adminOnlyMintPeriodIfSellout
     ) internal {
         // load project config
         RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
@@ -162,6 +193,24 @@ library RAMLib {
             auctionTimestampEnd > auctionTimestampStart,
             "Only end time gt start time"
         );
+        // enforce contract-level constraints set by contract admin
+        RAMContractConfig storage RAMContractConfig_ = getRAMContractConfig({
+            coreContract: coreContract
+        });
+        if (RAMContractConfig_.imposeConstraints) {
+            if (RAMContractConfig_.requireAdminOnlyMintPeriod) {
+                require(
+                    adminOnlyMintPeriodIfSellout,
+                    "Only admin-only mint period"
+                );
+            }
+            if (RAMContractConfig_.requireNoAdminOnlyMintPeriod) {
+                require(
+                    !adminOnlyMintPeriodIfSellout,
+                    "Only no admin-only mint period"
+                );
+            }
+        }
 
         // set auction details
         RAMProjectConfig_.numTokensInAuction = numTokensInAuction;
@@ -169,6 +218,8 @@ library RAMLib {
         RAMProjectConfig_.timestampEnd = auctionTimestampEnd;
         RAMProjectConfig_.basePrice = basePrice;
         RAMProjectConfig_.allowExtraTime = allowExtraTime;
+        RAMProjectConfig_
+            .adminOnlyMintPeriodIfSellout = adminOnlyMintPeriodIfSellout;
 
         // TODO emit state change event
     }
@@ -218,7 +269,6 @@ library RAMLib {
                     "Insufficient bid value"
                 );
             }
-            // TODO? emit event for removed Bid
 
             // apply auction extension time if needed
             bool timeExtensionNeeded = RAMProjectConfig_.allowExtraTime &&
@@ -272,6 +322,7 @@ library RAMLib {
                 RAMProjectConfig_.maxUnmintedBidSlotIndex = slotIndex;
             }
         }
+        // TODO emit state change event
     }
 
     function removeMinBid(
@@ -320,6 +371,7 @@ library RAMLib {
             amount: removedBidAmount,
             minterRefundGasLimit: minterRefundGasLimit
         });
+        // TODO emit state change event
     }
 
     /**
@@ -428,10 +480,14 @@ library RAMLib {
             // State E: Post-Auction, all bids handled
             return ProjectMinterStates.E;
         }
-        // @dev all bids not handled due to previous State E return
-        // helper value(s) for readability
-        bool adminOnlyMintPeriod = block.timestamp <
-            timestampEnd + ADMIN_ONLY_MINT_TIME_SECONDS;
+        // @dev all bids are not handled due to previous State E return
+        bool adminOnlyMintPeriod = RAMProjectConfig_
+        // @dev if project is configured to have an admin-only mint period
+            .adminOnlyMintPeriodIfSellout &&
+            // @dev sellout if numBids == numTokensInAuction
+            RAMProjectConfig_.numBids == RAMProjectConfig_.numTokensInAuction &&
+            // @dev still in admin-only mint period if current time < end time + admin-only mint period
+            block.timestamp < timestampEnd + ADMIN_ONLY_MINT_TIME_SECONDS;
         if (adminOnlyMintPeriod) {
             // State C: Post-Auction, not all bids handled, admin-only mint period
             return ProjectMinterStates.C;
@@ -512,6 +568,16 @@ library RAMLib {
         address coreContract
     ) internal view returns (RAMProjectConfig storage) {
         return s().RAMProjectConfigs[coreContract][projectId];
+    }
+
+    /**
+     * Loads the RAMContractConfig for a given core contract.
+     * @param coreContract Core contract address to get config for
+     */
+    function getRAMContractConfig(
+        address coreContract
+    ) internal view returns (RAMContractConfig storage) {
+        return s().RAMContractConfigs[coreContract];
     }
 
     /**
