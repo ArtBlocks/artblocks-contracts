@@ -196,8 +196,28 @@ library RAMLib {
                 coreContract: coreContract,
                 minterRefundGasLimit: minterRefundGasLimit
             });
-            // require new bid is greater than removed minimum bid
-            require(slotIndex > removedSlotIndex, "Insufficient bid value");
+            // require new bid is sufficiently greater than removed minimum bid
+            uint256 newBidValue = slotIndexToBidValue({
+                basePrice: RAMProjectConfig_.basePrice,
+                slotIndex: slotIndex
+            });
+            uint256 removedBidValue = slotIndexToBidValue({
+                basePrice: RAMProjectConfig_.basePrice,
+                slotIndex: removedSlotIndex
+            });
+            if (newBidValue > 0.5 ether) {
+                // require new bid is at least 2.5% greater than removed minimum bid
+                require(
+                    newBidValue > (removedBidValue * 10250) / 10000,
+                    "Insufficient bid value"
+                );
+            } else {
+                // require new bid is at least 5% greater than removed minimum bid
+                require(
+                    newBidValue > (removedBidValue * 10500) / 10000,
+                    "Insufficient bid value"
+                );
+            }
             // TODO? emit event for removed Bid
 
             // apply auction extension time if needed
