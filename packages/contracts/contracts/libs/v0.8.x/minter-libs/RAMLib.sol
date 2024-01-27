@@ -105,6 +105,49 @@ library RAMLib {
     );
 
     /**
+     * @notice Auction timestamp end updated. Occurs when auction is extended
+     * due to new bids near the end of an auction, when the auction is
+     * configured to allow extra time.
+     * @param projectId Project Id to update
+     * @param coreContract Core contract address to update
+     * @param timestampEnd Auction end timestamp
+     */
+    event AuctionTimestampEndUpdated(
+        uint256 projectId,
+        address coreContract,
+        uint256 timestampEnd
+    );
+
+    /**
+     * @notice Bid removed from auction
+     * @param projectId Project Id to update
+     * @param coreContract Core contract address to update
+     * @param slotIndex Slot index of bid that was removed
+     * @param bidIndexInSlot Bid index in slot of bid that was removed
+     */
+    event BidRemoved(
+        uint256 projectId,
+        address coreContract,
+        uint256 slotIndex,
+        uint256 bidIndexInSlot
+    );
+
+    /**
+     * @notice Bid inserted in auction
+     * @param projectId Project Id to update
+     * @param coreContract Core contract address to update
+     * @param slotIndex Slot index of bid that was added
+     * @param bidIndexInSlot Bid index in slot of bid that was added
+     */
+    event BidInserted(
+        uint256 projectId,
+        address coreContract,
+        uint256 slotIndex,
+        uint256 bidIndexInSlot,
+        address bidder
+    );
+
+    /**
      * @notice Number of slots used by this RAM minter
      * @param numSlots Number of slots used by this RAM minter
      */
@@ -145,11 +188,11 @@ library RAMLib {
         uint256 slotsBitmapA;
         uint256 slotsBitmapB;
         // minimum bitmap index with an active bid
-        // @dev max uint16 >> max possible value of 511
+        // @dev max uint16 >> max possible value of 511 + 1
         uint16 minBidSlotIndex;
         // maximum bitmap index with an unminted bid
         // TODO - this could be populated when finishing auction via function input, bitshifting to verify...
-        // @dev max uint16 >> max possible value of 511
+        // @dev max uint16 >> max possible value of 511 + 1
         uint16 maxUnmintedBidSlotIndex;
         // TODO - determine if this should be updated on insertion/removal, or initialized when finishing auction
         // @dev max uint24 is 16,777,215 > 1_000_000 max project size
@@ -319,12 +362,26 @@ library RAMLib {
         });
     }
 
-    // TODO must limit to only active auctions, etc.
+    /**
+     * @notice Place a new bid for a project.
+     * Assumes check that minter is set for project on minter filter has
+     * already been performed.
+     * Reverts if project is not in state B (Live Auction).
+     * Reverts if bid value is not equal to the slot value.
+     * @param projectId Project Id to place bid for
+     * @param coreContract Core contract address to place bid for
+     * @param slotIndex Slot index to place bid at
+     * @param bidder Bidder address
+     * @param bidValue Bid value, in Wei (verified to align with slotIndex)
+     * @param minterRefundGasLimit Gas limit to use when refunding the previous
+     * highest bidder, prior to using fallback force-send to refund
+     */
     function placeBid(
         uint256 projectId,
         address coreContract,
         uint8 slotIndex,
         address bidder,
+        uint256 bidValue,
         uint256 minterRefundGasLimit
     ) internal {
         // load project config
@@ -332,6 +389,24 @@ library RAMLib {
             projectId: projectId,
             coreContract: coreContract
         });
+        // CHECKS
+        // require project minter state B (Live Auction)
+        require(
+            getProjectMinterState(projectId, coreContract) ==
+                ProjectMinterStates.B,
+            "Only state B"
+        );
+        // require bid value must equal slot value
+        uint256 newBidRequiredValue = slotIndexToBidValue({
+            basePrice: RAMProjectConfig_.basePrice,
+            slotIndex: slotIndex
+        });
+        require(
+            bidValue == newBidRequiredValue,
+            "msg.value must equal slot value"
+        );
+
+        // EFFECTS
         // if first bid, refresh max invocations in case artist has reduced
         // the core contract's max invocations after the auction was configured
         // @dev this helps prevent E1 error state
@@ -347,35 +422,36 @@ library RAMLib {
                 coreContract: coreContract
             });
         }
+        // require at least one token allowed in auction
+        // @dev this case would revert in removeMinBid, but prefer clean error
+        // message here
+        uint256 numTokensInAuction = RAMProjectConfig_.numTokensInAuction;
+        require(numTokensInAuction > 0, "No bids in auction");
         // determine if have reached max bids
-        bool reachedMaxBids = RAMProjectConfig_.numBids ==
-            RAMProjectConfig_.numTokensInAuction;
+        bool reachedMaxBids = RAMProjectConfig_.numBids == numTokensInAuction;
         if (reachedMaxBids) {
             // remove + refund the minimum Bid
             uint16 removedSlotIndex = removeMinBid({
+                RAMProjectConfig_: RAMProjectConfig_,
                 projectId: projectId,
                 coreContract: coreContract,
                 minterRefundGasLimit: minterRefundGasLimit
             });
             // require new bid is sufficiently greater than removed minimum bid
-            uint256 newBidValue = slotIndexToBidValue({
-                basePrice: RAMProjectConfig_.basePrice,
-                slotIndex: slotIndex
-            });
             uint256 removedBidValue = slotIndexToBidValue({
                 basePrice: RAMProjectConfig_.basePrice,
                 slotIndex: removedSlotIndex
             });
-            if (newBidValue > 0.5 ether) {
+            if (bidValue > 0.5 ether) {
                 // require new bid is at least 2.5% greater than removed minimum bid
                 require(
-                    newBidValue > (removedBidValue * 10250) / 10000,
+                    bidValue > (removedBidValue * 10250) / 10000,
                     "Insufficient bid value"
                 );
             } else {
                 // require new bid is at least 5% greater than removed minimum bid
                 require(
-                    newBidValue > (removedBidValue * 10500) / 10000,
+                    bidValue > (removedBidValue * 10500) / 10000,
                     "Insufficient bid value"
                 );
             }
@@ -395,10 +471,17 @@ library RAMLib {
                     )
                 );
             }
+            emit AuctionTimestampEndUpdated({
+                projectId: projectId,
+                coreContract: coreContract,
+                timestampEnd: RAMProjectConfig_.timestampEnd
+            });
         }
         // insert the new Bid
         insertBid({
             RAMProjectConfig_: RAMProjectConfig_,
+            projectId: projectId,
+            coreContract: coreContract,
             slotIndex: slotIndex,
             bidder: bidder
         });
@@ -407,6 +490,8 @@ library RAMLib {
     // TODO: add assumptions/protections about max bids, active auction, etc.
     function insertBid(
         RAMProjectConfig storage RAMProjectConfig_,
+        uint256 projectId,
+        address coreContract,
         uint16 slotIndex,
         address bidder
     ) private {
@@ -417,7 +502,9 @@ library RAMLib {
         RAMProjectConfig_.numBids++;
         // update metadata if first bid for this slot
         // @dev assumes minting has not yet started
-        if (bids.length == 1) {
+        // @dev load into memory for gas efficiency
+        uint256 newBidsLength = bids.length;
+        if (newBidsLength == 1) {
             // set the slot in the bitmap
             setBitmapSlot({
                 RAMProjectConfig_: RAMProjectConfig_,
@@ -432,25 +519,37 @@ library RAMLib {
                 RAMProjectConfig_.maxUnmintedBidSlotIndex = slotIndex;
             }
         }
-        // TODO emit state change event
+
+        // emit state change event
+        emit BidInserted({
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndex: slotIndex,
+            bidIndexInSlot: newBidsLength - 1, // index of new bid in slot
+            bidder: bidder
+        });
     }
 
+    /**
+     * @notice Remove minimum bid from the project's RAMProjectConfig.
+     * Reverts if no bids exist in slot RAMProjectConfig_.minBidSlotIndex.
+     * @param RAMProjectConfig_ RAM project config to remove bid from
+     * @param minterRefundGasLimit Gas limit to use when refunding the previous
+     * highest bidder, prior to using fallback force-send to refund
+     */
     function removeMinBid(
+        RAMProjectConfig storage RAMProjectConfig_,
         uint256 projectId,
         address coreContract,
         uint256 minterRefundGasLimit
     ) private returns (uint16 removedSlotIndex) {
-        // get project config
-        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
-            projectId: projectId,
-            coreContract: coreContract
-        });
         // get the minimum bid
         removedSlotIndex = RAMProjectConfig_.minBidSlotIndex;
         // get the bids array for that slot
         Bid[] storage bids = RAMProjectConfig_.bidsBySlot[removedSlotIndex];
         // record the previous min bidder
-        address removedBidder = bids[bids.length - 1].bidder;
+        uint256 removedBidIndexInSlot = bids.length - 1;
+        address removedBidder = bids[removedBidIndexInSlot].bidder;
         // pop the last active bid in the array
         // @dev implicitly deletes the last bid in the array
         // @dev appropriate because earlier bids (lower index) have priority;
@@ -465,7 +564,10 @@ library RAMLib {
                 RAMProjectConfig_: RAMProjectConfig_,
                 slotIndex: removedSlotIndex
             });
-            // @dev intentionally reverts due to overflow if removing from the last slot
+            // @dev reverts if removedSlotIndex was the maximum slot 511,
+            // preventing bids from being removed entirely from the last slot,
+            // which is acceptable and non-impacting for this minter
+            // @dev sets minBidSlotIndex to 512 if no more active bids
             RAMProjectConfig_.minBidSlotIndex = getMinSlotWithBid({
                 RAMProjectConfig_: RAMProjectConfig_,
                 startSlotIndex: removedSlotIndex + 1
@@ -481,7 +583,14 @@ library RAMLib {
             amount: removedBidAmount,
             minterRefundGasLimit: minterRefundGasLimit
         });
-        // TODO emit state change event
+
+        // emit state change event
+        emit BidRemoved({
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndex: removedSlotIndex,
+            bidIndexInSlot: removedBidIndexInSlot
+        });
     }
 
     /**
@@ -762,14 +871,26 @@ library RAMLib {
         }
     }
 
+    /**
+     * @notice Helper function to get minimum slot index with an active bid
+     * Reverts if startSlotIndex > 511, since this library only supports 512
+     * slots.
+     * @param RAMProjectConfig_ RAM project config to query
+     * @param startSlotIndex Slot index to start search at
+     * @return minSlotWithBid Minimum slot index with an active bid, or 512 if
+     * no bids exist
+     */
     function getMinSlotWithBid(
         RAMProjectConfig storage RAMProjectConfig_,
         uint16 startSlotIndex
     ) private view returns (uint16 minSlotWithBid) {
+        // revert if startSlotIndex > 511, since this is an invalid input
+        if (startSlotIndex > 511) {
+            revert("Only start slot index lt 512");
+        }
         // start at startSlotIndex
         if (startSlotIndex > 255) {
-            // @dev <512 assumption results in no overflow when casting to
-            // uint8, but NOT guaranteed by any means in this function
+            // @dev <512 check results in no overflow when casting to uint8
             minSlotWithBid = uint16(
                 256 +
                     RAMProjectConfig_.slotsBitmapB.minBitSet(
@@ -785,16 +906,14 @@ library RAMLib {
             );
             // if no bids in first bitmap, check second bitmap
             // @dev behavior of library's minBitSet is to return 256 if no bits
-            // are set
+            // were set
             if (minSlotWithBid == 256) {
-                // @dev <512 assumption results in no overflow when casting to
-                // uint8, but NOT guaranteed by any means in this function
+                // @dev <512 check results in no overflow when casting to uint8
                 minSlotWithBid = uint16(
                     256 +
                         RAMProjectConfig_.slotsBitmapB.minBitSet(
-                            // @dev casting to uint8 intentional overflow instead of
-                            // subtracting 256 from slotIndex
-                            uint8(startSlotIndex)
+                            // start at beginning of second bitmap
+                            uint8(0)
                         )
                 );
             }

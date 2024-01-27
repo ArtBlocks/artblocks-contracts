@@ -619,16 +619,17 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * @notice Enters a bid for token `tokenId`.
-     * If an auction for token `tokenId` does not exist, an auction will be
-     * initialized as long as any existing auction for the project has been
-     * settled.
+     * @notice Places a bid for project `projectId` on core contract
+     * `coreContract`.
+     * Reverts if minter is not the active minter for projectId on minter
+     * filter.
+     * Reverts if project is not in a Live Auction.
+     * Reverts if msg.value is not equal to slot value.
      * In order to successfully place the bid, the token bid must be:
-     * - greater than or equal to a project's minimum bid price if a new
-     *   auction is initialized
-     * - sufficiently greater than the current highest bid, according to the
-     *   minter's bid increment percentage `minterMinBidIncrementPercentage`,
-     *   if an auction for the token already exists
+     * - greater than or equal to a project's minimum bid price if maximum
+     *   number of bids has not been reached
+     * - sufficiently greater than the current minimum bid if maximum number
+     *   of bids has been reached
      * If the bid is unsuccessful, the transaction will revert.
      * If the bid is successful, but outbid by another bid before the auction
      * ends, the funds will be noncustodially returned to the bidder's address,
@@ -640,14 +641,6 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * outbid and their funds are returned to the original `msg.sender` address
      * via SELFDESTRUCT (SENDALL).
      * ------------------------------------------------------------------------
-     * Note that the use of `tokenId` is to prevent the possibility of
-     * transactions that are stuck in the pending pool for long periods of time
-     * from unintentionally bidding on auctions for future tokens.
-     * If a new auction is initialized during this call, the project's next
-     * token will be attempted to be minted to this minter contract, preparing
-     * it for the next auction. If the project's next token cannot be minted
-     * due to e.g. reaching the maximum invocations on the core contract or
-     * minter, the project's next token will not be minted.
      * @param projectId projectId being bid on.
      * @param coreContract Core contract address for the given project.
      * @dev nonReentrant modifier is used to prevent reentrancy attacks, e.g.
@@ -660,25 +653,24 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         uint8 slotIndex
     ) public payable nonReentrant {
         // CHECKS
-        // TODO many more checks required
-        // @dev temporarily adding different check for gas testing purposes
-        uint256 targetBidValue = RAMLib.slotIndexToBidValue(
-            RAMLib
-                .getRAMProjectConfig({
-                    projectId: projectId,
-                    coreContract: coreContract
-                })
-                .basePrice,
-            slotIndex
+        // minter must be set for project on MinterFilter
+        require(
+            _minterFilter.getMinterForProject({
+                projectId: projectId,
+                coreContract: coreContract
+            }) == address(this),
+            "Minter not active"
         );
-        require(msg.value == targetBidValue, "msg.value must equal slot value");
-        // get slot index for bid
+        // @dev bid value is checked against slot value in placeBid
+        // @dev project state is checked in placeBid
 
+        // EFFECTS
         RAMLib.placeBid({
             projectId: projectId,
             coreContract: coreContract,
             slotIndex: slotIndex,
             bidder: msg.sender,
+            bidValue: msg.value,
             minterRefundGasLimit: _minterRefundGasLimit
         });
     }
