@@ -148,6 +148,21 @@ library RAMLib {
     );
 
     /**
+     * @notice Bid was settled, and any payment above the lowest winning bid,
+     * or base price if not a sellout, was refunded to the bidder.
+     * @param projectId Project Id to update
+     * @param coreContract Core contract address to update
+     * @param slotIndex Slot index of bid that was settled
+     * @param bidIndexInSlot Bid index in slot of bid that was settled
+     */
+    event BidSettled(
+        uint256 projectId,
+        address coreContract,
+        uint256 slotIndex,
+        uint256 bidIndexInSlot
+    );
+
+    /**
      * @notice Number of slots used by this RAM minter
      * @param numSlots Number of slots used by this RAM minter
      */
@@ -471,9 +486,21 @@ library RAMLib {
                 projectMinterState == ProjectMinterStates.D,
             "Only state C or D"
         );
+        // get project price, depending on if it was a sellout
+        bool wasSellout = RAMProjectConfig_.numBids ==
+            RAMProjectConfig_.numTokensInAuction;
+        uint256 projectPrice = wasSellout
+            ? slotIndexToBidValue({
+                basePrice: RAMProjectConfig_.basePrice,
+                slotIndex: RAMProjectConfig_.minBidSlotIndex
+            })
+            : RAMProjectConfig_.basePrice;
         // settle the bid
         settleBid({
             RAMProjectConfig_: RAMProjectConfig_,
+            projectId: projectId,
+            coreContract: coreContract,
+            projectPrice: projectPrice,
             slotIndex: slotIndex,
             bidIndexInSlot: bidIndexInSlot,
             bidder: bidder,
@@ -517,16 +544,29 @@ library RAMLib {
             "Input lengths must match"
         );
         // (project-level checks)
-        // require project minter state E (Post-Auction, all bids handled)
-        ProjectMinterStates projectMinterState = getProjectMinterState({
-            projectId: projectId,
-            coreContract: coreContract
-        });
-        require(
-            projectMinterState == ProjectMinterStates.C ||
-                projectMinterState == ProjectMinterStates.D,
-            "Only state C or D"
-        );
+        // @dev block scope to avoid stack too deep error
+        {
+            // require project minter state E (Post-Auction, all bids handled)
+            ProjectMinterStates projectMinterState = getProjectMinterState({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+            require(
+                projectMinterState == ProjectMinterStates.C ||
+                    projectMinterState == ProjectMinterStates.D,
+                "Only state C or D"
+            );
+        }
+
+        // get project price, depending on if it was a sellout
+        bool wasSellout = RAMProjectConfig_.numBids ==
+            RAMProjectConfig_.numTokensInAuction;
+        uint256 projectPrice = wasSellout
+            ? slotIndexToBidValue({
+                basePrice: RAMProjectConfig_.basePrice,
+                slotIndex: RAMProjectConfig_.minBidSlotIndex
+            })
+            : RAMProjectConfig_.basePrice;
         // settle each input bid
         // @dev already verified that input lengths match
         uint256 inputBidsLength = slotIndices.length;
@@ -535,6 +575,9 @@ library RAMLib {
             // settle the bid
             settleBid({
                 RAMProjectConfig_: RAMProjectConfig_,
+                projectId: projectId,
+                coreContract: coreContract,
+                projectPrice: projectPrice,
                 slotIndex: slotIndices[i],
                 bidIndexInSlot: bidIndicesInSlot[i],
                 bidder: bidder,
@@ -1001,6 +1044,9 @@ library RAMLib {
      * Reverts if bidder is not the bid's bidder.
      * Reverts if bid has already been settled.
      * @param RAMProjectConfig_ RAMProjectConfig to update
+     * @param projectId Project ID of bid to settle
+     * @param coreContract Core contract address for the given project.
+     * @param projectPrice Price of token on the project
      * @param slotIndex Slot index of bid to settle
      * @param bidIndexInSlot Bid index in slot of bid to settle
      * @param bidder Bidder address of bid to settle
@@ -1008,6 +1054,9 @@ library RAMLib {
      */
     function settleBid(
         RAMProjectConfig storage RAMProjectConfig_,
+        uint256 projectId,
+        address coreContract,
+        uint256 projectPrice,
         uint16 slotIndex,
         uint256 bidIndexInSlot,
         address bidder,
@@ -1032,11 +1081,7 @@ library RAMLib {
             basePrice: RAMProjectConfig_.basePrice,
             slotIndex: slotIndex
         });
-        uint256 amountDue = bidAmount -
-            slotIndexToBidValue({
-                basePrice: RAMProjectConfig_.basePrice,
-                slotIndex: RAMProjectConfig_.minBidSlotIndex
-            });
+        uint256 amountDue = bidAmount - projectPrice;
         if (amountDue > 0) {
             SplitFundsLib.forceSafeTransferETH({
                 to: bidder,
@@ -1044,6 +1089,14 @@ library RAMLib {
                 minterRefundGasLimit: minterRefundGasLimit
             });
         }
+
+        // emit state change event
+        emit BidSettled({
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndex: slotIndex,
+            bidIndexInSlot: bidIndexInSlot
+        });
     }
 
     /**
