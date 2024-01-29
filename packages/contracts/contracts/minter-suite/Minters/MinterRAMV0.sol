@@ -470,6 +470,74 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         });
     }
 
+    /**
+     * @notice Collects settlement for project `projectId` on core contract
+     * `coreContract` for all bid in `slotIndex` at `bidIndexInSlot`.
+     * Reverts if project is not in a post-auction state.
+     * Reverts if msg.sender is not the bid's bidder.
+     * Reverts if msg.sender is not the bidder.
+     * Reverts if bid has already been settled.
+     * Reverts if invalid bid.
+     * @param projectId Project ID of bid to collect settlement for
+     * @param coreContract Core contract address for the given project.
+     * @param slotIndex Slot index of bid to collect settlement for
+     * @param bidIndexInSlot Bid index in slot of bid to collect settlement for
+     */
+    function collectSettlement(
+        uint256 projectId,
+        address coreContract,
+        uint16 slotIndex,
+        uint24 bidIndexInSlot
+    ) external nonReentrant {
+        // CHECKS
+        // @dev project state is checked in collectSettlement
+        // EFFECTS
+        RAMLib.collectSettlement({
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndex: slotIndex,
+            bidIndexInSlot: bidIndexInSlot,
+            bidder: msg.sender,
+            minterRefundGasLimit: _minterRefundGasLimit
+        });
+    }
+
+    /**
+     * @notice Collects settlement for project `projectId` on core contract
+     * `coreContract` for all bids in `slotIndices` at `bidIndicesInSlot`,
+     * which must be aligned by index.
+     * Reverts if `slotIndices` and `bid` indices are not the same length.
+     * Reverts if msg.sender is not the bidder for all bids.
+     * Reverts if project is not in a post-auction state.
+     * Reverts if one or more bids has already been settled.
+     * Reverts if invalid bid is found.
+     * @param projectId Project ID of bid to collect settlement for
+     * @param coreContract Core contract address for the given project.
+     * @param slotIndices Slot indices of bids to collect settlements for
+     * @param bidIndicesInSlot Bid indices in slot of bid to collect
+     * settlements for
+     */
+    function collectSettlements(
+        uint256 projectId,
+        address coreContract,
+        uint16[] calldata slotIndices,
+        uint24[] calldata bidIndicesInSlot
+    ) external nonReentrant {
+        // CHECKS
+        // @dev project state is checked in collectSettlements
+        // @dev length of slotIndices and bidIndicesInSlot must be equal is
+        // checked in collectSettlements
+        // EFFECTS
+        RAMLib.collectSettlements({
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndices: slotIndices,
+            bidIndicesInSlot: bidIndicesInSlot,
+            bidder: msg.sender,
+            minterRefundGasLimit: _minterRefundGasLimit
+        });
+    }
+
     // /**
     //  * @notice View function to return the current minter-level configuration
     //  * details.

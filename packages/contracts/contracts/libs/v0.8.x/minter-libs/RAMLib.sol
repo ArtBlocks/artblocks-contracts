@@ -434,6 +434,120 @@ library RAMLib {
     }
 
     /**
+     * @notice Collects settlement for project `projectId` on core contract
+     * `coreContract` for all bid in `slotIndex` at `bidIndexInSlot`.
+     * Reverts if project is not in a post-auction state.
+     * Reverts if bidder is not the bid's bidder.
+     * Reverts if bid has already been settled.
+     * Reverts if invalid bid.
+     * @param projectId Project ID of bid to collect settlement for
+     * @param coreContract Core contract address for the given project.
+     * @param slotIndex Slot index of bid to collect settlement for
+     * @param bidIndexInSlot Bid index in slot of bid to collect settlement for
+     * @param bidder Bidder address of bid to collect settlement for
+     * @param minterRefundGasLimit Gas limit to use when refunding the bidder.
+     */
+    function collectSettlement(
+        uint256 projectId,
+        address coreContract,
+        uint16 slotIndex,
+        uint24 bidIndexInSlot,
+        address bidder,
+        uint256 minterRefundGasLimit
+    ) internal {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // CHECKS (project-level checks)
+        // require project minter state E (Post-Auction, all bids handled)
+        ProjectMinterStates projectMinterState = getProjectMinterState({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        require(
+            projectMinterState == ProjectMinterStates.C ||
+                projectMinterState == ProjectMinterStates.D,
+            "Only state C or D"
+        );
+        // settle the bid
+        settleBid({
+            RAMProjectConfig_: RAMProjectConfig_,
+            slotIndex: slotIndex,
+            bidIndexInSlot: bidIndexInSlot,
+            bidder: bidder,
+            minterRefundGasLimit: minterRefundGasLimit
+        });
+    }
+
+    /**
+     * @notice Collects settlement for project `projectId` on core contract
+     * `coreContract` for all bids in `slotIndices` at `bidIndicesInSlot`,
+     * which must be aligned by index.
+     * Reverts if project is not in a post-auction state.
+     * Reverts if bidder is not the bidder for all bids.
+     * Reverts if one or more bids has already been settled.
+     * Reverts if invalid bid is found.
+     * @param projectId Project ID of bid to collect settlement for
+     * @param coreContract Core contract address for the given project.
+     * @param slotIndices Slot indices of bids to collect settlements for
+     * @param bidIndicesInSlot Bid indices in slot of bid to collect
+     * settlements for
+     * @param bidder Bidder address of bid to collect settlements for
+     * @param minterRefundGasLimit Gas limit to use when refunding the bidder.
+     */
+    function collectSettlements(
+        uint256 projectId,
+        address coreContract,
+        uint16[] calldata slotIndices,
+        uint24[] calldata bidIndicesInSlot,
+        address bidder,
+        uint256 minterRefundGasLimit
+    ) internal {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // CHECKS
+        // input validation
+        require(
+            slotIndices.length == bidIndicesInSlot.length,
+            "Input lengths must match"
+        );
+        // (project-level checks)
+        // require project minter state E (Post-Auction, all bids handled)
+        ProjectMinterStates projectMinterState = getProjectMinterState({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        require(
+            projectMinterState == ProjectMinterStates.C ||
+                projectMinterState == ProjectMinterStates.D,
+            "Only state C or D"
+        );
+        // settle each input bid
+        // @dev already verified that input lengths match
+        uint256 inputBidsLength = slotIndices.length;
+        // @dev use unchecked loop incrementing for gas efficiency
+        for (uint256 i; i < inputBidsLength; ) {
+            // settle the bid
+            settleBid({
+                RAMProjectConfig_: RAMProjectConfig_,
+                slotIndex: slotIndices[i],
+                bidIndexInSlot: bidIndicesInSlot[i],
+                bidder: bidder,
+                minterRefundGasLimit: minterRefundGasLimit
+            });
+            // increment loop counter
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /**
      * @notice Place a new bid for a project.
      * Assumes check that minter is set for project on minter filter has
      * already been performed.
@@ -879,6 +993,56 @@ library RAMLib {
         bytes32 position = RAM_LIB_STORAGE_POSITION;
         assembly ("memory-safe") {
             storageStruct.slot := position
+        }
+    }
+
+    /**
+     * @notice Helper function to handle settling a bid.
+     * Reverts if bidder is not the bid's bidder.
+     * Reverts if bid has already been settled.
+     * @param RAMProjectConfig_ RAMProjectConfig to update
+     * @param slotIndex Slot index of bid to settle
+     * @param bidIndexInSlot Bid index in slot of bid to settle
+     * @param bidder Bidder address of bid to settle
+     * @param minterRefundGasLimit Gas limit to use when refunding the bidder.
+     */
+    function settleBid(
+        RAMProjectConfig storage RAMProjectConfig_,
+        uint16 slotIndex,
+        uint256 bidIndexInSlot,
+        address bidder,
+        uint256 minterRefundGasLimit
+    ) private {
+        // CHECKS
+        Bid storage bid = RAMProjectConfig_.bidsBySlot[slotIndex][
+            bidIndexInSlot
+        ];
+        // require bidder is the bid's bidder
+        require(bid.bidder == bidder, "Only bidder");
+        // require bid is not yet settled
+        require(bid.isSettled, "Only un-settled bid");
+
+        // EFFECTS
+        // update bid state
+        bid.isSettled = true;
+
+        // INTERACTIONS
+        // transfer amount due to bidder
+        uint256 bidAmount = slotIndexToBidValue({
+            basePrice: RAMProjectConfig_.basePrice,
+            slotIndex: slotIndex
+        });
+        uint256 amountDue = bidAmount -
+            slotIndexToBidValue({
+                basePrice: RAMProjectConfig_.basePrice,
+                slotIndex: RAMProjectConfig_.minBidSlotIndex
+            });
+        if (amountDue > 0) {
+            SplitFundsLib.forceSafeTransferETH({
+                to: bidder,
+                amount: amountDue,
+                minterRefundGasLimit: minterRefundGasLimit
+            });
         }
     }
 
