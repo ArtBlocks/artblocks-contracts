@@ -411,8 +411,63 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             allowExtraTime: allowExtraTime,
             adminOnlyMintPeriodIfSellout: adminOnlyMintPeriodIfSellout
         });
+    }
 
-        // TODO ...
+    /**
+     * @notice Places a bid for project `projectId` on core contract
+     * `coreContract`.
+     * Reverts if minter is not the active minter for projectId on minter
+     * filter.
+     * Reverts if project is not in a Live Auction.
+     * Reverts if msg.value is not equal to slot value.
+     * In order to successfully place the bid, the token bid must be:
+     * - greater than or equal to a project's minimum bid price if maximum
+     *   number of bids has not been reached
+     * - sufficiently greater than the current minimum bid if maximum number
+     *   of bids has been reached
+     * If the bid is unsuccessful, the transaction will revert.
+     * If the bid is successful, but outbid by another bid before the auction
+     * ends, the funds will be noncustodially returned to the bidder's address,
+     * `msg.sender`. A fallback method of sending funds back to the bidder via
+     * SELFDESTRUCT (SENDALL) prevents denial of service attacks, even if the
+     * original bidder reverts or runs out of gas during receive or fallback.
+     * ------------------------------------------------------------------------
+     * WARNING: bidders must be prepared to handle the case where their bid is
+     * outbid and their funds are returned to the original `msg.sender` address
+     * via SELFDESTRUCT (SENDALL).
+     * ------------------------------------------------------------------------
+     * @param projectId projectId being bid on.
+     * @param coreContract Core contract address for the given project.
+     * @dev nonReentrant modifier is used to prevent reentrancy attacks, e.g.
+     * an an auto-bidder that would be able to atomically outbid a user's
+     * new bid via a reentrant call to createBid.
+     */
+    function createBid(
+        uint256 projectId,
+        address coreContract,
+        uint8 slotIndex
+    ) external payable nonReentrant {
+        // CHECKS
+        // minter must be set for project on MinterFilter
+        require(
+            _minterFilter.getMinterForProject({
+                projectId: projectId,
+                coreContract: coreContract
+            }) == address(this),
+            "Minter not active"
+        );
+        // @dev bid value is checked against slot value in placeBid
+        // @dev project state is checked in placeBid
+
+        // EFFECTS
+        RAMLib.placeBid({
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndex: slotIndex,
+            bidder: msg.sender,
+            bidValue: msg.value,
+            minterRefundGasLimit: _minterRefundGasLimit
+        });
     }
 
     // /**
@@ -648,63 +703,6 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         MaxInvocationsLib.syncProjectMaxInvocationsToCore({
             projectId: projectId,
             coreContract: coreContract
-        });
-    }
-
-    /**
-     * @notice Places a bid for project `projectId` on core contract
-     * `coreContract`.
-     * Reverts if minter is not the active minter for projectId on minter
-     * filter.
-     * Reverts if project is not in a Live Auction.
-     * Reverts if msg.value is not equal to slot value.
-     * In order to successfully place the bid, the token bid must be:
-     * - greater than or equal to a project's minimum bid price if maximum
-     *   number of bids has not been reached
-     * - sufficiently greater than the current minimum bid if maximum number
-     *   of bids has been reached
-     * If the bid is unsuccessful, the transaction will revert.
-     * If the bid is successful, but outbid by another bid before the auction
-     * ends, the funds will be noncustodially returned to the bidder's address,
-     * `msg.sender`. A fallback method of sending funds back to the bidder via
-     * SELFDESTRUCT (SENDALL) prevents denial of service attacks, even if the
-     * original bidder reverts or runs out of gas during receive or fallback.
-     * ------------------------------------------------------------------------
-     * WARNING: bidders must be prepared to handle the case where their bid is
-     * outbid and their funds are returned to the original `msg.sender` address
-     * via SELFDESTRUCT (SENDALL).
-     * ------------------------------------------------------------------------
-     * @param projectId projectId being bid on.
-     * @param coreContract Core contract address for the given project.
-     * @dev nonReentrant modifier is used to prevent reentrancy attacks, e.g.
-     * an an auto-bidder that would be able to atomically outbid a user's
-     * new bid via a reentrant call to createBid.
-     */
-    function createBid(
-        uint256 projectId,
-        address coreContract,
-        uint8 slotIndex
-    ) public payable nonReentrant {
-        // CHECKS
-        // minter must be set for project on MinterFilter
-        require(
-            _minterFilter.getMinterForProject({
-                projectId: projectId,
-                coreContract: coreContract
-            }) == address(this),
-            "Minter not active"
-        );
-        // @dev bid value is checked against slot value in placeBid
-        // @dev project state is checked in placeBid
-
-        // EFFECTS
-        RAMLib.placeBid({
-            projectId: projectId,
-            coreContract: coreContract,
-            slotIndex: slotIndex,
-            bidder: msg.sender,
-            bidValue: msg.value,
-            minterRefundGasLimit: _minterRefundGasLimit
         });
     }
 }
