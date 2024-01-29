@@ -232,6 +232,39 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
+     * @notice Contract-Admin only function to add emergency auction hours to
+     * auction of project `projectId` on core contract `coreContract`.
+     * Protects against unexpected frontend downtime, etc.
+     * Reverts if called by anyone other than a contract admin.
+     * Reverts if project is not in a Live Auction.
+     * Reverts if auction is already in extra time.
+     * Reverts if adding more than the maximum number of emergency hours.
+     * @param projectId Project ID to add emergency auction hours to.
+     * @param coreContract Core contract address for the given project.
+     * @param emergencyHoursToAdd Number of emergency hours to add to the
+     * project's auction.
+     */
+    function adminAddEmergencyAuctionHours(
+        uint256 projectId,
+        address coreContract,
+        uint8 emergencyHoursToAdd
+    ) external {
+        // CHECKS
+        AuthLib.onlyCoreAdminACL({
+            coreContract: coreContract,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.adminAddEmergencyAuctionHours.selector
+        });
+        // EFFECTS
+        RAMLib.adminAddEmergencyAuctionHours({
+            projectId: projectId,
+            coreContract: coreContract,
+            emergencyHoursToAdd: emergencyHoursToAdd
+        });
+    }
+
+    /**
      * @notice Manually sets the local maximum invocations of project `projectId`
      * with the provided `maxInvocations`, checking that `maxInvocations` is less
      * than or equal to the value of project `project_id`'s maximum invocations that is

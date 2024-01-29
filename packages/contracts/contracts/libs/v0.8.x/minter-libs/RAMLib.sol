@@ -165,6 +165,7 @@ library RAMLib {
     // auction extension time constants
     uint256 constant AUCTION_BUFFER_SECONDS = 5 * 60; // 5 minutes
     uint256 constant MAX_AUCTION_EXTRA_SECONDS = 60 * 60; // 1 hour
+    uint256 constant MAX_AUCTION_ADMIN_EMERGENCY_EXTENSION_HOURS = 72; // 24 hours
 
     // 60 sec/min * 60 min/hr * 24 hr
     uint256 constant ADMIN_ONLY_MINT_TIME_SECONDS = 60 * 60 * 72; // 72 hours
@@ -208,6 +209,8 @@ library RAMLib {
         uint40 timestampStart;
         uint40 timestampOriginalEnd;
         uint40 timestampEnd;
+        // @dev max uint8 ~= 256 hours, which is gt max auction extension time of 72 hours
+        uint8 adminEmergencyExtensionHoursApplied;
         bool allowExtraTime;
         bool adminOnlyMintPeriodIfSellout;
         // @dev max uint88 ~= 3e26 Wei = ~300 million ETH, which is well above
@@ -265,6 +268,74 @@ library RAMLib {
             imposeConstraints: imposeConstraints,
             requireAdminOnlyMintPeriod: requireAdminOnlyMintPeriod,
             requireNoAdminOnlyMintPeriod: requireNoAdminOnlyMintPeriod
+        });
+    }
+
+    /**
+     * @notice Function to add emergency auction hours to auction of
+     * project `projectId` on core contract `coreContract`.
+     * Protects against unexpected frontend downtime, etc.
+     * Reverts if called by anyone other than a contract admin.
+     * Reverts if project is not in a Live Auction.
+     * Reverts if auction is already in extra time.
+     * Reverts if adding more than the maximum number of emergency hours.
+     * @param projectId Project ID to add emergency auction hours to.
+     * @param coreContract Core contract address for the given project.
+     * @param emergencyHoursToAdd Number of emergency hours to add to the
+     * project's auction.
+     */
+    function adminAddEmergencyAuctionHours(
+        uint256 projectId,
+        address coreContract,
+        uint8 emergencyHoursToAdd
+    ) internal {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // CHECKS
+        // require auction in state B (Live Auction)
+        require(
+            getProjectMinterState(projectId, coreContract) ==
+                ProjectMinterStates.B,
+            "Only state B"
+        );
+        // require auction has not reached extra time
+        require(
+            RAMProjectConfig_.timestampOriginalEnd ==
+                RAMProjectConfig_.timestampEnd,
+            "Not allowed in extra time"
+        );
+        // require auction is not being extended beyond limit
+        uint256 currentEmergencyHoursApplied = RAMProjectConfig_
+            .adminEmergencyExtensionHoursApplied;
+        require(
+            currentEmergencyHoursApplied + emergencyHoursToAdd <=
+                MAX_AUCTION_ADMIN_EMERGENCY_EXTENSION_HOURS,
+            "Only emergency hours lt max"
+        );
+
+        // EFFECTS
+        // update emergency hours applied
+        // @dev overflow automatically checked in solidity 0.8
+        RAMProjectConfig_.adminEmergencyExtensionHoursApplied = uint8(
+            currentEmergencyHoursApplied + emergencyHoursToAdd
+        );
+        // update auction end time
+        // @dev update both original end timestamp and current end timestamp
+        // because this is not extra time, but rather an emergency extension
+        uint256 newTimestampEnd = RAMProjectConfig_.timestampEnd +
+            emergencyHoursToAdd *
+            1 hours;
+        RAMProjectConfig_.timestampEnd = uint40(newTimestampEnd);
+        RAMProjectConfig_.timestampOriginalEnd = uint40(newTimestampEnd);
+
+        // emit event
+        emit AuctionTimestampEndUpdated({
+            projectId: projectId,
+            coreContract: coreContract,
+            timestampEnd: newTimestampEnd
         });
     }
 
