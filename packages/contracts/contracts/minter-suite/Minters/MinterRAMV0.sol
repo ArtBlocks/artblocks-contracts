@@ -494,7 +494,6 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * Settles bids as tokens are minted, if not already settled.
      * Reverts if project is not in a post-auction state, admin-only mint
      * period (i.e. State C), with tokens available.
-     * to be minted.
      * Reverts if msg.sender is not a contract admin.
      * Reverts if number of tokens to mint is greater than the number of
      * tokens available to be minted.
@@ -519,6 +518,88 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             projectId: projectId,
             coreContract: coreContract,
             numTokensToMint: numTokensToMint,
+            minterFilter: _minterFilter,
+            minterRefundGasLimit: _minterRefundGasLimit
+        });
+    }
+
+    /**
+     * @notice Directly mint tokens to winners of project `projectId` on core
+     * contract `coreContract`.
+     * Does not guarantee an optimal ordering or handling of E1 state like
+     * `adminAutoMintTokensToWinners` does while in State C.
+     * Admin or Artist may mint to any addresses.
+     * Provides protection for Admin and Artist because they may mint tokens
+     * to winners to prevent denial of revenue claiming.
+     * Skips over bids that have already been minted or refunded (front-running
+     * protection if collector were to mint or admin were to refund).
+     * Reverts if project is not in a post-auction state, post-admin-only mint
+     * period (i.e. State D), with tokens available.
+     * Reverts if msg.sender is not a contract admin or artist.
+     * @param projectId Project ID to mint tokens on.
+     * @param coreContract Core contract address for the given project.
+     * @param slotIndices Slot indices of bids to mint tokens for
+     * @param bidIndicesInSlot Bid indices in slot of bid to mint tokens for
+     */
+    function adminArtistDirectMintTokensToWinners(
+        uint256 projectId,
+        address coreContract,
+        uint16[] calldata slotIndices,
+        uint24[] calldata bidIndicesInSlot
+    ) external nonReentrant {
+        // CHECKS
+        AuthLib.onlyCoreAdminACLOrArtist({
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.adminArtistDirectMintTokensToWinners.selector
+        });
+        // EFFECTS/INTERACTIONS
+        RAMLib.directMintTokensToWinners({
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndices: slotIndices,
+            bidIndicesInSlot: bidIndicesInSlot,
+            requireSenderIsBidder: false, // not required when called by admin or artist
+            minterFilter: _minterFilter,
+            minterRefundGasLimit: _minterRefundGasLimit
+        });
+    }
+
+    /**
+     * @notice Directly mint tokens of winner of project `projectId` on core
+     * contract `coreContract`.
+     * Does not guarantee an optimal ordering or handling of E1 state like
+     * `adminAutoMintTokensToWinners` does while in State C.
+     * Only winning collector may call and mint tokens to themselves.
+     * Provides protection for collectors because they may mint their tokens
+     * directly.
+     * Skips over bids that have already been minted or refunded (front-running
+     * protection if admin/artist were to mint/refund).
+     * Reverts if project is not in a post-auction state, post-admin-only mint
+     * period (i.e. State D), with tokens available.
+     * Reverts if msg.sender is not the winning bidder for all specified bids.
+     * @param projectId Project ID to mint tokens on.
+     * @param coreContract Core contract address for the given project.
+     * @param slotIndices Slot indices of bids to mint tokens for
+     * @param bidIndicesInSlot Bid indices in slot of bid to mint tokens for
+     */
+    function winnerDirectMintTokens(
+        uint256 projectId,
+        address coreContract,
+        uint16[] calldata slotIndices,
+        uint24[] calldata bidIndicesInSlot
+    ) external nonReentrant {
+        // CHECKS
+        // @dev all checks performed in library function
+        // EFFECTS/INTERACTIONS
+        RAMLib.directMintTokensToWinners({
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndices: slotIndices,
+            bidIndicesInSlot: bidIndicesInSlot,
+            requireSenderIsBidder: true, // only allow winning bidder to call
             minterFilter: _minterFilter,
             minterRefundGasLimit: _minterRefundGasLimit
         });

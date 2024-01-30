@@ -620,6 +620,152 @@ library RAMLib {
     }
 
     /**
+     * @notice Directly mint tokens to winners of project `projectId` on core
+     * contract `coreContract`.
+     * Does not guarantee an optimal ordering or handling of E1 state like
+     * `adminAutoMintTokensToWinners` does while in State C.
+     * Skips over bids that have already been minted or refunded (front-running
+     * protection)
+     * Reverts if project is not in a post-auction state, post-admin-only mint
+     * period (i.e. State D), with tokens available.
+     * Reverts if msg.sender is not the bidder for all bids if
+     * requireSenderIsBidder is true.
+     * @param projectId Project ID to mint tokens on.
+     * @param coreContract Core contract address for the given project.
+     * @param slotIndices Slot indices of bids to mint tokens for
+     * @param bidIndicesInSlot Bid indices in slot of bid to mint tokens for
+     */
+    function directMintTokensToWinners(
+        uint256 projectId,
+        address coreContract,
+        uint16[] calldata slotIndices,
+        uint24[] calldata bidIndicesInSlot,
+        bool requireSenderIsBidder,
+        IMinterFilterV1 minterFilter,
+        uint256 minterRefundGasLimit
+    ) internal {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+
+        // CHECKS
+        // @dev memoize length for gas efficiency
+        uint256 slotIndicesLength = slotIndices.length;
+        // @dev block scope to limit stack depth
+        {
+            // verify input lengths match
+            require(
+                slotIndicesLength == bidIndicesInSlot.length,
+                "Input lengths must match"
+            );
+            // require project minter state D (Post-Auction, post-admin-only,
+            // not all bids handled)
+            ProjectMinterStates projectMinterState = getProjectMinterState({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+            require(
+                projectMinterState == ProjectMinterStates.D,
+                "Only state D"
+            );
+            // require numTokensToMint does not exceed number of tokens
+            // available to minter, considering the number of bids
+            // @dev must check this here to avoid minting more tokens than max
+            // invocations, which could potentially not revert if minter
+            // max invocations was limiting (+other unexpected conditions)
+            require(
+                slotIndicesLength <=
+                    RAMProjectConfig_.numBids -
+                        (RAMProjectConfig_.numBidsMintedTokens +
+                            RAMProjectConfig_.numBidsErrorRefunded),
+                "tokens to mint gt available qty"
+            );
+        }
+
+        // settlement values
+        // memoize project price, depending on if it was a sellout
+        uint256 projectPrice;
+        // @dev block scope to limit stack depth
+        {
+            bool wasSellout = RAMProjectConfig_.numBids ==
+                RAMProjectConfig_.numTokensInAuction;
+            projectPrice = wasSellout
+                ? slotIndexToBidValue({
+                    basePrice: RAMProjectConfig_.basePrice,
+                    slotIndex: RAMProjectConfig_.minBidSlotIndex
+                })
+                : RAMProjectConfig_.basePrice;
+        }
+
+        // main loop to mint tokens
+        for (uint256 i; i < slotIndicesLength; ++i) {
+            // @dev current slot index and bid index in slot not memoized due
+            // to stack depth limitations
+            // get bid
+            Bid storage bid = RAMProjectConfig_.bidsBySlot[slotIndices[i]][
+                bidIndicesInSlot[i]
+            ];
+            // CHECKS
+            // if bid is already minted or refunded, skip to next bid
+            // @dev do not revert, since this could be due to front-running
+            if (bid.isMinted || bid.isRefunded) {
+                continue;
+            }
+            // require sender is bidder if requireSenderIsBidder is true
+            if (requireSenderIsBidder) {
+                require(msg.sender == bid.bidder, "Only sender is bidder");
+            }
+            // EFFECTS
+            // STEP 1: mint bid
+            // update state
+            bid.isMinted = true;
+            // @dev num bids minted tokens not memoized due to stack depth
+            // limitations
+            RAMProjectConfig_.numBidsMintedTokens++;
+            // INTERACTIONS
+            _mintToken({
+                projectId: projectId,
+                coreContract: coreContract,
+                slotIndex: slotIndices[i],
+                bidIndexInSlot: bidIndicesInSlot[i],
+                bidder: bid.bidder,
+                minterFilter: minterFilter
+            });
+
+            // STEP 2: settle if not already settled
+            // @dev collector could have previously settled bid, so need to
+            // check if bid is settled
+            if (!(bid.isSettled)) {
+                // update state
+                bid.isSettled = true;
+                // determine amount due
+                uint256 currentAmountDue = slotIndexToBidValue({
+                    basePrice: RAMProjectConfig_.basePrice,
+                    // @dev safe to cast to uint16
+                    slotIndex: uint16(slotIndices[i])
+                }) - projectPrice;
+                if (currentAmountDue > 0) {
+                    // force-send settlement to bidder
+                    SplitFundsLib.forceSafeTransferETH({
+                        to: bid.bidder,
+                        amount: currentAmountDue,
+                        minterRefundGasLimit: minterRefundGasLimit
+                    });
+                    // emit event for state change
+                    emit BidSettled({
+                        projectId: projectId,
+                        coreContract: coreContract,
+                        slotIndex: slotIndices[i],
+                        bidIndexInSlot: bidIndicesInSlot[i]
+                    });
+                }
+            }
+        }
+    }
+
+    /**
      * @notice Function that enables a contract admin (checked by external
      * function) to mint tokens to winners of project `projectId` on core
      * contract `coreContract`.
@@ -750,29 +896,22 @@ library RAMLib {
             // @dev scrolling logic in State C ensures bid is not yet minted
             bid.isMinted = true;
             // INTERACTIONS
-            // @dev block scope to limit stack depth
-            {
-                // mint token
-                uint256 tokenId = minterFilter.mint_joo({
-                    to: bid.bidder,
-                    projectId: projectId,
-                    coreContract: coreContract,
-                    sender: msg.sender
-                });
-                // emit event for state change
-                emit BidMinted({
-                    projectId: projectId,
-                    coreContract: coreContract,
-                    slotIndex: currentLatestMintedBidSlotIndex,
-                    bidIndexInSlot: currentLatestMintedBidArrayIndex,
-                    tokenId: tokenId
-                });
-            }
+            _mintToken({
+                projectId: projectId,
+                coreContract: coreContract,
+                slotIndex: uint16(currentLatestMintedBidSlotIndex),
+                bidIndexInSlot: uint24(currentLatestMintedBidArrayIndex),
+                bidder: bid.bidder,
+                minterFilter: minterFilter
+            });
 
-            // STEP 32: settle if not already settled
+            // STEP 3: settle if not already settled
             // @dev collector could have previously settled bid, so need to
             // check if bid is settled
             if (!(bid.isSettled)) {
+                // update state
+                bid.isSettled = true;
+                // determine amount due
                 // @dev currentAmountDue is not memoized per slot due to stack
                 // depth limitations
                 uint256 currentAmountDue = slotIndexToBidValue({
@@ -780,8 +919,6 @@ library RAMLib {
                     // @dev safe to cast to uint16
                     slotIndex: uint16(currentLatestMintedBidSlotIndex)
                 }) - projectPrice;
-                // update state
-                bid.isSettled = true;
                 if (currentAmountDue > 0) {
                     // force-send settlement to bidder
                     SplitFundsLib.forceSafeTransferETH({
@@ -1528,6 +1665,41 @@ library RAMLib {
             coreContract: coreContract,
             slotIndex: slotIndex,
             bidIndexInSlot: bidIndexInSlot
+        });
+    }
+
+    /**
+     * @notice private helper function to mint a token.
+     * @dev assumes all checks have been performed
+     * @param projectId project ID to mint token for
+     * @param coreContract core contract address for the given project
+     * @param slotIndex slot index of bid to mint token for
+     * @param bidIndexInSlot bid index in slot of bid to mint token for
+     * @param bidder bidder address of bid to mint token for
+     * @param minterFilter minter filter contract address
+     */
+    function _mintToken(
+        uint256 projectId,
+        address coreContract,
+        uint16 slotIndex,
+        uint24 bidIndexInSlot,
+        address bidder,
+        IMinterFilterV1 minterFilter
+    ) private {
+        // mint token
+        uint256 tokenId = minterFilter.mint_joo({
+            to: bidder,
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
+        });
+        // emit event for state change
+        emit BidMinted({
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndex: slotIndex,
+            bidIndexInSlot: bidIndexInSlot,
+            tokenId: tokenId
         });
     }
 
