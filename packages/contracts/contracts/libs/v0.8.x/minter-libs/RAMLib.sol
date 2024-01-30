@@ -162,6 +162,14 @@ library RAMLib {
         uint256 bidIndexInSlot
     );
 
+    event BidMinted(
+        uint256 projectId,
+        address coreContract,
+        uint256 slotIndex,
+        uint256 bidIndexInSlot,
+        uint256 tokenId
+    );
+
     /**
      * @notice Number of slots used by this RAM minter
      * @param numSlots Number of slots used by this RAM minter
@@ -207,12 +215,10 @@ library RAMLib {
         // @dev max uint16 >> max possible value of 511 + 1
         uint16 minBidSlotIndex;
         // maximum bitmap index with an unminted bid
-        // TODO - this could be populated when finishing auction via function input, bitshifting to verify...
         // @dev max uint16 >> max possible value of 511 + 1
         uint16 maxUnmintedBidSlotIndex;
-        // TODO - determine if this should be updated on insertion/removal, or initialized when finishing auction
         // @dev max uint24 is 16,777,215 > 1_000_000 max project size
-        uint24 maxUnmintedBidArrayIndex;
+        uint24 unmintedBidArrayIndex;
         // --- auction parameters ---
         // @dev max uint24 is 16,777,215 > 1_000_000 max project size
         uint24 numTokensInAuction;
@@ -231,8 +237,6 @@ library RAMLib {
         // @dev max uint88 ~= 3e26 Wei = ~300 million ETH, which is well above
         // the expected prices of any NFT mint in the foreseeable future.
         uint88 basePrice;
-        // --- auction state ---
-        bool allWinningBidsSettled; // default false
     }
 
     struct Bid {
@@ -484,7 +488,7 @@ library RAMLib {
         require(
             projectMinterState == ProjectMinterStates.C ||
                 projectMinterState == ProjectMinterStates.D,
-            "Only state C or D"
+            "Only states C or D"
         );
         // get project price, depending on if it was a sellout
         bool wasSellout = RAMProjectConfig_.numBids ==
@@ -554,7 +558,7 @@ library RAMLib {
             require(
                 projectMinterState == ProjectMinterStates.C ||
                     projectMinterState == ProjectMinterStates.D,
-                "Only state C or D"
+                "Only states C or D"
             );
         }
 
@@ -588,6 +592,185 @@ library RAMLib {
                 ++i;
             }
         }
+    }
+
+    function adminMintTokensToWinners(
+        uint256 projectId,
+        address coreContract,
+        uint24 numTokensToMint,
+        IMinterFilterV1 minterFilter,
+        uint256 minterRefundGasLimit
+    ) internal {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+
+        // CHECKS
+        // @dev block scope to limit stack depth
+        {
+            // require project minter state C or D (Post-Auction, not all bids handled)
+            ProjectMinterStates projectMinterState = getProjectMinterState({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+            require(
+                projectMinterState == ProjectMinterStates.C ||
+                    projectMinterState == ProjectMinterStates.D,
+                "Only states C or D"
+            );
+            // require numTokensToMint does not exceed number of tokens
+            // available to minter, considering the number of bids
+            // @dev must check this here to avoid minting more tokens than max
+            // invocations, which could potentially not revert if minter
+            // max invocations was limiting (+other unexpected conditions)
+            require(
+                numTokensToMint <=
+                    RAMProjectConfig_.numBids -
+                        (RAMProjectConfig_.numBidsMintedTokens +
+                            RAMProjectConfig_.numBidsErrorRefunded),
+                "tokens to mint gt available qty"
+            );
+        }
+
+        // EFFECTS
+        // load values to memory for gas efficiency
+        uint256 currentMaxUnmintedBidSlotIndex = RAMProjectConfig_
+            .maxUnmintedBidSlotIndex;
+        uint256 currentUnmintedBidArrayIndex = RAMProjectConfig_
+            .unmintedBidArrayIndex;
+        uint256 currentSlotBidsMaxIndex = RAMProjectConfig_
+            .bidsBySlot[currentMaxUnmintedBidSlotIndex]
+            .length - 1;
+        // settlement values
+        // get project price, depending on if it was a sellout
+        uint256 projectPrice;
+        // @dev block scope to limit stack depth
+        {
+            bool wasSellout = RAMProjectConfig_.numBids ==
+                RAMProjectConfig_.numTokensInAuction;
+            projectPrice = wasSellout
+                ? slotIndexToBidValue({
+                    basePrice: RAMProjectConfig_.basePrice,
+                    slotIndex: RAMProjectConfig_.minBidSlotIndex
+                })
+                : RAMProjectConfig_.basePrice;
+        }
+        uint256 numNewTokensMinted; // = 0
+        while (numNewTokensMinted < numTokensToMint) {
+            // EFFECTS
+            // get bid
+            Bid storage bid = RAMProjectConfig_.bidsBySlot[
+                currentMaxUnmintedBidSlotIndex
+            ][currentUnmintedBidArrayIndex];
+
+            // STEP 1: mint if not already minted
+            if (!(bid.isMinted)) {
+                // mark bid as minted
+                bid.isMinted = true;
+                // INTERACTIONS
+                // @dev block scope to limit stack depth
+                {
+                    // mint token
+                    uint256 tokenId = minterFilter.mint_joo({
+                        to: bid.bidder,
+                        projectId: projectId,
+                        coreContract: coreContract,
+                        sender: msg.sender
+                    });
+                    // emit event for state change
+                    emit BidMinted({
+                        projectId: projectId,
+                        coreContract: coreContract,
+                        slotIndex: currentMaxUnmintedBidSlotIndex,
+                        bidIndexInSlot: currentUnmintedBidArrayIndex,
+                        tokenId: tokenId
+                    });
+                }
+            }
+
+            // STEP 2: settle if not already settled
+            if (!(bid.isSettled)) {
+                // @dev currentAmountDue is not memoized per slot due to stack
+                // depth limitations
+                uint256 currentAmountDue = slotIndexToBidValue({
+                    basePrice: RAMProjectConfig_.basePrice,
+                    // @dev safe to cast to uint16
+                    slotIndex: uint16(currentMaxUnmintedBidSlotIndex)
+                }) - projectPrice;
+                if (currentAmountDue > 0) {
+                    // update state
+                    bid.isSettled = true;
+                    // force-send settlement to bidder
+                    SplitFundsLib.forceSafeTransferETH({
+                        to: bid.bidder,
+                        amount: currentAmountDue,
+                        minterRefundGasLimit: minterRefundGasLimit
+                    });
+                    // emit event for state change
+                    emit BidSettled({
+                        projectId: projectId,
+                        coreContract: coreContract,
+                        slotIndex: currentMaxUnmintedBidSlotIndex,
+                        bidIndexInSlot: currentUnmintedBidArrayIndex
+                    });
+                }
+            }
+
+            // STEP 3: update auction metadata state for next iteration
+            if (currentUnmintedBidArrayIndex < currentSlotBidsMaxIndex) {
+                // point to next un-minted bid in current slot
+                unchecked {
+                    ++currentUnmintedBidArrayIndex;
+                }
+            } else {
+                if (currentMaxUnmintedBidSlotIndex == 0) {
+                    // if at slot 0, we are done, and just increment the
+                    // minted bid array index to past the last bid in array
+                    unchecked {
+                        ++currentUnmintedBidArrayIndex;
+                    }
+                } else {
+                    // find next lowest slot with bids since we have
+                    // reached the end of the current slot's bid stack
+                    // @dev if this is the last slot, this will return 0,
+                    // and the loop will terminate, we know due to prior checks
+                    currentMaxUnmintedBidSlotIndex = getMaxSlotWithBid({
+                        RAMProjectConfig_: RAMProjectConfig_,
+                        startSlotIndex: uint16(
+                            currentMaxUnmintedBidSlotIndex - 1
+                        )
+                    });
+                    // return to start of new slot
+                    currentUnmintedBidArrayIndex = 0;
+                    // update max index for new slot
+                    currentSlotBidsMaxIndex =
+                        RAMProjectConfig_
+                            .bidsBySlot[currentMaxUnmintedBidSlotIndex]
+                            .length -
+                        1;
+                }
+            }
+
+            // increment loop counter
+            unchecked {
+                ++numNewTokensMinted;
+            }
+        }
+
+        // finally, update auction metadata storage state from memoized values
+        // @dev safe to cast numNewTokensMinted to uint24 since
+        // lte uint24 input maxNumTokensToMint
+        RAMProjectConfig_.numBidsMintedTokens += uint24(numNewTokensMinted);
+        // @dev safe to cast following to uint16 and uint24 because they are
+        // sourced from uint16 and uint24 values, respectively
+        RAMProjectConfig_.maxUnmintedBidSlotIndex = uint16(
+            currentMaxUnmintedBidSlotIndex
+        );
+        RAMProjectConfig_.unmintedBidArrayIndex = uint24(
+            currentUnmintedBidArrayIndex
+        );
     }
 
     /**
@@ -745,6 +928,10 @@ library RAMLib {
             // update bitmap metadata - increase max unminted bid index if necessary
             if (slotIndex > RAMProjectConfig_.maxUnmintedBidSlotIndex) {
                 RAMProjectConfig_.maxUnmintedBidSlotIndex = slotIndex;
+                // @dev due to it being a live auction, we know that the
+                // unminted bid array index was already 0, but set it here
+                // for completeness/redundancy
+                RAMProjectConfig_.unmintedBidArrayIndex = uint24(0);
             }
         }
 
@@ -1160,7 +1347,8 @@ library RAMLib {
     }
 
     /**
-     * @notice Helper function to get minimum slot index with an active bid
+     * @notice Helper function to get minimum slot index with an active bid,
+     * starting at a given slot index.
      * Reverts if startSlotIndex > 511, since this library only supports 512
      * slots.
      * @param RAMProjectConfig_ RAM project config to query
@@ -1205,6 +1393,53 @@ library RAMLib {
                         )
                 );
             }
+        }
+    }
+
+    /**
+     * @notice Helper function to get maximum slot index with an active bid,
+     * starting at a given slot index.
+     * Returns 0 if not slots with bids were found.
+     * Reverts if startSlotIndex > 511, since this library only supports 512
+     * slots.
+     * @param RAMProjectConfig_ RAM project config to query
+     * @param startSlotIndex Slot index to start search at
+     * @return maxSlotWithBid Maximum slot index with an active bid, and 0 if
+     * no slots with bids were found
+     */
+    function getMaxSlotWithBid(
+        RAMProjectConfig storage RAMProjectConfig_,
+        uint16 startSlotIndex
+    ) private view returns (uint16 maxSlotWithBid) {
+        // revert if startSlotIndex > 511, since this is an invalid input
+        if (startSlotIndex > 511) {
+            revert("Only start slot index lt 512");
+        }
+        // start at startSlotIndex
+        if (startSlotIndex < 256) {
+            // @dev <256 conditional ensures no overflow when casting to uint8
+            (uint256 maxSlotWithBid_, ) = RAMProjectConfig_
+                .slotsBitmapA
+                .maxBitSet(uint8(startSlotIndex));
+            return uint16(maxSlotWithBid_);
+        } else {
+            // need to potentially check both bitmaps
+            (uint256 maxSlotWithBid_, bool foundSetBit) = RAMProjectConfig_
+                .slotsBitmapB
+                .maxBitSet(
+                    // @dev casting to uint8 intentional overflow instead of
+                    // subtracting 256 from slotIndex
+                    uint8(startSlotIndex)
+                );
+            if (foundSetBit) {
+                return uint16(256 + maxSlotWithBid_);
+            }
+            // no bids in first bitmap B, so check second bitmap A
+            (maxSlotWithBid_, ) = RAMProjectConfig_.slotsBitmapA.maxBitSet(
+                // start at beginning of second bitmap
+                uint8(255)
+            );
+            return uint16(maxSlotWithBid_);
         }
     }
 }

@@ -42,6 +42,7 @@ library BitMaps256 {
      * Returns 256 if no bits are set.
      * @param bitMap BitMap to search
      * @param startIndex Index to start searching from, inclusive
+     * @return minIndex Index of first set bit, or 256 if no bits are set
      */
     function minBitSet(
         uint256 bitMap,
@@ -53,5 +54,27 @@ library BitMaps256 {
         while (minIndex < 256 && !get(bitMap, uint8(minIndex))) {
             minIndex++;
         }
+    }
+
+    /**
+     * @notice Finds the index of the highest bit that is set in the bit map
+     * starting from a given index and counting down.
+     * Returns `foundSetBit` of false if no set bits were found.
+     * @param bitMap BitMap to search
+     * @param startIndex Index to start searching from, inclusive
+     * @return maxIndex Index of last set bit, or 256 if no bits are set
+     * @return foundSetBit True if a set bit was found, false otherwise
+     */
+    function maxBitSet(
+        uint256 bitMap,
+        uint8 startIndex
+    ) internal pure returns (uint256 maxIndex, bool foundSetBit) {
+        maxIndex = startIndex;
+        // TODO make this more efficient
+        // @dev this is a linear search, worst case 256 iterations in memory
+        while (maxIndex > 0 && !get(bitMap, uint8(maxIndex))) {
+            maxIndex--;
+        }
+        foundSetBit = get(bitMap, uint8(maxIndex));
     }
 }

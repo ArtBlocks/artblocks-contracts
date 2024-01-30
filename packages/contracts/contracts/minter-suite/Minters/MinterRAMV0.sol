@@ -538,6 +538,43 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         });
     }
 
+    /**
+     * @notice Contract-Admin only function to mint tokens to winners of
+     * project `projectId` on core contract `coreContract`.
+     * Automatically mints tokens to most-winning bids, in order from highest
+     * and earliest bid to lowest and latest bid.
+     * Settles bids as tokens are minted, if not already settled.
+     * Reverts if project is not in a post-auction state with tokens available
+     * to be minted.
+     * Reverts if msg.sender is not a contract admin.
+     * Reverts if number of tokens to mint is greater than the number of
+     * tokens available to be minted.
+     * @param projectId Project ID to mint tokens on.
+     * @param coreContract Core contract address for the given project.
+     * @param numTokensToMint Number of tokens to mint in this transaction.
+     */
+    function adminMintTokensToWinners(
+        uint256 projectId,
+        address coreContract,
+        uint24 numTokensToMint
+    ) external nonReentrant {
+        // CHECKS
+        AuthLib.onlyCoreAdminACL({
+            coreContract: coreContract,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.adminMintTokensToWinners.selector
+        });
+        // EFFECTS/INTERACTIONS
+        RAMLib.adminMintTokensToWinners({
+            projectId: projectId,
+            coreContract: coreContract,
+            numTokensToMint: numTokensToMint,
+            minterFilter: _minterFilter,
+            minterRefundGasLimit: _minterRefundGasLimit
+        });
+    }
+
     // /**
     //  * @notice View function to return the current minter-level configuration
     //  * details.
