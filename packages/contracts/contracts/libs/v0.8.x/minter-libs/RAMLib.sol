@@ -171,6 +171,24 @@ library RAMLib {
     );
 
     /**
+     * @notice Bid was refunded, and the entire bid value was sent to the
+     * bidder.
+     * This only occurrs if the minter encountered an unexpected error state
+     * due to operational issues, and the minter was unable to mint a token to
+     * the bidder.
+     * @param projectId Project Id to update
+     * @param coreContract Core contract address to update
+     * @param slotIndex Slot index of bid that was settled
+     * @param bidIndexInSlot Bid index in slot of bid that was settled
+     */
+    event BidRefunded(
+        uint256 projectId,
+        address coreContract,
+        uint256 slotIndex,
+        uint256 bidIndexInSlot
+    );
+
+    /**
      * @notice Number of slots used by this RAM minter
      * @param numSlots Number of slots used by this RAM minter
      */
@@ -219,6 +237,9 @@ library RAMLib {
         uint16 maxUnmintedBidSlotIndex;
         // @dev max uint24 is 16,777,215 > 1_000_000 max project size
         uint24 unmintedBidArrayIndex;
+        // --- error state refund tracking ---
+        uint16 latestRefundedBidSlotIndex;
+        uint24 latestRefundedBidArrayIndex;
         // --- auction parameters ---
         // @dev max uint24 is 16,777,215 > 1_000_000 max project size
         uint24 numTokensInAuction;
@@ -243,6 +264,7 @@ library RAMLib {
         address bidder;
         bool isSettled; // TODO: could remove this if amount is changed when settling
         bool isMinted; // TODO: determine if this is needed
+        bool isRefunded; // TODO: determine if this is needed
     }
 
     // contract-specific parameters
@@ -699,9 +721,9 @@ library RAMLib {
                     // @dev safe to cast to uint16
                     slotIndex: uint16(currentMaxUnmintedBidSlotIndex)
                 }) - projectPrice;
+                // update state
+                bid.isSettled = true;
                 if (currentAmountDue > 0) {
-                    // update state
-                    bid.isSettled = true;
                     // force-send settlement to bidder
                     SplitFundsLib.forceSafeTransferETH({
                         to: bid.bidder,
@@ -770,6 +792,157 @@ library RAMLib {
         );
         RAMProjectConfig_.unmintedBidArrayIndex = uint24(
             currentUnmintedBidArrayIndex
+        );
+    }
+
+    /**
+     * @notice Function to refund bids for project `projectId` on core contract
+     * `coreContract`.
+     * @dev must be called within the context of a nonReentrant modifier.
+     * Reverts if project is not in post-auction states C or D.
+     * Reverts if project is not in an error state E1.
+     * Reverts if numBidsToRefund is greater than the number of bids required
+     * to resolve the E1 error state.
+     */
+    function refundBidsToResolveE1(
+        uint256 projectId,
+        address coreContract,
+        uint24 numBidsToRefund,
+        uint256 minterRefundGasLimit
+    ) internal {
+        // CHECKS
+        // @dev block scope to limit stack depth
+        {
+            // require project minter state C or D (Post-Auction, not all bids handled)
+            ProjectMinterStates projectMinterState = getProjectMinterState({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+            require(
+                projectMinterState == ProjectMinterStates.C ||
+                    projectMinterState == ProjectMinterStates.D,
+                "Only states C or D"
+            );
+            // require is in state E1
+            (bool isErrorE1_, uint256 maxNumBidsToRefund) = isErrorE1({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+            require(isErrorE1_, "Only in state E1");
+            // require numBidsToRefund does not exceed max number of bids
+            // available to refund
+            require(
+                numBidsToRefund <= maxNumBidsToRefund,
+                "bids to refund gt available qty"
+            );
+        }
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+
+        // EFFECTS
+        // load values to memory for gas efficiency
+        uint256 currentLatestRefundedBidSlotIndex = RAMProjectConfig_
+            .latestRefundedBidSlotIndex;
+        uint256 currentLatestRefundedBidArrayIndex = RAMProjectConfig_
+            .latestRefundedBidArrayIndex;
+        uint256 currentSlotBidsMaxIndex; // populated later
+        // memoize project's numBidsErrorRefunded for gas efficiency
+        uint256 currentNumBidsErrorRefunded = RAMProjectConfig_
+            .numBidsErrorRefunded;
+        // @dev block scope to limit stack depth
+        uint256 numRefundsIssued; // = 0
+        while (numRefundsIssued < numBidsToRefund) {
+            // EFFECTS
+            // STEP 1: Get next bid to be refunded
+            // set latest refunded bid indices to the bid to be refunded
+            if (currentNumBidsErrorRefunded == 0) {
+                // first refund, so need to initialize at minBidSlotIndex
+                currentLatestRefundedBidSlotIndex = RAMProjectConfig_
+                    .minBidSlotIndex;
+                // begin with last bid in slot's array
+                currentSlotBidsMaxIndex =
+                    RAMProjectConfig_
+                        .bidsBySlot[currentLatestRefundedBidSlotIndex]
+                        .length -
+                    1;
+                currentLatestRefundedBidArrayIndex = currentSlotBidsMaxIndex;
+            } else if (currentLatestRefundedBidArrayIndex == 0) {
+                // was previously initialized, so need to find next bid slot
+                // with bids, and start at last bid in slot's array
+                currentLatestRefundedBidSlotIndex = getMinSlotWithBid({
+                    RAMProjectConfig_: RAMProjectConfig_,
+                    startSlotIndex: uint16(
+                        currentLatestRefundedBidSlotIndex + 1
+                    )
+                });
+                // begin with last bid in slot's array
+                currentSlotBidsMaxIndex =
+                    RAMProjectConfig_
+                        .bidsBySlot[currentLatestRefundedBidSlotIndex]
+                        .length -
+                    1;
+                currentLatestRefundedBidArrayIndex = currentSlotBidsMaxIndex;
+            } else {
+                // was previously initialized, so need to decrement bid index
+                // @dev already checked that not == 0, so safe to use unchecked
+                unchecked {
+                    --currentLatestRefundedBidArrayIndex;
+                }
+            }
+
+            // get bid
+            Bid storage bid = RAMProjectConfig_.bidsBySlot[
+                currentLatestRefundedBidSlotIndex
+            ][currentLatestRefundedBidArrayIndex];
+
+            // STEP 2: Refund the Bid
+            // mark bid as refunded
+            bid.isRefunded = true;
+            // INTERACTIONS
+            // @dev bidValue is not memoized per slot due to stack
+            // depth limitations
+            uint256 bidValue = slotIndexToBidValue({
+                basePrice: RAMProjectConfig_.basePrice,
+                // @dev safe to cast to uint16
+                slotIndex: uint16(currentLatestRefundedBidSlotIndex)
+            });
+            // force-send settlement to bidder
+            SplitFundsLib.forceSafeTransferETH({
+                to: bid.bidder,
+                amount: bidValue,
+                minterRefundGasLimit: minterRefundGasLimit
+            });
+            // emit event for state change
+            emit BidRefunded({
+                projectId: projectId,
+                coreContract: coreContract,
+                slotIndex: currentLatestRefundedBidSlotIndex,
+                bidIndexInSlot: currentLatestRefundedBidArrayIndex
+            });
+
+            // increment loop counter and current num bids refunded
+            unchecked {
+                ++numRefundsIssued;
+                ++currentNumBidsErrorRefunded;
+            }
+        }
+
+        // finally, update auction metadata storage state from memoized values
+        // @dev safe to cast numNewTokensMinted to uint24 since
+        // lte uint24 input maxNumTokensToMint
+        RAMProjectConfig_.numBidsErrorRefunded = uint24(
+            currentNumBidsErrorRefunded
+        );
+        // @dev safe to cast following to uint16 and uint24 because they are
+        // sourced from uint16 and uint24 values, respectively
+        RAMProjectConfig_.latestRefundedBidSlotIndex = uint16(
+            currentLatestRefundedBidSlotIndex
+        );
+        RAMProjectConfig_.latestRefundedBidArrayIndex = uint24(
+            currentLatestRefundedBidArrayIndex
         );
     }
 
@@ -908,7 +1081,14 @@ library RAMLib {
     ) private {
         // add the new Bid
         Bid[] storage bids = RAMProjectConfig_.bidsBySlot[slotIndex];
-        bids.push(Bid({bidder: bidder, isSettled: false, isMinted: false}));
+        bids.push(
+            Bid({
+                bidder: bidder,
+                isSettled: false,
+                isMinted: false,
+                isRefunded: false
+            })
+        );
         // update number of active bids
         RAMProjectConfig_.numBids++;
         // update metadata if first bid for this slot
@@ -1161,18 +1341,22 @@ library RAMLib {
     }
 
     /**
-     * @notice Returns if project minter is in ERROR state E1.
+     * @notice Returns if project minter is in ERROR state E1, and the number
+     * of bids that need to be refunded to resolve the error.
      * E1: Tokens owed > invocations available
      * Occurs when: tokens are minted on different minter after auction begins,
      * or when core contract max invocations are reduced after auction begins.
      * Resolution: Admin must refund the lowest bids after auction ends.
      * @param projectId Project Id to query
      * @param coreContract Core contract address to query
+     * @return isError True if in error state, false otherwise
+     * @return numBidsToRefund Number of bids to refund to resolve error, 0 if
+     * not in error state
      */
     function isErrorE1(
         uint256 projectId,
         address coreContract
-    ) internal view returns (bool) {
+    ) internal view returns (bool isError, uint256 numBidsToRefund) {
         // get project config
         RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
             projectId: projectId,
@@ -1188,7 +1372,9 @@ library RAMLib {
                 projectId: projectId,
                 coreContract: coreContract
             });
-        return tokensOwed > invocationsAvailable;
+        // populate return values
+        isError = tokensOwed > invocationsAvailable;
+        numBidsToRefund = isError ? tokensOwed - invocationsAvailable : 0;
     }
 
     /**

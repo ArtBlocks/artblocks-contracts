@@ -575,6 +575,56 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         });
     }
 
+    /**
+     * @notice Function to refund the lowest winning bids for project
+     * `projectId` on core contract `coreContract` to resolve error state E1.
+     * Reverts if project is not in post-auction states C or D.
+     * Reverts if project is not in error state E1.
+     * Reverts if numBidsToRefund exceeds the number of bids that need to be
+     * refunded to resolve the error state E1.
+     * @param projectId Project ID to refunds bids for.
+     * @param coreContract Core contract address for the given project.
+     * @param numBidsToRefund Number of bids to refund in this call.
+     */
+    function refundBidsToResolveE1(
+        uint256 projectId,
+        address coreContract,
+        uint24 numBidsToRefund
+    ) external nonReentrant {
+        // @dev intentionally allow any wallet to call this to prevent valid
+        // refunds from being blocked.
+        RAMLib.refundBidsToResolveE1({
+            projectId: projectId,
+            coreContract: coreContract,
+            numBidsToRefund: numBidsToRefund,
+            minterRefundGasLimit: _minterRefundGasLimit
+        });
+    }
+
+    /**
+     * @notice Returns if project minter is in ERROR state E1, and the number
+     * of bids that need to be refunded to resolve the error.
+     * E1: Tokens owed > invocations available
+     * Occurs when: tokens are minted on different minter after auction begins,
+     * or when core contract max invocations are reduced after auction begins.
+     * Resolution: Admin must refund the lowest bids after auction ends.
+     * @param projectId Project Id to query
+     * @param coreContract Core contract address to query
+     * @return isError True if in error state, false otherwise
+     * @return numBidsToRefund Number of bids to refund to resolve error, 0 if
+     * not in error state
+     */
+    function getIsErrorE1(
+        uint256 projectId,
+        address coreContract
+    ) external view returns (bool isError, uint256 numBidsToRefund) {
+        return
+            RAMLib.isErrorE1({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+    }
+
     // /**
     //  * @notice View function to return the current minter-level configuration
     //  * details.
