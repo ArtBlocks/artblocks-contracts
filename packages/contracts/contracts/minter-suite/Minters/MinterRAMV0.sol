@@ -544,7 +544,8 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * Automatically mints tokens to most-winning bids, in order from highest
      * and earliest bid to lowest and latest bid.
      * Settles bids as tokens are minted, if not already settled.
-     * Reverts if project is not in a post-auction state with tokens available
+     * Reverts if project is not in a post-auction state, admin-only mint
+     * period (i.e. State C), with tokens available.
      * to be minted.
      * Reverts if msg.sender is not a contract admin.
      * Reverts if number of tokens to mint is greater than the number of
@@ -553,7 +554,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @param coreContract Core contract address for the given project.
      * @param numTokensToMint Number of tokens to mint in this transaction.
      */
-    function adminMintTokensToWinners(
+    function adminAutoMintTokensToWinners(
         uint256 projectId,
         address coreContract,
         uint24 numTokensToMint
@@ -563,10 +564,10 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             coreContract: coreContract,
             sender: msg.sender,
             contract_: address(this),
-            selector: this.adminMintTokensToWinners.selector
+            selector: this.adminAutoMintTokensToWinners.selector
         });
         // EFFECTS/INTERACTIONS
-        RAMLib.adminMintTokensToWinners({
+        RAMLib.adminAutoMintTokensToWinners({
             projectId: projectId,
             coreContract: coreContract,
             numTokensToMint: numTokensToMint,
@@ -576,24 +577,35 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * @notice Function to refund the lowest winning bids for project
-     * `projectId` on core contract `coreContract` to resolve error state E1.
-     * Reverts if project is not in post-auction states C or D.
+     * @notice Function to automatically refund the lowest winning bids for
+     * project `projectId` on core contract `coreContract` to resolve error
+     * state E1.
+     * Reverts if not called by a contract admin.
+     * Reverts if project is not in post-auction state C.
      * Reverts if project is not in error state E1.
      * Reverts if numBidsToRefund exceeds the number of bids that need to be
      * refunded to resolve the error state E1.
+     * @dev Admin-only requirement is not for security, but is to enable Admin
+     * to be aware that an error state has been encountered while in post-
+     * auction state C.
      * @param projectId Project ID to refunds bids for.
      * @param coreContract Core contract address for the given project.
      * @param numBidsToRefund Number of bids to refund in this call.
      */
-    function refundBidsToResolveE1(
+    function adminAutoRefundBidsToResolveE1(
         uint256 projectId,
         address coreContract,
         uint24 numBidsToRefund
     ) external nonReentrant {
-        // @dev intentionally allow any wallet to call this to prevent valid
-        // refunds from being blocked.
-        RAMLib.refundBidsToResolveE1({
+        // CHECKS
+        AuthLib.onlyCoreAdminACL({
+            coreContract: coreContract,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.adminAutoMintTokensToWinners.selector
+        });
+        // EFFECTS/INTERACTIONS
+        RAMLib.autoRefundBidsToResolveE1({
             projectId: projectId,
             coreContract: coreContract,
             numBidsToRefund: numBidsToRefund,
