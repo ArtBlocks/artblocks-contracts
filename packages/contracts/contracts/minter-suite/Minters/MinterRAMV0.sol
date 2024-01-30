@@ -307,58 +307,6 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * @notice Manually reduces the minter-local maximum invocations of project
-     * `projectId` with the provided `maxInvocations`, checking that
-     * `maxInvocations` is less than or equal to the value of project
-     * `project_id`'s maximum invocations set on the core contract, and checking
-     * that `maxInvocations` is less than the current number of invocations.
-     * @param projectId Project ID to set the maximum invocations for.
-     * @param coreContract Core contract address for the given project.
-     * @param maxInvocations Maximum invocations to set for the project.
-     */
-    function manuallyReduceProjectMaxInvocationsDuringAuction(
-        uint256 projectId,
-        address coreContract,
-        uint24 maxInvocations
-    ) external {
-        // CHECKS
-        AuthLib.onlyArtist({
-            projectId: projectId,
-            coreContract: coreContract,
-            sender: msg.sender
-        });
-        // only project minter state B (Live Auction)
-        RAMLib.ProjectMinterStates currentState = RAMLib.getProjectMinterState({
-            projectId: projectId,
-            coreContract: coreContract
-        });
-        require(currentState == RAMLib.ProjectMinterStates.B, "Only state B");
-        // only reduce max invocations (for collector protection - no increase)
-        uint256 currentMaxInvocations = MaxInvocationsLib.getMaxInvocations({
-            projectId: projectId,
-            coreContract: coreContract
-        });
-        require(
-            maxInvocations < currentMaxInvocations,
-            "Only lt current max invocations"
-        );
-        // EFFECTS
-        // @dev this will revert if maxInvocations is greater than the current
-        // max invocations on the core contract, or less than current
-        // invocations
-        MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
-            projectId: projectId,
-            coreContract: coreContract,
-            maxInvocations: maxInvocations
-        });
-        // also update number of tokens in auction
-        RAMLib.refreshNumTokensInAuction({
-            projectId: projectId,
-            coreContract: coreContract
-        });
-    }
-
-    /**
      * @notice Sets auction details for project `projectId`.
      * @param projectId Project ID to set auction details for.
      * @param coreContract Core contract address for the given project.
