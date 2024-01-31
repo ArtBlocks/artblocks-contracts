@@ -419,6 +419,46 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
+     * @notice Purchases token for project `projectId` on core contract
+     * `coreContract` for auction that has ended, but not yet been sold out.
+     * @param projectId Project ID to purchase token for.
+     * @param coreContract Core contract address for the given project.
+     */
+    function purchase(
+        uint256 projectId,
+        address coreContract
+    ) external payable nonReentrant returns (uint256 tokenId) {
+        // @dev checks performed in RAMLib purchaseTo function
+        tokenId = RAMLib.purchaseTo({
+            to: msg.sender,
+            projectId: projectId,
+            coreContract: coreContract,
+            minterFilter: _minterFilter
+        });
+    }
+
+    /**
+     * @notice Purchases token for project `projectId` on core contract
+     * `coreContract` for auction that has ended, but not yet been sold out,
+     * and sets the token's owner to `to`.
+     * @param projectId Project ID to purchase token for.
+     * @param coreContract Core contract address for the given project.
+     */
+    function purchaseTo(
+        address to,
+        uint256 projectId,
+        address coreContract
+    ) external payable nonReentrant returns (uint256 tokenId) {
+        // @dev checks performed in RAMLib purchaseTo function
+        tokenId = RAMLib.purchaseTo({
+            to: to,
+            projectId: projectId,
+            coreContract: coreContract,
+            minterFilter: _minterFilter
+        });
+    }
+
+    /**
      * @notice Collects settlement for project `projectId` on core contract
      * `coreContract` for all bid in `slotIndex` at `bidIndexInSlot`.
      * Reverts if project is not in a post-auction state.
@@ -775,11 +815,10 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         uint256 projectId,
         address coreContract
     ) external view returns (bool isError, uint256 numBidsToRefund) {
-        return
-            RAMLib.isErrorE1({
-                projectId: projectId,
-                coreContract: coreContract
-            });
+        (isError, numBidsToRefund, ) = RAMLib.isErrorE1({
+            projectId: projectId,
+            coreContract: coreContract
+        });
     }
 
     // /**

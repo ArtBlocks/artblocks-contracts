@@ -16,7 +16,7 @@ import {SafeCast} from "@openzeppelin-5.0/contracts/utils/math/SafeCast.sol";
 import {Math} from "@openzeppelin-5.0/contracts/utils/math/Math.sol";
 
 /**
- * @title Art Blocks RAM Minter Library
+ * @title Art Blocks Ranked Auction Minter (RAM) Library
  * @notice This library is designed for the Art Blocks platform. It includes
  * Structs and functions that help with ranked auction minters.
  * @author Art Blocks Inc.
@@ -190,6 +190,16 @@ library RAMLib {
     );
 
     /**
+     * @notice Token was directly purchased
+     */
+    event TokenPurchased(
+        uint256 projectId,
+        address coreContract,
+        uint256 tokenId,
+        address to
+    );
+
+    /**
      * @notice Number of slots used by this RAM minter
      * @param numSlots Number of slots used by this RAM minter
      */
@@ -239,21 +249,19 @@ library RAMLib {
         // maximum bitmap index with an active bid
         uint16 maxBidSlotIndex;
         // --- bid minting tracking ---
-        // @dev max uint16 >> max possible value of 511 + 1
-        // uint16 maxUnmintedBidSlotIndex;
         uint16 latestMintedBidSlotIndex;
-        // @dev max uint24 is 16,777,215 > 1_000_000 max project size
         uint24 latestMintedBidArrayIndex;
         // --- error state bid refund tracking ---
         uint16 latestRefundedBidSlotIndex;
         uint24 latestRefundedBidArrayIndex;
         // --- auction parameters ---
+        // number of tokens and related values
         // @dev max uint24 is 16,777,215 > 1_000_000 max project size
         uint24 numTokensInAuction;
         uint24 numBids;
         uint24 numBidsMintedTokens;
         uint24 numBidsErrorRefunded;
-        // pricing and timing
+        // timing
         // @dev max uint40 ~= 1.1e12 sec ~= 34 thousand years
         uint40 timestampStart;
         uint40 timestampOriginalEnd;
@@ -262,6 +270,7 @@ library RAMLib {
         uint8 adminEmergencyExtensionHoursApplied;
         bool allowExtraTime;
         bool adminOnlyMintPeriodIfSellout;
+        // pricing
         // @dev max uint88 ~= 3e26 Wei = ~300 million ETH, which is well above
         // the expected prices of any NFT mint in the foreseeable future.
         uint88 basePrice;
@@ -732,7 +741,7 @@ library RAMLib {
             // limitations
             RAMProjectConfig_.numBidsMintedTokens++;
             // INTERACTIONS
-            _mintToken({
+            _mintTokenForBid({
                 projectId: projectId,
                 coreContract: coreContract,
                 slotIndex: slotIndices[i],
@@ -903,7 +912,7 @@ library RAMLib {
             // @dev scrolling logic in State C ensures bid is not yet minted
             bid.isMinted = true;
             // INTERACTIONS
-            _mintToken({
+            _mintTokenForBid({
                 projectId: projectId,
                 coreContract: coreContract,
                 slotIndex: uint16(currentLatestMintedBidSlotIndex),
@@ -1013,7 +1022,7 @@ library RAMLib {
                 "Only state D"
             );
             // require is in state E1
-            (bool isErrorE1_, uint256 numBidsToResolveE1) = isErrorE1({
+            (bool isErrorE1_, uint256 numBidsToResolveE1, ) = isErrorE1({
                 projectId: projectId,
                 coreContract: coreContract
             });
@@ -1147,7 +1156,7 @@ library RAMLib {
                 "Only state C"
             );
             // require is in state E1
-            (bool isErrorE1_, uint256 numBidsToResolveE1) = isErrorE1({
+            (bool isErrorE1_, uint256 numBidsToResolveE1, ) = isErrorE1({
                 projectId: projectId,
                 coreContract: coreContract
             });
@@ -1369,6 +1378,88 @@ library RAMLib {
             coreContract: coreContract,
             key: CONFIG_AUCTION_REVENUES_COLLECTED,
             value: true
+        });
+    }
+
+    /**
+     * @notice Function to mint tokens if an auction is over, but did not sell
+     * out and tokens are still available to be minted.
+     * @dev must be called within non-reentrant context
+     */
+    function purchaseTo(
+        address to,
+        uint256 projectId,
+        address coreContract,
+        IMinterFilterV1 minterFilter
+    ) internal returns (uint256 tokenId) {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+
+        // CHECKS
+        // @dev block scope to limit stack depth
+        {
+            // require project minter state C, D, or E (Post-Auction)
+            ProjectMinterStates projectMinterState = getProjectMinterState({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+            require(
+                projectMinterState == ProjectMinterStates.C ||
+                    projectMinterState == ProjectMinterStates.D ||
+                    projectMinterState == ProjectMinterStates.E,
+                "Only states C, D, or E"
+            );
+            // require at least one excess token available to be minted
+            // @dev this ensures minter and core contract max-invocations
+            // constraints are not violated, as well as confirms that one
+            // additional mint will not send the minter into an E1 state
+            (, , uint256 numExcessInvocationsAvailable) = isErrorE1({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+            require(
+                numExcessInvocationsAvailable > 0,
+                "Reached max invocations"
+            );
+        }
+        // require sufficient payment
+        // since excess invocations are available, know not a sellout, so
+        // project price is base price
+        uint256 pricePerTokenInWei = RAMProjectConfig_.basePrice;
+        require(
+            msg.value == pricePerTokenInWei,
+            "Only send auction reserve price"
+        );
+
+        // EFFECTS
+        // mint token
+        tokenId = minterFilter.mint_joo({
+            to: to,
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
+        });
+
+        // @dev this minter specifically does not update max invocations has
+        // been reached, since it must consider unminted bids when determining
+        // if max invocations has been reached
+
+        // INTERACTIONS
+        SplitFundsLib.splitFundsETHRefundSender({
+            projectId: projectId,
+            pricePerTokenInWei: pricePerTokenInWei,
+            coreContract: coreContract
+        });
+
+        // emit event for state change
+        emit TokenPurchased({
+            projectId: projectId,
+            coreContract: coreContract,
+            tokenId: tokenId,
+            to: to
         });
     }
 
@@ -1778,7 +1869,15 @@ library RAMLib {
     function isErrorE1(
         uint256 projectId,
         address coreContract
-    ) internal view returns (bool isError, uint256 numBidsToRefund) {
+    )
+        internal
+        view
+        returns (
+            bool isError,
+            uint256 numBidsToRefund,
+            uint256 numExcessInvocationsAvailable
+        )
+    {
         // get project config
         RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
             projectId: projectId,
@@ -1797,6 +1896,11 @@ library RAMLib {
         // populate return values
         isError = tokensOwed > invocationsAvailable;
         numBidsToRefund = isError ? tokensOwed - invocationsAvailable : 0;
+        // no excess invocations available if in error state, otherwise is the
+        // difference between invocations available and tokens owed
+        numExcessInvocationsAvailable = isError
+            ? 0
+            : invocationsAvailable - tokensOwed;
     }
 
     /**
@@ -1904,7 +2008,7 @@ library RAMLib {
      * @param bidder bidder address of bid to mint token for
      * @param minterFilter minter filter contract address
      */
-    function _mintToken(
+    function _mintTokenForBid(
         uint256 projectId,
         address coreContract,
         uint16 slotIndex,

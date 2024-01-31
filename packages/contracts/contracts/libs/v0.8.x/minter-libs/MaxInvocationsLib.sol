@@ -384,7 +384,7 @@ library MaxInvocationsLib {
 
     /**
      * @notice Function returns the number of invocations available for a given
-     * project. Function checks the core contract's invocations and max
+     * project. Function checks the core contract's invocations and minter's max
      * invocations, ensuring that the most limiting value is used, even if the
      * local minter max invocations is stale.
      * @param projectId The id of the project.
