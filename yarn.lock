@@ -4229,10 +4229,10 @@
   dependencies:
     ethereumjs-util "^7.1.4"
 
-"@nomicfoundation/hardhat-verify@^2.0.3":
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/@nomicfoundation/hardhat-verify/-/hardhat-verify-2.0.3.tgz#173557f8cfa53c8c9da23a326f54d24fe459ae68"
-  integrity sha512-ESbRu9by53wu6VvgwtMtm108RSmuNsVqXtzg061D+/4R7jaWh/Wl/8ve+p6SdDX7vA1Z3L02hDO1Q3BY4luLXQ==
+"@nomicfoundation/hardhat-verify@^2.0.4":
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/@nomicfoundation/hardhat-verify/-/hardhat-verify-2.0.4.tgz#65b86787fc7b47d38fd941862266065c7eb9bca4"
+  integrity sha512-B8ZjhOrmbbRWqJi65jvQblzjsfYktjqj2vmOm+oc2Vu8drZbT2cjeSCRHZKbS7lOtfW78aJZSFvw+zRLCiABJA==
   dependencies:
     "@ethersproject/abi" "^5.1.2"
     "@ethersproject/address" "^5.0.2"
