@@ -628,6 +628,7 @@ library RAMLib {
      * protection)
      * Reverts if project is not in a post-auction state, post-admin-only mint
      * period (i.e. State D), with tokens available.
+     * Reverts if bid does not exist at slotIndex and bidIndexInSlot.
      * Reverts if msg.sender is not the bidder for all bids if
      * requireSenderIsBidder is true.
      * @param projectId Project ID to mint tokens on.
@@ -956,6 +957,155 @@ library RAMLib {
     }
 
     /**
+     * @notice Directly refund bids for project `projectId` on core contract
+     * `coreContract` to resolve error state E1.
+     * Does not guarantee an optimal ordering or handling of E1 state like
+     * `adminAutoRefundBidsToResolveE1` does while in State C.
+     * Skips over bids that have already been minted or refunded (front-running
+     * protection)
+     * Reverts if project is not in post-auction state, post-admin-only mint
+     * period (i.e. State D).
+     * Reverts if project is not in error state E1.
+     * Reverts if length of bids to refund exceeds the number of bids that need
+     * to be refunded to resolve the error state E1.
+     * Reverts if bid does not exist at slotIndex and bidIndexInSlot.
+     * Reverts if msg.sender is not the bidder for all bids if
+     * requireSenderIsBidder is true.
+     * @param projectId Project ID to refunds bids for.
+     * @param coreContract Core contract address for the given project.
+     * @param slotIndices Slot indices of bids to refund
+     * @param bidIndicesInSlot Bid indices in slot of bid to refund
+     * @param requireSenderIsBidder Require sender is bidder for all bids
+     * @param minterRefundGasLimit Gas limit to use when refunding the bidder.
+     */
+    function directRefundBidsToResolveE1(
+        uint256 projectId,
+        address coreContract,
+        uint16[] calldata slotIndices,
+        uint24[] calldata bidIndicesInSlot,
+        bool requireSenderIsBidder,
+        uint256 minterRefundGasLimit
+    ) internal {
+        // CHECKS
+        // @dev memoize length for gas efficiency
+        uint256 slotIndicesLength = slotIndices.length;
+        // @dev block scope to limit stack depth
+        {
+            // verify input lengths match
+            require(
+                slotIndicesLength == bidIndicesInSlot.length,
+                "Input lengths must match"
+            );
+            // require project minter state D (Post-Auction, post-admin-only,
+            // not all bids handled)
+            ProjectMinterStates projectMinterState = getProjectMinterState({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+            require(
+                projectMinterState == ProjectMinterStates.D,
+                "Only state D"
+            );
+            // require is in state E1
+            (bool isErrorE1_, uint256 numBidsToResolveE1) = isErrorE1({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+            require(isErrorE1_, "Only in state E1");
+            // require numBidsToRefund does not exceed max number of bids
+            // to resolve E1 error state
+            require(
+                slotIndicesLength <= numBidsToResolveE1,
+                "bids to refund gt available qty"
+            );
+        }
+
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+
+        // settlement values
+        // memoize project price, depending on if it was a sellout
+        uint256 projectPrice;
+        // @dev block scope to limit stack depth
+        {
+            bool wasSellout = RAMProjectConfig_.numBids ==
+                RAMProjectConfig_.numTokensInAuction;
+            projectPrice = wasSellout
+                ? slotIndexToBidValue({
+                    basePrice: RAMProjectConfig_.basePrice,
+                    slotIndex: RAMProjectConfig_.minBidSlotIndex
+                })
+                : RAMProjectConfig_.basePrice;
+        }
+
+        // main loop to mint tokens
+        for (uint256 i; i < slotIndicesLength; ++i) {
+            // @dev current slot index and bid index in slot not memoized due
+            // to stack depth limitations
+            // get bid
+            Bid storage bid = RAMProjectConfig_.bidsBySlot[slotIndices[i]][
+                bidIndicesInSlot[i]
+            ];
+            // CHECKS
+            // if bid is already minted or refunded, skip to next bid
+            // @dev do not revert, since this could be due to front-running
+            if (bid.isMinted || bid.isRefunded) {
+                continue;
+            }
+            // require sender is bidder if requireSenderIsBidder is true
+            if (requireSenderIsBidder) {
+                require(msg.sender == bid.bidder, "Only sender is bidder");
+            }
+            // EFFECTS
+            // STEP 1: Settle and Refund the Bid
+            // minimum value to send is the project price
+            uint256 valueToSend = projectPrice;
+            bool didSettleBid = false;
+            if (!bid.isSettled) {
+                bid.isSettled = true;
+                didSettleBid = true;
+                // send entire bid value if not previously settled
+                valueToSend = slotIndexToBidValue({
+                    basePrice: RAMProjectConfig_.basePrice,
+                    // @dev safe to cast to uint16
+                    slotIndex: uint16(slotIndices[i])
+                });
+            }
+            // mark bid as refunded
+            bid.isRefunded = true;
+            // update number of bids refunded
+            // @dev not memoized due to stack depth limitations
+            RAMProjectConfig_.numBidsErrorRefunded++;
+            // INTERACTIONS
+            // force-send refund to bidder
+            SplitFundsLib.forceSafeTransferETH({
+                to: bid.bidder,
+                amount: valueToSend,
+                minterRefundGasLimit: minterRefundGasLimit
+            });
+
+            // emit event for state changes
+            if (didSettleBid) {
+                emit BidSettled({
+                    projectId: projectId,
+                    coreContract: coreContract,
+                    slotIndex: slotIndices[i],
+                    bidIndexInSlot: bidIndicesInSlot[i]
+                });
+            }
+            emit BidRefunded({
+                projectId: projectId,
+                coreContract: coreContract,
+                slotIndex: slotIndices[i],
+                bidIndexInSlot: bidIndicesInSlot[i]
+            });
+        }
+    }
+
+    /**
      * @notice Function to automatically refund the lowest winning bids for
      * project `projectId` on core contract `coreContract` to resolve error
      * state E1.
@@ -1104,7 +1254,7 @@ library RAMLib {
             // mark bid as refunded
             bid.isRefunded = true;
             // INTERACTIONS
-            // force-send settlement to bidder
+            // force-send refund to bidder
             SplitFundsLib.forceSafeTransferETH({
                 to: bid.bidder,
                 amount: valueToSend,

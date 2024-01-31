@@ -528,11 +528,11 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * contract `coreContract`.
      * Does not guarantee an optimal ordering or handling of E1 state like
      * `adminAutoMintTokensToWinners` does while in State C.
-     * Admin or Artist may mint to any addresses.
+     * Admin or Artist may mint to any winning bids.
      * Provides protection for Admin and Artist because they may mint tokens
      * to winners to prevent denial of revenue claiming.
      * Skips over bids that have already been minted or refunded (front-running
-     * protection if collector were to mint or admin were to refund).
+     * protection).
      * Reverts if project is not in a post-auction state, post-admin-only mint
      * period (i.e. State D), with tokens available.
      * Reverts if msg.sender is not a contract admin or artist.
@@ -576,7 +576,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * Provides protection for collectors because they may mint their tokens
      * directly.
      * Skips over bids that have already been minted or refunded (front-running
-     * protection if admin/artist were to mint/refund).
+     * protection)
      * Reverts if project is not in a post-auction state, post-admin-only mint
      * period (i.e. State D), with tokens available.
      * Reverts if msg.sender is not the winning bidder for all specified bids.
@@ -601,6 +601,94 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             bidIndicesInSlot: bidIndicesInSlot,
             requireSenderIsBidder: true, // only allow winning bidder to call
             minterFilter: _minterFilter,
+            minterRefundGasLimit: _minterRefundGasLimit
+        });
+    }
+
+    /**
+     * @notice Directly refund bids for project `projectId` on core
+     * contract `coreContract` to resolve error state E1.
+     * Does not guarantee an optimal ordering or handling of E1 state like
+     * `adminAutoMintTokensToWinners` does while in State C.
+     * Admin or Artist may refund to any bids.
+     * Provides protection for Admin and Artist because they may refund to
+     * resolve E1 state to prevent denial of revenue claiming.
+     * Skips over bids that have already been minted or refunded (front-running
+     * protection).
+     * Reverts if project is not in a post-auction state, post-admin-only mint
+     * period (i.e. State D).
+     * Reverts if project is not in error state E1.
+     * Reverts if length of bids to refund exceeds the number of bids that need
+     * to be refunded to resolve the error state E1.
+     * Reverts if bid does not exist at slotIndex and bidIndexInSlot.
+     * Reverts if msg.sender is not a contract admin or artist.
+     * @param projectId Project ID to mint tokens on.
+     * @param coreContract Core contract address for the given project.
+     * @param slotIndices Slot indices of bids to mint tokens for
+     * @param bidIndicesInSlot Bid indices in slot of bid to mint tokens for
+     */
+    function adminArtistDirectRefundWinners(
+        uint256 projectId,
+        address coreContract,
+        uint16[] calldata slotIndices,
+        uint24[] calldata bidIndicesInSlot
+    ) external nonReentrant {
+        // CHECKS
+        AuthLib.onlyCoreAdminACLOrArtist({
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.adminArtistDirectRefundWinners.selector
+        });
+        // EFFECTS/INTERACTIONS
+        RAMLib.directRefundBidsToResolveE1({
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndices: slotIndices,
+            bidIndicesInSlot: bidIndicesInSlot,
+            requireSenderIsBidder: false, // not required when called by admin or artist
+            minterRefundGasLimit: _minterRefundGasLimit
+        });
+    }
+
+    /**
+     * @notice Directly refund bids for project `projectId` on core
+     * contract `coreContract` to resolve error state E1.
+     * Does not guarantee an optimal ordering or handling of E1 state like
+     * `adminAutoMintTokensToWinners` does while in State C.
+     * Only winning collector may call and refund to themselves.
+     * Provides protection for collectors because they may refund their tokens
+     * directly if in E1 state and they are no longer able to mint their
+     * token(s) (prevent holding of funds).
+     * Skips over bids that have already been minted or refunded (front-running
+     * protection).
+     * Reverts if project is not in a post-auction state, post-admin-only mint
+     * period (i.e. State D).
+     * Reverts if project is not in error state E1.
+     * Reverts if length of bids to refund exceeds the number of bids that need
+     * to be refunded to resolve the error state E1.
+     * Reverts if msg.sender is not the winning bidder for all specified bids.
+     * @param projectId Project ID to mint tokens on.
+     * @param coreContract Core contract address for the given project.
+     * @param slotIndices Slot indices of bids to mint tokens for
+     * @param bidIndicesInSlot Bid indices in slot of bid to mint tokens for
+     */
+    function winnerDirectRefund(
+        uint256 projectId,
+        address coreContract,
+        uint16[] calldata slotIndices,
+        uint24[] calldata bidIndicesInSlot
+    ) external nonReentrant {
+        // CHECKS
+        // @dev all checks performed in library function
+        // EFFECTS/INTERACTIONS
+        RAMLib.directRefundBidsToResolveE1({
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndices: slotIndices,
+            bidIndicesInSlot: bidIndicesInSlot,
+            requireSenderIsBidder: true, // only allow winning bidder to call
             minterRefundGasLimit: _minterRefundGasLimit
         });
     }
