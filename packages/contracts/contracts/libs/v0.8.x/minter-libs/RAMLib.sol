@@ -1719,7 +1719,16 @@ library RAMLib {
             SLOTS_PER_PRICE_DOUBLE;
     }
 
-    // TODO - handle case where there are no bids
+    /**
+     * @notice Returns the value and slot index of the minimum bid in the
+     * project's auction, in Wei.
+     * Reverts if no bids exist in the auction.
+     * @param projectId Project ID to get the minimum bid value for
+     * @param coreContract Core contract address for the given project
+     * @return minBid Storage to pointer of Bid struct of the minimum bid in
+     * the auction
+     * @return minSlotIndex Slot index of the minimum bid in the auction
+     */
     function getMinBid(
         uint256 projectId,
         address coreContract
@@ -1728,7 +1737,10 @@ library RAMLib {
             projectId: projectId,
             coreContract: coreContract
         });
-        // get first slot with an active bid
+        if (RAMProjectConfig_.numBids == 0) {
+            revert("No bids in auction");
+        }
+        // get min slot with a bid
         minSlotIndex = RAMProjectConfig_.minBidSlotIndex;
         // get the bids array for that slot
         Bid[] storage bids = RAMProjectConfig_.bidsBySlot[minSlotIndex];
@@ -1834,6 +1846,8 @@ library RAMLib {
             if (projectMinterState == RAMLib.ProjectMinterStates.B) {
                 if (isSellout) {
                     // find next valid bid
+                    // @dev okay if we extend past the maximum slot index
+                    // for this view function
                     uint256 nextValidBidSlotIndex = findNextValidBidSlotIndex({
                         projectId: projectId,
                         coreContract: coreContract,
@@ -1863,6 +1877,16 @@ library RAMLib {
         }
     }
 
+    /**
+     * @notice Returns the next valid bid slot index for a given project.
+     * @dev this may return a slot index higher than the maximum slot index
+     * allowed by the minter, in which case a bid cannot actually be placed
+     * to outbid a bid at `startSlotIndex`.
+     * @param projectId Project ID to find next valid bid slot index for
+     * @param coreContract Core contract address for the given project
+     * @param startSlotIndex Slot index to start search from
+     * @return nextValidBidSlotIndex Next valid bid slot index
+     */
     function findNextValidBidSlotIndex(
         uint256 projectId,
         address coreContract,
@@ -1902,7 +1926,7 @@ library RAMLib {
             // otherwise continue to next iteration
         }
         // return the found valid slot index
-        nextValidBidSlotIndex = currentSlotIndex;
+        nextValidBidSlotIndex = uint16(currentSlotIndex);
     }
 
     /**
@@ -1916,7 +1940,7 @@ library RAMLib {
     function isSufficientOutbid(
         uint256 oldBidValue,
         uint256 newBidValue
-    ) internal pure returns (bool) {
+    ) private pure returns (bool) {
         if (oldBidValue > 0.5 ether) {
             // require new bid is at least 2.5% greater than removed minimum bid
             return newBidValue > (oldBidValue * 10250) / 10000;

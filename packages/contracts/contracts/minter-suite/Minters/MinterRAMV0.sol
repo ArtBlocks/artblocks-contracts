@@ -1033,6 +1033,14 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         currencyAddress = address(0);
     }
 
+    /**
+     * @notice Returns the value of the minimum bid in the project's auction,
+     * in Wei.
+     * Reverts if no bids exist in the auction.
+     * @param projectId Project ID to get the minimum bid value for
+     * @param coreContract Core contract address for the given project
+     * @return minBidValue Value of the minimum bid in the auction, in Wei
+     */
     function getMinBidValue(
         uint256 projectId,
         address coreContract
@@ -1041,6 +1049,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             projectId: projectId,
             coreContract: coreContract
         });
+        // translate slot index to bid value
         uint256 projectBasePrice = RAMLib
             .getRAMProjectConfig({
                 projectId: projectId,
