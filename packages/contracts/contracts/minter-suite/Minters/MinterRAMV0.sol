@@ -855,6 +855,18 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
+     * Gets the configuration details for a core contract as configured by a
+     * contract admin, for this minter.
+     * @param coreContract The address of the core contract.
+     * @return RAMLib.RAMContractConfig instance with the configuration data.
+     */
+    function contractConfigurationDetails(
+        address coreContract
+    ) external view returns (RAMLib.RAMContractConfig memory) {
+        return RAMLib.getRAMContractConfig(coreContract);
+    }
+
+    /**
      * @notice Gets the maximum invocations project configuration.
      * @dev RAMLib shims in logic to properly return maxHasBeenInvoked based
      * on project state, bid state, and core contract state.
@@ -882,6 +894,32 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             });
     }
 
+    /**
+     * @notice Returns the auction details for project `projectId` on core
+     * contract `coreContract`.
+     * @param projectId is an existing project ID.
+     * @param coreContract is an existing core contract address.
+     * @return auctionTimestampStart is the timestamp at which the auction
+     * starts.
+     * @return auctionTimestampEnd is the timestamp at which the auction ends.
+     * @return basePrice is the resting price of the auction, in Wei.
+     * @return numTokensInAuction is the number of tokens in the auction.
+     * @return numBids is the number of bids in the auction.
+     * @return numBidsMintedTokens is the number of bids that have been minted
+     * into tokens.
+     * @return numBidsErrorRefunded is the number of bids that have been
+     * refunded due to an error state.
+     * @return minBidSlotIndex is the index of the slot with the minimum bid
+     * value.
+     * @return allowExtraTime is a bool indicating if the auction is allowed to
+     * have extra time.
+     * @return adminOnlyMintPeriodIfSellout is a bool indicating if an
+     * admin-only mint period is required if the auction sells out.
+     * @return revenuesCollected is a bool indicating if the auction revenues
+     * have been collected.
+     * @return projectMinterState is the current state of the project minter.
+     * @dev projectMinterState is a RAMLib.ProjectMinterStates enum value.
+     */
     function getAuctionDetails(
         uint256 projectId,
         address coreContract
