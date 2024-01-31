@@ -845,6 +845,8 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
 
     /**
      * @notice Gets the maximum invocations project configuration.
+     * @dev RAMLib shims in logic to properly return maxHasBeenInvoked based
+     * on project state, bid state, and core contract state.
      * @param projectId The ID of the project whose data needs to be fetched.
      * @param coreContract The address of the core contract.
      * @return MaxInvocationsLib.MaxInvocationsProjectConfig instance with the
@@ -858,8 +860,12 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         view
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
+        // RAM minter does not update maxHasBeenInvoked, so we ask the RAMLib
+        // for this state, and it shims in an appropriate maxHasBeenInvoked
+        // value based on the state of the auction, unminted bids, core
+        // contract invocations, and minter max invocations
         return
-            MaxInvocationsLib.getMaxInvocationsProjectConfig({
+            RAMLib.getMaxInvocationsProjectConfig({
                 projectId: projectId,
                 coreContract: coreContract
             });
@@ -887,16 +893,10 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * @notice projectId => has project reached its maximum number of
-     * invocations? Note that this returns a local cache of the core contract's
-     * state, and may be out of sync with the core contract. This is
-     * intentional, as it only enables gas optimization of mints after a
-     * project's maximum invocations has been reached. A false negative will
-     * only result in a gas cost increase, since the core contract will still
-     * enforce a maxInvocation check during minting. A false positive is not
-     * possible because the V3 core contract only allows maximum invocations
-     * to be reduced, not increased. Based on this rationale, we intentionally
-     * do not do input validation in this method as to whether or not the input
+     * @notice Returns if project has reached maximum number of invocations for
+     * a given project and core contract, properly accounting for the auction
+     * state, unminted bids, core contract invocations, and minter max
+     * invocations when determining maxHasBeenInvoked
      * @param projectId is an existing project ID.
      * @param coreContract is an existing core contract address.
      */
@@ -905,7 +905,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         address coreContract
     ) external view returns (bool) {
         return
-            MaxInvocationsLib.getMaxHasBeenInvoked({
+            RAMLib.getMaxHasBeenInvoked({
                 projectId: projectId,
                 coreContract: coreContract
             });

@@ -1904,6 +1904,78 @@ library RAMLib {
     }
 
     /**
+     * @notice Returns the MaxInvocationsProjectConfig for a given project and
+     * core contract, properly accounting for the auction state, unminted bids,
+     * core contract invocations, and minter max invocations when determining
+     * maxHasBeenInvoked
+     * @param projectId Project Id to get config for
+     * @param coreContract Core contract address to get config for
+     */
+    function getMaxInvocationsProjectConfig(
+        uint256 projectId,
+        address coreContract
+    )
+        internal
+        view
+        returns (
+            MaxInvocationsLib.MaxInvocationsProjectConfig
+                memory maxInvocationsProjectConfig
+        )
+    {
+        // get max invocations project config from MaxInvocationsLib
+        maxInvocationsProjectConfig.maxInvocations = uint24(
+            MaxInvocationsLib.getMaxInvocations({
+                projectId: projectId,
+                coreContract: coreContract
+            })
+        );
+        maxInvocationsProjectConfig.maxHasBeenInvoked = getMaxHasBeenInvoked({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+    }
+
+    /**
+     * @notice Returns if project has reached maximum number of invocations for
+     * a given project and core contract, properly accounting for the auction
+     * state, unminted bids, core contract invocations, and minter max
+     * invocations when determining maxHasBeenInvoked
+     * @param projectId Project Id to get config for
+     * @param coreContract Core contract address to get config for
+     */
+    function getMaxHasBeenInvoked(
+        uint256 projectId,
+        address coreContract
+    ) internal view returns (bool maxHasBeenInvoked) {
+        // calculate if max has been invoked based on auction state
+        ProjectMinterStates projectMinterState = getProjectMinterState({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        if (projectMinterState == ProjectMinterStates.A) {
+            // pre-auction, always leave maxHasBeenInvoked as init value false
+        } else if (projectMinterState == ProjectMinterStates.B) {
+            // live auction, set to true if num bids == num tokens in auction
+            RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+            maxHasBeenInvoked =
+                RAMProjectConfig_.numTokensInAuction ==
+                RAMProjectConfig_.numBids;
+        } else {
+            // post auction, set to true if remaining excess invocations is zero
+            (, , uint256 numExcessInvocationsAvailable) = isErrorE1({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+            if (numExcessInvocationsAvailable == 0) {
+                maxHasBeenInvoked = true;
+            }
+        }
+    }
+
+    /**
      * Loads the RAMProjectConfig for a given project and core
      * contract.
      * @param projectId Project Id to get config for
