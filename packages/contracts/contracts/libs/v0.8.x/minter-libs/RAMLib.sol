@@ -218,12 +218,13 @@ library RAMLib {
     uint256 constant SLOTS_PER_PRICE_DOUBLE = 512 / 8; // 64 slots per double
 
     // auction extension time constants
-    uint256 constant AUCTION_BUFFER_SECONDS = 5 * 60; // 5 minutes
-    uint256 constant MAX_AUCTION_EXTRA_SECONDS = 60 * 60; // 1 hour
-    uint256 constant MAX_AUCTION_ADMIN_EMERGENCY_EXTENSION_HOURS = 72; // 24 hours
+    uint256 constant AUCTION_BUFFER_SECONDS = 5 minutes; // 5 minutes
+    uint256 constant MAX_AUCTION_EXTRA_SECONDS = 1 hours; // 1 hour
+    // @dev store value in hours to improve storage packing
+    uint256 constant MAX_AUCTION_ADMIN_EMERGENCY_EXTENSION_HOURS = 72; // 72 hours
 
     // 60 sec/min * 60 min/hr * 24 hr
-    uint256 constant ADMIN_ONLY_MINT_TIME_SECONDS = 60 * 60 * 72; // 72 hours
+    uint256 constant ADMIN_ONLY_MINT_TIME_SECONDS = 72 hours;
 
     enum ProjectMinterStates {
         A, // Pre-Auction
@@ -1749,13 +1750,25 @@ library RAMLib {
         internal
         view
         returns (
-            uint40 auctionTimestampStart,
-            uint40 auctionTimestampEnd,
-            uint88 basePrice,
-            uint24 numTokensInAuction,
-            uint24 numBids
+            uint256 auctionTimestampStart,
+            uint256 auctionTimestampEnd,
+            uint256 basePrice,
+            uint256 numTokensInAuction,
+            uint256 numBids,
+            uint256 numBidsMintedTokens,
+            uint256 numBidsErrorRefunded,
+            uint256 minBidSlotIndex,
+            bool allowExtraTime,
+            bool adminOnlyMintPeriodIfSellout,
+            bool revenuesCollected,
+            RAMLib.ProjectMinterStates projectMinterState
         )
     {
+        // asign project minter state
+        projectMinterState = getProjectMinterState({
+            projectId: projectId,
+            coreContract: coreContract
+        });
         // get project config
         RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
             projectId: projectId,
@@ -1767,6 +1780,13 @@ library RAMLib {
         basePrice = RAMProjectConfig_.basePrice;
         numTokensInAuction = RAMProjectConfig_.numTokensInAuction;
         numBids = RAMProjectConfig_.numBids;
+        numBidsMintedTokens = RAMProjectConfig_.numBidsMintedTokens;
+        numBidsErrorRefunded = RAMProjectConfig_.numBidsErrorRefunded;
+        minBidSlotIndex = RAMProjectConfig_.minBidSlotIndex;
+        allowExtraTime = RAMProjectConfig_.allowExtraTime;
+        adminOnlyMintPeriodIfSellout = RAMProjectConfig_
+            .adminOnlyMintPeriodIfSellout;
+        revenuesCollected = RAMProjectConfig_.revenuesCollected;
     }
 
     function getProjectMinterState(

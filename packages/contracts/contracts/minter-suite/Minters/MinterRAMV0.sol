@@ -821,27 +821,38 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         });
     }
 
-    // /**
-    //  * @notice View function to return the current minter-level configuration
-    //  * details.
-    //  * @return minAuctionDurationSeconds Minimum auction duration in seconds.
-    //  * Note that this value is a constant on this version of the minter.
-    //  * @return minterTimeBufferSeconds Buffer time in seconds
-    //  * @return minterRefundGasLimit Gas limit for refunding ETH
-    //  */
-    // function minterConfigurationDetails()
-    //     external
-    //     view
-    //     returns (
-    //         uint256 minAuctionDurationSeconds,
-    //         uint32 minterTimeBufferSeconds,
-    //         uint24 minterRefundGasLimit
-    //     )
-    // {
-    //     minAuctionDurationSeconds = MIN_AUCTION_DURATION_SECONDS;
-    //     minterTimeBufferSeconds = _minterTimeBufferSeconds;
-    //     minterRefundGasLimit = _minterRefundGasLimit;
-    // }
+    /**
+     * @notice View function to return the current minter-level configuration
+     * details. Some or all of these values may be defined as constants for
+     * this minter.
+     * @return minAuctionDurationSeconds Minimum auction duration in seconds
+     * @return auctionBufferSeconds Auction buffer time in seconds
+     * @return maxAuctionExtraSeconds Maximum extra time in seconds
+     * @return maxAuctionAdminEmergencyExtensionHours Maximum emergency
+     * extension hours for admin
+     * @return adminOnlyMintTimeSeconds Admin-only mint time in seconds
+     * @return minterRefundGasLimit Gas limit for refunding ETH
+     */
+    function minterConfigurationDetails()
+        external
+        view
+        returns (
+            uint256 minAuctionDurationSeconds,
+            uint256 auctionBufferSeconds,
+            uint256 maxAuctionExtraSeconds,
+            uint256 maxAuctionAdminEmergencyExtensionHours,
+            uint256 adminOnlyMintTimeSeconds,
+            uint24 minterRefundGasLimit
+        )
+    {
+        minAuctionDurationSeconds = MIN_AUCTION_DURATION_SECONDS;
+        auctionBufferSeconds = RAMLib.AUCTION_BUFFER_SECONDS;
+        maxAuctionExtraSeconds = RAMLib.MAX_AUCTION_EXTRA_SECONDS;
+        maxAuctionAdminEmergencyExtensionHours = RAMLib
+            .MAX_AUCTION_ADMIN_EMERGENCY_EXTENSION_HOURS;
+        adminOnlyMintTimeSeconds = RAMLib.ADMIN_ONLY_MINT_TIME_SECONDS;
+        minterRefundGasLimit = _minterRefundGasLimit;
+    }
 
     /**
      * @notice Gets the maximum invocations project configuration.
@@ -878,11 +889,18 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         external
         view
         returns (
-            uint40 auctionTimestampStart,
-            uint40 auctionTimestampEnd,
-            uint88 basePrice,
-            uint24 numTokensInAuction,
-            uint24 numBids
+            uint256 auctionTimestampStart,
+            uint256 auctionTimestampEnd,
+            uint256 basePrice,
+            uint256 numTokensInAuction,
+            uint256 numBids,
+            uint256 numBidsMintedTokens,
+            uint256 numBidsErrorRefunded,
+            uint256 minBidSlotIndex,
+            bool allowExtraTime,
+            bool adminOnlyMintPeriodIfSellout,
+            bool revenuesCollected,
+            RAMLib.ProjectMinterStates projectMinterState
         )
     {
         return
