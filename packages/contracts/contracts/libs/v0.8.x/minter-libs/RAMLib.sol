@@ -1878,6 +1878,88 @@ library RAMLib {
     }
 
     /**
+     * Gets minimum next bid value in Wei and slot index for project `projectId`
+     * on core contract `coreContract`.
+     * If in a pre-auction state, reverts if unconfigured, otherwise returns
+     * the minimum initial bid price for the upcoming auction.
+     * If in an active auction, returns the minimum next bid's value and slot
+     * index.
+     * If in a post-auction state, reverts if auction was a sellout, otherwise
+     * returns the auction's reserve price and slot index 0 (because tokens may
+     * still be purchasable at the reserve price).
+     * @param projectId Project ID to get the minimum next bid value for
+     * @param coreContract Core contract address for the given project
+     * @return minNextBidValueInWei minimum next bid value in Wei
+     * @return minNextBidSlotIndex slot index of the minimum next bid
+     */
+    function getMinimumNextBid(
+        uint256 projectId,
+        address coreContract
+    )
+        external
+        view
+        returns (uint256 minNextBidValueInWei, uint256 minNextBidSlotIndex)
+    {
+        // get minter state
+        RAMLib.ProjectMinterStates projectMinterState = getProjectMinterState({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // handle pre-auction State A
+        if (projectMinterState == RAMLib.ProjectMinterStates.A) {
+            bool isConfigured = RAMProjectConfig_.timestampStart > 0;
+            if (!isConfigured) {
+                // if not configured, revert
+                revert("auction not configured");
+            }
+            // if configured, min next bid is base price at slot 0
+            minNextBidValueInWei = RAMProjectConfig_.basePrice;
+            minNextBidSlotIndex = 0;
+        } else {
+            // values that apply to all live-auction and post-auction states
+            bool isSellout = RAMProjectConfig_.numBids ==
+                RAMProjectConfig_.numTokensInAuction;
+
+            // handle live-auction State B
+            if (projectMinterState == RAMLib.ProjectMinterStates.B) {
+                if (isSellout) {
+                    // find next valid bid
+                    // @dev okay if we extend past the maximum slot index
+                    // for this view function
+                    minNextBidSlotIndex = findNextValidBidSlotIndex({
+                        projectId: projectId,
+                        coreContract: coreContract,
+                        startSlotIndex: RAMProjectConfig_.minBidSlotIndex
+                    });
+                    minNextBidValueInWei = slotIndexToBidValue({
+                        basePrice: RAMProjectConfig_.basePrice,
+                        slotIndex: uint16(minNextBidSlotIndex)
+                    });
+                } else {
+                    // not sellout, so min bid is base price
+                    minNextBidValueInWei = RAMProjectConfig_.basePrice;
+                    minNextBidSlotIndex = 0;
+                }
+            } else {
+                // handle post-auction States C, D, E
+                if (isSellout) {
+                    // if sellout, revert
+                    revert("auction ended, sellout");
+                } else {
+                    // not sellout, so return base price
+                    minNextBidValueInWei = RAMProjectConfig_.basePrice;
+                    minNextBidSlotIndex = 0;
+                }
+            }
+        }
+    }
+
+    /**
      * @notice Returns the next valid bid slot index for a given project.
      * @dev this may return a slot index higher than the maximum slot index
      * allowed by the minter, in which case a bid cannot actually be placed

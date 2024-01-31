@@ -1034,6 +1034,35 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
+     * Gets minimum next bid value in Wei and slot index for project `projectId`
+     * on core contract `coreContract`.
+     * If in a pre-auction state, reverts if unconfigured, otherwise returns
+     * the minimum initial bid price for the upcoming auction.
+     * If in an active auction, returns the minimum next bid's value and slot
+     * index.
+     * If in a post-auction state, reverts if auction was a sellout, otherwise
+     * returns the auction's reserve price and slot index 0 (because tokens may
+     * still be purchasable at the reserve price).
+     * @param projectId Project ID to get the minimum next bid value for
+     * @param coreContract Core contract address for the given project
+     * @return minNextBidValueInWei minimum next bid value in Wei
+     * @return minNextBidSlotIndex slot index of the minimum next bid
+     */
+    function getMinimumNextBid(
+        uint256 projectId,
+        address coreContract
+    )
+        external
+        view
+        returns (uint256 minNextBidValueInWei, uint256 minNextBidSlotIndex)
+    {
+        (minNextBidValueInWei, minNextBidSlotIndex) = RAMLib.getMinimumNextBid({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+    }
+
+    /**
      * @notice Returns the value of the minimum bid in the project's auction,
      * in Wei.
      * Reverts if no bids exist in the auction.
