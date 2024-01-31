@@ -731,6 +731,34 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
+     * @notice This withdraws project revenues for project `projectId` on core
+     * contract `coreContract` to the artist and admin, only after all bids
+     * have been minted+settled or refunded.
+     * Note that the conditions described are the equivalent of project minter
+     * State E.
+     * @param projectId Project ID to withdraw revenues for.
+     * @param coreContract Core contract address for the given project.
+     */
+    function withdrawArtistAndAdminRevenues(
+        uint256 projectId,
+        address coreContract
+    ) external nonReentrant {
+        // CHECKS
+        AuthLib.onlyCoreAdminACLOrArtist({
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.withdrawArtistAndAdminRevenues.selector
+        });
+        // EFFECTS/INTERACTIONS
+        RAMLib.withdrawArtistAndAdminRevenues({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+    }
+
+    /**
      * @notice Returns if project minter is in ERROR state E1, and the number
      * of bids that need to be refunded to resolve the error.
      * E1: Tokens owed > invocations available

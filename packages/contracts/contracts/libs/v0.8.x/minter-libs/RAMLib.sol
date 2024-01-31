@@ -9,6 +9,7 @@ import {BitMaps256} from "../BitMap.sol";
 import {ABHelpers} from "../ABHelpers.sol";
 import {SplitFundsLib} from "./SplitFundsLib.sol";
 import {MaxInvocationsLib} from "./MaxInvocationsLib.sol";
+import {GenericMinterEventsLib} from "./GenericMinterEventsLib.sol";
 
 import {IERC721} from "@openzeppelin-5.0/contracts/token/ERC721/IERC721.sol";
 import {SafeCast} from "@openzeppelin-5.0/contracts/utils/math/SafeCast.sol";
@@ -198,6 +199,9 @@ library RAMLib {
     // for this library
     bytes32 constant RAM_LIB_STORAGE_POSITION = keccak256("ramlib.storage");
 
+    bytes32 internal constant CONFIG_AUCTION_REVENUES_COLLECTED =
+        "auctionRevenuesCollected";
+
     uint256 constant NUM_SLOTS = 512;
 
     // pricing assumes maxPrice = minPrice * 2^8, pseudo-exponential curve
@@ -261,6 +265,8 @@ library RAMLib {
         // @dev max uint88 ~= 3e26 Wei = ~300 million ETH, which is well above
         // the expected prices of any NFT mint in the foreseeable future.
         uint88 basePrice;
+        // --- revenue collection state ---
+        bool revenuesCollected;
     }
 
     struct Bid {
@@ -1294,6 +1300,76 @@ library RAMLib {
         RAMProjectConfig_.latestRefundedBidArrayIndex = uint24(
             currentLatestRefundedBidArrayIndex
         );
+    }
+
+    /**
+     * @notice This withdraws project revenues for project `projectId` on core
+     * contract `coreContract` to the artist and admin, only after all bids
+     * have been minted+settled or refunded.
+     * Note that the conditions described are the equivalent of project minter
+     * State E.
+     * @param projectId Project ID to withdraw revenues for.
+     * @param coreContract Core contract address for the given project.
+     */
+    function withdrawArtistAndAdminRevenues(
+        uint256 projectId,
+        address coreContract
+    ) internal {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+
+        // CHECKS
+        // require project minter state E (Post-Auction, all bids handled)
+        ProjectMinterStates projectMinterState = getProjectMinterState({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        require(projectMinterState == ProjectMinterStates.E, "Only state E");
+        // require revenues not already withdrawn
+        require(
+            !(RAMProjectConfig_.revenuesCollected),
+            "Revenues already withdrawn"
+        );
+
+        // EFFECTS
+        // update state to indicate revenues withdrawn
+        RAMProjectConfig_.revenuesCollected = true;
+
+        // get project price, depending on if it was a sellout
+        uint256 projectPrice;
+        // @dev block scope to limit stack depth
+        {
+            bool wasSellout = RAMProjectConfig_.numBids ==
+                RAMProjectConfig_.numTokensInAuction;
+            projectPrice = wasSellout
+                ? slotIndexToBidValue({
+                    basePrice: RAMProjectConfig_.basePrice,
+                    slotIndex: RAMProjectConfig_.minBidSlotIndex
+                })
+                : RAMProjectConfig_.basePrice;
+        }
+        // get netRevenues
+        // @dev refunded bids do not count towards amount due because they
+        // did not generate revenue
+        uint256 netRevenues = projectPrice *
+            RAMProjectConfig_.numBidsMintedTokens;
+
+        // INTERACTIONS
+        SplitFundsLib.splitRevenuesETHNoRefund({
+            projectId: projectId,
+            valueInWei: netRevenues,
+            coreContract: coreContract
+        });
+
+        emit GenericMinterEventsLib.ConfigValueSet({
+            projectId: projectId,
+            coreContract: coreContract,
+            key: CONFIG_AUCTION_REVENUES_COLLECTED,
+            value: true
+        });
     }
 
     /**
