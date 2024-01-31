@@ -984,18 +984,21 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * @notice Gets price info to become the leading bidder on a token auction.
-     * If artist has not called `configureFutureAuctions` and there is no
-     * active token auction accepting bids, `isConfigured` will be false, and a
+     * @notice Gets minimum bid value to become the leading bidder in an
+     * auction for project `projectId` on core contract `coreContract`.
+     * If an auction is not configured, `isConfigured` will be false, and a
      * dummy price of zero is assigned to `tokenPriceInWei`.
-     * If there is an active auction accepting bids, `isConfigured` will be
-     * true, and `tokenPriceInWei` will be the sum of the current bid value and
-     * the minimum bid increment due to the minter's
-     * `minterMinBidIncrementPercentage`.
+     * If an auction is configured but still in a pre-auction state,
+     * `isConfigured` will be true, and `tokenPriceInWei` will be the minimum
+     * initial bid price for the next token auction.
+     * If there is an active auction, `isConfigured` will be true, and
+     * `tokenPriceInWei` will be the current minimum bid's value + min bid
+     * increment due to the minter's increment percentage, rounded up to next
+     * slot's bid value.
      * If there is an auction that has ended (no longer accepting bids), but
      * the project is configured, `isConfigured` will be true, and
-     * `tokenPriceInWei` will be the minimum initial bid price for the next
-     * token auction.
+     * `tokenPriceInWei` will be either the sellout price or the reserve price
+     * of the auction if it did not sell out during its auction.
      * Also returns currency symbol and address to be being used as payment,
      * which for this minter is ETH only.
      * @param projectId Project ID to get price information for.
@@ -1021,13 +1024,13 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             address currencyAddress
         )
     {
-        // (isConfigured, tokenPriceInWei) = SEALib.getPriceInfo({
-        //     projectId: projectId,
-        //     coreContract: coreContract
-        // });
-        // // currency is always ETH
-        // currencySymbol = "ETH";
-        // currencyAddress = address(0);
+        (isConfigured, tokenPriceInWei) = RAMLib.getPriceInfo({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // currency is always ETH
+        currencySymbol = "ETH";
+        currencyAddress = address(0);
     }
 
     function getMinBidValue(

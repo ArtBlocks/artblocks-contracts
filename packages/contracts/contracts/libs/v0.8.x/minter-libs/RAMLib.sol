@@ -1544,19 +1544,13 @@ library RAMLib {
                 basePrice: RAMProjectConfig_.basePrice,
                 slotIndex: removedSlotIndex
             });
-            if (bidValue > 0.5 ether) {
-                // require new bid is at least 2.5% greater than removed minimum bid
-                require(
-                    bidValue > (removedBidValue * 10250) / 10000,
-                    "Insufficient bid value"
-                );
-            } else {
-                // require new bid is at least 5% greater than removed minimum bid
-                require(
-                    bidValue > (removedBidValue * 10500) / 10000,
-                    "Insufficient bid value"
-                );
-            }
+            require(
+                isSufficientOutbid({
+                    oldBidValue: removedBidValue,
+                    newBidValue: bidValue
+                }),
+                "Insufficient bid value"
+            );
 
             // apply auction extension time if needed
             bool timeExtensionNeeded = RAMProjectConfig_.allowExtraTime &&
@@ -1787,6 +1781,148 @@ library RAMLib {
         adminOnlyMintPeriodIfSellout = RAMProjectConfig_
             .adminOnlyMintPeriodIfSellout;
         revenuesCollected = RAMProjectConfig_.revenuesCollected;
+    }
+
+    /**
+     * @notice Returns the price information for a given project.
+     * If an auction is not configured, `isConfigured` will be false, and a
+     * dummy price of zero is assigned to `tokenPriceInWei`.
+     * If an auction is configured but still in a pre-auction state,
+     * `isConfigured` will be true, and `tokenPriceInWei` will be the minimum
+     * initial bid price for the next token auction.
+     * If there is an active auction, `isConfigured` will be true, and
+     * `tokenPriceInWei` will be the current minimum bid's value + min bid
+     * increment due to the minter's increment percentage, rounded up to next
+     * slot's bid value.
+     * If there is an auction that has ended (no longer accepting bids), but
+     * the project is configured, `isConfigured` will be true, and
+     * `tokenPriceInWei` will be either the sellout price or the reserve price
+     * of the auction if it did not sell out during its auction.
+     * @param projectId Project ID to get price information for
+     * @param coreContract Core contract address for the given project
+     * @return isConfigured True if the project is configured, false otherwise
+     * @return tokenPriceInWei Price of a token in Wei, if configured
+     */
+    function getPriceInfo(
+        uint256 projectId,
+        address coreContract
+    ) internal view returns (bool isConfigured, uint256 tokenPriceInWei) {
+        // get minter state
+        RAMLib.ProjectMinterStates projectMinterState = getProjectMinterState({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // handle pre-auction State A
+        if (projectMinterState == RAMLib.ProjectMinterStates.A) {
+            isConfigured = RAMProjectConfig_.timestampStart > 0;
+            // if not configured, leave tokenPriceInWei as 0
+            if (isConfigured) {
+                tokenPriceInWei = RAMProjectConfig_.basePrice;
+            }
+        } else {
+            // values that apply to all live-auction and post-auction states
+            isConfigured = true;
+            bool isSellout = RAMProjectConfig_.numBids ==
+                RAMProjectConfig_.numTokensInAuction;
+
+            // handle live-auction State B
+            if (projectMinterState == RAMLib.ProjectMinterStates.B) {
+                if (isSellout) {
+                    // find next valid bid
+                    uint256 nextValidBidSlotIndex = findNextValidBidSlotIndex({
+                        projectId: projectId,
+                        coreContract: coreContract,
+                        startSlotIndex: RAMProjectConfig_.minBidSlotIndex
+                    });
+                    tokenPriceInWei = slotIndexToBidValue({
+                        basePrice: RAMProjectConfig_.basePrice,
+                        slotIndex: uint16(nextValidBidSlotIndex)
+                    });
+                } else {
+                    // not sellout, so min bid is base price
+                    tokenPriceInWei = RAMProjectConfig_.basePrice;
+                }
+            } else {
+                // handle post-auction States C, D, E
+                if (isSellout) {
+                    // if sellout, return min bid price
+                    tokenPriceInWei = slotIndexToBidValue({
+                        basePrice: RAMProjectConfig_.basePrice,
+                        slotIndex: RAMProjectConfig_.minBidSlotIndex
+                    });
+                } else {
+                    // not sellout, so return base price
+                    tokenPriceInWei = RAMProjectConfig_.basePrice;
+                }
+            }
+        }
+    }
+
+    function findNextValidBidSlotIndex(
+        uint256 projectId,
+        address coreContract,
+        uint16 startSlotIndex
+    ) private view returns (uint16 nextValidBidSlotIndex) {
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        uint256 basePrice = RAMProjectConfig_.basePrice;
+        uint256 startBidValue = slotIndexToBidValue({
+            basePrice: basePrice,
+            slotIndex: startSlotIndex
+        });
+        // start search at next slot, incremented in while loop
+        uint256 currentSlotIndex = startSlotIndex;
+        uint256 currentSlotBidValue; // populated in while loop
+        while (true) {
+            // increment slot index and re-calc current slot bid value
+            unchecked {
+                currentSlotIndex++;
+            }
+            currentSlotBidValue = slotIndexToBidValue({
+                basePrice: basePrice,
+                slotIndex: uint16(currentSlotIndex)
+            });
+            // break if current slot's bid value is sufficiently greater than
+            // the starting slot's bid value
+            if (
+                isSufficientOutbid({
+                    oldBidValue: startBidValue,
+                    newBidValue: currentSlotBidValue
+                })
+            ) {
+                break;
+            }
+            // otherwise continue to next iteration
+        }
+        // return the found valid slot index
+        nextValidBidSlotIndex = currentSlotIndex;
+    }
+
+    /**
+     * @notice Returns a bool indicating if a new bid value is sufficiently
+     * greater than an old bid value, to replace the old bid value.
+     * @param oldBidValue Old bid value to compare
+     * @param newBidValue New bid value to compare
+     * @return isSufficientOutbid True if new bid is sufficiently greater than
+     * old bid, false otherwise
+     */
+    function isSufficientOutbid(
+        uint256 oldBidValue,
+        uint256 newBidValue
+    ) internal pure returns (bool) {
+        if (oldBidValue > 0.5 ether) {
+            // require new bid is at least 2.5% greater than removed minimum bid
+            return newBidValue > (oldBidValue * 10250) / 10000;
+        }
+        // require new bid is at least 5% greater than removed minimum bid
+        return newBidValue > (oldBidValue * 10500) / 10000;
     }
 
     function getProjectMinterState(
