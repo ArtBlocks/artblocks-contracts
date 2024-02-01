@@ -362,6 +362,40 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
+     * @notice Reduces the auction length for project `projectId` on core
+     * contract `coreContract` to `auctionTimestampEnd`.
+     * Only allowed to be called during a live auction, and protects against
+     * the case of an accidental excessively long auction, which locks funds.
+     * Reverts if called by anyone other than the project's artist.
+     * Reverts if project is not in a Live Auction.
+     * Reverts if auction is not being reduced in length.
+     * Reverts if in extra time.
+     * Reverts if `auctionTimestampEnd` results in auction that is not at least
+     * `MIN_AUCTION_DURATION_SECONDS` in duration.
+     * Reverts if admin previously applied a time extension.
+     * @param projectId Project ID to reduce the auction length for.
+     * @param coreContract Core contract address for the given project.
+     * @param auctionTimestampEnd New timestamp at which to end the auction.
+     */
+    function reduceAuctionLength(
+        uint256 projectId,
+        address coreContract,
+        uint40 auctionTimestampEnd
+    ) external nonReentrant {
+        AuthLib.onlyArtist({
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
+        });
+        RAMLib.reduceAuctionLength({
+            projectId: projectId,
+            coreContract: coreContract,
+            auctionTimestampEnd: auctionTimestampEnd,
+            minimumAuctionDurationSeconds: MIN_AUCTION_DURATION_SECONDS
+        });
+    }
+
+    /**
      * @notice Places a bid for project `projectId` on core contract
      * `coreContract`.
      * Reverts if minter is not the active minter for projectId on minter

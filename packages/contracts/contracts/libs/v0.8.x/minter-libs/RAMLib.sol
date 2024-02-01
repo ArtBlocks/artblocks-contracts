@@ -288,6 +288,7 @@ library RAMLib {
         // timing
         // @dev max uint40 ~= 1.1e12 sec ~= 34 thousand years
         uint40 timestampStart;
+        // @dev timestampOriginalEnd & timestampEnd are the same if not in extra time
         uint40 timestampOriginalEnd;
         uint40 timestampEnd;
         // @dev max uint8 ~= 256 hours, which is gt max auction extension time of 72 hours
@@ -489,6 +490,78 @@ library RAMLib {
             allowExtraTime: allowExtraTime,
             adminOnlyMintPeriodIfSellout: adminOnlyMintPeriodIfSellout,
             numTokensInAuction: numTokensInAuction
+        });
+    }
+
+    /**
+     * @notice Reduces the auction length for project `projectId` on core
+     * contract `coreContract` to `auctionTimestampEnd`.
+     * Only allowed to be called during a live auction, and protects against
+     * the case of an accidental excessively long auction, which locks funds.
+     * Reverts if called by anyone other than the project's artist.
+     * Reverts if project is not in a Live Auction.
+     * Reverts if auction is not being reduced in length.
+     * Reverts if in extra time.
+     * Reverts if `auctionTimestampEnd` results in auction that is not at least
+     * `MIN_AUCTION_DURATION_SECONDS` in duration.
+     * Reverts if admin previously applied a time extension.
+     * @param projectId Project ID to reduce the auction length for.
+     * @param coreContract Core contract address for the given project.
+     * @param auctionTimestampEnd New timestamp at which to end the auction.
+     * @param minimumAuctionDurationSeconds Minimum auction duration, in seconds
+     */
+    function reduceAuctionLength(
+        uint256 projectId,
+        address coreContract,
+        uint40 auctionTimestampEnd,
+        uint256 minimumAuctionDurationSeconds
+    ) internal {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // CHECKS
+        // require auction state B
+        require(
+            getProjectMinterState(projectId, coreContract) ==
+                ProjectMinterStates.B,
+            "Only state B"
+        );
+        // require no previous admin extension time
+        require(
+            RAMProjectConfig_.adminEmergencyExtensionHoursApplied == 0,
+            "No previous admin extension"
+        );
+        // require not in extra time
+        require(
+            RAMProjectConfig_.timestampOriginalEnd ==
+                RAMProjectConfig_.timestampEnd,
+            "Not allowed in extra time"
+        );
+        // require reduction in auction length
+        require(
+            auctionTimestampEnd < RAMProjectConfig_.timestampEnd,
+            "Only reduce auction length"
+        );
+        // require meet minimum auction length requirement
+        require(
+            auctionTimestampEnd >
+                RAMProjectConfig_.timestampStart +
+                    minimumAuctionDurationSeconds,
+            "Auction too short"
+        );
+
+        // set auction details
+        RAMProjectConfig_.timestampEnd = auctionTimestampEnd;
+        // also update original end for accurate extra time calculation
+        RAMProjectConfig_.timestampOriginalEnd = auctionTimestampEnd;
+
+        // emit state change event
+        emit AuctionTimestampEndUpdated({
+            projectId: projectId,
+            coreContract: coreContract,
+            timestampEnd: auctionTimestampEnd
         });
     }
 
