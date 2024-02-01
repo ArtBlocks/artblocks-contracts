@@ -39,6 +39,12 @@ library RAMLib {
     event MinterRefundGasLimitUpdated(uint24 refundGasLimit);
 
     /**
+     * @notice Number of slots used by this RAM minter
+     * @param numSlots Number of slots used by this RAM minter
+     */
+    event NumSlotsUpdated(uint256 numSlots);
+
+    /**
      * @notice RAM auction buffer time parameters updated
      * @param auctionBufferSeconds time period at end of auction when new bids
      * can affect auction end time, updated to be this many seconds after the
@@ -62,7 +68,7 @@ library RAMLib {
      * is not allowed for all projects on this contract
      */
     event ContractConfigUpdated(
-        address coreContract,
+        address indexed coreContract,
         bool imposeConstraints,
         bool requireAdminOnlyMintPeriod,
         bool requireNoAdminOnlyMintPeriod
@@ -81,8 +87,8 @@ library RAMLib {
      * @param numTokensInAuction Auction number of tokens in auction
      */
     event AuctionConfigUpdated(
-        uint256 projectId,
-        address coreContract,
+        uint256 indexed projectId,
+        address indexed coreContract,
         uint256 timestampStart,
         uint256 timestampEnd,
         uint256 basePrice,
@@ -95,13 +101,14 @@ library RAMLib {
      * @notice Number of tokens in auction updated
      * @dev okay to not index this event if prior to AuctionConfigUpdated, as
      * the state value will be emitted in another future event
+     * @dev generic event not used due to additional indexing logic desired
      * @param projectId Project Id to update
      * @param coreContract Core contract address to update
      * @param numTokensInAuction Number of tokens in auction
      */
     event NumTokensInAuctionUpdated(
-        uint256 projectId,
-        address coreContract,
+        uint256 indexed projectId,
+        address indexed coreContract,
         uint256 numTokensInAuction
     );
 
@@ -109,26 +116,31 @@ library RAMLib {
      * @notice Auction timestamp end updated. Occurs when auction is extended
      * due to new bids near the end of an auction, when the auction is
      * configured to allow extra time.
+     * Also may occur when an admin extends the auction within the emergency
+     * extension time limit.
+     * @dev generic event not used due to additional indexing logic desired
+     * when event is encountered (want to understand what caused time
+     * extension)
      * @param projectId Project Id to update
      * @param coreContract Core contract address to update
      * @param timestampEnd Auction end timestamp
      */
     event AuctionTimestampEndUpdated(
-        uint256 projectId,
-        address coreContract,
+        uint256 indexed projectId,
+        address indexed coreContract,
         uint256 timestampEnd
     );
 
     /**
-     * @notice Bid removed from auction
+     * @notice Bid removed from auction because it was outbid.
      * @param projectId Project Id to update
      * @param coreContract Core contract address to update
      * @param slotIndex Slot index of bid that was removed
      * @param bidIndexInSlot Bid index in slot of bid that was removed
      */
     event BidRemoved(
-        uint256 projectId,
-        address coreContract,
+        uint256 indexed projectId,
+        address indexed coreContract,
         uint256 slotIndex,
         uint256 bidIndexInSlot
     );
@@ -141,8 +153,8 @@ library RAMLib {
      * @param bidIndexInSlot Bid index in slot of bid that was added
      */
     event BidInserted(
-        uint256 projectId,
-        address coreContract,
+        uint256 indexed projectId,
+        address indexed coreContract,
         uint256 slotIndex,
         uint256 bidIndexInSlot,
         address bidder
@@ -157,15 +169,25 @@ library RAMLib {
      * @param bidIndexInSlot Bid index in slot of bid that was settled
      */
     event BidSettled(
-        uint256 projectId,
-        address coreContract,
+        uint256 indexed projectId,
+        address indexed coreContract,
         uint256 slotIndex,
         uint256 bidIndexInSlot
     );
 
+    /**
+     * @notice A token was minted to the bidder for the bid at slotIndex and
+     * bidIndexInSlot. The tokenId is the token that was minted.
+     * @param projectId Project Id to update
+     * @param coreContract Core contract address to update
+     * @param slotIndex Slot index of bid that was minted
+     * @param bidIndexInSlot Bid index in slot of bid that was minted
+     * @param tokenId Token Id that was minted
+     *
+     */
     event BidMinted(
-        uint256 projectId,
-        address coreContract,
+        uint256 indexed projectId,
+        address indexed coreContract,
         uint256 slotIndex,
         uint256 bidIndexInSlot,
         uint256 tokenId
@@ -183,34 +205,35 @@ library RAMLib {
      * @param bidIndexInSlot Bid index in slot of bid that was settled
      */
     event BidRefunded(
-        uint256 projectId,
-        address coreContract,
+        uint256 indexed projectId,
+        address indexed coreContract,
         uint256 slotIndex,
         uint256 bidIndexInSlot
     );
 
     /**
-     * @notice Token was directly purchased
+     * @notice Token was directly purchased after an auction ended, and the
+     * token was minted to the buyer.
+     * @param projectId Project Id to update
+     * @param coreContract Core contract address to update
+     * @param tokenId Token Id that was minted
+     * @param to Address that the token was minted to
      */
     event TokenPurchased(
-        uint256 projectId,
-        address coreContract,
+        uint256 indexed projectId,
+        address indexed coreContract,
         uint256 tokenId,
         address to
     );
-
-    /**
-     * @notice Number of slots used by this RAM minter
-     * @param numSlots Number of slots used by this RAM minter
-     */
-    event NumSlotsUpdated(uint256 numSlots);
 
     // position of RAM Lib storage, using a diamond storage pattern
     // for this library
     bytes32 constant RAM_LIB_STORAGE_POSITION = keccak256("ramlib.storage");
 
+    // generic event key constants
     bytes32 internal constant CONFIG_AUCTION_REVENUES_COLLECTED =
         "auctionRevenuesCollected";
+    bytes32 internal constant CONFIG_TIMESTAMP_END = "timestampEnd";
 
     uint256 constant NUM_SLOTS = 512;
 
