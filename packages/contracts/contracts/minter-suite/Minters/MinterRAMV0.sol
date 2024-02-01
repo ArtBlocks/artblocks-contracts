@@ -1131,26 +1131,14 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * @notice Syncs local maximum invocations of project `projectId` based on
-     * the value currently defined in the core contract.
-     * @param projectId Project ID to set the maximum invocations for.
-     * @param coreContract Core contract address for the given project.
-     * @dev this enables gas reduction after maxInvocations have been reached -
-     * core contracts shall still enforce a maxInvocation check during mint.
+     * @notice Exists for interface conformance only.
+     * Use manuallyLimitProjectMaxInvocations to set the maximum invocations
+     * for a project instead.
      */
     function syncProjectMaxInvocationsToCore(
-        uint256 projectId,
-        address coreContract
-    ) public {
-        AuthLib.onlyArtist({
-            projectId: projectId,
-            coreContract: coreContract,
-            sender: msg.sender
-        });
-
-        MaxInvocationsLib.syncProjectMaxInvocationsToCore({
-            projectId: projectId,
-            coreContract: coreContract
-        });
+        uint256 /*projectId*/,
+        address /*coreContract*/
+    ) public pure {
+        revert("Action not supported");
     }
 }
