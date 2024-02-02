@@ -1555,7 +1555,7 @@ library RAMLib {
                 slotIndex: removedSlotIndex
             });
             require(
-                isSufficientOutbid({
+                _isSufficientOutbid({
                     oldBidValue: removedBidValue,
                     newBidValue: bidValue
                 }),
@@ -1591,151 +1591,6 @@ library RAMLib {
             slotIndex: slotIndex,
             bidder: bidder
         });
-    }
-
-    /**
-     * @notice Inserts a bid into the project's RAMProjectConfig.
-     * Assumes the bid is valid and may be inserted into the bucket-sort data
-     * structure.
-     * @param RAMProjectConfig_ RAM project config to insert bid into
-     * @param projectId Project ID to insert bid for
-     * @param coreContract Core contract address to insert bid for
-     * @param slotIndex Slot index to insert bid at
-     * @param bidder Bidder address
-     */
-    function _insertBid(
-        RAMProjectConfig storage RAMProjectConfig_,
-        uint256 projectId,
-        address coreContract,
-        uint16 slotIndex,
-        address bidder
-    ) private {
-        // add the new Bid
-        Bid[] storage bids = RAMProjectConfig_.bidsBySlot[slotIndex];
-        bids.push(
-            Bid({
-                bidder: bidder,
-                isSettled: false,
-                isMinted: false,
-                isRefunded: false
-            })
-        );
-        // update number of active bids
-        RAMProjectConfig_.numBids++;
-        // update metadata if first bid for this slot
-        // @dev assumes minting has not yet started
-        // @dev load into memory for gas efficiency
-        uint256 newBidsLength = bids.length;
-        if (newBidsLength == 1) {
-            // set the slot in the bitmap
-            _setBitmapSlot({
-                RAMProjectConfig_: RAMProjectConfig_,
-                slotIndex: slotIndex
-            });
-            // update bitmap metadata - reduce min bid index if necessary
-            if (slotIndex < RAMProjectConfig_.minBidSlotIndex) {
-                RAMProjectConfig_.minBidSlotIndex = slotIndex;
-            }
-            // update bitmap metadata - increase max bid index if necessary
-            if (slotIndex > RAMProjectConfig_.maxBidSlotIndex) {
-                RAMProjectConfig_.maxBidSlotIndex = slotIndex;
-            }
-        }
-
-        // emit state change event
-        emit BidInserted({
-            projectId: projectId,
-            coreContract: coreContract,
-            slotIndex: slotIndex,
-            bidIndexInSlot: newBidsLength - 1, // index of new bid in slot
-            bidder: bidder
-        });
-    }
-
-    /**
-     * @notice Remove minimum bid from the project's RAMProjectConfig.
-     * Reverts if no bids exist in slot RAMProjectConfig_.minBidSlotIndex.
-     * @param RAMProjectConfig_ RAM project config to remove bid from
-     * @param minterRefundGasLimit Gas limit to use when refunding the previous
-     * highest bidder, prior to using fallback force-send to refund
-     */
-    function _removeMinBid(
-        RAMProjectConfig storage RAMProjectConfig_,
-        uint256 projectId,
-        address coreContract,
-        uint256 minterRefundGasLimit
-    ) private returns (uint16 removedSlotIndex) {
-        // get the minimum bid
-        removedSlotIndex = RAMProjectConfig_.minBidSlotIndex;
-        // get the bids array for that slot
-        Bid[] storage bids = RAMProjectConfig_.bidsBySlot[removedSlotIndex];
-        // record the previous min bidder
-        uint256 removedBidIndexInSlot = bids.length - 1;
-        address removedBidder = bids[removedBidIndexInSlot].bidder;
-        // pop the last active bid in the array
-        // @dev implicitly deletes the last bid in the array
-        // @dev appropriate because earlier bids (lower index) have priority;
-        // TODO: gas-optimize this by only editing array length since once remove a bid, will never re-add on that slot
-        bids.pop();
-        RAMProjectConfig_.numBids--;
-        // update metadata if no more active bids for this slot
-        if (bids.length == 0) {
-            // unset the slot in the bitmap
-            // update minBidIndex, efficiently starting at minBidSlotIndex + 1
-            _unsetBitmapSlot({
-                RAMProjectConfig_: RAMProjectConfig_,
-                slotIndex: removedSlotIndex
-            });
-            // @dev reverts if removedSlotIndex was the maximum slot 511,
-            // preventing bids from being removed entirely from the last slot,
-            // which is acceptable and non-impacting for this minter
-            // @dev sets minBidSlotIndex to 512 if no more active bids
-            RAMProjectConfig_.minBidSlotIndex = _getMinSlotWithBid({
-                RAMProjectConfig_: RAMProjectConfig_,
-                startSlotIndex: removedSlotIndex + 1
-            });
-        }
-        // refund the removed bidder
-        uint256 removedBidAmount = slotIndexToBidValue({
-            basePrice: RAMProjectConfig_.basePrice,
-            slotIndex: removedSlotIndex
-        });
-        SplitFundsLib.forceSafeTransferETH({
-            to: removedBidder,
-            amount: removedBidAmount,
-            minterRefundGasLimit: minterRefundGasLimit
-        });
-
-        // emit state change event
-        emit BidRemoved({
-            projectId: projectId,
-            coreContract: coreContract,
-            slotIndex: removedSlotIndex,
-            bidIndexInSlot: removedBidIndexInSlot
-        });
-    }
-
-    /**
-     * @notice Returns the value of a bid in a given slot, in Wei.
-     * @dev returns 0 if base price is zero
-     * @param basePrice Base price (or reserve price) of the auction, in Wei
-     * @param slotIndex Slot index to query
-     * @return slotBidValue Value of a bid in the slot, in Wei
-     */
-    function slotIndexToBidValue(
-        uint256 basePrice,
-        uint16 slotIndex
-    ) internal pure returns (uint256 slotBidValue) {
-        // use pseud-exponential pricing curve
-        // multiply by two (via bit-shifting) for the number of entire
-        // slots-per-price-double associated with the slot index
-        slotBidValue = basePrice << (slotIndex / SLOTS_PER_PRICE_DOUBLE);
-        // perform a linear interpolation between partial half-life points, to
-        // approximate the current place on a perfect exponential curve.
-        // @dev overflow automatically checked in solidity 0.8, not expected
-        slotBidValue +=
-            (slotBidValue * (slotIndex % SLOTS_PER_PRICE_DOUBLE)) /
-            SLOTS_PER_PRICE_DOUBLE;
     }
 
     /**
@@ -2004,78 +1859,6 @@ library RAMLib {
         }
     }
 
-    /**
-     * @notice Returns the next valid bid slot index for a given project.
-     * @dev this may return a slot index higher than the maximum slot index
-     * allowed by the minter, in which case a bid cannot actually be placed
-     * to outbid a bid at `startSlotIndex`.
-     * @param projectId Project ID to find next valid bid slot index for
-     * @param coreContract Core contract address for the given project
-     * @param startSlotIndex Slot index to start search from
-     * @return nextValidBidSlotIndex Next valid bid slot index
-     */
-    function _findNextValidBidSlotIndex(
-        uint256 projectId,
-        address coreContract,
-        uint16 startSlotIndex
-    ) private view returns (uint16 nextValidBidSlotIndex) {
-        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
-            projectId: projectId,
-            coreContract: coreContract
-        });
-        uint256 basePrice = RAMProjectConfig_.basePrice;
-        uint256 startBidValue = slotIndexToBidValue({
-            basePrice: basePrice,
-            slotIndex: startSlotIndex
-        });
-        // start search at next slot, incremented in while loop
-        uint256 currentSlotIndex = startSlotIndex;
-        uint256 currentSlotBidValue; // populated in while loop
-        while (true) {
-            // increment slot index and re-calc current slot bid value
-            unchecked {
-                currentSlotIndex++;
-            }
-            currentSlotBidValue = slotIndexToBidValue({
-                basePrice: basePrice,
-                slotIndex: uint16(currentSlotIndex)
-            });
-            // break if current slot's bid value is sufficiently greater than
-            // the starting slot's bid value
-            if (
-                isSufficientOutbid({
-                    oldBidValue: startBidValue,
-                    newBidValue: currentSlotBidValue
-                })
-            ) {
-                break;
-            }
-            // otherwise continue to next iteration
-        }
-        // return the found valid slot index
-        nextValidBidSlotIndex = uint16(currentSlotIndex);
-    }
-
-    /**
-     * @notice Returns a bool indicating if a new bid value is sufficiently
-     * greater than an old bid value, to replace the old bid value.
-     * @param oldBidValue Old bid value to compare
-     * @param newBidValue New bid value to compare
-     * @return isSufficientOutbid True if new bid is sufficiently greater than
-     * old bid, false otherwise
-     */
-    function _isSufficientOutbid(
-        uint256 oldBidValue,
-        uint256 newBidValue
-    ) private pure returns (bool) {
-        if (oldBidValue > 0.5 ether) {
-            // require new bid is at least 2.5% greater than removed minimum bid
-            return newBidValue > (oldBidValue * 10250) / 10000;
-        }
-        // require new bid is at least 5% greater than removed minimum bid
-        return newBidValue > (oldBidValue * 10500) / 10000;
-    }
-
     function getProjectMinterState(
         uint256 projectId,
         address coreContract
@@ -2306,18 +2089,6 @@ library RAMLib {
     }
 
     /**
-     * @notice Return the storage struct for reading and writing. This library
-     * uses a diamond storage pattern when managing storage.
-     * @return storageStruct The SEALibStorage struct.
-     */
-    function s() private pure returns (RAMLibStorage storage storageStruct) {
-        bytes32 position = RAM_LIB_STORAGE_POSITION;
-        assembly ("memory-safe") {
-            storageStruct.slot := position
-        }
-    }
-
-    /**
      * @notice private helper function to mint a token.
      * @dev assumes all checks have been performed
      * @param projectId project ID to mint token for
@@ -2482,6 +2253,128 @@ library RAMLib {
     }
 
     /**
+     * @notice Inserts a bid into the project's RAMProjectConfig.
+     * Assumes the bid is valid and may be inserted into the bucket-sort data
+     * structure.
+     * @param RAMProjectConfig_ RAM project config to insert bid into
+     * @param projectId Project ID to insert bid for
+     * @param coreContract Core contract address to insert bid for
+     * @param slotIndex Slot index to insert bid at
+     * @param bidder Bidder address
+     */
+    function _insertBid(
+        RAMProjectConfig storage RAMProjectConfig_,
+        uint256 projectId,
+        address coreContract,
+        uint16 slotIndex,
+        address bidder
+    ) private {
+        // add the new Bid
+        Bid[] storage bids = RAMProjectConfig_.bidsBySlot[slotIndex];
+        bids.push(
+            Bid({
+                bidder: bidder,
+                isSettled: false,
+                isMinted: false,
+                isRefunded: false
+            })
+        );
+        // update number of active bids
+        RAMProjectConfig_.numBids++;
+        // update metadata if first bid for this slot
+        // @dev assumes minting has not yet started
+        // @dev load into memory for gas efficiency
+        uint256 newBidsLength = bids.length;
+        if (newBidsLength == 1) {
+            // set the slot in the bitmap
+            _setBitmapSlot({
+                RAMProjectConfig_: RAMProjectConfig_,
+                slotIndex: slotIndex
+            });
+            // update bitmap metadata - reduce min bid index if necessary
+            if (slotIndex < RAMProjectConfig_.minBidSlotIndex) {
+                RAMProjectConfig_.minBidSlotIndex = slotIndex;
+            }
+            // update bitmap metadata - increase max bid index if necessary
+            if (slotIndex > RAMProjectConfig_.maxBidSlotIndex) {
+                RAMProjectConfig_.maxBidSlotIndex = slotIndex;
+            }
+        }
+
+        // emit state change event
+        emit BidInserted({
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndex: slotIndex,
+            bidIndexInSlot: newBidsLength - 1, // index of new bid in slot
+            bidder: bidder
+        });
+    }
+
+    /**
+     * @notice Remove minimum bid from the project's RAMProjectConfig.
+     * Reverts if no bids exist in slot RAMProjectConfig_.minBidSlotIndex.
+     * @param RAMProjectConfig_ RAM project config to remove bid from
+     * @param minterRefundGasLimit Gas limit to use when refunding the previous
+     * highest bidder, prior to using fallback force-send to refund
+     */
+    function _removeMinBid(
+        RAMProjectConfig storage RAMProjectConfig_,
+        uint256 projectId,
+        address coreContract,
+        uint256 minterRefundGasLimit
+    ) private returns (uint16 removedSlotIndex) {
+        // get the minimum bid
+        removedSlotIndex = RAMProjectConfig_.minBidSlotIndex;
+        // get the bids array for that slot
+        Bid[] storage bids = RAMProjectConfig_.bidsBySlot[removedSlotIndex];
+        // record the previous min bidder
+        uint256 removedBidIndexInSlot = bids.length - 1;
+        address removedBidder = bids[removedBidIndexInSlot].bidder;
+        // pop the last active bid in the array
+        // @dev implicitly deletes the last bid in the array
+        // @dev appropriate because earlier bids (lower index) have priority;
+        // TODO: gas-optimize this by only editing array length since once remove a bid, will never re-add on that slot
+        bids.pop();
+        RAMProjectConfig_.numBids--;
+        // update metadata if no more active bids for this slot
+        if (bids.length == 0) {
+            // unset the slot in the bitmap
+            // update minBidIndex, efficiently starting at minBidSlotIndex + 1
+            _unsetBitmapSlot({
+                RAMProjectConfig_: RAMProjectConfig_,
+                slotIndex: removedSlotIndex
+            });
+            // @dev reverts if removedSlotIndex was the maximum slot 511,
+            // preventing bids from being removed entirely from the last slot,
+            // which is acceptable and non-impacting for this minter
+            // @dev sets minBidSlotIndex to 512 if no more active bids
+            RAMProjectConfig_.minBidSlotIndex = _getMinSlotWithBid({
+                RAMProjectConfig_: RAMProjectConfig_,
+                startSlotIndex: removedSlotIndex + 1
+            });
+        }
+        // refund the removed bidder
+        uint256 removedBidAmount = slotIndexToBidValue({
+            basePrice: RAMProjectConfig_.basePrice,
+            slotIndex: removedSlotIndex
+        });
+        SplitFundsLib.forceSafeTransferETH({
+            to: removedBidder,
+            amount: removedBidAmount,
+            minterRefundGasLimit: minterRefundGasLimit
+        });
+
+        // emit state change event
+        emit BidRemoved({
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndex: removedSlotIndex,
+            bidIndexInSlot: removedBidIndexInSlot
+        });
+    }
+
+    /**
      * @notice Helper function to handle setting slot in 512-bit bitmap
      * @dev WARN Assumes slotIndex is between 0 and 511, function will cast
      * incorrectly if >=512
@@ -2635,6 +2528,113 @@ library RAMLib {
                 uint8(255)
             );
             return uint16(maxSlotWithBid_);
+        }
+    }
+
+    /**
+     * @notice Returns the next valid bid slot index for a given project.
+     * @dev this may return a slot index higher than the maximum slot index
+     * allowed by the minter, in which case a bid cannot actually be placed
+     * to outbid a bid at `startSlotIndex`.
+     * @param projectId Project ID to find next valid bid slot index for
+     * @param coreContract Core contract address for the given project
+     * @param startSlotIndex Slot index to start search from
+     * @return nextValidBidSlotIndex Next valid bid slot index
+     */
+    function _findNextValidBidSlotIndex(
+        uint256 projectId,
+        address coreContract,
+        uint16 startSlotIndex
+    ) private view returns (uint16 nextValidBidSlotIndex) {
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        uint256 basePrice = RAMProjectConfig_.basePrice;
+        uint256 startBidValue = slotIndexToBidValue({
+            basePrice: basePrice,
+            slotIndex: startSlotIndex
+        });
+        // start search at next slot, incremented in while loop
+        uint256 currentSlotIndex = startSlotIndex;
+        uint256 currentSlotBidValue; // populated in while loop
+        while (true) {
+            // increment slot index and re-calc current slot bid value
+            unchecked {
+                currentSlotIndex++;
+            }
+            currentSlotBidValue = slotIndexToBidValue({
+                basePrice: basePrice,
+                slotIndex: uint16(currentSlotIndex)
+            });
+            // break if current slot's bid value is sufficiently greater than
+            // the starting slot's bid value
+            if (
+                _isSufficientOutbid({
+                    oldBidValue: startBidValue,
+                    newBidValue: currentSlotBidValue
+                })
+            ) {
+                break;
+            }
+            // otherwise continue to next iteration
+        }
+        // return the found valid slot index
+        nextValidBidSlotIndex = uint16(currentSlotIndex);
+    }
+
+    /**
+     * @notice Returns a bool indicating if a new bid value is sufficiently
+     * greater than an old bid value, to replace the old bid value.
+     * @param oldBidValue Old bid value to compare
+     * @param newBidValue New bid value to compare
+     * @return isSufficientOutbid True if new bid is sufficiently greater than
+     * old bid, false otherwise
+     */
+    function _isSufficientOutbid(
+        uint256 oldBidValue,
+        uint256 newBidValue
+    ) private pure returns (bool) {
+        if (oldBidValue > 0.5 ether) {
+            // require new bid is at least 2.5% greater than removed minimum bid
+            return newBidValue > (oldBidValue * 10250) / 10000;
+        }
+        // require new bid is at least 5% greater than removed minimum bid
+        return newBidValue > (oldBidValue * 10500) / 10000;
+    }
+
+    /**
+     * @notice Returns the value of a bid in a given slot, in Wei.
+     * @dev returns 0 if base price is zero
+     * @param basePrice Base price (or reserve price) of the auction, in Wei
+     * @param slotIndex Slot index to query
+     * @return slotBidValue Value of a bid in the slot, in Wei
+     */
+    function slotIndexToBidValue(
+        uint256 basePrice,
+        uint16 slotIndex
+    ) internal pure returns (uint256 slotBidValue) {
+        // use pseud-exponential pricing curve
+        // multiply by two (via bit-shifting) for the number of entire
+        // slots-per-price-double associated with the slot index
+        slotBidValue = basePrice << (slotIndex / SLOTS_PER_PRICE_DOUBLE);
+        // perform a linear interpolation between partial half-life points, to
+        // approximate the current place on a perfect exponential curve.
+        // @dev overflow automatically checked in solidity 0.8, not expected
+        slotBidValue +=
+            (slotBidValue * (slotIndex % SLOTS_PER_PRICE_DOUBLE)) /
+            SLOTS_PER_PRICE_DOUBLE;
+    }
+
+    /**
+     * @notice Return the storage struct for reading and writing. This library
+     * uses a diamond storage pattern when managing storage.
+     * @return storageStruct The SEALibStorage struct.
+     */
+    function s() private pure returns (RAMLibStorage storage storageStruct) {
+        bytes32 position = RAM_LIB_STORAGE_POSITION;
+        assembly ("memory-safe") {
+            storageStruct.slot := position
         }
     }
 }
