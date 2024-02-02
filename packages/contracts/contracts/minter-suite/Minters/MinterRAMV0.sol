@@ -73,28 +73,26 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  * abilities:
  *  - (minter active) create bid
  *  - (minter active) top-up bid
- *  - (admin) emergency increase auction end time by up to 48 hr (in cases of frontend downtime, etc.)
- *  - (admin | artist) refresh (reduce-only) max invocations (preemptively limit E1 state)
- *  - (artist) reduce min bid price or reduce auction length
+ *  - (admin) emergency increase auction end time by up to 72 hr (in cases of frontend downtime, etc.)
+ *  - (artist)(not in extra time)(no previous admin extension) reduce auction length
  * -------------
  * STATE C: Post-Auction, not all bids handled, admin-only mint period (if applicable)
  * abilities:
- *  - (admin) mint tokens to winners
+ *  - (admin) auto-mint tokens to winners
  *  - (winner) collect settlement
  *  - (FLAG F1) purchase remaining tokens for auction min price (base price), like fixed price minter
- *  - (ERROR E1)(admin) refund winning bids that cannot receive tokens due to max invocations error
+ *  - (ERROR E1)(admin) auto-refund winning bids that cannot receive tokens due to max invocations error
  * -------------
  * STATE D: Post-Auction, not all bids handled, post-admin-only mint period
  * abilities:
- *  - (winner | admin) mint tokens to winners
+ *  - (winner | admin | artist) directly mint tokens to winners, any order
  *  - (winner) collect settlement
  *  - (FLAG F1) purchase remaining tokens for auction min price (base price), like fixed price minter
- *  - (ERROR E1)(admin) refund lowest winning bids that cannot receive tokens due to max invocations error
+ *  - (ERROR E1)(winner | admin | artist) directly refund bids due to max invocations error state, any order
  * -------------
  * STATE E: Post-Auction, all bids handled
  * note: "all bids handled" guarantees not in ERROR E1
  *  - (artist | admin) collect revenues
- *  - (winner) collect settlement (TODO - only if  minting doesn't also push out settlement)
  *  - (FLAG F1) purchase remaining tokens for auction min price (base price), like fixed price minter
  * -------------
  * FLAGS
@@ -106,7 +104,7 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  * E1: tokens owed > invocations available
  *     occurs when tokens minted on different minter or core max invocations were reduced after auction bidding began.
  *     indicates operational error occurred.
- *     resolution: when all winning bids have either been fully refunded or received a token
+ *     resolution: when winning bids have refunded to sufficiently reduce tokens owed == invocations available.
  *     note: error state does not affect minimum winning bid price, and therefore does not affect settlement amount due to any
  *     winning bids.
  * ----------------------------------------------------------------------------
