@@ -939,7 +939,7 @@ library RAMLib {
             ) {
                 // at end of array, so need to find next bid slot
                 // with bids, and start at index 0 in slot's array
-                currentLatestMintedBidSlotIndex = getMaxSlotWithBid({
+                currentLatestMintedBidSlotIndex = _getMaxSlotWithBid({
                     RAMProjectConfig_: RAMProjectConfig_,
                     startSlotIndex: uint16(currentLatestMintedBidSlotIndex - 1)
                 });
@@ -1242,7 +1242,7 @@ library RAMLib {
             ) {
                 // was previously initialized, so need to find next bid slot
                 // with bids, and start at last bid in slot's array
-                currentLatestRefundedBidSlotIndex = getMinSlotWithBid({
+                currentLatestRefundedBidSlotIndex = _getMinSlotWithBid({
                     RAMProjectConfig_: RAMProjectConfig_,
                     startSlotIndex: uint16(
                         currentLatestRefundedBidSlotIndex + 1
@@ -1535,7 +1535,7 @@ library RAMLib {
             });
         }
         // require at least one token allowed in auction
-        // @dev this case would revert in removeMinBid, but prefer clean error
+        // @dev this case would revert in _removeMinBid, but prefer clean error
         // message here
         uint256 numTokensInAuction = RAMProjectConfig_.numTokensInAuction;
         require(numTokensInAuction > 0, "No bids in auction");
@@ -1543,7 +1543,7 @@ library RAMLib {
         bool reachedMaxBids = RAMProjectConfig_.numBids == numTokensInAuction;
         if (reachedMaxBids) {
             // remove + refund the minimum Bid
-            uint16 removedSlotIndex = removeMinBid({
+            uint16 removedSlotIndex = _removeMinBid({
                 RAMProjectConfig_: RAMProjectConfig_,
                 projectId: projectId,
                 coreContract: coreContract,
@@ -1584,7 +1584,7 @@ library RAMLib {
             }
         }
         // insert the new Bid
-        insertBid({
+        _insertBid({
             RAMProjectConfig_: RAMProjectConfig_,
             projectId: projectId,
             coreContract: coreContract,
@@ -1593,8 +1593,17 @@ library RAMLib {
         });
     }
 
-    // TODO: add assumptions/protections about max bids, active auction, etc.
-    function insertBid(
+    /**
+     * @notice Inserts a bid into the project's RAMProjectConfig.
+     * Assumes the bid is valid and may be inserted into the bucket-sort data
+     * structure.
+     * @param RAMProjectConfig_ RAM project config to insert bid into
+     * @param projectId Project ID to insert bid for
+     * @param coreContract Core contract address to insert bid for
+     * @param slotIndex Slot index to insert bid at
+     * @param bidder Bidder address
+     */
+    function _insertBid(
         RAMProjectConfig storage RAMProjectConfig_,
         uint256 projectId,
         address coreContract,
@@ -1619,7 +1628,7 @@ library RAMLib {
         uint256 newBidsLength = bids.length;
         if (newBidsLength == 1) {
             // set the slot in the bitmap
-            setBitmapSlot({
+            _setBitmapSlot({
                 RAMProjectConfig_: RAMProjectConfig_,
                 slotIndex: slotIndex
             });
@@ -1650,7 +1659,7 @@ library RAMLib {
      * @param minterRefundGasLimit Gas limit to use when refunding the previous
      * highest bidder, prior to using fallback force-send to refund
      */
-    function removeMinBid(
+    function _removeMinBid(
         RAMProjectConfig storage RAMProjectConfig_,
         uint256 projectId,
         address coreContract,
@@ -1673,7 +1682,7 @@ library RAMLib {
         if (bids.length == 0) {
             // unset the slot in the bitmap
             // update minBidIndex, efficiently starting at minBidSlotIndex + 1
-            unsetBitmapSlot({
+            _unsetBitmapSlot({
                 RAMProjectConfig_: RAMProjectConfig_,
                 slotIndex: removedSlotIndex
             });
@@ -1681,7 +1690,7 @@ library RAMLib {
             // preventing bids from being removed entirely from the last slot,
             // which is acceptable and non-impacting for this minter
             // @dev sets minBidSlotIndex to 512 if no more active bids
-            RAMProjectConfig_.minBidSlotIndex = getMinSlotWithBid({
+            RAMProjectConfig_.minBidSlotIndex = _getMinSlotWithBid({
                 RAMProjectConfig_: RAMProjectConfig_,
                 startSlotIndex: removedSlotIndex + 1
             });
@@ -1884,7 +1893,7 @@ library RAMLib {
                     // find next valid bid
                     // @dev okay if we extend past the maximum slot index
                     // for this view function
-                    uint256 nextValidBidSlotIndex = findNextValidBidSlotIndex({
+                    uint256 nextValidBidSlotIndex = _findNextValidBidSlotIndex({
                         projectId: projectId,
                         coreContract: coreContract,
                         startSlotIndex: RAMProjectConfig_.minBidSlotIndex
@@ -1967,7 +1976,7 @@ library RAMLib {
                     // find next valid bid
                     // @dev okay if we extend past the maximum slot index
                     // for this view function
-                    minNextBidSlotIndex = findNextValidBidSlotIndex({
+                    minNextBidSlotIndex = _findNextValidBidSlotIndex({
                         projectId: projectId,
                         coreContract: coreContract,
                         startSlotIndex: RAMProjectConfig_.minBidSlotIndex
@@ -2005,7 +2014,7 @@ library RAMLib {
      * @param startSlotIndex Slot index to start search from
      * @return nextValidBidSlotIndex Next valid bid slot index
      */
-    function findNextValidBidSlotIndex(
+    function _findNextValidBidSlotIndex(
         uint256 projectId,
         address coreContract,
         uint16 startSlotIndex
@@ -2055,7 +2064,7 @@ library RAMLib {
      * @return isSufficientOutbid True if new bid is sufficiently greater than
      * old bid, false otherwise
      */
-    function isSufficientOutbid(
+    function _isSufficientOutbid(
         uint256 oldBidValue,
         uint256 newBidValue
     ) private pure returns (bool) {
@@ -2479,7 +2488,7 @@ library RAMLib {
      * @param slotIndex Index of slot to set (between 0 and 511)
      * @param RAMProjectConfig_ RAMProjectConfig to update
      */
-    function setBitmapSlot(
+    function _setBitmapSlot(
         RAMProjectConfig storage RAMProjectConfig_,
         uint256 slotIndex
     ) private {
@@ -2507,7 +2516,7 @@ library RAMLib {
      * @param slotIndex Index of slot to set (between 0 and 511)
      * @param RAMProjectConfig_ RAMProjectConfig to update
      */
-    function unsetBitmapSlot(
+    function _unsetBitmapSlot(
         RAMProjectConfig storage RAMProjectConfig_,
         uint256 slotIndex
     ) private {
@@ -2542,7 +2551,7 @@ library RAMLib {
      * @return minSlotWithBid Minimum slot index with an active bid, or 512 if
      * no bids exist
      */
-    function getMinSlotWithBid(
+    function _getMinSlotWithBid(
         RAMProjectConfig storage RAMProjectConfig_,
         uint16 startSlotIndex
     ) private view returns (uint16 minSlotWithBid) {
@@ -2593,7 +2602,7 @@ library RAMLib {
      * @return maxSlotWithBid Maximum slot index with an active bid, and 0 if
      * no slots with bids were found
      */
-    function getMaxSlotWithBid(
+    function _getMaxSlotWithBid(
         RAMProjectConfig storage RAMProjectConfig_,
         uint16 startSlotIndex
     ) private view returns (uint16 maxSlotWithBid) {
