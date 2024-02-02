@@ -13,4 +13,11 @@ interface ISharedMinterRAMV0 {
         address coreContract,
         uint16 slotIndex
     ) external payable;
+
+    function topUpBid(
+        uint256 projectId,
+        address coreContract,
+        uint32 bidId,
+        uint16 newSlotIndex
+    ) external payable;
 }

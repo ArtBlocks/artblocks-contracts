@@ -450,6 +450,52 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
+     * @notice Top up bid for project `projectId` on core contract
+     * `coreContract` for bid `bidId` to new slot index `newSlotIndex`.
+     * Reverts if Bid ID has been kicked out of the auction or does not exist.
+     * Reverts if msg.sender is not the bidder of the bid.
+     * Reverts if minter is not the active minter for projectId on minter
+     * filter.
+     * Reverts if project is not in a Live Auction.
+     * Reverts if msg.value is not equal to difference in bid values between
+     * new and old slots.
+     * Reverts if new slot index is not greater than or equal to the current
+     * slot index.
+     * @param projectId Project ID to top up bid for.
+     * @param coreContract Core contract address for the given project.
+     * @param bidId ID of bid to top up.
+     * @param newSlotIndex New slot index to move bid to.
+     */
+    function topUpBid(
+        uint256 projectId,
+        address coreContract,
+        uint32 bidId,
+        uint16 newSlotIndex
+    ) external payable nonReentrant {
+        // CHECKS
+        // minter must be set for project on MinterFilter
+        require(
+            _minterFilter.getMinterForProject({
+                projectId: projectId,
+                coreContract: coreContract
+            }) == address(this),
+            "Minter not active"
+        );
+        // @dev additional bid value is checked against slot value in topUpBid
+        // @dev project state is checked in topUpBid
+
+        // EFFECTS
+        RAMLib.topUpBid({
+            projectId: projectId,
+            coreContract: coreContract,
+            bidId: bidId,
+            newSlotIndex: newSlotIndex,
+            bidder: msg.sender,
+            addedValue: msg.value
+        });
+    }
+
+    /**
      * @notice Purchases token for project `projectId` on core contract
      * `coreContract` for auction that has ended, but not yet been sold out.
      * @param projectId Project ID to purchase token for.

@@ -144,18 +144,32 @@ library RAMLib {
     );
 
     /**
-     * @notice Bid inserted in auction
+     * @notice Bid created in auction
      * @param projectId Project Id to update
      * @param coreContract Core contract address to update
-     * @param slotIndex Slot index of bid that was added
-     * @param bidId Bid Id that was added
+     * @param slotIndex Slot index of bid that was created
+     * @param bidId Bid Id that was created
      */
-    event BidInserted(
+    event BidCreated(
         uint256 indexed projectId,
         address indexed coreContract,
         uint256 slotIndex,
         uint256 bidId,
         address bidder
+    );
+
+    /**
+     * @notice Bid topped up in auction
+     * @param projectId Project Id to update
+     * @param coreContract Core contract address to update
+     * @param bidId Bid Id that was topped up
+     * @param newSlotIndex New slot index of bid that was topped up
+     */
+    event BidToppedUp(
+        uint256 indexed projectId,
+        address indexed coreContract,
+        uint256 bidId,
+        uint256 newSlotIndex
     );
 
     /**
@@ -1536,7 +1550,96 @@ library RAMLib {
             projectId: projectId,
             coreContract: coreContract,
             slotIndex: slotIndex,
-            bidder: bidder
+            bidder: bidder,
+            bidId: 0 // zero triggers new bid ID to be assigned
+        });
+    }
+
+    /**
+     * @notice Top up bid for project `projectId` on core contract
+     * `coreContract` for bid `bidId` to new slot index `newSlotIndex`.
+     * Reverts if Bid ID has been kicked out of the auction or does not exist.
+     * Reverts if bidder is not the bidder of the bid.
+     * Reverts if project is not in a Live Auction.
+     * Reverts if addedValue is not equal to difference in bid values between
+     * new and old slots.
+     * Reverts if new slot index is not greater than or equal to the current
+     * slot index.
+     * @param projectId Project ID to top up bid for.
+     * @param coreContract Core contract address for the given project.
+     * @param bidId ID of bid to top up.
+     * @param newSlotIndex New slot index to move bid to.
+     * @param bidder Bidder address
+     * @param addedValue Value to add to the bid, in Wei
+     */
+    function topUpBid(
+        uint256 projectId,
+        address coreContract,
+        uint32 bidId,
+        uint16 newSlotIndex,
+        address bidder,
+        uint256 addedValue
+    ) internal {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        Bid storage bid = RAMProjectConfig_.bids[bidId];
+        // memoize for gas efficiency
+        uint16 oldSlotIndex = bid.slotIndex;
+        // CHECKS
+        {
+            // require project minter state B (Live Auction)
+            require(
+                getProjectMinterState(projectId, coreContract) ==
+                    ProjectMinterStates.B,
+                "Only state B"
+            );
+            // @dev give clean error message if bid is null or deleted
+            require(bid.bidder != address(0), "Bid dne - were you outbid?");
+            // require bidder owns referenced bid
+            require(bid.bidder == bidder, "Only bidder of existing bid");
+            // require correct added bid value
+            uint256 oldBidValue = slotIndexToBidValue({
+                basePrice: RAMProjectConfig_.basePrice,
+                slotIndex: oldSlotIndex
+            });
+            uint256 newBidValue = slotIndexToBidValue({
+                basePrice: RAMProjectConfig_.basePrice,
+                slotIndex: newSlotIndex
+            });
+            // implicitly checks that newSlotIndex > oldSlotIndex, since
+            // addedValue must be positive
+            require(
+                oldBidValue + addedValue == newBidValue,
+                "incorrect added value"
+            );
+        }
+
+        // EFFECTS
+        // eject bid from the linked list at oldSlotIndex
+        _ejectBidFromSlot({
+            RAMProjectConfig_: RAMProjectConfig_,
+            slotIndex: oldSlotIndex,
+            bidId: bidId
+        });
+        // insert the existing bid into newSlotIndex's linked list
+        _insertBid({
+            RAMProjectConfig_: RAMProjectConfig_,
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndex: newSlotIndex,
+            bidder: bidder,
+            bidId: bidId
+        });
+
+        // emit top-up event
+        emit BidToppedUp({
+            projectId: projectId,
+            coreContract: coreContract,
+            bidId: bidId,
+            newSlotIndex: newSlotIndex
         });
     }
 
@@ -2191,24 +2294,32 @@ library RAMLib {
      * @notice Inserts a bid into the project's RAMProjectConfig.
      * Assumes the bid is valid and may be inserted into the bucket-sort data
      * structure.
+     * Creates a new bid if bidId is zero, otherwise moves an existing bid,
+     * which is assumed to exist and be valid.
+     * Emits BidCreated event if a new bid is created.
      * @param RAMProjectConfig_ RAM project config to insert bid into
      * @param projectId Project ID to insert bid for
      * @param coreContract Core contract address to insert bid for
      * @param slotIndex Slot index to insert bid at
      * @param bidder Bidder address
+     * @param bidId Bid ID to insert, or zero if a new bid should be created
      */
     function _insertBid(
         RAMProjectConfig storage RAMProjectConfig_,
         uint256 projectId,
         address coreContract,
         uint16 slotIndex,
-        address bidder
+        address bidder,
+        uint32 bidId
     ) private {
         // add the new Bid to tail of the slot's doubly linked list
-        // prefix ++ to skip initial bid ID of zero (indicates null value)
-        uint32 newBidId = ++RAMProjectConfig_.nextBidId;
+        bool createNewBid = bidId == 0;
+        if (createNewBid) {
+            // prefix ++ to skip initial bid ID of zero (indicates null value)
+            bidId = ++RAMProjectConfig_.nextBidId;
+        }
         uint256 prevTailBidId = RAMProjectConfig_.tailBidIdBySlot[slotIndex];
-        RAMProjectConfig_.bids[newBidId] = Bid({
+        RAMProjectConfig_.bids[bidId] = Bid({
             prevBidId: uint32(prevTailBidId),
             nextBidId: 0, // null value at end of tail
             slotIndex: slotIndex,
@@ -2218,14 +2329,14 @@ library RAMLib {
             isRefunded: false
         });
         // update tail pointer to new bid
-        RAMProjectConfig_.tailBidIdBySlot[slotIndex] = newBidId;
+        RAMProjectConfig_.tailBidIdBySlot[slotIndex] = bidId;
         // update head pointer or next pointer of previous bid
         if (prevTailBidId == 0) {
             // first bid in slot, update head pointer
-            RAMProjectConfig_.headBidIdBySlot[slotIndex] = newBidId;
+            RAMProjectConfig_.headBidIdBySlot[slotIndex] = bidId;
         } else {
             // update previous bid's next pointer
-            RAMProjectConfig_.bids[prevTailBidId].nextBidId = newBidId;
+            RAMProjectConfig_.bids[prevTailBidId].nextBidId = bidId;
         }
 
         // update number of active bids
@@ -2248,14 +2359,16 @@ library RAMLib {
             }
         }
 
-        // emit state change event
-        emit BidInserted({
-            projectId: projectId,
-            coreContract: coreContract,
-            slotIndex: slotIndex,
-            bidId: newBidId,
-            bidder: bidder
-        });
+        if (createNewBid) {
+            // emit state change event
+            emit BidCreated({
+                projectId: projectId,
+                coreContract: coreContract,
+                slotIndex: slotIndex,
+                bidId: bidId,
+                bidder: bidder
+            });
+        }
     }
 
     /**
@@ -2327,6 +2440,64 @@ library RAMLib {
         // delete the removed bid to prevent future claiming
         // @dev performed last to avoid pointing to deleted bid struct
         delete RAMProjectConfig_.bids[removedBidId];
+    }
+
+    /**
+     * @notice Ejects a bid from the project's RAMProjectConfig.
+     * Assumes the bid is valid (i.e. bid ID is a valid, active bid).
+     * Does not refund the bidder, does not emit events, does not delete Bid.
+     * @param RAMProjectConfig_ RAM project config to eject bid from
+     * @param slotIndex Slot index to eject bid from
+     * @param bidId ID of bid to eject
+     */
+    function _ejectBidFromSlot(
+        RAMProjectConfig storage RAMProjectConfig_,
+        uint16 slotIndex,
+        uint256 bidId
+    ) private {
+        // get the bid to remove
+        Bid storage removedBid = RAMProjectConfig_.bids[bidId];
+        uint32 prevBidId = removedBid.prevBidId;
+        uint32 nextBidId = removedBid.nextBidId;
+        // update previous bid's next pointer
+        if (prevBidId == 0) {
+            // removed bid was the head bid
+            RAMProjectConfig_.headBidIdBySlot[slotIndex] = nextBidId;
+        } else {
+            // removed bid was not the head bid
+            RAMProjectConfig_.bids[prevBidId].nextBidId = nextBidId;
+        }
+        // update next bid's previous pointer
+        if (nextBidId == 0) {
+            // removed bid was the tail bid
+            RAMProjectConfig_.tailBidIdBySlot[slotIndex] = prevBidId;
+        } else {
+            // removed bid was not the tail bid
+            RAMProjectConfig_.bids[nextBidId].prevBidId = prevBidId;
+        }
+
+        // decrement the number of active bids
+        RAMProjectConfig_.numBids--;
+
+        // update metadata if no more active bids for this slot
+        if (prevBidId == 0 && nextBidId == 0) {
+            // unset the slot in the bitmap
+            // update minBidIndex, efficiently starting at minBidSlotIndex + 1
+            _unsetBitmapSlot({
+                RAMProjectConfig_: RAMProjectConfig_,
+                slotIndex: slotIndex
+            });
+            // @dev reverts if removedSlotIndex was the maximum slot 511,
+            // preventing bids from being removed entirely from the last slot,
+            // which is acceptable and non-impacting for this minter
+            // @dev sets minBidSlotIndex to 512 if no more active bids
+            RAMProjectConfig_.minBidSlotIndex = _getMinSlotWithBid({
+                RAMProjectConfig_: RAMProjectConfig_,
+                startSlotIndex: slotIndex + 1
+            });
+        }
+
+        // @dev do not refund, do not emit event, do not delete bid
     }
 
     /**
