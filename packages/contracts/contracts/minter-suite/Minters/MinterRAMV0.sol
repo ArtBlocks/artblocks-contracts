@@ -118,10 +118,9 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  * @dev Note that while this minter makes use of `block.timestamp` and it is
  * technically possible that this value is manipulated by block producers, such
  * manipulation will not have material impact on the ability for collectors to
- * place a bid before auction end time. This is due to the admin-configured
- * `minterTimeBufferSeconds` parameter, which will used to ensure that
- * collectors have sufficient time to place a bid after the final bid and
- * before the auction end time.
+ * place a bid before auction end time. Minimum limits are set on time
+ * intervals such that this manipulation would not have a material impact on
+ * the auction process.
  */
 contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     using SafeCast for uint256;
