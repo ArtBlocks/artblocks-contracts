@@ -637,7 +637,7 @@ library RAMLib {
             })
             : RAMProjectConfig_.basePrice;
         // settle the bid
-        settleBid({
+        _settleBidWithChecks({
             RAMProjectConfig_: RAMProjectConfig_,
             projectId: projectId,
             coreContract: coreContract,
@@ -714,7 +714,7 @@ library RAMLib {
         // @dev use unchecked loop incrementing for gas efficiency
         for (uint256 i; i < inputBidsLength; ) {
             // settle the bid
-            settleBid({
+            _settleBidWithChecks({
                 RAMProjectConfig_: RAMProjectConfig_,
                 projectId: projectId,
                 coreContract: coreContract,
@@ -851,28 +851,14 @@ library RAMLib {
             // @dev collector could have previously settled bid, so need to
             // check if bid is settled
             if (!(bid.isSettled)) {
-                // update state
-                bid.isSettled = true;
-                // determine amount due
-                uint256 currentAmountDue = slotIndexToBidValue({
-                    basePrice: RAMProjectConfig_.basePrice,
-                    // @dev safe to cast to uint16
-                    slotIndex: uint16(slotIndices[i])
-                }) - projectPrice;
-                if (currentAmountDue > 0) {
-                    // force-send settlement to bidder
-                    SplitFundsLib.forceSafeTransferETH({
-                        to: bid.bidder,
-                        amount: currentAmountDue,
-                        minterRefundGasLimit: minterRefundGasLimit
-                    });
-                }
-                // emit event for state change
-                emit BidSettled({
+                _settleBid({
+                    RAMProjectConfig_: RAMProjectConfig_,
                     projectId: projectId,
                     coreContract: coreContract,
+                    projectPrice: projectPrice,
                     slotIndex: slotIndices[i],
-                    bidIndexInSlot: bidIndicesInSlot[i]
+                    bidIndexInSlot: bidIndicesInSlot[i],
+                    minterRefundGasLimit: minterRefundGasLimit
                 });
             }
         }
@@ -1022,30 +1008,14 @@ library RAMLib {
             // @dev collector could have previously settled bid, so need to
             // check if bid is settled
             if (!(bid.isSettled)) {
-                // update state
-                bid.isSettled = true;
-                // determine amount due
-                // @dev currentAmountDue is not memoized per slot due to stack
-                // depth limitations
-                uint256 currentAmountDue = slotIndexToBidValue({
-                    basePrice: RAMProjectConfig_.basePrice,
-                    // @dev safe to cast to uint16
-                    slotIndex: uint16(currentLatestMintedBidSlotIndex)
-                }) - projectPrice;
-                if (currentAmountDue > 0) {
-                    // force-send settlement to bidder
-                    SplitFundsLib.forceSafeTransferETH({
-                        to: bid.bidder,
-                        amount: currentAmountDue,
-                        minterRefundGasLimit: minterRefundGasLimit
-                    });
-                }
-                // emit event for state change
-                emit BidSettled({
+                _settleBid({
+                    RAMProjectConfig_: RAMProjectConfig_,
                     projectId: projectId,
                     coreContract: coreContract,
-                    slotIndex: currentLatestMintedBidSlotIndex,
-                    bidIndexInSlot: currentLatestMintedBidArrayIndex
+                    projectPrice: projectPrice,
+                    slotIndex: uint16(currentLatestMintedBidSlotIndex),
+                    bidIndexInSlot: uint24(currentLatestMintedBidArrayIndex),
+                    minterRefundGasLimit: minterRefundGasLimit
                 });
             }
 
@@ -1356,7 +1326,7 @@ library RAMLib {
             if (!bid.isSettled) {
                 bid.isSettled = true;
                 didSettleBid = true;
-                // send entire bid value if not previously settled
+                // send entire bid value since was not previously settled
                 valueToSend = slotIndexToBidValue({
                     basePrice: RAMProjectConfig_.basePrice,
                     // @dev safe to cast to uint16
@@ -2395,66 +2365,6 @@ library RAMLib {
     }
 
     /**
-     * @notice Helper function to handle settling a bid.
-     * Reverts if bidder is not the bid's bidder.
-     * Reverts if bid has already been settled.
-     * @param RAMProjectConfig_ RAMProjectConfig to update
-     * @param projectId Project ID of bid to settle
-     * @param coreContract Core contract address for the given project.
-     * @param projectPrice Price of token on the project
-     * @param slotIndex Slot index of bid to settle
-     * @param bidIndexInSlot Bid index in slot of bid to settle
-     * @param bidder Bidder address of bid to settle
-     * @param minterRefundGasLimit Gas limit to use when refunding the bidder.
-     */
-    function settleBid(
-        RAMProjectConfig storage RAMProjectConfig_,
-        uint256 projectId,
-        address coreContract,
-        uint256 projectPrice,
-        uint16 slotIndex,
-        uint256 bidIndexInSlot,
-        address bidder,
-        uint256 minterRefundGasLimit
-    ) private {
-        // CHECKS
-        Bid storage bid = RAMProjectConfig_.bidsBySlot[slotIndex][
-            bidIndexInSlot
-        ];
-        // require bidder is the bid's bidder
-        require(bid.bidder == bidder, "Only bidder");
-        // require bid is not yet settled
-        require(bid.isSettled, "Only un-settled bid");
-
-        // EFFECTS
-        // update bid state
-        bid.isSettled = true;
-
-        // INTERACTIONS
-        // transfer amount due to bidder
-        uint256 bidAmount = slotIndexToBidValue({
-            basePrice: RAMProjectConfig_.basePrice,
-            slotIndex: slotIndex
-        });
-        uint256 amountDue = bidAmount - projectPrice;
-        if (amountDue > 0) {
-            SplitFundsLib.forceSafeTransferETH({
-                to: bidder,
-                amount: amountDue,
-                minterRefundGasLimit: minterRefundGasLimit
-            });
-        }
-
-        // emit state change event
-        emit BidSettled({
-            projectId: projectId,
-            coreContract: coreContract,
-            slotIndex: slotIndex,
-            bidIndexInSlot: bidIndexInSlot
-        });
-    }
-
-    /**
      * @notice private helper function to mint a token.
      * @dev assumes all checks have been performed
      * @param projectId project ID to mint token for
@@ -2486,6 +2396,100 @@ library RAMLib {
             slotIndex: slotIndex,
             bidIndexInSlot: bidIndexInSlot,
             tokenId: tokenId
+        });
+    }
+
+    /**
+     * @notice Helper function to handle settling a bid.
+     * Reverts if bidder is not the bid's bidder.
+     * Reverts if bid has already been settled.
+     * @param RAMProjectConfig_ RAMProjectConfig to update
+     * @param projectId Project ID of bid to settle
+     * @param coreContract Core contract address for the given project.
+     * @param projectPrice Price of token on the project
+     * @param slotIndex Slot index of bid to settle
+     * @param bidIndexInSlot Bid index in slot of bid to settle
+     * @param bidder Bidder address of bid to settle
+     * @param minterRefundGasLimit Gas limit to use when refunding the bidder.
+     */
+    function _settleBidWithChecks(
+        RAMProjectConfig storage RAMProjectConfig_,
+        uint256 projectId,
+        address coreContract,
+        uint256 projectPrice,
+        uint16 slotIndex,
+        uint256 bidIndexInSlot,
+        address bidder,
+        uint256 minterRefundGasLimit
+    ) private {
+        // CHECKS
+        Bid storage bid = RAMProjectConfig_.bidsBySlot[slotIndex][
+            bidIndexInSlot
+        ];
+        // require bidder is the bid's bidder
+        require(bid.bidder == bidder, "Only bidder");
+        // require bid is not yet settled
+        require(bid.isSettled, "Only un-settled bid");
+
+        _settleBid({
+            RAMProjectConfig_: RAMProjectConfig_,
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndex: slotIndex,
+            bidIndexInSlot: bidIndexInSlot,
+            projectPrice: projectPrice,
+            minterRefundGasLimit: minterRefundGasLimit
+        });
+    }
+
+    /**
+     * @notice private helper function to handle settling a bid.
+     * @dev assumes bid has not been previously settled, and that all other
+     * checks have been performed.
+     * @param RAMProjectConfig_ RAMProjectConfig to update
+     * @param projectId Project ID of bid to settle
+     * @param coreContract Core contract address for the given project.
+     * @param slotIndex Slot index of bid to settle
+     * @param bidIndexInSlot Bid index in slot of bid to settle
+     * @param projectPrice Price of token on the project
+     */
+    function _settleBid(
+        RAMProjectConfig storage RAMProjectConfig_,
+        uint256 projectId,
+        address coreContract,
+        uint256 slotIndex,
+        uint256 bidIndexInSlot,
+        uint256 projectPrice,
+        uint256 minterRefundGasLimit
+    ) private {
+        // @dev bid not passed as parameter to avoid stack too deep error in
+        // functions that utilize this helper function
+        Bid storage bid = RAMProjectConfig_.bidsBySlot[slotIndex][
+            bidIndexInSlot
+        ];
+        // EFFECTS
+        // update state
+        bid.isSettled = true;
+        // amount due = bid amount - project price
+        uint256 amountDue = slotIndexToBidValue({
+            basePrice: RAMProjectConfig_.basePrice,
+            // @dev safe to cast to uint16
+            slotIndex: uint16(slotIndex)
+        }) - projectPrice;
+        if (amountDue > 0) {
+            // force-send settlement to bidder
+            SplitFundsLib.forceSafeTransferETH({
+                to: bid.bidder,
+                amount: amountDue,
+                minterRefundGasLimit: minterRefundGasLimit
+            });
+        }
+        // emit event for state change
+        emit BidSettled({
+            projectId: projectId,
+            coreContract: coreContract,
+            slotIndex: slotIndex,
+            bidIndexInSlot: bidIndexInSlot
         });
     }
 
