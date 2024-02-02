@@ -118,10 +118,9 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  * @dev Note that while this minter makes use of `block.timestamp` and it is
  * technically possible that this value is manipulated by block producers, such
  * manipulation will not have material impact on the ability for collectors to
- * place a bid before auction end time. This is due to the admin-configured
- * `minterTimeBufferSeconds` parameter, which will used to ensure that
- * collectors have sufficient time to place a bid after the final bid and
- * before the auction end time.
+ * place a bid before auction end time. Minimum limits are set on time
+ * intervals such that this manipulation would not have a material impact on
+ * the auction process.
  */
 contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     using SafeCast for uint256;
@@ -425,7 +424,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     function createBid(
         uint256 projectId,
         address coreContract,
-        uint8 slotIndex
+        uint16 slotIndex
     ) external payable nonReentrant {
         // CHECKS
         // minter must be set for project on MinterFilter
@@ -492,7 +491,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
 
     /**
      * @notice Collects settlement for project `projectId` on core contract
-     * `coreContract` for all bid in `slotIndex` at `bidIndexInSlot`.
+     * `coreContract` for bid `bidId`.
      * Reverts if project is not in a post-auction state.
      * Reverts if msg.sender is not the bid's bidder.
      * Reverts if msg.sender is not the bidder.
@@ -500,14 +499,12 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * Reverts if invalid bid.
      * @param projectId Project ID of bid to collect settlement for
      * @param coreContract Core contract address for the given project.
-     * @param slotIndex Slot index of bid to collect settlement for
-     * @param bidIndexInSlot Bid index in slot of bid to collect settlement for
+     * @param bidId ID of bid to be settled
      */
     function collectSettlement(
         uint256 projectId,
         address coreContract,
-        uint16 slotIndex,
-        uint24 bidIndexInSlot
+        uint32 bidId
     ) external nonReentrant {
         // CHECKS
         // @dev project state is checked in collectSettlement
@@ -515,8 +512,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         RAMLib.collectSettlement({
             projectId: projectId,
             coreContract: coreContract,
-            slotIndex: slotIndex,
-            bidIndexInSlot: bidIndexInSlot,
+            bidId: bidId,
             bidder: msg.sender,
             minterRefundGasLimit: _minterRefundGasLimit
         });
@@ -533,15 +529,12 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * Reverts if invalid bid is found.
      * @param projectId Project ID of bid to collect settlement for
      * @param coreContract Core contract address for the given project.
-     * @param slotIndices Slot indices of bids to collect settlements for
-     * @param bidIndicesInSlot Bid indices in slot of bid to collect
-     * settlements for
+     * @param bidIds IDs of bids to collect settlements for
      */
     function collectSettlements(
         uint256 projectId,
         address coreContract,
-        uint16[] calldata slotIndices,
-        uint24[] calldata bidIndicesInSlot
+        uint32[] calldata bidIds
     ) external nonReentrant {
         // CHECKS
         // @dev project state is checked in collectSettlements
@@ -551,8 +544,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         RAMLib.collectSettlements({
             projectId: projectId,
             coreContract: coreContract,
-            slotIndices: slotIndices,
-            bidIndicesInSlot: bidIndicesInSlot,
+            bidIds: bidIds,
             bidder: msg.sender,
             minterRefundGasLimit: _minterRefundGasLimit
         });
@@ -610,14 +602,12 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * Reverts if msg.sender is not a contract admin or artist.
      * @param projectId Project ID to mint tokens on.
      * @param coreContract Core contract address for the given project.
-     * @param slotIndices Slot indices of bids to mint tokens for
-     * @param bidIndicesInSlot Bid indices in slot of bid to mint tokens for
+     * @param bidIds IDs of bids to mint tokens for
      */
     function adminArtistDirectMintTokensToWinners(
         uint256 projectId,
         address coreContract,
-        uint16[] calldata slotIndices,
-        uint24[] calldata bidIndicesInSlot
+        uint32[] calldata bidIds
     ) external nonReentrant {
         // CHECKS
         AuthLib.onlyCoreAdminACLOrArtist({
@@ -631,8 +621,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         RAMLib.directMintTokensToWinners({
             projectId: projectId,
             coreContract: coreContract,
-            slotIndices: slotIndices,
-            bidIndicesInSlot: bidIndicesInSlot,
+            bidIds: bidIds,
             requireSenderIsBidder: false, // not required when called by admin or artist
             minterFilter: _minterFilter,
             minterRefundGasLimit: _minterRefundGasLimit
@@ -654,14 +643,12 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * Reverts if msg.sender is not the winning bidder for all specified bids.
      * @param projectId Project ID to mint tokens on.
      * @param coreContract Core contract address for the given project.
-     * @param slotIndices Slot indices of bids to mint tokens for
-     * @param bidIndicesInSlot Bid indices in slot of bid to mint tokens for
+     * @param bidIds IDs of bids to mint tokens for
      */
     function winnerDirectMintTokens(
         uint256 projectId,
         address coreContract,
-        uint16[] calldata slotIndices,
-        uint24[] calldata bidIndicesInSlot
+        uint32[] calldata bidIds
     ) external nonReentrant {
         // CHECKS
         // @dev all checks performed in library function
@@ -669,8 +656,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         RAMLib.directMintTokensToWinners({
             projectId: projectId,
             coreContract: coreContract,
-            slotIndices: slotIndices,
-            bidIndicesInSlot: bidIndicesInSlot,
+            bidIds: bidIds,
             requireSenderIsBidder: true, // only allow winning bidder to call
             minterFilter: _minterFilter,
             minterRefundGasLimit: _minterRefundGasLimit
@@ -692,18 +678,16 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * Reverts if project is not in error state E1.
      * Reverts if length of bids to refund exceeds the number of bids that need
      * to be refunded to resolve the error state E1.
-     * Reverts if bid does not exist at slotIndex and bidIndexInSlot.
+     * Reverts if bid does not exist at bidId.
      * Reverts if msg.sender is not a contract admin or artist.
-     * @param projectId Project ID to mint tokens on.
+     * @param projectId Project ID to refund bid values on.
      * @param coreContract Core contract address for the given project.
-     * @param slotIndices Slot indices of bids to mint tokens for
-     * @param bidIndicesInSlot Bid indices in slot of bid to mint tokens for
+     * @param bidIds IDs of bids to refund bid values for
      */
     function adminArtistDirectRefundWinners(
         uint256 projectId,
         address coreContract,
-        uint16[] calldata slotIndices,
-        uint24[] calldata bidIndicesInSlot
+        uint32[] calldata bidIds
     ) external nonReentrant {
         // CHECKS
         AuthLib.onlyCoreAdminACLOrArtist({
@@ -717,8 +701,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         RAMLib.directRefundBidsToResolveE1({
             projectId: projectId,
             coreContract: coreContract,
-            slotIndices: slotIndices,
-            bidIndicesInSlot: bidIndicesInSlot,
+            bidIds: bidIds,
             requireSenderIsBidder: false, // not required when called by admin or artist
             minterRefundGasLimit: _minterRefundGasLimit
         });
@@ -741,16 +724,14 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * Reverts if length of bids to refund exceeds the number of bids that need
      * to be refunded to resolve the error state E1.
      * Reverts if msg.sender is not the winning bidder for all specified bids.
-     * @param projectId Project ID to mint tokens on.
+     * @param projectId Project ID to refund bid values on.
      * @param coreContract Core contract address for the given project.
-     * @param slotIndices Slot indices of bids to mint tokens for
-     * @param bidIndicesInSlot Bid indices in slot of bid to mint tokens for
+     * @param bidIds IDs of bids to refund bid values for
      */
     function winnerDirectRefund(
         uint256 projectId,
         address coreContract,
-        uint16[] calldata slotIndices,
-        uint24[] calldata bidIndicesInSlot
+        uint32[] calldata bidIds
     ) external nonReentrant {
         // CHECKS
         // @dev all checks performed in library function
@@ -758,8 +739,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         RAMLib.directRefundBidsToResolveE1({
             projectId: projectId,
             coreContract: coreContract,
-            slotIndices: slotIndices,
-            bidIndicesInSlot: bidIndicesInSlot,
+            bidIds: bidIds,
             requireSenderIsBidder: true, // only allow winning bidder to call
             minterRefundGasLimit: _minterRefundGasLimit
         });
