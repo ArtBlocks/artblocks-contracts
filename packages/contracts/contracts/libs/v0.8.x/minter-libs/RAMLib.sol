@@ -272,10 +272,10 @@ library RAMLib {
         uint16 minBidSlotIndex;
         // maximum bitmap index with an active bid
         uint16 maxBidSlotIndex;
-        // --- bid minting tracking ---
+        // --- bid auto-minting tracking ---
         uint16 latestMintedBidSlotIndex;
         uint24 latestMintedBidArrayIndex;
-        // --- error state bid refund tracking ---
+        // --- error state bid auto-refund tracking ---
         uint16 latestRefundedBidSlotIndex;
         uint24 latestRefundedBidArrayIndex;
         // --- auction parameters ---
@@ -866,14 +866,14 @@ library RAMLib {
                         amount: currentAmountDue,
                         minterRefundGasLimit: minterRefundGasLimit
                     });
-                    // emit event for state change
-                    emit BidSettled({
-                        projectId: projectId,
-                        coreContract: coreContract,
-                        slotIndex: slotIndices[i],
-                        bidIndexInSlot: bidIndicesInSlot[i]
-                    });
                 }
+                // emit event for state change
+                emit BidSettled({
+                    projectId: projectId,
+                    coreContract: coreContract,
+                    slotIndex: slotIndices[i],
+                    bidIndexInSlot: bidIndicesInSlot[i]
+                });
             }
         }
     }
@@ -1039,14 +1039,14 @@ library RAMLib {
                         amount: currentAmountDue,
                         minterRefundGasLimit: minterRefundGasLimit
                     });
-                    // emit event for state change
-                    emit BidSettled({
-                        projectId: projectId,
-                        coreContract: coreContract,
-                        slotIndex: currentLatestMintedBidSlotIndex,
-                        bidIndexInSlot: currentLatestMintedBidArrayIndex
-                    });
                 }
+                // emit event for state change
+                emit BidSettled({
+                    projectId: projectId,
+                    coreContract: coreContract,
+                    slotIndex: currentLatestMintedBidSlotIndex,
+                    bidIndexInSlot: currentLatestMintedBidArrayIndex
+                });
             }
 
             // increment num new tokens minted
@@ -1662,12 +1662,12 @@ library RAMLib {
                         block.timestamp + AUCTION_BUFFER_SECONDS
                     )
                 );
+                emit AuctionTimestampEndUpdated({
+                    projectId: projectId,
+                    coreContract: coreContract,
+                    timestampEnd: RAMProjectConfig_.timestampEnd
+                });
             }
-            emit AuctionTimestampEndUpdated({
-                projectId: projectId,
-                coreContract: coreContract,
-                timestampEnd: RAMProjectConfig_.timestampEnd
-            });
         }
         // insert the new Bid
         insertBid({
