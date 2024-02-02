@@ -11,6 +11,6 @@ interface ISharedMinterRAMV0 {
     function createBid(
         uint256 projectId,
         address coreContract,
-        uint8 slotIndex
+        uint16 slotIndex
     ) external payable;
 }
