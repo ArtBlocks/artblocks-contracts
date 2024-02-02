@@ -627,15 +627,11 @@ library RAMLib {
                 projectMinterState == ProjectMinterStates.D,
             "Only states C or D"
         );
-        // get project price, depending on if it was a sellout
-        bool wasSellout = RAMProjectConfig_.numBids ==
-            RAMProjectConfig_.numTokensInAuction;
-        uint256 projectPrice = wasSellout
-            ? slotIndexToBidValue({
-                basePrice: RAMProjectConfig_.basePrice,
-                slotIndex: RAMProjectConfig_.minBidSlotIndex
-            })
-            : RAMProjectConfig_.basePrice;
+
+        // get project price
+        uint256 projectPrice = _getProjectPrice({
+            RAMProjectConfig_: RAMProjectConfig_
+        });
         // settle the bid
         _settleBidWithChecks({
             RAMProjectConfig_: RAMProjectConfig_,
@@ -699,15 +695,11 @@ library RAMLib {
             );
         }
 
-        // get project price, depending on if it was a sellout
-        bool wasSellout = RAMProjectConfig_.numBids ==
-            RAMProjectConfig_.numTokensInAuction;
-        uint256 projectPrice = wasSellout
-            ? slotIndexToBidValue({
-                basePrice: RAMProjectConfig_.basePrice,
-                slotIndex: RAMProjectConfig_.minBidSlotIndex
-            })
-            : RAMProjectConfig_.basePrice;
+        // get project price
+        uint256 projectPrice = _getProjectPrice({
+            RAMProjectConfig_: RAMProjectConfig_
+        });
+
         // settle each input bid
         // @dev already verified that input lengths match
         uint256 inputBidsLength = slotIndices.length;
@@ -798,19 +790,10 @@ library RAMLib {
         }
 
         // settlement values
-        // memoize project price, depending on if it was a sellout
-        uint256 projectPrice;
-        // @dev block scope to limit stack depth
-        {
-            bool wasSellout = RAMProjectConfig_.numBids ==
-                RAMProjectConfig_.numTokensInAuction;
-            projectPrice = wasSellout
-                ? slotIndexToBidValue({
-                    basePrice: RAMProjectConfig_.basePrice,
-                    slotIndex: RAMProjectConfig_.minBidSlotIndex
-                })
-                : RAMProjectConfig_.basePrice;
-        }
+        // get project price
+        uint256 projectPrice = _getProjectPrice({
+            RAMProjectConfig_: RAMProjectConfig_
+        });
 
         // main loop to mint tokens
         for (uint256 i; i < slotIndicesLength; ++i) {
@@ -931,20 +914,11 @@ library RAMLib {
         // @dev this logic is only valid in State C
         bool haveInitializedCurrentValues = RAMProjectConfig_
             .numBidsMintedTokens > 0;
-        // settlement values
-        // get project price, depending on if it was a sellout
-        uint256 projectPrice;
-        // @dev block scope to limit stack depth
-        {
-            bool wasSellout = RAMProjectConfig_.numBids ==
-                RAMProjectConfig_.numTokensInAuction;
-            projectPrice = wasSellout
-                ? slotIndexToBidValue({
-                    basePrice: RAMProjectConfig_.basePrice,
-                    slotIndex: RAMProjectConfig_.minBidSlotIndex
-                })
-                : RAMProjectConfig_.basePrice;
-        }
+
+        // get project price
+        uint256 projectPrice = _getProjectPrice({
+            RAMProjectConfig_: RAMProjectConfig_
+        });
         uint256 numNewTokensMinted; // = 0
 
         // main loop to mint tokens
@@ -1109,19 +1083,11 @@ library RAMLib {
         });
 
         // settlement values
-        // memoize project price, depending on if it was a sellout
-        uint256 projectPrice;
-        // @dev block scope to limit stack depth
-        {
-            bool wasSellout = RAMProjectConfig_.numBids ==
-                RAMProjectConfig_.numTokensInAuction;
-            projectPrice = wasSellout
-                ? slotIndexToBidValue({
-                    basePrice: RAMProjectConfig_.basePrice,
-                    slotIndex: RAMProjectConfig_.minBidSlotIndex
-                })
-                : RAMProjectConfig_.basePrice;
-        }
+
+        // get project price
+        uint256 projectPrice = _getProjectPrice({
+            RAMProjectConfig_: RAMProjectConfig_
+        });
 
         // main loop to mint tokens
         for (uint256 i; i < slotIndicesLength; ++i) {
@@ -1253,19 +1219,10 @@ library RAMLib {
         bool haveInitializedCurrentValues = RAMProjectConfig_
             .numBidsErrorRefunded > 0;
         // settlement values
-        // get project price, depending on if it was a sellout
-        uint256 projectPrice;
-        // @dev block scope to limit stack depth
-        {
-            bool wasSellout = RAMProjectConfig_.numBids ==
-                RAMProjectConfig_.numTokensInAuction;
-            projectPrice = wasSellout
-                ? slotIndexToBidValue({
-                    basePrice: RAMProjectConfig_.basePrice,
-                    slotIndex: RAMProjectConfig_.minBidSlotIndex
-                })
-                : RAMProjectConfig_.basePrice;
-        }
+        // get project price
+        uint256 projectPrice = _getProjectPrice({
+            RAMProjectConfig_: RAMProjectConfig_
+        });
         uint256 numRefundsIssued; // = 0
 
         // main loop to refund bids
@@ -1414,19 +1371,10 @@ library RAMLib {
         // update state to indicate revenues withdrawn
         RAMProjectConfig_.revenuesCollected = true;
 
-        // get project price, depending on if it was a sellout
-        uint256 projectPrice;
-        // @dev block scope to limit stack depth
-        {
-            bool wasSellout = RAMProjectConfig_.numBids ==
-                RAMProjectConfig_.numTokensInAuction;
-            projectPrice = wasSellout
-                ? slotIndexToBidValue({
-                    basePrice: RAMProjectConfig_.basePrice,
-                    slotIndex: RAMProjectConfig_.minBidSlotIndex
-                })
-                : RAMProjectConfig_.basePrice;
-        }
+        // get project price
+        uint256 projectPrice = _getProjectPrice({
+            RAMProjectConfig_: RAMProjectConfig_
+        });
         // get netRevenues
         // @dev refunded bids do not count towards amount due because they
         // did not generate revenue
@@ -2491,6 +2439,26 @@ library RAMLib {
             slotIndex: slotIndex,
             bidIndexInSlot: bidIndexInSlot
         });
+    }
+
+    /**
+     * @notice Helper function to get the price of a token on a project.
+     * @dev Assumes project is configured, has a base price, and generally
+     * makes sense to get a price for.
+     * @param RAMProjectConfig_ RAMProjectConfig to query
+     */
+    function _getProjectPrice(
+        RAMProjectConfig storage RAMProjectConfig_
+    ) private view returns (uint256 projectPrice) {
+        bool wasSellout = RAMProjectConfig_.numBids ==
+            RAMProjectConfig_.numTokensInAuction;
+        // price is lowest bid if sellout, otherwise base price
+        projectPrice = wasSellout
+            ? slotIndexToBidValue({
+                basePrice: RAMProjectConfig_.basePrice,
+                slotIndex: RAMProjectConfig_.minBidSlotIndex
+            })
+            : RAMProjectConfig_.basePrice;
     }
 
     /**
