@@ -776,16 +776,14 @@ library RAMLib {
                 "Only state D"
             );
             // require numTokensToMint does not exceed number of tokens
-            // available to minter, considering the number of bids
+            // owed.
             // @dev must check this here to avoid minting more tokens than max
             // invocations, which could potentially not revert if minter
             // max invocations was limiting (+other unexpected conditions)
             require(
                 slotIndicesLength <=
-                    RAMProjectConfig_.numBids -
-                        (RAMProjectConfig_.numBidsMintedTokens +
-                            RAMProjectConfig_.numBidsErrorRefunded),
-                "tokens to mint gt available qty"
+                    _getNumTokensOwed({RAMProjectConfig_: RAMProjectConfig_}),
+                "tokens to mint gt tokens owed"
             );
         }
 
@@ -890,16 +888,14 @@ library RAMLib {
                 "Only state C"
             );
             // require numTokensToMint does not exceed number of tokens
-            // available to minter, considering the number of bids
+            // owed
             // @dev must check this here to avoid minting more tokens than max
             // invocations, which could potentially not revert if minter
             // max invocations was limiting (+other unexpected conditions)
             require(
                 numTokensToMint <=
-                    RAMProjectConfig_.numBids -
-                        (RAMProjectConfig_.numBidsMintedTokens +
-                            RAMProjectConfig_.numBidsErrorRefunded),
-                "tokens to mint gt available qty"
+                    _getNumTokensOwed({RAMProjectConfig_: RAMProjectConfig_}),
+                "tokens to mint gt tokens owed"
             );
         }
 
@@ -2144,9 +2140,9 @@ library RAMLib {
         });
         // F1: Tokens owed < invocations available
         // @dev underflow impossible given what the parameters represent
-        uint256 tokensOwed = RAMProjectConfig_.numBids -
-            (RAMProjectConfig_.numBidsMintedTokens +
-                RAMProjectConfig_.numBidsErrorRefunded);
+        uint256 tokensOwed = _getNumTokensOwed({
+            RAMProjectConfig_: RAMProjectConfig_
+        });
         uint256 invocationsAvailable = MaxInvocationsLib
             .getInvocationsAvailable({
                 projectId: projectId,
@@ -2187,9 +2183,9 @@ library RAMLib {
         });
         // E1: Tokens owed > invocations available
         // @dev underflow impossible given what the parameters represent
-        uint256 tokensOwed = RAMProjectConfig_.numBids -
-            (RAMProjectConfig_.numBidsMintedTokens +
-                RAMProjectConfig_.numBidsErrorRefunded);
+        uint256 tokensOwed = _getNumTokensOwed({
+            RAMProjectConfig_: RAMProjectConfig_
+        });
         uint256 invocationsAvailable = MaxInvocationsLib
             .getInvocationsAvailable({
                 projectId: projectId,
@@ -2459,6 +2455,21 @@ library RAMLib {
                 slotIndex: RAMProjectConfig_.minBidSlotIndex
             })
             : RAMProjectConfig_.basePrice;
+    }
+
+    /**
+     * @notice Helper function to get the number of tokens owed for a given
+     * project.
+     * Returns the number of bids in a project minus the sum of tokens already
+     * minted and bids that have been refunded due to an error state.
+     */
+    function _getNumTokensOwed(
+        RAMProjectConfig storage RAMProjectConfig_
+    ) private view returns (uint256 tokensOwed) {
+        tokensOwed =
+            RAMProjectConfig_.numBids -
+            (RAMProjectConfig_.numBidsMintedTokens +
+                RAMProjectConfig_.numBidsErrorRefunded);
     }
 
     /**
