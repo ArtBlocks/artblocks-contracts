@@ -6,6 +6,7 @@ pragma solidity ^0.8.0;
 import {IMinterFilterV1} from "../../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
 import {BitMaps256} from "../BitMap.sol";
+import {PackedBools} from "../PackedBools.sol";
 import {ABHelpers} from "../ABHelpers.sol";
 import {SplitFundsLib} from "./SplitFundsLib.sol";
 import {MaxInvocationsLib} from "./MaxInvocationsLib.sol";
@@ -24,6 +25,7 @@ import {Math} from "@openzeppelin-5.0/contracts/utils/math/Math.sol";
 library RAMLib {
     using SafeCast for uint256;
     using BitMaps256 for uint256;
+    using PackedBools for uint256;
     /**
      * @notice Minimum auction length, in seconds, was updated to be the
      * provided value.
@@ -255,6 +257,11 @@ library RAMLib {
     // 60 sec/min * 60 min/hr * 24 hr
     uint256 constant ADMIN_ONLY_MINT_TIME_SECONDS = 72 hours;
 
+    // packed bools constants for Bid struct
+    uint8 constant INDEX_IS_SETTLED = 0;
+    uint8 constant INDEX_IS_MINTED = 1;
+    uint8 constant INDEX_IS_REFUNDED = 2;
+
     enum ProjectMinterStates {
         A, // Pre-Auction
         B, // Live-Auction
@@ -320,11 +327,11 @@ library RAMLib {
         uint32 nextBidId;
         uint16 slotIndex;
         address bidder;
-        // TODO - maybe pack three bool values in bitmap
-        bool isSettled;
-        bool isMinted;
-        // -- slot end --
-        bool isRefunded;
+        // three bool values packed into a single uint8
+        // index 0 - isSettled (INDEX_IS_SETTLED)
+        // index 1 - isMinted (INDEX_IS_MINTED)
+        // index 2 - isRefunded (INDEX_IS_REFUNDED)
+        uint8 packedBools;
     }
 
     // contract-specific parameters
@@ -803,7 +810,10 @@ library RAMLib {
             // CHECKS
             // if bid is already minted or refunded, skip to next bid
             // @dev do not revert, since this could be due to front-running
-            if (bid.isMinted || bid.isRefunded) {
+            if (
+                _getBidPackedBool(bid, INDEX_IS_MINTED) ||
+                _getBidPackedBool(bid, INDEX_IS_REFUNDED)
+            ) {
                 continue;
             }
             // require sender is bidder if requireSenderIsBidder is true
@@ -813,7 +823,7 @@ library RAMLib {
             // EFFECTS
             // STEP 1: mint bid
             // update state
-            bid.isMinted = true;
+            _setBidPackedBool({bid: bid, index: INDEX_IS_MINTED, value: true});
             // @dev num bids minted tokens not memoized due to stack depth
             // limitations
             RAMProjectConfig_.numBidsMintedTokens++;
@@ -828,8 +838,8 @@ library RAMLib {
 
             // STEP 2: settle if not already settled
             // @dev collector could have previously settled bid, so need to
-            // check if bid is settled
-            if (!(bid.isSettled)) {
+            // settle only if not already settled
+            if (!(_getBidPackedBool(bid, INDEX_IS_SETTLED))) {
                 _settleBid({
                     RAMProjectConfig_: RAMProjectConfig_,
                     projectId: projectId,
@@ -955,7 +965,8 @@ library RAMLib {
 
             // STEP 2: mint bid
             // @dev scrolling logic in State C ensures bid is not yet minted
-            bid.isMinted = true;
+            // mark bid as minted
+            _setBidPackedBool({bid: bid, index: INDEX_IS_MINTED, value: true});
             // INTERACTIONS
             _mintTokenForBid({
                 projectId: projectId,
@@ -967,8 +978,8 @@ library RAMLib {
 
             // STEP 3: settle if not already settled
             // @dev collector could have previously settled bid, so need to
-            // check if bid is settled
-            if (!(bid.isSettled)) {
+            // settle only if not already settled
+            if (!(_getBidPackedBool(bid, INDEX_IS_SETTLED))) {
                 // pika
                 _settleBid({
                     RAMProjectConfig_: RAMProjectConfig_,
@@ -1073,7 +1084,10 @@ library RAMLib {
             // CHECKS
             // if bid is already minted or refunded, skip to next bid
             // @dev do not revert, since this could be due to front-running
-            if (bid.isMinted || bid.isRefunded) {
+            if (
+                _getBidPackedBool(bid, INDEX_IS_MINTED) ||
+                _getBidPackedBool(bid, INDEX_IS_REFUNDED)
+            ) {
                 continue;
             }
             // require sender is bidder if requireSenderIsBidder is true
@@ -1085,8 +1099,14 @@ library RAMLib {
             // minimum value to send is the project price
             uint256 valueToSend = projectPrice;
             bool didSettleBid = false;
-            if (!bid.isSettled) {
-                bid.isSettled = true;
+            // if not isSettled, then settle the bid
+            if (!(_getBidPackedBool(bid, INDEX_IS_SETTLED))) {
+                // mark bid as settled
+                _setBidPackedBool({
+                    bid: bid,
+                    index: INDEX_IS_SETTLED,
+                    value: true
+                });
                 didSettleBid = true;
                 // send entire bid value if not previously settled
                 valueToSend = slotIndexToBidValue({
@@ -1096,7 +1116,11 @@ library RAMLib {
                 });
             }
             // mark bid as refunded
-            bid.isRefunded = true;
+            _setBidPackedBool({
+                bid: bid,
+                index: INDEX_IS_REFUNDED,
+                value: true
+            });
             // update number of bids refunded
             // @dev not memoized due to stack depth limitations
             RAMProjectConfig_.numBidsErrorRefunded++;
@@ -1243,8 +1267,14 @@ library RAMLib {
             // minimum value to send is the project price
             uint256 valueToSend = projectPrice;
             bool didSettleBid = false;
-            if (!bid.isSettled) {
-                bid.isSettled = true;
+            // if not isSettled, then settle the bid
+            if (!(_getBidPackedBool(bid, INDEX_IS_SETTLED))) {
+                // mark bid as settled
+                _setBidPackedBool({
+                    bid: bid,
+                    index: INDEX_IS_SETTLED,
+                    value: true
+                });
                 didSettleBid = true;
                 // send entire bid value since was not previously settled
                 valueToSend = slotIndexToBidValue({
@@ -1254,7 +1284,11 @@ library RAMLib {
                 });
             }
             // mark bid as refunded
-            bid.isRefunded = true;
+            _setBidPackedBool({
+                bid: bid,
+                index: INDEX_IS_REFUNDED,
+                value: true
+            });
             // INTERACTIONS
             // force-send refund to bidder
             SplitFundsLib.forceSafeTransferETH({
@@ -2194,7 +2228,10 @@ library RAMLib {
         // require bidder is the bid's bidder
         require(bid.bidder == bidder, "Only bidder");
         // require bid is not yet settled
-        require(bid.isSettled, "Only un-settled bid");
+        require(
+            !(_getBidPackedBool(bid, INDEX_IS_SETTLED)),
+            "Only un-settled bid"
+        );
 
         _settleBid({
             RAMProjectConfig_: RAMProjectConfig_,
@@ -2232,7 +2269,7 @@ library RAMLib {
         Bid storage bid = RAMProjectConfig_.bids[bidId];
         // EFFECTS
         // update state
-        bid.isSettled = true;
+        _setBidPackedBool({bid: bid, index: INDEX_IS_SETTLED, value: true});
         // amount due = bid amount - project price
         uint256 amountDue = slotIndexToBidValue({
             basePrice: RAMProjectConfig_.basePrice,
@@ -2324,9 +2361,7 @@ library RAMLib {
             nextBidId: 0, // null value at end of tail
             slotIndex: slotIndex,
             bidder: bidder,
-            isSettled: false,
-            isMinted: false,
-            isRefunded: false
+            packedBools: 0 // all packed bools false
         });
         // update tail pointer to new bid
         RAMProjectConfig_.tailBidIdBySlot[slotIndex] = bidId;
@@ -2558,6 +2593,41 @@ library RAMLib {
                     uint8(slotIndex)
                 );
         }
+    }
+
+    /**
+     * @notice Helper function to set a packed boolean in a Bid struct.
+     * @param bid Bid to update
+     * @param index Index of packed boolean to update
+     * @param value Value to set packed boolean to
+     */
+    function _setBidPackedBool(
+        Bid storage bid,
+        uint8 index,
+        bool value
+    ) private {
+        if (value) {
+            bid.packedBools = uint8(
+                uint256(bid.packedBools).setBoolTrue(index)
+            );
+        } else {
+            bid.packedBools = uint8(
+                uint256(bid.packedBools).setBoolFalse(index)
+            );
+        }
+    }
+
+    /**
+     * @notice Helper function to get a packed boolean from a Bid struct.
+     * @param bid Bid to query
+     * @param index Index of packed boolean to query
+     * @return bool Value of packed boolean
+     */
+    function _getBidPackedBool(
+        Bid storage bid,
+        uint8 index
+    ) private view returns (bool) {
+        return uint256(bid.packedBools).getBool(index);
     }
 
     /**
