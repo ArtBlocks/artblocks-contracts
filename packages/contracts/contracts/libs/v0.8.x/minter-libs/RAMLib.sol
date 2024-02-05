@@ -1412,16 +1412,15 @@ library RAMLib {
         // CHECKS
         // @dev block scope to limit stack depth
         {
-            // require project minter state C, D, or E (Post-Auction)
+            // require project minter state D, or E (Post-Auction)
             ProjectMinterStates projectMinterState = getProjectMinterState({
                 projectId: projectId,
                 coreContract: coreContract
             });
             require(
-                projectMinterState == ProjectMinterStates.C ||
-                    projectMinterState == ProjectMinterStates.D ||
+                projectMinterState == ProjectMinterStates.D ||
                     projectMinterState == ProjectMinterStates.E,
-                "Only states C, D, or E"
+                "Only states D or E"
             );
             // require at least one excess token available to be minted
             // @dev this ensures minter and core contract max-invocations
@@ -1459,9 +1458,11 @@ library RAMLib {
         // if max invocations has been reached
 
         // INTERACTIONS
-        SplitFundsLib.splitFundsETHRefundSender({
+        // split revenue from sale
+        // @dev no refund because previously verified msg.value == pricePerTokenInWei
+        SplitFundsLib.splitRevenuesETHNoRefund({
             projectId: projectId,
-            pricePerTokenInWei: pricePerTokenInWei,
+            valueInWei: pricePerTokenInWei,
             coreContract: coreContract
         });
 

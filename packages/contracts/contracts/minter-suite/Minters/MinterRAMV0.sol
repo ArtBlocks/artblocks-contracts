@@ -80,8 +80,8 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  * abilities:
  *  - (admin | artist) auto-mint tokens to winners
  *  - (winner) collect settlement
- *  - (FLAG F1) purchase remaining tokens for auction min price (base price), like fixed price minter
  *  - (ERROR E1)(admin) auto-refund winning bids that cannot receive tokens due to max invocations error
+ *  note: State C is skipped if auction was not a sellout
  * -------------
  * STATE D: Post-Auction, not all bids handled, post-admin-artist-only mint period
  * abilities:
