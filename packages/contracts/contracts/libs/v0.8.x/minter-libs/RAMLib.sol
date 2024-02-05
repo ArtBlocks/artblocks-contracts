@@ -1912,7 +1912,7 @@ library RAMLib {
         uint256 projectId,
         address coreContract
     )
-        external
+        internal
         view
         returns (uint256 minNextBidValueInWei, uint256 minNextBidSlotIndex)
     {
@@ -2191,7 +2191,7 @@ library RAMLib {
     function getProjectBalance(
         uint256 projectId,
         address coreContract
-    ) external view returns (uint256) {
+    ) internal view returns (uint256) {
         RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
             projectId: projectId,
             coreContract: coreContract

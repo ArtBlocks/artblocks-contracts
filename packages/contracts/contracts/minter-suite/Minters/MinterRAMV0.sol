@@ -123,7 +123,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     string public constant minterType = "MinterRAMV0";
 
     /// @notice minter version for this minter
-    string public constant minterVersion = "v1.0.0";
+    string public constant minterVersion = "v0.0.0";
 
     /// @notice Minimum auction duration
     uint256 public constant MIN_AUCTION_DURATION_SECONDS = 60 * 10; // 10 minutes
