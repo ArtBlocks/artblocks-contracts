@@ -64,16 +64,16 @@ library RAMLib {
      * @param coreContract Core contract address to update
      * @param imposeConstraints bool representing if constraints should be
      * imposed on this contract
-     * @param requireAdminOnlyMintPeriod bool representing if admin-only mint
-     * is required for all projects on this contract
-     * @param requireNoAdminOnlyMintPeriod bool representing if admin-only mint
-     * is not allowed for all projects on this contract
+     * @param requireAdminArtistOnlyMintPeriod bool representing if
+     * admin-artist-only mint is required for all projects on this contract
+     * @param requireNoAdminArtistOnlyMintPeriod bool representing if
+     * admin-artist-only mint is not allowed for all projects on this contract
      */
     event ContractConfigUpdated(
         address indexed coreContract,
         bool imposeConstraints,
-        bool requireAdminOnlyMintPeriod,
-        bool requireNoAdminOnlyMintPeriod
+        bool requireAdminArtistOnlyMintPeriod,
+        bool requireNoAdminArtistOnlyMintPeriod
     );
 
     /**
@@ -84,7 +84,7 @@ library RAMLib {
      * @param timestampEnd Auction end timestamp
      * @param basePrice Auction base price
      * @param allowExtraTime Auction allows extra time
-     * @param adminOnlyMintPeriodIfSellout Auction admin-only mint period if
+     * @param adminArtistOnlyMintPeriodIfSellout Auction admin-artist-only mint period if
      * sellout
      * @param numTokensInAuction Auction number of tokens in auction
      */
@@ -95,7 +95,7 @@ library RAMLib {
         uint256 timestampEnd,
         uint256 basePrice,
         bool allowExtraTime,
-        bool adminOnlyMintPeriodIfSellout,
+        bool adminArtistOnlyMintPeriodIfSellout,
         uint256 numTokensInAuction
     );
 
@@ -249,13 +249,12 @@ library RAMLib {
     uint256 constant SLOTS_PER_PRICE_DOUBLE = 512 / 8; // 64 slots per double
 
     // auction extension time constants
-    uint256 constant AUCTION_BUFFER_SECONDS = 5 minutes; // 5 minutes
-    uint256 constant MAX_AUCTION_EXTRA_SECONDS = 1 hours; // 1 hour
+    uint256 constant AUCTION_BUFFER_SECONDS = 5 minutes;
+    uint256 constant MAX_AUCTION_EXTRA_SECONDS = 1 hours;
     // @dev store value in hours to improve storage packing
     uint256 constant MAX_AUCTION_ADMIN_EMERGENCY_EXTENSION_HOURS = 72; // 72 hours
 
-    // 60 sec/min * 60 min/hr * 24 hr
-    uint256 constant ADMIN_ONLY_MINT_TIME_SECONDS = 72 hours;
+    uint256 constant ADMIN_ARTIST_ONLY_MINT_TIME_SECONDS = 72 hours;
 
     // packed bools constants for Bid struct
     uint8 constant INDEX_IS_SETTLED = 0;
@@ -265,8 +264,8 @@ library RAMLib {
     enum ProjectMinterStates {
         A, // Pre-Auction
         B, // Live-Auction
-        C, // Post-Auction, not all bids handled, admin-only mint period
-        D, // Post-Auction, not all bids handled, post-admin-only mint period
+        C, // Post-Auction, not all bids handled, admin-artist-only mint period
+        D, // Post-Auction, not all bids handled, post-admin-artist-only mint period
         E // Post-Auction, all bids handled
     }
 
@@ -313,7 +312,7 @@ library RAMLib {
         // @dev max uint8 ~= 256 hours, which is gt max auction extension time of 72 hours
         uint8 adminEmergencyExtensionHoursApplied;
         bool allowExtraTime;
-        bool adminOnlyMintPeriodIfSellout;
+        bool adminArtistOnlyMintPeriodIfSellout;
         // pricing
         // @dev max uint88 ~= 3e26 Wei = ~300 million ETH, which is well above
         // the expected prices of any NFT mint in the foreseeable future.
@@ -338,8 +337,8 @@ library RAMLib {
     // @dev may not be indexed, but does impose on-chain constraints
     struct RAMContractConfig {
         bool imposeConstraints; // default false
-        bool requireAdminOnlyMintPeriod;
-        bool requireNoAdminOnlyMintPeriod;
+        bool requireAdminArtistOnlyMintPeriod;
+        bool requireNoAdminArtistOnlyMintPeriod;
     }
 
     // Diamond storage pattern is used in this library
@@ -348,16 +347,22 @@ library RAMLib {
         mapping(address coreContract => RAMContractConfig) RAMContractConfigs;
     }
 
+    /**
+     * @notice Update a contract's requirements on if a post-auction
+     * admin-artist-only mint period is required or banned, for and-on
+     * configured projects.
+     */
     function setContractConfig(
         address coreContract,
         bool imposeConstraints,
-        bool requireAdminOnlyMintPeriod,
-        bool requireNoAdminOnlyMintPeriod
+        bool requireAdminArtistOnlyMintPeriod,
+        bool requireNoAdminArtistOnlyMintPeriod
     ) internal {
         // CHECKS
         // require not both constraints set to true, since mutually exclusive
         require(
-            !(requireAdminOnlyMintPeriod && requireNoAdminOnlyMintPeriod),
+            !(requireAdminArtistOnlyMintPeriod &&
+                requireNoAdminArtistOnlyMintPeriod),
             "Only one constraint can be set"
         );
         // load contract config
@@ -367,15 +372,15 @@ library RAMLib {
         // set contract config
         RAMContractConfig_.imposeConstraints = imposeConstraints;
         RAMContractConfig_
-            .requireAdminOnlyMintPeriod = requireAdminOnlyMintPeriod;
+            .requireAdminArtistOnlyMintPeriod = requireAdminArtistOnlyMintPeriod;
         RAMContractConfig_
-            .requireNoAdminOnlyMintPeriod = requireNoAdminOnlyMintPeriod;
+            .requireNoAdminArtistOnlyMintPeriod = requireNoAdminArtistOnlyMintPeriod;
         // emit event
         emit ContractConfigUpdated({
             coreContract: coreContract,
             imposeConstraints: imposeConstraints,
-            requireAdminOnlyMintPeriod: requireAdminOnlyMintPeriod,
-            requireNoAdminOnlyMintPeriod: requireNoAdminOnlyMintPeriod
+            requireAdminArtistOnlyMintPeriod: requireAdminArtistOnlyMintPeriod,
+            requireNoAdminArtistOnlyMintPeriod: requireNoAdminArtistOnlyMintPeriod
         });
     }
 
@@ -455,7 +460,7 @@ library RAMLib {
         uint40 auctionTimestampEnd,
         uint88 basePrice,
         bool allowExtraTime,
-        bool adminOnlyMintPeriodIfSellout
+        bool adminArtistOnlyMintPeriodIfSellout
     ) internal {
         // load project config
         RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
@@ -477,16 +482,16 @@ library RAMLib {
             coreContract: coreContract
         });
         if (RAMContractConfig_.imposeConstraints) {
-            if (RAMContractConfig_.requireAdminOnlyMintPeriod) {
+            if (RAMContractConfig_.requireAdminArtistOnlyMintPeriod) {
                 require(
-                    adminOnlyMintPeriodIfSellout,
-                    "Only admin-only mint period"
+                    adminArtistOnlyMintPeriodIfSellout,
+                    "Only admin-artist mint period"
                 );
             }
-            if (RAMContractConfig_.requireNoAdminOnlyMintPeriod) {
+            if (RAMContractConfig_.requireNoAdminArtistOnlyMintPeriod) {
                 require(
-                    !adminOnlyMintPeriodIfSellout,
-                    "Only no admin-only mint period"
+                    !adminArtistOnlyMintPeriodIfSellout,
+                    "Only no admin-artist mint period"
                 );
             }
         }
@@ -497,7 +502,7 @@ library RAMLib {
         RAMProjectConfig_.basePrice = basePrice;
         RAMProjectConfig_.allowExtraTime = allowExtraTime;
         RAMProjectConfig_
-            .adminOnlyMintPeriodIfSellout = adminOnlyMintPeriodIfSellout;
+            .adminArtistOnlyMintPeriodIfSellout = adminArtistOnlyMintPeriodIfSellout;
         // refresh numTokensInAuction
         uint256 numTokensInAuction = refreshNumTokensInAuction({
             projectId: projectId,
@@ -512,7 +517,7 @@ library RAMLib {
             timestampEnd: auctionTimestampEnd,
             basePrice: basePrice,
             allowExtraTime: allowExtraTime,
-            adminOnlyMintPeriodIfSellout: adminOnlyMintPeriodIfSellout,
+            adminArtistOnlyMintPeriodIfSellout: adminArtistOnlyMintPeriodIfSellout,
             numTokensInAuction: numTokensInAuction
         });
     }
@@ -737,11 +742,11 @@ library RAMLib {
      * @notice Directly mint tokens to winners of project `projectId` on core
      * contract `coreContract`.
      * Does not guarantee an optimal ordering or handling of E1 state like
-     * `adminAutoMintTokensToWinners` does while in State C.
+     * `adminArtistAutoMintTokensToWinners` does while in State C.
      * Skips over bids that have already been minted or refunded (front-running
      * protection)
-     * Reverts if project is not in a post-auction state, post-admin-only mint
-     * period (i.e. State D), with tokens available.
+     * Reverts if project is not in a post-auction state,
+     * post-admin-artist-only mint period (i.e. State D), with tokens available
      * Reverts if bid does not exist at bidId.
      * Reverts if msg.sender is not the bidder for all bids if
      * requireSenderIsBidder is true.
@@ -772,8 +777,8 @@ library RAMLib {
         uint256 bidIdsLength = bidIds.length;
         // @dev block scope to limit stack depth
         {
-            // require project minter state D (Post-Auction, post-admin-only,
-            // not all bids handled)
+            // require project minter state D (Post-Auction,
+            // post-admin-artist-only, not all bids handled)
             ProjectMinterStates projectMinterState = getProjectMinterState({
                 projectId: projectId,
                 coreContract: coreContract
@@ -854,13 +859,13 @@ library RAMLib {
     }
 
     /**
-     * @notice Function that enables a contract admin (checked by external
-     * function) to mint tokens to winners of project `projectId` on core
-     * contract `coreContract`.
+     * @notice Function that enables a contract admin or artist (checked by
+     * external function) to mint tokens to winners of project `projectId` on
+     * core contract `coreContract`.
      * Automatically mints tokens to most-winning bids, in order from highest
      * and earliest bid to lowest and latest bid.
      * Settles bids as tokens are minted, if not already settled.
-     * Reverts if project is not in a post-auction state, admin-only mint
+     * Reverts if project is not in a post-auction state, admin-artist-only mint
      * period (i.e. State C), with tokens available.
      * to be minted.
      * Reverts if number of tokens to mint is greater than the number of
@@ -869,7 +874,7 @@ library RAMLib {
      * @param coreContract Core contract address for the given project.
      * @param numTokensToMint Number of tokens to mint in this transaction.
      */
-    function adminAutoMintTokensToWinners(
+    function adminArtistAutoMintTokensToWinners(
         uint256 projectId,
         address coreContract,
         uint24 numTokensToMint,
@@ -885,8 +890,8 @@ library RAMLib {
         // CHECKS
         // @dev block scope to limit stack depth
         {
-            // require project minter state C (Post-Auction, admin-only, not
-            // all bids handled)
+            // require project minter state C (Post-Auction, admin-artist-only,
+            // not all bids handled)
             ProjectMinterStates projectMinterState = getProjectMinterState({
                 projectId: projectId,
                 coreContract: coreContract
@@ -1012,8 +1017,8 @@ library RAMLib {
      * `adminAutoRefundBidsToResolveE1` does while in State C.
      * Skips over bids that have already been minted or refunded (front-running
      * protection)
-     * Reverts if project is not in post-auction state, post-admin-only mint
-     * period (i.e. State D).
+     * Reverts if project is not in post-auction state,
+     * post-admin-artist-only mint period (i.e. State D).
      * Reverts if project is not in error state E1.
      * Reverts if length of bids to refund exceeds the number of bids that need
      * to be refunded to resolve the error state E1.
@@ -1038,7 +1043,7 @@ library RAMLib {
         uint256 bidIdsLength = bidIds.length;
         // @dev block scope to limit stack depth
         {
-            // require project minter state D (Post-Auction, post-admin-only,
+            // require project minter state D (Post-Auction, post-admin-artist-only,
             // not all bids handled)
             ProjectMinterStates projectMinterState = getProjectMinterState({
                 projectId: projectId,
@@ -1173,8 +1178,8 @@ library RAMLib {
         // CHECKS
         // @dev block scope to limit stack depth
         {
-            // require project minter state C (Post-Auction, admin-only, not
-            // all bids handled)
+            // require project minter state C (Post-Auction, admin-artist-only,
+            //  not all bids handled)
             ProjectMinterStates projectMinterState = getProjectMinterState({
                 projectId: projectId,
                 coreContract: coreContract
@@ -1724,8 +1729,8 @@ library RAMLib {
      * value.
      * @return allowExtraTime is a bool indicating if the auction is allowed to
      * have extra time.
-     * @return adminOnlyMintPeriodIfSellout is a bool indicating if an
-     * admin-only mint period is required if the auction sells out.
+     * @return adminArtistOnlyMintPeriodIfSellout is a bool indicating if an
+     * admin-artist-only mint period is required if the auction sells out.
      * @return revenuesCollected is a bool indicating if the auction revenues
      * have been collected.
      * @return projectMinterState is the current state of the project minter.
@@ -1747,7 +1752,7 @@ library RAMLib {
             uint256 numBidsErrorRefunded,
             uint256 minBidSlotIndex,
             bool allowExtraTime,
-            bool adminOnlyMintPeriodIfSellout,
+            bool adminArtistOnlyMintPeriodIfSellout,
             bool revenuesCollected,
             RAMLib.ProjectMinterStates projectMinterState
         )
@@ -1772,8 +1777,8 @@ library RAMLib {
         numBidsErrorRefunded = RAMProjectConfig_.numBidsErrorRefunded;
         minBidSlotIndex = RAMProjectConfig_.minBidSlotIndex;
         allowExtraTime = RAMProjectConfig_.allowExtraTime;
-        adminOnlyMintPeriodIfSellout = RAMProjectConfig_
-            .adminOnlyMintPeriodIfSellout;
+        adminArtistOnlyMintPeriodIfSellout = RAMProjectConfig_
+            .adminArtistOnlyMintPeriodIfSellout;
         revenuesCollected = RAMProjectConfig_.revenuesCollected;
     }
 
@@ -1981,17 +1986,18 @@ library RAMLib {
         }
         // @dev all bids are not handled due to previous State E return
         bool adminOnlyMintPeriod = RAMProjectConfig_
-        // @dev if project is configured to have an admin-only mint period
-            .adminOnlyMintPeriodIfSellout &&
+        // @dev if project is configured to have an admin-artist-only mint period
+            .adminArtistOnlyMintPeriodIfSellout &&
             // @dev sellout if numBids == numTokensInAuction
             RAMProjectConfig_.numBids == RAMProjectConfig_.numTokensInAuction &&
-            // @dev still in admin-only mint period if current time < end time + admin-only mint period
-            block.timestamp < timestampEnd + ADMIN_ONLY_MINT_TIME_SECONDS;
+            // @dev still in admin-artist-only mint period if current time < end time + admin-artist-only mint period
+            block.timestamp <
+            timestampEnd + ADMIN_ARTIST_ONLY_MINT_TIME_SECONDS;
         if (adminOnlyMintPeriod) {
-            // State C: Post-Auction, not all bids handled, admin-only mint period
+            // State C: Post-Auction, not all bids handled, admin-artist-only mint period
             return ProjectMinterStates.C;
         }
-        // State D: Post-Auction, not all bids handled, post-admin-only mint period
+        // State D: Post-Auction, not all bids handled, post-admin-artist-only mint period
         // @dev states are mutually exclusive, so must be in final remaining state
         return ProjectMinterStates.D;
     }

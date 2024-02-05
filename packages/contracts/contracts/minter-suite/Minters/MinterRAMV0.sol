@@ -76,14 +76,14 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  *  - (admin) emergency increase auction end time by up to 72 hr (in cases of frontend downtime, etc.)
  *  - (artist)(not in extra time)(no previous admin extension) reduce auction length
  * -------------
- * STATE C: Post-Auction, not all bids handled, admin-only mint period (if applicable)
+ * STATE C: Post-Auction, not all bids handled, admin-artist-only mint period (if applicable)
  * abilities:
- *  - (admin) auto-mint tokens to winners
+ *  - (admin | artist) auto-mint tokens to winners
  *  - (winner) collect settlement
  *  - (FLAG F1) purchase remaining tokens for auction min price (base price), like fixed price minter
  *  - (ERROR E1)(admin) auto-refund winning bids that cannot receive tokens due to max invocations error
  * -------------
- * STATE D: Post-Auction, not all bids handled, post-admin-only mint period
+ * STATE D: Post-Auction, not all bids handled, post-admin-artist-only mint period
  * abilities:
  *  - (winner | admin | artist) directly mint tokens to winners, any order
  *  - (winner) collect settlement
@@ -199,18 +199,18 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
 
     /**
      * @notice Contract-Admin only function to update the requirements on if a
-     * post-auction admin-only mint period is required, for and-on configured
-     * projects.
+     * post-auction admin-artist-only mint period is required or banned, for
+     * and-on configured projects.
      * @param coreContract core contract to set the configuration for.
-     * @param requireAdminOnlyMintPeriod bool indicating if the minter should
-     * require an admin-only mint period after the auction ends.
-     * @param requireNoAdminOnlyMintPeriod bool indicating if the minter should
-     * require no admin-only mint period after the auction ends.
+     * @param requireAdminArtistOnlyMintPeriod bool indicating if the minter should
+     * require an admin-artist-only mint period after the auction ends.
+     * @param requireNoAdminArtistOnlyMintPeriod bool indicating if the minter should
+     * require no admin-artist-only mint period after the auction ends.
      */
     function setContractConfig(
         address coreContract,
-        bool requireAdminOnlyMintPeriod,
-        bool requireNoAdminOnlyMintPeriod
+        bool requireAdminArtistOnlyMintPeriod,
+        bool requireNoAdminArtistOnlyMintPeriod
     ) external {
         // CHECKS
         AuthLib.onlyCoreAdminACL({
@@ -223,8 +223,8 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         RAMLib.setContractConfig({
             coreContract: coreContract,
             imposeConstraints: true, // always true because we are configuring
-            requireAdminOnlyMintPeriod: requireAdminOnlyMintPeriod,
-            requireNoAdminOnlyMintPeriod: requireNoAdminOnlyMintPeriod
+            requireAdminArtistOnlyMintPeriod: requireAdminArtistOnlyMintPeriod,
+            requireNoAdminArtistOnlyMintPeriod: requireNoAdminArtistOnlyMintPeriod
         });
     }
 
@@ -309,6 +309,11 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @param coreContract Core contract address for the given project.
      * @param auctionTimestampStart Timestamp at which to start the auction.
      * @param basePrice Resting price of the auction, in Wei.
+     * @param allowExtraTime Boolean indicating if extra time is allowed for
+     * the auction, when valid bids are placed near the end of the auction.
+     * @param adminArtistOnlyMintPeriodIfSellout Boolean indicating if an
+     * admin-artist-only mint period should be enforced if the auction sells
+     * out.
      * @dev Note that a basePrice of `0` will cause the transaction to revert.
      */
     function setAuctionDetails(
@@ -318,7 +323,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         uint40 auctionTimestampEnd,
         uint256 basePrice,
         bool allowExtraTime,
-        bool adminOnlyMintPeriodIfSellout
+        bool adminArtistOnlyMintPeriodIfSellout
     ) external nonReentrant {
         AuthLib.onlyArtist({
             projectId: projectId,
@@ -354,7 +359,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             auctionTimestampEnd: auctionTimestampEnd,
             basePrice: basePrice.toUint88(),
             allowExtraTime: allowExtraTime,
-            adminOnlyMintPeriodIfSellout: adminOnlyMintPeriodIfSellout
+            adminArtistOnlyMintPeriodIfSellout: adminArtistOnlyMintPeriodIfSellout
         });
     }
 
@@ -597,34 +602,35 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * @notice Contract-Admin only function to mint tokens to winners of
-     * project `projectId` on core contract `coreContract`.
+     * @notice Contract-Admin or Artist only function to mint tokens to winners
+     * of project `projectId` on core contract `coreContract`.
      * Automatically mints tokens to most-winning bids, in order from highest
      * and earliest bid to lowest and latest bid.
      * Settles bids as tokens are minted, if not already settled.
-     * Reverts if project is not in a post-auction state, admin-only mint
-     * period (i.e. State C), with tokens available.
-     * Reverts if msg.sender is not a contract admin.
+     * Reverts if project is not in a post-auction state, admin-artist-only
+     * mint period (i.e. State C), with tokens available.
+     * Reverts if msg.sender is not a contract admin or artist.
      * Reverts if number of tokens to mint is greater than the number of
      * tokens available to be minted.
      * @param projectId Project ID to mint tokens on.
      * @param coreContract Core contract address for the given project.
      * @param numTokensToMint Number of tokens to mint in this transaction.
      */
-    function adminAutoMintTokensToWinners(
+    function adminArtistAutoMintTokensToWinners(
         uint256 projectId,
         address coreContract,
         uint24 numTokensToMint
     ) external nonReentrant {
         // CHECKS
-        AuthLib.onlyCoreAdminACL({
+        AuthLib.onlyCoreAdminACLOrArtist({
+            projectId: projectId,
             coreContract: coreContract,
             sender: msg.sender,
             contract_: address(this),
-            selector: this.adminAutoMintTokensToWinners.selector
+            selector: this.adminArtistAutoMintTokensToWinners.selector
         });
         // EFFECTS/INTERACTIONS
-        RAMLib.adminAutoMintTokensToWinners({
+        RAMLib.adminArtistAutoMintTokensToWinners({
             projectId: projectId,
             coreContract: coreContract,
             numTokensToMint: numTokensToMint,
@@ -643,8 +649,8 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * to winners to prevent denial of revenue claiming.
      * Skips over bids that have already been minted or refunded (front-running
      * protection).
-     * Reverts if project is not in a post-auction state, post-admin-only mint
-     * period (i.e. State D), with tokens available.
+     * Reverts if project is not in a post-auction state,
+     * post-admin-artist-only mint period (i.e. State D), with tokens available
      * Reverts if msg.sender is not a contract admin or artist.
      * @param projectId Project ID to mint tokens on.
      * @param coreContract Core contract address for the given project.
@@ -684,8 +690,8 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * directly.
      * Skips over bids that have already been minted or refunded (front-running
      * protection)
-     * Reverts if project is not in a post-auction state, post-admin-only mint
-     * period (i.e. State D), with tokens available.
+     * Reverts if project is not in a post-auction state,
+     * post-admin-artist-only mint period (i.e. State D), with tokens available
      * Reverts if msg.sender is not the winning bidder for all specified bids.
      * @param projectId Project ID to mint tokens on.
      * @param coreContract Core contract address for the given project.
@@ -719,8 +725,8 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * resolve E1 state to prevent denial of revenue claiming.
      * Skips over bids that have already been minted or refunded (front-running
      * protection).
-     * Reverts if project is not in a post-auction state, post-admin-only mint
-     * period (i.e. State D).
+     * Reverts if project is not in a post-auction state,
+     * post-admin-artist-only mint period (i.e. State D).
      * Reverts if project is not in error state E1.
      * Reverts if length of bids to refund exceeds the number of bids that need
      * to be refunded to resolve the error state E1.
@@ -764,8 +770,8 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * token(s) (prevent holding of funds).
      * Skips over bids that have already been minted or refunded (front-running
      * protection).
-     * Reverts if project is not in a post-auction state, post-admin-only mint
-     * period (i.e. State D).
+     * Reverts if project is not in a post-auction state,
+     * post-admin-artist-only mint period (i.e. State D).
      * Reverts if project is not in error state E1.
      * Reverts if length of bids to refund exceeds the number of bids that need
      * to be refunded to resolve the error state E1.
@@ -817,7 +823,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             coreContract: coreContract,
             sender: msg.sender,
             contract_: address(this),
-            selector: this.adminAutoMintTokensToWinners.selector
+            selector: this.adminAutoRefundBidsToResolveE1.selector
         });
         // EFFECTS/INTERACTIONS
         RAMLib.autoRefundBidsToResolveE1({
@@ -888,7 +894,8 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @return maxAuctionExtraSeconds Maximum extra time in seconds
      * @return maxAuctionAdminEmergencyExtensionHours Maximum emergency
      * extension hours for admin
-     * @return adminOnlyMintTimeSeconds Admin-only mint time in seconds
+     * @return adminArtistOnlyMintTimeSeconds Admin-artist-only mint time in
+     * seconds
      * @return minterRefundGasLimit Gas limit for refunding ETH
      */
     function minterConfigurationDetails()
@@ -899,7 +906,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             uint256 auctionBufferSeconds,
             uint256 maxAuctionExtraSeconds,
             uint256 maxAuctionAdminEmergencyExtensionHours,
-            uint256 adminOnlyMintTimeSeconds,
+            uint256 adminArtistOnlyMintTimeSeconds,
             uint24 minterRefundGasLimit
         )
     {
@@ -908,7 +915,8 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         maxAuctionExtraSeconds = RAMLib.MAX_AUCTION_EXTRA_SECONDS;
         maxAuctionAdminEmergencyExtensionHours = RAMLib
             .MAX_AUCTION_ADMIN_EMERGENCY_EXTENSION_HOURS;
-        adminOnlyMintTimeSeconds = RAMLib.ADMIN_ONLY_MINT_TIME_SECONDS;
+        adminArtistOnlyMintTimeSeconds = RAMLib
+            .ADMIN_ARTIST_ONLY_MINT_TIME_SECONDS;
         minterRefundGasLimit = _minterRefundGasLimit;
     }
 
@@ -971,8 +979,8 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * value.
      * @return allowExtraTime is a bool indicating if the auction is allowed to
      * have extra time.
-     * @return adminOnlyMintPeriodIfSellout is a bool indicating if an
-     * admin-only mint period is required if the auction sells out.
+     * @return adminArtistOnlyMintPeriodIfSellout is a bool indicating if an
+     * admin-artist-only mint period is required if the auction sells out.
      * @return revenuesCollected is a bool indicating if the auction revenues
      * have been collected.
      * @return projectMinterState is the current state of the project minter.
@@ -994,7 +1002,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             uint256 numBidsErrorRefunded,
             uint256 minBidSlotIndex,
             bool allowExtraTime,
-            bool adminOnlyMintPeriodIfSellout,
+            bool adminArtistOnlyMintPeriodIfSellout,
             bool revenuesCollected,
             RAMLib.ProjectMinterStates projectMinterState
         )
