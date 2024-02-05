@@ -76,14 +76,14 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  *  - (admin) emergency increase auction end time by up to 72 hr (in cases of frontend downtime, etc.)
  *  - (artist)(not in extra time)(no previous admin extension) reduce auction length
  * -------------
- * STATE C: Post-Auction, not all bids handled, admin-artist-only mint period (if applicable)
+ * STATE C: Post-Auction, Admin-Artist Mint Period (if applicable)
  * abilities:
  *  - (admin | artist) auto-mint tokens to winners
  *  - (winner) collect settlement
  *  - (ERROR E1)(admin) auto-refund winning bids that cannot receive tokens due to max invocations error
  *  note: State C is skipped if auction was not a sellout
  * -------------
- * STATE D: Post-Auction, not all bids handled, post-admin-artist-only mint period
+ * STATE D: Post-Auction, Open Mint Period
  * abilities:
  *  - (winner | admin | artist) directly mint tokens to winners, any order
  *  - (winner) collect settlement
