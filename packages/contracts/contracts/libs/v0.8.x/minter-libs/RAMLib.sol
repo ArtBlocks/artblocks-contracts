@@ -603,6 +603,12 @@ library RAMLib {
         });
     }
 
+    /**
+     * @notice Update the number of tokens in the auction, based on the state
+     * of the core contract and th eminter-local max invocations.
+     * @param projectId Project ID to update
+     * @param coreContract Core contract address to update
+     */
     function refreshNumTokensInAuction(
         uint256 projectId,
         address coreContract
