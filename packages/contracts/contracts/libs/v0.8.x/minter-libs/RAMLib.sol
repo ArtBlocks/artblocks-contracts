@@ -317,6 +317,15 @@ library RAMLib {
         // @dev max uint88 ~= 3e26 Wei = ~300 million ETH, which is well above
         // the expected prices of any NFT mint in the foreseeable future.
         uint88 basePrice;
+        // -- redundant backstops --
+        // Track per-project fund balance, in wei. This is used as a redundant
+        // backstop to prevent one project from draining the minter's balance
+        // of ETH from other projects, which is a worthwhile failsafe on this
+        // shared minter.
+        // @dev max uint88 ~= 3e26 Wei = ~300 million ETH, which is well above
+        // the expected revenues for a single auction.
+        // This enables struct packing.
+        uint88 projectBalance;
         // --- revenue collection state ---
         bool revenuesCollected;
     }
@@ -1131,6 +1140,8 @@ library RAMLib {
             RAMProjectConfig_.numBidsErrorRefunded++;
             // INTERACTIONS
             // force-send refund to bidder
+            // @dev reverts on underflow
+            RAMProjectConfig_.projectBalance -= uint88(valueToSend);
             SplitFundsLib.forceSafeTransferETH({
                 to: bid.bidder,
                 amount: valueToSend,
@@ -1296,6 +1307,8 @@ library RAMLib {
             });
             // INTERACTIONS
             // force-send refund to bidder
+            // @dev reverts on underflow
+            RAMProjectConfig_.projectBalance -= uint88(valueToSend);
             SplitFundsLib.forceSafeTransferETH({
                 to: bid.bidder,
                 amount: valueToSend,
@@ -1376,6 +1389,10 @@ library RAMLib {
         // did not generate revenue
         uint256 netRevenues = projectPrice *
             RAMProjectConfig_.numBidsMintedTokens;
+
+        // update project balance
+        // @dev reverts on underflow
+        RAMProjectConfig_.projectBalance -= uint88(netRevenues);
 
         // INTERACTIONS
         SplitFundsLib.splitRevenuesETHNoRefund({
@@ -1460,6 +1477,7 @@ library RAMLib {
         // INTERACTIONS
         // split revenue from sale
         // @dev no refund because previously verified msg.value == pricePerTokenInWei
+        // @dev no effect on project balance, splitting same amount received
         SplitFundsLib.splitRevenuesETHNoRefund({
             projectId: projectId,
             valueInWei: pricePerTokenInWei,
@@ -1520,6 +1538,8 @@ library RAMLib {
         );
 
         // EFFECTS
+        // add bid value to project balance
+        RAMProjectConfig_.projectBalance += uint88(bidValue);
         // if first bid, refresh max invocations in case artist has reduced
         // the core contract's max invocations after the auction was configured
         // @dev this helps prevent E1 error state
@@ -1658,6 +1678,8 @@ library RAMLib {
         }
 
         // EFFECTS
+        // add the added value to project balance
+        RAMProjectConfig_.projectBalance += uint88(addedValue);
         // eject bid from the linked list at oldSlotIndex
         _ejectBidFromSlot({
             RAMProjectConfig_: RAMProjectConfig_,
@@ -2155,6 +2177,23 @@ library RAMLib {
     }
 
     /**
+     * Returns balance of project `projectId` on core contract `coreContract`
+     * on this minter contract.
+     * @param projectId Project ID to get the balance for
+     * @param coreContract Core contract address for the given project
+     */
+    function getProjectBalance(
+        uint256 projectId,
+        address coreContract
+    ) external view returns (uint256) {
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        return RAMProjectConfig_.projectBalance;
+    }
+
+    /**
      * Loads the RAMProjectConfig for a given project and core
      * contract.
      * @param projectId Project Id to get config for
@@ -2285,6 +2324,8 @@ library RAMLib {
         }) - projectPrice;
         if (amountDue > 0) {
             // force-send settlement to bidder
+            // @dev reverts on underflow
+            RAMProjectConfig_.projectBalance -= uint88(amountDue);
             SplitFundsLib.forceSafeTransferETH({
                 to: bid.bidder,
                 amount: amountDue,
@@ -2466,6 +2507,8 @@ library RAMLib {
             basePrice: RAMProjectConfig_.basePrice,
             slotIndex: removedSlotIndex
         });
+        // @dev reverts on underflow
+        RAMProjectConfig_.projectBalance -= uint88(removedBidAmount);
         SplitFundsLib.forceSafeTransferETH({
             to: removedBidder,
             amount: removedBidAmount,

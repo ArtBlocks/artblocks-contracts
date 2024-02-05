@@ -1185,6 +1185,26 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
+     * Returns balance of project `projectId` on core contract `coreContract`
+     * on this minter contract.
+     * @dev project balance is a failsafe backstop used to ensure that funds
+     * from one project may never affect funds from another project on this
+     * shared minter contract.
+     * @param projectId Project ID to get the balance for
+     * @param coreContract Core contract address for the given project
+     */
+    function getProjectBalance(
+        uint256 projectId,
+        address coreContract
+    ) external view returns (uint256) {
+        return
+            RAMLib.getProjectBalance({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+    }
+
+    /**
      * @notice Exists for interface conformance only.
      * Use manuallyLimitProjectMaxInvocations to set the maximum invocations
      * for a project instead.
