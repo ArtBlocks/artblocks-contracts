@@ -86,7 +86,7 @@ library RAMLib {
      * @param allowExtraTime Auction allows extra time
      * @param adminArtistOnlyMintPeriodIfSellout Auction admin-artist-only mint period if
      * sellout
-     * @param numTokensInAuction Auction number of tokens in auction
+     * @param numTokensInAuction Number of tokens in auction
      */
     event AuctionConfigUpdated(
         uint256 indexed projectId,
@@ -134,18 +134,6 @@ library RAMLib {
     );
 
     /**
-     * @notice Bid removed from auction because it was outbid.
-     * @param projectId Project Id to update
-     * @param coreContract Core contract address to update
-     * @param bidId Bid Id that was removed
-     */
-    event BidRemoved(
-        uint256 indexed projectId,
-        address indexed coreContract,
-        uint256 bidId
-    );
-
-    /**
      * @notice Bid created in auction
      * @param projectId Project Id to update
      * @param coreContract Core contract address to update
@@ -158,6 +146,18 @@ library RAMLib {
         uint256 slotIndex,
         uint256 bidId,
         address bidder
+    );
+
+    /**
+     * @notice Bid removed from auction because it was outbid.
+     * @param projectId Project Id to update
+     * @param coreContract Core contract address to update
+     * @param bidId Bid Id that was removed
+     */
+    event BidRemoved(
+        uint256 indexed projectId,
+        address indexed coreContract,
+        uint256 bidId
     );
 
     /**

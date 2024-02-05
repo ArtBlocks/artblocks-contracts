@@ -25,32 +25,12 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  * engine contracts.
  * @author Art Blocks Inc.
  * @notice Bid Front-Running:
- * TODO - update this for RAM
- * Collectors can front-run bids to become the highest bidder by bidding any
- * amount sufficiently higher than the current highest bid, considering the
- * minter-level configured value of `minterMinBidIncrementPercentage`. For
- * instance, if current bid is 1 ETH, and collector A sends a transaction with
- * a bid of 2.50 ETH, collector B may send a transaction with a bid of 2.499
- * ETH, that if successfully front-runs Collector A's transaction, is able to
- * cause collector A's transaction to revert. This is a difficult problem to
- * get around in a decentralized system with public bids, and we have chosen to
- * keep the minter simple and transparent, and leave it up to collectors to
- * understand the risks of front-running and bid accordingly.
- * @notice Token Ownership:
- * TODO - update this for RAM
- * This minter contract may own up to two tokens at a time for a given project.
- * The first possible token owned is the token that is currently being
- * auctioned. During the auction, the token is owned by the minter contract.
- * Once the auction ends, the token is transferred to the winning bidder via a
- * call to "settle" the auction.
- * The second possible token owned is the token that will be auctioned next.
- * This token is minted to and owned by the minter contract whenever possible
- * (i.e. when the project's max invocations has not been reached) when an
- * artist configures their project on this minter, or when a new auction is
- * started. The purpose of this token is to allow users to have a preview of
- * the next token that will be auctioned, even before the auction has started.
+ * Collectors can front-run bids, potentially causing bid transactions to
+ * revert. The minter attempts to handle this in a simple and transparent
+ * manner, but some transactions reverting, especially during highly
+ * competitive auctions, is unavoidable, and best remedied by resubmitting a
+ * new bid transaction with a higher value.
  * @notice Privileged Roles and Ownership:
- * TODO: Update this for RAM
  * This contract is designed to be managed, with limited powers.
  * Privileged roles and abilities are controlled by the core contract's Admin
  * ACL contract a project's artist, and auction winners. The Admin ACL and
@@ -60,8 +40,16 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  *
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
+ * @notice Fallback and Error States:
+ * This minter implements protections for collectors and artists and admin with
+ * the intention of preventing any single party from being able to deny
+ * revenue or minting rights to another party, for any time longer than
+ * 72 hours. All funds are held non-custodially by the smart contract until
+ * all tokens are minted or bids are refunded, after which they may be
+ * distributed to the artist and admin. All settlements are non-custodial and
+ * may be claimed by the winning bidder at any time after an auction ends.
  * ----------------------------------------------------------------------------
- * Project-Minter STATE, FLAG, and ERROR Summary
+ * @notice Project-Minter STATE, FLAG, and ERROR Summary
  * Note: STATEs are mutually exclusive and are in-order, State C potentially skipped
  * -------------
  * STATE A: Pre-Auction
