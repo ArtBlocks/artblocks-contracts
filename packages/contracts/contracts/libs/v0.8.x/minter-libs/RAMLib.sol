@@ -2160,7 +2160,12 @@ library RAMLib {
             coreContract: coreContract
         });
         if (projectMinterState == ProjectMinterStates.A) {
-            // pre-auction, always leave maxHasBeenInvoked as init value false
+            // pre-auction, true if numTokensInAuction == 0
+            RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+            maxHasBeenInvoked = RAMProjectConfig_.numTokensInAuction == 0;
         } else if (projectMinterState == ProjectMinterStates.B) {
             // live auction, set to true if num bids == num tokens in auction
             RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({

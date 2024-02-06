@@ -93,4 +93,6 @@ export const revertMessages = {
   refundFailed: "Refund failed",
   renderProviderPaymentFailed: "Render Provider payment failed",
   onlyBeforePurchases: "Only before purchases",
+  actionNotSupported: "Action not supported",
+  onlyStateA: "Only state A",
 };
