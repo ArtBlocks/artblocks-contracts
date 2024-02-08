@@ -104,4 +104,7 @@ export const revertMessages = {
   onlyGTE0p05ETH: "Only base price gte 0.05 ETH",
   onlyAdminArtistMintPeriod: "Only admin-artist mint period",
   onlyNoAdminArtistMintPeriod: "Only no admin-artist mint period",
+  noPerviousAdminExtension: "No previous admin extension",
+  onlyReduceAuctionLength: "Only reduce auction length",
+  onlyFutureEndTime: "Only future end time",
 };

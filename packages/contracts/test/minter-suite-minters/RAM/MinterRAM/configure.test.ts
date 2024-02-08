@@ -739,5 +739,163 @@ runForEach.forEach((params) => {
         );
       });
     });
+
+    describe("reduceAuctionLength", async function () {
+      it("reverts if non-artist calls", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .reduceAuctionLength(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime + config.defaultAuctionLengthSeconds
+            ),
+          revertMessages.onlyArtist
+        );
+      });
+
+      it("reverts if not in state B", async function () {
+        const config = await loadFixture(_beforeEach);
+        // revert in State A
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .reduceAuctionLength(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime + config.defaultAuctionLengthSeconds
+            ),
+          revertMessages.onlyStateB
+        );
+      });
+
+      it("reverts if admin previously added emergency hours", async function () {
+        const config = await loadFixture(_beforeEach);
+        // advance to State B
+        await initializeMinBidInProjectZeroAuction(config);
+        // add emergency hours
+        await config.minter
+          .connect(config.accounts.deployer)
+          .adminAddEmergencyAuctionHours(
+            config.projectZero,
+            config.genArt721Core.address,
+            1
+          );
+        // revert when emergency hours previously set
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .reduceAuctionLength(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime + config.defaultAuctionLengthSeconds
+            ),
+          revertMessages.noPerviousAdminExtension
+        );
+      });
+
+      it("reverts if already in extension time", async function () {
+        const config = await loadFixture(_beforeEach);
+        // advance to State B
+        await initializeMinBidInProjectZeroAuctionAndEnterExtraTime(config);
+        // revert when in extension time
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .reduceAuctionLength(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime + config.defaultAuctionLengthSeconds - 1
+            ),
+          revertMessages.notInExtraTime
+        );
+      });
+
+      it("reverts if doesn't reduce auction length", async function () {
+        const config = await loadFixture(_beforeEach);
+        // advance to State B
+        await initializeMinBidInProjectZeroAuction(config);
+        // revert when auction length not reduced
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .reduceAuctionLength(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime + config.defaultAuctionLengthSeconds
+            ),
+          revertMessages.onlyReduceAuctionLength
+        );
+      });
+
+      it("reverts if auction length < MIN_AUCTION_DURATION_SECONDS", async function () {
+        const config = await loadFixture(_beforeEach);
+        // advance to State B
+        await initializeMinBidInProjectZeroAuction(config);
+        // revert when auction length < MIN_AUCTION_DURATION_SECONDS
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .reduceAuctionLength(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime + MIN_AUCTION_DURATION_SECONDS - 1
+            ),
+          revertMessages.auctionTooShortRAM
+        );
+      });
+
+      it("reverts if new end timestamp is not in future", async function () {
+        const config = await loadFixture(_beforeEach);
+        // advance to State B
+        await initializeMinBidInProjectZeroAuction(config);
+        // advance well into the auction, beyond minimum duration
+        await ethers.provider.send("evm_mine", [
+          config.startTime + MIN_AUCTION_DURATION_SECONDS + 60,
+        ]);
+        // revert if new end timestamp is not in future
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .reduceAuctionLength(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime + MIN_AUCTION_DURATION_SECONDS + 60
+            ),
+          revertMessages.onlyFutureEndTime
+        );
+      });
+
+      it("updates state when successful", async function () {
+        const config = await loadFixture(_beforeEach);
+        // advance to State B
+        await initializeMinBidInProjectZeroAuction(config);
+        // record auction end time
+        const initialAuctionDetails = await config.minter
+          .connect(config.accounts.artist)
+          .getAuctionDetails(config.projectZero, config.genArt721Core.address);
+        const initialAuctionTimestampEnd =
+          initialAuctionDetails.auctionTimestampEnd;
+        // reduce auction length
+        await config.minter
+          .connect(config.accounts.artist)
+          .reduceAuctionLength(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime + config.defaultAuctionLengthSeconds - 60
+          );
+        // record updated auction end time
+        const updatedAuctionDetails = await config.minter
+          .connect(config.accounts.artist)
+          .getAuctionDetails(config.projectZero, config.genArt721Core.address);
+        const updatedAuctionTimestampEnd =
+          updatedAuctionDetails.auctionTimestampEnd;
+        // validate state update
+        expect(parseInt(initialAuctionTimestampEnd, 10) - 60).to.equal(
+          parseInt(updatedAuctionTimestampEnd, 10)
+        );
+      });
+    });
   });
 });

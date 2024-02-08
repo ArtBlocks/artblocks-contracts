@@ -595,6 +595,8 @@ library RAMLib {
                     minimumAuctionDurationSeconds,
             "Auction too short"
         );
+        // require new end time in future
+        require(auctionTimestampEnd > block.timestamp, "Only future end time");
 
         // set auction details
         RAMProjectConfig_.timestampEnd = auctionTimestampEnd;
