@@ -18,6 +18,25 @@ export async function configureDefaultProjectZero(config: T_Config) {
   );
 }
 
+export async function placeMinBidInProjectZeroAuction(config: T_Config) {
+  // get min next bid
+  const minNextBid = await config.minter.getMinimumNextBid(
+    config.projectZero,
+    config.genArt721Core.address
+  );
+  // place bid
+  await config.minter
+    .connect(config.accounts.user)
+    .createBid(
+      config.projectZero,
+      config.genArt721Core.address,
+      minNextBid.minNextBidSlotIndex,
+      {
+        value: minNextBid.minNextBidValueInWei,
+      }
+    );
+}
+
 export async function advanceToAuctionStartTime(config: T_Config) {
   // advance time to auction start time - 1 second
   // @dev this makes next block timestamp equal to auction start time
@@ -46,6 +65,28 @@ export async function initializeMinBidInProjectZeroAuctionAndAdvanceToEnd(
   // advance time to end of auction
   await ethers.provider.send("evm_mine", [
     config.startTime + config.defaultAuctionLengthSeconds,
+  ]);
+}
+
+// helper function to initialize and place bid in auction on project zero, and then
+// advance time near the end of the auction, place another bid and cause auction to enter extra time
+export async function initializeMinBidInProjectZeroAuctionAndEnterExtraTime(
+  config: T_Config
+) {
+  // update project zero to allow one max invocation
+  await config.genArt721Core
+    .connect(config.accounts.artist)
+    .updateProjectMaxInvocations(config.projectZero, 1);
+  await initializeMinBidInProjectZeroAuction(config);
+  // advance time to near the end of auction
+  await ethers.provider.send("evm_mine", [
+    config.startTime + config.defaultAuctionLengthSeconds - 60,
+  ]);
+  // place bid to enter extra time
+  await placeMinBidInProjectZeroAuction(config);
+  // advance time to near the end of auction
+  await ethers.provider.send("evm_mine", [
+    config.startTime + config.defaultAuctionLengthSeconds - 58,
   ]);
 }
 

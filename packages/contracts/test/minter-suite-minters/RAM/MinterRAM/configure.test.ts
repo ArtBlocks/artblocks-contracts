@@ -10,6 +10,8 @@ import { Logger } from "@ethersproject/logger";
 import {
   initializeMinBidInProjectZeroAuction,
   mintTokenOnDifferentMinter,
+  initializeMinBidInProjectZeroAuctionAndAdvanceToEnd,
+  initializeMinBidInProjectZeroAuctionAndEnterExtraTime,
 } from "./helpers";
 import { BigNumber, constants } from "ethers";
 // hide nuisance logs about event overloading
@@ -17,6 +19,13 @@ Logger.setLogLevel(Logger.levels.ERROR);
 
 const TARGET_MINTER_NAME = "MinterRAMV0";
 const TARGET_MINTER_VERSION = "v0.0.0";
+
+// hard-coded minter constants
+const MIN_AUCTION_DURATION_SECONDS = 10 * ONE_MINUTE; // 10 minutes
+const AUCTION_BUFFER_SECONDS = 5 * ONE_MINUTE; // 5 minutes
+const MAX_AUCTION_EXTRA_SECONDS = 60 * ONE_MINUTE; // 60 minutes
+const MAX_AUCTION_ADMIN_EMERGENCY_EXTENSION_HOURS = 72; // 72 hours
+const ADMIN_ARTIST_ONLY_MINT_TIME_SECONDS = 72 * ONE_HOUR; // 72 hours
 
 const runForEach = [
   {
@@ -35,7 +44,7 @@ const runForEach = [
 ];
 
 runForEach.forEach((params) => {
-  describe(`${TARGET_MINTER_NAME} Configure w/ core ${params.core}`, async function () {
+  describe(`${TARGET_MINTER_NAME} View w/ core ${params.core}`, async function () {
     async function _beforeEach() {
       // load minter filter V2 fixture
       const config = await loadFixture(setupConfigWitMinterFilterV2Suite);
@@ -115,6 +124,16 @@ runForEach.forEach((params) => {
 
       return config;
     }
+
+    describe("constructor", async function () {
+      it("populates values during deployment", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        // verify minter filter address
+        const minterFilterAddress = await config.minter.minterFilterAddress();
+        expect(minterFilterAddress).to.equal(config.minterFilter.address);
+      });
+    });
 
     describe("syncProjectMaxInvocationsToCore", async function () {
       it("reverts", async function () {
@@ -329,6 +348,152 @@ runForEach.forEach((params) => {
         const minterConfigDetails =
           await config.minter.minterConfigurationDetails();
         expect(minterConfigDetails.minterRefundGasLimit).to.equal(7_001);
+      });
+    });
+
+    describe("setContractConfig", async function () {
+      it("reverts non-admin calls", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .setContractConfig(config.genArt721Core.address, false, false),
+          revertMessages.onlyCoreAdminACL
+        );
+      });
+
+      it("reverts when both args are true", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .setContractConfig(config.genArt721Core.address, true, true),
+          revertMessages.onlyOneConstraint
+        );
+      });
+
+      it("updates state when successful", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .setContractConfig(config.genArt721Core.address, true, false);
+        // validate state update
+        const contractConfigDetails =
+          await config.minter.contractConfigurationDetails(
+            config.genArt721Core.address
+          );
+        expect(contractConfigDetails.imposeConstraints).to.equal(true);
+        expect(contractConfigDetails.requireAdminArtistOnlyMintPeriod).to.equal(
+          true
+        );
+        expect(
+          contractConfigDetails.requireNoAdminArtistOnlyMintPeriod
+        ).to.equal(false);
+      });
+    });
+
+    describe("adminAddEmergencyAuctionHours", async function () {
+      it("reverts non-admin calls", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .adminAddEmergencyAuctionHours(
+              config.projectZero,
+              config.genArt721Core.address,
+              1
+            ),
+          revertMessages.onlyCoreAdminACL
+        );
+      });
+
+      it("reverts if not in state B", async function () {
+        const config = await loadFixture(_beforeEach);
+        // revert in State A
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminAddEmergencyAuctionHours(
+              config.projectZero,
+              config.genArt721Core.address,
+              1
+            ),
+          revertMessages.onlyStateB
+        );
+        // revert in State C
+        await initializeMinBidInProjectZeroAuctionAndAdvanceToEnd(config);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminAddEmergencyAuctionHours(
+              config.projectZero,
+              config.genArt721Core.address,
+              1
+            ),
+          revertMessages.onlyStateB
+        );
+      });
+
+      it("reverts if called during auction extra time", async function () {
+        const config = await loadFixture(_beforeEach);
+        await initializeMinBidInProjectZeroAuctionAndEnterExtraTime(config);
+        // revert due to extra time
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminAddEmergencyAuctionHours(
+              config.projectZero,
+              config.genArt721Core.address,
+              1
+            ),
+          revertMessages.notInExtraTime
+        );
+      });
+
+      it("reverts if hours > 72", async function () {
+        const config = await loadFixture(_beforeEach);
+        // advance to State B
+        await initializeMinBidInProjectZeroAuction(config);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminAddEmergencyAuctionHours(
+              config.projectZero,
+              config.genArt721Core.address,
+              73
+            ),
+          revertMessages.onlyEmergencyLTMax
+        );
+      });
+
+      it("updates state when successful", async function () {
+        const config = await loadFixture(_beforeEach);
+        // advance to State B
+        await initializeMinBidInProjectZeroAuction(config);
+        // record auction end time
+        const initialAuctionDetails = await config.minter
+          .connect(config.accounts.artist)
+          .getAuctionDetails(config.projectZero, config.genArt721Core.address);
+        const initialAuctionTimestampEnd =
+          initialAuctionDetails.auctionTimestampEnd;
+        // extend two hours
+        await config.minter
+          .connect(config.accounts.deployer)
+          .adminAddEmergencyAuctionHours(
+            config.projectZero,
+            config.genArt721Core.address,
+            2
+          );
+        // record updated auction end time
+        const updatedAuctionDetails = await config.minter
+          .connect(config.accounts.artist)
+          .getAuctionDetails(config.projectZero, config.genArt721Core.address);
+        const updatedAuctionTimestampEnd =
+          updatedAuctionDetails.auctionTimestampEnd;
+        // validate state update
+        expect(
+          parseInt(initialAuctionTimestampEnd, 10) + 2 * ONE_HOUR
+        ).to.equal(parseInt(updatedAuctionTimestampEnd, 10));
       });
     });
   });

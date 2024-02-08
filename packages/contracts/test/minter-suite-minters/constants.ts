@@ -95,4 +95,8 @@ export const revertMessages = {
   onlyBeforePurchases: "Only before purchases",
   actionNotSupported: "Action not supported",
   onlyStateA: "Only state A",
+  onlyStateB: "Only state B",
+  onlyOneConstraint: "Only one constraint can be set",
+  onlyEmergencyLTMax: "Only emergency hours lt max",
+  notInExtraTime: "Not allowed in extra time",
 };

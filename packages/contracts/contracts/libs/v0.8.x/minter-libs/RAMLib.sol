@@ -508,6 +508,7 @@ library RAMLib {
         // set auction details
         RAMProjectConfig_.timestampStart = auctionTimestampStart;
         RAMProjectConfig_.timestampEnd = auctionTimestampEnd;
+        RAMProjectConfig_.timestampOriginalEnd = auctionTimestampEnd;
         RAMProjectConfig_.basePrice = basePrice;
         RAMProjectConfig_.allowExtraTime = allowExtraTime;
         RAMProjectConfig_
