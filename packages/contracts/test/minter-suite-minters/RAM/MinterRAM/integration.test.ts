@@ -402,5 +402,279 @@ runForEach.forEach((params) => {
         expect(auctionAfter.minBidSlotIndex).to.equal(0);
       });
     });
+
+    describe("topUpBid", async function () {
+      it("reverts if no minter assigned", async function () {
+        const config = await _beforeEach();
+        // unassign minter on minter filter
+        await config.minterFilter
+          .connect(config.accounts.deployer)
+          .removeMinterForProject(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // advance to State B
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // no minter assigned on minter filter
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .topUpBid(config.projectZero, config.genArt721Core.address, 0, 0, {
+              value: config.basePrice,
+            }),
+          revertMessages.noMinterAssigned
+        );
+      });
+
+      it("reverts if different minter assigned", async function () {
+        const config = await _beforeEach();
+        // assign a different minter for the project on minter filter
+        const differentMinter = await deployAndGet(config, "MinterSetPriceV5", [
+          config.minterFilter.address,
+        ]);
+        await config.minterFilter
+          .connect(config.accounts.deployer)
+          .approveMinterGlobally(differentMinter.address);
+        await config.minterFilter
+          .connect(config.accounts.deployer)
+          .setMinterForProject(
+            config.projectZero,
+            config.genArt721Core.address,
+            differentMinter.address
+          );
+        // advance to State B
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // minter not active error
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .topUpBid(config.projectZero, config.genArt721Core.address, 0, 0, {
+              value: config.basePrice,
+            }),
+          revertMessages.minterNotActive
+        );
+      });
+
+      it("reverts if not in State B (pre-auction)", async function () {
+        const config = await _beforeEach();
+        // unconfigured auction
+        // not in State B error
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .topUpBid(config.projectZero, config.genArt721Core.address, 0, 0, {
+              value: config.basePrice,
+            }),
+          revertMessages.onlyStateB
+        );
+      });
+
+      it("reverts if not in State B (post-auction)", async function () {
+        const config = await _beforeEach();
+        // advance to State C
+        await initializeMinBidInProjectZeroAuctionAndAdvanceToEnd(config);
+        // not in State B error
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .topUpBid(config.projectZero, config.genArt721Core.address, 0, 0, {
+              value: config.basePrice,
+            }),
+          revertMessages.onlyStateB
+        );
+      });
+
+      it("reverts if bid slot is gt 511", async function () {
+        const config = await _beforeEach();
+        // advance to State B
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // place bid in theoretical slot 512
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .topUpBid(
+              config.projectZero,
+              config.genArt721Core.address,
+              0,
+              512,
+              {
+                value: config.basePrice?.mul(256),
+              }
+            ),
+          revertMessages.slotIndexOutOfRange
+        );
+      });
+
+      it("reverts if bid does not exist", async function () {
+        const config = await _beforeEach();
+        // advance to State B
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // top up bid that does not exist (bid ID 0)
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .topUpBid(config.projectZero, config.genArt721Core.address, 0, 0, {
+              value: config.basePrice,
+            }),
+          revertMessages.bidDNE
+        );
+      });
+
+      it("reverts if mgs.sender is not bidder of referenced bid", async function () {
+        const config = await _beforeEach();
+        // advance to State B
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // place bid
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 0, {
+            value: config.basePrice,
+          });
+        // top up bid from different address
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .topUpBid(config.projectZero, config.genArt721Core.address, 1, 0, {
+              value: config.basePrice,
+            }),
+          revertMessages.onlyBidderOfExistingBid
+        );
+      });
+
+      it("reverts if incorrect added value", async function () {
+        const config = await _beforeEach();
+        // advance to State B
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // place bid
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 0, {
+            value: config.basePrice,
+          });
+        // top up bid with incorrect added value (too low)
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .topUpBid(config.projectZero, config.genArt721Core.address, 1, 2, {
+              value: 1, // need more than 1 wei to top up to slot 2
+            }),
+          revertMessages.incorrectAddedValue
+        );
+        // top up bid with incorrect added value (too high)
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .topUpBid(config.projectZero, config.genArt721Core.address, 1, 2, {
+              value: ethers.utils.parseEther("1.0"), // need less than 1 ETH to top up to slot 2
+            }),
+          revertMessages.incorrectAddedValue
+        );
+      });
+
+      it("updates state when successful, non-sellout", async function () {
+        const config = await _beforeEach();
+        // advance to State B
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // place bid
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 0, {
+            value: config.basePrice,
+          });
+        // get state before
+        const auctionBefore = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // top up bid
+        const addedValue = (
+          await config.minter.slotIndexToBidValue(
+            config.projectZero,
+            config.genArt721Core.address,
+            1
+          )
+        ).sub(
+          await config.minter.slotIndexToBidValue(
+            config.projectZero,
+            config.genArt721Core.address,
+            0
+          )
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .topUpBid(config.projectZero, config.genArt721Core.address, 1, 1, {
+            value: addedValue,
+          });
+        // get state after
+        const auctionAfter = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // verify relevant state updates
+        expect(auctionBefore.auctionTimestampEnd).to.equal(
+          auctionAfter.auctionTimestampEnd
+        );
+        expect(auctionBefore.numBids).to.equal(1);
+        expect(auctionAfter.numBids).to.equal(1);
+        expect(auctionBefore.minBidSlotIndex).to.equal(0);
+        expect(auctionAfter.minBidSlotIndex).to.equal(1);
+      });
+
+      it("updates state when successful, sellout", async function () {
+        const config = await _beforeEach();
+        // advance to State B
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // place bid in slot 0
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 0, {
+            value: config.basePrice,
+          });
+        // place 14 more bids in slot 1
+        const slot1Value = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          1
+        );
+        for (let i = 0; i < 14; i++) {
+          await config.minter
+            .connect(config.accounts.user)
+            .createBid(config.projectZero, config.genArt721Core.address, 1, {
+              value: slot1Value,
+            });
+        }
+        // get state before
+        const auctionBefore = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // top up bid id 1
+        const addedValue = slot1Value.sub(
+          await config.minter.slotIndexToBidValue(
+            config.projectZero,
+            config.genArt721Core.address,
+            0
+          )
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .topUpBid(config.projectZero, config.genArt721Core.address, 1, 1, {
+            value: addedValue,
+          });
+        // get state after
+        const auctionAfter = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // verify relevant state updates
+        expect(auctionBefore.auctionTimestampEnd).to.equal(
+          auctionAfter.auctionTimestampEnd
+        );
+        expect(auctionBefore.numBids).to.equal(15);
+        expect(auctionAfter.numBids).to.equal(15);
+        expect(auctionBefore.minBidSlotIndex).to.equal(0);
+        expect(auctionAfter.minBidSlotIndex).to.equal(1);
+      });
+    });
   });
 });

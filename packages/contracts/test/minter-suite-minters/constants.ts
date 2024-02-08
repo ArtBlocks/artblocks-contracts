@@ -114,4 +114,7 @@ export const revertMessages = {
   slotIndexOutOfRange: "Slot index out of range",
   noTokensInAuction: "No tokens in auction",
   insufficientBidValue: "Insufficient bid value",
+  bidDNE: "Bid dne - were you outbid?",
+  onlyBidderOfExistingBid: "Only bidder of existing bid",
+  incorrectAddedValue: "incorrect added value",
 };
