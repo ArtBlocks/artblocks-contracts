@@ -43,7 +43,15 @@ export async function advanceToAuctionStartTime(config: T_Config) {
   await ethers.provider.send("evm_mine", [config.startTime - 1]);
 }
 
-// helper function to initialize a token auction on project zero
+// helper function to configure project zero auction and advance to start time
+export async function configureProjectZeroAuctionAndAdvanceToStartTime(
+  config: T_Config
+) {
+  await configureDefaultProjectZero(config);
+  await advanceToAuctionStartTime(config);
+}
+
+// helper function to initialize an auction on project zero
 // @dev "user" account is the one who initializes the auction
 export async function initializeMinBidInProjectZeroAuction(config: T_Config) {
   await configureDefaultProjectZero(config);
@@ -54,6 +62,19 @@ export async function initializeMinBidInProjectZeroAuction(config: T_Config) {
     .createBid(config.projectZero, config.genArt721Core.address, 0, {
       value: config.basePrice,
     });
+}
+
+// helper function to initialize an auction on project zero, and place bids
+// to enter a sellout, live auction
+//
+export async function configureProjectZeroAuctionAndSelloutLiveAuction(
+  config: T_Config
+) {
+  await initializeMinBidInProjectZeroAuction(config);
+  // place 14 more bids in the auction to "sellout" the auction
+  for (let i = 0; i < 14; i++) {
+    await placeMinBidInProjectZeroAuction(config);
+  }
 }
 
 // helper function to initialize and place bid in auction on project zero, and then

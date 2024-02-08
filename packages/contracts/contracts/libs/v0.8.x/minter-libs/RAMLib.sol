@@ -1541,6 +1541,8 @@ library RAMLib {
                 ProjectMinterStates.B,
             "Only state B"
         );
+        // require slot index not out of range
+        require(slotIndex < NUM_SLOTS, "Slot index out of range");
         // require bid value must equal slot value
         uint256 newBidRequiredValue = slotIndexToBidValue({
             basePrice: RAMProjectConfig_.basePrice,
@@ -1568,12 +1570,15 @@ library RAMLib {
                 projectId: projectId,
                 coreContract: coreContract
             });
+            // initialize min and max bid slot index metadata
+            RAMProjectConfig_.minBidSlotIndex = slotIndex;
+            RAMProjectConfig_.maxBidSlotIndex = slotIndex;
         }
         // require at least one token allowed in auction
         // @dev this case would revert in _removeMinBid, but prefer clean error
         // message here
         uint256 numTokensInAuction = RAMProjectConfig_.numTokensInAuction;
-        require(numTokensInAuction > 0, "No bids in auction");
+        require(numTokensInAuction > 0, "No tokens in auction");
         // determine if have reached max bids
         bool reachedMaxBids = RAMProjectConfig_.numBids == numTokensInAuction;
         if (reachedMaxBids) {
@@ -1670,6 +1675,8 @@ library RAMLib {
                     ProjectMinterStates.B,
                 "Only state B"
             );
+            // require new slot index not out of range
+            require(newSlotIndex < NUM_SLOTS, "Slot index out of range");
             // @dev give clean error message if bid is null or deleted
             require(bid.bidder != address(0), "Bid dne - were you outbid?");
             // require bidder owns referenced bid
@@ -2401,6 +2408,7 @@ library RAMLib {
      * Creates a new bid if bidId is zero, otherwise moves an existing bid,
      * which is assumed to exist and be valid.
      * Emits BidCreated event if a new bid is created.
+     * @dev assumes slot index is valid and < NUM_SLOTS
      * @param RAMProjectConfig_ RAM project config to insert bid into
      * @param projectId Project ID to insert bid for
      * @param coreContract Core contract address to insert bid for

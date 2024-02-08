@@ -109,4 +109,9 @@ export const revertMessages = {
   onlyReduceAuctionLength: "Only reduce auction length",
   onlyFutureEndTime: "Only future end time",
   revenuesAlreadyWithdrawn: "Revenues already withdrawn",
+  minterNotActive: "Minter not active",
+  valueDNEBidSlot: "msg.value must equal slot value",
+  slotIndexOutOfRange: "Slot index out of range",
+  noTokensInAuction: "No tokens in auction",
+  insufficientBidValue: "Insufficient bid value",
 };
