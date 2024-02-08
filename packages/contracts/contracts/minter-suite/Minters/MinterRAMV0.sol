@@ -1185,8 +1185,37 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * Returns balance of project `projectId` on core contract `coreContract`
-     * on this minter contract.
+     * @notice Convenience view function that returns the bid value associated
+     * with a given slot index for the specified project's auction, in Wei.
+     * Reverts if the slot index is out of range (greater than 511).
+     * Reverts if the project's auction is not configured.
+     * @param projectId Project ID to get the bid value for
+     * @param coreContract Core contract address for the given project
+     * @param slotIndex Slot index to get the bid value for
+     */
+    function slotIndexToBidValue(
+        uint256 projectId,
+        address coreContract,
+        uint16 slotIndex
+    ) external view returns (uint256) {
+        require(slotIndex < 512, "Slot index out of range");
+        uint256 projectBasePrice = RAMLib
+            .getRAMProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            })
+            .basePrice;
+        // @dev does not check if project configured to reduce bytecode size
+        return
+            RAMLib.slotIndexToBidValue({
+                basePrice: projectBasePrice,
+                slotIndex: slotIndex
+            });
+    }
+
+    /**
+     * @notice Returns balance of project `projectId` on core contract
+     * `coreContract` on this minter contract.
      * @dev project balance is a failsafe backstop used to ensure that funds
      * from one project may never affect funds from another project on this
      * shared minter contract.
