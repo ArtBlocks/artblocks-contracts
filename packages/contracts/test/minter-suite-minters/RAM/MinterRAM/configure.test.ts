@@ -12,6 +12,7 @@ import {
   mintTokenOnDifferentMinter,
   initializeMinBidInProjectZeroAuctionAndAdvanceToEnd,
   initializeMinBidInProjectZeroAuctionAndEnterExtraTime,
+  initializeProjectZeroTokenZeroAuctionAndMint,
 } from "./helpers";
 import { BigNumber, constants } from "ethers";
 // hide nuisance logs about event overloading
@@ -894,6 +895,126 @@ runForEach.forEach((params) => {
         // validate state update
         expect(parseInt(initialAuctionTimestampEnd, 10) - 60).to.equal(
           parseInt(updatedAuctionTimestampEnd, 10)
+        );
+      });
+    });
+
+    describe("withdrawArtistAndAdminRevenues", async function () {
+      it("reverts if not in State E", async function () {
+        const config = await loadFixture(_beforeEach);
+        // revert in State A
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .withdrawArtistAndAdminRevenues(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+          revertMessages.onlyStateE
+        );
+        // revert in State B
+        await initializeMinBidInProjectZeroAuction(config);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .withdrawArtistAndAdminRevenues(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+          revertMessages.onlyStateE
+        );
+        // advance time to end of auction
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds,
+        ]);
+        // revert in State C
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .withdrawArtistAndAdminRevenues(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+          revertMessages.onlyStateE
+        );
+      });
+
+      it("reverts if revenues already withdrawn", async function () {
+        const config = await loadFixture(_beforeEach);
+        // advance to State E
+        await initializeProjectZeroTokenZeroAuctionAndMint(config);
+        // withdraw revenues
+        await config.minter
+          .connect(config.accounts.artist)
+          .withdrawArtistAndAdminRevenues(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // revert when revenues already withdrawn
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .withdrawArtistAndAdminRevenues(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+          revertMessages.revenuesAlreadyWithdrawn
+        );
+      });
+
+      it("updates state when successful", async function () {
+        const config = await loadFixture(_beforeEach);
+        // advance to State E
+        await initializeProjectZeroTokenZeroAuctionAndMint(config);
+        // get project balance before
+        const projectBalanceBefore = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(projectBalanceBefore).to.equal(config.basePrice);
+        // record artist & admin balance before
+        const artistBalanceBefore = await config.accounts.artist.getBalance();
+        const adminBalanceBefore = await config.accounts.deployer.getBalance();
+        // validate revenues collected state before
+        const auctionDetailsBefore = await config.minter
+          .connect(config.accounts.artist)
+          .getAuctionDetails(config.projectZero, config.genArt721Core.address);
+        expect(auctionDetailsBefore.revenuesCollected).to.equal(false);
+
+        // withdraw revenues (with gas fee of zero)
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        await config.minter
+          .connect(config.accounts.artist)
+          .withdrawArtistAndAdminRevenues(
+            config.projectZero,
+            config.genArt721Core.address,
+            {
+              gasPrice: 0,
+            }
+          );
+
+        // get project balance after is zero
+        const projectBalanceAfter = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(projectBalanceAfter).to.equal(0);
+        // validate revenues collected state after
+        const auctionDetailsAfter = await config.minter
+          .connect(config.accounts.artist)
+          .getAuctionDetails(config.projectZero, config.genArt721Core.address);
+        expect(auctionDetailsAfter.revenuesCollected).to.equal(true);
+        // record artist & admin balance after
+        const artistBalanceAfter = await config.accounts.artist.getBalance();
+        const adminBalanceAfter = await config.accounts.deployer.getBalance();
+        // validate artist & admin balances
+        expect(artistBalanceAfter.sub(artistBalanceBefore)).to.equal(
+          config.basePrice?.mul(90).div(100)
+        );
+        expect(adminBalanceAfter.sub(adminBalanceBefore)).to.equal(
+          config.basePrice?.mul(10).div(100)
         );
       });
     });

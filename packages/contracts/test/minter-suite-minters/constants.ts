@@ -97,6 +97,7 @@ export const revertMessages = {
   onlyStateA: "Only state A",
   onlyPreAuction: "Only pre-auction",
   onlyStateB: "Only state B",
+  onlyStateE: "Only state E",
   onlyOneConstraint: "Only one constraint can be set",
   onlyEmergencyLTMax: "Only emergency hours lt max",
   notInExtraTime: "Not allowed in extra time",
@@ -107,4 +108,5 @@ export const revertMessages = {
   noPerviousAdminExtension: "No previous admin extension",
   onlyReduceAuctionLength: "Only reduce auction length",
   onlyFutureEndTime: "Only future end time",
+  revenuesAlreadyWithdrawn: "Revenues already withdrawn",
 };

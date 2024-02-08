@@ -92,17 +92,17 @@ export async function initializeMinBidInProjectZeroAuctionAndEnterExtraTime(
 
 // helper function to initialize and place bid in auction on project zero, and then
 // advance time to the end of the auction. Then mints the token to the winner.
-export async function initializeProjectZeroTokenZeroAuctionAndSettle(
+export async function initializeProjectZeroTokenZeroAuctionAndMint(
   config: T_Config
 ) {
   await initializeMinBidInProjectZeroAuctionAndAdvanceToEnd(config);
   // mint token to the winner
   await config.minter
-    .connect(config.accounts.user)
-    .adminArtistAutoMintTokensToWinners(
+    .connect(config.accounts.deployer)
+    .adminArtistDirectMintTokensToWinners(
       config.projectZero,
       config.genArt721Core.address,
-      1 // only one token available to mint
+      [1] // only one token available to mint
     );
 }
 
