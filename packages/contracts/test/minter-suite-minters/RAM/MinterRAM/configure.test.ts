@@ -115,7 +115,7 @@ runForEach.forEach((params) => {
 
       await config.genArt721Core
         .connect(config.accounts.artist)
-        .updateProjectMaxInvocations(config.projectZero, 15);
+        .updateProjectMaxInvocations(config.projectZero, config.maxInvocations);
 
       const blockNumber = await ethers.provider.getBlockNumber();
       const block = await ethers.provider.getBlock(blockNumber);
@@ -494,6 +494,249 @@ runForEach.forEach((params) => {
         expect(
           parseInt(initialAuctionTimestampEnd, 10) + 2 * ONE_HOUR
         ).to.equal(parseInt(updatedAuctionTimestampEnd, 10));
+      });
+    });
+
+    describe("setAuctionDetails", async function () {
+      it("reverts when non-artist calls", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .setAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.startTime + config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              true,
+              true
+            ),
+          revertMessages.onlyArtist
+        );
+      });
+
+      it("reverts when called after State A", async function () {
+        const config = await loadFixture(_beforeEach);
+        // enter State B
+        await initializeMinBidInProjectZeroAuction(config);
+        // revert in State B
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .setAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.startTime + config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              true,
+              true
+            ),
+          revertMessages.onlyPreAuction
+        );
+      });
+
+      it("reverts if auction duration < MIN_AUCTION_DURATION_SECONDS", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .setAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.startTime + MIN_AUCTION_DURATION_SECONDS - 1,
+              config.basePrice,
+              true,
+              true
+            ),
+          revertMessages.auctionTooShortRAM
+        );
+      });
+
+      it("refreshes auction state before setting num tokens in auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // reduce core max invocations to 1
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 1);
+        // configure auction
+        await config.minter
+          .connect(config.accounts.artist)
+          .setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.startTime + config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            true,
+            true
+          );
+        // validate that one token is in auction
+        const auctionDetails = await config.minter
+          .connect(config.accounts.artist)
+          .getAuctionDetails(config.projectZero, config.genArt721Core.address);
+        expect(auctionDetails.numTokensInAuction).to.equal(1);
+      });
+
+      it("requires min price of >= 0.05 ether", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .setAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.startTime + config.defaultAuctionLengthSeconds,
+              ethers.utils.parseEther("0.049"),
+              true,
+              true
+            ),
+          revertMessages.onlyGTE0p05ETH
+        );
+      });
+
+      it("only allows future start times", async function () {
+        const config = await loadFixture(_beforeEach);
+        // advance time to auction start time - 1 second
+        await ethers.provider.send("evm_mine", [config.startTime - 1]);
+        // revert when start time is not in the future
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .setAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime - 1,
+              config.startTime + config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              true,
+              true
+            ),
+          revertMessages.onlyFutureAuctions
+        );
+      });
+
+      it("enforces only admin-artist mint period constraint", async function () {
+        const config = await loadFixture(_beforeEach);
+        // allows either case if admin has not configured
+        await config.minter
+          .connect(config.accounts.artist)
+          .setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.startTime + config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            true,
+            true
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          .setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.startTime + config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            true,
+            false
+          );
+        // set requireNoAdminArtistOnlyMintPeriod to true
+        await config.minter
+          .connect(config.accounts.deployer)
+          .setContractConfig(config.genArt721Core.address, false, true);
+        // revert when admin-artist only mint period not allowed
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .setAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.startTime + config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              true,
+              true
+            ),
+          revertMessages.onlyNoAdminArtistMintPeriod
+        );
+        // allows when admin-artist only mint period is false
+        await config.minter
+          .connect(config.accounts.artist)
+          .setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.startTime + config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            true,
+            false
+          );
+        // requireAdminArtistOnlyMintPeriod to true
+        await config.minter
+          .connect(config.accounts.deployer)
+          .setContractConfig(config.genArt721Core.address, true, false);
+        // revert when admin-artist only mint period not allowed
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .setAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.startTime + config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              true,
+              false
+            ),
+          revertMessages.onlyAdminArtistMintPeriod
+        );
+        // allows when admin-artist only mint period is true
+        await config.minter
+          .connect(config.accounts.artist)
+          .setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.startTime + config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            true,
+            true
+          );
+      });
+
+      it("updates state when successful", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.startTime + config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            true,
+            true
+          );
+        // validate state update
+        const auctionDetails = await config.minter
+          .connect(config.accounts.artist)
+          .getAuctionDetails(config.projectZero, config.genArt721Core.address);
+        expect(auctionDetails.auctionTimestampStart).to.equal(config.startTime);
+        expect(auctionDetails.auctionTimestampEnd).to.equal(
+          config.startTime + config.defaultAuctionLengthSeconds
+        );
+        expect(auctionDetails.basePrice).to.equal(config.basePrice);
+        expect(auctionDetails.allowExtraTime).to.equal(true);
+        expect(auctionDetails.adminArtistOnlyMintPeriodIfSellout).to.equal(
+          true
+        );
+        expect(auctionDetails.numTokensInAuction).to.equal(
+          config.maxInvocations
+        );
       });
     });
   });

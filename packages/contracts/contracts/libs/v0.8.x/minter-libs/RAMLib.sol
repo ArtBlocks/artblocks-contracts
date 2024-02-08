@@ -480,6 +480,11 @@ library RAMLib {
         // @dev function assumes currently in ProjectMinterState A
         // require base price >= 0.05 ETH
         require(basePrice >= 0.05 ether, "Only base price gte 0.05 ETH");
+        // only future start time
+        require(
+            auctionTimestampStart > block.timestamp,
+            "Only future auctions"
+        );
         // require end time after start time
         // @dev no coverage, minter already checks via min auction length check
         require(

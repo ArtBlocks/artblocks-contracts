@@ -95,8 +95,13 @@ export const revertMessages = {
   onlyBeforePurchases: "Only before purchases",
   actionNotSupported: "Action not supported",
   onlyStateA: "Only state A",
+  onlyPreAuction: "Only pre-auction",
   onlyStateB: "Only state B",
   onlyOneConstraint: "Only one constraint can be set",
   onlyEmergencyLTMax: "Only emergency hours lt max",
   notInExtraTime: "Not allowed in extra time",
+  auctionTooShortRAM: "Auction too short",
+  onlyGTE0p05ETH: "Only base price gte 0.05 ETH",
+  onlyAdminArtistMintPeriod: "Only admin-artist mint period",
+  onlyNoAdminArtistMintPeriod: "Only no admin-artist mint period",
 };
