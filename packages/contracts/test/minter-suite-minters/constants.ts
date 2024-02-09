@@ -102,6 +102,7 @@ export const revertMessages = {
   onlyStateD: "Only state D",
   onlyStatesDE: "Only states D or E",
   onlyStateE: "Only state E",
+  onlyStateErrorE1: "Only in state E1",
   onlyOneConstraint: "Only one constraint can be set",
   onlyEmergencyLTMax: "Only emergency hours lt max",
   notInExtraTime: "Not allowed in extra time",
@@ -129,4 +130,5 @@ export const revertMessages = {
   tooManyTokensToMint: "tokens to mint gt tokens owed",
   noExceedMaxInvocations: "Must not exceed max invocations",
   onlySenderIsBidder: "Only sender is bidder",
+  tooManyBidsToRefund: "bids to refund gt available qty",
 };

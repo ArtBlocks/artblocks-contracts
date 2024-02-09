@@ -986,7 +986,7 @@ library RAMLib {
      * @notice Directly refund bids for project `projectId` on core contract
      * `coreContract` to resolve error state E1.
      * Does not guarantee an optimal ordering or handling of E1 state like
-     * `adminAutoRefundBidsToResolveE1` does while in State C.
+     * `autoRefundBidsToResolveE1` does while in State C.
      * Skips over bids that have already been minted or refunded (front-running
      * protection)
      * Reverts if project is not in post-auction state,
