@@ -97,6 +97,7 @@ export const revertMessages = {
   onlyStateA: "Only state A",
   onlyPreAuction: "Only pre-auction",
   onlyStateB: "Only state B",
+  onlyStatesCD: "Only states C or D",
   onlyStatesDE: "Only states D or E",
   onlyStateE: "Only state E",
   onlyOneConstraint: "Only one constraint can be set",
@@ -117,7 +118,9 @@ export const revertMessages = {
   insufficientBidValue: "Insufficient bid value",
   bidDNE: "Bid dne - were you outbid?",
   onlyBidderOfExistingBid: "Only bidder of existing bid",
+  onlyBidder: "Only bidder",
   incorrectAddedValue: "incorrect added value",
   reachedMaxInvocations: "Reached max invocations",
   onlyAuctionReservePrice: "Only send auction reserve price",
+  onlyUnsettledBid: "Only un-settled bid",
 };

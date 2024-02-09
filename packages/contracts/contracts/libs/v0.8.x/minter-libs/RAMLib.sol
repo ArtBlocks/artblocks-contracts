@@ -667,7 +667,7 @@ library RAMLib {
             coreContract: coreContract
         });
         // CHECKS (project-level checks)
-        // require project minter state E (Post-Auction, all bids handled)
+        // require project minter states C or D (Post-Auction, not all bids handled)
         ProjectMinterStates projectMinterState = getProjectMinterState({
             projectId: projectId,
             coreContract: coreContract
