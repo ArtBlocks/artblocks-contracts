@@ -150,16 +150,16 @@
     "@aws-sdk/util-utf8-browser" "^3.0.0"
     tslib "^1.11.1"
 
-"@aws-sdk/client-cognito-identity@3.507.0":
-  version "3.507.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/client-cognito-identity/-/client-cognito-identity-3.507.0.tgz#161c4721b7fe1292c0b75cd5f537010d4e66be80"
-  integrity sha512-LzxPdA/XYtc7xcm5xvvxdbUZdrt0t9PsPjPLBEAiZ8Ptv4CPACwPhEAHKh8xZwNGPjkV5ugzCYyytJzzeta/7A==
+"@aws-sdk/client-cognito-identity@3.509.0":
+  version "3.509.0"
+  resolved "https://registry.yarnpkg.com/@aws-sdk/client-cognito-identity/-/client-cognito-identity-3.509.0.tgz#d6284fbacc3456820446d51b74b87d2fedee015e"
+  integrity sha512-4gOFHM/u3DQB73ri15j+4As/mONj9Zmjze6SCQI9JwsW7WlOonDCsUQCKumEEnRGE8UQlqZAshIpAWWCrutLQw==
   dependencies:
     "@aws-crypto/sha256-browser" "3.0.0"
     "@aws-crypto/sha256-js" "3.0.0"
     "@aws-sdk/client-sts" "3.507.0"
     "@aws-sdk/core" "3.496.0"
-    "@aws-sdk/credential-provider-node" "3.507.0"
+    "@aws-sdk/credential-provider-node" "3.509.0"
     "@aws-sdk/middleware-host-header" "3.502.0"
     "@aws-sdk/middleware-logger" "3.502.0"
     "@aws-sdk/middleware-recursion-detection" "3.502.0"
@@ -405,12 +405,12 @@
     "@smithy/types" "^2.9.1"
     tslib "^2.5.0"
 
-"@aws-sdk/credential-provider-cognito-identity@3.507.0":
-  version "3.507.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/credential-provider-cognito-identity/-/credential-provider-cognito-identity-3.507.0.tgz#8bf3032a5dc78d37e22994b453aeb0fc4a1a829f"
-  integrity sha512-5i14xU1B7r+ALdz8FSYL1p9UlhCXtj+LV5EjrZozWzs7K3Z4jpxr2txB9CMhn0ByPp5Sjf9y2115hMbqSJV/WQ==
+"@aws-sdk/credential-provider-cognito-identity@3.509.0":
+  version "3.509.0"
+  resolved "https://registry.yarnpkg.com/@aws-sdk/credential-provider-cognito-identity/-/credential-provider-cognito-identity-3.509.0.tgz#69cd9e59a166407d85ec4c5f2f446401d014c18e"
+  integrity sha512-cQEwOoNzdN9vPTiDZt34EZNL1qXMk2lnsg9U1yEeVwvfur/5G/D0Kd1uvJmPXEtZOcJklPKAPrcvCejVmZuN3A==
   dependencies:
-    "@aws-sdk/client-cognito-identity" "3.507.0"
+    "@aws-sdk/client-cognito-identity" "3.509.0"
     "@aws-sdk/types" "3.502.0"
     "@smithy/property-provider" "^2.1.1"
     "@smithy/types" "^2.9.1"
@@ -448,24 +448,6 @@
   dependencies:
     "@aws-sdk/client-sts" "3.507.0"
     "@aws-sdk/credential-provider-env" "3.502.0"
-    "@aws-sdk/credential-provider-process" "3.502.0"
-    "@aws-sdk/credential-provider-sso" "3.507.0"
-    "@aws-sdk/credential-provider-web-identity" "3.507.0"
-    "@aws-sdk/types" "3.502.0"
-    "@smithy/credential-provider-imds" "^2.2.1"
-    "@smithy/property-provider" "^2.1.1"
-    "@smithy/shared-ini-file-loader" "^2.3.1"
-    "@smithy/types" "^2.9.1"
-    tslib "^2.5.0"
-
-"@aws-sdk/credential-provider-node@3.507.0":
-  version "3.507.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/credential-provider-node/-/credential-provider-node-3.507.0.tgz#b6c9f3c2c8294911c4f12e267f16a26e1eba4813"
-  integrity sha512-tkQnmOLkRBXfMLgDYHzogrqTNdtl0Im0ipzJb2IV5hfM5NoTfCf795e9A9isgwjSP/g/YEU0xQWxa4lq8LRtuA==
-  dependencies:
-    "@aws-sdk/credential-provider-env" "3.502.0"
-    "@aws-sdk/credential-provider-http" "3.503.1"
-    "@aws-sdk/credential-provider-ini" "3.507.0"
     "@aws-sdk/credential-provider-process" "3.502.0"
     "@aws-sdk/credential-provider-sso" "3.507.0"
     "@aws-sdk/credential-provider-web-identity" "3.507.0"
@@ -529,19 +511,19 @@
     "@smithy/types" "^2.9.1"
     tslib "^2.5.0"
 
-"@aws-sdk/credential-providers@^3.507.0":
-  version "3.507.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/credential-providers/-/credential-providers-3.507.0.tgz#f7a22ef78b5196bfb12205fdbbea18f4739c5948"
-  integrity sha512-3DQNtsHS5OzHNe2jQKCPZ1Gt7nU3TNRnv2XpubVvUGlYpZ8nsmCSeo1UYwVkDD3/9X36iI1Z/CfeNU8alMGTAA==
+"@aws-sdk/credential-providers@^3.509.0":
+  version "3.509.0"
+  resolved "https://registry.yarnpkg.com/@aws-sdk/credential-providers/-/credential-providers-3.509.0.tgz#6f2f26163e46aff7e093979a9afbf1fcb1ee1594"
+  integrity sha512-NqmWeLmk+1SJF4hvJU62Mv/+O535Ge7HL5MPheDpkhGZAN4eCeXgJvvuUDOzJOLijHlH9V8xCi/XG33KQ2Kvmg==
   dependencies:
-    "@aws-sdk/client-cognito-identity" "3.507.0"
+    "@aws-sdk/client-cognito-identity" "3.509.0"
     "@aws-sdk/client-sso" "3.507.0"
     "@aws-sdk/client-sts" "3.507.0"
-    "@aws-sdk/credential-provider-cognito-identity" "3.507.0"
+    "@aws-sdk/credential-provider-cognito-identity" "3.509.0"
     "@aws-sdk/credential-provider-env" "3.502.0"
     "@aws-sdk/credential-provider-http" "3.503.1"
     "@aws-sdk/credential-provider-ini" "3.507.0"
-    "@aws-sdk/credential-provider-node" "3.507.0"
+    "@aws-sdk/credential-provider-node" "3.509.0"
     "@aws-sdk/credential-provider-process" "3.502.0"
     "@aws-sdk/credential-provider-sso" "3.507.0"
     "@aws-sdk/credential-provider-web-identity" "3.507.0"
