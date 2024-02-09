@@ -783,6 +783,9 @@ library RAMLib {
             uint256 currentBidId = bidIds[i];
             Bid storage bid = RAMProjectConfig_.bids[currentBidId];
             // CHECKS
+            // require bid exists
+            address bidderAddress = bid.bidder;
+            require(bidderAddress != address(0), "invalid Bid ID");
             // if bid is already minted or refunded, skip to next bid
             // @dev do not revert, since this could be due to front-running
             if (
@@ -793,7 +796,7 @@ library RAMLib {
             }
             // require sender is bidder if requireSenderIsBidder is true
             if (requireSenderIsBidder) {
-                require(msg.sender == bid.bidder, "Only sender is bidder");
+                require(msg.sender == bidderAddress, "Only sender is bidder");
             }
             // EFFECTS
             // STEP 1: mint bid
@@ -807,7 +810,7 @@ library RAMLib {
                 projectId: projectId,
                 coreContract: coreContract,
                 bidId: uint32(currentBidId),
-                bidder: bid.bidder,
+                bidder: bidderAddress,
                 minterFilter: minterFilter
             });
 
