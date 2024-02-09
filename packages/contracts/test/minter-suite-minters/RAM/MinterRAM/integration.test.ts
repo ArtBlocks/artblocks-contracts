@@ -10,8 +10,10 @@ import { Logger } from "@ethersproject/logger";
 import {
   configureProjectZeroAuctionAndAdvanceToStartTime,
   configureDefaultProjectZero,
+  advanceToAuctionStartTime,
   initializeMinBidInProjectZeroAuction,
   configureProjectZeroAuctionAndSelloutLiveAuction,
+  configureProjectZeroAuctionSelloutAndAdvanceToStateD,
   mintTokenOnDifferentMinter,
   initializeMinBidInProjectZeroAuctionAndAdvanceToEnd,
   initializeMinBidInProjectZeroAuctionAndEnterExtraTime,
@@ -674,6 +676,261 @@ runForEach.forEach((params) => {
         expect(auctionAfter.numBids).to.equal(15);
         expect(auctionBefore.minBidSlotIndex).to.equal(0);
         expect(auctionAfter.minBidSlotIndex).to.equal(1);
+      });
+    });
+
+    describe("purchaseTo", async function () {
+      it("reverts if not in States D or E (unconfigured, A, and B)", async function () {
+        const config = await _beforeEach();
+        // unconfigured
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseTo(
+              config.accounts.user2.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              {
+                value: config.basePrice,
+              }
+            ),
+          revertMessages.onlyStatesDE
+        );
+        // configure auction in State A
+        await configureDefaultProjectZero(config);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseTo(
+              config.accounts.user2.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              {
+                value: config.basePrice,
+              }
+            ),
+          revertMessages.onlyStatesDE
+        );
+        // advance to State B
+        await advanceToAuctionStartTime(config);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseTo(
+              config.accounts.user2.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              {
+                value: config.basePrice,
+              }
+            ),
+          revertMessages.onlyStatesDE
+        );
+      });
+
+      it("reverts if not in States D or E (check State C)", async function () {
+        const config = await _beforeEach();
+        // advance to State C
+        await configureProjectZeroAuctionAndSelloutLiveAuction(config);
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds,
+        ]);
+        // expect revert
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseTo(
+              config.accounts.user2.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              {
+                value: config.basePrice,
+              }
+            ),
+          revertMessages.onlyStatesDE
+        );
+      });
+
+      it("reverts if no invocations remaining", async function () {
+        const config = await _beforeEach();
+        // advance to State D
+        await configureProjectZeroAuctionSelloutAndAdvanceToStateD(config);
+        // no invocations remaining
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseTo(
+              config.accounts.user2.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              {
+                value: config.basePrice,
+              }
+            ),
+          revertMessages.reachedMaxInvocations
+        );
+      });
+
+      it("reverts if not sent auction reserve price", async function () {
+        const config = await _beforeEach();
+        // advance to State D
+        await initializeMinBidInProjectZeroAuctionAndAdvanceToEnd(config);
+        // expect revert (value too low)
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseTo(
+              config.accounts.user2.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              {
+                value: config.basePrice.sub(1),
+              }
+            ),
+          revertMessages.onlyAuctionReservePrice
+        );
+        // expect revert (value too high)
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseTo(
+              config.accounts.user2.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              {
+                value: config.basePrice.add(1),
+              }
+            ),
+          revertMessages.onlyAuctionReservePrice
+        );
+      });
+
+      it("updates state when successful", async function () {
+        const config = await _beforeEach();
+        // advance to State D
+        await initializeMinBidInProjectZeroAuctionAndAdvanceToEnd(config);
+        // get state before
+        const auctionBefore = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const projectBalanceBefore = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const artistBalanceBefore = await config.accounts.artist.getBalance();
+        const deployerBalanceBefore =
+          await config.accounts.deployer.getBalance();
+        // purchase token
+        await config.minter
+          .connect(config.accounts.user)
+          .purchaseTo(
+            config.accounts.user2.address,
+            config.projectZero,
+            config.genArt721Core.address,
+            {
+              value: config.basePrice,
+            }
+          );
+        // get state after
+        const auctionAfter = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const projectBalanceAfter = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const artistBalanceAfter = await config.accounts.artist.getBalance();
+        const deployerBalanceAfter =
+          await config.accounts.deployer.getBalance();
+        // verify relevant state updates
+        expect(auctionBefore.numBids).to.equal(1);
+        expect(auctionAfter.numBids).to.equal(1);
+        expect(auctionBefore.minBidSlotIndex).to.equal(0);
+        expect(auctionAfter.minBidSlotIndex).to.equal(0);
+        // only balance on minter should be from single bid, unaffected by purchase
+        expect(projectBalanceBefore).to.equal(config.basePrice);
+        expect(projectBalanceAfter).to.equal(config.basePrice);
+        // artist balance should increase by base price * 90%
+        expect(artistBalanceAfter.sub(artistBalanceBefore)).to.equal(
+          config.basePrice.mul(9).div(10)
+        );
+        // deployer balance should increase by base price * 10%
+        expect(deployerBalanceAfter.sub(deployerBalanceBefore)).to.equal(
+          config.basePrice.div(10)
+        );
+        // new token should be owned by user2
+        const tokenOwner = await config.genArt721Core.ownerOf(0);
+        expect(tokenOwner).to.equal(config.accounts.user2.address);
+        // allows 13 more purchase without reverting
+        for (let i = 0; i < 13; i++) {
+          await config.minter
+            .connect(config.accounts.user)
+            .purchaseTo(
+              config.accounts.user2.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              {
+                value: config.basePrice,
+              }
+            );
+        }
+        // reverts on next purchase because no invocations remaining
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseTo(
+              config.accounts.user2.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              {
+                value: config.basePrice,
+              }
+            ),
+          revertMessages.reachedMaxInvocations
+        );
+      });
+
+      it("reverts before sending minter into E1 state", async function () {
+        const config = await _beforeEach();
+        // advance to State D
+        await initializeMinBidInProjectZeroAuctionAndAdvanceToEnd(config);
+        // set max invocations to 1 on core contract, keep minter stale
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 1);
+        // purchase should revert to avoid tripping into E1 state
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseTo(
+              config.accounts.user2.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              {
+                value: config.basePrice,
+              }
+            ),
+          revertMessages.reachedMaxInvocations
+        );
+      });
+    });
+
+    describe("purchase", async function () {
+      it("should send token to msg.sender", async function () {
+        const config = await _beforeEach();
+        // advance to State D
+        await initializeMinBidInProjectZeroAuctionAndAdvanceToEnd(config);
+        // purchase token
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.basePrice,
+          });
+        // new token should be owned by user
+        const tokenOwner = await config.genArt721Core.ownerOf(0);
+        expect(tokenOwner).to.equal(config.accounts.user.address);
       });
     });
   });

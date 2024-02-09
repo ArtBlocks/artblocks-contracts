@@ -77,6 +77,34 @@ export async function configureProjectZeroAuctionAndSelloutLiveAuction(
   }
 }
 
+// helper function to initialize an auction on project zero, and place bids
+// to enter a sellout, live auction. Configures auction to skip State C.
+//
+export async function configureProjectZeroAuctionSelloutAndAdvanceToStateD(
+  config: T_Config
+) {
+  // configure project zero to skip State C
+  await config.minter.connect(config.accounts.artist).setAuctionDetails(
+    config.projectZero,
+    config.genArt721Core.address,
+    config.startTime,
+    config.defaultAuctionLengthSeconds + config.startTime,
+    config.basePrice,
+    true, // allowExtraTime
+    false // admin/artist only mint period if sellout
+  );
+  // advance to auction start time
+  await advanceToAuctionStartTime(config);
+  // place 15 bids in the auction to "sellout" the auction
+  for (let i = 0; i < 15; i++) {
+    await placeMinBidInProjectZeroAuction(config);
+  }
+  // advance time to end of auction, entering State D
+  await ethers.provider.send("evm_mine", [
+    config.startTime + config.defaultAuctionLengthSeconds,
+  ]);
+}
+
 // helper function to initialize and place bid in auction on project zero, and then
 // advance time to the end of the auction
 export async function initializeMinBidInProjectZeroAuctionAndAdvanceToEnd(
