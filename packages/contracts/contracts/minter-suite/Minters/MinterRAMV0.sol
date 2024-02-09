@@ -233,7 +233,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         uint256 projectId,
         address coreContract,
         uint8 emergencyHoursToAdd
-    ) external {
+    ) external nonReentrant {
         // CHECKS
         AuthLib.onlyCoreAdminACL({
             coreContract: coreContract,
