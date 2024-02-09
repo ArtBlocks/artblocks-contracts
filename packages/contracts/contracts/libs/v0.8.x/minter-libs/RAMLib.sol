@@ -955,7 +955,6 @@ library RAMLib {
             // @dev collector could have previously settled bid, so need to
             // settle only if not already settled
             if (!(_getBidPackedBool(bid, INDEX_IS_SETTLED))) {
-                // pika
                 _settleBid({
                     RAMProjectConfig_: RAMProjectConfig_,
                     projectId: projectId,

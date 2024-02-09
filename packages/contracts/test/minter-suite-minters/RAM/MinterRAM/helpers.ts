@@ -77,6 +77,17 @@ export async function configureProjectZeroAuctionAndSelloutLiveAuction(
   }
 }
 
+// helper function to sellout an auction and advance to State C
+export async function selloutProjectZeroAuctionAndAdvanceToStateC(
+  config: T_Config
+) {
+  await configureProjectZeroAuctionAndSelloutLiveAuction(config);
+  // advance time to end of auction, entering State C
+  await ethers.provider.send("evm_mine", [
+    config.startTime + config.defaultAuctionLengthSeconds,
+  ]);
+}
+
 // helper function to initialize an auction on project zero, and place bids
 // to enter a sellout, live auction. Configures auction to skip State C.
 //

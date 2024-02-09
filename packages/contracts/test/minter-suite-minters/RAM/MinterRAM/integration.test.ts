@@ -13,6 +13,7 @@ import {
   advanceToAuctionStartTime,
   initializeMinBidInProjectZeroAuction,
   configureProjectZeroAuctionAndSelloutLiveAuction,
+  selloutProjectZeroAuctionAndAdvanceToStateC,
   configureProjectZeroAuctionSelloutAndAdvanceToStateD,
   mintTokenOnDifferentMinter,
   initializeMinBidInProjectZeroAuctionAndAdvanceToEnd,
@@ -1201,6 +1202,272 @@ runForEach.forEach((params) => {
         );
         expect(userBalanceAfter.sub(userBalanceBefore)).to.equal(
           settlementAmount
+        );
+      });
+    });
+
+    describe("adminArtistAutoMintTokensToWinners", async function () {
+      it("reverts when non-admin or artist calls", async function () {
+        const config = await _beforeEach();
+        // advance to State C
+        await selloutProjectZeroAuctionAndAdvanceToStateC(config);
+        // expect revert when non-admin calls
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .adminArtistAutoMintTokensToWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              2
+            ),
+          revertMessages.onlyCoreAdminACLOrArtist
+        );
+      });
+
+      it("does not revet when artist calls", async function () {
+        const config = await _beforeEach();
+        // advance to State C
+        await selloutProjectZeroAuctionAndAdvanceToStateC(config);
+        // no revert when artist calls
+        await config.minter
+          .connect(config.accounts.artist)
+          .adminArtistAutoMintTokensToWinners(
+            config.projectZero,
+            config.genArt721Core.address,
+            2
+          );
+      });
+
+      it("does not revet when admin calls (pre-C)", async function () {
+        const config = await _beforeEach();
+        // advance to State C
+        await selloutProjectZeroAuctionAndAdvanceToStateC(config);
+        // no revert when admin calls
+        await config.minter
+          .connect(config.accounts.deployer)
+          .adminArtistAutoMintTokensToWinners(
+            config.projectZero,
+            config.genArt721Core.address,
+            2
+          );
+      });
+
+      it("reverts when not in State C (pre-C)", async function () {
+        const config = await _beforeEach();
+        // unconfigured reverts
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .adminArtistAutoMintTokensToWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              0
+            ),
+          revertMessages.onlyStateC
+        );
+        // configure auction in State A
+        await configureDefaultProjectZero(config);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .adminArtistAutoMintTokensToWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              0
+            ),
+          revertMessages.onlyStateC
+        );
+        // advance to State B
+        await advanceToAuctionStartTime(config);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .adminArtistAutoMintTokensToWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              0
+            ),
+          revertMessages.onlyStateC
+        );
+      });
+
+      it("reverts when not in State C (post-C)", async function () {
+        const config = await _beforeEach();
+        // State D reverts
+        await configureProjectZeroAuctionSelloutAndAdvanceToStateD(config);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .adminArtistAutoMintTokensToWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              1
+            ),
+          revertMessages.onlyStateC
+        );
+      });
+
+      it("reverts when num tokens to mint gt tokens owed", async function () {
+        const config = await _beforeEach();
+        // advance to State C
+        await selloutProjectZeroAuctionAndAdvanceToStateC(config);
+        // expect revert when num tokens to mint gt tokens owed
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .adminArtistAutoMintTokensToWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              16
+            ),
+          revertMessages.tooManyTokensToMint
+        );
+        // mint 13 of 15 tokens to winners
+        await config.minter
+          .connect(config.accounts.artist)
+          .adminArtistAutoMintTokensToWinners(
+            config.projectZero,
+            config.genArt721Core.address,
+            13
+          );
+        // expect revert when num tokens to mint gt tokens owed
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .adminArtistAutoMintTokensToWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              3
+            ),
+          revertMessages.tooManyTokensToMint
+        );
+        // enter E1 state
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 14);
+        // expect revert from core when num tokens to mint gt tokens owed due to E1
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .adminArtistAutoMintTokensToWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              2
+            ),
+          revertMessages.noExceedMaxInvocations
+        );
+      });
+
+      it("updates state when successful", async function () {
+        const config = await _beforeEach();
+        // sellout live auction
+        await configureProjectZeroAuctionAndSelloutLiveAuction(config);
+        // user 2 places bid in slot 8
+        const bidValue = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          8
+        );
+        await config.minter
+          .connect(config.accounts.user2)
+          .createBid(config.projectZero, config.genArt721Core.address, 8, {
+            value: bidValue,
+          });
+        // advance to end of auction
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds,
+        ]);
+        // get state before
+        const projectBalanceBefore = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const artistBalanceBefore = await config.accounts.artist.getBalance();
+        const user2BalanceBefore = await config.accounts.user2.getBalance();
+        // mint 2 of 15 tokens to winners
+        await config.minter
+          .connect(config.accounts.deployer)
+          .adminArtistAutoMintTokensToWinners(
+            config.projectZero,
+            config.genArt721Core.address,
+            2
+          );
+        // get state after
+        const projectBalanceAfter = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const artistBalanceAfter = await config.accounts.artist.getBalance();
+        const user2BalanceAfter = await config.accounts.user2.getBalance();
+        // verify relevant state updates
+        const settlementAmount = bidValue.sub(config.basePrice);
+        expect(projectBalanceBefore.sub(projectBalanceAfter)).to.equal(
+          settlementAmount
+        );
+        expect(artistBalanceAfter).to.equal(artistBalanceBefore);
+        expect(user2BalanceAfter.sub(user2BalanceBefore)).to.equal(
+          settlementAmount
+        );
+        // token 0 should be owned by user2, since they had the highest bid
+        expect(await config.genArt721Core.ownerOf(0)).to.equal(
+          config.accounts.user2.address
+        );
+        // token 1 should be owned by user, since they had the lower bids
+        expect(await config.genArt721Core.ownerOf(1)).to.equal(
+          config.accounts.user.address
+        );
+        // verify auto-mint scroll state was updated and is WAI
+        // subsequent call should mint token 1 to user
+        await config.minter
+          .connect(config.accounts.deployer)
+          .adminArtistAutoMintTokensToWinners(
+            config.projectZero,
+            config.genArt721Core.address,
+            1
+          );
+        // token 2 should be owned by user, since they had the lower bids
+        expect(await config.genArt721Core.ownerOf(2)).to.equal(
+          config.accounts.user.address
+        );
+        // verify minted bids were marked as settled
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user2)
+            .collectSettlements(
+              config.projectZero,
+              config.genArt721Core.address,
+              [16]
+            ),
+          revertMessages.onlyUnsettledBid
+        );
+        // verify bid was marked as minted
+        const auctionDetails = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(auctionDetails.numBidsMintedTokens).to.equal(3);
+        // advance to state D via advancing 72 hours
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds + 60 * 60 * 72,
+        ]);
+        // expect skip if try to direct mint bid id 16 again (verifying it is minted)
+        const auctionDetailsBefore = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        await config.minter
+          .connect(config.accounts.user2)
+          .winnerDirectMintTokens(
+            config.projectZero,
+            config.genArt721Core.address,
+            [16]
+          );
+        const auctionDetailsAfter = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(auctionDetailsBefore.numBidsMintedTokens).to.equal(
+          auctionDetailsAfter.numBidsMintedTokens
         );
       });
     });

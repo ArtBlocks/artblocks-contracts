@@ -97,6 +97,7 @@ export const revertMessages = {
   onlyStateA: "Only state A",
   onlyPreAuction: "Only pre-auction",
   onlyStateB: "Only state B",
+  onlyStateC: "Only state C",
   onlyStatesCD: "Only states C or D",
   onlyStatesDE: "Only states D or E",
   onlyStateE: "Only state E",
@@ -123,4 +124,6 @@ export const revertMessages = {
   reachedMaxInvocations: "Reached max invocations",
   onlyAuctionReservePrice: "Only send auction reserve price",
   onlyUnsettledBid: "Only un-settled bid",
+  tooManyTokensToMint: "tokens to mint gt tokens owed",
+  noExceedMaxInvocations: "Must not exceed max invocations",
 };
