@@ -643,59 +643,6 @@ library RAMLib {
 
     /**
      * @notice Collects settlement for project `projectId` on core contract
-     * `coreContract` for bid `bidId`.
-     * Reverts if project is not in a post-auction state.
-     * Reverts if bidder is not the bid's bidder.
-     * Reverts if bid has already been settled.
-     * Reverts if invalid bid.
-     * @param projectId Project ID of bid to collect settlement for
-     * @param coreContract Core contract address for the given project.
-     * @param bidId ID of bid to be settled
-     * @param bidder Bidder address of bid to collect settlement for
-     * @param minterRefundGasLimit Gas limit to use when refunding the bidder.
-     */
-    function collectSettlement(
-        uint256 projectId,
-        address coreContract,
-        uint32 bidId,
-        address bidder,
-        uint256 minterRefundGasLimit
-    ) internal {
-        // load project config
-        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
-            projectId: projectId,
-            coreContract: coreContract
-        });
-        // CHECKS (project-level checks)
-        // require project minter states C or D (Post-Auction, not all bids handled)
-        ProjectMinterStates projectMinterState = getProjectMinterState({
-            projectId: projectId,
-            coreContract: coreContract
-        });
-        require(
-            projectMinterState == ProjectMinterStates.C ||
-                projectMinterState == ProjectMinterStates.D,
-            "Only states C or D"
-        );
-
-        // get project price
-        uint256 projectPrice = _getProjectPrice({
-            RAMProjectConfig_: RAMProjectConfig_
-        });
-        // settle the bid
-        _settleBidWithChecks({
-            RAMProjectConfig_: RAMProjectConfig_,
-            projectId: projectId,
-            coreContract: coreContract,
-            projectPrice: projectPrice,
-            bidId: bidId,
-            bidder: bidder,
-            minterRefundGasLimit: minterRefundGasLimit
-        });
-    }
-
-    /**
-     * @notice Collects settlement for project `projectId` on core contract
      * `coreContract` for all bids in `bidIds`.
      * Reverts if project is not in a post-auction state.
      * Reverts if bidder is not the bidder for all bids.

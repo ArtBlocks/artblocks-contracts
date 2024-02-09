@@ -530,35 +530,6 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
 
     /**
      * @notice Collects settlement for project `projectId` on core contract
-     * `coreContract` for bid `bidId`.
-     * Reverts if project is not in a post-auction state.
-     * Reverts if msg.sender is not the bid's bidder.
-     * Reverts if msg.sender is not the bidder.
-     * Reverts if bid has already been settled.
-     * Reverts if invalid bid.
-     * @param projectId Project ID of bid to collect settlement for
-     * @param coreContract Core contract address for the given project.
-     * @param bidId ID of bid to be settled
-     */
-    function collectSettlement(
-        uint256 projectId,
-        address coreContract,
-        uint32 bidId
-    ) external nonReentrant {
-        // CHECKS
-        // @dev project state is checked in collectSettlement
-        // EFFECTS
-        RAMLib.collectSettlement({
-            projectId: projectId,
-            coreContract: coreContract,
-            bidId: bidId,
-            bidder: msg.sender,
-            minterRefundGasLimit: _minterRefundGasLimit
-        });
-    }
-
-    /**
-     * @notice Collects settlement for project `projectId` on core contract
      * `coreContract` for all bids in `slotIndices` at `bidIndicesInSlot`,
      * which must be aligned by index.
      * Reverts if `slotIndices` and `bid` indices are not the same length.

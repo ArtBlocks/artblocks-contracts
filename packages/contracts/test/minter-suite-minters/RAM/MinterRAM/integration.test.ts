@@ -935,17 +935,17 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("collectSettlement", async function () {
+    describe("collectSettlements", async function () {
       it("reverts if not in States C or D (before)", async function () {
         const config = await _beforeEach();
         // unconfigured
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .collectSettlement(
+            .collectSettlements(
               config.projectZero,
               config.genArt721Core.address,
-              0
+              [0]
             ),
           revertMessages.onlyStatesCD
         );
@@ -954,10 +954,10 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .collectSettlement(
+            .collectSettlements(
               config.projectZero,
               config.genArt721Core.address,
-              0
+              [0]
             ),
           revertMessages.onlyStatesCD
         );
@@ -966,10 +966,10 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .collectSettlement(
+            .collectSettlements(
               config.projectZero,
               config.genArt721Core.address,
-              0
+              [0]
             ),
           revertMessages.onlyStatesCD
         );
@@ -982,10 +982,10 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .collectSettlement(
+            .collectSettlements(
               config.projectZero,
               config.genArt721Core.address,
-              0
+              [0]
             ),
           revertMessages.onlyStatesCD
         );
@@ -1000,10 +1000,10 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .collectSettlement(
+            .collectSettlements(
               config.projectZero,
               config.genArt721Core.address,
-              0
+              [0]
             ),
           revertMessages.onlyBidder
         );
@@ -1018,10 +1018,10 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.user2)
-            .collectSettlement(
+            .collectSettlements(
               config.projectZero,
               config.genArt721Core.address,
-              1
+              [1]
             ),
           revertMessages.onlyBidder
         );
@@ -1034,19 +1034,19 @@ runForEach.forEach((params) => {
         // settle bid ID 1
         await config.minter
           .connect(config.accounts.user)
-          .collectSettlement(
+          .collectSettlements(
             config.projectZero,
             config.genArt721Core.address,
-            1
+            [1]
           );
         // expect revert when settling again
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .collectSettlement(
+            .collectSettlements(
               config.projectZero,
               config.genArt721Core.address,
-              1
+              [1]
             ),
           revertMessages.onlyUnsettledBid
         );
@@ -1068,10 +1068,10 @@ runForEach.forEach((params) => {
         ]);
         await config.minter
           .connect(config.accounts.user)
-          .collectSettlement(
+          .collectSettlements(
             config.projectZero,
             config.genArt721Core.address,
-            1,
+            [1],
             { gasPrice: 0 }
           );
         // get state after
@@ -1117,10 +1117,10 @@ runForEach.forEach((params) => {
         ]);
         await config.minter
           .connect(config.accounts.user)
-          .collectSettlement(
+          .collectSettlements(
             config.projectZero,
             config.genArt721Core.address,
-            16,
+            [16],
             { gasPrice: 0 }
           );
         // get state after
@@ -1131,6 +1131,71 @@ runForEach.forEach((params) => {
         const userBalanceAfter = await config.accounts.user.getBalance();
         // verify relevant state updates
         const settlementAmount = bidValue.sub(config.basePrice);
+        expect(projectBalanceBefore.sub(projectBalanceAfter)).to.equal(
+          settlementAmount
+        );
+        expect(userBalanceAfter.sub(userBalanceBefore)).to.equal(
+          settlementAmount
+        );
+      });
+
+      it("updates state when successful - multiple settlement balance exists case", async function () {
+        const config = await _beforeEach();
+        // sellout live auction
+        await configureProjectZeroAuctionAndSelloutLiveAuction(config);
+        // place bids in slots 8 and 9
+        const bidValue8 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          8
+        );
+        const bidValue9 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          9
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 8, {
+            value: bidValue8,
+          });
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 9, {
+            value: bidValue9,
+          });
+        // advance to end of auction
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds,
+        ]);
+        // get state before
+        const projectBalanceBefore = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const userBalanceBefore = await config.accounts.user.getBalance();
+        // settle the bids 16 and 17 with zero gas price
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        await config.minter
+          .connect(config.accounts.user)
+          .collectSettlements(
+            config.projectZero,
+            config.genArt721Core.address,
+            [16, 17],
+            { gasPrice: 0 }
+          );
+        // get state after
+        const projectBalanceAfter = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const userBalanceAfter = await config.accounts.user.getBalance();
+        // verify relevant state updates
+        const settlementAmount = bidValue8
+          .add(bidValue9)
+          .sub(config.basePrice?.mul(2));
         expect(projectBalanceBefore.sub(projectBalanceAfter)).to.equal(
           settlementAmount
         );
