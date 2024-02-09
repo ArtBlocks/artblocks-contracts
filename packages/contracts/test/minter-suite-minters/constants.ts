@@ -128,4 +128,5 @@ export const revertMessages = {
   onlyUnsettledBid: "Only un-settled bid",
   tooManyTokensToMint: "tokens to mint gt tokens owed",
   noExceedMaxInvocations: "Must not exceed max invocations",
+  onlySenderIsBidder: "Only sender is bidder",
 };
