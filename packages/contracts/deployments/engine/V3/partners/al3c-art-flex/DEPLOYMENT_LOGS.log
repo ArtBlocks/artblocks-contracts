@@ -1,0 +1,36 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2024-02-09T20:39:32.728Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/al3c-art-flex/deployment-config.sepolia-staging.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xB4915B29835B57361dEf71d2bB44b01d1b0AbbF8
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x7b591fb85cc3839Eca0967cbe43AA12d156ce5aD
+[INFO] Registered core contract 0x7b591fb85cc3839Eca0967cbe43AA12d156ce5aD on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x4a8557FFC313a398904daE6e5561eE216a04602D.
+[INFO] Verifying core contract contract deployment...
+The contract 0x7b591fb85cc3839Eca0967cbe43AA12d156ce5aD has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x7b591fb85cc3839Eca0967cbe43AA12d156ce5aD#code
+[INFO] Core contract verified on Etherscan at 0x7b591fb85cc3839Eca0967cbe43AA12d156ce5aD}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xB4915B29835B57361dEf71d2bB44b01d1b0AbbF8 has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0xB4915B29835B57361dEf71d2bB44b01d1b0AbbF8#code
+[INFO] AdminACL contract verified on Etherscan at 0xB4915B29835B57361dEf71d2bB44b01d1b0AbbF8
+Created s3 bucket for https://al3c-art-sepolia.s3.amazonaws.com
+[INFO] Created image bucket al3c-art-sepolia
+[INFO] Deployment details written to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/al3c-art-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x7b591fb85cc3839eca0967cbe43aa12d156ce5ad",
+  "name": "AL3C.art",
+  "bucket_name": "al3c-art-sepolia",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x4a8557FFC313a398904daE6e5561eE216a04602D, don't forget to update if requred.
