@@ -11,6 +11,7 @@ import {
   configureProjectZeroAuctionAndAdvanceToStartTime,
   configureProjectZeroAuctionAndSelloutLiveAuction,
   selloutProjectZeroAuctionAndAdvanceToStateC,
+  configureProjectZeroAuctionSelloutAndAdvanceToStateD,
 } from "./helpers";
 import { BigNumber, constants } from "ethers";
 // hide nuisance logs about event overloading
@@ -178,6 +179,35 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             15
+          );
+        const receipt = await tx.wait();
+        console.log("gasUsed", receipt.gasUsed.toString());
+        const avgGasUsed = receipt.gasUsed.div(15);
+        console.log("average gas per token minted:", avgGasUsed.toString());
+        // in dollars
+        const avgGasCostAt100gwei = receipt.effectiveGasPrice
+          .mul(avgGasUsed)
+          .toString();
+        const avgGasCostAt100gweiInETH = parseFloat(
+          ethers.utils.formatUnits(avgGasCostAt100gwei, "ether")
+        );
+        const avgGasCostAt100gweiAt2kUSDPerETH = avgGasCostAt100gweiInETH * 2e3;
+        console.log(
+          `=USD at 100gwei, $2k USD/ETH: \$${avgGasCostAt100gweiAt2kUSDPerETH}`
+        );
+      });
+
+      it("admin direct-mint bids to winners, non-sellout, typical [ @skip-on-coverage ]", async function () {
+        const config = await loadFixture(_beforeEach);
+        // initialize auction and sellout, advance to State D
+        await configureProjectZeroAuctionSelloutAndAdvanceToStateD(config);
+        // record gas cost of admin auto-minting 15 tokens
+        const tx = await config.minter
+          .connect(config.accounts.deployer)
+          .adminArtistDirectMintTokensToWinners(
+            config.projectZero,
+            config.genArt721Core.address,
+            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
           );
         const receipt = await tx.wait();
         console.log("gasUsed", receipt.gasUsed.toString());
