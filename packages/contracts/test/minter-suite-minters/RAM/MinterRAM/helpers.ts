@@ -116,6 +116,20 @@ export async function configureProjectZeroAuctionSelloutAndAdvanceToStateD(
   ]);
 }
 
+// helper function to initialize an auction on project zero, and place bids
+// to enter a sellout, live auction. Configures auction to skip State C.
+// induces E1 state by reducing max invocations on project by one.
+//
+export async function configureProjectZeroAuctionSelloutAndAdvanceToStateDWithE1(
+  config: T_Config
+) {
+  await configureProjectZeroAuctionSelloutAndAdvanceToStateD(config);
+  // artist reduce max invocations on core to enter E1
+  await config.genArt721Core
+    .connect(config.accounts.artist)
+    .updateProjectMaxInvocations(config.projectZero, 14);
+}
+
 // helper function to initialize and place bid in auction on project zero, and then
 // advance time to the end of the auction
 export async function initializeMinBidInProjectZeroAuctionAndAdvanceToEnd(

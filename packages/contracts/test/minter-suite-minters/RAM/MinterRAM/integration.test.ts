@@ -15,6 +15,7 @@ import {
   configureProjectZeroAuctionAndSelloutLiveAuction,
   selloutProjectZeroAuctionAndAdvanceToStateC,
   configureProjectZeroAuctionSelloutAndAdvanceToStateD,
+  configureProjectZeroAuctionSelloutAndAdvanceToStateDWithE1,
   mintTokenOnDifferentMinter,
   initializeMinBidInProjectZeroAuctionAndAdvanceToEnd,
   initializeMinBidInProjectZeroAuctionAndEnterExtraTime,
@@ -2149,6 +2150,426 @@ runForEach.forEach((params) => {
         );
         expect(auctionDetailsBefore.numBidsErrorRefunded).to.equal(1);
         expect(auctionDetailsAfter.numBidsErrorRefunded).to.equal(3);
+      });
+    });
+
+    describe("adminArtistDirectRefundWinners", async function () {
+      it("reverts when non-admin or artist calls", async function () {
+        const config = await _beforeEach();
+        // advance to State D w/ E1
+        await configureProjectZeroAuctionSelloutAndAdvanceToStateDWithE1(
+          config
+        );
+        // expect revert when non-admin calls
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .adminArtistDirectRefundWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              [1]
+            ),
+          revertMessages.onlyCoreAdminACLOrArtist
+        );
+      });
+
+      it("does not revert when artist calls", async function () {
+        const config = await _beforeEach();
+        // advance to State D w/ E1
+        await configureProjectZeroAuctionSelloutAndAdvanceToStateDWithE1(
+          config
+        );
+        // no revert when artist calls
+        await config.minter
+          .connect(config.accounts.artist)
+          .adminArtistDirectRefundWinners(
+            config.projectZero,
+            config.genArt721Core.address,
+            [1]
+          );
+      });
+
+      it("does not revert when admin calls", async function () {
+        const config = await _beforeEach();
+        // advance to State D w/ E1
+        await configureProjectZeroAuctionSelloutAndAdvanceToStateDWithE1(
+          config
+        );
+        // no revert when admin calls
+        await config.minter
+          .connect(config.accounts.deployer)
+          .adminArtistDirectRefundWinners(
+            config.projectZero,
+            config.genArt721Core.address,
+            [1]
+          );
+      });
+
+      it("reverts when not in State D (pre-D)", async function () {
+        const config = await _beforeEach();
+        // unconfigured reverts
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .adminArtistDirectRefundWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              [1]
+            ),
+          revertMessages.onlyStateD
+        );
+        // configure auction in State A
+        await configureDefaultProjectZero(config);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .adminArtistDirectRefundWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              [1]
+            ),
+          revertMessages.onlyStateD
+        );
+        // advance to State B
+        await advanceToAuctionStartTime(config);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .adminArtistDirectRefundWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              [1]
+            ),
+          revertMessages.onlyStateD
+        );
+      });
+
+      it("reverts when not in State D (check C)", async function () {
+        const config = await _beforeEach();
+        // advance to State C
+        await selloutProjectZeroAuctionAndAdvanceToStateC(config);
+        // expect revert
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .adminArtistDirectRefundWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              [1]
+            ),
+          revertMessages.onlyStateD
+        );
+      });
+
+      it("reverts when not in E1 state", async function () {
+        const config = await _beforeEach();
+        // advance to State D w/o E1
+        await configureProjectZeroAuctionSelloutAndAdvanceToStateD(config);
+        // expect revert when not in E1 state
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .adminArtistDirectRefundWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              [1]
+            ),
+          revertMessages.onlyStateErrorE1
+        );
+      });
+
+      it("reverts when num bids to refund gt num bids available to refund", async function () {
+        const config = await _beforeEach();
+        // advance to State D w/ E1
+        await configureProjectZeroAuctionSelloutAndAdvanceToStateDWithE1(
+          config
+        );
+        // expect revert when num bids to refund gt num bids available to refund
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .adminArtistDirectRefundWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              [1, 2]
+            ),
+          revertMessages.tooManyBidsToRefund
+        );
+      });
+
+      it("updates state when successful, bid not previously settled", async function () {
+        const config = await _beforeEach();
+        // advance sellout live auction
+        await configureProjectZeroAuctionAndSelloutLiveAuction(config);
+        // user2 places bid in slot 8
+        const bidValue = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          8
+        );
+        await config.minter
+          .connect(config.accounts.user2)
+          .createBid(config.projectZero, config.genArt721Core.address, 8, {
+            value: bidValue,
+          });
+        // advance to end of auction + 72 hours to get to State D
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds + 60 * 60 * 72,
+        ]);
+        // enter E1 state by reducing max invocations by 1
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 14);
+        // record state before
+        const auctionDetailsBefore = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const projectBalanceBefore = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const user2BalanceBefore = await config.accounts.user2.getBalance();
+        // direct refund by artist
+        await config.minter
+          .connect(config.accounts.artist)
+          .adminArtistDirectRefundWinners(
+            config.projectZero,
+            config.genArt721Core.address,
+            [16]
+          );
+        // record state after
+        const auctionDetailsAfter = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const projectBalanceAfter = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const user2BalanceAfter = await config.accounts.user2.getBalance();
+        // verify relevant state updates
+        expect(auctionDetailsBefore.numBidsErrorRefunded).to.equal(0);
+        expect(auctionDetailsAfter.numBidsErrorRefunded).to.equal(1);
+        const refundAmount = bidValue; // entire bid value should be refunded
+        expect(projectBalanceBefore.sub(projectBalanceAfter)).to.equal(
+          refundAmount
+        );
+        expect(user2BalanceAfter.sub(user2BalanceBefore)).to.equal(
+          refundAmount
+        );
+      });
+
+      it("updates state when successful, bid was previously settled", async function () {
+        const config = await _beforeEach();
+        // sellout live auction
+        await configureProjectZeroAuctionAndSelloutLiveAuction(config);
+        // user2 places bid in slot 8
+        const bidValue = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          8
+        );
+        await config.minter
+          .connect(config.accounts.user2)
+          .createBid(config.projectZero, config.genArt721Core.address, 8, {
+            value: bidValue,
+          });
+        // advance to end of auction + 72 hours to get to State D
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds + 60 * 60 * 72,
+        ]);
+        // enter E1 state by reducing max invocations by 1
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 14);
+        // user2 settles bid 16
+        await config.minter
+          .connect(config.accounts.user2)
+          .collectSettlements(
+            config.projectZero,
+            config.genArt721Core.address,
+            [16]
+          );
+        // record state before
+        const auctionDetailsBefore = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const projectBalanceBefore = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const user2BalanceBefore = await config.accounts.user2.getBalance();
+        // direct refund by artist
+        await config.minter
+          .connect(config.accounts.artist)
+          .adminArtistDirectRefundWinners(
+            config.projectZero,
+            config.genArt721Core.address,
+            [16]
+          );
+        // record state after
+        const auctionDetailsAfter = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const projectBalanceAfter = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const user2BalanceAfter = await config.accounts.user2.getBalance();
+        // verify relevant state updates
+        expect(auctionDetailsBefore.numBidsErrorRefunded).to.equal(0);
+        expect(auctionDetailsAfter.numBidsErrorRefunded).to.equal(1);
+        const refundAmount = config.basePrice; // only non-settled value should be refunded
+        expect(projectBalanceBefore.sub(projectBalanceAfter)).to.equal(
+          refundAmount
+        );
+        expect(user2BalanceAfter.sub(user2BalanceBefore)).to.equal(
+          refundAmount
+        );
+      });
+
+      it("refunds multiple bids in one call", async function () {
+        const config = await _beforeEach();
+        // advance to State D w/ E1
+        await configureProjectZeroAuctionSelloutAndAdvanceToStateDWithE1(
+          config
+        );
+        // make 3 bids need refunds by further reducing max invocations
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 12);
+        // record state before
+        const auctionDetailsBefore = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const projectBalanceBefore = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const userBalanceBefore = await config.accounts.user.getBalance();
+        // direct refund by artist
+        await config.minter
+          .connect(config.accounts.artist)
+          .adminArtistDirectRefundWinners(
+            config.projectZero,
+            config.genArt721Core.address,
+            [15, 2, 1]
+          );
+        // record state after
+        const auctionDetailsAfter = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const projectBalanceAfter = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const userBalanceAfter = await config.accounts.user.getBalance();
+        // verify relevant state updates
+        expect(auctionDetailsBefore.numBidsErrorRefunded).to.equal(0);
+        expect(auctionDetailsAfter.numBidsErrorRefunded).to.equal(3);
+        const refundAmount = config.basePrice.mul(3);
+        expect(projectBalanceBefore.sub(projectBalanceAfter)).to.equal(
+          refundAmount
+        );
+        expect(userBalanceAfter.sub(userBalanceBefore)).to.equal(refundAmount);
+      });
+
+      it("skip refund of a previously refunded bid", async function () {
+        const config = await _beforeEach();
+        // advance to State D w/ E1
+        await configureProjectZeroAuctionSelloutAndAdvanceToStateDWithE1(
+          config
+        );
+        // make 3 bids need refunds by further reducing max invocations
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 12);
+        // direct refund by artist for bid ID 15
+        await config.minter
+          .connect(config.accounts.artist)
+          .adminArtistDirectRefundWinners(
+            config.projectZero,
+            config.genArt721Core.address,
+            [15]
+          );
+        // record state before
+        const auctionDetailsBefore = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // expect skip when refunding already-refunded bid
+        await config.minter
+          .connect(config.accounts.artist)
+          .adminArtistDirectRefundWinners(
+            config.projectZero,
+            config.genArt721Core.address,
+            [15]
+          );
+        // record state after
+        const auctionDetailsAfter = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // verify relevant state updates
+        expect(auctionDetailsBefore.numBidsErrorRefunded).to.equal(1);
+        expect(auctionDetailsAfter.numBidsErrorRefunded).to.equal(1);
+      });
+    });
+
+    describe("winnerDirectRefund", async function () {
+      // @dev overlapping library logic with adminArtistDirectRefundWinners,
+      // only testing differences
+      it("reverts when caller is not bidder", async function () {
+        const config = await _beforeEach();
+        // advance to State D w/ E1
+        await configureProjectZeroAuctionSelloutAndAdvanceToStateDWithE1(
+          config
+        );
+        // expect revert when non-bidder calls
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user2)
+            .winnerDirectRefund(
+              config.projectZero,
+              config.genArt721Core.address,
+              [1]
+            ),
+          revertMessages.onlySenderIsBidder
+        );
+      });
+
+      it("updates state when successful", async function () {
+        const config = await _beforeEach();
+        // advance to State D w/ E1
+        await configureProjectZeroAuctionSelloutAndAdvanceToStateDWithE1(
+          config
+        );
+        // auction state before
+        const auctionDetailsBefore = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // direct refund by winner
+        await config.minter
+          .connect(config.accounts.user)
+          .winnerDirectRefund(
+            config.projectZero,
+            config.genArt721Core.address,
+            [1]
+          );
+        // auction state after
+        const auctionDetailsAfter = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // verify relevant state updates
+        expect(auctionDetailsBefore.numBidsErrorRefunded).to.equal(0);
+        expect(auctionDetailsAfter.numBidsErrorRefunded).to.equal(1);
       });
     });
   });

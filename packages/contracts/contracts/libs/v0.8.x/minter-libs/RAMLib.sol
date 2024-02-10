@@ -1051,7 +1051,7 @@ library RAMLib {
             RAMProjectConfig_: RAMProjectConfig_
         });
 
-        // main loop to mint tokens
+        // main loop to refund tokens
         for (uint256 i; i < bidIdsLength; ++i) {
             // @dev current slot index and bid index in slot not memoized due
             // to stack depth limitations
