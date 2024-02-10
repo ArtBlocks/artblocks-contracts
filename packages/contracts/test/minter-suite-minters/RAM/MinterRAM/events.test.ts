@@ -42,7 +42,7 @@ const runForEach = [
 ];
 
 runForEach.forEach((params) => {
-  describe(`${TARGET_MINTER_NAME} Views w/ core ${params.core}`, async function () {
+  describe(`${TARGET_MINTER_NAME} Events w/ core ${params.core}`, async function () {
     async function _beforeEach() {
       // load minter filter V2 fixture
       const config = await loadFixture(setupConfigWitMinterFilterV2Suite);
@@ -123,31 +123,6 @@ runForEach.forEach((params) => {
       return config;
     }
 
-    describe("minterConfigurationDetails", async function () {
-      it("gets values as expected", async function () {
-        const config = await loadFixture(_beforeEach);
-
-        // verify minter config details
-        const minterConfigDetails =
-          await config.minter.minterConfigurationDetails();
-        expect(minterConfigDetails.minAuctionDurationSeconds).to.equal(
-          MIN_AUCTION_DURATION_SECONDS
-        );
-        expect(minterConfigDetails.auctionBufferSeconds).to.equal(
-          AUCTION_BUFFER_SECONDS
-        );
-        expect(minterConfigDetails.maxAuctionExtraSeconds).to.equal(
-          MAX_AUCTION_EXTRA_SECONDS
-        );
-        expect(
-          minterConfigDetails.maxAuctionAdminEmergencyExtensionHours
-        ).to.equal(MAX_AUCTION_ADMIN_EMERGENCY_EXTENSION_HOURS);
-        expect(minterConfigDetails.adminArtistOnlyMintTimeSeconds).to.equal(
-          ADMIN_ARTIST_ONLY_MINT_TIME_SECONDS
-        );
-      });
-    });
-
-    // TODO - add remaining views tests
+    // TODO - add remaining event tests
   });
 });
