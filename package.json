@@ -12,7 +12,7 @@
     "@graphql-codegen/typescript-document-nodes": "^4.0.4",
     "@graphql-codegen/typescript-operations": "^4.1.2",
     "@graphql-codegen/typescript-urql": "^4.0.0",
-    "dotenv": "^16.4.1",
+    "dotenv": "^16.4.2",
     "husky": "^9.0.10"
   },
   "scripts": {
