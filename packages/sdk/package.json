@@ -19,7 +19,7 @@
     "lint-staged": "^15.2.2",
     "prettier": "^3.2.5",
     "tsconfig": "*",
-    "tsup": "^8.0.1",
+    "tsup": "^8.0.2",
     "typechain": "^8.3.2",
     "typescript": "^5.3.3"
   },
