@@ -12,6 +12,10 @@ import { Logger } from "@ethersproject/logger";
 import {
   configureProjectZeroAuctionAndAdvanceToStartTime,
   configureProjectZeroAuctionAndSelloutLiveAuction,
+  initializeMinBidInProjectZeroAuction,
+  configureProjectZeroAuctionSelloutAndAdvanceToStateD,
+  selloutProjectZeroAuctionAndAdvanceToStateC,
+  configureDefaultProjectZero,
 } from "./helpers";
 import { BigNumber, constants } from "ethers";
 // hide nuisance logs about event overloading
@@ -31,16 +35,15 @@ const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  // TODO uncomment all cores
-  // {
-  //   core: "GenArt721CoreV3_Explorations",
-  // },
-  // {
-  //   core: "GenArt721CoreV3_Engine",
-  // },
-  // {
-  //   core: "GenArt721CoreV3_Engine_Flex",
-  // },
+  {
+    core: "GenArt721CoreV3_Explorations",
+  },
+  {
+    core: "GenArt721CoreV3_Engine",
+  },
+  {
+    core: "GenArt721CoreV3_Engine_Flex",
+  },
 ];
 
 runForEach.forEach((params) => {
@@ -363,6 +366,322 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             config.startTime + config.defaultAuctionLengthSeconds + 1
+          );
+      });
+    });
+
+    describe("BidCreated", async function () {
+      it("is not emitted when topping up a bid", async function () {
+        const config = await loadFixture(_beforeEach);
+        await initializeMinBidInProjectZeroAuction(config);
+        // top up bid 1 to slot 1
+        const slot1Value = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          1
+        );
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .topUpBid(config.projectZero, config.genArt721Core.address, 1, 1, {
+              value: slot1Value.sub(config.basePrice),
+            })
+        ).to.not.emit(config.minter, "BidCreated");
+      });
+
+      it("is emitted when creating a new bid", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // place bid 1
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .createBid(config.projectZero, config.genArt721Core.address, 0, {
+              value: config.basePrice,
+            })
+        )
+          .to.emit(config.minter, "BidCreated")
+          .withArgs(
+            config.projectZero, // projectId
+            config.genArt721Core.address, // coreContract
+            0, // slotIndex
+            1, // bidId
+            config.accounts.user.address // bidder
+          );
+      });
+    });
+
+    describe("BidRemoved", async function () {
+      it("is emitted when a bid is removed via outbid", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSelloutLiveAuction(config);
+        // expect outbid to trigger the event
+        const minNextBid = await config.minter.getMinimumNextBid(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .createBid(
+              config.projectZero,
+              config.genArt721Core.address,
+              minNextBid.minNextBidSlotIndex,
+              {
+                value: minNextBid.minNextBidValueInWei,
+              }
+            )
+        )
+          .to.emit(config.minter, "BidRemoved")
+          .withArgs(
+            config.projectZero, // projectId
+            config.genArt721Core.address, // coreContract
+            15 // bidId of lowest, latest bid
+          );
+      });
+    });
+
+    describe("BidToppedUp", async function () {
+      it("is emitted when topping up a bid", async function () {
+        const config = await loadFixture(_beforeEach);
+        await initializeMinBidInProjectZeroAuction(config);
+        // top up bid 1 to slot 2
+        const slot2Value = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          2
+        );
+        const addedValue = slot2Value.sub(config.basePrice);
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .topUpBid(config.projectZero, config.genArt721Core.address, 1, 2, {
+              value: addedValue,
+            })
+        )
+          .to.emit(config.minter, "BidToppedUp")
+          .withArgs(
+            config.projectZero, // projectId
+            config.genArt721Core.address, // coreContract
+            1, // bidId
+            2 // newSlotIndex
+          );
+      });
+    });
+
+    describe("BidSettled", async function () {
+      it("is emitted when bid is auto-refunded", async function () {
+        const config = await loadFixture(_beforeEach);
+        await selloutProjectZeroAuctionAndAdvanceToStateC(config);
+        // enter E1 by artist reducing max invocations on core contract
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 14);
+        // expect auto-refund to trigger the event
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminAutoRefundBidsToResolveE1(
+              config.projectZero,
+              config.genArt721Core.address,
+              1
+            )
+        )
+          .to.emit(config.minter, "BidSettled")
+          .withArgs(
+            config.projectZero, // projectId
+            config.genArt721Core.address, // coreContract
+            15 // bidId
+          );
+      });
+
+      it("is emitted when a bid is direct refunded", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionSelloutAndAdvanceToStateD(config);
+        // enter E1 by artist reducing max invocations on core contract
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 14);
+        // expect direct refund to trigger the event
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminArtistDirectRefundWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              [1]
+            )
+        )
+          .to.emit(config.minter, "BidSettled")
+          .withArgs(
+            config.projectZero, // projectId
+            config.genArt721Core.address, // coreContract
+            1 // bidId
+          );
+      });
+
+      it("is emitted when a bid is settled by minting", async function () {
+        const config = await loadFixture(_beforeEach);
+        await selloutProjectZeroAuctionAndAdvanceToStateC(config);
+        // auto-mint should trigger the event
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminArtistAutoMintTokensToWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              1
+            )
+        )
+          .to.emit(config.minter, "BidSettled")
+          .withArgs(
+            config.projectZero, // projectId
+            config.genArt721Core.address, // coreContract
+            1 // bidId
+          );
+      });
+
+      it("is emitted when a bid is settled", async function () {
+        const config = await loadFixture(_beforeEach);
+        await selloutProjectZeroAuctionAndAdvanceToStateC(config);
+        // expect direct settle to trigger the event
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .collectSettlements(
+              config.projectZero,
+              config.genArt721Core.address,
+              [1]
+            )
+        )
+          .to.emit(config.minter, "BidSettled")
+          .withArgs(
+            config.projectZero, // projectId
+            config.genArt721Core.address, // coreContract
+            1 // bidId
+          );
+      });
+    });
+
+    describe("BidMinted", async function () {
+      it("is emitted when a bid is auto-minted", async function () {
+        const config = await loadFixture(_beforeEach);
+        await selloutProjectZeroAuctionAndAdvanceToStateC(config);
+        // auto-mint should trigger the event
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminArtistAutoMintTokensToWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              1
+            )
+        )
+          .to.emit(config.minter, "BidMinted")
+          .withArgs(
+            config.projectZero, // projectId
+            config.genArt721Core.address, // coreContract
+            1, // bidId
+            0 // tokenId
+          );
+      });
+
+      it("is emitted when a bid is direct minted", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionSelloutAndAdvanceToStateD(config);
+        // direct mint should trigger the event
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminArtistDirectMintTokensToWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              [9]
+            )
+        )
+          .to.emit(config.minter, "BidMinted")
+          .withArgs(
+            config.projectZero, // projectId
+            config.genArt721Core.address, // coreContract
+            9, // bidId
+            0 // tokenId
+          );
+      });
+    });
+
+    describe("BidRefunded", async function () {
+      it("is emitted when a bid is auto-refunded", async function () {
+        const config = await loadFixture(_beforeEach);
+        await selloutProjectZeroAuctionAndAdvanceToStateC(config);
+        // enter E1 by artist reducing max invocations on core contract
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 14);
+        // expect auto-refund to trigger the event
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminAutoRefundBidsToResolveE1(
+              config.projectZero,
+              config.genArt721Core.address,
+              1
+            )
+        )
+          .to.emit(config.minter, "BidRefunded")
+          .withArgs(
+            config.projectZero, // projectId
+            config.genArt721Core.address, // coreContract
+            15 // bidId
+          );
+      });
+
+      it("is emitted when a bid is direct refunded", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionSelloutAndAdvanceToStateD(config);
+        // enter E1 by artist reducing max invocations on core contract
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 14);
+        // expect direct refund to trigger the event
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminArtistDirectRefundWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              [1]
+            )
+        )
+          .to.emit(config.minter, "BidRefunded")
+          .withArgs(
+            config.projectZero, // projectId
+            config.genArt721Core.address, // coreContract
+            1 // bidId
+          );
+      });
+    });
+
+    describe("TokenPurchased", async function () {
+      it("is emitted when a token is purchased", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureDefaultProjectZero(config);
+        // advance to State D
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds + ONE_HOUR * 72,
+        ]);
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address, {
+              value: config.basePrice,
+            })
+        )
+          .to.emit(config.minter, "TokenPurchased")
+          .withArgs(
+            config.projectZero, // projectId
+            config.genArt721Core.address, // coreContract
+            0, // tokenId
+            config.accounts.user.address // purchaser
           );
       });
     });
