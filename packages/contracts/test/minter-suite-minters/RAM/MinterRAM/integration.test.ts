@@ -853,13 +853,15 @@ runForEach.forEach((params) => {
         // only balance on minter should be from single bid, unaffected by purchase
         expect(projectBalanceBefore).to.equal(config.basePrice);
         expect(projectBalanceAfter).to.equal(config.basePrice);
-        // artist balance should increase by base price * 90%
+        // artist balance should increase by base price * artistPercentage
+        const artistPercentage = params.core.includes("Engine") ? 80 : 90;
+        const adminPercentage = 10;
         expect(artistBalanceAfter.sub(artistBalanceBefore)).to.equal(
-          config.basePrice.mul(9).div(10)
+          config.basePrice.mul(artistPercentage).div(100)
         );
-        // deployer balance should increase by base price * 10%
+        // deployer balance should increase by base price * adminPercentage
         expect(deployerBalanceAfter.sub(deployerBalanceBefore)).to.equal(
-          config.basePrice.div(10)
+          config.basePrice.mul(adminPercentage).div(100)
         );
         // new token should be owned by user2
         const tokenOwner = await config.genArt721Core.ownerOf(0);

@@ -1009,11 +1009,13 @@ runForEach.forEach((params) => {
         const artistBalanceAfter = await config.accounts.artist.getBalance();
         const adminBalanceAfter = await config.accounts.deployer.getBalance();
         // validate artist & admin balances
+        const artistPercentage = params.core.includes("Engine") ? 80 : 90;
+        const adminPercentage = 10;
         expect(artistBalanceAfter.sub(artistBalanceBefore)).to.equal(
-          config.basePrice?.mul(90).div(100)
+          config.basePrice?.mul(artistPercentage).div(100)
         );
         expect(adminBalanceAfter.sub(adminBalanceBefore)).to.equal(
-          config.basePrice?.mul(10).div(100)
+          config.basePrice?.mul(adminPercentage).div(100)
         );
       });
     });
