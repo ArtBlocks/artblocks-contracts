@@ -4,12 +4,14 @@ import { expect } from "chai";
 import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
 import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
+import { Common_Events } from "../../common.events";
 import { ethers } from "hardhat";
+import { AbiCoder } from "ethers/lib/utils";
 import { revertMessages } from "../../constants";
 import { Logger } from "@ethersproject/logger";
 import {
-  initializeMinBidInProjectZeroAuction,
-  mintTokenOnDifferentMinter,
+  configureProjectZeroAuctionAndAdvanceToStartTime,
+  configureProjectZeroAuctionAndSelloutLiveAuction,
 } from "./helpers";
 import { BigNumber, constants } from "ethers";
 // hide nuisance logs about event overloading
@@ -123,6 +125,246 @@ runForEach.forEach((params) => {
       return config;
     }
 
-    // TODO - add remaining event tests
+    describe("Common Minter Events Tests", async function () {
+      await Common_Events(_beforeEach);
+    });
+
+    describe("minter-level config updates", async function () {
+      describe("constructor events for minter config init", async function () {
+        it("minter-level config constants emitted in constructor", async function () {
+          const config = await loadFixture(_beforeEach);
+          const contractFactory =
+            await ethers.getContractFactory(TARGET_MINTER_NAME);
+          const tx = await contractFactory.deploy(config.minterFilter.address);
+          const receipt = await tx.deployTransaction.wait();
+          // target event "MinAuctionDurationSecondsUpdated" is the log at index 0
+          let targetLog = receipt.logs[0];
+          // expect log 0 to be MinAuctionDurationSecondsUpdated
+          expect(targetLog.topics[0]).to.be.equal(
+            ethers.utils.keccak256(
+              ethers.utils.toUtf8Bytes(
+                "MinAuctionDurationSecondsUpdated(uint256)"
+              )
+            )
+          );
+          // expect field to be the hard-coded default value
+          const abiCoder = new AbiCoder();
+          expect(targetLog.data).to.be.equal(
+            abiCoder.encode(["uint256"], [MIN_AUCTION_DURATION_SECONDS])
+          );
+          // expect log 1 to be MinterRefundGasLimitUpdated
+          targetLog = receipt.logs[1];
+          expect(targetLog.topics[0]).to.be.equal(
+            ethers.utils.keccak256(
+              ethers.utils.toUtf8Bytes("MinterRefundGasLimitUpdated(uint24)")
+            )
+          );
+          // expect field to be the hard-coded default value
+          expect(targetLog.data).to.be.equal(
+            abiCoder.encode(["uint32"], [30_000])
+          );
+          // expect log 2 to be AuctionBufferTimeParamsUpdated
+          targetLog = receipt.logs[2];
+          expect(targetLog.topics[0]).to.be.equal(
+            ethers.utils.keccak256(
+              ethers.utils.toUtf8Bytes(
+                "AuctionBufferTimeParamsUpdated(uint256,uint256)"
+              )
+            )
+          );
+          // expect field to be the hard-coded default value
+          expect(targetLog.data).to.be.equal(
+            abiCoder.encode(
+              ["uint256", "uint256"],
+              [AUCTION_BUFFER_SECONDS, MAX_AUCTION_EXTRA_SECONDS]
+            )
+          );
+          // expect log 3 to be NumSlotsUpdated
+          targetLog = receipt.logs[3];
+          expect(targetLog.topics[0]).to.be.equal(
+            ethers.utils.keccak256(
+              ethers.utils.toUtf8Bytes("NumSlotsUpdated(uint256)")
+            )
+          );
+          // expect field to be the hard-coded default value
+          expect(targetLog.data).to.be.equal(
+            abiCoder.encode(["uint256"], [512])
+          );
+        });
+      });
+    });
+
+    describe("ContractConfigUpdated", async function () {
+      it("is emitted when the contract config is updated", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .setContractConfig(config.genArt721Core.address, false, true)
+        )
+          .to.emit(config.minter, "ContractConfigUpdated")
+          .withArgs(config.genArt721Core.address, true, false, true);
+      });
+    });
+
+    describe("AuctionConfigUpdated", async function () {
+      it("is emitted when setAuctionDetails is called", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.minter.connect(config.accounts.artist).setAuctionDetails(
+            config.projectZero, // projectId
+            config.genArt721Core.address, // coreContract
+            config.startTime, // timestampStart
+            config.startTime + config.defaultAuctionLengthSeconds, // timestampEnd
+            config.basePrice, // basePrice
+            true, // allowExtraTime
+            true // adminArtistOnlyMintPeriodIfSellout
+          )
+        )
+          .to.emit(config.minter, "AuctionConfigUpdated")
+          .withArgs(
+            config.projectZero, // projectId
+            config.genArt721Core.address, // coreContract
+            config.startTime, // timestampStart
+            config.startTime + config.defaultAuctionLengthSeconds, // timestampEnd
+            config.basePrice, // basePrice
+            true, // allowExtraTime
+            true, // adminArtistOnlyMintPeriodIfSellout
+            15 // numTokensInAuction
+          );
+      });
+    });
+
+    describe("NumTokensInAuctionUpdated", async function () {
+      it("is emitted when manually limit project max invocations", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(
+              config.projectZero, // projectId
+              config.genArt721Core.address, // coreContract
+              10 // numTokensInAuction
+            )
+        )
+          .to.emit(config.minter, "NumTokensInAuctionUpdated")
+          .withArgs(config.projectZero, config.genArt721Core.address, 10);
+      });
+
+      it("is emitted when setAuctionDetails is called", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.minter.connect(config.accounts.artist).setAuctionDetails(
+            config.projectZero, // projectId
+            config.genArt721Core.address, // coreContract
+            config.startTime, // timestampStart
+            config.startTime + config.defaultAuctionLengthSeconds, // timestampEnd
+            config.basePrice, // basePrice
+            true, // allowExtraTime
+            true // adminArtistOnlyMintPeriodIfSellout
+          )
+        )
+          .to.emit(config.minter, "NumTokensInAuctionUpdated")
+          .withArgs(config.projectZero, config.genArt721Core.address, 15);
+      });
+
+      it("is emitted when first bid is placed in auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // artist reduces max invocations on core contract
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 10);
+        // expect initial bid to catch this update
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .createBid(config.projectZero, config.genArt721Core.address, 0, {
+              value: config.basePrice,
+            })
+        )
+          .to.emit(config.minter, "NumTokensInAuctionUpdated")
+          .withArgs(config.projectZero, config.genArt721Core.address, 10);
+      });
+    });
+
+    describe("AuctionTimestampEndUpdated", async function () {
+      it("is emitted when admin adds emergency auction hours", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // admin adds 1 hour to auction
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminAddEmergencyAuctionHours(
+              config.projectZero,
+              config.genArt721Core.address,
+              1
+            )
+        )
+          .to.emit(config.minter, "AuctionTimestampEndUpdated")
+          .withArgs(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime + config.defaultAuctionLengthSeconds + ONE_HOUR
+          );
+      });
+
+      it("is emitted when artist reduces auction length", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // artist reduces auction length by 1 hour
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .reduceAuctionLength(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime + config.defaultAuctionLengthSeconds - ONE_MINUTE
+            )
+        )
+          .to.emit(config.minter, "AuctionTimestampEndUpdated")
+          .withArgs(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime + config.defaultAuctionLengthSeconds - ONE_MINUTE
+          );
+      });
+
+      it("is emitted when sellout bid placed in auction buffer time", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSelloutLiveAuction(config);
+        // advance to auction buffer time
+        await ethers.provider.send("evm_mine", [
+          config.startTime +
+            config.defaultAuctionLengthSeconds -
+            AUCTION_BUFFER_SECONDS,
+        ]);
+        // get proper bid value
+        const minNextBid = await config.minter.getMinimumNextBid(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // expect initial bid to trigger the event
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .createBid(
+              config.projectZero,
+              config.genArt721Core.address,
+              minNextBid.minNextBidSlotIndex,
+              {
+                value: minNextBid.minNextBidValueInWei,
+              }
+            )
+        )
+          .to.emit(config.minter, "AuctionTimestampEndUpdated")
+          .withArgs(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime + config.defaultAuctionLengthSeconds + 1
+          );
+      });
+    });
   });
 });
