@@ -1472,6 +1472,30 @@ runForEach.forEach((params) => {
           auctionDetailsAfter.numBidsMintedTokens
         );
       });
+
+      it("does not settle bid when bid was previously settled", async function () {
+        const config = await _beforeEach();
+        // sellout live auction
+        await selloutProjectZeroAuctionAndAdvanceToStateC(config);
+        // user settles bid 1
+        await config.minter
+          .connect(config.accounts.user)
+          .collectSettlements(
+            config.projectZero,
+            config.genArt721Core.address,
+            [1]
+          );
+        // expect no settlement when auto-minting bid 1
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminArtistAutoMintTokensToWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              1
+            )
+        ).to.not.emit(config.minter, "BidSettled");
+      });
     });
 
     describe("adminArtistDirectMintTokensToWinners", async function () {
@@ -2151,6 +2175,34 @@ runForEach.forEach((params) => {
         );
         expect(auctionDetailsBefore.numBidsErrorRefunded).to.equal(1);
         expect(auctionDetailsAfter.numBidsErrorRefunded).to.equal(3);
+      });
+
+      it("does not settle bid when bid was previously settled", async function () {
+        const config = await _beforeEach();
+        // sellout live auction
+        await selloutProjectZeroAuctionAndAdvanceToStateC(config);
+        // enter E1 state by reducing max invocations by 1
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 14);
+        // user settles bid 1
+        await config.minter
+          .connect(config.accounts.user)
+          .collectSettlements(
+            config.projectZero,
+            config.genArt721Core.address,
+            [15]
+          );
+        // expect no settlement when auto-refunded bid 15
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminAutoRefundBidsToResolveE1(
+              config.projectZero,
+              config.genArt721Core.address,
+              1
+            )
+        ).to.not.emit(config.minter, "BidSettled");
       });
     });
 

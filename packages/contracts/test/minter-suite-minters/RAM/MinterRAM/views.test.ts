@@ -367,14 +367,34 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("getMaxHasBeenInvoked", async function () {
+    describe("projectMaxHasBeenInvoked", async function () {
       // @dev logic is tested in maxInvocationsProjectConfig, so no additional
-      // tests are needed here
+      // tests are needed here, other than making sure the function calls unerlying lib
+      it("calls underlying lib function", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // verify view function works as intended
+        const maxHasBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(maxHasBeenInvoked).to.equal(false);
+      });
     });
 
     describe("projectMaxInvocations", async function () {
       // @dev logic is tested in maxInvocationsProjectConfig, so no additional
-      // tests are needed here
+      // tests are needed here, other than making sure the function calls unerlying lib
+      it("calls underlying lib function", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // verify view function works as intended
+        const maxInvocations = await config.minter.projectMaxInvocations(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(maxInvocations).to.equal(15);
+      });
     });
 
     describe("isEngineView", async function () {

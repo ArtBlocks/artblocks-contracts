@@ -530,9 +530,8 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
 
     /**
      * @notice Collects settlement for project `projectId` on core contract
-     * `coreContract` for all bids in `slotIndices` at `bidIndicesInSlot`,
+     * `coreContract` for all bids in `bidIds`,
      * which must be aligned by index.
-     * Reverts if `slotIndices` and `bid` indices are not the same length.
      * Reverts if msg.sender is not the bidder for all bids.
      * Reverts if project is not in a post-auction state.
      * Reverts if one or more bids has already been settled.
