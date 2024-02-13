@@ -8,8 +8,12 @@ import { ethers } from "hardhat";
 import { revertMessages } from "../../constants";
 import { Logger } from "@ethersproject/logger";
 import {
+  configureDefaultProjectZero,
   initializeMinBidInProjectZeroAuction,
-  mintTokenOnDifferentMinter,
+  configureProjectZeroAuctionAndSelloutLiveAuction,
+  selloutProjectZeroAuctionAndAdvanceToStateC,
+  initializeMinBidInProjectZeroAuctionAndAdvanceToEnd,
+  configureProjectZeroAuctionAndAdvanceToStartTime,
 } from "./helpers";
 import { BigNumber, constants } from "ethers";
 // hide nuisance logs about event overloading
@@ -148,6 +152,554 @@ runForEach.forEach((params) => {
       });
     });
 
-    // TODO - add remaining views tests
+    describe("getIsErrorE1", async function () {
+      // TODO: write more tests for this after audit recommendations
+    });
+
+    describe("contractConfigurationDetails", async function () {
+      it("gets values as expected", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        // verify unconfigured state
+        let contractConfigDetails =
+          await config.minter.contractConfigurationDetails(
+            config.genArt721Core.address
+          );
+        expect(contractConfigDetails.imposeConstraints).to.equal(false);
+        expect(contractConfigDetails.requireAdminArtistOnlyMintPeriod).to.equal(
+          false
+        );
+        expect(
+          contractConfigDetails.requireNoAdminArtistOnlyMintPeriod
+        ).to.equal(false);
+        // configure values and verify
+        await config.minter
+          .connect(config.accounts.deployer)
+          .setContractConfig(config.genArt721Core.address, true, false);
+        contractConfigDetails =
+          await config.minter.contractConfigurationDetails(
+            config.genArt721Core.address
+          );
+        expect(contractConfigDetails.imposeConstraints).to.equal(true);
+        expect(contractConfigDetails.requireAdminArtistOnlyMintPeriod).to.equal(
+          true
+        );
+        expect(
+          contractConfigDetails.requireNoAdminArtistOnlyMintPeriod
+        ).to.equal(false);
+      });
+    });
+
+    describe("maxInvocationsProjectConfig", async function () {
+      it("gets values as expected, unconfigured", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        // verify unconfigured state to equal default solidity initial values
+        let maxInvocationsProjectConfig =
+          await config.minter.maxInvocationsProjectConfig(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(maxInvocationsProjectConfig.maxInvocations).to.equal(0);
+        expect(maxInvocationsProjectConfig.maxHasBeenInvoked).to.equal(false);
+      });
+
+      it("gets values as expected, configured directly", async function () {
+        const config = await loadFixture(_beforeEach);
+        // manually limit max invocations on minter
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            config.projectZero,
+            config.genArt721Core.address,
+            5
+          );
+        // verify state
+        let maxInvocationsProjectConfig =
+          await config.minter.maxInvocationsProjectConfig(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(maxInvocationsProjectConfig.maxInvocations).to.equal(5);
+        expect(maxInvocationsProjectConfig.maxHasBeenInvoked).to.equal(false);
+      });
+
+      it("gets values as expected, configured auction (state A)", async function () {
+        const config = await loadFixture(_beforeEach);
+        // initialize auction
+        await configureDefaultProjectZero(config);
+        // verify state
+        let maxInvocationsProjectConfig =
+          await config.minter.maxInvocationsProjectConfig(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(maxInvocationsProjectConfig.maxInvocations).to.equal(15);
+        expect(maxInvocationsProjectConfig.maxHasBeenInvoked).to.equal(false);
+      });
+
+      it("gets values as expected, configured auction, non-sellout (state B)", async function () {
+        const config = await loadFixture(_beforeEach);
+        // sellout auction
+        await initializeMinBidInProjectZeroAuction(config);
+        // verify state
+        let maxInvocationsProjectConfig =
+          await config.minter.maxInvocationsProjectConfig(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(maxInvocationsProjectConfig.maxInvocations).to.equal(15);
+        expect(maxInvocationsProjectConfig.maxHasBeenInvoked).to.equal(false);
+      });
+
+      it("gets values as expected, configured auction, sellout (state B)", async function () {
+        const config = await loadFixture(_beforeEach);
+        // sellout auction
+        await configureProjectZeroAuctionAndSelloutLiveAuction(config);
+        // verify state
+        let maxInvocationsProjectConfig =
+          await config.minter.maxInvocationsProjectConfig(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(maxInvocationsProjectConfig.maxInvocations).to.equal(15);
+        expect(maxInvocationsProjectConfig.maxHasBeenInvoked).to.equal(true);
+      });
+
+      it("gets values as expected, configured auction, sellout, state C", async function () {
+        const config = await loadFixture(_beforeEach);
+        // sellout auction and advance to state C
+        await selloutProjectZeroAuctionAndAdvanceToStateC(config);
+        // verify state
+        let maxInvocationsProjectConfig =
+          await config.minter.maxInvocationsProjectConfig(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(maxInvocationsProjectConfig.maxInvocations).to.equal(15);
+        expect(maxInvocationsProjectConfig.maxHasBeenInvoked).to.equal(true);
+      });
+
+      it("gets values as expected, configured auction, non-sellout, state D", async function () {
+        const config = await loadFixture(_beforeEach);
+        // sellout auction and advance to state D
+        await initializeMinBidInProjectZeroAuction(config);
+        // advance time to end of auction + 72 hours, entering State D
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds + ONE_HOUR * 72,
+        ]);
+        // verify state w/invocations available
+        let maxInvocationsProjectConfig =
+          await config.minter.maxInvocationsProjectConfig(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(maxInvocationsProjectConfig.maxInvocations).to.equal(15);
+        expect(maxInvocationsProjectConfig.maxHasBeenInvoked).to.equal(false);
+        // reduce max invocations on project to 1
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 1);
+        // verify state w/invocations unavailable
+        maxInvocationsProjectConfig =
+          await config.minter.maxInvocationsProjectConfig(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // max invocations is stale
+        expect(maxInvocationsProjectConfig.maxInvocations).to.equal(15);
+        // but hasMaxBeenInvoked is not stale
+        expect(maxInvocationsProjectConfig.maxHasBeenInvoked).to.equal(true);
+      });
+    });
+
+    describe("getAuctionDetails", async function () {
+      it("gets values as expected, unconfigured", async function () {
+        const config = await loadFixture(_beforeEach);
+        // verify unconfigured state
+        let auctionDetails = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // all initial values
+        expect(auctionDetails.auctionTimestampStart).to.equal(0);
+        expect(auctionDetails.auctionTimestampEnd).to.equal(0);
+        expect(auctionDetails.basePrice).to.equal(0);
+        expect(auctionDetails.numTokensInAuction).to.equal(0);
+        expect(auctionDetails.numBids).to.equal(0);
+        expect(auctionDetails.numBidsMintedTokens).to.equal(0);
+        expect(auctionDetails.numBidsErrorRefunded).to.equal(0);
+        expect(auctionDetails.minBidSlotIndex).to.equal(0);
+        expect(auctionDetails.allowExtraTime).to.equal(false);
+        expect(auctionDetails.adminArtistOnlyMintPeriodIfSellout).to.equal(
+          false
+        );
+        expect(auctionDetails.revenuesCollected).to.equal(false);
+        expect(auctionDetails.projectMinterState).to.equal(0); // State A
+      });
+
+      it("gets values as expected, configured and live sellout", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSelloutLiveAuction(config);
+        // verify configured state
+        let auctionDetails = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // all initial values
+        expect(
+          parseInt(auctionDetails.auctionTimestampStart, 10)
+        ).to.be.greaterThan(0);
+        expect(
+          parseInt(auctionDetails.auctionTimestampEnd, 10)
+        ).to.be.greaterThan(0);
+        expect(auctionDetails.basePrice).to.equal(config.basePrice);
+        expect(auctionDetails.numTokensInAuction).to.equal(15);
+        expect(auctionDetails.numBids).to.equal(15);
+        expect(auctionDetails.numBidsMintedTokens).to.equal(0);
+        expect(auctionDetails.numBidsErrorRefunded).to.equal(0);
+        expect(auctionDetails.minBidSlotIndex).to.equal(0);
+        expect(auctionDetails.allowExtraTime).to.equal(true);
+        expect(auctionDetails.adminArtistOnlyMintPeriodIfSellout).to.equal(
+          true
+        );
+        expect(auctionDetails.revenuesCollected).to.equal(false);
+        expect(auctionDetails.projectMinterState).to.equal(1); // State B
+      });
+    });
+
+    describe("getMaxHasBeenInvoked", async function () {
+      // @dev logic is tested in maxInvocationsProjectConfig, so no additional
+      // tests are needed here
+    });
+
+    describe("projectMaxInvocations", async function () {
+      // @dev logic is tested in maxInvocationsProjectConfig, so no additional
+      // tests are needed here
+    });
+
+    describe("isEngineView", async function () {
+      // @dev logic  for SplitFundsLib is tested elsewhere, so minimal calls are
+      // required here to ensure the minter routes calls appropriately to the lib
+      it("returns appropriate value when not cached", async function () {
+        const config = await loadFixture(_beforeEach);
+        const isEngineTargetValue = await params.core.includes("Engine");
+        const isEngine = await config.minter.isEngineView(
+          config.genArt721Core.address
+        );
+        expect(isEngine).to.equal(isEngineTargetValue);
+      });
+
+      it("returns appropriate value when cached", async function () {
+        const config = await loadFixture(_beforeEach);
+        // induce cache by splitting funds
+        await initializeMinBidInProjectZeroAuctionAndAdvanceToEnd(config);
+        // advance to auction end time + 72 hours
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds + ONE_HOUR * 72,
+        ]);
+        // purchase to induce cache
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.basePrice,
+          });
+        // verify cached value
+        const isEngineTargetValue = await params.core.includes("Engine");
+        const isEngine = await config.minter.isEngineView(
+          config.genArt721Core.address
+        );
+        expect(isEngine).to.equal(isEngineTargetValue);
+      });
+    });
+
+    describe("getPriceInfo", async function () {
+      it("returns appropriate value when unconfigured", async function () {
+        const config = await loadFixture(_beforeEach);
+        // verify unconfigured state
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.isConfigured).to.equal(false);
+        expect(priceInfo.tokenPriceInWei).to.equal(0);
+        expect(priceInfo.currencySymbol).to.equal("ETH");
+        expect(priceInfo.currencyAddress).to.equal(constants.AddressZero);
+      });
+
+      it("returns appropriate value when configured, State A", async function () {
+        const config = await loadFixture(_beforeEach);
+        // initialize auction
+        await configureDefaultProjectZero(config);
+        // verify state
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.isConfigured).to.equal(true);
+        expect(priceInfo.tokenPriceInWei).to.equal(config.basePrice);
+        expect(priceInfo.currencySymbol).to.equal("ETH");
+        expect(priceInfo.currencyAddress).to.equal(constants.AddressZero);
+      });
+
+      it("returns appropriate value when configured, State B, non-sellout", async function () {
+        const config = await loadFixture(_beforeEach);
+        // sellout auction
+        await initializeMinBidInProjectZeroAuction(config);
+        // verify state, non-sellout
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.isConfigured).to.equal(true);
+        expect(priceInfo.tokenPriceInWei).to.equal(config.basePrice);
+        expect(priceInfo.currencySymbol).to.equal("ETH");
+        expect(priceInfo.currencyAddress).to.equal(constants.AddressZero);
+      });
+
+      it("returns appropriate value when configured, State B, sellout", async function () {
+        const config = await loadFixture(_beforeEach);
+        // sellout auction
+        await configureProjectZeroAuctionAndSelloutLiveAuction(config);
+        // verify state, sellout
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.isConfigured).to.equal(true);
+        // price should be next minimum bid
+        const targetPrice = (
+          await config.minter.getMinimumNextBid(
+            config.projectZero,
+            config.genArt721Core.address
+          )
+        ).minNextBidValueInWei;
+        expect(priceInfo.tokenPriceInWei).to.equal(targetPrice);
+        expect(priceInfo.currencySymbol).to.equal("ETH");
+        expect(priceInfo.currencyAddress).to.equal(constants.AddressZero);
+      });
+
+      it("returns appropriate value when sellout, post-auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // sellout auction and advance to state C
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // sellout auction above base price
+        const slot8Price = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          8
+        );
+        // place 15 bids to sellout
+        for (let i = 0; i < 15; i++) {
+          await config.minter
+            .connect(config.accounts.user)
+            .createBid(config.projectZero, config.genArt721Core.address, 8, {
+              value: slot8Price,
+            });
+        }
+        // advance to post-auction
+        // @dev one extra second to get to state C because view functions don't tick hardhat's clock
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds + 1,
+        ]);
+        // verify state, sellout
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.isConfigured).to.equal(true);
+        // price should be sellout price, which was slot 8 price
+        expect(priceInfo.tokenPriceInWei).to.equal(slot8Price);
+        expect(priceInfo.currencySymbol).to.equal("ETH");
+        expect(priceInfo.currencyAddress).to.equal(constants.AddressZero);
+      });
+
+      it("returns appropriate value when not sellout, post-auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // sellout auction and advance to state C
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // sellout auction above base price
+        const slot8Price = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          8
+        );
+        // place 14 bids to not sellout
+        for (let i = 0; i < 14; i++) {
+          await config.minter
+            .connect(config.accounts.user)
+            .createBid(config.projectZero, config.genArt721Core.address, 8, {
+              value: slot8Price,
+            });
+        }
+        // advance to post-auction
+        // @dev one extra second to get to state C because view functions don't tick hardhat's clock
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds + 1,
+        ]);
+        // verify state, sellout
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.isConfigured).to.equal(true);
+        expect(priceInfo.tokenPriceInWei).to.equal(config.basePrice);
+        expect(priceInfo.currencySymbol).to.equal("ETH");
+        expect(priceInfo.currencyAddress).to.equal(constants.AddressZero);
+      });
+    });
+
+    describe("getMinimumNextBid", async function () {
+      it("reverts when unconfigured", async function () {
+        const config = await loadFixture(_beforeEach);
+        // verify unconfigured reverts
+        await expectRevert(
+          config.minter.getMinimumNextBid(
+            config.projectZero,
+            config.genArt721Core.address
+          ),
+          revertMessages.auctionNotConfigured
+        );
+      });
+
+      it("returns appropriate value when configured, State A", async function () {
+        const config = await loadFixture(_beforeEach);
+        // initialize auction
+        await configureDefaultProjectZero(config);
+        // verify state
+        const minNextBid = await config.minter.getMinimumNextBid(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(minNextBid.minNextBidSlotIndex).to.equal(0);
+        expect(minNextBid.minNextBidValueInWei).to.equal(config.basePrice);
+      });
+
+      it("returns appropriate value when configured, State B, non-sellout", async function () {
+        const config = await loadFixture(_beforeEach);
+        // sellout auction
+        await initializeMinBidInProjectZeroAuction(config);
+        // verify state, non-sellout
+        const minNextBid = await config.minter.getMinimumNextBid(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(minNextBid.minNextBidSlotIndex).to.equal(0);
+        expect(minNextBid.minNextBidValueInWei).to.equal(config.basePrice);
+      });
+
+      it("returns appropriate value when configured, State B, sellout", async function () {
+        const config = await loadFixture(_beforeEach);
+        // sellout auction
+        await configureProjectZeroAuctionAndSelloutLiveAuction(config);
+        // verify state, sellout
+        const minNextBid = await config.minter.getMinimumNextBid(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // @dev must be sufficiently percent higher than slot 0, so slot 2 is the answer
+        expect(minNextBid.minNextBidSlotIndex).to.equal(2);
+        expect(minNextBid.minNextBidValueInWei).to.equal(
+          await config.minter.slotIndexToBidValue(
+            config.projectZero,
+            config.genArt721Core.address,
+            2
+          )
+        );
+      });
+
+      it("reverts when sellout, post-auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // sellout auction and advance to state C
+        await selloutProjectZeroAuctionAndAdvanceToStateC(config);
+        // advance another second to tick clock when testing view functions
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds + 1,
+        ]);
+        // expect revert when sellout, post-auction
+        await expectRevert(
+          config.minter.getMinimumNextBid(
+            config.projectZero,
+            config.genArt721Core.address
+          ),
+          revertMessages.auctionEndedSellout
+        );
+      });
+
+      it("returns appropriate value when not sellout, post-auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // sellout auction and advance to state C
+        await initializeMinBidInProjectZeroAuctionAndAdvanceToEnd(config);
+        // advance another second to tick clock when testing view functions
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds + 1,
+        ]);
+        // verify state, not sellout
+        const minNextBid = await config.minter.getMinimumNextBid(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(minNextBid.minNextBidSlotIndex).to.equal(0);
+        expect(minNextBid.minNextBidValueInWei).to.equal(config.basePrice);
+      });
+    });
+
+    describe("getMinBidValue", async function () {
+      it("reverts when no bid exists", async function () {
+        const config = await loadFixture(_beforeEach);
+        // verify revert when no bid exists, unconfigured
+        await expectRevert(
+          config.minter.getMinBidValue(
+            config.projectZero,
+            config.genArt721Core.address
+          ),
+          revertMessages.noBidsInAuction
+        );
+        // still reverts if auction is configured and live
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        await expectRevert(
+          config.minter.getMinBidValue(
+            config.projectZero,
+            config.genArt721Core.address
+          ),
+          revertMessages.noBidsInAuction
+        );
+      });
+
+      it("returns minimum bid value when bid exists", async function () {
+        const config = await loadFixture(_beforeEach);
+        // initialize auction
+        await initializeMinBidInProjectZeroAuction(config);
+        // verify state
+        const minBidValue = await config.minter.getMinBidValue(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(minBidValue).to.equal(config.basePrice);
+      });
+
+      it("returns greater than base price if min bid is above base price", async function () {
+        const config = await loadFixture(_beforeEach);
+        // sellout auction
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // place a bid above base price
+        const slot8Price = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          8
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 8, {
+            value: slot8Price,
+          });
+        // verify state
+        const minBidValue = await config.minter.getMinBidValue(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(minBidValue).to.equal(slot8Price);
+      });
+    });
   });
 });

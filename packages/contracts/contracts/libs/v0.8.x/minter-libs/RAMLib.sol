@@ -1693,9 +1693,8 @@ library RAMLib {
             projectId: projectId,
             coreContract: coreContract
         });
-        if (RAMProjectConfig_.numBids == 0) {
-            revert("No bids in auction");
-        }
+        // revert if no bids in auction
+        require(RAMProjectConfig_.numBids > 0, "No bids in auction");
         // get min slot with a bid
         minSlotIndex = RAMProjectConfig_.minBidSlotIndex;
         // get the tail bid ID for the min slot
@@ -2129,7 +2128,16 @@ library RAMLib {
                 projectId: projectId,
                 coreContract: coreContract
             });
-            maxHasBeenInvoked = RAMProjectConfig_.numTokensInAuction == 0;
+            if (RAMProjectConfig_.timestampStart > 0) {
+                // if auction configured, look at num tokens in auction
+                maxHasBeenInvoked = RAMProjectConfig_.numTokensInAuction == 0;
+            } else {
+                // if auction not configured, defer to max invocation lib
+                maxHasBeenInvoked = MaxInvocationsLib.getMaxHasBeenInvoked({
+                    projectId: projectId,
+                    coreContract: coreContract
+                });
+            }
         } else if (projectMinterState == ProjectMinterStates.B) {
             // live auction, set to true if num bids == num tokens in auction
             RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({

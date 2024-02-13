@@ -131,4 +131,7 @@ export const revertMessages = {
   noExceedMaxInvocations: "Must not exceed max invocations",
   onlySenderIsBidder: "Only sender is bidder",
   tooManyBidsToRefund: "bids to refund gt available qty",
+  auctionNotConfigured: "auction not configured",
+  auctionEndedSellout: "auction ended, sellout",
+  noBidsInAuction: "No bids in auction",
 };
