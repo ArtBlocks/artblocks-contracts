@@ -1159,7 +1159,6 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @notice Convenience view function that returns the bid value associated
      * with a given slot index for the specified project's auction, in Wei.
      * Reverts if the slot index is out of range (greater than 511).
-     * Reverts if the project's auction is not configured.
      * @param projectId Project ID to get the bid value for
      * @param coreContract Core contract address for the given project
      * @param slotIndex Slot index to get the bid value for

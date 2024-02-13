@@ -33,16 +33,15 @@ const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  // TODO uncomment all cores
-  // {
-  //   core: "GenArt721CoreV3_Explorations",
-  // },
-  // {
-  //   core: "GenArt721CoreV3_Engine",
-  // },
-  // {
-  //   core: "GenArt721CoreV3_Engine_Flex",
-  // },
+  {
+    core: "GenArt721CoreV3_Explorations",
+  },
+  {
+    core: "GenArt721CoreV3_Engine",
+  },
+  {
+    core: "GenArt721CoreV3_Engine_Flex",
+  },
 ];
 
 runForEach.forEach((params) => {
@@ -699,6 +698,105 @@ runForEach.forEach((params) => {
           config.genArt721Core.address
         );
         expect(minBidValue).to.equal(slot8Price);
+      });
+    });
+
+    describe("slotIndexToBidValue", async function () {
+      it("reverts if slot index is out of range", async function () {
+        const config = await loadFixture(_beforeEach);
+        // verify revert when slot index is out of range
+        await expectRevert(
+          config.minter.slotIndexToBidValue(
+            config.projectZero,
+            config.genArt721Core.address,
+            512
+          ),
+          revertMessages.slotIndexOutOfRange
+        );
+      });
+
+      it("does not revert if project is unconfigured", async function () {
+        const config = await loadFixture(_beforeEach);
+        // verify no revert when project is unconfigured
+        const slotValue = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          0
+        );
+        expect(slotValue).to.equal(0);
+      });
+
+      it("returns appropriate value when project is configured", async function () {
+        const config = await loadFixture(_beforeEach);
+        // initialize auction
+        await configureDefaultProjectZero(config);
+        // verify state
+        let slotValue = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          0
+        );
+        expect(slotValue).to.equal(config.basePrice);
+        // test slot value 64 has completed a double
+        slotValue = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          64
+        );
+        expect(slotValue).to.equal(config.basePrice.mul(2));
+      });
+    });
+
+    describe("getProjectBalance", async function () {
+      it("returns appropriate value when project is unconfigured", async function () {
+        const config = await loadFixture(_beforeEach);
+        // verify state
+        const projectBalance = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(projectBalance).to.equal(0);
+      });
+
+      it("returns appropriate value when project is configured", async function () {
+        const config = await loadFixture(_beforeEach);
+        // initialize auction
+        await configureDefaultProjectZero(config);
+        // verify state
+        const projectBalance = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(projectBalance).to.equal(0);
+      });
+
+      it("returns appropriate value when project is configured, sellout", async function () {
+        const config = await loadFixture(_beforeEach);
+        // sellout auction
+        await configureProjectZeroAuctionAndSelloutLiveAuction(config);
+        // verify state
+        const projectBalance = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(projectBalance).to.equal(config.basePrice?.mul(15));
+      });
+
+      // @dev the above tests satisfy that the view function is working as intended.
+      // state updates due to other actions are tested with the function(s) tests, not here.
+    });
+
+    describe("syncProjectMaxInvocationsToCore", async function () {
+      it("reverts as not supported", async function () {
+        const config = await loadFixture(_beforeEach);
+        // verify revert
+        await expectRevert(
+          config.minter.syncProjectMaxInvocationsToCore(
+            config.projectZero,
+            config.genArt721Core.address
+          ),
+          revertMessages.actionNotSupported
+        );
       });
     });
   });
