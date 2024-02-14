@@ -1,9 +1,8 @@
 # Deployments Log
 
-
 ## Mainnet
 
-*note, details extracted from https://github.com/ArtBlocks/artblocks-contracts/pull/415*
+_note, details extracted from https://github.com/ArtBlocks/artblocks-contracts/pull/415_
 
 Deployment params:
 
@@ -48,15 +47,16 @@ https://etherscan.io/address/0x4610dB225D7305e31690658D674E7D37eB244f7e#code
 **MinterSetPriceV4:**
 https://etherscan.io/address/0x090860b07ae1413B9A08339F54cb621B392bB73d#code
 
+**Updated MinterSetPriceERC20V4:** https://etherscan.io/address/0x44fa83C329bAE521E3226c3072F9CC775956a7E7#code
+
 **MinterSetPriceERC20V4:**
 https://etherscan.io/address/0x07619C21fBf6A9CB10ce0B3B34934ba3b995C9Fb#code
-
 
 ## Goerli (artist-staging targetted)
 
 ### Upload 0
 
-*note, details extracted from https://github.com/ArtBlocks/artblocks-contracts/pull/415*
+_note, details extracted from https://github.com/ArtBlocks/artblocks-contracts/pull/415_
 
 Deployment params:
 
@@ -124,3 +124,22 @@ Date: 2023-02-22T23:00:34.949Z
 
 ---
 
+# Minter Deployment
+
+Date: 2024-01-19T18:45:36.292Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/collaborations/Art-Blocks-x-Bright-Moments/minter-deploy-config-01.mainnet.ts`
+
+**MinterSetPriceERC20V4:** https://etherscan.io/address/0x44fa83C329bAE521E3226c3072F9CC775956a7E7#code
+
+**Associated core contract:** 0x145789247973C5D612bF121e9E4Eef84b63Eb707
+
+**Associated minter filter:** 0x6E522449C1642E7cB0B12a2889CcBf79b51C69f8
+
+**Deployment Args:** 0x145789247973C5D612bF121e9E4Eef84b63Eb707,0x6E522449C1642E7cB0B12a2889CcBf79b51C69f8
+
+---

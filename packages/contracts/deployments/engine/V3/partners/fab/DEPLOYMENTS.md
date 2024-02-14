@@ -120,3 +120,24 @@ Date: 2023-05-12T22:28:38.681Z
 
 ---
 
+
+# Minter Deployment
+
+Date: 2024-01-19T16:29:37.532Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/fab/minter-deploy-config-01.mainnet.ts`
+
+**MinterSetPriceERC20V4:** https://etherscan.io/address/0x06529bB168f5505e28f53C3628B5eCFfbD02AA71#code
+
+**Associated core contract:** 0xC443588d22Fb0f8dAB928e52014CC23d2Df70743
+
+**Associated minter filter:** 0xC2f71150f845f830BC61E5B61427A79e9D4FBf6B
+
+**Deployment Args:** 0xC443588d22Fb0f8dAB928e52014CC23d2Df70743,0xC2f71150f845f830BC61E5B61427A79e9D4FBf6B
+
+---
+

@@ -8,6 +8,8 @@ https://etherscan.io/address/0x64780CE53f6e966E18a22Af13a2F97369580Ec11#code
 **MinterFilterV0**:
 https://etherscan.io/address/0x267313E435863f15285CF0f8572068aAA62fC40d#code
 
+**Updated MinterSetPriceERC20V1:** https://etherscan.io/address/0x2867baa9c2198977c942a439d4284d089dca74d6#code
+
 **MinterSetPriceERC20V1**:
 https://etherscan.io/address/0x7f13A57D138586dEBb254847D5358ADB57810C85#code
 
@@ -23,6 +25,7 @@ https://etherscan.io/address/0x12b7c521a4e4b988cE4CeB241872D620815E3B48#code
 `0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283` set as minter owner, whitelisted on core contract, and admin of core contract.
 
 ## Goerli
+
 ### Artist Staging
 
 **GenArt721CoreV2_ArtBlocksXPace**:
@@ -46,7 +49,8 @@ https://goerli.etherscan.io/address/0xf4015573db8f9E80206296e53a32E20B87Ab1578#c
 `0x2246475beddf9333b6a6D9217194576E7617Afd1` set as minter owner, whitelisted on core contract, and admin of core contract. (contact Ryley if you need to change this)
 
 ### Dev
->Goerli Dev contract deployed because this is the first V2_PRTNR contract, and additional testing may be required prior to Artist Staging.
+
+> Goerli Dev contract deployed because this is the first V2_PRTNR contract, and additional testing may be required prior to Artist Staging.
 
 **GenArt721CoreV2_ArtBlocksXPace**:
 https://goerli.etherscan.io/address/0xBA86aCdc62331a14DFc215729AEf69E7C87bef87#code
@@ -69,6 +73,7 @@ https://goerli.etherscan.io/address/0xe25D9B8F5Cd8E8E8ccb68F26fc70E6AD4e0C7845#c
 `0x2246475beddf9333b6a6D9217194576E7617Afd1` set as minter owner, whitelisted on core contract, and admin of core contract. (contact Ryley if you need to change this)
 
 # deprecated
+
 ## Ropsten
 
 ### Upload 0

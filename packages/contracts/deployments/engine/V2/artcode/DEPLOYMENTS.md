@@ -2,6 +2,8 @@
 
 ## Mainnet
 
+**Updated GenArt721Minter:** https://etherscan.io/address/0xD650ED6d6A5Fc77cda73ce2dDE3194FA1C261639#code
+
 **GenArt721CoreV2:** https://etherscan.io/address/0xd10e3DEe203579FcEE90eD7d0bDD8086F7E53beB#code
 **GenArt721Minter:** https://etherscan.io/address/0x17D34c3C10eDE845D1875eA0Db4293BFEd9d4971#code
 
