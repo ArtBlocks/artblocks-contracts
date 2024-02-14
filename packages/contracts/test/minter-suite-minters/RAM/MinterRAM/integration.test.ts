@@ -2625,5 +2625,114 @@ runForEach.forEach((params) => {
         expect(auctionDetailsAfter.numBidsErrorRefunded).to.equal(1);
       });
     });
+
+    describe("RAMLib data structure coverage", async function () {
+      it("ejects bid from middle of doubly linked list", async function () {
+        const config = await _beforeEach();
+        // sellout live auction
+        await configureProjectZeroAuctionAndSelloutLiveAuction(config);
+        // user tops-up bid ID 8 to slot 2
+        const bidValue = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          2
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .topUpBid(config.projectZero, config.genArt721Core.address, 8, 2, {
+            value: bidValue.sub(config.basePrice),
+          });
+      });
+
+      it("handles ejecting entire set of bids from a given slot", async function () {
+        const config = await _beforeEach();
+        // sellout live auction
+        await configureProjectZeroAuctionAndSelloutLiveAuction(config);
+        // minimum bid value should be base price
+        expect(
+          await config.minter.getMinBidValue(
+            config.projectZero,
+            config.genArt721Core.address
+          )
+        ).to.equal(config.basePrice);
+        // user tops-up all bids from slot 0 to slot 2
+        const bidValueSlot2 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          2
+        );
+        for (let i = 1; i < 16; i++) {
+          await config.minter
+            .connect(config.accounts.user)
+            .topUpBid(config.projectZero, config.genArt721Core.address, i, 2, {
+              value: bidValueSlot2.sub(config.basePrice),
+            });
+        }
+        // minimum bid value should now be bidValueSlot2
+        expect(
+          await config.minter.getMinBidValue(
+            config.projectZero,
+            config.genArt721Core.address
+          )
+        ).to.equal(bidValueSlot2);
+      });
+
+      it("handles populating bids in Bitmap B", async function () {
+        const config = await _beforeEach();
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // place bid in slot 256
+        const bidValue = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          256
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 256, {
+            value: bidValue,
+          });
+        // verify bid was populated appropriately
+        const getMinBidValue = await config.minter.getMinBidValue(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(getMinBidValue).to.equal(bidValue);
+      });
+
+      it("handles ejecting bid from Bitmap B", async function () {
+        const config = await _beforeEach();
+        // sellout live auction
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // user places bid in slot 256
+        const bidValue256 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          256
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 256, {
+            value: bidValue256,
+          });
+        // user tops-up bid ID 1 to slot 258
+        const bidValue258 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          258
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .topUpBid(config.projectZero, config.genArt721Core.address, 1, 258, {
+            value: bidValue258.sub(bidValue256),
+          });
+        // min bid value should be bidValue258
+        expect(
+          await config.minter.getMinBidValue(
+            config.projectZero,
+            config.genArt721Core.address
+          )
+        ).to.equal(bidValue258);
+      });
+    });
   });
 });

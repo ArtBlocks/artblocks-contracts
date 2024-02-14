@@ -2640,6 +2640,7 @@ library RAMLib {
         uint8 index,
         bool value
     ) private {
+        // @dev no coverage on else branch because it is unreachable as used
         if (value) {
             bid.packedBools = uint8(
                 uint256(bid.packedBools).setBoolTrue(index)
