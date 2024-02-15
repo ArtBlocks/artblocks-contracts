@@ -19,6 +19,8 @@ Date: 2023-12-21T23:28:29.453Z
 
 **Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
 
+**Standalone Minter:** Serial English Auction - https://sepolia.etherscan.io/address/0x9E19D9Ec5a73E616C153E65291306F6ef1917Bdf#code
+
 **Metadata**
 
 - **Starting Project Id:** 0
