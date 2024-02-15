@@ -324,10 +324,10 @@ library RAMLib {
         // backstop to prevent one project from draining the minter's balance
         // of ETH from other projects, which is a worthwhile failsafe on this
         // shared minter.
-        // @dev max uint88 ~= 3e26 Wei = ~300 million ETH, which is well above
-        // the expected revenues for a single auction.
-        // This enables struct packing.
-        uint88 projectBalance;
+        // @dev max uint120 > max basPrice * 256 * 1_000_000
+        // @dev while uint88 is gt max ETH supply, use uin120 to prevent reliance on
+        // max token supply
+        uint120 projectBalance;
         // --- revenue collection state ---
         bool revenuesCollected;
     }
@@ -1033,7 +1033,7 @@ library RAMLib {
                 "Only state D"
             );
             // require is in state E1
-            (bool isErrorE1_, uint256 numBidsToResolveE1, ) = isErrorE1({
+            (bool isErrorE1_, uint256 numBidsToResolveE1, ) = isErrorE1FlagF1({
                 projectId: projectId,
                 coreContract: coreContract
             });
@@ -1111,7 +1111,7 @@ library RAMLib {
             // INTERACTIONS
             // force-send refund to bidder
             // @dev reverts on underflow
-            RAMProjectConfig_.projectBalance -= uint88(valueToSend);
+            RAMProjectConfig_.projectBalance -= uint120(valueToSend);
             SplitFundsLib.forceSafeTransferETH({
                 to: bid.bidder,
                 amount: valueToSend,
@@ -1170,7 +1170,7 @@ library RAMLib {
                 "Only state C"
             );
             // require is in state E1
-            (bool isErrorE1_, uint256 numBidsToResolveE1, ) = isErrorE1({
+            (bool isErrorE1_, uint256 numBidsToResolveE1, ) = isErrorE1FlagF1({
                 projectId: projectId,
                 coreContract: coreContract
             });
@@ -1280,7 +1280,7 @@ library RAMLib {
             // INTERACTIONS
             // force-send refund to bidder
             // @dev reverts on underflow
-            RAMProjectConfig_.projectBalance -= uint88(valueToSend);
+            RAMProjectConfig_.projectBalance -= uint120(valueToSend);
             SplitFundsLib.forceSafeTransferETH({
                 to: bid.bidder,
                 amount: valueToSend,
@@ -1364,7 +1364,7 @@ library RAMLib {
 
         // update project balance
         // @dev reverts on underflow
-        RAMProjectConfig_.projectBalance -= uint88(netRevenues);
+        RAMProjectConfig_.projectBalance -= uint120(netRevenues);
 
         // INTERACTIONS
         SplitFundsLib.splitRevenuesETHNoRefund({
@@ -1416,8 +1416,12 @@ library RAMLib {
             // @dev this ensures minter and core contract max-invocations
             // constraints are not violated, as well as confirms that one
             // additional mint will not send the minter into an E1 state
+            (, , uint256 numExcessInvocationsAvailable) = isErrorE1FlagF1({
+                projectId: projectId,
+                coreContract: coreContract
+            });
             require(
-                isFlagF1({projectId: projectId, coreContract: coreContract}),
+                numExcessInvocationsAvailable > 0,
                 "Reached max invocations"
             );
         }
@@ -1510,7 +1514,7 @@ library RAMLib {
 
         // EFFECTS
         // add bid value to project balance
-        RAMProjectConfig_.projectBalance += uint88(bidValue);
+        RAMProjectConfig_.projectBalance += uint120(bidValue);
         // if first bid, refresh max invocations in case artist has reduced
         // the core contract's max invocations after the auction was configured
         // @dev this helps prevent E1 error state
@@ -1652,7 +1656,7 @@ library RAMLib {
 
         // EFFECTS
         // add the added value to project balance
-        RAMProjectConfig_.projectBalance += uint88(addedValue);
+        RAMProjectConfig_.projectBalance += uint120(addedValue);
         // eject bid from the linked list at oldSlotIndex
         _ejectBidFromSlot({
             RAMProjectConfig_: RAMProjectConfig_,
@@ -1998,37 +2002,9 @@ library RAMLib {
     }
 
     /**
-     * @notice Returns if project minter is in FLAG state F1.
-     * F1: tokens owed < invocations available
-     * Occurs when: auction ends before selling out
-     * @param projectId Project Id to query
-     * @param coreContract Core contract address to query
-     */
-    function isFlagF1(
-        uint256 projectId,
-        address coreContract
-    ) internal view returns (bool) {
-        // get project config
-        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
-            projectId: projectId,
-            coreContract: coreContract
-        });
-        // F1: Tokens owed < invocations available
-        // @dev underflow impossible given what the parameters represent
-        uint256 tokensOwed = _getNumTokensOwed({
-            RAMProjectConfig_: RAMProjectConfig_
-        });
-        uint256 invocationsAvailable = MaxInvocationsLib
-            .getInvocationsAvailable({
-                projectId: projectId,
-                coreContract: coreContract
-            });
-        return tokensOwed < invocationsAvailable;
-    }
-
-    /**
      * @notice Returns if project minter is in ERROR state E1, and the number
-     * of bids that need to be refunded to resolve the error.
+     * of bids that need to be refunded to resolve the error. Also returns the
+     * number of excess invocations available, if any, indicating Flag F1.
      * E1: Tokens owed > invocations available
      * Occurs when: tokens are minted on different minter after auction begins,
      * or when core contract max invocations are reduced after auction begins.
@@ -2038,8 +2014,10 @@ library RAMLib {
      * @return isError True if in error state, false otherwise
      * @return numBidsToRefund Number of bids to refund to resolve error, 0 if
      * not in error state
+     * @return numExcessInvocationsAvailable Number of excess invocations
+     * available. Value above 0 indicates Flag F1.
      */
-    function isErrorE1(
+    function isErrorE1FlagF1(
         uint256 projectId,
         address coreContract
     )
@@ -2152,7 +2130,7 @@ library RAMLib {
                 RAMProjectConfig_.numBids;
         } else {
             // post auction, set to true if remaining excess invocations is zero
-            (, , uint256 numExcessInvocationsAvailable) = isErrorE1({
+            (, , uint256 numExcessInvocationsAvailable) = isErrorE1FlagF1({
                 projectId: projectId,
                 coreContract: coreContract
             });
@@ -2311,7 +2289,7 @@ library RAMLib {
         if (amountDue > 0) {
             // force-send settlement to bidder
             // @dev reverts on underflow
-            RAMProjectConfig_.projectBalance -= uint88(amountDue);
+            RAMProjectConfig_.projectBalance -= uint120(amountDue);
             SplitFundsLib.forceSafeTransferETH({
                 to: bid.bidder,
                 amount: amountDue,
@@ -2496,7 +2474,7 @@ library RAMLib {
             slotIndex: removedSlotIndex
         });
         // @dev reverts on underflow
-        RAMProjectConfig_.projectBalance -= uint88(removedBidAmount);
+        RAMProjectConfig_.projectBalance -= uint120(removedBidAmount);
         SplitFundsLib.forceSafeTransferETH({
             to: removedBidder,
             amount: removedBidAmount,
@@ -2807,7 +2785,7 @@ library RAMLib {
             projectId: projectId,
             coreContract: coreContract
         });
-        uint256 basePrice = RAMProjectConfig_.basePrice;
+        uint88 basePrice = RAMProjectConfig_.basePrice;
         uint256 startBidValue = slotIndexToBidValue({
             basePrice: basePrice,
             slotIndex: startSlotIndex
@@ -2868,13 +2846,19 @@ library RAMLib {
      * @return slotBidValue Value of a bid in the slot, in Wei
      */
     function slotIndexToBidValue(
-        uint256 basePrice,
+        uint88 basePrice,
         uint16 slotIndex
     ) internal pure returns (uint256 slotBidValue) {
+        // @dev for overflow safety, always revert if slotIndex >= NUM_SLOTS
+        require(slotIndex < NUM_SLOTS, "Only slot index lt NUM_SLOTS");
         // use pseud-exponential pricing curve
         // multiply by two (via bit-shifting) for the number of entire
         // slots-per-price-double associated with the slot index
-        slotBidValue = basePrice << (slotIndex / SLOTS_PER_PRICE_DOUBLE);
+        // @dev overflow not possible due to typing, constants, and check above
+        // (max(uint88) << (512 / 64)) < max(uint256)
+        slotBidValue =
+            uint256(basePrice) <<
+            (slotIndex / SLOTS_PER_PRICE_DOUBLE);
         // perform a linear interpolation between partial half-life points, to
         // approximate the current place on a perfect exponential curve.
         // @dev overflow automatically checked in solidity 0.8, not expected

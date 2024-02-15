@@ -837,7 +837,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         uint256 projectId,
         address coreContract
     ) external view returns (bool isError, uint256 numBidsToRefund) {
-        (isError, numBidsToRefund, ) = RAMLib.isErrorE1({
+        (isError, numBidsToRefund, ) = RAMLib.isErrorE1FlagF1({
             projectId: projectId,
             coreContract: coreContract
         });
@@ -1141,7 +1141,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             coreContract: coreContract
         });
         // translate slot index to bid value
-        uint256 projectBasePrice = RAMLib
+        uint88 projectBasePrice = RAMLib
             .getRAMProjectConfig({
                 projectId: projectId,
                 coreContract: coreContract
@@ -1167,8 +1167,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         address coreContract,
         uint16 slotIndex
     ) external view returns (uint256) {
-        require(slotIndex < 512, "Slot index out of range");
-        uint256 projectBasePrice = RAMLib
+        uint88 projectBasePrice = RAMLib
             .getRAMProjectConfig({
                 projectId: projectId,
                 coreContract: coreContract

@@ -3042,5 +3042,57 @@ runForEach.forEach((params) => {
           value: bidValue2,
         });
     });
+
+    describe("prevents price overflow", async function () {
+      it("doesn't allow slot price calculation to overflow", async function () {
+        const config = await _beforeEach();
+        // configure auction with maximum possible price
+        // @base price must fit in uint88
+        const maxPriceInvalid = ethers.BigNumber.from(2).pow(88);
+        const maxPriceValid = maxPriceInvalid.sub(1);
+        await expectRevert(
+          config.minter.connect(config.accounts.artist).setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds + config.startTime,
+            maxPriceInvalid, // base price
+            true, // allowExtraTime
+            true // admin/artist only mint period if sellout
+          ),
+          "SafeCast: value doesn't fit in 88 bits"
+        );
+        await config.minter.connect(config.accounts.artist).setAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address,
+          config.startTime,
+          config.defaultAuctionLengthSeconds + config.startTime,
+          maxPriceValid, // base price
+          true, // allowExtraTime
+          true // admin/artist only mint period if sellout
+        );
+        // ensure price at slot 511 did not overflow
+        const slot511PriceOnChainCalc = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          511
+        );
+        // independent calculation of slot 511 price
+        const slot511PriceIndependent = maxPriceValid
+          .mul(256)
+          .sub(maxPriceValid.mul(128).div(64));
+        expect(slot511PriceOnChainCalc).to.equal(slot511PriceIndependent);
+
+        // reverts when requesting slot 512 price
+        await expectRevert(
+          config.minter.slotIndexToBidValue(
+            config.projectZero,
+            config.genArt721Core.address,
+            512
+          ),
+          revertMessages.onlySlotLtNumSlots
+        );
+      });
+    });
   });
 });

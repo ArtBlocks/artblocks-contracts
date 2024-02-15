@@ -134,4 +134,5 @@ export const revertMessages = {
   auctionNotConfigured: "auction not configured",
   auctionEndedSellout: "auction ended, sellout",
   noBidsInAuction: "No bids in auction",
+  onlySlotLtNumSlots: "Only slot index lt NUM_SLOTS",
 };
