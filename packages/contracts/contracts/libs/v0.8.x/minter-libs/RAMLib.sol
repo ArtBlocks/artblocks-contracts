@@ -1411,16 +1411,13 @@ library RAMLib {
                     projectMinterState == ProjectMinterStates.E,
                 "Only states D or E"
             );
-            // require at least one excess token available to be minted
+            // require Flag F1, i.e. at least one excess token available to be
+            // minted
             // @dev this ensures minter and core contract max-invocations
             // constraints are not violated, as well as confirms that one
             // additional mint will not send the minter into an E1 state
-            (, , uint256 numExcessInvocationsAvailable) = isErrorE1({
-                projectId: projectId,
-                coreContract: coreContract
-            });
             require(
-                numExcessInvocationsAvailable > 0,
+                isFlagF1({projectId: projectId, coreContract: coreContract}),
                 "Reached max invocations"
             );
         }
