@@ -39,30 +39,31 @@ library BitMaps256 {
     /**
      * @notice Finds the index of the first bit that is set in the bit map
      * starting from a given index.
-     * Returns 256 if no bits are set.
+     * Returns (255, false) if no set bits were found.
      * @param bitMap BitMap to search
      * @param startIndex Index to start searching from, inclusive
-     * @return minIndex Index of first set bit, or 256 if no bits are set
+     * @return minIndex Index of first set bit, or 255 if no bits were found
+     * @return foundSetBit True if a set bit was found, false otherwise
      */
     function minBitSet(
         uint256 bitMap,
         uint8 startIndex
-    ) internal pure returns (uint256 minIndex) {
+    ) internal pure returns (uint256 minIndex, bool foundSetBit) {
         minIndex = startIndex;
-        // TODO make this more efficient
-        // @dev this is a linear search, worst case 256 iterations in memory
-        while (minIndex < 256 && !get(bitMap, uint8(minIndex))) {
+        // @dev this is a linear search, worst case 255 iterations in memory
+        while (minIndex < 255 && !get(bitMap, uint8(minIndex))) {
             minIndex++;
         }
+        foundSetBit = get(bitMap, uint8(minIndex));
     }
 
     /**
      * @notice Finds the index of the highest bit that is set in the bit map
      * starting from a given index and counting down.
-     * Returns `foundSetBit` of false if no set bits were found.
+     * Returns (0, false) if no set bits were found.
      * @param bitMap BitMap to search
      * @param startIndex Index to start searching from, inclusive
-     * @return maxIndex Index of last set bit, or 256 if no bits are set
+     * @return maxIndex Index of last set bit, or 0 if no bits were found
      * @return foundSetBit True if a set bit was found, false otherwise
      */
     function maxBitSet(
@@ -70,8 +71,7 @@ library BitMaps256 {
         uint8 startIndex
     ) internal pure returns (uint256 maxIndex, bool foundSetBit) {
         maxIndex = startIndex;
-        // TODO make this more efficient
-        // @dev this is a linear search, worst case 256 iterations in memory
+        // @dev this is a linear search, worst case 255 iterations in memory
         while (maxIndex > 0 && !get(bitMap, uint8(maxIndex))) {
             maxIndex--;
         }

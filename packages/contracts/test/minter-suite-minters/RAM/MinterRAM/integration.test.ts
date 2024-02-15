@@ -2733,6 +2733,70 @@ runForEach.forEach((params) => {
           )
         ).to.equal(bidValue258);
       });
+
+      it("updates minBidSlotIndex when initial bid is placed above slot 0", async function () {
+        const config = await _beforeEach();
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // place bid in slot 256
+        const bidValue256 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          256
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 256, {
+            value: bidValue256,
+          });
+        // verify minBidSlotIndex was updated in underlying data structure
+        const minBidValue = await config.minter.getMinBidValue(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(minBidValue).to.equal(bidValue256);
+      });
+
+      it("updates minBidSlotIndex when single-token auction", async function () {
+        const config = await _beforeEach();
+        // configure project to be single-token
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 1);
+        await initializeMinBidInProjectZeroAuction(config);
+        // top-up bid ID 1 to slot 300
+        const bidValue300 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          300
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 300, {
+            value: bidValue300,
+          });
+        // verify minBidSlotIndex was updated in underlying data structure
+        const minBidValue = await config.minter.getMinBidValue(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(minBidValue).to.equal(bidValue300);
+        // also check top-up
+        const bidValue301 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          301
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .topUpBid(config.projectZero, config.genArt721Core.address, 2, 301, {
+            value: bidValue301.sub(bidValue300),
+          });
+        const minBidValueAfterTopUp = await config.minter.getMinBidValue(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(minBidValueAfterTopUp).to.equal(bidValue301);
+      });
     });
   });
 });
