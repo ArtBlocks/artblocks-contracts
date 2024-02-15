@@ -126,6 +126,49 @@ runForEach.forEach((params) => {
       return config;
     }
 
+    describe("getIsErrorE1", async function () {
+      it("returns (false, 0) when no error", async function () {
+        const config = await loadFixture(_beforeEach);
+        // sellout auction and advance to state C
+        await selloutProjectZeroAuctionAndAdvanceToStateC(config);
+        // verify no error
+        const isErrorE1 = await config.minter.getIsErrorE1(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(isErrorE1.isError).to.equal(false);
+        expect(isErrorE1.numBidsToRefund).to.equal(0);
+      });
+
+      it("returns (true, numBidsToRefund) when error", async function () {
+        const config = await loadFixture(_beforeEach);
+        // sellout auction and advance to state C
+        await selloutProjectZeroAuctionAndAdvanceToStateC(config);
+        // induce E1 error, 1 bid to refund
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 14);
+        // verify error
+        const isErrorE1 = await config.minter.getIsErrorE1(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(isErrorE1.isError).to.equal(true);
+        expect(isErrorE1.numBidsToRefund).to.equal(1);
+        // induce E1 error, 15 bids to refund
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 0);
+        // verify error
+        const isErrorE1_15 = await config.minter.getIsErrorE1(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(isErrorE1_15.isError).to.equal(true);
+        expect(isErrorE1_15.numBidsToRefund).to.equal(15);
+      });
+    });
+
     describe("minterConfigurationDetails", async function () {
       it("gets values as expected", async function () {
         const config = await loadFixture(_beforeEach);
