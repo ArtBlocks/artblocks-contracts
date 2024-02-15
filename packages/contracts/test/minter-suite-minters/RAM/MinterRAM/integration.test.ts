@@ -20,6 +20,7 @@ import {
   initializeMinBidInProjectZeroAuctionAndAdvanceToEnd,
   initializeMinBidInProjectZeroAuctionAndEnterExtraTime,
   initializeProjectZeroTokenZeroAuctionAndMint,
+  placeMinBidInProjectZeroAuction,
 } from "./helpers";
 import { BigNumber, constants } from "ethers";
 // hide nuisance logs about event overloading
@@ -2797,6 +2798,125 @@ runForEach.forEach((params) => {
         );
         expect(minBidValueAfterTopUp).to.equal(bidValue301);
       });
+    });
+
+    describe("Outbid logic coverage", async function () {
+      it("requires 5% increase for bid values below 0.5 ETH", async function () {
+        const config = await _beforeEach();
+        // "sellout" live auction
+        // @dev do not use helper function, which sets min bid to 1 ETH
+        // configure project zero
+        const basePrice = ethers.utils.parseEther("0.1");
+        await config.minter.connect(config.accounts.artist).setAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address,
+          config.startTime,
+          config.defaultAuctionLengthSeconds + config.startTime,
+          basePrice,
+          true, // allowExtraTime
+          true // admin/artist only mint period if sellout
+        );
+        await advanceToAuctionStartTime(config);
+        for (let i = 0; i < 15; i++) {
+          await placeMinBidInProjectZeroAuction(config);
+        }
+
+        // place insufficient outbid value
+        const bidValue1 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          1
+        );
+        // one slot above base price should not be 5% higher, so should revert
+        expect(basePrice?.mul(10_500).div(10_000)).to.be.gt(bidValue1);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .createBid(config.projectZero, config.genArt721Core.address, 1, {
+              value: bidValue1,
+            }),
+          revertMessages.insufficientBidValue
+        );
+        // two slots should be >2.5% higher, but <5% higher, so should also revert
+        const bidValue2 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          2
+        );
+        expect(basePrice?.mul(10_500).div(10_000)).to.be.gt(bidValue2);
+        expect(basePrice?.mul(10_250).div(10_000)).to.be.lt(bidValue2);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .createBid(config.projectZero, config.genArt721Core.address, 2, {
+              value: bidValue2,
+            }),
+          revertMessages.insufficientBidValue
+        );
+        // confirm four slots above base price is >5% higher, so should not revert
+        const bidValue4 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          4
+        );
+        expect(basePrice?.mul(10_500).div(10_000)).to.be.lt(bidValue4);
+        // no revert, should be successful
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 4, {
+            value: bidValue4,
+          });
+      });
+    });
+
+    it("requires 2.5% increase for bid values above 0.5 ETH", async function () {
+      const config = await _beforeEach();
+      // "sellout" live auction
+      // @dev do not use helper function, which sets min bid to 1 ETH
+      // configure project zero
+      const basePrice = ethers.utils.parseEther("0.50001");
+      await config.minter.connect(config.accounts.artist).setAuctionDetails(
+        config.projectZero,
+        config.genArt721Core.address,
+        config.startTime,
+        config.defaultAuctionLengthSeconds + config.startTime,
+        basePrice,
+        true, // allowExtraTime
+        true // admin/artist only mint period if sellout
+      );
+      await advanceToAuctionStartTime(config);
+      for (let i = 0; i < 15; i++) {
+        await placeMinBidInProjectZeroAuction(config);
+      }
+
+      // place insufficient outbid value
+      const bidValue1 = await config.minter.slotIndexToBidValue(
+        config.projectZero,
+        config.genArt721Core.address,
+        1
+      );
+      // one slot above base price should not be 2.5% higher, so should revert
+      expect(basePrice?.mul(10_250).div(10_000)).to.be.gt(bidValue1);
+      await expectRevert(
+        config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 1, {
+            value: bidValue1,
+          }),
+        revertMessages.insufficientBidValue
+      );
+      // two slots should be >2.5% higher, so should not revert
+      const bidValue2 = await config.minter.slotIndexToBidValue(
+        config.projectZero,
+        config.genArt721Core.address,
+        2
+      );
+      expect(basePrice?.mul(10_250).div(10_000)).to.be.lt(bidValue2);
+      await config.minter
+        .connect(config.accounts.user)
+        .createBid(config.projectZero, config.genArt721Core.address, 2, {
+          value: bidValue2,
+        });
     });
   });
 });
