@@ -65,7 +65,7 @@
     "@gnosis.pm/safe-core-sdk-types": "^1.7.0",
     "@gnosis.pm/safe-ethers-lib": "1.1.0",
     "@gnosis.pm/safe-service-client": "^1.4.0",
-    "@nomicfoundation/hardhat-ledger": "^1.0.1",
+    "@nomicfoundation/hardhat-ledger": "^1.0.2",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.10",
     "@nomiclabs/hardhat-ethers": "^2.2.1",
     "@nomiclabs/hardhat-solhint": "^3.0.0",
