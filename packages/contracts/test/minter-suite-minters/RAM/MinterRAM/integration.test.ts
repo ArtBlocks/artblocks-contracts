@@ -2798,6 +2798,130 @@ runForEach.forEach((params) => {
         );
         expect(minBidValueAfterTopUp).to.equal(bidValue301);
       });
+
+      it("handles _getMaxSlotWithBid scroll in Bitmap B", async function () {
+        const config = await _beforeEach();
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // place bid in slot 300
+        const bidValue300 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          300
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 300, {
+            value: bidValue300,
+          });
+        // place remaining bids in slot 256
+        const bidValue256 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          256
+        );
+        for (let i = 0; i < 14; i++) {
+          await config.minter
+            .connect(config.accounts.user)
+            .createBid(config.projectZero, config.genArt721Core.address, 256, {
+              value: bidValue256,
+            });
+        }
+        // advance time to get to State C
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds + 1,
+        ]);
+        // record project balance before
+        const projectBalanceBefore = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // auto-mint first and second tokens, inducing the scroll
+        await config.minter
+          .connect(config.accounts.artist)
+          .adminArtistAutoMintTokensToWinners(
+            config.projectZero,
+            config.genArt721Core.address,
+            2
+          );
+        // record project balance after
+        const projectBalanceAfter = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // project balance should have been properly updated
+        expect(projectBalanceBefore.sub(projectBalanceAfter)).to.equal(
+          bidValue300.sub(bidValue256)
+        );
+        // expect two bids to have been minted tokens
+        const auctionDetails = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(auctionDetails.numBidsMintedTokens).to.equal(2);
+        expect(auctionDetails.minBidSlotIndex).to.equal(256);
+      });
+
+      it("handles _getMaxSlotWithBid scroll from Bitmap B to Bitmap A", async function () {
+        const config = await _beforeEach();
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // place bid in slot 300
+        const bidValue300 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          300
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 300, {
+            value: bidValue300,
+          });
+        // place remaining bids in slot 100
+        const bidValue100 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          100
+        );
+        for (let i = 0; i < 14; i++) {
+          await config.minter
+            .connect(config.accounts.user)
+            .createBid(config.projectZero, config.genArt721Core.address, 100, {
+              value: bidValue100,
+            });
+        }
+        // advance time to get to State C
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds + 1,
+        ]);
+        // record project balance before
+        const projectBalanceBefore = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // auto-mint first and second tokens, inducing the scroll
+        await config.minter
+          .connect(config.accounts.artist)
+          .adminArtistAutoMintTokensToWinners(
+            config.projectZero,
+            config.genArt721Core.address,
+            2
+          );
+        // record project balance after
+        const projectBalanceAfter = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // project balance should have been properly updated
+        expect(projectBalanceBefore.sub(projectBalanceAfter)).to.equal(
+          bidValue300.sub(bidValue100)
+        );
+        // expect two bids to have been minted tokens
+        const auctionDetails = await config.minter.getAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(auctionDetails.numBidsMintedTokens).to.equal(2);
+        expect(auctionDetails.minBidSlotIndex).to.equal(100);
+      });
     });
 
     describe("Outbid logic coverage", async function () {

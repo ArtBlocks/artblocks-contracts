@@ -2754,6 +2754,7 @@ library RAMLib {
         uint16 startSlotIndex
     ) private view returns (uint16 maxSlotWithBid, bool foundSlotWithBid) {
         // revert if startSlotIndex > 511, since this is an invalid input
+        // @dev no coverage on if branch because unreachable as used
         if (startSlotIndex > 511) {
             revert("Only start slot index lt 512");
         }
