@@ -1504,7 +1504,7 @@ library RAMLib {
             "Only state B"
         );
         // require slot index not out of range
-        require(slotIndex < NUM_SLOTS, "Slot index out of range");
+        // @dev slot index out of range is checked in slotIndexToBidValue
         // require bid value must equal slot value
         uint256 newBidRequiredValue = slotIndexToBidValue({
             basePrice: RAMProjectConfig_.basePrice,
@@ -1635,7 +1635,7 @@ library RAMLib {
                 "Only state B"
             );
             // require new slot index not out of range
-            require(newSlotIndex < NUM_SLOTS, "Slot index out of range");
+            // @dev slot index out of range is checked in slotIndexToBidValue
             // @dev give clean error message if bid is null or deleted
             require(bid.bidder != address(0), "Bid dne - were you outbid?");
             // require bidder owns referenced bid
