@@ -526,8 +526,8 @@ library RAMLib {
             coreContract: coreContract
         });
 
-        // initialize min slot metadata to 511
-        RAMProjectConfig_.minBidSlotIndex = uint16(NUM_SLOTS);
+        // initialize min slot metadata to highest slot index
+        RAMProjectConfig_.minBidSlotIndex = uint16(NUM_SLOTS - 1);
 
         // emit state change event
         emit AuctionConfigUpdated({
@@ -1066,6 +1066,9 @@ library RAMLib {
             uint256 currentBidId = bidIds[i];
             Bid storage bid = RAMProjectConfig_.bids[currentBidId];
             // CHECKS
+            // require bidder is non-zero address (i.e. bid exists)
+            address bidderAddress = bid.bidder;
+            require(bidderAddress != address(0), "invalid Bid ID");
             // if bid is already minted or refunded, skip to next bid
             // @dev do not revert, since this could be due to front-running
             if (
@@ -1076,7 +1079,7 @@ library RAMLib {
             }
             // require sender is bidder if requireSenderIsBidder is true
             if (requireSenderIsBidder) {
-                require(msg.sender == bid.bidder, "Only sender is bidder");
+                require(msg.sender == bidderAddress, "Only sender is bidder");
             }
             // EFFECTS
             // STEP 1: Settle and Refund the Bid
@@ -1113,7 +1116,7 @@ library RAMLib {
             // @dev reverts on underflow
             RAMProjectConfig_.projectBalance -= uint120(valueToSend);
             SplitFundsLib.forceSafeTransferETH({
-                to: bid.bidder,
+                to: bidderAddress,
                 amount: valueToSend,
                 minterRefundGasLimit: minterRefundGasLimit
             });

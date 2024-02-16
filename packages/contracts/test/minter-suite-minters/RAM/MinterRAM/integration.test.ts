@@ -236,7 +236,7 @@ runForEach.forEach((params) => {
             .createBid(config.projectZero, config.genArt721Core.address, 512, {
               value: config.basePrice?.mul(256),
             }),
-          revertMessages.slotIndexOutOfRange
+          revertMessages.onlySlotLtNumSlots
         );
       });
 
@@ -505,7 +505,7 @@ runForEach.forEach((params) => {
                 value: config.basePrice?.mul(256),
               }
             ),
-          revertMessages.slotIndexOutOfRange
+          revertMessages.onlySlotLtNumSlots
         );
       });
 
@@ -3092,6 +3092,87 @@ runForEach.forEach((params) => {
           ),
           revertMessages.onlySlotLtNumSlots
         );
+      });
+    });
+
+    describe("deletes bids", async function () {
+      it("deletes bid when outbid, preventing future minting and refunding", async function () {
+        const config = await _beforeEach();
+        // configure project zero and sellout
+        await configureProjectZeroAuctionAndSelloutLiveAuction(config);
+        // user places bid in slot 8 and kicks out bid id 15
+        const bidValue8 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          8
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 8, {
+            value: bidValue8,
+          });
+        // advance to end of auction + 72 hours to get to State D
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds + 60 * 60 * 72,
+        ]);
+        // direct mint bid id 15 should revert because it was removed
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .adminArtistDirectMintTokensToWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              [15]
+            ),
+          revertMessages.invalidBidId
+        );
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .winnerDirectMintTokens(
+              config.projectZero,
+              config.genArt721Core.address,
+              [15]
+            ),
+          revertMessages.invalidBidId
+        );
+        // direct refund bid id 15 should revert because it was removed
+        // enter E1 state by reducing max invocations by 1
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 14);
+        // record project balance before
+        const projectBalanceBefore = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .adminArtistDirectRefundWinners(
+              config.projectZero,
+              config.genArt721Core.address,
+              [15]
+            ),
+          revertMessages.invalidBidId
+        );
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .winnerDirectRefund(
+              config.projectZero,
+              config.genArt721Core.address,
+              [15]
+            ),
+          revertMessages.invalidBidId
+        );
+        // record project balance after
+        const projectBalanceAfter = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // project balance should not have changed
+        expect(projectBalanceBefore).to.equal(projectBalanceAfter);
       });
     });
   });
