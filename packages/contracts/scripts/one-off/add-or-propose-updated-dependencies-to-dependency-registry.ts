@@ -19,36 +19,11 @@ const DEPENDENCIES: {
   website: string;
 }[] = [
   {
-    nameAndVersion: "aframe@1.5.0",
-    preferredCdn:
-      "https://cdnjs.cloudflare.com/ajax/libs/aframe/1.5.0/aframe.min.js",
-    preferredRepository: "https://github.com/aframevr/aframe",
+    nameAndVersion: "js-legacy@na",
+    preferredCdn: "",
+    preferredRepository: "",
     licenseType: "MIT",
-    website: "https://aframe.io",
-  },
-  {
-    nameAndVersion: "babylon@6.36.0",
-    preferredCdn:
-      "https://cdnjs.cloudflare.com/ajax/libs/babylonjs/6.36.0/babylon.min.js",
-    preferredRepository: "https://github.com/BabylonJS/Babylon.js",
-    licenseType: "Apache-2.0",
-    website: "https://www.babylonjs.com",
-  },
-  {
-    nameAndVersion: "p5@1.9.0",
-    preferredCdn:
-      "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js",
-    preferredRepository: "https://github.com/processing/p5.js",
-    licenseType: "LGPL-2.1-only",
-    website: "https://p5js.org",
-  },
-  {
-    nameAndVersion: "three@0.160.0",
-    preferredCdn:
-      "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js",
-    preferredRepository: "https://github.com/mrdoob/three.js",
-    licenseType: "MIT",
-    website: "https://threejs.org",
+    website: "",
   },
 ];
 
@@ -78,10 +53,10 @@ type Config = GnosisSafeConfig | NoGnosisSafeConfig;
 
 // Fill this out before running the script
 const config: Config = {
-  network: "",
-  dependencyRegistryAddress: "",
+  network: "mainnet",
+  dependencyRegistryAddress: "0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF",
   useLedgerSigner: false,
-  useGnosisSafe: false,
+  useGnosisSafe: true,
 };
 
 //////////////////////////////////////////////////////////////////////////////

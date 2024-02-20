@@ -99,7 +99,15 @@ async function main() {
           // We know of a few projects that have dependencies that are not supported
           // by the dependency registry. We will override these dependencies to be
           // "js@na" so that they can be added to the dependency registry.
+
+          // Override dependency for 'NimTeens'
           if (
+            contractAddress.toLowerCase() ===
+              "0x99a9b7c1116f9ceeb1652de04d5969cce509b069" &&
+            projectId === "408"
+          ) {
+            dependencyNameAndVersion = "js-legacy@na";
+          } else if (
             dependencyNameAndVersion === "js@undefined" ||
             dependencyNameAndVersion === "js@n/a"
           ) {
