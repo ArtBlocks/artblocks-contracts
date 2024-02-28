@@ -1,0 +1,36 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2024-02-22T20:43:20.428Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/luke-shannon-flex/deployment-config.sepolia-staging.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x09D8351b9e195ec502d6c132478068388e72229c
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x28c470BF64a74f2b231f214b7F529353b80aefdD
+[INFO] Registered core contract 0x28c470BF64a74f2b231f214b7F529353b80aefdD on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0xc7D7852C8936CFfd7903e07CE0758527C4b3e9a1.
+[INFO] Verifying core contract contract deployment...
+The contract 0x28c470BF64a74f2b231f214b7F529353b80aefdD has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x28c470BF64a74f2b231f214b7F529353b80aefdD#code
+[INFO] Core contract verified on Etherscan at 0x28c470BF64a74f2b231f214b7F529353b80aefdD}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x09D8351b9e195ec502d6c132478068388e72229c has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x09D8351b9e195ec502d6c132478068388e72229c#code
+[INFO] AdminACL contract verified on Etherscan at 0x09D8351b9e195ec502d6c132478068388e72229c
+Created s3 bucket for https://luke-shannon-sepolia.s3.amazonaws.com
+[INFO] Created image bucket luke-shannon-sepolia
+[INFO] Deployment details written to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/luke-shannon-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x28c470bf64a74f2b231f214b7f529353b80aefdd",
+  "name": "Luke Shannon",
+  "bucket_name": "luke-shannon-sepolia",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xc7D7852C8936CFfd7903e07CE0758527C4b3e9a1, don't forget to update if requred.
