@@ -327,6 +327,11 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             }) == RAMLib.ProjectMinterStates.A,
             "Only pre-auction"
         );
+        // require valid auction start time
+        require(
+            block.timestamp < auctionTimestampStart,
+            "Only future auctions"
+        );
         // check min auction duration
         // @dev underflow checked automatically in solidity 0.8
         require(

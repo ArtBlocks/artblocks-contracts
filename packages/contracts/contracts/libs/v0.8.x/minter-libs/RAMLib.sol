@@ -439,6 +439,15 @@ library RAMLib {
                 MAX_AUCTION_ADMIN_EMERGENCY_EXTENSION_HOURS,
             "Only emergency hours lt max"
         );
+        // calculate auction end time
+        uint256 newTimestampEnd = RAMProjectConfig_.timestampEnd +
+            emergencyHoursToAdd *
+            1 hours;
+        // ensure newTimestampEnd does not exceed the maximum value for uint40
+        require(
+            newTimestampEnd <= type(uint40).max,
+            "New timestampEnd gt uint40 limits"
+        );
 
         // EFFECTS
         // update emergency hours applied
@@ -446,12 +455,10 @@ library RAMLib {
         RAMProjectConfig_.adminEmergencyExtensionHoursApplied = uint8(
             currentEmergencyHoursApplied + emergencyHoursToAdd
         );
+
         // update auction end time
         // @dev update both original end timestamp and current end timestamp
         // because this is not extra time, but rather an emergency extension
-        uint256 newTimestampEnd = RAMProjectConfig_.timestampEnd +
-            emergencyHoursToAdd *
-            1 hours;
         RAMProjectConfig_.timestampEnd = uint40(newTimestampEnd);
         RAMProjectConfig_.timestampOriginalEnd = uint40(newTimestampEnd);
 
