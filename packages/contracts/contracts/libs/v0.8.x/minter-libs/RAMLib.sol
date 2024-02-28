@@ -2561,8 +2561,7 @@ library RAMLib {
 
     /**
      * @notice Helper function to handle setting slot in 512-bit bitmap
-     * @dev WARN Assumes slotIndex is between 0 and 511, function will cast
-     * incorrectly if >=512
+     * Reverts if slotIndex > 511
      * @param slotIndex Index of slot to set (between 0 and 511)
      * @param RAMProjectConfig_ RAMProjectConfig to update
      */
@@ -2570,6 +2569,8 @@ library RAMLib {
         RAMProjectConfig storage RAMProjectConfig_,
         uint256 slotIndex
     ) private {
+        // revert if slotIndex >= NUM_SLOTS, since this is an invalid input
+        require(slotIndex < NUM_SLOTS, "Only slot index lt NUM_SLOTS");
         // set the slot in the bitmap
         if (slotIndex < 256) {
             // @dev <256 conditional ensures no overflow when casting to uint8
@@ -2577,8 +2578,7 @@ library RAMLib {
                 uint8(slotIndex)
             );
         } else {
-            // @dev <512 assumption results in no overflow when casting to
-            // uint8, but NOT guaranteed by any means in this function
+            // @dev <512 results in no overflow when casting to uint8
             RAMProjectConfig_.slotsBitmapB = RAMProjectConfig_.slotsBitmapB.set(
                 // @dev casting to uint8 intentional overflow instead of
                 // subtracting 256 from slotIndex
@@ -2589,8 +2589,7 @@ library RAMLib {
 
     /**
      * @notice Helper function to handle unsetting slot in 512-bit bitmap
-     * @dev WARN Assumes slotIndex is between 0 and 511, function will cast
-     * incorrectly if >=512
+     * Reverts if slotIndex > 511
      * @param slotIndex Index of slot to set (between 0 and 511)
      * @param RAMProjectConfig_ RAMProjectConfig to update
      */
@@ -2598,15 +2597,16 @@ library RAMLib {
         RAMProjectConfig storage RAMProjectConfig_,
         uint256 slotIndex
     ) private {
-        // set the slot in the bitmap
+        // revert if slotIndex >= NUM_SLOTS, since this is an invalid input
+        require(slotIndex < NUM_SLOTS, "Only slot index lt NUM_SLOTS");
+        // unset the slot in the bitmap
         if (slotIndex < 256) {
             // @dev <256 conditional ensures no overflow when casting to uint8
             RAMProjectConfig_.slotsBitmapA = RAMProjectConfig_
                 .slotsBitmapA
                 .unset(uint8(slotIndex));
         } else {
-            // @dev <512 assumption results in no overflow when casting to
-            // uint8, but NOT guaranteed by any means in this function
+            // @dev <512 results in no overflow when casting to uint8
             // @dev casting to uint8 intentional overflow instead of
             // subtracting 256 from slotIndex
             RAMProjectConfig_.slotsBitmapB = RAMProjectConfig_
