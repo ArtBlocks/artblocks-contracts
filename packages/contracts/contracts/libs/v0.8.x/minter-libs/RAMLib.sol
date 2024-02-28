@@ -2470,6 +2470,10 @@ library RAMLib {
                 RAMProjectConfig_: RAMProjectConfig_,
                 startSlotIndex: removedSlotIndex + 1
             });
+        } else {
+            // if the removed bid was not the head, then unset the nextBidId pointer of the bid
+            Bid storage newTailBid = RAMProjectConfig_.bids[newTailBidId];
+            newTailBid.nextBidId = 0;
         }
         // refund the removed bidder
         uint256 removedBidAmount = slotIndexToBidValue({
