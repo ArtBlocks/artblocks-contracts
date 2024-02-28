@@ -3,39 +3,19 @@
 
 import hre, { ethers } from "hardhat";
 import { DependencyRegistryV0__factory } from "../contracts/factories/DependencyRegistryV0__factory";
-import { getClient } from "../util/graphql-client-utils";
-import {
-  GetProjectDependenciesDocument,
-  GetProjectDependenciesQuery,
-} from "../../generated/graphql";
 import Safe from "@safe-global/protocol-kit";
 import { EthersAdapter } from "@safe-global/protocol-kit";
 import SafeApiKit from "@safe-global/api-kit";
-import { MetaTransactionData } from "@gnosis.pm/safe-core-sdk-types";
 import { getNetworkName } from "../util/utils";
 import { chunkArray } from "../util/utils";
-
-const supportedDependencies = [
-  "aframe@1.2.0",
-  "babylon@5.0.0",
-  "js@na",
-  "custom@na",
-  "p5@1.0.0",
-  "paper@0.12.15",
-  "processing-js@1.4.6",
-  "regl@2.1.0",
-  "svg@na",
-  "three@0.124.0",
-  "tone@14.8.15",
-  "twemoji@14.0.2",
-  "zdog@1.1.2",
-];
 
 // Fill these out before running
 const config = {
   network: "mainnet",
-  dependencyRegistryAddress: "0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF",
+  dependencyRegistryAddress: "0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF", // mainnet
   safeAddress: "0x---",
+  useLedgerSigner: false,
+  useGnosisSafe: false,
   transactionServiceUrl: "https://safe-transaction-mainnet.safe.global",
 };
 
@@ -77,68 +57,22 @@ async function main() {
     ledgerSigner
   );
 
-  // Fetch all pre-v3 projects from Hasura
-  const client = getClient();
-  const res = await client.query<GetProjectDependenciesQuery>(
-    GetProjectDependenciesDocument,
-    {}
-  );
+  // Create transaction to override dependency on NimTeens
+  const overrideProjectDependencyTransactionData = [
+    {
+      to: dependencyRegistry.address,
+      data: dependencyRegistry.interface.encodeFunctionData(
+        "addProjectDependencyOverride",
+        [
+          "0x99a9b7c1116f9ceeb1652de04d5969cce509b069",
+          "408",
+          ethers.utils.formatBytes32String("js-legacy@na"),
+        ]
+      ),
+      value: "0",
+    },
+  ];
 
-  if (res.error || !res.data) {
-    throw new Error("error fetching dependencies");
-  }
-
-  // Create transactions to add dependencies to dependency registry
-  const overrideProjectDependencyTransactionData: MetaTransactionData[] =
-    res.data.projects_metadata
-      .map((project) => {
-        const [contractAddress, projectId] = project.id.split("-");
-        let dependencyNameAndVersion = project.script_type_and_version;
-
-        if (!supportedDependencies.includes(dependencyNameAndVersion)) {
-          // We know of a few projects that have dependencies that are not supported
-          // by the dependency registry. We will override these dependencies to be
-          // "js@na" so that they can be added to the dependency registry.
-
-          // Override dependency for 'NimTeens'
-          if (
-            contractAddress.toLowerCase() ===
-              "0x99a9b7c1116f9ceeb1652de04d5969cce509b069" &&
-            projectId === "408"
-          ) {
-            dependencyNameAndVersion = "js-legacy@na";
-          } else if (
-            dependencyNameAndVersion === "js@undefined" ||
-            dependencyNameAndVersion === "js@n/a"
-          ) {
-            dependencyNameAndVersion = "js@na";
-          } else {
-            // If we encounter a dependency that is not supported by the dependency
-            // registry and is not one of the known exceptions, we will skip it.
-            console.log(
-              `Unexpected dependency name and version ${dependencyNameAndVersion} found for project ${project.id}. Skipping override.`
-            );
-            return null;
-          }
-        }
-
-        const data = dependencyRegistry.interface.encodeFunctionData(
-          "addProjectDependencyOverride",
-          [
-            contractAddress,
-            projectId,
-            ethers.utils.formatBytes32String(dependencyNameAndVersion),
-          ]
-        );
-        return {
-          to: dependencyRegistry.address,
-          data,
-          value: "0x00",
-        };
-      })
-      .filter((transaction) => transaction !== null);
-
-  // Chunk transactions into groups of TRANSACTION_CHUNK_SIZE to avoid hitting the gas limit
   const chunkedTransactions = chunkArray(
     overrideProjectDependencyTransactionData,
     TRANSACTION_CHUNK_SIZE
