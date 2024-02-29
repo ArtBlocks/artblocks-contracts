@@ -1,0 +1,36 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2024-02-22T20:50:32.195Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/numbers-flex/deployment-config.sepolia-staging.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x574D5228748AcC4fC1e13d73fA54BA372115df43
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x6c5d3B8fb5c03aD3338a9096c97cdBE2813F4D83
+[INFO] Registered core contract 0x6c5d3B8fb5c03aD3338a9096c97cdBE2813F4D83 on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x64F0D457BE37e429B1CF717AD6EFD14066A7d145.
+[INFO] Verifying core contract contract deployment...
+The contract 0x6c5d3B8fb5c03aD3338a9096c97cdBE2813F4D83 has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x6c5d3B8fb5c03aD3338a9096c97cdBE2813F4D83#code
+[INFO] Core contract verified on Etherscan at 0x6c5d3B8fb5c03aD3338a9096c97cdBE2813F4D83}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x574D5228748AcC4fC1e13d73fA54BA372115df43 has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x574D5228748AcC4fC1e13d73fA54BA372115df43#code
+[INFO] AdminACL contract verified on Etherscan at 0x574D5228748AcC4fC1e13d73fA54BA372115df43
+Created s3 bucket for https://nnumber-sepolia.s3.amazonaws.com
+[INFO] Created image bucket nnumber-sepolia
+[INFO] Deployment details written to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/numbers-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x6c5d3b8fb5c03ad3338a9096c97cdbe2813f4d83",
+  "name": "Nnumber",
+  "bucket_name": "nnumber-sepolia",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef, don't forget to update if requred.

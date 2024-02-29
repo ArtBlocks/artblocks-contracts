@@ -126,3 +126,81 @@ Date: 2023-05-22T23:34:23.880Z
 
 ---
 
+
+# Deployment
+
+Date: 2024-02-09T21:36:16.849Z
+
+## **Network:** sepolia
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/plottables/deployment-config.sepolia-staging.ts`
+
+**GenArt721CoreV3_Engine:** https://sepolia.etherscan.io/address/0x9f22B52702E1C00B1318e1DACd543c17aD00774D#code
+
+**AdminACLV1:** https://sepolia.etherscan.io/address/0x7b16D671fdDFb17C471269935Bfe9caaeC446e07#code
+
+**Core Registry:** https://sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**Shared Minter Filter:** https://sepolia.etherscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Plottables
+- **Token Ticker:** PLOTS
+- **Auto Approve Artist Split Proposals:** false
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0x9f75C11383f5b93a72c61fb1Dd1a44f5Ec7e4187
+- **BytecodeStorageReader Library:** 0x7497909537cE00fDda93c12d5083D8647C593c67
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** plottables-sepolia
+
+---
+
+
+# Deployment
+
+Date: 2024-02-09T21:49:08.662Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/plottables/deployment-config.mainnet.ts`
+
+**GenArt721CoreV3_Engine:** https://etherscan.io/address/0xAc521EA7A83a3Bc3f9f1e09F8300a6301743fB1f#code
+
+**AdminACLV1:** https://etherscan.io/address/0x1a820A0D3edC157ba76757b16750149d717cbC96#code
+
+**Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+
+**Shared Minter Filter:** https://etherscan.io/address/0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Plottables
+- **Token Ticker:** PLOTS
+- **Auto Approve Artist Split Proposals:** false
+- **Render Provider Address, Primary Sales:** 0x497702b81Ffc3Aa3535c84Af86Cfb5a8b367E1b2
+- **Platform Provider Address, Primary Sales:** 0x9f75C11383f5b93a72c61fb1Dd1a44f5Ec7e4187
+- **BytecodeStorageReader Library:** 0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** plottables-mainnet
+
+---
+
