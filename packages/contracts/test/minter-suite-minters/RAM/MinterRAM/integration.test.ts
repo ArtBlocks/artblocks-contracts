@@ -492,6 +492,12 @@ runForEach.forEach((params) => {
         const config = await _beforeEach();
         // advance to State B
         await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // place bid
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 0, {
+            value: config.basePrice,
+          });
         // place bid in theoretical slot 512
         await expectRevert(
           config.minter
@@ -499,7 +505,7 @@ runForEach.forEach((params) => {
             .topUpBid(
               config.projectZero,
               config.genArt721Core.address,
-              0,
+              1,
               512,
               {
                 value: config.basePrice?.mul(256),
