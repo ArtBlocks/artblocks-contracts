@@ -774,7 +774,7 @@ runForEach.forEach((params) => {
             config.genArt721Core.address,
             512
           ),
-          revertMessages.slotIndexOutOfRange
+          revertMessages.onlySlotLtNumSlots
         );
       });
 
