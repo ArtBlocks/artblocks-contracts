@@ -319,14 +319,6 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             sender: msg.sender
         });
         // CHECKS
-        // require State A (pre-auction)
-        require(
-            RAMLib.getProjectMinterState({
-                projectId: projectId,
-                coreContract: coreContract
-            }) == RAMLib.ProjectMinterStates.A,
-            "Only pre-auction"
-        );
         // check min auction duration
         // @dev underflow checked automatically in solidity 0.8
         require(
@@ -335,11 +327,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             "Auction too short"
         );
         // EFFECTS
-        // refresh max invocations to eliminate any stale state
-        MaxInvocationsLib.refreshMaxInvocations({
-            projectId: projectId,
-            coreContract: coreContract
-        });
+        // @dev project minter state checked in setAuctionDetails
         RAMLib.setAuctionDetails({
             projectId: projectId,
             coreContract: coreContract,
@@ -771,7 +759,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @param coreContract Core contract address for the given project.
      * @param numBidsToRefund Number of bids to refund in this call.
      */
-    function adminAutoRefundBidsToResolveE1(
+    function adminAutoRefundWinners(
         uint256 projectId,
         address coreContract,
         uint24 numBidsToRefund
@@ -781,7 +769,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             coreContract: coreContract,
             sender: msg.sender,
             contract_: address(this),
-            selector: this.adminAutoRefundBidsToResolveE1.selector
+            selector: this.adminAutoRefundWinners.selector
         });
         // EFFECTS/INTERACTIONS
         RAMLib.autoRefundBidsToResolveE1({
@@ -1125,14 +1113,14 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * @notice Returns the value of the minimum bid in the project's auction,
+     * @notice Returns the value of the lowest bid in the project's auction,
      * in Wei.
      * Reverts if no bids exist in the auction.
-     * @param projectId Project ID to get the minimum bid value for
+     * @param projectId Project ID to get the lowest bid value for
      * @param coreContract Core contract address for the given project
-     * @return minBidValue Value of the minimum bid in the auction, in Wei
+     * @return minBidValue Value of the lowest bid in the auction, in Wei
      */
-    function getMinBidValue(
+    function getLowestBidValue(
         uint256 projectId,
         address coreContract
     ) external view returns (uint256) {

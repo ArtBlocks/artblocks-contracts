@@ -481,7 +481,7 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.deployer)
-            .adminAutoRefundBidsToResolveE1(
+            .adminAutoRefundWinners(
               config.projectZero,
               config.genArt721Core.address,
               1
@@ -621,7 +621,7 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.deployer)
-            .adminAutoRefundBidsToResolveE1(
+            .adminAutoRefundWinners(
               config.projectZero,
               config.genArt721Core.address,
               1

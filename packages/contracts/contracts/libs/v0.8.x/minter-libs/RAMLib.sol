@@ -470,7 +470,9 @@ library RAMLib {
         });
     }
 
-    // Reminder - note assumption of being in ProjectMinterState A
+    /**
+     * Reverts if not currently in ProjectMinterState A
+     */
     function setAuctionDetails(
         uint256 projectId,
         address coreContract,
@@ -486,7 +488,14 @@ library RAMLib {
             coreContract: coreContract
         });
         // CHECKS
-        // @dev function assumes currently in ProjectMinterState A
+        // require ProjectMinterState A (pre-auction)
+        require(
+            getProjectMinterState({
+                projectId: projectId,
+                coreContract: coreContract
+            }) == ProjectMinterStates.A,
+            "Only pre-auction"
+        );
         // require base price >= 0.05 ETH
         require(basePrice >= 0.05 ether, "Only base price gte 0.05 ETH");
         // only future start time
@@ -518,6 +527,11 @@ library RAMLib {
                 );
             }
         }
+        // refresh max invocations to eliminate any stale state
+        MaxInvocationsLib.refreshMaxInvocations({
+            projectId: projectId,
+            coreContract: coreContract
+        });
 
         // set auction details
         RAMProjectConfig_.timestampStart = auctionTimestampStart;

@@ -706,12 +706,12 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("getMinBidValue", async function () {
+    describe("getLowestBidValue", async function () {
       it("reverts when no bid exists", async function () {
         const config = await loadFixture(_beforeEach);
         // verify revert when no bid exists, unconfigured
         await expectRevert(
-          config.minter.getMinBidValue(
+          config.minter.getLowestBidValue(
             config.projectZero,
             config.genArt721Core.address
           ),
@@ -720,7 +720,7 @@ runForEach.forEach((params) => {
         // still reverts if auction is configured and live
         await configureProjectZeroAuctionAndAdvanceToStartTime(config);
         await expectRevert(
-          config.minter.getMinBidValue(
+          config.minter.getLowestBidValue(
             config.projectZero,
             config.genArt721Core.address
           ),
@@ -733,11 +733,11 @@ runForEach.forEach((params) => {
         // initialize auction
         await initializeMinBidInProjectZeroAuction(config);
         // verify state
-        const minBidValue = await config.minter.getMinBidValue(
+        const lowestBidValue = await config.minter.getLowestBidValue(
           config.projectZero,
           config.genArt721Core.address
         );
-        expect(minBidValue).to.equal(config.basePrice);
+        expect(lowestBidValue).to.equal(config.basePrice);
       });
 
       it("returns greater than base price if min bid is above base price", async function () {
@@ -756,11 +756,11 @@ runForEach.forEach((params) => {
             value: slot8Price,
           });
         // verify state
-        const minBidValue = await config.minter.getMinBidValue(
+        const lowestBidValue = await config.minter.getLowestBidValue(
           config.projectZero,
           config.genArt721Core.address
         );
-        expect(minBidValue).to.equal(slot8Price);
+        expect(lowestBidValue).to.equal(slot8Price);
       });
     });
 

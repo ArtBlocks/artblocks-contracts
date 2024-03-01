@@ -1952,13 +1952,13 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("adminAutoRefundBidsToResolveE1", async function () {
+    describe("adminAutoRefundWinners", async function () {
       it("reverts when non-admin calls", async function () {
         const config = await _beforeEach();
         await expectRevert(
           config.minter
             .connect(config.accounts.artist)
-            .adminAutoRefundBidsToResolveE1(
+            .adminAutoRefundWinners(
               config.projectZero,
               config.genArt721Core.address,
               1
@@ -1973,7 +1973,7 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.deployer)
-            .adminAutoRefundBidsToResolveE1(
+            .adminAutoRefundWinners(
               config.projectZero,
               config.genArt721Core.address,
               1
@@ -1985,7 +1985,7 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.deployer)
-            .adminAutoRefundBidsToResolveE1(
+            .adminAutoRefundWinners(
               config.projectZero,
               config.genArt721Core.address,
               1
@@ -1997,7 +1997,7 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.deployer)
-            .adminAutoRefundBidsToResolveE1(
+            .adminAutoRefundWinners(
               config.projectZero,
               config.genArt721Core.address,
               1
@@ -2011,7 +2011,7 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.deployer)
-            .adminAutoRefundBidsToResolveE1(
+            .adminAutoRefundWinners(
               config.projectZero,
               config.genArt721Core.address,
               1
@@ -2028,7 +2028,7 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.deployer)
-            .adminAutoRefundBidsToResolveE1(
+            .adminAutoRefundWinners(
               config.projectZero,
               config.genArt721Core.address,
               1
@@ -2049,7 +2049,7 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.deployer)
-            .adminAutoRefundBidsToResolveE1(
+            .adminAutoRefundWinners(
               config.projectZero,
               config.genArt721Core.address,
               2
@@ -2079,7 +2079,7 @@ runForEach.forEach((params) => {
         // auto-refund 1 bid
         await config.minter
           .connect(config.accounts.deployer)
-          .adminAutoRefundBidsToResolveE1(
+          .adminAutoRefundWinners(
             config.projectZero,
             config.genArt721Core.address,
             1
@@ -2138,7 +2138,7 @@ runForEach.forEach((params) => {
         // auto-refund 1 bid that doesn't have settlement
         await config.minter
           .connect(config.accounts.deployer)
-          .adminAutoRefundBidsToResolveE1(
+          .adminAutoRefundWinners(
             config.projectZero,
             config.genArt721Core.address,
             1
@@ -2156,7 +2156,7 @@ runForEach.forEach((params) => {
         // auto-refund 2 bids that have settlement
         await config.minter
           .connect(config.accounts.deployer)
-          .adminAutoRefundBidsToResolveE1(
+          .adminAutoRefundWinners(
             config.projectZero,
             config.genArt721Core.address,
             2
@@ -2204,7 +2204,7 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.deployer)
-            .adminAutoRefundBidsToResolveE1(
+            .adminAutoRefundWinners(
               config.projectZero,
               config.genArt721Core.address,
               1
@@ -2657,7 +2657,7 @@ runForEach.forEach((params) => {
         await configureProjectZeroAuctionAndSelloutLiveAuction(config);
         // minimum bid value should be base price
         expect(
-          await config.minter.getMinBidValue(
+          await config.minter.getLowestBidValue(
             config.projectZero,
             config.genArt721Core.address
           )
@@ -2677,7 +2677,7 @@ runForEach.forEach((params) => {
         }
         // minimum bid value should now be bidValueSlot2
         expect(
-          await config.minter.getMinBidValue(
+          await config.minter.getLowestBidValue(
             config.projectZero,
             config.genArt721Core.address
           )
@@ -2699,11 +2699,11 @@ runForEach.forEach((params) => {
             value: bidValue,
           });
         // verify bid was populated appropriately
-        const getMinBidValue = await config.minter.getMinBidValue(
+        const getLowestBidValue = await config.minter.getLowestBidValue(
           config.projectZero,
           config.genArt721Core.address
         );
-        expect(getMinBidValue).to.equal(bidValue);
+        expect(getLowestBidValue).to.equal(bidValue);
       });
 
       it("handles ejecting bid from Bitmap B", async function () {
@@ -2734,7 +2734,7 @@ runForEach.forEach((params) => {
           });
         // min bid value should be bidValue258
         expect(
-          await config.minter.getMinBidValue(
+          await config.minter.getLowestBidValue(
             config.projectZero,
             config.genArt721Core.address
           )
@@ -2756,11 +2756,11 @@ runForEach.forEach((params) => {
             value: bidValue256,
           });
         // verify minBidSlotIndex was updated in underlying data structure
-        const minBidValue = await config.minter.getMinBidValue(
+        const lowestBidValue = await config.minter.getLowestBidValue(
           config.projectZero,
           config.genArt721Core.address
         );
-        expect(minBidValue).to.equal(bidValue256);
+        expect(lowestBidValue).to.equal(bidValue256);
       });
 
       it("updates minBidSlotIndex when single-token auction", async function () {
@@ -2782,11 +2782,11 @@ runForEach.forEach((params) => {
             value: bidValue300,
           });
         // verify minBidSlotIndex was updated in underlying data structure
-        const minBidValue = await config.minter.getMinBidValue(
+        const lowestBidValue = await config.minter.getLowestBidValue(
           config.projectZero,
           config.genArt721Core.address
         );
-        expect(minBidValue).to.equal(bidValue300);
+        expect(lowestBidValue).to.equal(bidValue300);
         // also check top-up
         const bidValue301 = await config.minter.slotIndexToBidValue(
           config.projectZero,
@@ -2798,11 +2798,11 @@ runForEach.forEach((params) => {
           .topUpBid(config.projectZero, config.genArt721Core.address, 2, 301, {
             value: bidValue301.sub(bidValue300),
           });
-        const minBidValueAfterTopUp = await config.minter.getMinBidValue(
+        const lowestBidValueAfterTopUp = await config.minter.getLowestBidValue(
           config.projectZero,
           config.genArt721Core.address
         );
-        expect(minBidValueAfterTopUp).to.equal(bidValue301);
+        expect(lowestBidValueAfterTopUp).to.equal(bidValue301);
       });
 
       it("handles _getMaxSlotWithBid scroll in Bitmap B", async function () {
