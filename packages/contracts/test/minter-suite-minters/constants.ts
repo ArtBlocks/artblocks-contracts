@@ -103,7 +103,6 @@ export const revertMessages = {
   onlyStatesDE: "Only states D or E",
   onlyStateE: "Only state E",
   onlyStateErrorE1: "Only in state E1",
-  onlyOneConstraint: "Only one constraint can be set",
   onlyEmergencyLTMax: "Only emergency hours lt max",
   notInExtraTime: "Not allowed in extra time",
   auctionTooShortRAM: "Auction too short",

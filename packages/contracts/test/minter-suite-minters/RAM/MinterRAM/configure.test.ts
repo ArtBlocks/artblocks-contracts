@@ -357,18 +357,8 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.artist)
-            .setContractConfig(config.genArt721Core.address, false, false),
+            .setContractConfig(config.genArt721Core.address, 0),
           revertMessages.onlyCoreAdminACL
-        );
-      });
-
-      it("reverts when both args are true", async function () {
-        const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.minter
-            .connect(config.accounts.deployer)
-            .setContractConfig(config.genArt721Core.address, true, true),
-          revertMessages.onlyOneConstraint
         );
       });
 
@@ -376,19 +366,13 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         await config.minter
           .connect(config.accounts.deployer)
-          .setContractConfig(config.genArt721Core.address, true, false);
+          .setContractConfig(config.genArt721Core.address, 1);
         // validate state update
         const contractConfigDetails =
           await config.minter.contractConfigurationDetails(
             config.genArt721Core.address
           );
-        expect(contractConfigDetails.imposeConstraints).to.equal(true);
-        expect(contractConfigDetails.requireAdminArtistOnlyMintPeriod).to.equal(
-          true
-        );
-        expect(
-          contractConfigDetails.requireNoAdminArtistOnlyMintPeriod
-        ).to.equal(false);
+        expect(contractConfigDetails.adminMintingConstraint).to.equal(1);
       });
     });
 
@@ -644,10 +628,10 @@ runForEach.forEach((params) => {
             true,
             false
           );
-        // set requireNoAdminArtistOnlyMintPeriod to true
+        // set minting constraint to requireNoAdminArtistOnlyMintPeriod
         await config.minter
           .connect(config.accounts.deployer)
-          .setContractConfig(config.genArt721Core.address, false, true);
+          .setContractConfig(config.genArt721Core.address, 2);
         // revert when admin-artist only mint period not allowed
         await expectRevert(
           config.minter
@@ -675,10 +659,10 @@ runForEach.forEach((params) => {
             true,
             false
           );
-        // requireAdminArtistOnlyMintPeriod to true
+        // set minting constraint to require AdminArtistOnlyMintPeriod
         await config.minter
           .connect(config.accounts.deployer)
-          .setContractConfig(config.genArt721Core.address, true, false);
+          .setContractConfig(config.genArt721Core.address, 1);
         // revert when admin-artist only mint period not allowed
         await expectRevert(
           config.minter

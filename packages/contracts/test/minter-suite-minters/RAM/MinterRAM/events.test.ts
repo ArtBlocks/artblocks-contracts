@@ -203,10 +203,10 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.deployer)
-            .setContractConfig(config.genArt721Core.address, false, true)
+            .setContractConfig(config.genArt721Core.address, 2)
         )
           .to.emit(config.minter, "ContractConfigUpdated")
-          .withArgs(config.genArt721Core.address, true, false, true);
+          .withArgs(config.genArt721Core.address, 2);
       });
     });
 

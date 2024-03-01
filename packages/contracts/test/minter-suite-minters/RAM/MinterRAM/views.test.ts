@@ -207,28 +207,16 @@ runForEach.forEach((params) => {
           await config.minter.contractConfigurationDetails(
             config.genArt721Core.address
           );
-        expect(contractConfigDetails.imposeConstraints).to.equal(false);
-        expect(contractConfigDetails.requireAdminArtistOnlyMintPeriod).to.equal(
-          false
-        );
-        expect(
-          contractConfigDetails.requireNoAdminArtistOnlyMintPeriod
-        ).to.equal(false);
+        expect(contractConfigDetails.adminMintingConstraint).to.equal(0);
         // configure values and verify
         await config.minter
           .connect(config.accounts.deployer)
-          .setContractConfig(config.genArt721Core.address, true, false);
+          .setContractConfig(config.genArt721Core.address, 1);
         contractConfigDetails =
           await config.minter.contractConfigurationDetails(
             config.genArt721Core.address
           );
-        expect(contractConfigDetails.imposeConstraints).to.equal(true);
-        expect(contractConfigDetails.requireAdminArtistOnlyMintPeriod).to.equal(
-          true
-        );
-        expect(
-          contractConfigDetails.requireNoAdminArtistOnlyMintPeriod
-        ).to.equal(false);
+        expect(contractConfigDetails.adminMintingConstraint).to.equal(1);
       });
     });
 

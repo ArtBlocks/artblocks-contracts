@@ -62,18 +62,11 @@ library RAMLib {
     /**
      *
      * @param coreContract Core contract address to update
-     * @param imposeConstraints bool representing if constraints should be
-     * imposed on this contract
-     * @param requireAdminArtistOnlyMintPeriod bool representing if
-     * admin-artist-only mint is required for all projects on this contract
-     * @param requireNoAdminArtistOnlyMintPeriod bool representing if
-     * admin-artist-only mint is not allowed for all projects on this contract
+     * @param adminMintingConstraint enum representing admin minting constraints imposed on this contract
      */
     event ContractConfigUpdated(
         address indexed coreContract,
-        bool imposeConstraints,
-        bool requireAdminArtistOnlyMintPeriod,
-        bool requireNoAdminArtistOnlyMintPeriod
+        AdminMintingConstraint adminMintingConstraint
     );
 
     /**
@@ -246,7 +239,7 @@ library RAMLib {
     uint256 constant NUM_SLOTS = 512;
 
     // pricing assumes maxPrice = minPrice * 2^8, pseudo-exponential curve
-    uint256 constant SLOTS_PER_PRICE_DOUBLE = 512 / 8; // 64 slots per double
+    uint256 constant SLOTS_PER_PRICE_DOUBLE = NUM_SLOTS / 8; // 64 slots per double
 
     // auction extension time constants
     uint256 constant AUCTION_BUFFER_SECONDS = 5 minutes;
@@ -347,9 +340,13 @@ library RAMLib {
     // contract-specific parameters
     // @dev may not be indexed, but does impose on-chain constraints
     struct RAMContractConfig {
-        bool imposeConstraints; // default false
-        bool requireAdminArtistOnlyMintPeriod;
-        bool requireNoAdminArtistOnlyMintPeriod;
+        AdminMintingConstraint adminMintingConstraint;
+    }
+
+    enum AdminMintingConstraint {
+        None,
+        AdminArtistOnlyMintPeriod,
+        NoAdminArtistOnlyMintPeriod
     }
 
     // Diamond storage pattern is used in this library
@@ -362,36 +359,23 @@ library RAMLib {
      * @notice Update a contract's requirements on if a post-auction
      * admin-artist-only mint period is required or banned, for and-on
      * configured projects.
+     * @param coreContract The address of the core contract being configured
+     * @param adminMintingConstraint The AdminMintingConstraint setting for the contract
      */
     function setContractConfig(
         address coreContract,
-        bool imposeConstraints,
-        bool requireAdminArtistOnlyMintPeriod,
-        bool requireNoAdminArtistOnlyMintPeriod
+        AdminMintingConstraint adminMintingConstraint
     ) internal {
-        // CHECKS
-        // require not both constraints set to true, since mutually exclusive
-        require(
-            !(requireAdminArtistOnlyMintPeriod &&
-                requireNoAdminArtistOnlyMintPeriod),
-            "Only one constraint can be set"
-        );
         // load contract config
         RAMContractConfig storage RAMContractConfig_ = getRAMContractConfig({
             coreContract: coreContract
         });
-        // set contract config
-        RAMContractConfig_.imposeConstraints = imposeConstraints;
-        RAMContractConfig_
-            .requireAdminArtistOnlyMintPeriod = requireAdminArtistOnlyMintPeriod;
-        RAMContractConfig_
-            .requireNoAdminArtistOnlyMintPeriod = requireNoAdminArtistOnlyMintPeriod;
+        // set the contract config with the new constraint enum value
+        RAMContractConfig_.adminMintingConstraint = adminMintingConstraint;
         // emit event
         emit ContractConfigUpdated({
             coreContract: coreContract,
-            imposeConstraints: imposeConstraints,
-            requireAdminArtistOnlyMintPeriod: requireAdminArtistOnlyMintPeriod,
-            requireNoAdminArtistOnlyMintPeriod: requireNoAdminArtistOnlyMintPeriod
+            adminMintingConstraint: adminMintingConstraint
         });
     }
 
@@ -513,20 +497,25 @@ library RAMLib {
         RAMContractConfig storage RAMContractConfig_ = getRAMContractConfig({
             coreContract: coreContract
         });
-        if (RAMContractConfig_.imposeConstraints) {
-            if (RAMContractConfig_.requireAdminArtistOnlyMintPeriod) {
-                require(
-                    adminArtistOnlyMintPeriodIfSellout,
-                    "Only admin-artist mint period"
-                );
-            }
-            if (RAMContractConfig_.requireNoAdminArtistOnlyMintPeriod) {
-                require(
-                    !adminArtistOnlyMintPeriodIfSellout,
-                    "Only no admin-artist mint period"
-                );
-            }
+
+        if (
+            RAMContractConfig_.adminMintingConstraint ==
+            AdminMintingConstraint.AdminArtistOnlyMintPeriod
+        ) {
+            require(
+                adminArtistOnlyMintPeriodIfSellout,
+                "Only admin-artist mint period"
+            );
+        } else if (
+            RAMContractConfig_.adminMintingConstraint ==
+            AdminMintingConstraint.NoAdminArtistOnlyMintPeriod
+        ) {
+            require(
+                !adminArtistOnlyMintPeriodIfSellout,
+                "Only no admin-artist mint period"
+            );
         }
+
         // refresh max invocations to eliminate any stale state
         MaxInvocationsLib.refreshMaxInvocations({
             projectId: projectId,
@@ -1560,7 +1549,7 @@ library RAMLib {
         uint256 numTokensInAuction = RAMProjectConfig_.numTokensInAuction;
         require(numTokensInAuction > 0, "No tokens in auction");
         // determine if have reached max bids
-        bool reachedMaxBids = RAMProjectConfig_.numBids == numTokensInAuction;
+        bool reachedMaxBids = RAMProjectConfig_.numBids >= numTokensInAuction;
         if (reachedMaxBids) {
             // remove + refund the minimum Bid
             uint16 removedSlotIndex = _removeMinBid({
@@ -1849,7 +1838,7 @@ library RAMLib {
         } else {
             // values that apply to all live-auction and post-auction states
             isConfigured = true;
-            bool isSellout = RAMProjectConfig_.numBids ==
+            bool isSellout = RAMProjectConfig_.numBids >=
                 RAMProjectConfig_.numTokensInAuction;
 
             // handle live-auction State B
@@ -1932,7 +1921,7 @@ library RAMLib {
             minNextBidSlotIndex = 0;
         } else {
             // values that apply to all live-auction and post-auction states
-            bool isSellout = RAMProjectConfig_.numBids ==
+            bool isSellout = RAMProjectConfig_.numBids >=
                 RAMProjectConfig_.numTokensInAuction;
 
             // handle live-auction State B
@@ -2337,7 +2326,7 @@ library RAMLib {
     function _getProjectPrice(
         RAMProjectConfig storage RAMProjectConfig_
     ) private view returns (uint256 projectPrice) {
-        bool wasSellout = RAMProjectConfig_.numBids ==
+        bool wasSellout = RAMProjectConfig_.numBids >=
             RAMProjectConfig_.numTokensInAuction;
         // price is lowest bid if sellout, otherwise base price
         projectPrice = wasSellout

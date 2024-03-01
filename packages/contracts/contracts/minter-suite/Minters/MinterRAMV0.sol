@@ -190,15 +190,12 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * post-auction admin-artist-only mint period is required or banned, for
      * and-on configured projects.
      * @param coreContract core contract to set the configuration for.
-     * @param requireAdminArtistOnlyMintPeriod bool indicating if the minter should
-     * require an admin-artist-only mint period after the auction ends.
-     * @param requireNoAdminArtistOnlyMintPeriod bool indicating if the minter should
-     * require no admin-artist-only mint period after the auction ends.
+     * @param adminMintingConstraint enum indicating if the minter should
+     * require an admin-artist-only mint period after the auction ends or not.
      */
     function setContractConfig(
         address coreContract,
-        bool requireAdminArtistOnlyMintPeriod,
-        bool requireNoAdminArtistOnlyMintPeriod
+        RAMLib.AdminMintingConstraint adminMintingConstraint
     ) external {
         // CHECKS
         AuthLib.onlyCoreAdminACL({
@@ -210,9 +207,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         // EFFECTS
         RAMLib.setContractConfig({
             coreContract: coreContract,
-            imposeConstraints: true, // always true because we are configuring
-            requireAdminArtistOnlyMintPeriod: requireAdminArtistOnlyMintPeriod,
-            requireNoAdminArtistOnlyMintPeriod: requireNoAdminArtistOnlyMintPeriod
+            adminMintingConstraint: adminMintingConstraint
         });
     }
 
