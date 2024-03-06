@@ -425,14 +425,10 @@ library RAMLib {
             "Only emergency hours lt max"
         );
         // calculate auction end time
+        // @dev overflow automatically checked in solidity 0.8
         uint40 newTimestampEnd = RAMProjectConfig_.timestampEnd +
             emergencyHoursToAdd *
             1 hours;
-        // ensure newTimestampEnd does not exceed the maximum value for uint40
-        require(
-            newTimestampEnd <= type(uint40).max,
-            "New timestampEnd gt uint40 limits"
-        );
 
         // EFFECTS
         // update emergency hours applied
