@@ -13,6 +13,8 @@
 
 ### Upload 0
 
+**Updated GenArt721Minter** https://sepolia.etherscan.io/address/0xce4488273a3409a0b1070db944180aba43ef8142
+
 **GenArt721CoreV2:** https://sepolia.etherscan.io/address/0xaDe9dF7D1F38299b26266af80c9679d97Dd1F0CC#code
 **GenArt721Minter:** https://sepolia.etherscan.io/address/0x898a945005e602d268E874537C502190B925532a#code
 

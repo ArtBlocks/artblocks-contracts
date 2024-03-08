@@ -34,3 +34,50 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2024-03-08T01:28:39.742Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/numbers-flex/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x987ffeEfa95B7a8C76cd773Ab7f496852c3A12B3
+[INFO] Using shared Randomizer at 0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91
+----------------------------------------
+[INFO] Datetime of deployment: 2024-03-08T17:15:29.978Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/numbers-flex/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xCDB5B0FEA050Eaa69323A7352f0F3295aB4dFA63
+[INFO] Using shared Randomizer at 0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xB8E8Bec0891A7519091E18590e0b60221853dd2B
+[INFO] Registered core contract 0xB8E8Bec0891A7519091E18590e0b60221853dd2B on core registry 0x2eE7B9bB2E038bE7323A119701A191c030A61ec6
+[INFO] Updated the Minter Filter on the Core contract to 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x64F0D457BE37e429B1CF717AD6EFD14066A7d145.
+[INFO] Verifying core contract contract deployment...
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine_Flex.sol:GenArt721CoreV3_Engine_Flex at 0xB8E8Bec0891A7519091E18590e0b60221853dd2B
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex on the block explorer.
+https://etherscan.io/address/0xB8E8Bec0891A7519091E18590e0b60221853dd2B#code
+
+[INFO] Core contract verified on Etherscan at 0xB8E8Bec0891A7519091E18590e0b60221853dd2B}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xCDB5B0FEA050Eaa69323A7352f0F3295aB4dFA63 has already been verified on Etherscan.
+https://etherscan.io/address/0xCDB5B0FEA050Eaa69323A7352f0F3295aB4dFA63#code
+[INFO] AdminACL contract verified on Etherscan at 0xCDB5B0FEA050Eaa69323A7352f0F3295aB4dFA63
+Created s3 bucket for https://nnumber-mainnet.s3.amazonaws.com
+[INFO] Created image bucket nnumber-mainnet
+[INFO] Deployment details written to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/numbers-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xb8e8bec0891a7519091e18590e0b60221853dd2b",
+  "name": "Nnumber",
+  "bucket_name": "nnumber-mainnet",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] AdminACL's superAdmin address is 0x64F0D457BE37e429B1CF717AD6EFD14066A7d145, don't forget to update if requred.

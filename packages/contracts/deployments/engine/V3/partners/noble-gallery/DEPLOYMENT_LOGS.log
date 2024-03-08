@@ -79,3 +79,39 @@ Contracts metadata upsert input:
 }
 Successfully upserted 1 contract
 [ACTION] AdminACL's superAdmin address is 0xf8e90D2D2f6f67A13D0a04374e22624A80a1e918, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2024-03-08T01:06:52.599Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/noble-gallery/deployment-config.sepolia-staging.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x8DdfD721BB91Ba6B8Ed803353318a5DB4E294fa8
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine deployed at 0xCA26580b0e996E2772246091C3c0f6076410e25C
+[INFO] Registered core contract 0xCA26580b0e996E2772246091C3c0f6076410e25C on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0xf8e90D2D2f6f67A13D0a04374e22624A80a1e918.
+[INFO] Verifying core contract contract deployment...
+The contract 0xCA26580b0e996E2772246091C3c0f6076410e25C has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0xCA26580b0e996E2772246091C3c0f6076410e25C#code
+[INFO] Core contract verified on Etherscan at 0xCA26580b0e996E2772246091C3c0f6076410e25C}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x8DdfD721BB91Ba6B8Ed803353318a5DB4E294fa8 has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x8DdfD721BB91Ba6B8Ed803353318a5DB4E294fa8#code
+[INFO] AdminACL contract verified on Etherscan at 0x8DdfD721BB91Ba6B8Ed803353318a5DB4E294fa8
+Created s3 bucket for https://noble-generative-sepolia.s3.amazonaws.com
+[INFO] Created image bucket noble-generative-sepolia
+[INFO] Deployment details written to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/noble-gallery/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xca26580b0e996e2772246091c3c0f6076410e25c",
+  "name": "Noble Generative",
+  "bucket_name": "noble-generative-sepolia",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef, don't forget to update if requred.
