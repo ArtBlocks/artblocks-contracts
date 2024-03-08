@@ -1,17 +1,17 @@
 
 # Deployment
 
-Date: 2023-12-21T23:28:29.453Z
+Date: 2024-03-08T01:22:59.858Z
 
 ## **Network:** sepolia
 
 ## **Environment:** staging
 
-**Deployment Input File:** `deployments/engine/V3/partners/the-disruptive-gallery/deployment-config.staging.ts`
+**Deployment Input File:** `deployments/engine/V3/partners/glitch-gallery-flex/deployment-config.sepolia-staging.ts`
 
-**GenArt721CoreV3_Engine_Flex:** https://sepolia.etherscan.io/address/0xcA7224Cc37116D72092e34259e6A5bfdB3009179#code
+**GenArt721CoreV3_Engine_Flex:** https://sepolia.etherscan.io/address/0x7D4B998240B8453C10d41C810650DeBbE21e1492#code
 
-**AdminACLV1:** https://sepolia.etherscan.io/address/0x5FA646aB6fFAF0be0FaF72d0e633C4d2dc736001#code
+**AdminACLV1:** https://sepolia.etherscan.io/address/0xAE68d27eCdB7c6988eD972d8b7F9C51a6D52502A#code
 
 **Core Registry:** https://sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
 
@@ -21,36 +21,36 @@ Date: 2023-12-21T23:28:29.453Z
 
 **Metadata**
 
-- **Starting Project Id:** 0
-- **Token Name:** The Disruptive Gallery
-- **Token Ticker:** TDG
+- **Starting Project Id:** 1
+- **Token Name:** glitch Gallery
+- **Token Ticker:** glitch
 - **Auto Approve Artist Split Proposals:** false
 - **Render Provider Address, Primary Sales:** deployer
-- **Platform Provider Address, Primary Sales:** 0x7118b4e929b72Cb75C69C7CF4467fA7E2761175f
+- **Platform Provider Address, Primary Sales:** 0x6e2F6130B31df274283fb21744Ad18836aBCaceE
 - **BytecodeStorageReader Library:** 0x7497909537cE00fDda93c12d5083D8647C593c67
 
 **Other**
 
 - **Add initial project?:** false
 - **Add initial token?:** false
-- **Image Bucket:** the-disruptive-gallery-sepolia
+- **Image Bucket:** glitch-gallery-sepolia
 
 ---
 
 
 # Deployment
 
-Date: 2024-03-08T17:38:21.253Z
+Date: 2024-03-08T17:44:10.149Z
 
 ## **Network:** mainnet
 
 ## **Environment:** mainnet
 
-**Deployment Input File:** `deployments/engine/V3/partners/the-disruptive-gallery/deployment-config.mainnet.ts`
+**Deployment Input File:** `deployments/engine/V3/partners/glitch-gallery-flex/deployment-config.mainnet.ts`
 
-**GenArt721CoreV3_Engine_Flex:** https://etherscan.io/address/0x96A83b48dE94E130Cf2AA81b28391c28EE33d253#code
+**GenArt721CoreV3_Engine_Flex:** https://etherscan.io/address/0xE18F2247FE4A69c0E2210331B0604F6D10FecE9E#code
 
-**AdminACLV1:** https://etherscan.io/address/0xDa660c53BF80Ec39acbac12160B34c6583434F92#code
+**AdminACLV1:** https://etherscan.io/address/0x8e0C9751BE63B23e5795b6f68ed3a654F0D44162#code
 
 **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
 
@@ -60,19 +60,19 @@ Date: 2024-03-08T17:38:21.253Z
 
 **Metadata**
 
-- **Starting Project Id:** 0
-- **Token Name:** The Disruptive Gallery
-- **Token Ticker:** TDG
+- **Starting Project Id:** 1
+- **Token Name:** glitch Gallery
+- **Token Ticker:** glitch
 - **Auto Approve Artist Split Proposals:** false
-- **Render Provider Address, Primary Sales:** 0x5B614c9C64B4c626E0302970DFA2FCde6F3B1A2b
-- **Platform Provider Address, Primary Sales:** 0x7118b4e929b72Cb75C69C7CF4467fA7E2761175f
+- **Render Provider Address, Primary Sales:** 0x3c53D7bAdfAFB74D1C7c2b5ce9828C2bB023156F
+- **Platform Provider Address, Primary Sales:** 0x6e2F6130B31df274283fb21744Ad18836aBCaceE
 - **BytecodeStorageReader Library:** 0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5
 
 **Other**
 
 - **Add initial project?:** false
 - **Add initial token?:** false
-- **Image Bucket:** the-disruptive-gallery-mainnet
+- **Image Bucket:** glitch-gallery-mainnet
 
 ---
 
