@@ -393,6 +393,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * ------------------------------------------------------------------------
      * @param projectId projectId being bid on.
      * @param coreContract Core contract address for the given project.
+     * @param slotIndex Slot index to get the bid value for.
      * @dev nonReentrant modifier is used to prevent reentrancy attacks, e.g.
      * an an auto-bidder that would be able to atomically outbid a user's
      * new bid via a reentrant call to createBid.
@@ -476,6 +477,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * `coreContract` for auction that has ended, but not yet been sold out.
      * @param projectId Project ID to purchase token for.
      * @param coreContract Core contract address for the given project.
+     * @return tokenId Token ID of minted token
      */
     function purchase(
         uint256 projectId,
@@ -494,8 +496,10 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @notice Purchases token for project `projectId` on core contract
      * `coreContract` for auction that has ended, but not yet been sold out,
      * and sets the token's owner to `to`.
+     * @param to Address to be the new token's owner.
      * @param projectId Project ID to purchase token for.
      * @param coreContract Core contract address for the given project.
+     * @return tokenId Token ID of minted token
      */
     function purchaseTo(
         address to,
@@ -584,7 +588,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @notice Directly mint tokens to winners of project `projectId` on core
      * contract `coreContract`.
      * Does not guarantee an optimal ordering or handling of E1 state like
-     * `adminAutoMintTokensToWinners` does while in State C.
+     * `adminAutoRefundWinners` does while in State C.
      * Admin or Artist may mint to any winning bids.
      * Provides protection for Admin and Artist because they may mint tokens
      * to winners to prevent denial of revenue claiming.
@@ -625,7 +629,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @notice Directly mint tokens of winner of project `projectId` on core
      * contract `coreContract`.
      * Does not guarantee an optimal ordering or handling of E1 state like
-     * `adminAutoMintTokensToWinners` does while in State C.
+     * `adminAutoRefundWinners` does while in State C.
      * Only winning collector may call and mint tokens to themselves.
      * Provides protection for collectors because they may mint their tokens
      * directly.
@@ -862,7 +866,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * Gets the configuration details for a core contract as configured by a
+     * @notice Gets the configuration details for a core contract as configured by a
      * contract admin, for this minter.
      * @param coreContract The address of the core contract.
      * @return RAMLib.RAMContractConfig instance with the configuration data.
@@ -1015,7 +1019,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @dev This function will revert if the provided `coreContract` is not
      * a valid Engine or V3 Flagship contract.
      * @param coreContract The address of the contract to check.
-     * @return bool indicating if `coreContract` is a valid engine contract.
+     * @return indicating if `coreContract` is a valid engine contract.
      */
     function isEngineView(address coreContract) external view returns (bool) {
         SplitFundsLib.IsEngineCache storage isEngineCache = SplitFundsLib
@@ -1029,7 +1033,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * @notice Gets minimum bid value to become the leading bidder in an
+     * @notice Gets minimum bid value to participate in an
      * auction for project `projectId` on core contract `coreContract`.
      * If an auction is not configured, `isConfigured` will be false, and a
      * dummy price of zero is assigned to `tokenPriceInWei`.
@@ -1049,7 +1053,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @param projectId Project ID to get price information for.
      * @param coreContract Core contract to get price information for.
      * @return isConfigured true only if project auctions are configured.
-     * @return tokenPriceInWei price in wei to become the leading bidder on a
+     * @return tokenPriceInWei price in wei to become a bidder on a
      * token auction.
      * @return currencySymbol currency symbol for purchases of project on this
      * minter. This minter always returns "ETH"
@@ -1079,7 +1083,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * Gets minimum next bid value in Wei and slot index for project `projectId`
+     * @notice Gets minimum next bid value in Wei and slot index for project `projectId`
      * on core contract `coreContract`.
      * If in a pre-auction state, reverts if unconfigured, otherwise returns
      * the minimum initial bid price for the upcoming auction.

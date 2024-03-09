@@ -490,8 +490,8 @@ library SplitFundsLib {
      * `currencyAddress` is zero.
      * @param projectId Project ID to get config for
      * @param coreContract Core contract address to get config for
-     * @return currencyAddress
-     * @return currencySymbol
+     * @return currencySymbol currency symbol for the referenced SplitFundsProjectConfig.
+     * @return currencyAddress currency address for the referenced SplitFundsProjectConfig.
      */
     function getCurrencyInfoERC20(
         uint256 projectId,
@@ -517,7 +517,7 @@ library SplitFundsLib {
      * @notice Gets the balance of `currencyAddress` ERC20 tokens for `walletAddress`.
      * @param currencyAddress ERC20 token address.
      * @param walletAddress wallet address.
-     * @return balance
+     * @return balance Balance of ERC-20
      */
     function getERC20Balance(
         address currencyAddress,
@@ -532,7 +532,7 @@ library SplitFundsLib {
      * @param currencyAddress ERC20 token address.
      * @param walletAddress wallet address.
      * @param spenderAddress spender address.
-     * @return allowance
+     * @return allowance Allowance of ERC-20
      */
     function getERC20Allowance(
         address currencyAddress,

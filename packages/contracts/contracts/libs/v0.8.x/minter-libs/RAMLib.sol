@@ -60,7 +60,7 @@ library RAMLib {
     );
 
     /**
-     *
+     * @notice Admin minting constraint configuration updated
      * @param coreContract Core contract address to update
      * @param adminMintingConstraint enum representing admin minting constraints imposed on this contract
      */
@@ -451,7 +451,20 @@ library RAMLib {
     }
 
     /**
-     * Reverts if not currently in ProjectMinterState A
+     * @notice Function to set auction details on project `projectId` on core contract `coreContract`.
+     * Reverts if not currently in ProjectMinterState A.
+     * Reverts if base price does not meet the minimum.
+     * Reverts if not for future auction.
+     * Reverts if end time not greater than start time.
+     * Reverts if adminArtistOnlyMintPeriodIfSellout disagrees with the admin configured constraints.
+     * @param projectId Project ID to add emergency auction hours to.
+     * @param coreContract Core contract address for the given project.
+     * @param auctionTimestampStart New timestamp at which to start the auction.
+     * @param auctionTimestampEnd New timestamp at which to end the auction.
+     * @param basePrice Base price (or reserve price) of the auction, in Wei
+     * @param allowExtraTime Auction allows extra time
+     * @param adminArtistOnlyMintPeriodIfSellout Auction admin-artist-only mint period if
+     * sellout
      */
     function setAuctionDetails(
         uint256 projectId,
@@ -558,7 +571,7 @@ library RAMLib {
      * Reverts if auction is not being reduced in length.
      * Reverts if in extra time.
      * Reverts if `auctionTimestampEnd` results in auction that is not at least
-     * `MIN_AUCTION_DURATION_SECONDS` in duration.
+     * `minimumAuctionDurationSeconds` in duration.
      * Reverts if admin previously applied a time extension.
      * @param projectId Project ID to reduce the auction length for.
      * @param coreContract Core contract address for the given project.
@@ -1393,6 +1406,11 @@ library RAMLib {
      * @notice Function to mint tokens if an auction is over, but did not sell
      * out and tokens are still available to be minted.
      * @dev must be called within non-reentrant context
+     * @param to Address to be the new token's owner.
+     * @param projectId Project ID to mint a token on.
+     * @param coreContract Core contract address for the given project.
+     * @param minterFilter Minter filter to use when minting token.
+     * @return tokenId Token ID of minted token
      */
     function purchaseTo(
         address to,
@@ -1691,7 +1709,7 @@ library RAMLib {
     }
 
     /**
-     * @notice Returns the value and slot index of the minimum bid in the
+     * @notice Returns the Bid struct and slot index of the minimum bid in the
      * project's auction, in Wei.
      * Reverts if no bids exist in the auction.
      * @param projectId Project ID to get the minimum bid value for
@@ -1872,7 +1890,7 @@ library RAMLib {
     }
 
     /**
-     * Gets minimum next bid value in Wei and slot index for project `projectId`
+     * @notice Gets minimum next bid value in Wei and slot index for project `projectId`
      * on core contract `coreContract`.
      * If in a pre-auction state, reverts if unconfigured, otherwise returns
      * the minimum initial bid price for the upcoming auction.
@@ -1953,6 +1971,13 @@ library RAMLib {
         }
     }
 
+    /**
+     * @notice Gets the project minter state of project `projectId` on core
+     * contract `coreContract`.
+     * @param projectId Project ID to get the minimum next bid value for
+     * @param coreContract Core contract address for the given project
+     * @return ProjectMinterStates enum representing the minter state.
+     */
     function getProjectMinterState(
         uint256 projectId,
         address coreContract
@@ -2069,6 +2094,7 @@ library RAMLib {
      * maxHasBeenInvoked
      * @param projectId Project Id to get config for
      * @param coreContract Core contract address to get config for
+     * @return maxInvocationsProjectConfig max invocations project configuration
      */
     function getMaxInvocationsProjectConfig(
         uint256 projectId,
@@ -2101,6 +2127,7 @@ library RAMLib {
      * invocations when determining maxHasBeenInvoked
      * @param projectId Project Id to get config for
      * @param coreContract Core contract address to get config for
+     * @return maxHasBeenInvoked bool indicating if max invocations have been invoked
      */
     function getMaxHasBeenInvoked(
         uint256 projectId,
@@ -2272,6 +2299,8 @@ library RAMLib {
      * @param slotIndex Slot index of bid to settle
      * @param bidId ID of bid to settle
      * @param projectPrice Price of token on the project
+     * @param minterRefundGasLimit Gas limit to use when refunding the previous
+     * highest bidder, prior to using fallback force-send to refund
      */
     function _settleBid(
         RAMProjectConfig storage RAMProjectConfig_,
@@ -2335,7 +2364,8 @@ library RAMLib {
     /**
      * @notice Helper function to get the number of tokens owed for a given
      * project.
-     * Returns the number of bids in a project minus the sum of tokens already
+     * @param RAMProjectConfig_ RAMProjectConfig to query
+     * @return tokensOwed The number of bids in a project minus the sum of tokens already
      * minted and bids that have been refunded due to an error state.
      */
     function _getNumTokensOwed(
@@ -2431,8 +2461,11 @@ library RAMLib {
      * @notice Remove minimum bid from the project's RAMProjectConfig.
      * Reverts if no bids exist in slot RAMProjectConfig_.minBidSlotIndex.
      * @param RAMProjectConfig_ RAM project config to remove bid from
+     * @param projectId Project ID to remove bid from
+     * @param coreContract Core contract address for the given project
      * @param minterRefundGasLimit Gas limit to use when refunding the previous
      * highest bidder, prior to using fallback force-send to refund
+     * @return removedSlotIndex The slot index of the removed bid
      */
     function _removeMinBid(
         RAMProjectConfig storage RAMProjectConfig_,
@@ -2649,7 +2682,7 @@ library RAMLib {
      * @notice Helper function to get a packed boolean from a Bid struct.
      * @param bid Bid to query
      * @param index Index of packed boolean to query
-     * @return bool Value of packed boolean
+     * @return Value of packed boolean
      */
     function _getBidPackedBool(
         Bid storage bid,
@@ -2723,7 +2756,7 @@ library RAMLib {
     /**
      * @notice Helper function to get maximum slot index with an active bid,
      * starting at a given slot index and searching downwards.
-     * Returns (0, false) if not slots with bids were found.
+     * Returns (0, false) if no slots with bids were found.
      * Reverts if startSlotIndex > 511, since this library only supports 512
      * slots.
      * @param RAMProjectConfig_ RAM project config to query

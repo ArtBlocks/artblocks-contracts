@@ -15,11 +15,26 @@ pragma solidity ^0.8.0;
  * outside of the library.
  */
 library BitMaps256 {
+    /**
+     * @notice Checks if the bit at a specific index in the bit map is set.
+     * A bit is considered set if it is 1, and unset if it is 0.
+     * @param bitMap BitMap to check.
+     * @param index The index of the bit to check.
+     * @return Indicating if the bit at the specified index is set, false otherwise.
+     */
     function get(uint256 bitMap, uint8 index) internal pure returns (bool) {
         uint256 mask = 1 << (index & 0xff);
         return bitMap & mask != 0;
     }
 
+    /**
+     * @notice Sets the bit at a specific index in the bit map to 1.
+     * This function creates a new bit map where the bit at the specified index is set,
+     * leaving other bits unchanged.
+     * @param bitMap The original BitMap.
+     * @param index The index of the bit to set.
+     * @return newBitMap The new bit map after setting the bit at the specified index.
+     */
     function set(
         uint256 bitMap,
         uint8 index
@@ -28,6 +43,14 @@ library BitMaps256 {
         return bitMap | mask;
     }
 
+    /**
+     * @notice Unsets the bit at a specific index in the bit map, setting it to 0.
+     * This function creates a new bit map where the bit at the specified index is unset,
+     * leaving other bits unchanged.
+     * @param bitMap The original BitMap.
+     * @param index The index of the bit to unset.
+     * @return newBitMap The new bit map after unsetting the bit at the specified index.
+     */
     function unset(
         uint256 bitMap,
         uint8 index

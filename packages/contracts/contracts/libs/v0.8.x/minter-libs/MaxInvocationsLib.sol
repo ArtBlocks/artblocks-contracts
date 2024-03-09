@@ -217,7 +217,6 @@ library MaxInvocationsLib {
      * Returns true if not initialized, false if initialized.
      * @param projectId The id of the project.
      * @param coreContract The address of the core contract.
-     * @return bool
      * @dev We know a project's max invocations have never been initialized if
      * both max invocations and maxHasBeenInvoked are still initial values.
      * This is because if maxInvocations were ever set to zero,
@@ -389,7 +388,7 @@ library MaxInvocationsLib {
      * local minter max invocations is stale.
      * @param projectId The id of the project.
      * @param coreContract The address of the core contract.
-     * @return uint256 The number of invocations available for the project.
+     * @return The number of invocations available for the project.
      */
     function getInvocationsAvailable(
         uint256 projectId,
