@@ -490,8 +490,8 @@ library SplitFundsLib {
      * `currencyAddress` is zero.
      * @param projectId Project ID to get config for
      * @param coreContract Core contract address to get config for
-     * @return currencySymbol currency symbol for the referenced SplitFundsProjectConfig.
      * @return currencyAddress currency address for the referenced SplitFundsProjectConfig.
+     * @return currencySymbol currency symbol for the referenced SplitFundsProjectConfig.
      */
     function getCurrencyInfoERC20(
         uint256 projectId,
