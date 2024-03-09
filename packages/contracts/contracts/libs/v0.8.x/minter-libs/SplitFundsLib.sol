@@ -231,7 +231,7 @@ library SplitFundsLib {
             });
             projectCurrency = IERC20(currencyAddress);
         }
-        // split remaining funds between foundation, artist, and artist's
+        // split remaining funds between foundation, artist, and artist's additional payee
         bool isEngine_ = isEngine(coreContract);
         uint256 renderProviderRevenue;
         address payable renderProviderAddress;

@@ -680,7 +680,7 @@ library RAMLib {
         // CHECKS
         // @dev block scope to avoid stack too deep error
         {
-            // require project minter state E (Post-Auction, all bids handled)
+            // require project minter state C or D (Post-Auction, Open Mint or Admin-Artist Mint Period)
             ProjectMinterStates projectMinterState = getProjectMinterState({
                 projectId: projectId,
                 coreContract: coreContract
@@ -1104,7 +1104,6 @@ library RAMLib {
                 // send entire bid value if not previously settled
                 valueToSend = slotIndexToBidValue({
                     basePrice: RAMProjectConfig_.basePrice,
-                    // @dev safe to cast to uint16
                     slotIndex: bid.slotIndex
                 });
             }
@@ -2613,8 +2612,6 @@ library RAMLib {
                 .unset(uint8(slotIndex));
         } else {
             // @dev <512 results in no overflow when casting to uint8
-            // @dev casting to uint8 intentional overflow instead of
-            // subtracting 256 from slotIndex
             RAMProjectConfig_.slotsBitmapB = RAMProjectConfig_
                 .slotsBitmapB
                 .unset(
@@ -2770,7 +2767,7 @@ library RAMLib {
                 (maxSlotWithBid_, foundSlotWithBid) = RAMProjectConfig_
                     .slotsBitmapA
                     .maxBitSet(
-                        // start at beginning of second bitmap
+                        // start at the end of the first bitmap
                         uint8(255)
                     );
             }
