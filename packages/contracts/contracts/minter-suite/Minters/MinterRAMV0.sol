@@ -272,7 +272,10 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             projectId: projectId,
             coreContract: coreContract
         });
-        require(currentState == RAMLib.ProjectMinterStates.A, "Only state A");
+        require(
+            currentState == RAMLib.ProjectMinterStates.PreAuction,
+            "Only pre-auction"
+        );
         // EFFECTS
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
             projectId: projectId,
@@ -393,7 +396,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * ------------------------------------------------------------------------
      * @param projectId projectId being bid on.
      * @param coreContract Core contract address for the given project.
-     * @param slotIndex Slot index to get the bid value for.
+     * @param slotIndex Slot index to create the bid for.
      * @dev nonReentrant modifier is used to prevent reentrancy attacks, e.g.
      * an an auto-bidder that would be able to atomically outbid a user's
      * new bid via a reentrant call to createBid.
@@ -1019,7 +1022,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @dev This function will revert if the provided `coreContract` is not
      * a valid Engine or V3 Flagship contract.
      * @param coreContract The address of the contract to check.
-     * @return indicating if `coreContract` is a valid engine contract.
+     * @return True if `coreContract` is a valid engine contract.
      */
     function isEngineView(address coreContract) external view returns (bool) {
         SplitFundsLib.IsEngineCache storage isEngineCache = SplitFundsLib
@@ -1123,7 +1126,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         uint256 projectId,
         address coreContract
     ) external view returns (uint256) {
-        (, uint16 minBidSlotIndex) = RAMLib.getMinBid({
+        (, uint16 minBidSlotIndex) = RAMLib.getLowestBid({
             projectId: projectId,
             coreContract: coreContract
         });

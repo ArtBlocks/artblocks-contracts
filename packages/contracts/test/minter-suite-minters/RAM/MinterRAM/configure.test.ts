@@ -189,7 +189,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               1
             ),
-          revertMessages.onlyStateA
+          revertMessages.onlyPreAuction
         );
       });
 
@@ -402,7 +402,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               1
             ),
-          revertMessages.onlyStateB
+          revertMessages.onlyLiveAuction
         );
         // revert in State C
         await initializeMinBidInProjectZeroAuctionAndAdvanceToEnd(config);
@@ -414,7 +414,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               1
             ),
-          revertMessages.onlyStateB
+          revertMessages.onlyLiveAuction
         );
       });
 
@@ -750,7 +750,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               config.startTime + config.defaultAuctionLengthSeconds
             ),
-          revertMessages.onlyStateB
+          revertMessages.onlyLiveAuction
         );
       });
 

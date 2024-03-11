@@ -255,11 +255,11 @@ library RAMLib {
     uint8 constant INDEX_IS_REFUNDED = 2;
 
     enum ProjectMinterStates {
-        A, // Pre-Auction
-        B, // Live-Auction
-        C, // Post-Auction, not all bids handled, admin-artist-only mint period
-        D, // Post-Auction, not all bids handled, post-admin-artist-only mint period
-        E // Post-Auction, all bids handled
+        PreAuction, // Pre-Auction, State A
+        LiveAuction, // Live-Auction, State B
+        PostAuctionAdminArtistMint, // Post-Auction, not all bids handled, admin-artist-only mint period, State C
+        PostAuctionOpenMint, // Post-Auction, not all bids handled, post-admin-artist-only mint period, State D
+        PostAuctionAllBidsHandled // Post-Auction, all bids handled, State E
     }
 
     // project-specific parameters
@@ -406,8 +406,8 @@ library RAMLib {
         // require auction in state B (Live Auction)
         require(
             getProjectMinterState(projectId, coreContract) ==
-                ProjectMinterStates.B,
-            "Only state B"
+                ProjectMinterStates.LiveAuction,
+            "Only live auction"
         );
         // require auction has not reached extra time
         require(
@@ -481,12 +481,12 @@ library RAMLib {
             coreContract: coreContract
         });
         // CHECKS
-        // require ProjectMinterState A (pre-auction)
+        // require ProjectMinterState Pre-auction (State A)
         require(
             getProjectMinterState({
                 projectId: projectId,
                 coreContract: coreContract
-            }) == ProjectMinterStates.A,
+            }) == ProjectMinterStates.PreAuction,
             "Only pre-auction"
         );
         // require base price >= 0.05 ETH
@@ -590,11 +590,11 @@ library RAMLib {
             coreContract: coreContract
         });
         // CHECKS
-        // require auction state B
+        // require auction state B, live auction
         require(
             getProjectMinterState(projectId, coreContract) ==
-                ProjectMinterStates.B,
-            "Only state B"
+                ProjectMinterStates.LiveAuction,
+            "Only live auction"
         );
         // require no previous admin extension time
         require(
@@ -699,9 +699,11 @@ library RAMLib {
                 coreContract: coreContract
             });
             require(
-                projectMinterState == ProjectMinterStates.C ||
-                    projectMinterState == ProjectMinterStates.D,
-                "Only states C or D"
+                projectMinterState ==
+                    ProjectMinterStates.PostAuctionAdminArtistMint ||
+                    projectMinterState ==
+                    ProjectMinterStates.PostAuctionOpenMint,
+                "Only post-auction open mint or admin artist mint period"
             );
         }
 
@@ -713,8 +715,8 @@ library RAMLib {
         // settle each input bid
         // @dev already verified that input lengths match
         uint256 inputBidsLength = bidIds.length;
-        // @dev use unchecked loop incrementing for gas efficiency
-        for (uint256 i; i < inputBidsLength; ) {
+        // @dev overflow check optimization as of 0.8.22
+        for (uint256 i = 0; i < inputBidsLength; ++i) {
             // settle the bid
             _settleBidWithChecks({
                 RAMProjectConfig_: RAMProjectConfig_,
@@ -725,10 +727,6 @@ library RAMLib {
                 bidder: bidder,
                 minterRefundGasLimit: minterRefundGasLimit
             });
-            // increment loop counter
-            unchecked {
-                ++i;
-            }
         }
     }
 
@@ -778,8 +776,8 @@ library RAMLib {
                 coreContract: coreContract
             });
             require(
-                projectMinterState == ProjectMinterStates.D,
-                "Only state D"
+                projectMinterState == ProjectMinterStates.PostAuctionOpenMint,
+                "Only post-auction open mint"
             );
             // require numTokensToMint does not exceed number of tokens
             // owed.
@@ -894,8 +892,9 @@ library RAMLib {
                 coreContract: coreContract
             });
             require(
-                projectMinterState == ProjectMinterStates.C,
-                "Only state C"
+                projectMinterState ==
+                    ProjectMinterStates.PostAuctionAdminArtistMint,
+                "Only post-auction admin-artist-only"
             );
             // require numTokensToMint does not exceed number of tokens
             // owed
@@ -942,21 +941,22 @@ library RAMLib {
                 currentLatestMintedBidId = RAMProjectConfig_
                     .bids[currentLatestMintedBidId]
                     .nextBidId;
-            }
-            // if scrolled off end of list, then find next slot with bids
-            if (currentLatestMintedBidId == 0) {
-                // past tail of current slot's linked list, so need to find next
-                // bid slot with bids
-                // @dev not possible to not find next slot during auto-minting,
-                // so no need to handle case where slot not found
-                (currentLatestMintedBidSlotIndex, ) = _getMaxSlotWithBid({
-                    RAMProjectConfig_: RAMProjectConfig_,
-                    startSlotIndex: uint16(currentLatestMintedBidSlotIndex - 1)
-                });
-                // current bid is now the head of the linked list
-                currentLatestMintedBidId = RAMProjectConfig_.headBidIdBySlot[
-                    currentLatestMintedBidSlotIndex
-                ];
+                // if scrolled off end of list, then find next slot with bids
+                if (currentLatestMintedBidId == 0) {
+                    // past tail of current slot's linked list, so need to find next
+                    // bid slot with bids
+                    // @dev not possible to not find next slot during auto-minting,
+                    // so no need to handle case where slot not found
+                    (currentLatestMintedBidSlotIndex, ) = _getMaxSlotWithBid({
+                        RAMProjectConfig_: RAMProjectConfig_,
+                        startSlotIndex: uint16(
+                            currentLatestMintedBidSlotIndex - 1
+                        )
+                    });
+                    // current bid is now the head of the linked list
+                    currentLatestMintedBidId = RAMProjectConfig_
+                        .headBidIdBySlot[currentLatestMintedBidSlotIndex];
+                }
             }
 
             // get bid
@@ -1048,8 +1048,8 @@ library RAMLib {
                 coreContract: coreContract
             });
             require(
-                projectMinterState == ProjectMinterStates.D,
-                "Only state D"
+                projectMinterState == ProjectMinterStates.PostAuctionOpenMint,
+                "Only post-auction open mint"
             );
             // require is in state E1
             (bool isErrorE1_, uint256 numBidsToResolveE1, ) = isErrorE1FlagF1({
@@ -1106,7 +1106,7 @@ library RAMLib {
             uint256 valueToSend = projectPrice;
             bool didSettleBid = false;
             // if not isSettled, then settle the bid
-            if (!(_getBidPackedBool(bid, INDEX_IS_SETTLED))) {
+            if (!_getBidPackedBool(bid, INDEX_IS_SETTLED)) {
                 // mark bid as settled
                 _setBidPackedBool({
                     bid: bid,
@@ -1187,8 +1187,9 @@ library RAMLib {
                 coreContract: coreContract
             });
             require(
-                projectMinterState == ProjectMinterStates.C,
-                "Only state C"
+                projectMinterState ==
+                    ProjectMinterStates.PostAuctionAdminArtistMint,
+                "Only post-auction admin-artist-only"
             );
             // require is in state E1
             (bool isErrorE1_, uint256 numBidsToResolveE1, ) = isErrorE1FlagF1({
@@ -1277,7 +1278,7 @@ library RAMLib {
             uint256 valueToSend = projectPrice;
             bool didSettleBid = false;
             // if not isSettled, then settle the bid
-            if (!(_getBidPackedBool(bid, INDEX_IS_SETTLED))) {
+            if (!_getBidPackedBool(bid, INDEX_IS_SETTLED)) {
                 // mark bid as settled
                 _setBidPackedBool({
                     bid: bid,
@@ -1362,7 +1363,10 @@ library RAMLib {
             projectId: projectId,
             coreContract: coreContract
         });
-        require(projectMinterState == ProjectMinterStates.E, "Only state E");
+        require(
+            projectMinterState == ProjectMinterStates.PostAuctionAllBidsHandled,
+            "Only post-auction all bids handled"
+        );
         // require revenues not already withdrawn
         require(
             !(RAMProjectConfig_.revenuesCollected),
@@ -1433,9 +1437,10 @@ library RAMLib {
                 coreContract: coreContract
             });
             require(
-                projectMinterState == ProjectMinterStates.D ||
-                    projectMinterState == ProjectMinterStates.E,
-                "Only states D or E"
+                projectMinterState == ProjectMinterStates.PostAuctionOpenMint ||
+                    projectMinterState ==
+                    ProjectMinterStates.PostAuctionAllBidsHandled,
+                "Only post-auction open mint or all bids handled"
             );
             // require Flag F1, i.e. at least one excess token available to be
             // minted
@@ -1523,8 +1528,8 @@ library RAMLib {
         // require project minter state B (Live Auction)
         require(
             getProjectMinterState(projectId, coreContract) ==
-                ProjectMinterStates.B,
-            "Only state B"
+                ProjectMinterStates.LiveAuction,
+            "Only live auction"
         );
         // require slot index not out of range
         // @dev slot index out of range is checked in slotIndexToBidValue
@@ -1654,8 +1659,8 @@ library RAMLib {
             // require project minter state B (Live Auction)
             require(
                 getProjectMinterState(projectId, coreContract) ==
-                    ProjectMinterStates.B,
-                "Only state B"
+                    ProjectMinterStates.LiveAuction,
+                "Only live auction"
             );
             // require new slot index not out of range
             // @dev slot index out of range is checked in slotIndexToBidValue
@@ -1709,16 +1714,16 @@ library RAMLib {
     }
 
     /**
-     * @notice Returns the Bid struct and slot index of the minimum bid in the
+     * @notice Returns the Bid struct and slot index of the lowest bid in the
      * project's auction, in Wei.
      * Reverts if no bids exist in the auction.
-     * @param projectId Project ID to get the minimum bid value for
+     * @param projectId Project ID to get the lowest bid value for
      * @param coreContract Core contract address for the given project
-     * @return minBid Storage to pointer of Bid struct of the minimum bid in
+     * @return minBid Storage to pointer of Bid struct of the lowest bid in
      * the auction
-     * @return minSlotIndex Slot index of the minimum bid in the auction
+     * @return minSlotIndex Slot index of the lowest bid in the auction
      */
-    function getMinBid(
+    function getLowestBid(
         uint256 projectId,
         address coreContract
     ) internal view returns (Bid storage minBid, uint16 minSlotIndex) {
@@ -1842,7 +1847,7 @@ library RAMLib {
             coreContract: coreContract
         });
         // handle pre-auction State A
-        if (projectMinterState == RAMLib.ProjectMinterStates.A) {
+        if (projectMinterState == RAMLib.ProjectMinterStates.PreAuction) {
             isConfigured = RAMProjectConfig_.timestampStart > 0;
             // if not configured, leave tokenPriceInWei as 0
             if (isConfigured) {
@@ -1855,7 +1860,7 @@ library RAMLib {
                 RAMProjectConfig_.numTokensInAuction;
 
             // handle live-auction State B
-            if (projectMinterState == RAMLib.ProjectMinterStates.B) {
+            if (projectMinterState == RAMLib.ProjectMinterStates.LiveAuction) {
                 if (isSellout) {
                     // find next valid bid
                     // @dev okay if we extend past the maximum slot index
@@ -1923,7 +1928,7 @@ library RAMLib {
             coreContract: coreContract
         });
         // handle pre-auction State A
-        if (projectMinterState == RAMLib.ProjectMinterStates.A) {
+        if (projectMinterState == RAMLib.ProjectMinterStates.PreAuction) {
             bool isConfigured = RAMProjectConfig_.timestampStart > 0;
             if (!isConfigured) {
                 // if not configured, revert
@@ -1938,7 +1943,7 @@ library RAMLib {
                 RAMProjectConfig_.numTokensInAuction;
 
             // handle live-auction State B
-            if (projectMinterState == RAMLib.ProjectMinterStates.B) {
+            if (projectMinterState == RAMLib.ProjectMinterStates.LiveAuction) {
                 if (isSellout) {
                     // find next valid bid
                     // @dev okay if we extend past the maximum slot index
@@ -1994,7 +1999,7 @@ library RAMLib {
         bool isPreAuction = block.timestamp < timestampStart;
         // confirm that auction is either not configured or is pre-auction
         if ((!auctionIsConfigured) || isPreAuction) {
-            return ProjectMinterStates.A;
+            return ProjectMinterStates.PreAuction;
         }
         // State B: Live-Auction
         // @dev auction is configured due to previous State A return
@@ -2004,7 +2009,7 @@ library RAMLib {
         bool isPostAuction = block.timestamp > timestampEnd;
         bool isLiveAuction = !(isPreAuction || isPostAuction);
         if (isLiveAuction) {
-            return ProjectMinterStates.B;
+            return ProjectMinterStates.LiveAuction;
         }
         // States C, D, E: Post-Auction
         // @dev auction is configured and post auction due to previous States A, B returns
@@ -2014,7 +2019,7 @@ library RAMLib {
             RAMProjectConfig_.numBids;
         if (allBidsHandled) {
             // State E: Post-Auction, all bids handled
-            return ProjectMinterStates.E;
+            return ProjectMinterStates.PostAuctionAllBidsHandled;
         }
         // @dev all bids are not handled due to previous State E return
         bool adminOnlyMintPeriod = RAMProjectConfig_
@@ -2027,11 +2032,11 @@ library RAMLib {
             timestampEnd + ADMIN_ARTIST_ONLY_MINT_TIME_SECONDS;
         if (adminOnlyMintPeriod) {
             // State C: Post-Auction, not all bids handled, admin-artist-only mint period
-            return ProjectMinterStates.C;
+            return ProjectMinterStates.PostAuctionAdminArtistMint;
         }
         // State D: Post-Auction, not all bids handled, post-admin-artist-only mint period
         // @dev states are mutually exclusive, so must be in final remaining state
-        return ProjectMinterStates.D;
+        return ProjectMinterStates.PostAuctionOpenMint;
     }
 
     /**
@@ -2138,7 +2143,7 @@ library RAMLib {
             projectId: projectId,
             coreContract: coreContract
         });
-        if (projectMinterState == ProjectMinterStates.A) {
+        if (projectMinterState == ProjectMinterStates.PreAuction) {
             // pre-auction, true if numTokensInAuction == 0
             RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
                 projectId: projectId,
@@ -2154,7 +2159,7 @@ library RAMLib {
                     coreContract: coreContract
                 });
             }
-        } else if (projectMinterState == ProjectMinterStates.B) {
+        } else if (projectMinterState == ProjectMinterStates.LiveAuction) {
             // live auction, set to true if num bids == num tokens in auction
             RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
                 projectId: projectId,
@@ -2169,9 +2174,7 @@ library RAMLib {
                 projectId: projectId,
                 coreContract: coreContract
             });
-            if (numExcessInvocationsAvailable == 0) {
-                maxHasBeenInvoked = true;
-            }
+            maxHasBeenInvoked = numExcessInvocationsAvailable == 0;
         }
     }
 
@@ -2526,16 +2529,15 @@ library RAMLib {
             minterRefundGasLimit: minterRefundGasLimit
         });
 
+        // delete the removed bid to prevent future claiming
+        // @dev performed last to avoid pointing to deleted bid struct
+        delete RAMProjectConfig_.bids[removedBidId];
         // emit state change event
         emit BidRemoved({
             projectId: projectId,
             coreContract: coreContract,
             bidId: removedBidId
         });
-
-        // delete the removed bid to prevent future claiming
-        // @dev performed last to avoid pointing to deleted bid struct
-        delete RAMProjectConfig_.bids[removedBidId];
     }
 
     /**

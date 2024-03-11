@@ -250,27 +250,11 @@ library MaxInvocationsLib {
         uint256 projectId,
         address coreContract
     ) internal view returns (bool) {
-        // get up-to-data invocation data from core contract
-        (
-            uint256 coreInvocations,
-            uint256 coreMaxInvocations
-        ) = coreContractInvocationData({
+        return
+            getInvocationsAvailable({
                 projectId: projectId,
                 coreContract: coreContract
-            });
-        // load minter-local max invocations into memory
-        MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
-                projectId: projectId,
-                coreContract: coreContract
-            });
-        // invocations remain available if the core contract has not reached
-        // the most limiting max invocations, either on minter or core contract
-        uint256 limitingMaxInvocations = Math.min(
-            coreMaxInvocations,
-            maxInvocationsProjectConfig.maxInvocations // local max invocations
-        );
-        return coreInvocations < limitingMaxInvocations;
+            }) != 0;
     }
 
     /**
@@ -351,34 +335,11 @@ library MaxInvocationsLib {
         uint256 projectId,
         address coreContract
     ) internal view returns (bool) {
-        // get max invocations from core contract
-        (
-            uint256 coreInvocations,
-            uint256 coreMaxInvocations
-        ) = coreContractInvocationData({
+        return
+            getInvocationsAvailable({
                 projectId: projectId,
                 coreContract: coreContract
-            });
-
-        MaxInvocationsProjectConfig
-            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
-                projectId: projectId,
-                coreContract: coreContract
-            });
-        uint256 localMaxInvocations = maxInvocationsProjectConfig
-            .maxInvocations;
-        // value is locally defined, and could be out of date.
-        // only possible illogical state is if local max invocations is
-        // greater than core contract's max invocations, in which case
-        // we should use the core contract's max invocations
-        if (localMaxInvocations > coreMaxInvocations) {
-            // local max invocations is stale and illogical, defer to core
-            // contract's max invocations since it is the limiting factor
-            return (coreMaxInvocations == coreInvocations);
-        }
-        // local max invocations is limiting, so check core invocations against
-        // local max invocations
-        return (coreInvocations >= localMaxInvocations);
+            }) == 0;
     }
 
     /**
@@ -388,7 +349,7 @@ library MaxInvocationsLib {
      * local minter max invocations is stale.
      * @param projectId The id of the project.
      * @param coreContract The address of the core contract.
-     * @return The number of invocations available for the project.
+     * @return Number of invocations available for the project.
      */
     function getInvocationsAvailable(
         uint256 projectId,

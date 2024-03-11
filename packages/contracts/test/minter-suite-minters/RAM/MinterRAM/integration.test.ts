@@ -195,7 +195,7 @@ runForEach.forEach((params) => {
             .createBid(config.projectZero, config.genArt721Core.address, 0, {
               value: config.basePrice,
             }),
-          revertMessages.onlyStateB
+          revertMessages.onlyLiveAuction
         );
         // configure, remian in State A
         await configureDefaultProjectZero(config);
@@ -206,7 +206,7 @@ runForEach.forEach((params) => {
             .createBid(config.projectZero, config.genArt721Core.address, 0, {
               value: config.basePrice,
             }),
-          revertMessages.onlyStateB
+          revertMessages.onlyLiveAuction
         );
       });
 
@@ -221,7 +221,7 @@ runForEach.forEach((params) => {
             .createBid(config.projectZero, config.genArt721Core.address, 0, {
               value: config.basePrice,
             }),
-          revertMessages.onlyStateB
+          revertMessages.onlyLiveAuction
         );
       });
 
@@ -469,7 +469,7 @@ runForEach.forEach((params) => {
             .topUpBid(config.projectZero, config.genArt721Core.address, 0, 0, {
               value: config.basePrice,
             }),
-          revertMessages.onlyStateB
+          revertMessages.onlyLiveAuction
         );
       });
 
@@ -484,7 +484,7 @@ runForEach.forEach((params) => {
             .topUpBid(config.projectZero, config.genArt721Core.address, 0, 0, {
               value: config.basePrice,
             }),
-          revertMessages.onlyStateB
+          revertMessages.onlyLiveAuction
         );
       });
 
