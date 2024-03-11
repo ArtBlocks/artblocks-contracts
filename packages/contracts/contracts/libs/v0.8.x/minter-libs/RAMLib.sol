@@ -791,12 +791,6 @@ library RAMLib {
             );
         }
 
-        // settlement values
-        // get project price
-        uint256 projectPrice = _getProjectPrice({
-            RAMProjectConfig_: RAMProjectConfig_
-        });
-
         // main loop to mint tokens
         for (uint256 i; i < bidIdsLength; ++i) {
             // @dev current slot index and bid index in slot not memoized due
@@ -821,35 +815,19 @@ library RAMLib {
                 require(msg.sender == bidderAddress, "Only sender is bidder");
             }
             // EFFECTS
-            // STEP 1: mint bid
-            // update state
-            _setBidPackedBool({bid: bid, index: INDEX_IS_MINTED, value: true});
             // @dev num bids minted tokens not memoized due to stack depth
             // limitations
             RAMProjectConfig_.numBidsMintedTokens++;
-            // INTERACTIONS
-            _mintTokenForBid({
+            // Mint bid and settle if not already settled
+            _mintAndSettle({
                 projectId: projectId,
                 coreContract: coreContract,
-                bidId: uint32(currentBidId),
+                slotIndex: bid.slotIndex,
+                bidId: currentBidId,
                 bidder: bidderAddress,
-                minterFilter: minterFilter
+                minterFilter: minterFilter,
+                minterRefundGasLimit: minterRefundGasLimit
             });
-
-            // STEP 2: settle if not already settled
-            // @dev collector could have previously settled bid, so need to
-            // settle only if not already settled
-            if (!(_getBidPackedBool(bid, INDEX_IS_SETTLED))) {
-                _settleBid({
-                    RAMProjectConfig_: RAMProjectConfig_,
-                    projectId: projectId,
-                    coreContract: coreContract,
-                    projectPrice: projectPrice,
-                    slotIndex: bid.slotIndex,
-                    bidId: uint32(currentBidId),
-                    minterRefundGasLimit: minterRefundGasLimit
-                });
-            }
         }
     }
 
@@ -916,10 +894,6 @@ library RAMLib {
             .bids[currentLatestMintedBidId]
             .slotIndex;
 
-        // get project price
-        uint256 projectPrice = _getProjectPrice({
-            RAMProjectConfig_: RAMProjectConfig_
-        });
         uint256 numNewTokensMinted; // = 0
 
         // main loop to mint tokens
@@ -967,33 +941,17 @@ library RAMLib {
             // functions available for use while in State C. The bid may have
             // been previously settled, however.
 
-            // STEP 2: mint bid
+            // Mint bid and settle if not already settled
             // @dev scrolling logic in State C ensures bid is not yet minted
-            // mark bid as minted
-            _setBidPackedBool({bid: bid, index: INDEX_IS_MINTED, value: true});
-            // INTERACTIONS
-            _mintTokenForBid({
+            _mintAndSettle({
                 projectId: projectId,
                 coreContract: coreContract,
-                bidId: uint32(currentLatestMintedBidId),
+                slotIndex: currentLatestMintedBidSlotIndex,
+                bidId: currentLatestMintedBidId,
                 bidder: bid.bidder,
-                minterFilter: minterFilter
+                minterFilter: minterFilter,
+                minterRefundGasLimit: minterRefundGasLimit
             });
-
-            // STEP 3: settle if not already settled
-            // @dev collector could have previously settled bid, so need to
-            // settle only if not already settled
-            if (!(_getBidPackedBool(bid, INDEX_IS_SETTLED))) {
-                _settleBid({
-                    RAMProjectConfig_: RAMProjectConfig_,
-                    projectId: projectId,
-                    coreContract: coreContract,
-                    projectPrice: projectPrice,
-                    slotIndex: uint16(currentLatestMintedBidSlotIndex),
-                    bidId: uint32(currentLatestMintedBidId),
-                    minterRefundGasLimit: minterRefundGasLimit
-                });
-            }
 
             // increment num new tokens minted
             unchecked {
@@ -1006,6 +964,65 @@ library RAMLib {
         RAMProjectConfig_.numBidsMintedTokens += uint24(numNewTokensMinted);
         // @dev safe to cast to uint32 because directly derived from bid ID
         RAMProjectConfig_.latestMintedBidId = uint32(currentLatestMintedBidId);
+    }
+
+    /**
+     * @notice Function to mint and settle bid if not already settled.
+     * @param projectId Project ID to mint token on.
+     * @param coreContract Core contract address for the given project.
+     * @param slotIndex Slot index of bid.
+     * @param bidId ID of bid to settle.
+     * @param bidder Bidder of bid to settle.
+     * @param minterFilter minter filter contract address
+     * @param minterRefundGasLimit Gas limit to use when settling bid, prior to using fallback force-send to refund
+     */
+    function _mintAndSettle(
+        uint256 projectId,
+        address coreContract,
+        uint256 slotIndex,
+        uint256 bidId,
+        address bidder,
+        IMinterFilterV1 minterFilter,
+        uint256 minterRefundGasLimit
+    ) internal {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        Bid storage bid = RAMProjectConfig_.bids[bidId];
+        // settlement values
+        // get project price
+        uint256 projectPrice = _getProjectPrice({
+            RAMProjectConfig_: RAMProjectConfig_
+        });
+
+        // Mark bid as minted
+        _setBidPackedBool({bid: bid, index: INDEX_IS_MINTED, value: true});
+
+        // Mint token for bid
+        _mintTokenForBid({
+            projectId: projectId,
+            coreContract: coreContract,
+            bidId: uint32(bidId),
+            bidder: bidder,
+            minterFilter: minterFilter
+        });
+
+        // Settle if not already settled
+        // @dev collector could have previously settled bid, so need to
+        // settle only if not already settled
+        if (!(_getBidPackedBool(bid, INDEX_IS_SETTLED))) {
+            _settleBid({
+                RAMProjectConfig_: RAMProjectConfig_,
+                projectId: projectId,
+                coreContract: coreContract,
+                projectPrice: projectPrice,
+                slotIndex: slotIndex,
+                bidId: uint32(bidId),
+                minterRefundGasLimit: minterRefundGasLimit
+            });
+        }
     }
 
     /**

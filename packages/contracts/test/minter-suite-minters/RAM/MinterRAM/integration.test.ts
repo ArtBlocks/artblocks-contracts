@@ -1562,7 +1562,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               [0]
             ),
-          revertMessages.onlyStateD
+          revertMessages.onlyPostAuctionOpenMint
         );
         // configure auction in State A
         await configureDefaultProjectZero(config);
@@ -1574,7 +1574,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               [0]
             ),
-          revertMessages.onlyStateD
+          revertMessages.onlyPostAuctionOpenMint
         );
         // advance to State B
         await advanceToAuctionStartTime(config);
@@ -1586,7 +1586,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               [0]
             ),
-          revertMessages.onlyStateD
+          revertMessages.onlyPostAuctionOpenMint
         );
       });
 
@@ -1603,7 +1603,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               [0]
             ),
-          revertMessages.onlyStateD
+          revertMessages.onlyPostAuctionOpenMint
         );
       });
 
@@ -2276,7 +2276,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               [1]
             ),
-          revertMessages.onlyStateD
+          revertMessages.onlyPostAuctionOpenMint
         );
         // configure auction in State A
         await configureDefaultProjectZero(config);
@@ -2288,7 +2288,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               [1]
             ),
-          revertMessages.onlyStateD
+          revertMessages.onlyPostAuctionOpenMint
         );
         // advance to State B
         await advanceToAuctionStartTime(config);
@@ -2300,7 +2300,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               [1]
             ),
-          revertMessages.onlyStateD
+          revertMessages.onlyPostAuctionOpenMint
         );
       });
 
@@ -2317,7 +2317,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               [1]
             ),
-          revertMessages.onlyStateD
+          revertMessages.onlyPostAuctionOpenMint
         );
       });
 
