@@ -893,7 +893,7 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address
             ),
-          revertMessages.onlyStateE
+          revertMessages.onlyStatePostAuctionBidsHandled
         );
         // revert in State B
         await initializeMinBidInProjectZeroAuction(config);
@@ -904,7 +904,7 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address
             ),
-          revertMessages.onlyStateE
+          revertMessages.onlyStatePostAuctionBidsHandled
         );
         // advance time to end of auction
         await ethers.provider.send("evm_mine", [
@@ -918,7 +918,7 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address
             ),
-          revertMessages.onlyStateE
+          revertMessages.onlyStatePostAuctionBidsHandled
         );
       });
 
