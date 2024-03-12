@@ -1088,12 +1088,6 @@ library RAMLib {
             coreContract: coreContract
         });
 
-        // settlement values
-        // get project price
-        uint256 projectPrice = _getProjectPrice({
-            RAMProjectConfig_: RAMProjectConfig_
-        });
-
         // main loop to refund tokens
         for (uint256 i; i < bidIdsLength; ++i) {
             // @dev current slot index and bid index in slot not memoized due
@@ -1118,57 +1112,17 @@ library RAMLib {
                 require(msg.sender == bidderAddress, "Only sender is bidder");
             }
             // EFFECTS
-            // STEP 1: Settle and Refund the Bid
-            // minimum value to send is the project price
-            uint256 valueToSend = projectPrice;
-            bool didSettleBid = false;
-            // if not isSettled, then settle the bid
-            if (!_getBidPackedBool(bid, INDEX_IS_SETTLED)) {
-                // mark bid as settled
-                _setBidPackedBool({
-                    bid: bid,
-                    index: INDEX_IS_SETTLED,
-                    value: true
-                });
-                didSettleBid = true;
-                // send entire bid value if not previously settled
-                valueToSend = slotIndexToBidValue({
-                    basePrice: RAMProjectConfig_.basePrice,
-                    slotIndex: bid.slotIndex
-                });
-            }
-            // mark bid as refunded
-            _setBidPackedBool({
-                bid: bid,
-                index: INDEX_IS_REFUNDED,
-                value: true
+            // Settle and Refund the Bid
+            _settleAndRefundBid({
+                projectId: projectId,
+                coreContract: coreContract,
+                slotIndex: bid.slotIndex,
+                bidId: currentBidId,
+                minterRefundGasLimit: minterRefundGasLimit
             });
             // update number of bids refunded
             // @dev not memoized due to stack depth limitations
             RAMProjectConfig_.numBidsErrorRefunded++;
-            // INTERACTIONS
-            // force-send refund to bidder
-            // @dev reverts on underflow
-            RAMProjectConfig_.projectBalance -= uint120(valueToSend);
-            SplitFundsLib.forceSafeTransferETH({
-                to: bidderAddress,
-                amount: valueToSend,
-                minterRefundGasLimit: minterRefundGasLimit
-            });
-
-            // emit event for state changes
-            if (didSettleBid) {
-                emit BidSettled({
-                    projectId: projectId,
-                    coreContract: coreContract,
-                    bidId: currentBidId
-                });
-            }
-            emit BidRefunded({
-                projectId: projectId,
-                coreContract: coreContract,
-                bidId: currentBidId
-            });
         }
     }
 
@@ -1235,10 +1189,6 @@ library RAMLib {
             .bids[currentLatestRefundedBidId]
             .slotIndex;
         // settlement values
-        // get project price
-        uint256 projectPrice = _getProjectPrice({
-            RAMProjectConfig_: RAMProjectConfig_
-        });
         uint256 numRefundsIssued; // = 0
 
         // main loop to refund bids
@@ -1280,66 +1230,19 @@ library RAMLib {
                 ];
             }
 
-            // get bid
-            Bid storage bid = RAMProjectConfig_.bids[
-                currentLatestRefundedBidId
-            ];
-
             // @dev minter is in State C, so bid must not have been minted or
             // refunded due to scrolling logic of admin mint and refund
             // functions available for use while in State C. The bid may have
             // been previously settled, however.
 
-            // STEP 2: Settle & Refund the Bid
-            // minimum value to send is the project price
-            uint256 valueToSend = projectPrice;
-            bool didSettleBid = false;
-            // if not isSettled, then settle the bid
-            if (!_getBidPackedBool(bid, INDEX_IS_SETTLED)) {
-                // mark bid as settled
-                _setBidPackedBool({
-                    bid: bid,
-                    index: INDEX_IS_SETTLED,
-                    value: true
-                });
-                didSettleBid = true;
-                // send entire bid value since was not previously settled
-                valueToSend = slotIndexToBidValue({
-                    basePrice: RAMProjectConfig_.basePrice,
-                    // @dev safe to cast to uint16
-                    slotIndex: uint16(currentLatestRefundedBidSlotIndex)
-                });
-            }
-            // mark bid as refunded
-            _setBidPackedBool({
-                bid: bid,
-                index: INDEX_IS_REFUNDED,
-                value: true
-            });
-            // INTERACTIONS
-            // force-send refund to bidder
-            // @dev reverts on underflow
-            RAMProjectConfig_.projectBalance -= uint120(valueToSend);
-            SplitFundsLib.forceSafeTransferETH({
-                to: bid.bidder,
-                amount: valueToSend,
-                minterRefundGasLimit: minterRefundGasLimit
-            });
-
-            // emit event for state changes
-            if (didSettleBid) {
-                emit BidSettled({
-                    projectId: projectId,
-                    coreContract: coreContract,
-                    bidId: uint32(currentLatestRefundedBidId)
-                });
-            }
-            emit BidRefunded({
+            // Settle & Refund the Bid
+            _settleAndRefundBid({
                 projectId: projectId,
                 coreContract: coreContract,
-                bidId: uint32(currentLatestRefundedBidId)
+                slotIndex: uint16(currentLatestRefundedBidSlotIndex),
+                bidId: currentLatestRefundedBidId,
+                minterRefundGasLimit: minterRefundGasLimit
             });
-
             // increment loop counter and current num bids refunded
             unchecked {
                 ++numRefundsIssued;
@@ -1353,6 +1256,75 @@ library RAMLib {
         RAMProjectConfig_.latestRefundedBidId = uint32(
             currentLatestRefundedBidId
         );
+    }
+
+    /**
+     * @notice Function to refund bids to resolve E1 error state.
+     * @param projectId Project ID to refund bid for.
+     * @param coreContract Core contract address for the given project.
+     * @param slotIndex Slot index of bid.
+     * @param bidId ID of bid to settle.
+     * @param minterRefundGasLimit Gas limit to use when refunding bidder
+     */
+    function _settleAndRefundBid(
+        uint256 projectId,
+        address coreContract,
+        uint256 slotIndex,
+        uint256 bidId,
+        uint256 minterRefundGasLimit
+    ) internal {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // load bid
+        Bid storage bid = RAMProjectConfig_.bids[bidId];
+        // @dev bidderAddress previously checked not null
+        address bidderAddress = bid.bidder;
+        // Settle and refund the Bid
+        // Minimum value to send is the project price
+        uint256 projectPrice = _getProjectPrice({
+            RAMProjectConfig_: RAMProjectConfig_
+        });
+        uint256 valueToSend = projectPrice;
+        bool didSettleBid = false;
+
+        // if not isSettled, then settle the bid
+        if (!_getBidPackedBool(bid, INDEX_IS_SETTLED)) {
+            // mark bid as settled
+            _setBidPackedBool({bid: bid, index: INDEX_IS_SETTLED, value: true});
+            didSettleBid = true;
+            // send entire bid value if not previously settled
+            valueToSend = slotIndexToBidValue({
+                basePrice: RAMProjectConfig_.basePrice,
+                slotIndex: bid.slotIndex
+            });
+        }
+        // mark bid as refunded
+        _setBidPackedBool({bid: bid, index: INDEX_IS_REFUNDED, value: true});
+        // INTERACTIONS
+        // force-send refund to bidder
+        // @dev reverts on underflow
+        RAMProjectConfig_.projectBalance -= uint120(valueToSend);
+        SplitFundsLib.forceSafeTransferETH({
+            to: bidderAddress,
+            amount: valueToSend,
+            minterRefundGasLimit: minterRefundGasLimit
+        });
+        // emit event for state changes
+        if (didSettleBid) {
+            emit BidSettled({
+                projectId: projectId,
+                coreContract: coreContract,
+                bidId: bidId
+            });
+        }
+        emit BidRefunded({
+            projectId: projectId,
+            coreContract: coreContract,
+            bidId: bidId
+        });
     }
 
     /**
