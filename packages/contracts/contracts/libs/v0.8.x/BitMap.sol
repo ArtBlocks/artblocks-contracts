@@ -23,7 +23,7 @@ library BitMaps256 {
      * @return Indicating if the bit at the specified index is set, false otherwise.
      */
     function get(uint256 bitMap, uint8 index) internal pure returns (bool) {
-        uint256 mask = 1 << (index & 0xff);
+        uint256 mask = 1 << index;
         return bitMap & mask != 0;
     }
 
@@ -39,7 +39,7 @@ library BitMaps256 {
         uint256 bitMap,
         uint8 index
     ) internal pure returns (uint256 newBitMap) {
-        uint256 mask = 1 << (index & 0xff);
+        uint256 mask = 1 << index;
         return bitMap | mask;
     }
 
@@ -55,7 +55,7 @@ library BitMaps256 {
         uint256 bitMap,
         uint8 index
     ) internal pure returns (uint256 newBitMap) {
-        uint256 mask = 1 << (index & 0xff);
+        uint256 mask = 1 << index;
         return bitMap & ~mask;
     }
 
@@ -72,8 +72,13 @@ library BitMaps256 {
         uint256 bitMap,
         uint8 startIndex
     ) internal pure returns (uint256 minIndex, bool foundSetBit) {
+        // check if there's any set bit at or above startIndex
+        if ((bitMap >> startIndex) == 0) {
+            return (255, false);
+        }
         minIndex = startIndex;
-        // @dev this is a linear search, worst case 255 iterations in memory
+        // @dev this is a linear search, optimized to start only if there's a set bit at or above startIndex
+        // worst case 255 iterations in memory
         while (minIndex < 255 && !get(bitMap, uint8(minIndex))) {
             minIndex++;
         }

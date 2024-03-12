@@ -46,9 +46,11 @@ library ABHelpers {
     function tokenIdToTokenInvocation(
         uint256 tokenId
     ) internal pure returns (uint256) {
-        // mod returns remainder, which is the token number
-        // @dev no way to disable mod zero check in solidity, so not unchecked
-        return (tokenId % ONE_MILLION) + 1;
+        unchecked {
+            // mod returns remainder, which is the token number
+            // @dev no way to disable mod zero check in solidity, unchecked to optimize gas for addition
+            return (tokenId % ONE_MILLION) + 1;
+        }
     }
 
     /**

@@ -492,15 +492,10 @@ library RAMLib {
         // require base price >= 0.05 ETH
         require(basePrice >= 0.05 ether, "Only base price gte 0.05 ETH");
         // only future start time
+        // @dev minter already checks via min auction length check
         require(
             auctionTimestampStart > block.timestamp,
             "Only future auctions"
-        );
-        // require end time after start time
-        // @dev no coverage, minter already checks via min auction length check
-        require(
-            auctionTimestampEnd > auctionTimestampStart,
-            "Only end time gt start time"
         );
         // enforce contract-level constraints set by contract admin
         RAMContractConfig storage RAMContractConfig_ = getRAMContractConfig({
@@ -637,7 +632,7 @@ library RAMLib {
 
     /**
      * @notice Update the number of tokens in the auction, based on the state
-     * of the core contract and th eminter-local max invocations.
+     * of the core contract and the minter-local max invocations.
      * @param projectId Project ID to update
      * @param coreContract Core contract address to update
      */
@@ -1298,7 +1293,7 @@ library RAMLib {
             // send entire bid value if not previously settled
             valueToSend = slotIndexToBidValue({
                 basePrice: RAMProjectConfig_.basePrice,
-                slotIndex: bid.slotIndex
+                slotIndex: uint16(slotIndex)
             });
         }
         // mark bid as refunded
@@ -1559,16 +1554,11 @@ library RAMLib {
         bool reachedMaxBids = RAMProjectConfig_.numBids >= numTokensInAuction;
         if (reachedMaxBids) {
             // remove + refund the minimum Bid
-            uint16 removedSlotIndex = _removeMinBid({
+            uint256 removedBidValue = _removeMinBid({
                 RAMProjectConfig_: RAMProjectConfig_,
                 projectId: projectId,
                 coreContract: coreContract,
                 minterRefundGasLimit: minterRefundGasLimit
-            });
-            // require new bid is sufficiently greater than removed minimum bid
-            uint256 removedBidValue = slotIndexToBidValue({
-                basePrice: RAMProjectConfig_.basePrice,
-                slotIndex: removedSlotIndex
             });
             require(
                 _isSufficientOutbid({
@@ -1854,14 +1844,10 @@ library RAMLib {
                     // find next valid bid
                     // @dev okay if we extend past the maximum slot index
                     // for this view function
-                    uint256 nextValidBidSlotIndex = _findNextValidBidSlotIndex({
+                    tokenPriceInWei = _findNextValidBidValue({
                         projectId: projectId,
                         coreContract: coreContract,
                         startSlotIndex: RAMProjectConfig_.minBidSlotIndex
-                    });
-                    tokenPriceInWei = slotIndexToBidValue({
-                        basePrice: RAMProjectConfig_.basePrice,
-                        slotIndex: uint16(nextValidBidSlotIndex)
                     });
                 } else {
                     // not sellout, so min bid is base price
@@ -1937,14 +1923,10 @@ library RAMLib {
                     // find next valid bid
                     // @dev okay if we extend past the maximum slot index
                     // for this view function
-                    minNextBidSlotIndex = _findNextValidBidSlotIndex({
+                    minNextBidValueInWei = _findNextValidBidValue({
                         projectId: projectId,
                         coreContract: coreContract,
                         startSlotIndex: RAMProjectConfig_.minBidSlotIndex
-                    });
-                    minNextBidValueInWei = slotIndexToBidValue({
-                        basePrice: RAMProjectConfig_.basePrice,
-                        slotIndex: uint16(minNextBidSlotIndex)
                     });
                 } else {
                     // not sellout, so min bid is base price
@@ -1996,8 +1978,8 @@ library RAMLib {
         // @dev load to memory for gas efficiency
         uint256 timestampEnd = RAMProjectConfig_.timestampEnd;
         bool isPostAuction = block.timestamp > timestampEnd;
-        bool isLiveAuction = !(isPreAuction || isPostAuction);
-        if (isLiveAuction) {
+        // pre-auction already checked above
+        if (!isPostAuction) {
             return ProjectMinterStates.LiveAuction;
         }
         // States C, D, E: Post-Auction
@@ -2457,16 +2439,16 @@ library RAMLib {
      * @param coreContract Core contract address for the given project
      * @param minterRefundGasLimit Gas limit to use when refunding the previous
      * highest bidder, prior to using fallback force-send to refund
-     * @return removedSlotIndex The slot index of the removed bid
+     * @return removedBidValue The value of the removed bid
      */
     function _removeMinBid(
         RAMProjectConfig storage RAMProjectConfig_,
         uint256 projectId,
         address coreContract,
         uint256 minterRefundGasLimit
-    ) private returns (uint16 removedSlotIndex) {
+    ) private returns (uint256 removedBidValue) {
         // get the minimum bid slot and bid id
-        removedSlotIndex = RAMProjectConfig_.minBidSlotIndex;
+        uint16 removedSlotIndex = RAMProjectConfig_.minBidSlotIndex;
         uint256 removedBidId = RAMProjectConfig_.tailBidIdBySlot[
             removedSlotIndex
         ];
@@ -2506,15 +2488,15 @@ library RAMLib {
             newTailBid.nextBidId = 0;
         }
         // refund the removed bidder
-        uint256 removedBidAmount = slotIndexToBidValue({
+        removedBidValue = slotIndexToBidValue({
             basePrice: RAMProjectConfig_.basePrice,
             slotIndex: removedSlotIndex
         });
         // @dev reverts on underflow
-        RAMProjectConfig_.projectBalance -= uint120(removedBidAmount);
+        RAMProjectConfig_.projectBalance -= uint120(removedBidValue);
         SplitFundsLib.forceSafeTransferETH({
             to: removedBidder,
-            amount: removedBidAmount,
+            amount: removedBidValue,
             minterRefundGasLimit: minterRefundGasLimit
         });
 
@@ -2574,15 +2556,18 @@ library RAMLib {
                 RAMProjectConfig_: RAMProjectConfig_,
                 slotIndex: slotIndex
             });
-            // @dev reverts if removedSlotIndex was the maximum slot 511,
-            // preventing bids from being removed entirely from the last slot,
-            // which is acceptable and non-impacting for this minter
-            // @dev sets minBidSlotIndex to 511 if no more active bids, which
-            // is desired behavior for this minter
-            (RAMProjectConfig_.minBidSlotIndex, ) = _getMinSlotWithBid({
-                RAMProjectConfig_: RAMProjectConfig_,
-                startSlotIndex: slotIndex + 1
-            });
+            // update the minBidSlotIndex if it is the slotIndex of the ejected bid
+            if (RAMProjectConfig_.minBidSlotIndex == slotIndex) {
+                // @dev reverts if removedSlotIndex was the maximum slot 511,
+                // preventing bids from being removed entirely from the last slot,
+                // which is acceptable and non-impacting for this minter
+                // @dev sets minBidSlotIndex to 511 if no more active bids, which
+                // is desired behavior for this minter
+                (RAMProjectConfig_.minBidSlotIndex, ) = _getMinSlotWithBid({
+                    RAMProjectConfig_: RAMProjectConfig_,
+                    startSlotIndex: slotIndex + 1
+                });
+            }
         }
 
         // @dev do not refund, do not emit event, do not delete bid
@@ -2801,20 +2786,20 @@ library RAMLib {
     }
 
     /**
-     * @notice Returns the next valid bid slot index for a given project.
-     * @dev this may return a slot index higher than the maximum slot index
+     * @notice Returns the next valid bid value for a given project.
+     * @dev this may return a value at a slot index higher than the maximum slot index
      * allowed by the minter, in which case a bid cannot actually be placed
      * to outbid a bid at `startSlotIndex`.
      * @param projectId Project ID to find next valid bid slot index for
      * @param coreContract Core contract address for the given project
      * @param startSlotIndex Slot index to start search from
-     * @return nextValidBidSlotIndex Next valid bid slot index
+     * @return nextSlotBidValue Next valid bid value
      */
-    function _findNextValidBidSlotIndex(
+    function _findNextValidBidValue(
         uint256 projectId,
         address coreContract,
         uint16 startSlotIndex
-    ) private view returns (uint16 nextValidBidSlotIndex) {
+    ) private view returns (uint256 nextSlotBidValue) {
         RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
             projectId: projectId,
             coreContract: coreContract
@@ -2826,13 +2811,12 @@ library RAMLib {
         });
         // start search at next slot, incremented in while loop
         uint256 currentSlotIndex = startSlotIndex;
-        uint256 currentSlotBidValue; // populated in while loop
         while (true) {
             // increment slot index and re-calc current slot bid value
             unchecked {
                 currentSlotIndex++;
             }
-            currentSlotBidValue = slotIndexToBidValue({
+            nextSlotBidValue = slotIndexToBidValue({
                 basePrice: basePrice,
                 slotIndex: uint16(currentSlotIndex)
             });
@@ -2841,15 +2825,13 @@ library RAMLib {
             if (
                 _isSufficientOutbid({
                     oldBidValue: startBidValue,
-                    newBidValue: currentSlotBidValue
+                    newBidValue: nextSlotBidValue
                 })
             ) {
                 break;
             }
             // otherwise continue to next iteration
         }
-        // return the found valid slot index
-        nextValidBidSlotIndex = uint16(currentSlotIndex);
     }
 
     /**
