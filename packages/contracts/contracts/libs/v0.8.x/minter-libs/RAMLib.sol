@@ -633,7 +633,7 @@ library RAMLib {
 
     /**
      * @notice Update the number of tokens in the auction, based on the state
-     * of the core contract and th eminter-local max invocations.
+     * of the core contract and the minter-local max invocations.
      * @param projectId Project ID to update
      * @param coreContract Core contract address to update
      */
@@ -1294,7 +1294,7 @@ library RAMLib {
             // send entire bid value if not previously settled
             valueToSend = slotIndexToBidValue({
                 basePrice: RAMProjectConfig_.basePrice,
-                slotIndex: bid.slotIndex
+                slotIndex: uint16(slotIndex)
             });
         }
         // mark bid as refunded
