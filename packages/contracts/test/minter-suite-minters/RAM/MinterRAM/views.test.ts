@@ -194,10 +194,6 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("getIsErrorE1", async function () {
-      // TODO: write more tests for this after audit recommendations
-    });
-
     describe("contractConfigurationDetails", async function () {
       it("gets values as expected", async function () {
         const config = await loadFixture(_beforeEach);
