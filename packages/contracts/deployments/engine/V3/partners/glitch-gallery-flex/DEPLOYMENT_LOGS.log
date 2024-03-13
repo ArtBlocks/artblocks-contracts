@@ -1,0 +1,71 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2024-03-08T01:21:25.938Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/glitch-gallery-flex/deployment-config.sepolia-staging.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xAE68d27eCdB7c6988eD972d8b7F9C51a6D52502A
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x7D4B998240B8453C10d41C810650DeBbE21e1492
+[INFO] Registered core contract 0x7D4B998240B8453C10d41C810650DeBbE21e1492 on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x6e2F6130B31df274283fb21744Ad18836aBCaceE.
+[INFO] Verifying core contract contract deployment...
+The contract 0x7D4B998240B8453C10d41C810650DeBbE21e1492 has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x7D4B998240B8453C10d41C810650DeBbE21e1492#code
+[INFO] Core contract verified on Etherscan at 0x7D4B998240B8453C10d41C810650DeBbE21e1492}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xAE68d27eCdB7c6988eD972d8b7F9C51a6D52502A has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0xAE68d27eCdB7c6988eD972d8b7F9C51a6D52502A#code
+[INFO] AdminACL contract verified on Etherscan at 0xAE68d27eCdB7c6988eD972d8b7F9C51a6D52502A
+Created s3 bucket for https://glitch-gallery-sepolia.s3.amazonaws.com
+[INFO] Created image bucket glitch-gallery-sepolia
+[INFO] Deployment details written to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/glitch-gallery-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x7d4b998240b8453c10d41c810650debbe21e1492",
+  "name": "glitch Gallery",
+  "bucket_name": "glitch-gallery-sepolia",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2024-03-08T17:42:30.539Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/glitch-gallery-flex/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x8e0C9751BE63B23e5795b6f68ed3a654F0D44162
+[INFO] Using shared Randomizer at 0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xE18F2247FE4A69c0E2210331B0604F6D10FecE9E
+[INFO] Registered core contract 0xE18F2247FE4A69c0E2210331B0604F6D10FecE9E on core registry 0x2eE7B9bB2E038bE7323A119701A191c030A61ec6
+[INFO] Updated the Minter Filter on the Core contract to 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x6e2F6130B31df274283fb21744Ad18836aBCaceE.
+[INFO] Verifying core contract contract deployment...
+The contract 0xE18F2247FE4A69c0E2210331B0604F6D10FecE9E has already been verified on Etherscan.
+https://etherscan.io/address/0xE18F2247FE4A69c0E2210331B0604F6D10FecE9E#code
+[INFO] Core contract verified on Etherscan at 0xE18F2247FE4A69c0E2210331B0604F6D10FecE9E}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x8e0C9751BE63B23e5795b6f68ed3a654F0D44162 has already been verified on Etherscan.
+https://etherscan.io/address/0x8e0C9751BE63B23e5795b6f68ed3a654F0D44162#code
+[INFO] AdminACL contract verified on Etherscan at 0x8e0C9751BE63B23e5795b6f68ed3a654F0D44162
+Created s3 bucket for https://glitch-gallery-mainnet.s3.amazonaws.com
+[INFO] Created image bucket glitch-gallery-mainnet
+[INFO] Deployment details written to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/glitch-gallery-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xe18f2247fe4a69c0e2210331b0604f6d10fece9e",
+  "name": "glitch Gallery",
+  "bucket_name": "glitch-gallery-mainnet",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] AdminACL's superAdmin address is 0x6e2F6130B31df274283fb21744Ad18836aBCaceE, don't forget to update if requred.
