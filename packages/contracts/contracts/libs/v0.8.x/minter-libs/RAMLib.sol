@@ -820,7 +820,6 @@ library RAMLib {
                 coreContract: coreContract,
                 slotIndex: bid.slotIndex,
                 bidId: currentBidId,
-                bidder: bidderAddress,
                 minterFilter: minterFilter,
                 minterRefundGasLimit: minterRefundGasLimit
             });
@@ -842,6 +841,8 @@ library RAMLib {
      * @param projectId Project ID to mint tokens on.
      * @param coreContract Core contract address for the given project.
      * @param numTokensToMint Number of tokens to mint in this transaction.
+     * @param minterFilter minter filter contract address
+     * @param minterRefundGasLimit Gas limit to use when settling bid if not already settled
      */
     function adminArtistAutoMintTokensToWinners(
         uint256 projectId,
@@ -929,9 +930,6 @@ library RAMLib {
                 }
             }
 
-            // get bid
-            Bid storage bid = RAMProjectConfig_.bids[currentLatestMintedBidId];
-
             // @dev minter is in State C, so bid must not have been minted or
             // refunded due to scrolling logic of admin mint and refund
             // functions available for use while in State C. The bid may have
@@ -944,7 +942,6 @@ library RAMLib {
                 coreContract: coreContract,
                 slotIndex: currentLatestMintedBidSlotIndex,
                 bidId: currentLatestMintedBidId,
-                bidder: bid.bidder,
                 minterFilter: minterFilter,
                 minterRefundGasLimit: minterRefundGasLimit
             });
@@ -968,7 +965,6 @@ library RAMLib {
      * @param coreContract Core contract address for the given project.
      * @param slotIndex Slot index of bid.
      * @param bidId ID of bid to settle.
-     * @param bidder Bidder of bid to settle.
      * @param minterFilter minter filter contract address
      * @param minterRefundGasLimit Gas limit to use when settling bid, prior to using fallback force-send to refund
      */
@@ -977,7 +973,6 @@ library RAMLib {
         address coreContract,
         uint256 slotIndex,
         uint256 bidId,
-        address bidder,
         IMinterFilterV1 minterFilter,
         uint256 minterRefundGasLimit
     ) internal {
@@ -1001,7 +996,7 @@ library RAMLib {
             projectId: projectId,
             coreContract: coreContract,
             bidId: uint32(bidId),
-            bidder: bidder,
+            bidder: bid.bidder,
             minterFilter: minterFilter
         });
 
@@ -1255,7 +1250,7 @@ library RAMLib {
     }
 
     /**
-     * @notice Function to refund bids to resolve E1 error state.
+     * @notice Function to settle and refund bids to resolve E1 error state.
      * @param projectId Project ID to refund bid for.
      * @param coreContract Core contract address for the given project.
      * @param slotIndex Slot index of bid.

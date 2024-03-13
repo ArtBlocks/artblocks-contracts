@@ -85,7 +85,7 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  * -------------
  * FLAGS
  * F1: tokens owed < invocations available
- *     occurs when an auction ends before selling out, so tokens are aviailable to be purchased
+ *     occurs when an auction ends before selling out, so tokens are available to be purchased
  *     note: also occurs during Pre and Live auction, so FLAG F1 can occur with STATE A, B, but should not enable purchases
  * -------------
  * ERRORS
@@ -398,7 +398,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @param coreContract Core contract address for the given project.
      * @param slotIndex Slot index to create the bid for.
      * @dev nonReentrant modifier is used to prevent reentrancy attacks, e.g.
-     * an an auto-bidder that would be able to atomically outbid a user's
+     * an an auto-bidder that would be able to automically outbid a user's
      * new bid via a reentrant call to createBid.
      */
     function createBid(
