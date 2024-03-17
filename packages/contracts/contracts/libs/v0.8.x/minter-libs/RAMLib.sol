@@ -276,8 +276,8 @@ library RAMLib {
         uint256 slotsBitmapA;
         uint256 slotsBitmapB;
         // minimum bitmap index with an active bid
-        // @dev set to 511 if no active bids
-        // @dev max uint16 >> max possible value of 511
+        // @dev set to 512 if no active bids
+        // @dev max uint16 >> max possible value of 512
         uint16 minBidSlotIndex;
         // maximum bitmap index with an active bid
         // @dev set to 0 if no active bids
@@ -541,8 +541,8 @@ library RAMLib {
             coreContract: coreContract
         });
 
-        // initialize min slot metadata to highest slot index
-        RAMProjectConfig_.minBidSlotIndex = uint16(NUM_SLOTS - 1);
+        // initialize min slot metadata to NUM_SLOTS (an invalid index) to represent NULL value
+        RAMProjectConfig_.minBidSlotIndex = uint16(NUM_SLOTS);
 
         // emit state change event
         emit AuctionConfigUpdated({
