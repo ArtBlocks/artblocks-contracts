@@ -795,9 +795,6 @@ library RAMLib {
             uint256 currentBidId = bidIds[i];
             Bid storage bid = RAMProjectConfig_.bids[currentBidId];
             // CHECKS
-            // require bid exists
-            address bidderAddress = bid.bidder;
-            require(bidderAddress != address(0), "invalid Bid ID");
             // if bid is already minted or refunded, skip to next bid
             // @dev do not revert, since this could be due to front-running
             if (
@@ -806,9 +803,13 @@ library RAMLib {
             ) {
                 continue;
             }
+            address bidderAddress = bid.bidder;
             // require sender is bidder if requireSenderIsBidder is true
             if (requireSenderIsBidder) {
                 require(msg.sender == bidderAddress, "Only sender is bidder");
+            } else {
+                // require bid exists
+                require(bidderAddress != address(0), "invalid Bid ID");
             }
             // EFFECTS
             // @dev num bids minted tokens not memoized due to stack depth
