@@ -2577,10 +2577,12 @@ library RAMLib {
             // which is acceptable and non-impacting for this minter
             // @dev sets minBidSlotIndex to 511 if no more active bids, which
             // is desired behavior for this minter
-            (RAMProjectConfig_.minBidSlotIndex, ) = _getMinSlotWithBid({
-                RAMProjectConfig_: RAMProjectConfig_,
-                startSlotIndex: slotIndex + 1
-            });
+            if (RAMProjectConfig_.minBidSlotIndex == slotIndex) {
+                (RAMProjectConfig_.minBidSlotIndex, ) = _getMinSlotWithBid({
+                    RAMProjectConfig_: RAMProjectConfig_,
+                    startSlotIndex: slotIndex + 1
+                });
+            }
         }
 
         // @dev do not refund, do not emit event, do not delete bid
