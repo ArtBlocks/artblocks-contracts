@@ -1701,7 +1701,7 @@ library RAMLib {
     }
 
     /**
-     * @notice Returns the Bid struct and slot index of the lowest bid in the
+     * @notice Returns a storage pointer to the Bid struct and slot index of the lowest bid in the
      * project's auction, in Wei.
      * Reverts if no bids exist in the auction.
      * @param projectId Project ID to get the lowest bid value for
