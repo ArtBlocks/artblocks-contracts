@@ -2012,8 +2012,8 @@ library RAMLib {
         bool adminOnlyMintPeriod = RAMProjectConfig_
         // @dev if project is configured to have an admin-artist-only mint period
             .adminArtistOnlyMintPeriodIfSellout &&
-            // @dev sellout if numBids == numTokensInAuction
-            RAMProjectConfig_.numBids == RAMProjectConfig_.numTokensInAuction &&
+            // @dev sellout if numBids >= numTokensInAuction
+            RAMProjectConfig_.numBids >= RAMProjectConfig_.numTokensInAuction &&
             // @dev still in admin-artist-only mint period if current time < end time + admin-artist-only mint period
             block.timestamp <
             timestampEnd + ADMIN_ARTIST_ONLY_MINT_TIME_SECONDS;
@@ -2147,14 +2147,14 @@ library RAMLib {
                 });
             }
         } else if (projectMinterState == ProjectMinterStates.LiveAuction) {
-            // live auction, set to true if num bids == num tokens in auction
+            // live auction, set to true if num bids >= num tokens in auction
             RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
                 projectId: projectId,
                 coreContract: coreContract
             });
             maxHasBeenInvoked =
-                RAMProjectConfig_.numTokensInAuction ==
-                RAMProjectConfig_.numBids;
+                RAMProjectConfig_.numBids >=
+                RAMProjectConfig_.numTokensInAuction;
         } else {
             // post auction, set to true if remaining excess invocations is zero
             (, , uint256 numExcessInvocationsAvailable) = isErrorE1FlagF1({
