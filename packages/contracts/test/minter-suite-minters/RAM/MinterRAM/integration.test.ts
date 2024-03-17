@@ -3140,7 +3140,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               [15]
             ),
-          revertMessages.invalidBidId
+          revertMessages.onlySenderIsBidder
         );
         // direct refund bid id 15 should revert because it was removed
         // enter E1 state by reducing max invocations by 1

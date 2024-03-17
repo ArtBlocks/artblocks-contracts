@@ -917,14 +917,20 @@ library RAMLib {
                 if (currentLatestMintedBidId == 0) {
                     // past tail of current slot's linked list, so need to find next
                     // bid slot with bids
-                    // @dev not possible to not find next slot during auto-minting,
-                    // so no need to handle case where slot not found
-                    (currentLatestMintedBidSlotIndex, ) = _getMaxSlotWithBid({
+                    bool foundSlotWithBid;
+                    (
+                        currentLatestMintedBidSlotIndex,
+                        foundSlotWithBid
+                    ) = _getMaxSlotWithBid({
                         RAMProjectConfig_: RAMProjectConfig_,
                         startSlotIndex: uint16(
                             currentLatestMintedBidSlotIndex - 1
                         )
                     });
+                    require(
+                        foundSlotWithBid == true,
+                        "slot with bid not found"
+                    );
                     // current bid is now the head of the linked list
                     currentLatestMintedBidId = RAMProjectConfig_
                         .headBidIdBySlot[currentLatestMintedBidSlotIndex];
