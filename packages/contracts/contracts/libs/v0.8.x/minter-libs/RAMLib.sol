@@ -917,7 +917,7 @@ library RAMLib {
                 if (currentLatestMintedBidId == 0) {
                     // past tail of current slot's linked list, so need to find next
                     // bid slot with bids
-                    (currentLatestMintedBidSlotIndex) = _getMaxSlotWithBid({
+                    currentLatestMintedBidSlotIndex = _getMaxSlotWithBid({
                         RAMProjectConfig_: RAMProjectConfig_,
                         startSlotIndex: uint16(
                             currentLatestMintedBidSlotIndex - 1
