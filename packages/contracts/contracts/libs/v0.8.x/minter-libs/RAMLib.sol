@@ -760,6 +760,11 @@ library RAMLib {
             coreContract: coreContract
         });
 
+        // get project price
+        uint256 projectPrice = _getProjectPrice({
+            RAMProjectConfig_: RAMProjectConfig_
+        });
+
         // CHECKS
         // @dev memoize length for gas efficiency
         uint256 bidIdsLength = bidIds.length;
@@ -819,6 +824,7 @@ library RAMLib {
             _mintAndSettle({
                 projectId: projectId,
                 coreContract: coreContract,
+                projectPrice: projectPrice,
                 slotIndex: bid.slotIndex,
                 bidId: currentBidId,
                 minterFilter: minterFilter,
@@ -859,6 +865,11 @@ library RAMLib {
         RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
             projectId: projectId,
             coreContract: coreContract
+        });
+
+        // get project price
+        uint256 projectPrice = _getProjectPrice({
+            RAMProjectConfig_: RAMProjectConfig_
         });
 
         // CHECKS
@@ -946,6 +957,7 @@ library RAMLib {
             _mintAndSettle({
                 projectId: projectId,
                 coreContract: coreContract,
+                projectPrice: projectPrice,
                 slotIndex: currentLatestMintedBidSlotIndex,
                 bidId: currentLatestMintedBidId,
                 minterFilter: minterFilter,
@@ -969,6 +981,7 @@ library RAMLib {
      * @notice Function to mint and settle bid if not already settled.
      * @param projectId Project ID to mint token on.
      * @param coreContract Core contract address for the given project.
+     * @param projectPrice Price of a token for the given project.
      * @param slotIndex Slot index of bid.
      * @param bidId ID of bid to settle.
      * @param minterFilter minter filter contract address
@@ -977,6 +990,7 @@ library RAMLib {
     function _mintAndSettle(
         uint256 projectId,
         address coreContract,
+        uint256 projectPrice,
         uint256 slotIndex,
         uint256 bidId,
         IMinterFilterV1 minterFilter,
@@ -988,12 +1002,6 @@ library RAMLib {
             coreContract: coreContract
         });
         Bid storage bid = RAMProjectConfig_.bids[bidId];
-        // settlement values
-        // get project price
-        uint256 projectPrice = _getProjectPrice({
-            RAMProjectConfig_: RAMProjectConfig_
-        });
-
         // Mark bid as minted
         _setBidPackedBool({bid: bid, index: INDEX_IS_MINTED, value: true});
 
@@ -1084,6 +1092,10 @@ library RAMLib {
             projectId: projectId,
             coreContract: coreContract
         });
+        // get project price
+        uint256 projectPrice = _getProjectPrice({
+            RAMProjectConfig_: RAMProjectConfig_
+        });
 
         // @dev memoize for gas efficiency
         uint24 numRefundsIssued = 0;
@@ -1115,6 +1127,7 @@ library RAMLib {
             _settleAndRefundBid({
                 projectId: projectId,
                 coreContract: coreContract,
+                projectPrice: projectPrice,
                 slotIndex: bid.slotIndex,
                 bidId: currentBidId,
                 minterRefundGasLimit: minterRefundGasLimit
@@ -1179,6 +1192,10 @@ library RAMLib {
             projectId: projectId,
             coreContract: coreContract
         });
+        // get project price
+        uint256 projectPrice = _getProjectPrice({
+            RAMProjectConfig_: RAMProjectConfig_
+        });
 
         // EFFECTS
         // load values to memory for gas efficiency
@@ -1238,6 +1255,7 @@ library RAMLib {
             _settleAndRefundBid({
                 projectId: projectId,
                 coreContract: coreContract,
+                projectPrice: projectPrice,
                 slotIndex: uint16(currentLatestRefundedBidSlotIndex),
                 bidId: currentLatestRefundedBidId,
                 minterRefundGasLimit: minterRefundGasLimit
@@ -1261,6 +1279,7 @@ library RAMLib {
      * @notice Function to settle and refund bids to resolve E1 error state.
      * @param projectId Project ID to refund bid for.
      * @param coreContract Core contract address for the given project.
+     * @param projectPrice Price of a token for the given project.
      * @param slotIndex Slot index of bid.
      * @param bidId ID of bid to settle.
      * @param minterRefundGasLimit Gas limit to use when refunding bidder
@@ -1268,6 +1287,7 @@ library RAMLib {
     function _settleAndRefundBid(
         uint256 projectId,
         address coreContract,
+        uint256 projectPrice,
         uint256 slotIndex,
         uint256 bidId,
         uint256 minterRefundGasLimit
@@ -1283,9 +1303,6 @@ library RAMLib {
         address bidderAddress = bid.bidder;
         // Settle and refund the Bid
         // Minimum value to send is the project price
-        uint256 projectPrice = _getProjectPrice({
-            RAMProjectConfig_: RAMProjectConfig_
-        });
         uint256 valueToSend = projectPrice;
         bool didSettleBid = false;
 
