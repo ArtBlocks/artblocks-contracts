@@ -728,7 +728,7 @@ library RAMLib {
 
     /**
      * @notice Directly mint tokens to winners of project `projectId` on core
-     * contract `coreContract`.
+     * contract `coreContract`. Bid is deleted from storage once minted and settled.
      * Does not guarantee an optimal ordering or handling of E1 state like
      * `adminArtistAutoMintTokensToWinners` does while in State C.
      * Skips over bids that have already been minted or refunded (front-running
@@ -824,6 +824,9 @@ library RAMLib {
                 minterFilter: minterFilter,
                 minterRefundGasLimit: minterRefundGasLimit
             });
+
+            // delete the minted and settled bid
+            delete RAMProjectConfig_.bids[currentBidId];
         }
     }
 
@@ -2258,7 +2261,7 @@ library RAMLib {
     ) private {
         // CHECKS
         Bid storage bid = RAMProjectConfig_.bids[bidId];
-        // require bidder is the bid's bidder
+        // require bidder is the bid's bidder and bid exists
         require(bid.bidder == bidder, "Only bidder");
         // require bid is not yet settled
         require(
