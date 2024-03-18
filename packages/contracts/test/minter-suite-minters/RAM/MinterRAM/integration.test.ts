@@ -1795,7 +1795,7 @@ runForEach.forEach((params) => {
           config.genArt721Core.address
         );
         expect(auctionDetails.numBidsMintedTokens).to.equal(3);
-        // verify cannot re-mint an already-minted bid, is skipped
+        // verify cannot re-mint an already-minted bid, is reverted
         await expectRevert(
           config.minter
             .connect(config.accounts.deployer)
