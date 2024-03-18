@@ -368,11 +368,11 @@ runForEach.forEach((params) => {
           .connect(config.accounts.deployer)
           .setContractConfig(config.genArt721Core.address, 1);
         // validate state update
-        const contractConfigDetails =
+        const contractConfigAdminMintingConstraintValue =
           await config.minter.contractConfigurationDetails(
             config.genArt721Core.address
           );
-        expect(contractConfigDetails.adminMintingConstraint).to.equal(1);
+        expect(contractConfigAdminMintingConstraintValue).to.equal(1);
       });
     });
 

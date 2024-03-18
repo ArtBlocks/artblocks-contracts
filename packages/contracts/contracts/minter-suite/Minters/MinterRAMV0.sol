@@ -869,15 +869,15 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * @notice Gets the configuration details for a core contract as configured by a
+     * @notice Gets the admin minting constraint configuration details for a core contract as configured by a
      * contract admin, for this minter.
      * @param coreContract The address of the core contract.
-     * @return RAMLib.RAMContractConfig instance with the configuration data.
+     * @return RAMLib.AdminMintingConstraint enum value.
      */
     function contractConfigurationDetails(
         address coreContract
-    ) external view returns (RAMLib.RAMContractConfig memory) {
-        return RAMLib.getRAMContractConfig(coreContract);
+    ) external view returns (RAMLib.AdminMintingConstraint) {
+        return RAMLib.getRAMAdminMintingConstraintValue(coreContract);
     }
 
     /**

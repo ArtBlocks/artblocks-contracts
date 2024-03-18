@@ -199,20 +199,20 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
 
         // verify unconfigured state
-        let contractConfigDetails =
+        let contractConfigAdminMintingConstraintValue =
           await config.minter.contractConfigurationDetails(
             config.genArt721Core.address
           );
-        expect(contractConfigDetails.adminMintingConstraint).to.equal(0);
+        expect(contractConfigAdminMintingConstraintValue).to.equal(0);
         // configure values and verify
         await config.minter
           .connect(config.accounts.deployer)
           .setContractConfig(config.genArt721Core.address, 1);
-        contractConfigDetails =
+        contractConfigAdminMintingConstraintValue =
           await config.minter.contractConfigurationDetails(
             config.genArt721Core.address
           );
-        expect(contractConfigDetails.adminMintingConstraint).to.equal(1);
+        expect(contractConfigAdminMintingConstraintValue).to.equal(1);
       });
     });
 

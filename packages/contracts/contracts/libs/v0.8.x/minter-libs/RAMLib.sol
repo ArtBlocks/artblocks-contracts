@@ -338,11 +338,6 @@ library RAMLib {
     }
 
     // contract-specific parameters
-    // @dev may not be indexed, but does impose on-chain constraints
-    struct RAMContractConfig {
-        AdminMintingConstraint adminMintingConstraint;
-    }
-
     enum AdminMintingConstraint {
         None,
         AdminArtistOnlyMintPeriod,
@@ -352,7 +347,7 @@ library RAMLib {
     // Diamond storage pattern is used in this library
     struct RAMLibStorage {
         mapping(address coreContract => mapping(uint256 projectId => RAMProjectConfig)) RAMProjectConfigs;
-        mapping(address coreContract => RAMContractConfig) RAMContractConfigs;
+        mapping(address => AdminMintingConstraint) RAMAdminMintingConstraint;
     }
 
     /**
@@ -366,12 +361,8 @@ library RAMLib {
         address coreContract,
         AdminMintingConstraint adminMintingConstraint
     ) internal {
-        // load contract config
-        RAMContractConfig storage RAMContractConfig_ = getRAMContractConfig({
-            coreContract: coreContract
-        });
-        // set the contract config with the new constraint enum value
-        RAMContractConfig_.adminMintingConstraint = adminMintingConstraint;
+        // set the contract admin minting constraint with the new constraint enum value
+        s().RAMAdminMintingConstraint[coreContract] = adminMintingConstraint;
         // emit event
         emit ContractConfigUpdated({
             coreContract: coreContract,
@@ -499,12 +490,12 @@ library RAMLib {
         );
 
         // enforce contract-level constraints set by contract admin
-        RAMContractConfig storage RAMContractConfig_ = getRAMContractConfig({
-            coreContract: coreContract
-        });
+        AdminMintingConstraint RAMAdminMintingConstraint_ = getRAMAdminMintingConstraintValue({
+                coreContract: coreContract
+            });
 
         if (
-            RAMContractConfig_.adminMintingConstraint ==
+            RAMAdminMintingConstraint_ ==
             AdminMintingConstraint.AdminArtistOnlyMintPeriod
         ) {
             require(
@@ -512,7 +503,7 @@ library RAMLib {
                 "Only admin-artist mint period"
             );
         } else if (
-            RAMContractConfig_.adminMintingConstraint ==
+            RAMAdminMintingConstraint_ ==
             AdminMintingConstraint.NoAdminArtistOnlyMintPeriod
         ) {
             require(
@@ -2213,13 +2204,13 @@ library RAMLib {
     }
 
     /**
-     * Loads the RAMContractConfig for a given core contract.
+     * Loads the RAMAdminMintingConstraint for a given core contract.
      * @param coreContract Core contract address to get config for
      */
-    function getRAMContractConfig(
+    function getRAMAdminMintingConstraintValue(
         address coreContract
-    ) internal view returns (RAMContractConfig storage) {
-        return s().RAMContractConfigs[coreContract];
+    ) internal view returns (AdminMintingConstraint) {
+        return s().RAMAdminMintingConstraint[coreContract];
     }
 
     /**
