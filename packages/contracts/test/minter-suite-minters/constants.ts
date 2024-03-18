@@ -96,7 +96,7 @@ export const revertMessages = {
   actionNotSupported: "Action not supported",
   onlyPreAuction: "Only pre-auction",
   onlyLiveAuction: "Only live auction",
-  onlyPostAuctionAdminArtistMint: "Only post-auction admin-artist-only",
+  onlyPostAuctionSellOutAdminArtistMint: "Only post-auction admin-artist-only",
   onlyPostAuctionOpenMintOrAdminArtistMint:
     "Only post-auction open mint or admin artist mint period",
   onlyPostAuctionOpenMint: "Only post-auction open mint",

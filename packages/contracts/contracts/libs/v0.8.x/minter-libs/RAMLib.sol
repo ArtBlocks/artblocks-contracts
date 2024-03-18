@@ -257,7 +257,7 @@ library RAMLib {
     enum ProjectMinterStates {
         PreAuction, // Pre-Auction, State A
         LiveAuction, // Live-Auction, State B
-        PostAuctionAdminArtistMint, // Post-Auction, not all bids handled, admin-artist-only mint period, State C
+        PostAuctionSellOutAdminArtistMint, // Post-Auction, sell out, not all bids handled, admin-artist-only mint period, State C
         PostAuctionOpenMint, // Post-Auction, not all bids handled, post-admin-artist-only mint period, State D
         PostAuctionAllBidsHandled // Post-Auction, all bids handled, State E
     }
@@ -687,7 +687,7 @@ library RAMLib {
             });
             require(
                 projectMinterState ==
-                    ProjectMinterStates.PostAuctionAdminArtistMint ||
+                    ProjectMinterStates.PostAuctionSellOutAdminArtistMint ||
                     projectMinterState ==
                     ProjectMinterStates.PostAuctionOpenMint,
                 "Only post-auction open mint or admin artist mint period"
@@ -866,7 +866,7 @@ library RAMLib {
         // CHECKS
         // @dev block scope to limit stack depth
         {
-            // require project minter state C (Post-Auction, admin-artist-only,
+            // require project minter state C (Post-Auction, sell out, admin-artist-only,
             // not all bids handled)
             ProjectMinterStates projectMinterState = getProjectMinterState({
                 projectId: projectId,
@@ -874,7 +874,7 @@ library RAMLib {
             });
             require(
                 projectMinterState ==
-                    ProjectMinterStates.PostAuctionAdminArtistMint,
+                    ProjectMinterStates.PostAuctionSellOutAdminArtistMint,
                 "Only post-auction admin-artist-only"
             );
             // require numTokensToMint does not exceed number of tokens
@@ -1162,7 +1162,7 @@ library RAMLib {
             });
             require(
                 projectMinterState ==
-                    ProjectMinterStates.PostAuctionAdminArtistMint,
+                    ProjectMinterStates.PostAuctionSellOutAdminArtistMint,
                 "Only post-auction admin-artist-only"
             );
             // require is in state E1
@@ -2027,8 +2027,8 @@ library RAMLib {
             block.timestamp <
             timestampEnd + ADMIN_ARTIST_ONLY_MINT_TIME_SECONDS;
         if (adminOnlyMintPeriod) {
-            // State C: Post-Auction, not all bids handled, admin-artist-only mint period
-            return ProjectMinterStates.PostAuctionAdminArtistMint;
+            // State C: Post-Auction, sell out, not all bids handled, admin-artist-only mint period
+            return ProjectMinterStates.PostAuctionSellOutAdminArtistMint;
         }
         // State D: Post-Auction, not all bids handled, post-admin-artist-only mint period
         // @dev states are mutually exclusive, so must be in final remaining state
