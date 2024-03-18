@@ -2061,7 +2061,6 @@ library RAMLib {
             coreContract: coreContract
         });
         // E1: Tokens owed > invocations available
-        // @dev underflow impossible given what the parameters represent
         uint256 tokensOwed = _getNumTokensOwed({
             RAMProjectConfig_: RAMProjectConfig_
         });
