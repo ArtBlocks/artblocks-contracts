@@ -1082,6 +1082,8 @@ library RAMLib {
             coreContract: coreContract
         });
 
+        // @dev memoize for gas efficiency
+        uint24 numRefundsIssued = 0;
         // main loop to refund tokens
         for (uint256 i; i < bidIdsLength; ++i) {
             // @dev current slot index and bid index in slot not memoized due
@@ -1114,10 +1116,10 @@ library RAMLib {
                 bidId: currentBidId,
                 minterRefundGasLimit: minterRefundGasLimit
             });
-            // update number of bids refunded
-            // @dev not memoized due to stack depth limitations
-            RAMProjectConfig_.numBidsErrorRefunded++;
+            numRefundsIssued++;
         }
+        // update number of bids refunded
+        RAMProjectConfig_.numBidsErrorRefunded += numRefundsIssued;
     }
 
     /**
