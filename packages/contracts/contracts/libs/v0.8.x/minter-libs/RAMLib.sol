@@ -917,18 +917,14 @@ library RAMLib {
                 if (currentLatestMintedBidId == 0) {
                     // past tail of current slot's linked list, so need to find next
                     // bid slot with bids
-                    bool foundSlotWithBid;
-                    (
-                        currentLatestMintedBidSlotIndex,
-                        foundSlotWithBid
-                    ) = _getMaxSlotWithBid({
+                    (currentLatestMintedBidSlotIndex) = _getMaxSlotWithBid({
                         RAMProjectConfig_: RAMProjectConfig_,
                         startSlotIndex: uint16(
                             currentLatestMintedBidSlotIndex - 1
                         )
                     });
                     require(
-                        foundSlotWithBid == true,
+                        currentLatestMintedBidSlotIndex < 512,
                         "slot with bid not found"
                     );
                     // current bid is now the head of the linked list
@@ -1216,7 +1212,7 @@ library RAMLib {
                 // bid slot with bids
                 // @dev not possible to not find next slot during auto-refund,
                 // so no need to handle case where slot not found
-                (currentLatestRefundedBidSlotIndex, ) = _getMinSlotWithBid({
+                currentLatestRefundedBidSlotIndex = _getMinSlotWithBid({
                     RAMProjectConfig_: RAMProjectConfig_,
                     startSlotIndex: uint16(
                         currentLatestRefundedBidSlotIndex + 1
@@ -2492,9 +2488,9 @@ library RAMLib {
             // @dev reverts if removedSlotIndex was the maximum slot 511,
             // preventing bids from being removed entirely from the last slot,
             // which is acceptable and non-impacting for this minter
-            // @dev sets minBidSlotIndex to 511 if no more active bids, which
+            // @dev sets minBidSlotIndex to 512 if no more active bids, which
             // is desired behavior for this minter
-            (RAMProjectConfig_.minBidSlotIndex, ) = _getMinSlotWithBid({
+            RAMProjectConfig_.minBidSlotIndex = _getMinSlotWithBid({
                 RAMProjectConfig_: RAMProjectConfig_,
                 startSlotIndex: removedSlotIndex + 1
             });
@@ -2575,10 +2571,10 @@ library RAMLib {
             // @dev reverts if removedSlotIndex was the maximum slot 511,
             // preventing bids from being removed entirely from the last slot,
             // which is acceptable and non-impacting for this minter
-            // @dev sets minBidSlotIndex to 511 if no more active bids, which
+            // @dev sets minBidSlotIndex to 512 if no more active bids, which
             // is desired behavior for this minter
             if (RAMProjectConfig_.minBidSlotIndex == slotIndex) {
-                (RAMProjectConfig_.minBidSlotIndex, ) = _getMinSlotWithBid({
+                RAMProjectConfig_.minBidSlotIndex = _getMinSlotWithBid({
                     RAMProjectConfig_: RAMProjectConfig_,
                     startSlotIndex: slotIndex + 1
                 });
@@ -2685,21 +2681,19 @@ library RAMLib {
     /**
      * @notice Helper function to get minimum slot index with an active bid,
      * starting at a given slot index and searching upwards.
-     * Returns (511, false) if not slots with bids were found.
+     * Returns 512, (invalid slot index) if no slots with bids were found.
      * Reverts if startSlotIndex > 511, since this library only supports 512
      * slots.
      * @param RAMProjectConfig_ RAM project config to query
      * @param startSlotIndex Slot index to start search at
-     * @return minSlotWithBid Minimum slot index with an active bid, or 511 if
-     * no slots with bids were found. Note slot 511 may contain a bid, so
-     * `foundSlotWithBid` should be checked to confirm if a bid was found.
-     * @return foundSlotWithBid True if a slot with a bid was found, false
-     * otherwise
+     * @return minSlotWithBid Minimum slot index with an active bid, or 512 (invalid index) if
+     * no slots with bids were found.
      */
     function _getMinSlotWithBid(
         RAMProjectConfig storage RAMProjectConfig_,
         uint16 startSlotIndex
-    ) private view returns (uint16 minSlotWithBid, bool foundSlotWithBid) {
+    ) private view returns (uint16 minSlotWithBid) {
+        bool foundSlotWithBid;
         // revert if startSlotIndex > 511, since this is an invalid input
         // @dev no coverage on if branch because unreachable as used
         if (startSlotIndex > 511) {
@@ -2741,27 +2735,30 @@ library RAMLib {
             }
         }
         // populate return value
-        minSlotWithBid = uint16(minSlotWithBid_);
+        if (!foundSlotWithBid) {
+            return 512;
+        } else {
+            minSlotWithBid = uint16(minSlotWithBid_);
+            return minSlotWithBid;
+        }
     }
 
     /**
      * @notice Helper function to get maximum slot index with an active bid,
      * starting at a given slot index and searching downwards.
-     * Returns (0, false) if no slots with bids were found.
+     * Returns 512, (invalid slot index) if no slots with bids were found.
      * Reverts if startSlotIndex > 511, since this library only supports 512
      * slots.
      * @param RAMProjectConfig_ RAM project config to query
      * @param startSlotIndex Slot index to start search at
-     * @return maxSlotWithBid Maximum slot index with an active bid, and 0 if
-     * no slots with bids were found. Note slot 0 may contain a bid, so
-     * `foundSlotWithBid` should be checked to confirm if a bid was found.
-     * @return foundSlotWithBid True if a slot with a bid was found, false
-     * otherwise
+     * @return maxSlotWithBid Maximum slot index with an active bid, and 512 (invalid index) if
+     * no slots with bids were found.
      */
     function _getMaxSlotWithBid(
         RAMProjectConfig storage RAMProjectConfig_,
         uint16 startSlotIndex
-    ) private view returns (uint16 maxSlotWithBid, bool foundSlotWithBid) {
+    ) private view returns (uint16 maxSlotWithBid) {
+        bool foundSlotWithBid;
         // revert if startSlotIndex > 511, since this is an invalid input
         // @dev no coverage on if branch because unreachable as used
         if (startSlotIndex > 511) {
@@ -2797,7 +2794,12 @@ library RAMLib {
             }
         }
         // populate return value
-        maxSlotWithBid = uint16(maxSlotWithBid_);
+        if (!foundSlotWithBid) {
+            return 512;
+        } else {
+            maxSlotWithBid = uint16(maxSlotWithBid_);
+            return maxSlotWithBid;
+        }
     }
 
     /**
