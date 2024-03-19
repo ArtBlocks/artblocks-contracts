@@ -1566,17 +1566,13 @@ library RAMLib {
         bool reachedMaxBids = RAMProjectConfig_.numBids >= numTokensInAuction;
         if (reachedMaxBids) {
             // remove + refund the minimum Bid
-            uint16 removedSlotIndex = _removeMinBid({
+            uint256 removedBidValue = _removeMinBid({
                 RAMProjectConfig_: RAMProjectConfig_,
                 projectId: projectId,
                 coreContract: coreContract,
                 minterRefundGasLimit: minterRefundGasLimit
             });
             // require new bid is sufficiently greater than removed minimum bid
-            uint256 removedBidValue = slotIndexToBidValue({
-                basePrice: RAMProjectConfig_.basePrice,
-                slotIndex: removedSlotIndex
-            });
             require(
                 _isSufficientOutbid({
                     oldBidValue: removedBidValue,
@@ -2463,16 +2459,16 @@ library RAMLib {
      * @param coreContract Core contract address for the given project
      * @param minterRefundGasLimit Gas limit to use when refunding the previous
      * highest bidder, prior to using fallback force-send to refund
-     * @return removedSlotIndex The slot index of the removed bid
+     * @return removedBidAmount The value of the removed bid, in Wei
      */
     function _removeMinBid(
         RAMProjectConfig storage RAMProjectConfig_,
         uint256 projectId,
         address coreContract,
         uint256 minterRefundGasLimit
-    ) private returns (uint16 removedSlotIndex) {
+    ) private returns (uint256 removedBidAmount) {
         // get the minimum bid slot and bid id
-        removedSlotIndex = RAMProjectConfig_.minBidSlotIndex;
+        uint16 removedSlotIndex = RAMProjectConfig_.minBidSlotIndex;
         uint256 removedBidId = RAMProjectConfig_.tailBidIdBySlot[
             removedSlotIndex
         ];
@@ -2512,7 +2508,7 @@ library RAMLib {
             newTailBid.nextBidId = 0;
         }
         // refund the removed bidder
-        uint256 removedBidAmount = slotIndexToBidValue({
+        removedBidAmount = slotIndexToBidValue({
             basePrice: RAMProjectConfig_.basePrice,
             slotIndex: removedSlotIndex
         });
