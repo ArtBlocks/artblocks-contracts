@@ -1778,7 +1778,7 @@ runForEach.forEach((params) => {
         expect(await config.genArt721Core.ownerOf(2)).to.equal(
           config.accounts.user.address
         );
-        // verify minted bids were removed from storage
+        // verify minted bids were marked as settled
         await expectRevert(
           config.minter
             .connect(config.accounts.user2)
@@ -1787,7 +1787,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               [16]
             ),
-          revertMessages.onlyBidder
+          revertMessages.onlyUnsettledBid
         );
         // verify bid was marked as minted
         const auctionDetails = await config.minter.getAuctionDetails(
@@ -1795,17 +1795,14 @@ runForEach.forEach((params) => {
           config.genArt721Core.address
         );
         expect(auctionDetails.numBidsMintedTokens).to.equal(3);
-        // verify cannot re-mint an already-minted bid, is reverted
-        await expectRevert(
-          config.minter
-            .connect(config.accounts.deployer)
-            .adminArtistDirectMintTokensToWinners(
-              config.projectZero,
-              config.genArt721Core.address,
-              [16]
-            ),
-          revertMessages.invalidBidId
-        );
+        // verify cannot re-mint an already-minted bid, is skipped
+        await config.minter
+          .connect(config.accounts.deployer)
+          .adminArtistDirectMintTokensToWinners(
+            config.projectZero,
+            config.genArt721Core.address,
+            [16]
+          );
         const auctionDetailsAfter = await config.minter.getAuctionDetails(
           config.projectZero,
           config.genArt721Core.address
