@@ -2506,15 +2506,16 @@ library RAMLib {
         });
         // @dev reverts on underflow
         RAMProjectConfig_.projectBalance -= uint120(removedBidAmount);
+
+        // delete the removed bid to prevent future claiming
+        // @dev performed last to avoid pointing to deleted bid struct
+        delete RAMProjectConfig_.bids[removedBidId];
+
         SplitFundsLib.forceSafeTransferETH({
             to: removedBidder,
             amount: removedBidAmount,
             minterRefundGasLimit: minterRefundGasLimit
         });
-
-        // delete the removed bid to prevent future claiming
-        // @dev performed last to avoid pointing to deleted bid struct
-        delete RAMProjectConfig_.bids[removedBidId];
         // emit state change event
         emit BidRemoved({
             projectId: projectId,
