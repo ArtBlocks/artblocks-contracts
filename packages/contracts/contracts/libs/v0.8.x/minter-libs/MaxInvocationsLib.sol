@@ -162,29 +162,24 @@ library MaxInvocationsLib {
                 coreContract: coreContract
             });
         // invocation is token number plus one, and will never overflow due to
-        // limit of 1e6 invocations per project. block scope for gas efficiency
-        // (i.e. avoid an unnecessary var initialization to 0).
-        unchecked {
-            uint256 tokenInvocation = ABHelpers.tokenIdToTokenInvocation(
-                tokenId
-            );
-            uint256 localMaxInvocations = maxInvocationsProjectConfig
-                .maxInvocations;
-            // handle the case where the token invocation == minter local max
-            // invocations occurred on a different minter, and we have a stale
-            // local maxHasBeenInvoked value returning a false negative.
-            // @dev this is a CHECK after EFFECTS, so security was considered
-            // in detail here.
-            require(
-                tokenInvocation <= localMaxInvocations,
-                "Max invocations reached"
-            );
-            // in typical case, update the local maxHasBeenInvoked value
-            // to true if the token invocation == minter local max invocations
-            // (enables gas efficient reverts after sellout)
-            if (tokenInvocation == localMaxInvocations) {
-                maxInvocationsProjectConfig.maxHasBeenInvoked = true;
-            }
+        // limit of 1e6 invocations per project.
+        uint256 tokenInvocation = ABHelpers.tokenIdToTokenInvocation(tokenId);
+        uint256 localMaxInvocations = maxInvocationsProjectConfig
+            .maxInvocations;
+        // handle the case where the token invocation == minter local max
+        // invocations occurred on a different minter, and we have a stale
+        // local maxHasBeenInvoked value returning a false negative.
+        // @dev this is a CHECK after EFFECTS, so security was considered
+        // in detail here.
+        require(
+            tokenInvocation <= localMaxInvocations,
+            "Max invocations reached"
+        );
+        // in typical case, update the local maxHasBeenInvoked value
+        // to true if the token invocation == minter local max invocations
+        // (enables gas efficient reverts after sellout)
+        if (tokenInvocation == localMaxInvocations) {
+            maxInvocationsProjectConfig.maxHasBeenInvoked = true;
         }
     }
 
