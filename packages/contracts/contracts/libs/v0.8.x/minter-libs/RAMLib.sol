@@ -1854,17 +1854,13 @@ library RAMLib {
             // handle live-auction State B
             if (projectMinterState == RAMLib.ProjectMinterStates.LiveAuction) {
                 if (isSellout) {
-                    // find next valid bid
-                    // @dev okay if we extend past the maximum slot index
+                    // find next valid bid value
+                    // @dev okay if we extend past the maximum slot index value
                     // for this view function
-                    uint256 nextValidBidSlotIndex = _findNextValidBidSlotIndex({
+                    (, tokenPriceInWei) = _findNextValidBidSlotIndexAndValue({
                         projectId: projectId,
                         coreContract: coreContract,
                         startSlotIndex: RAMProjectConfig_.minBidSlotIndex
-                    });
-                    tokenPriceInWei = slotIndexToBidValue({
-                        basePrice: RAMProjectConfig_.basePrice,
-                        slotIndex: uint16(nextValidBidSlotIndex)
                     });
                 } else {
                     // not sellout, so min bid is base price
@@ -1937,17 +1933,16 @@ library RAMLib {
             // handle live-auction State B
             if (projectMinterState == RAMLib.ProjectMinterStates.LiveAuction) {
                 if (isSellout) {
-                    // find next valid bid
-                    // @dev okay if we extend past the maximum slot index
+                    // find next valid bid slot index and value
+                    // @dev okay if we extend past the maximum slot index and value
                     // for this view function
-                    minNextBidSlotIndex = _findNextValidBidSlotIndex({
+                    (
+                        minNextBidSlotIndex,
+                        minNextBidValueInWei
+                    ) = _findNextValidBidSlotIndexAndValue({
                         projectId: projectId,
                         coreContract: coreContract,
                         startSlotIndex: RAMProjectConfig_.minBidSlotIndex
-                    });
-                    minNextBidValueInWei = slotIndexToBidValue({
-                        basePrice: RAMProjectConfig_.basePrice,
-                        slotIndex: uint16(minNextBidSlotIndex)
                     });
                 } else {
                     // not sellout, so min bid is base price
@@ -2811,20 +2806,25 @@ library RAMLib {
     }
 
     /**
-     * @notice Returns the next valid bid slot index for a given project.
-     * @dev this may return a slot index higher than the maximum slot index
+     * @notice Returns the next valid bid slot index and value for a given project.
+     * @dev this may return slot index and value higher than the maximum slot index and value
      * allowed by the minter, in which case a bid cannot actually be placed
      * to outbid a bid at `startSlotIndex`.
      * @param projectId Project ID to find next valid bid slot index for
      * @param coreContract Core contract address for the given project
      * @param startSlotIndex Slot index to start search from
      * @return nextValidBidSlotIndex Next valid bid slot index
+     * @return nextValidBidValue Next valid bid value at nextValidBidSlotIndex slot index, in Wei
      */
-    function _findNextValidBidSlotIndex(
+    function _findNextValidBidSlotIndexAndValue(
         uint256 projectId,
         address coreContract,
         uint16 startSlotIndex
-    ) private view returns (uint16 nextValidBidSlotIndex) {
+    )
+        private
+        view
+        returns (uint16 nextValidBidSlotIndex, uint256 nextValidBidValue)
+    {
         RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
             projectId: projectId,
             coreContract: coreContract
@@ -2836,13 +2836,12 @@ library RAMLib {
         });
         // start search at next slot, incremented in while loop
         uint256 currentSlotIndex = startSlotIndex;
-        uint256 currentSlotBidValue; // populated in while loop
         while (true) {
             // increment slot index and re-calc current slot bid value
             unchecked {
                 currentSlotIndex++;
             }
-            currentSlotBidValue = slotIndexToBidValue({
+            nextValidBidValue = slotIndexToBidValue({
                 basePrice: basePrice,
                 slotIndex: uint16(currentSlotIndex)
             });
@@ -2851,7 +2850,7 @@ library RAMLib {
             if (
                 _isSufficientOutbid({
                     oldBidValue: startBidValue,
-                    newBidValue: currentSlotBidValue
+                    newBidValue: nextValidBidValue
                 })
             ) {
                 break;
