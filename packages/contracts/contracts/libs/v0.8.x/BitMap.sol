@@ -98,6 +98,10 @@ library BitMaps256 {
         uint256 bitMap,
         uint8 startIndex
     ) internal pure returns (uint256 maxIndex, bool foundSetBit) {
+        if ((bitMap << (255 - startIndex)) == 0) {
+            return (0, false);
+        }
+
         maxIndex = startIndex;
         // @dev this is a linear search, worst case 255 iterations in memory
         while (maxIndex > 0 && !get(bitMap, uint8(maxIndex))) {
