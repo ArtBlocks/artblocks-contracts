@@ -193,8 +193,9 @@ describe("processProjectMinterConfigurationFormValuesForSubmission", () => {
       args
     );
     expect(result).toEqual({
-      "extra_minter_details.allowlistedAddressAndProjectId":
-        allowlistedAddressAndProjectId,
+      extra_minter_details: {
+        allowlistedAddressAndProjectId: allowlistedAddressAndProjectId,
+      },
       ownedNFTAddressesAdd: ["0x1"],
       ownedNFTProjectIdsAdd: ["2"],
       ownedNFTAddressesRemove: ["0x2"],

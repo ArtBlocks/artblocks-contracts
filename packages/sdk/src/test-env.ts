@@ -9,6 +9,7 @@ class CustomTestEnvironment extends Environment {
       const { TextEncoder, TextDecoder } = util;
       this.global.TextEncoder = TextEncoder;
       (this.global as any).TextDecoder = TextDecoder;
+      this.global.Uint8Array = Uint8Array;
     }
 
     /**

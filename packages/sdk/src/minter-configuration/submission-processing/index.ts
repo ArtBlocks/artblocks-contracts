@@ -77,5 +77,69 @@ export async function processProjectMinterConfigurationFormValuesForSubmission(
     }
   }
 
-  return { ...formValues, ...transformedFormValues };
+  return removeDuplicateDotNotationKeys({
+    ...formValues,
+    ...transformedFormValues,
+  });
+}
+
+/**
+ * Checks if a given key in dot notation has a corresponding nested object.
+ *
+ * @param obj - The object to check.
+ * @param dotNotationKey - The key in dot notation.
+ * @returns A boolean indicating if a corresponding nested object exists.
+ */
+function hasNestedObjectForDotNotation(
+  obj: Record<string, any>,
+  dotNotationKey: string
+): boolean {
+  const parts = dotNotationKey.split(".");
+  let current: any = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (current[parts[i]] === undefined) {
+      return false;
+    }
+    current = current[parts[i]];
+  }
+  return typeof current === "object" && !Array.isArray(current);
+}
+
+/**
+ * Creates a new object with keys in dot notation removed if a corresponding nested object exists.
+ *
+ * @param obj - The object from which to remove duplicate dot notation keys.
+ * @returns A new object with the duplicates removed.
+ */
+function removeDuplicateDotNotationKeys(
+  obj: Record<string, any>
+): Record<string, any> {
+  const newObj: Record<string, any> = {};
+
+  // First, copy all values from the original object to the new object.
+  Object.entries(obj).forEach(([key, value]) => {
+    if (!key.includes(".")) {
+      newObj[key] = value;
+    }
+  });
+
+  // Then, for each key in dot notation, check if a corresponding nested object exists.
+  // If it doesn't, copy the value to the new object.
+  Object.keys(obj).forEach((key) => {
+    if (key.includes(".") && !hasNestedObjectForDotNotation(newObj, key)) {
+      // Split the key and reconstruct the nested structure in the new object.
+      const parts = key.split(".");
+      let current = newObj;
+      for (let i = 0; i < parts.length; i++) {
+        if (i === parts.length - 1) {
+          current[parts[i]] = obj[key];
+        } else {
+          current[parts[i]] = current[parts[i]] || {};
+          current = current[parts[i]];
+        }
+      }
+    }
+  });
+
+  return newObj;
 }

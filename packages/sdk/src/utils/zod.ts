@@ -114,7 +114,7 @@ export function formFieldSchemaToZod(
                 const transformedVal =
                   typeof val === "string" ? BigInt(val) : val;
 
-                if (prop.minimum && transformedVal < prop.minimum) {
+                if (prop.minimum != null && transformedVal < prop.minimum) {
                   ctx.addIssue({
                     code: z.ZodIssueCode.too_small,
                     minimum: prop.minimum,
@@ -124,7 +124,7 @@ export function formFieldSchemaToZod(
                   });
                 }
 
-                if (prop.maximum && transformedVal > prop.maximum) {
+                if (prop.maximum != null && transformedVal > prop.maximum) {
                   ctx.addIssue({
                     code: z.ZodIssueCode.too_big,
                     maximum: prop.maximum,
@@ -143,10 +143,10 @@ export function formFieldSchemaToZod(
             });
         } else {
           zodProp = z.coerce.number();
-          if (prop.minimum) {
+          if (prop.minimum != null) {
             zodProp = zodProp.min(prop.minimum);
           }
-          if (prop.maximum) {
+          if (prop.maximum != null) {
             zodProp = zodProp.max(prop.maximum);
           }
           if (prop.multipleOf) {
@@ -163,7 +163,7 @@ export function formFieldSchemaToZod(
 
         zodProp = z.string();
         if (prop.pattern) {
-          zodProp = zodProp.regex(new RegExp(prop.pattern));
+          zodProp = zodProp.regex(new RegExp(prop.pattern), "Invalid format");
         }
         break;
       case "object": {

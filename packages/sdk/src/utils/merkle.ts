@@ -39,7 +39,7 @@ export const getMerkleRoot = (addresses: string[]): string => {
   return root;
 };
 
-const hashAddress = (address: Hex) => {
+export const hashAddress = (address: Hex) => {
   return Buffer.from(
     keccak256(encodePacked(["address"], [address])).slice(2),
     "hex"

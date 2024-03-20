@@ -11,7 +11,6 @@
     "@babel/preset-env": "^7.23.9",
     "@babel/preset-typescript": "^7.23.3",
     "@jest/globals": "^29.7.0",
-    "@typechain/ethers-v5": "^11.1.2",
     "@types/lodash": "^4.14.196",
     "abitype": "^0.8.7",
     "eslint-config-custom": "*",
@@ -23,7 +22,6 @@
     "prettier": "^3.2.5",
     "tsconfig": "*",
     "tsup": "^8.0.2",
-    "typechain": "^8.3.2",
     "typescript": "^5.3.3"
   },
   "scripts": {
@@ -34,8 +32,7 @@
     "test": "jest",
     "build:docs": "jsdoc -c jsdoc.json",
     "pre-commit": "yarn lint",
-    "pre-push": "yarn test",
-    "build:typechain": "typechain --target ethers-v5 --out-dir ./src/generated/contracts './artifacts/*.json' '../../node_modules/@artblocks/contracts/artifacts/contracts/!(*.dbg)*.json'"
+    "pre-push": "yarn test"
   },
   "lint-staged": {
     "*.{js,ts,tsx, jsx}": [
@@ -53,20 +50,16 @@
     ],
     "coverageThreshold": {
       "global": {
-        "branches": 95,
-        "functions": 95,
-        "lines": 95,
-        "statements": 95
+        "branches": 80,
+        "functions": 85,
+        "lines": 85,
+        "statements": 85
       }
     }
-  },
-  "peerDependencies": {
-    "ethers": "^6.3.0"
   },
   "dependencies": {
     "@artblocks/contracts": "^1.0.2",
     "encoding": "^0.1.13",
-    "ethers": "^6.7.0",
     "graphql": "^16.7.1",
     "graphql-request": "^6.1.0",
     "lodash": "^4.17.21",

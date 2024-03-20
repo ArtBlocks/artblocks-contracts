@@ -200,7 +200,7 @@ function generateSelectMinterForm({
         return;
       }
 
-      onProgress?.(SubmissionStatusEnum.AWAITING_USER_SIGNATURE);
+      onProgress?.(SubmissionStatusEnum.SIMULATING_TRANSACTION);
 
       // Get the minter filter address for minter selection
       const minterFilterAddress: Hex = project.contract.minter_filter
@@ -215,7 +215,7 @@ function generateSelectMinterForm({
       );
 
       // Submit the transaction
-      await submitTransaction({
+      const { blockHash } = await submitTransaction({
         publicClient: sdk.publicClient,
         walletClient,
         address: minterFilterAddress,
@@ -223,6 +223,8 @@ function generateSelectMinterForm({
         functionName:
           minterSelectionFormSchemaWithMinters.transactionDetails.functionName,
         args: functionArgs,
+        onSimulationSuccess: () =>
+          onProgress?.(SubmissionStatusEnum.AWAITING_USER_SIGNATURE),
         onUserAccepted: () => {
           onProgress?.(SubmissionStatusEnum.CONFIRMING);
         },
@@ -230,8 +232,9 @@ function generateSelectMinterForm({
 
       onProgress?.(SubmissionStatusEnum.SYNCING);
 
-      // Save the time the transaction was confirmed
-      const transactionConfirmedAt = new Date();
+      // Get block confirmation timestamp
+      const { timestamp } = await sdk.publicClient.getBlock({ blockHash });
+      const transactionConfirmedAt = new Date(Number(timestamp) * 1000);
 
       // Poll for updates to the configuration, this will return
       // when the minter_address column has been updated to a

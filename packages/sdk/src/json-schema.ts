@@ -77,10 +77,10 @@ export interface BaseFormFieldSchema extends JSONSchema7 {
   dependsOn?: string;
 
   /** Optional property indicating how a field should be transformed before submitting. */
-  submissionProcessing?: "string";
+  submissionProcessing?: string;
 
   /** Optional property indicating how a field should be transformed before being displayed. */
-  displayProcessing?: "string";
+  displayProcessing?: string;
 
   validationDependency?: ValidationDependency;
 
