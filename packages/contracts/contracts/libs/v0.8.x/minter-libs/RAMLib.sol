@@ -927,7 +927,7 @@ library RAMLib {
                         )
                     });
                     require(
-                        currentLatestMintedBidSlotIndex < 512,
+                        currentLatestMintedBidSlotIndex < NUM_SLOTS,
                         "slot with bid not found"
                     );
                     // current bid is now the head of the linked list
@@ -2738,7 +2738,7 @@ library RAMLib {
         }
         // populate return value
         if (!foundSlotWithBid) {
-            return 512;
+            return uint16(NUM_SLOTS);
         } else {
             minSlotWithBid = uint16(minSlotWithBid_);
             return minSlotWithBid;
@@ -2797,7 +2797,7 @@ library RAMLib {
         }
         // populate return value
         if (!foundSlotWithBid) {
-            return 512;
+            return uint16(NUM_SLOTS);
         } else {
             maxSlotWithBid = uint16(maxSlotWithBid_);
             return maxSlotWithBid;
