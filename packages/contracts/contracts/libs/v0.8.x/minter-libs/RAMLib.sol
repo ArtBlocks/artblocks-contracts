@@ -62,7 +62,7 @@ library RAMLib {
     /**
      * @notice Admin minting constraint configuration updated
      * @param coreContract Core contract address to update
-     * @param adminMintingConstraint enum representing admin minting constraints imposed on this contract
+     * @param adminMintingConstraint enum representing admin minting constraint imposed on this contract
      */
     event ContractConfigUpdated(
         address indexed coreContract,
@@ -132,6 +132,7 @@ library RAMLib {
      * @param coreContract Core contract address to update
      * @param slotIndex Slot index of bid that was created
      * @param bidId Bid Id that was created
+     * @param bidder Address of bidder
      */
     event BidCreated(
         uint256 indexed projectId,
@@ -199,7 +200,7 @@ library RAMLib {
     /**
      * @notice Bid was refunded, and the entire bid value was sent to the
      * bidder.
-     * This only occurrs if the minter encountered an unexpected error state
+     * This only occurs if the minter encountered an unexpected error state
      * due to operational issues, and the minter was unable to mint a token to
      * the bidder.
      * @param projectId Project Id to update
@@ -447,7 +448,7 @@ library RAMLib {
      * Reverts if base price does not meet the minimum.
      * Reverts if not for future auction.
      * Reverts if end time not greater than start time.
-     * Reverts if adminArtistOnlyMintPeriodIfSellout disagrees with the admin configured constraints.
+     * Reverts if adminArtistOnlyMintPeriodIfSellout disagrees with the admin configured constraint.
      * @param projectId Project ID to add emergency auction hours to.
      * @param coreContract Core contract address for the given project.
      * @param auctionTimestampStart New timestamp at which to start the auction.
@@ -839,7 +840,7 @@ library RAMLib {
      * @param projectId Project ID to mint tokens on.
      * @param coreContract Core contract address for the given project.
      * @param numTokensToMint Number of tokens to mint in this transaction.
-     * @param minterFilter minter filter contract address
+     * @param minterFilter Minter filter contract address
      * @param minterRefundGasLimit Gas limit to use when settling bid if not already settled
      */
     function adminArtistAutoMintTokensToWinners(
@@ -972,7 +973,7 @@ library RAMLib {
      * @param projectPrice Price of a token for the given project.
      * @param slotIndex Slot index of bid.
      * @param bidId ID of bid to settle.
-     * @param minterFilter minter filter contract address
+     * @param minterFilter Minter filter contract address
      * @param minterRefundGasLimit Gas limit to use when settling bid, prior to using fallback force-send to refund
      */
     function _mintAndSettle(
@@ -1708,7 +1709,7 @@ library RAMLib {
      * Reverts if no bids exist in the auction.
      * @param projectId Project ID to get the lowest bid value for
      * @param coreContract Core contract address for the given project
-     * @return minBid Storage to pointer of Bid struct of the lowest bid in
+     * @return minBid Storage pointer to Bid struct of the lowest bid in
      * the auction
      * @return minSlotIndex Slot index of the lowest bid in the auction
      */
@@ -2911,7 +2912,7 @@ library RAMLib {
     /**
      * @notice Return the storage struct for reading and writing. This library
      * uses a diamond storage pattern when managing storage.
-     * @return storageStruct The SEALibStorage struct.
+     * @return storageStruct The RAMLibStorage struct.
      */
     function s() private pure returns (RAMLibStorage storage storageStruct) {
         bytes32 position = RAM_LIB_STORAGE_POSITION;
