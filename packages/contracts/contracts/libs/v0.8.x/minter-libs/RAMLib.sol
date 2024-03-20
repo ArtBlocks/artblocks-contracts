@@ -352,7 +352,7 @@ library RAMLib {
 
     /**
      * @notice Update a contract's requirements on if a post-auction
-     * admin-artist-only mint period is required or banned, for and-on
+     * admin-artist-only mint period is required or not, for and-on
      * configured projects.
      * @param coreContract The address of the core contract being configured
      * @param adminMintingConstraint The AdminMintingConstraint setting for the contract

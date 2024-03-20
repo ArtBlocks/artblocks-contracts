@@ -197,7 +197,7 @@ runForEach.forEach((params) => {
             }),
           revertMessages.onlyLiveAuction
         );
-        // configure, remian in State A
+        // configure, remain in State A
         await configureDefaultProjectZero(config);
         // not in State B error
         await expectRevert(
