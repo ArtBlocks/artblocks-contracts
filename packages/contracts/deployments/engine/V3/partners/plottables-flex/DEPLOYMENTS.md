@@ -43,3 +43,42 @@ Date: 2023-07-15T00:38:01.072Z
 
 ---
 
+
+# Deployment
+
+Date: 2024-03-08T01:15:56.788Z
+
+## **Network:** sepolia
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/plottables-flex/deployment-config.sepolia-staging.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://sepolia.etherscan.io/address/0x81c7CfbD20fFf3B916Ded1963A711Aa89aaE0E8C#code
+
+**AdminACLV1:** https://sepolia.etherscan.io/address/0xf8ddCeA95a26E7d3D8521f081a019f6Bd82BEEee#code
+
+**Core Registry:** https://sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**Shared Minter Filter:** https://sepolia.etherscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
+
+**Minters:** All globally allowed minters on the shared minter filter contract may be used to mint tokens on the core contract.
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Stitchables
+- **Token Ticker:** STITCH
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0x38A0217478892db54992729eFC42d261e28bb82f
+- **BytecodeStorageReader Library:** 0x7497909537cE00fDda93c12d5083D8647C593c67
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** stitchables-sepolia
+
+---
+
