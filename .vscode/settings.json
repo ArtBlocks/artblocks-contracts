@@ -22,6 +22,7 @@
   "graphql-config.dotEnvPath": ".env",
   "solidity.packageDefaultDependenciesDirectory": "node_modules",
   "graphql-codegen.configFilePath": "./graphql.config.ts",
+  "typescript.tsdk": "node_modules/typescript/lib",
   "[solidity]": {
     "editor.defaultFormatter": "NomicFoundation.hardhat-solidity"
   }
