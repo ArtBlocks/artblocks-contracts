@@ -38,7 +38,7 @@ export type TransactionDetails = {
  * ValidationConditions is a constant object that defines the possible conditions for validation.
  * These conditions can be used to determine the validity of a field's value.
  */
-export const ValidationConditions = {
+export const ValidationConditionEnum = {
   /** The value of the field must be greater than a specified value. */
   GREATER_THAN: "greaterThan",
   /** The value of the field must be less than a specified value. */
@@ -56,16 +56,18 @@ export const ValidationConditions = {
  * It is derived from the keys of the ValidationConditions constant object.
  */
 type ValidationCondition =
-  (typeof ValidationConditions)[keyof typeof ValidationConditions];
+  (typeof ValidationConditionEnum)[keyof typeof ValidationConditionEnum];
 
 /**
  * ValidationDependency is an interface that represents a validation dependency.
  * It contains a field and a condition that the field must meet.
  */
 interface ValidationDependency {
-  /** The name of the field that is being validated against. */
-  field: string;
-  /** The validation condition that the field must meet. */
+  /** The name of the field that is being validated (target field). */
+  targetField: string;
+  /** The name of the field that the validation depends on (reference field). */
+  referenceField: string;
+  /** The validation condition that must be met. */
   condition: ValidationCondition;
 }
 
@@ -82,13 +84,17 @@ export interface BaseFormFieldSchema extends JSONSchema7 {
   /** Optional property indicating how a field should be transformed before being displayed. */
   displayProcessing?: string;
 
-  validationDependency?: ValidationDependency;
+  validationDependencies?: ValidationDependency[];
 
   /** Optional property indicating the order the fields should be displayed */
   "ui:order"?: string[];
 
   /** Optional property specifying what widget should be used in the ui for this field */
   "ui:widget"?: string;
+
+  properties?: { [key: string]: BaseFormFieldSchema };
+
+  items?: ItemsSchema;
 }
 
 interface FormFieldProperties {

@@ -1,6 +1,6 @@
 import { WalletClient } from "viem";
 import { FormFieldSchema } from "./json-schema";
-import { ZodValidationSchema } from "./utils/zod";
+import { ZodType } from "zod";
 
 export type Hex = `0x${string}`;
 
@@ -8,7 +8,7 @@ export type FormBlueprint = {
   key: string;
   formSchema: FormFieldSchema;
   initialFormValues: Record<string, any>;
-  zodSchema: ZodValidationSchema;
+  zodSchema: ZodType<any, any, any>;
   handleSubmit: (
     formValues: Record<string, any>,
     signer: WalletClient,
