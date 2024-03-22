@@ -40,3 +40,70 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0x5FE770CF8Ad1DF5DDe2c1447A898B087c275F6c1, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2024-03-21T20:28:32.734Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/iyk-flex/deployment-config.arbitrum-sepolia-staging.ts
+[INFO] Deploying to network: arbitrum-sepolia
+[INFO] Deploying to environment: arbitrum-staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xAbfe9A463c125F55a973cAB01b5081DF2ab4242a
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x03E590B63Ff9B4045480495aBEf47BFfC082e81D
+[INFO] Registered core contract 0x03E590B63Ff9B4045480495aBEf47BFfC082e81D on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x5FE770CF8Ad1DF5DDe2c1447A898B087c275F6c1.
+[INFO] Verifying core contract contract deployment...
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine_Flex.sol:GenArt721CoreV3_Engine_Flex at 0x03E590B63Ff9B4045480495aBEf47BFfC082e81D
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex on the block explorer.
+https://sepolia.arbiscan.io/address/0x03E590B63Ff9B4045480495aBEf47BFfC082e81D#code
+
+[INFO] Core contract verified on Etherscan at 0x03E590B63Ff9B4045480495aBEf47BFfC082e81D}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xAbfe9A463c125F55a973cAB01b5081DF2ab4242a has already been verified on Etherscan.
+https://sepolia.arbiscan.io/address/0xAbfe9A463c125F55a973cAB01b5081DF2ab4242a#code
+[INFO] AdminACL contract verified on Etherscan at 0xAbfe9A463c125F55a973cAB01b5081DF2ab4242a
+Created s3 bucket for https://iyk-arbitrum-sepolia.s3.amazonaws.com
+[INFO] Created image bucket iyk-arbitrum-sepolia
+[INFO] Deployment details written to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/iyk-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x03e590b63ff9b4045480495abef47bffc082e81d",
+  "name": "IYK",
+  "bucket_name": "iyk-arbitrum-sepolia",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x5FE770CF8Ad1DF5DDe2c1447A898B087c275F6c1, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2024-03-21T20:38:19.066Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/iyk-flex/deployment-config.arbitrum.ts
+[INFO] Deploying to network: arbitrum
+[INFO] Deploying to environment: arbitrum
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xb3dFE7EDeD7f19D859A60f65dADeBda24465bE72
+[INFO] Using shared Randomizer at 0x6a5976391E708fBf918c3786cd1FcbB88732fbc1
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xd168B708a5385a1CB50cf13f5FBD63149Ccc08ab
+[INFO] Registered core contract 0xd168B708a5385a1CB50cf13f5FBD63149Ccc08ab on core registry 0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2
+[INFO] Updated the Minter Filter on the Core contract to 0x94560abECb897f359ee1A6Ed0E922315Da11752d.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x5FE770CF8Ad1DF5DDe2c1447A898B087c275F6c1.
+[INFO] Verifying core contract contract deployment...
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine_Flex.sol:GenArt721CoreV3_Engine_Flex at 0xd168B708a5385a1CB50cf13f5FBD63149Ccc08ab
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex on the block explorer.
+https://arbiscan.io/address/0xd168B708a5385a1CB50cf13f5FBD63149Ccc08ab#code
+
+[INFO] Core contract verified on Etherscan at 0xd168B708a5385a1CB50cf13f5FBD63149Ccc08ab}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xb3dFE7EDeD7f19D859A60f65dADeBda24465bE72 has already been verified on Etherscan.
+https://arbiscan.io/address/0xb3dFE7EDeD7f19D859A60f65dADeBda24465bE72#code
