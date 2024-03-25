@@ -1,0 +1,35 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2024-03-21T21:10:36.744Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/bright-moments-finale/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x1188B781667a19836a14582E57351167AC2E8C9B
+[INFO] Using shared Randomizer at 0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x381233D5584fDb42e46b4D9ba91876479AAb7AcD
+[INFO] Registered core contract 0x381233D5584fDb42e46b4D9ba91876479AAb7AcD on core registry 0x2eE7B9bB2E038bE7323A119701A191c030A61ec6
+[INFO] Updated the Minter Filter on the Core contract to 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0xB96E81f80b3AEEf65CB6d0E280b15FD5DBE71937.
+[INFO] Verifying core contract contract deployment...
+The contract 0x381233D5584fDb42e46b4D9ba91876479AAb7AcD has already been verified on Etherscan.
+https://etherscan.io/address/0x381233D5584fDb42e46b4D9ba91876479AAb7AcD#code
+[INFO] Core contract verified on Etherscan at 0x381233D5584fDb42e46b4D9ba91876479AAb7AcD}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x1188B781667a19836a14582E57351167AC2E8C9B has already been verified on Etherscan.
+https://etherscan.io/address/0x1188B781667a19836a14582E57351167AC2E8C9B#code
+[INFO] AdminACL contract verified on Etherscan at 0x1188B781667a19836a14582E57351167AC2E8C9B
+Created s3 bucket for https://bright-moments-finale-mainnet.s3.amazonaws.com
+[INFO] Created image bucket bright-moments-finale-mainnet
+[INFO] Deployment details written to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/bright-moments-finale/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x381233d5584fdb42e46b4d9ba91876479aab7acd",
+  "name": "Bright Moments Finale",
+  "bucket_name": "bright-moments-finale-mainnet",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] AdminACL's superAdmin address is 0xB96E81f80b3AEEf65CB6d0E280b15FD5DBE71937, don't forget to update if requred.
