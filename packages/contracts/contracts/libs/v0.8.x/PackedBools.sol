@@ -20,7 +20,7 @@ library PackedBools {
         uint256 packedBool,
         uint8 index
     ) internal pure returns (bool) {
-        uint256 mask = 1 << (index & 0xff);
+        uint256 mask = 1 << index;
         return packedBool & mask != 0;
     }
 
@@ -28,7 +28,7 @@ library PackedBools {
         uint256 bitMap,
         uint8 index
     ) internal pure returns (uint256 newBitMap) {
-        uint256 mask = 1 << (index & 0xff);
+        uint256 mask = 1 << index;
         return bitMap | mask;
     }
 
@@ -36,7 +36,7 @@ library PackedBools {
         uint256 bitMap,
         uint8 index
     ) internal pure returns (uint256 newBitMap) {
-        uint256 mask = 1 << (index & 0xff);
+        uint256 mask = 1 << index;
         return bitMap & ~mask;
     }
 }

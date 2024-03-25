@@ -85,7 +85,7 @@ import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  * -------------
  * FLAGS
  * F1: tokens owed < invocations available
- *     occurs when an auction ends before selling out, so tokens are aviailable to be purchased
+ *     occurs when an auction ends before selling out, so tokens are available to be purchased
  *     note: also occurs during Pre and Live auction, so FLAG F1 can occur with STATE A, B, but should not enable purchases
  * -------------
  * ERRORS
@@ -190,15 +190,12 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * post-auction admin-artist-only mint period is required or banned, for
      * and-on configured projects.
      * @param coreContract core contract to set the configuration for.
-     * @param requireAdminArtistOnlyMintPeriod bool indicating if the minter should
-     * require an admin-artist-only mint period after the auction ends.
-     * @param requireNoAdminArtistOnlyMintPeriod bool indicating if the minter should
-     * require no admin-artist-only mint period after the auction ends.
+     * @param adminMintingConstraint enum indicating if the minter should
+     * require an admin-artist-only mint period after the auction ends or not.
      */
     function setContractConfig(
         address coreContract,
-        bool requireAdminArtistOnlyMintPeriod,
-        bool requireNoAdminArtistOnlyMintPeriod
+        RAMLib.AdminMintingConstraint adminMintingConstraint
     ) external {
         // CHECKS
         AuthLib.onlyCoreAdminACL({
@@ -210,9 +207,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         // EFFECTS
         RAMLib.setContractConfig({
             coreContract: coreContract,
-            imposeConstraints: true, // always true because we are configuring
-            requireAdminArtistOnlyMintPeriod: requireAdminArtistOnlyMintPeriod,
-            requireNoAdminArtistOnlyMintPeriod: requireNoAdminArtistOnlyMintPeriod
+            adminMintingConstraint: adminMintingConstraint
         });
     }
 
@@ -233,7 +228,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         uint256 projectId,
         address coreContract,
         uint8 emergencyHoursToAdd
-    ) external {
+    ) external nonReentrant {
         // CHECKS
         AuthLib.onlyCoreAdminACL({
             coreContract: coreContract,
@@ -277,7 +272,10 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             projectId: projectId,
             coreContract: coreContract
         });
-        require(currentState == RAMLib.ProjectMinterStates.A, "Only state A");
+        require(
+            currentState == RAMLib.ProjectMinterStates.PreAuction,
+            "Only pre-auction"
+        );
         // EFFECTS
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
             projectId: projectId,
@@ -319,14 +317,6 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             sender: msg.sender
         });
         // CHECKS
-        // require State A (pre-auction)
-        require(
-            RAMLib.getProjectMinterState({
-                projectId: projectId,
-                coreContract: coreContract
-            }) == RAMLib.ProjectMinterStates.A,
-            "Only pre-auction"
-        );
         // check min auction duration
         // @dev underflow checked automatically in solidity 0.8
         require(
@@ -335,11 +325,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             "Auction too short"
         );
         // EFFECTS
-        // refresh max invocations to eliminate any stale state
-        MaxInvocationsLib.refreshMaxInvocations({
-            projectId: projectId,
-            coreContract: coreContract
-        });
+        // @dev project minter state checked in setAuctionDetails
         RAMLib.setAuctionDetails({
             projectId: projectId,
             coreContract: coreContract,
@@ -410,8 +396,9 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * ------------------------------------------------------------------------
      * @param projectId projectId being bid on.
      * @param coreContract Core contract address for the given project.
+     * @param slotIndex Slot index to create the bid for.
      * @dev nonReentrant modifier is used to prevent reentrancy attacks, e.g.
-     * an an auto-bidder that would be able to atomically outbid a user's
+     * an an auto-bidder that would be able to automically outbid a user's
      * new bid via a reentrant call to createBid.
      */
     function createBid(
@@ -493,6 +480,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * `coreContract` for auction that has ended, but not yet been sold out.
      * @param projectId Project ID to purchase token for.
      * @param coreContract Core contract address for the given project.
+     * @return tokenId Token ID of minted token
      */
     function purchase(
         uint256 projectId,
@@ -511,8 +499,10 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @notice Purchases token for project `projectId` on core contract
      * `coreContract` for auction that has ended, but not yet been sold out,
      * and sets the token's owner to `to`.
+     * @param to Address to be the new token's owner.
      * @param projectId Project ID to purchase token for.
      * @param coreContract Core contract address for the given project.
+     * @return tokenId Token ID of minted token
      */
     function purchaseTo(
         address to,
@@ -530,38 +520,8 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
 
     /**
      * @notice Collects settlement for project `projectId` on core contract
-     * `coreContract` for bid `bidId`.
-     * Reverts if project is not in a post-auction state.
-     * Reverts if msg.sender is not the bid's bidder.
-     * Reverts if msg.sender is not the bidder.
-     * Reverts if bid has already been settled.
-     * Reverts if invalid bid.
-     * @param projectId Project ID of bid to collect settlement for
-     * @param coreContract Core contract address for the given project.
-     * @param bidId ID of bid to be settled
-     */
-    function collectSettlement(
-        uint256 projectId,
-        address coreContract,
-        uint32 bidId
-    ) external nonReentrant {
-        // CHECKS
-        // @dev project state is checked in collectSettlement
-        // EFFECTS
-        RAMLib.collectSettlement({
-            projectId: projectId,
-            coreContract: coreContract,
-            bidId: bidId,
-            bidder: msg.sender,
-            minterRefundGasLimit: _minterRefundGasLimit
-        });
-    }
-
-    /**
-     * @notice Collects settlement for project `projectId` on core contract
-     * `coreContract` for all bids in `slotIndices` at `bidIndicesInSlot`,
+     * `coreContract` for all bids in `bidIds`,
      * which must be aligned by index.
-     * Reverts if `slotIndices` and `bid` indices are not the same length.
      * Reverts if msg.sender is not the bidder for all bids.
      * Reverts if project is not in a post-auction state.
      * Reverts if one or more bids has already been settled.
@@ -631,7 +591,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @notice Directly mint tokens to winners of project `projectId` on core
      * contract `coreContract`.
      * Does not guarantee an optimal ordering or handling of E1 state like
-     * `adminAutoMintTokensToWinners` does while in State C.
+     * `adminAutoRefundWinners` does while in State C.
      * Admin or Artist may mint to any winning bids.
      * Provides protection for Admin and Artist because they may mint tokens
      * to winners to prevent denial of revenue claiming.
@@ -672,7 +632,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @notice Directly mint tokens of winner of project `projectId` on core
      * contract `coreContract`.
      * Does not guarantee an optimal ordering or handling of E1 state like
-     * `adminAutoMintTokensToWinners` does while in State C.
+     * `adminAutoRefundWinners` does while in State C.
      * Only winning collector may call and mint tokens to themselves.
      * Provides protection for collectors because they may mint their tokens
      * directly.
@@ -801,7 +761,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @param coreContract Core contract address for the given project.
      * @param numBidsToRefund Number of bids to refund in this call.
      */
-    function adminAutoRefundBidsToResolveE1(
+    function adminAutoRefundWinners(
         uint256 projectId,
         address coreContract,
         uint24 numBidsToRefund
@@ -811,7 +771,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
             coreContract: coreContract,
             sender: msg.sender,
             contract_: address(this),
-            selector: this.adminAutoRefundBidsToResolveE1.selector
+            selector: this.adminAutoRefundWinners.selector
         });
         // EFFECTS/INTERACTIONS
         RAMLib.autoRefundBidsToResolveE1({
@@ -867,7 +827,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
         uint256 projectId,
         address coreContract
     ) external view returns (bool isError, uint256 numBidsToRefund) {
-        (isError, numBidsToRefund, ) = RAMLib.isErrorE1({
+        (isError, numBidsToRefund, ) = RAMLib.isErrorE1FlagF1({
             projectId: projectId,
             coreContract: coreContract
         });
@@ -909,15 +869,15 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * Gets the configuration details for a core contract as configured by a
+     * @notice Gets the admin minting constraint configuration details for a core contract as configured by a
      * contract admin, for this minter.
      * @param coreContract The address of the core contract.
-     * @return RAMLib.RAMContractConfig instance with the configuration data.
+     * @return RAMLib.AdminMintingConstraint enum value.
      */
     function contractConfigurationDetails(
         address coreContract
-    ) external view returns (RAMLib.RAMContractConfig memory) {
-        return RAMLib.getRAMContractConfig(coreContract);
+    ) external view returns (RAMLib.AdminMintingConstraint) {
+        return RAMLib.getRAMAdminMintingConstraintValue(coreContract);
     }
 
     /**
@@ -1062,7 +1022,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @dev This function will revert if the provided `coreContract` is not
      * a valid Engine or V3 Flagship contract.
      * @param coreContract The address of the contract to check.
-     * @return bool indicating if `coreContract` is a valid engine contract.
+     * @return True if `coreContract` is a valid engine contract.
      */
     function isEngineView(address coreContract) external view returns (bool) {
         SplitFundsLib.IsEngineCache storage isEngineCache = SplitFundsLib
@@ -1076,7 +1036,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * @notice Gets minimum bid value to become the leading bidder in an
+     * @notice Gets minimum bid value to participate in an
      * auction for project `projectId` on core contract `coreContract`.
      * If an auction is not configured, `isConfigured` will be false, and a
      * dummy price of zero is assigned to `tokenPriceInWei`.
@@ -1096,7 +1056,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
      * @param projectId Project ID to get price information for.
      * @param coreContract Core contract to get price information for.
      * @return isConfigured true only if project auctions are configured.
-     * @return tokenPriceInWei price in wei to become the leading bidder on a
+     * @return tokenPriceInWei price in wei to become a bidder on a
      * token auction.
      * @return currencySymbol currency symbol for purchases of project on this
      * minter. This minter always returns "ETH"
@@ -1126,7 +1086,7 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * Gets minimum next bid value in Wei and slot index for project `projectId`
+     * @notice Gets minimum next bid value in Wei and slot index for project `projectId`
      * on core contract `coreContract`.
      * If in a pre-auction state, reverts if unconfigured, otherwise returns
      * the minimum initial bid price for the upcoming auction.
@@ -1155,23 +1115,23 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * @notice Returns the value of the minimum bid in the project's auction,
+     * @notice Returns the value of the lowest bid in the project's auction,
      * in Wei.
      * Reverts if no bids exist in the auction.
-     * @param projectId Project ID to get the minimum bid value for
+     * @param projectId Project ID to get the lowest bid value for
      * @param coreContract Core contract address for the given project
-     * @return minBidValue Value of the minimum bid in the auction, in Wei
+     * @return minBidValue Value of the lowest bid in the auction, in Wei
      */
-    function getMinBidValue(
+    function getLowestBidValue(
         uint256 projectId,
         address coreContract
     ) external view returns (uint256) {
-        (, uint16 minBidSlotIndex) = RAMLib.getMinBid({
+        (, uint16 minBidSlotIndex) = RAMLib.getLowestBid({
             projectId: projectId,
             coreContract: coreContract
         });
         // translate slot index to bid value
-        uint256 projectBasePrice = RAMLib
+        uint88 projectBasePrice = RAMLib
             .getRAMProjectConfig({
                 projectId: projectId,
                 coreContract: coreContract
@@ -1185,8 +1145,35 @@ contract MinterRAMV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterRAMV0 {
     }
 
     /**
-     * Returns balance of project `projectId` on core contract `coreContract`
-     * on this minter contract.
+     * @notice Convenience view function that returns the bid value associated
+     * with a given slot index for the specified project's auction, in Wei.
+     * Reverts if the slot index is out of range (greater than 511).
+     * @param projectId Project ID to get the bid value for
+     * @param coreContract Core contract address for the given project
+     * @param slotIndex Slot index to get the bid value for
+     */
+    function slotIndexToBidValue(
+        uint256 projectId,
+        address coreContract,
+        uint16 slotIndex
+    ) external view returns (uint256) {
+        uint88 projectBasePrice = RAMLib
+            .getRAMProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            })
+            .basePrice;
+        // @dev does not check if project configured to reduce bytecode size
+        return
+            RAMLib.slotIndexToBidValue({
+                basePrice: projectBasePrice,
+                slotIndex: slotIndex
+            });
+    }
+
+    /**
+     * @notice Returns balance of project `projectId` on core contract
+     * `coreContract` on this minter contract.
      * @dev project balance is a failsafe backstop used to ensure that funds
      * from one project may never affect funds from another project on this
      * shared minter contract.
