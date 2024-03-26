@@ -195,3 +195,22 @@ Date: 2023-11-08T20:16:39.072Z
 **Deployment Args:** 0xa07f47c30C262adcC263A4D44595972c50e04db7,0x00000000000076A84feF008CDAbe6409d2FE638B
 
 ---
+
+# Shared Minter Deployment
+
+Date: 2024-01-23T18:51:46.192Z
+
+## **Network:** sepolia
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/minters/sepolia-staging/shared-minter-deploy-config-01.staging.ts`
+
+**MinterSEAV1:** https://sepolia.etherscan.io/address/0x9E19D9Ec5a73E616C153E65291306F6ef1917Bdf#code
+
+**Associated Minter Filter:** 0xa07f47c30C262adcC263A4D44595972c50e04db7
+
+**Deployment Args:** 0xa07f47c30C262adcC263A4D44595972c50e04db7
+
+---
+

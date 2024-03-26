@@ -2,6 +2,8 @@
 
 ## Mainnet (Not Flex)
 
+**Updated GenArt721Minter:** https://etherscan.io/address/0x25Bb10cf67Fa45AE32042EfAC56DCb6aDcE7fd7A#code
+
 **GenArt721CoreV2_ENGINE_FLEX:** https://etherscan.io/address/0x4D928AB507Bf633DD8e68024A1fB4c99316bBdf3#code
 **GenArt721Minter:** https://etherscan.io/address/0x92fc62bE436Abd5dd042Ba4A982f8b3c4E366922#code
 

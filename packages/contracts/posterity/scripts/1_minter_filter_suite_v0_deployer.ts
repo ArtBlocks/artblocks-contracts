@@ -2,13 +2,13 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { MinterFilterV0__factory } from "../../scripts/contracts/factories/MinterFilterV0__factory";
-import { MinterSetPriceERC20V0__factory } from "../../scripts/contracts/factories/MinterSetPriceERC20V0__factory";
-import { MinterSetPriceV0__factory } from "../../scripts/contracts/factories/MinterSetPriceV0__factory";
-import { MinterDALinV0__factory } from "../../scripts/contracts/factories/MinterDALinV0__factory";
-import { MinterDAExpV0__factory } from "../../scripts/contracts/factories/MinterDAExpV0__factory";
+import { MinterFilterV0__factory } from "../../scripts/contracts/factories/minter-suite/MinterFilter/MinterFilterV0__factory";
+import { MinterSetPriceERC20V0__factory } from "../../scripts/contracts/factories/archive/minter-suite/Minters/MinterSetPriceERC20/MinterSetPriceERC20V0__factory";
+import { MinterSetPriceV0__factory } from "../../scripts/contracts/factories/archive/minter-suite/Minters/MinterSetPrice/MinterSetPriceV0__factory";
+import { MinterDALinV0__factory } from "../../scripts/contracts/factories/archive/minter-suite/Minters/MinterDALin/MinterDALinV0__factory";
+import { MinterDAExpV0__factory } from "../../scripts/contracts/factories/archive/minter-suite/Minters/MinterDAExp/MinterDAExpV0__factory";
 
-const CORE_CONTRACT_ADDRESS = "0x87c6E93Fc0B149ec59AD595e2E187a4e1d7fDC25";
+const CORE_CONTRACT_ADDRESS = "0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270";
 
 async function main() {
   const [deployer] = await ethers.getSigners();

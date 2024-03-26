@@ -7,6 +7,15 @@
 
 `TODO` set as minter owner, whitelisted on core contract, and admin of core contract.
 
+## Sepolia
+
+### Upload 0
+
+**GenArt721CoreV2_ENGINE_FLEX:** sepolia.etherscan.io/address/0xB5de93C717bb9AC6aae466E341ef949006A95316#code
+**GenArt721Minter:** https://sepolia.etherscan.io/address/0xf8F55c50127Dc8ebFDE9b460976d2F868D49a9e9#code
+
+`3c6412fee019f5c50d6f03aa6f5045d99d9748c4.` set as minter owner, whitelisted on core contract, and admin of core contract.
+
 ## Goerli (Flex)
 
 ### Upload 0

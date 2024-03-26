@@ -2,14 +2,14 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { MinterFilterV0__factory } from "../../scripts/contracts/factories/MinterFilterV0__factory";
-import { MinterSetPriceERC20V1__factory } from "../../scripts/contracts/factories/MinterSetPriceERC20V1__factory";
-import { MinterSetPriceV1__factory } from "../../scripts/contracts/factories/MinterSetPriceV1__factory";
-import { MinterDALinV1__factory } from "../../scripts/contracts/factories/MinterDALinV1__factory";
-import { MinterDAExpV1__factory } from "../../scripts/contracts/factories/MinterDAExpV1__factory";
+import { MinterFilterV0__factory } from "../../scripts/contracts/factories/minter-suite/MinterFilter/MinterFilterV0__factory";
+import { MinterSetPriceERC20V1__factory } from "../../scripts/contracts/factories/archive/minter-suite/Minters/MinterSetPriceERC20/MinterSetPriceERC20V1__factory";
+import { MinterSetPriceV1__factory } from "../../scripts/contracts/factories/archive/minter-suite/Minters/MinterSetPrice/MinterSetPriceV1__factory";
+import { MinterDALinV1__factory } from "../../scripts/contracts/factories/archive/minter-suite/Minters/MinterDALin/MinterDALinV1__factory";
+import { MinterDAExpV1__factory } from "../../scripts/contracts/factories/archive/minter-suite/Minters/MinterDAExp/MinterDAExpV1__factory";
 
 // ROPSTEN (ARTIST-STAGING) ADDRESSSES
-const CORE_CONTRACT_ADDRESS = "0x1cd623a86751d4c4f20c96000fec763941f098a2";
+const CORE_CONTRACT_ADDRESS = "0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270";
 const FILTER_CONTRACT_ADDRESS = "0xF3d2a642640c928A33a087545939e5df3d0d657f";
 
 // MAINNET ADDRESSES
