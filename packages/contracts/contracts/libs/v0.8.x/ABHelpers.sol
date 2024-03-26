@@ -21,7 +21,7 @@ library ABHelpers {
         uint256 tokenId
     ) internal pure returns (uint256) {
         // int division properly rounds down
-        // @dev no way to disable division by zero check in solidity, so not unchecked
+        // @dev no way to disable division by zero check in solidity v0.8.24, so not unchecked
         return tokenId / ONE_MILLION;
     }
 

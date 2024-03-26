@@ -484,7 +484,6 @@ library RAMLib {
         // require base price >= 0.05 ETH
         require(basePrice >= 0.05 ether, "Only base price gte 0.05 ETH");
         // only future start time
-        // @dev minter already checks via min auction length check
         require(
             auctionTimestampStart > block.timestamp,
             "Only future auctions"
@@ -968,6 +967,7 @@ library RAMLib {
 
     /**
      * @notice Function to mint and settle bid if not already settled.
+     * Assumes check that bidder for bid `bidId` is not null
      * @param projectId Project ID to mint token on.
      * @param coreContract Core contract address for the given project.
      * @param projectPrice Price of a token for the given project.
@@ -1262,74 +1262,6 @@ library RAMLib {
         RAMProjectConfig_.latestRefundedBidId = uint32(
             currentLatestRefundedBidId
         );
-    }
-
-    /**
-     * @notice Function to settle and refund bids to resolve E1 error state.
-     * @param projectId Project ID to refund bid for.
-     * @param coreContract Core contract address for the given project.
-     * @param projectPrice Price of a token for the given project.
-     * @param slotIndex Slot index of bid.
-     * @param bidId ID of bid to settle.
-     * @param minterRefundGasLimit Gas limit to use when refunding bidder
-     */
-    function _settleAndRefundBid(
-        uint256 projectId,
-        address coreContract,
-        uint256 projectPrice,
-        uint256 slotIndex,
-        uint256 bidId,
-        uint256 minterRefundGasLimit
-    ) internal {
-        // load project config
-        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
-            projectId: projectId,
-            coreContract: coreContract
-        });
-        // load bid
-        Bid storage bid = RAMProjectConfig_.bids[bidId];
-        // @dev bidderAddress previously checked not null
-        address bidderAddress = bid.bidder;
-        // Settle and refund the Bid
-        // Minimum value to send is the project price
-        uint256 valueToSend = projectPrice;
-        bool didSettleBid = false;
-
-        // if not isSettled, then settle the bid
-        if (!_getBidPackedBool(bid, INDEX_IS_SETTLED)) {
-            // mark bid as settled
-            _setBidPackedBool({bid: bid, index: INDEX_IS_SETTLED, value: true});
-            didSettleBid = true;
-            // send entire bid value if not previously settled
-            valueToSend = slotIndexToBidValue({
-                basePrice: RAMProjectConfig_.basePrice,
-                slotIndex: uint16(slotIndex)
-            });
-        }
-        // mark bid as refunded
-        _setBidPackedBool({bid: bid, index: INDEX_IS_REFUNDED, value: true});
-        // INTERACTIONS
-        // force-send refund to bidder
-        // @dev reverts on underflow
-        RAMProjectConfig_.projectBalance -= uint120(valueToSend);
-        SplitFundsLib.forceSafeTransferETH({
-            to: bidderAddress,
-            amount: valueToSend,
-            minterRefundGasLimit: minterRefundGasLimit
-        });
-        // emit event for state changes
-        if (didSettleBid) {
-            emit BidSettled({
-                projectId: projectId,
-                coreContract: coreContract,
-                bidId: bidId
-            });
-        }
-        emit BidRefunded({
-            projectId: projectId,
-            coreContract: coreContract,
-            bidId: bidId
-        });
     }
 
     /**
@@ -2329,6 +2261,75 @@ library RAMLib {
     }
 
     /**
+     * @notice private helper function to settle and refund bids to resolve E1 error state.
+     * Assumes check that bidder for bid `bidId` is not null
+     * @param projectId Project ID to refund bid for.
+     * @param coreContract Core contract address for the given project.
+     * @param projectPrice Price of a token for the given project.
+     * @param slotIndex Slot index of bid.
+     * @param bidId ID of bid to settle.
+     * @param minterRefundGasLimit Gas limit to use when refunding bidder
+     */
+    function _settleAndRefundBid(
+        uint256 projectId,
+        address coreContract,
+        uint256 projectPrice,
+        uint256 slotIndex,
+        uint256 bidId,
+        uint256 minterRefundGasLimit
+    ) private {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        // load bid
+        Bid storage bid = RAMProjectConfig_.bids[bidId];
+        // @dev bidderAddress previously checked not null
+        address bidderAddress = bid.bidder;
+        // Settle and refund the Bid
+        // Minimum value to send is the project price
+        uint256 valueToSend = projectPrice;
+        bool didSettleBid = false;
+
+        // if not isSettled, then settle the bid
+        if (!_getBidPackedBool(bid, INDEX_IS_SETTLED)) {
+            // mark bid as settled
+            _setBidPackedBool({bid: bid, index: INDEX_IS_SETTLED, value: true});
+            didSettleBid = true;
+            // send entire bid value if not previously settled
+            valueToSend = slotIndexToBidValue({
+                basePrice: RAMProjectConfig_.basePrice,
+                slotIndex: uint16(slotIndex)
+            });
+        }
+        // mark bid as refunded
+        _setBidPackedBool({bid: bid, index: INDEX_IS_REFUNDED, value: true});
+        // INTERACTIONS
+        // force-send refund to bidder
+        // @dev reverts on underflow
+        RAMProjectConfig_.projectBalance -= uint120(valueToSend);
+        SplitFundsLib.forceSafeTransferETH({
+            to: bidderAddress,
+            amount: valueToSend,
+            minterRefundGasLimit: minterRefundGasLimit
+        });
+        // emit event for state changes
+        if (didSettleBid) {
+            emit BidSettled({
+                projectId: projectId,
+                coreContract: coreContract,
+                bidId: bidId
+            });
+        }
+        emit BidRefunded({
+            projectId: projectId,
+            coreContract: coreContract,
+            bidId: bidId
+        });
+    }
+
+    /**
      * @notice Helper function to get the price of a token on a project.
      * @dev Assumes project is configured, has a base price, and generally
      * makes sense to get a price for.
@@ -2597,6 +2598,7 @@ library RAMLib {
         uint256 slotIndex
     ) private {
         // revert if slotIndex >= NUM_SLOTS, since this is an invalid input
+        // @dev no coverage as slot index out of range checked in placeBid
         require(slotIndex < NUM_SLOTS, "Only slot index lt NUM_SLOTS");
         // set the slot in the bitmap
         if (slotIndex < 256) {
@@ -2625,6 +2627,7 @@ library RAMLib {
         uint256 slotIndex
     ) private {
         // revert if slotIndex >= NUM_SLOTS, since this is an invalid input
+        // @dev no coverage as slot index out of range checked in placeBid
         require(slotIndex < NUM_SLOTS, "Only slot index lt NUM_SLOTS");
         // unset the slot in the bitmap
         if (slotIndex < 256) {
@@ -2834,7 +2837,7 @@ library RAMLib {
             slotIndex: startSlotIndex
         });
         // start search at next slot, incremented in while loop
-        uint256 currentSlotIndex = startSlotIndex;
+        uint16 currentSlotIndex = startSlotIndex;
         while (true) {
             // increment slot index and re-calc current slot bid value
             unchecked {
@@ -2842,7 +2845,7 @@ library RAMLib {
             }
             nextValidBidValue = slotIndexToBidValue({
                 basePrice: basePrice,
-                slotIndex: uint16(currentSlotIndex)
+                slotIndex: currentSlotIndex
             });
             // break if current slot's bid value is sufficiently greater than
             // the starting slot's bid value
@@ -2857,7 +2860,7 @@ library RAMLib {
             // otherwise continue to next iteration
         }
         // return the found valid slot index
-        nextValidBidSlotIndex = uint16(currentSlotIndex);
+        nextValidBidSlotIndex = currentSlotIndex;
     }
 
     /**
