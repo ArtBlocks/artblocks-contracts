@@ -241,7 +241,7 @@ library MaxInvocationsLib {
      * @param projectId The id of the project.
      * @param coreContract The address of the core contract.
      */
-    function invocationsRemain(
+    function invocationsRemainOnCore(
         uint256 projectId,
         address coreContract
     ) internal view returns (bool) {
@@ -330,11 +330,33 @@ library MaxInvocationsLib {
         uint256 projectId,
         address coreContract
     ) internal view returns (bool) {
-        return
-            getInvocationsAvailable({
+        // get max invocations from core contract
+        (
+            uint256 coreInvocations,
+            uint256 coreMaxInvocations
+        ) = coreContractInvocationData({
                 projectId: projectId,
                 coreContract: coreContract
-            }) == 0;
+            });
+        MaxInvocationsProjectConfig
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+        uint256 localMaxInvocations = maxInvocationsProjectConfig
+            .maxInvocations;
+        // value is locally defined, and could be out of date.
+        // only possible illogical state is if local max invocations is
+        // greater than core contract's max invocations, in which case
+        // we should use the core contract's max invocations
+        if (localMaxInvocations > coreMaxInvocations) {
+            // local max invocations is stale and illogical, defer to core
+            // contract's max invocations since it is the limiting factor
+            return (coreMaxInvocations == coreInvocations);
+        }
+        // local max invocations is limiting, so check core invocations against
+        // local max invocations
+        return (coreInvocations >= localMaxInvocations);
     }
 
     /**
