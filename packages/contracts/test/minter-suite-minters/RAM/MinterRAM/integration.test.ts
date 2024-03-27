@@ -943,6 +943,63 @@ runForEach.forEach((params) => {
         const tokenOwner = await config.genArt721Core.ownerOf(0);
         expect(tokenOwner).to.equal(config.accounts.user.address);
       });
+      it("does not allow reentrant purchases", async function () {
+        const config = await _beforeEach();
+        // advance to State D
+        await initializeMinBidInProjectZeroAuctionAndAdvanceToEnd(config);
+        // deploy reentrancy contract
+        const reentrancy = await deployAndGet(
+          config,
+          "ReentrancyMockShared",
+          []
+        );
+        // artist configures payment address to attack contract
+        const proposedAddressesAndSplits = [
+          config.projectZero,
+          reentrancy.address,
+          reentrancy.address,
+          // @dev additional payee does not matter for this test
+          0,
+          reentrancy.address,
+          // @dev split for secondary sales doesn't matter for test
+          0,
+        ];
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(
+            ...proposedAddressesAndSplits
+          );
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
+        // perform attack
+        // @dev artist payment failed error message is expected, because attack occurrs during the splitRevenuesETHNoRefund call
+        await expectRevert(
+          reentrancy.connect(config.accounts.artist).attack(
+            2, // qty to purchase
+            config.minter.address, // minter address
+            config.projectZero, // project id
+            config.genArt721Core.address, // core address
+            config.basePrice, // price to pay
+            {
+              value: config.basePrice,
+            }
+          ),
+          "Artist payment failed"
+        );
+
+        // does allow single purchase
+        await reentrancy.connect(config.accounts.artist).attack(
+          1, // qty to purchase
+          config.minter.address, // minter address
+          config.projectZero, // project id
+          config.genArt721Core.address, // core address
+          config.basePrice, // price to pay
+          {
+            value: config.basePrice,
+          }
+        );
+      });
     });
 
     describe("collectSettlements", async function () {

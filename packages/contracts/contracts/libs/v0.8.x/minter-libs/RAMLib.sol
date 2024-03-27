@@ -2799,6 +2799,7 @@ library RAMLib {
             }
         }
         // populate return value
+        // @dev no coverage on if branch because it is unreachable as used
         if (!foundSlotWithBid) {
             return uint16(NUM_SLOTS);
         } else {
