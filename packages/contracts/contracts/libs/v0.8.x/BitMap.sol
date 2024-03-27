@@ -11,7 +11,7 @@ pragma solidity ^0.8.0;
  * a mapping within a storage struct.
  * This design limits the number of indices to 256, but is more gas efficient
  * for use cases that fit within that limit. This is especially true for
- * operations that require many reads/writes, since SLOAD/STTORE can be managed
+ * operations that require many reads/writes, since SLOAD/SSTORE can be managed
  * outside of the library.
  */
 library BitMaps256 {
