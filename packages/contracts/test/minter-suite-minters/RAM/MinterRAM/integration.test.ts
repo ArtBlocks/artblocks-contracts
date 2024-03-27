@@ -2861,6 +2861,55 @@ runForEach.forEach((params) => {
         );
         expect(lowestBidValueAfterTopUp).to.equal(bidValue301);
       });
+      it("does not update minBidSlotIndex when ejected bid is from a higher slot index", async function () {
+        const config = await _beforeEach();
+        await configureProjectZeroAuctionAndAdvanceToStartTime(config);
+        // place bid in slot 200
+        const bidValue200 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          200
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 200, {
+            value: bidValue200,
+          });
+        // place bid in slot 202
+        const bidValue202 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          202
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .createBid(config.projectZero, config.genArt721Core.address, 202, {
+            value: bidValue202,
+          });
+        // verify minBidSlotIndex was updated in underlying data structure
+        const lowestBidValue = await config.minter.getLowestBidValue(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(lowestBidValue).to.equal(bidValue200);
+        // top up bid from slot 202 to slot 300
+        const bidValue300 = await config.minter.slotIndexToBidValue(
+          config.projectZero,
+          config.genArt721Core.address,
+          300
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .topUpBid(config.projectZero, config.genArt721Core.address, 2, 300, {
+            value: bidValue300.sub(bidValue202),
+          });
+        // verify minBidSlotIndex was not updated in underlying data structure
+        const lowestBidValueAfter = await config.minter.getLowestBidValue(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(lowestBidValueAfter).to.equal(bidValue200);
+      });
 
       it("handles _getMaxSlotWithBid scroll in Bitmap B", async function () {
         const config = await _beforeEach();
