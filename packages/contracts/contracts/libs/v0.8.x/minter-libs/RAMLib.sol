@@ -2598,7 +2598,7 @@ library RAMLib {
         uint256 slotIndex
     ) private {
         // revert if slotIndex >= NUM_SLOTS, since this is an invalid input
-        // @dev no coverage as slot index out of range checked in placeBid
+        // @dev no coverage as slot index out of range checked in placeBid and implicitly in topUpBid
         require(slotIndex < NUM_SLOTS, "Only slot index lt NUM_SLOTS");
         // set the slot in the bitmap
         if (slotIndex < 256) {
