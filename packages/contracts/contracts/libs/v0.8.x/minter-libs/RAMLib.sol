@@ -790,7 +790,10 @@ library RAMLib {
             // get bid
             uint256 currentBidId = bidIds[i];
             Bid storage bid = RAMProjectConfig_.bids[currentBidId];
+            address bidderAddress = bid.bidder;
             // CHECKS
+            // require bid exists
+            require(bidderAddress != address(0), "invalid Bid ID");
             // if bid is already minted or refunded, skip to next bid
             // @dev do not revert, since this could be due to front-running
             if (
@@ -799,13 +802,9 @@ library RAMLib {
             ) {
                 continue;
             }
-            address bidderAddress = bid.bidder;
             // require sender is bidder if requireSenderIsBidder is true
             if (requireSenderIsBidder) {
                 require(msg.sender == bidderAddress, "Only sender is bidder");
-            } else {
-                // require bid exists
-                require(bidderAddress != address(0), "invalid Bid ID");
             }
             // EFFECTS
             // @dev num bids minted tokens not memoized due to stack depth
@@ -925,6 +924,7 @@ library RAMLib {
                             currentLatestMintedBidSlotIndex - 1
                         )
                     });
+                    // @dev no coverage on else branch because it is unreachable as used
                     require(
                         currentLatestMintedBidSlotIndex < NUM_SLOTS,
                         "slot with bid not found"
@@ -941,7 +941,7 @@ library RAMLib {
             // been previously settled, however.
 
             // Mint bid and settle if not already settled
-            // @dev scrolling logic in State C ensures bid is not yet minted
+            // @dev scrolling logic in State C ensures bid **exists** is not yet minted
             _mintAndSettle({
                 projectId: projectId,
                 coreContract: coreContract,
