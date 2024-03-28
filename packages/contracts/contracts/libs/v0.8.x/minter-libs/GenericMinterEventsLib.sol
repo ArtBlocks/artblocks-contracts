@@ -13,11 +13,11 @@ pragma solidity ^0.8.0;
  */
 library GenericMinterEventsLib {
     /**
-     * @notice Generic project minter configuration event. Removes key `key`
+     * @notice Generic project minter configuration event. Removed key `key`
      * for project `projectId`.
-     * @param projectId Project ID to remove key for
+     * @param projectId Project ID key was removed for
      * @param coreContract Core contract address that projectId is on
-     * @param key Key to remove
+     * @param key Key removed
      */
     event ConfigKeyRemoved(
         uint256 indexed projectId,
@@ -26,12 +26,12 @@ library GenericMinterEventsLib {
     );
     /// BOOL
     /**
-     * @notice Generic project minter configuration event. Sets value of key
-     * `key` to `value` for project `projectId`.
-     * @param projectId Project ID to set key for
+     * @notice Generic project minter configuration event. Value of key
+     * `key` was set to `value` for project `projectId`.
+     * @param projectId Project ID key was set for
      * @param coreContract Core contract address that projectId is on
-     * @param key Key to set
-     * @param value Value to set key to
+     * @param key Key set
+     * @param value Value key was set to
      */
     event ConfigValueSet(
         uint256 indexed projectId,
@@ -41,12 +41,12 @@ library GenericMinterEventsLib {
     );
     /// UINT256
     /**
-     * @notice Generic project minter configuration event. Sets value of key
-     * `key` to `value` for project `projectId`.
-     * @param projectId Project ID to set key for
+     * @notice Generic project minter configuration event. Value of key
+     * `key` was set to `value` for project `projectId`.
+     * @param projectId Project ID key was set for
      * @param coreContract Core contract address that projectId is on
-     * @param key Key to set
-     * @param value Value to set key to
+     * @param key Key set
+     * @param value Value key was set to
      */
     event ConfigValueSet(
         uint256 indexed projectId,
@@ -55,12 +55,12 @@ library GenericMinterEventsLib {
         uint256 value
     );
     /**
-     * @notice Generic project minter configuration event. Adds value `value`
+     * @notice Generic project minter configuration event. Added value `value`
      * to the set of uint256 at key `key` for project `projectId`.
-     * @param projectId Project ID to set key for
+     * @param projectId Project ID key was set for
      * @param coreContract Core contract address that projectId is on
-     * @param key Key to modify
-     * @param value Value to add to the key's set
+     * @param key Key modified
+     * @param value Value added to the key's set
      */
     event ConfigValueAddedToSet(
         uint256 indexed projectId,
@@ -69,11 +69,11 @@ library GenericMinterEventsLib {
         uint256 value
     );
     /**
-     * @notice Generic project minter configuration event. Removes value
+     * @notice Generic project minter configuration event. Removed value
      * `value` to the set of uint256 at key `key` for project `projectId`.
-     * @param projectId Project ID to set key for
+     * @param projectId Project ID key was set for
      * @param coreContract Core contract address that projectId is on
-     * @param key Key to modify
+     * @param key Key modified
      * @param value Value removed from the key's set
      */
     event ConfigValueRemovedFromSet(
@@ -84,12 +84,12 @@ library GenericMinterEventsLib {
     );
     /// ADDRESS
     /**
-     * @notice Generic project minter configuration event. Sets value of key
-     * `key` to `value` for project `projectId`.
-     * @param projectId Project ID to set key for
+     * @notice Generic project minter configuration event. Value of key
+     * `key` was set to `value` for project `projectId`.
+     * @param projectId Project ID key was set for
      * @param coreContract Core contract address that projectId is on
-     * @param key Key to set
-     * @param value Value to set key to
+     * @param key Key set
+     * @param value Value key was set to
      */
     event ConfigValueSet(
         uint256 indexed projectId,
@@ -98,12 +98,12 @@ library GenericMinterEventsLib {
         address value
     );
     /**
-     * @notice Generic project minter configuration event. Adds value `value`
+     * @notice Generic project minter configuration event. Added value `value`
      * to the set of addresses at key `key` for project `projectId`.
-     * @param projectId Project ID to set key for
+     * @param projectId Project ID key was set for
      * @param coreContract Core contract address that projectId is on
-     * @param key Key to modify
-     * @param value Value to add to the key's set
+     * @param key Key modified
+     * @param value Value added to the key's set
      */
     event ConfigValueAddedToSet(
         uint256 indexed projectId,
@@ -112,11 +112,11 @@ library GenericMinterEventsLib {
         address value
     );
     /**
-     * @notice Generic project minter configuration event. Removes value
+     * @notice Generic project minter configuration event. Removed value
      * `value` to the set of addresses at key `key` for project `projectId`.
-     * @param projectId Project ID to set key for
+     * @param projectId Project ID key was set for
      * @param coreContract Core contract address that projectId is on
-     * @param key Key to modify
+     * @param key Key modified
      * @param value Value removed from the key's set
      */
     event ConfigValueRemovedFromSet(
@@ -127,12 +127,12 @@ library GenericMinterEventsLib {
     );
     /// BYTES32
     /**
-     * @notice Generic project minter configuration event. Sets value of key
-     * `key` to `value` for project `projectId`.
-     * @param projectId Project ID to set key for
+     * @notice Generic project minter configuration event. Value of key
+     * `key` was set to `value` for project `projectId`.
+     * @param projectId Project ID key was set for
      * @param coreContract Core contract address that projectId is on
-     * @param key Key to set
-     * @param value Value to set key to
+     * @param key Key set
+     * @param value Value key was set to
      */
     event ConfigValueSet(
         uint256 indexed projectId,
@@ -141,12 +141,12 @@ library GenericMinterEventsLib {
         bytes32 value
     );
     /**
-     * @notice Generic project minter configuration event. Adds value `value`
+     * @notice Generic project minter configuration event. Added value `value`
      * to the set of bytes32 at key `key` for project `projectId`.
-     * @param projectId Project ID to set key for
+     * @param projectId Project ID key was set for
      * @param coreContract Core contract address that projectId is on
-     * @param key Key to modify
-     * @param value Value to add to the key's set
+     * @param key Key modified
+     * @param value Value added to the key's set
      */
     event ConfigValueAddedToSet(
         uint256 indexed projectId,
@@ -155,11 +155,11 @@ library GenericMinterEventsLib {
         bytes32 value
     );
     /**
-     * @notice Generic project minter configuration event. Removes value
+     * @notice Generic project minter configuration event. Removed value
      * `value` to the set of bytes32 at key `key` for project `projectId`.
-     * @param projectId Project ID to set key for
+     * @param projectId Project ID key was set for
      * @param coreContract Core contract address that projectId is on
-     * @param key Key to modify
+     * @param key Key modified
      * @param value Value removed from the key's set
      */
     event ConfigValueRemovedFromSet(

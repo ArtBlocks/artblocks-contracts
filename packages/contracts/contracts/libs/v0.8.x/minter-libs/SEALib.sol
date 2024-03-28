@@ -580,10 +580,10 @@ library SEALib {
         // invocations has not been reached
         // we require up-to-date invocation data to properly handle last token
         // and avoid revert if relying on core to limit invocations, therefore
-        // use MaxInvocationsLib.invocationsRemain, which calls core contract
+        // use MaxInvocationsLib.invocationsRemainOnCore, which calls core contract
         // to get latest invocation data
         if (
-            !MaxInvocationsLib.invocationsRemain({
+            !MaxInvocationsLib.invocationsRemainOnCore({
                 projectId: projectId,
                 coreContract: coreContract
             })

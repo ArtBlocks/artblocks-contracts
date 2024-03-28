@@ -5,6 +5,7 @@ import { T_Config } from "../util/common";
 
 const minterTypesThatDoNotImplmentSyncMaxInvocationsToCore = [
   "MinterDAExpSettlementV3",
+  "MinterRAMV0",
 ];
 
 /**
