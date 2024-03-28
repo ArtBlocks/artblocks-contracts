@@ -958,7 +958,7 @@ runForEach.forEach((params) => {
           config.projectZero,
           reentrancy.address,
           reentrancy.address,
-          // @dev additional payee does not matter for this test
+          // @dev additional payee doesn't matter for this test
           0,
           reentrancy.address,
           // @dev split for secondary sales doesn't matter for test
@@ -982,7 +982,7 @@ runForEach.forEach((params) => {
             config.genArt721Core.address, // core address
             config.basePrice, // price to pay
             {
-              value: config.basePrice,
+              value: config?.basePrice?.mul(2),
             }
           ),
           "Artist payment failed"
