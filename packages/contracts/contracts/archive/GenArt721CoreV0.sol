@@ -2,7 +2,7 @@
  *Submitted for verification at Etherscan.io on 2020-11-27
  */
 
-// Sources flattened with buidler v1.4.7 https://buidler.dev
+// Sources flattened with builder v1.4.7 https://buidler.dev
 
 // File contracts/libs/IERC165.sol
 

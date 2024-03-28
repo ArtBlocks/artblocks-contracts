@@ -516,7 +516,7 @@ contract MinterDAExpSettlementV0 is
         // since this minter enforces monotonically decreasing purchase prices.
         uint256 _price = _getPrice(_projectId);
         // if the price is not base price, require that the auction have
-        // reached max invocations. This prevents premature withdrawl
+        // reached max invocations. This prevents premature withdrawal
         // before final auction price is possible to know.
         if (_price != _projectConfig.basePrice) {
             // prefer to use locally cached value of maxHasBeenInvoked, which
