@@ -1148,7 +1148,6 @@ contract GenArt721CoreV3_Engine_Flex is
         uint256 _projectId,
         string memory _projectArtistName
     ) external {
-        _onlyUnlocked(_projectId);
         _onlyArtistOrAdminACL(
             _projectId,
             this.updateProjectArtistName.selector

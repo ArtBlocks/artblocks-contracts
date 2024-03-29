@@ -896,6 +896,8 @@ contract GenArt721CoreV3 is
     /**
      * @notice Updates artist name for project `_projectId` to be
      * `_projectArtistName`.
+     * @dev allows updates even after project is locked, due to our experiences
+     * of artist name changes being requested post-lock.
      * @param _projectId Project ID.
      * @param _projectArtistName New artist name.
      */
@@ -903,7 +905,6 @@ contract GenArt721CoreV3 is
         uint256 _projectId,
         string memory _projectArtistName
     ) external {
-        _onlyUnlocked(_projectId);
         _onlyArtistOrAdminACL(
             _projectId,
             this.updateProjectArtistName.selector
