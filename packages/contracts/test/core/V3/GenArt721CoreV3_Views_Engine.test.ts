@@ -783,523 +783,551 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("getRoyalties", function () {
+      // @dev this function was supported until v3.2
+      it("reverts and no longer supports this function", async function () {
+        const config = await loadFixture(_beforeEach);
+        try {
+          config.genArt721Core
+            .connect(config.accounts.user)
+            .getRoyalties(config.projectZeroTokenZero.toNumber());
+          // should have thrown error
+          throw new Error("expected error to be thrown");
+        } catch (error) {
+          // expect specific error message
+          expect(error.message).to.include(
+            "config.genArt721Core.connect(...).getRoyalties is not a function"
+          );
+        }
+      });
+    });
+
+    // eip-2981 royaltyInfo
+    describe("royaltyInfo", function () {
+      const SALE_AMOUNT = 10_000;
       it("returns expected default values for valid projectZero token", async function () {
         const config = await loadFixture(_beforeEach);
         // mint token for projectZero
         await config.minter
           .connect(config.accounts.artist)
           .purchase(config.projectZero);
-        // check for expected values
-        const royaltiesData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .getRoyalties(config.projectZeroTokenZero.toNumber());
-        // generalized check on response size
-        expect(royaltiesData.recipients.length).to.be.equal(2);
-        expect(royaltiesData.bps.length).to.be.equal(2);
-        // Artist
-        // This is a special case where expected revenue is 0, so not included in the array
-        // Additional Payee
-        // This is a special case where expected revenue is 0, so not included in the array
-        // Render provider
-        const renderProviderSecondarySalesAddress =
-          await config.genArt721Core.renderProviderSecondarySalesAddress();
-        expect(royaltiesData.recipients[0]).to.be.equal(
-          renderProviderSecondarySalesAddress
+        // for now, expect revert
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.user)
+            .royaltyInfo(config.projectZeroTokenZero.toNumber(), SALE_AMOUNT),
+          "not implemented"
         );
-        expect(royaltiesData.bps[0]).to.be.equal(250);
-        // Platform provider
-        const platformProviderSecondarySalesAddress =
-          await config.genArt721Core.platformProviderSecondarySalesAddress();
-        expect(royaltiesData.recipients[1]).to.be.equal(
-          platformProviderSecondarySalesAddress
-        );
-        expect(royaltiesData.bps[1]).to.be.equal(250);
+        // // check for expected values
+        // const royaltiesData = await config.genArt721Core
+        //   .connect(config.accounts.user)
+        //   .getRoyalties(config.projectZeroTokenZero.toNumber());
+        // // generalized check on response size
+        // expect(royaltiesData.recipients.length).to.be.equal(2);
+        // expect(royaltiesData.bps.length).to.be.equal(2);
+        // // Artist
+        // // This is a special case where expected revenue is 0, so not included in the array
+        // // Additional Payee
+        // // This is a special case where expected revenue is 0, so not included in the array
+        // // Render provider
+        // const renderProviderSecondarySalesAddress =
+        //   await config.genArt721Core.renderProviderSecondarySalesAddress();
+        // expect(royaltiesData.recipients[0]).to.be.equal(
+        //   renderProviderSecondarySalesAddress
+        // );
+        // expect(royaltiesData.bps[0]).to.be.equal(250);
+        // // Platform provider
+        // const platformProviderSecondarySalesAddress =
+        //   await config.genArt721Core.platformProviderSecondarySalesAddress();
+        // expect(royaltiesData.recipients[1]).to.be.equal(
+        //   platformProviderSecondarySalesAddress
+        // );
+        // expect(royaltiesData.bps[1]).to.be.equal(250);
       });
 
-      it("returns expected configured values for valid projectOne token, three non-zero royalties", async function () {
-        const config = await loadFixture(_beforeEach);
-        // add project
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .addProject("name", config.accounts.artist2.address);
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .toggleProjectIsActive(config.projectOne);
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectMaxInvocations(
-            config.projectOne,
-            config.maxInvocations
-          );
+      // it("returns expected configured values for valid projectOne token, three non-zero royalties", async function () {
+      //   const config = await loadFixture(_beforeEach);
+      //   // add project
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .addProject("name", config.accounts.artist2.address);
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .toggleProjectIsActive(config.projectOne);
+      //   await config.genArt721Core
+      //     .connect(config.accounts.artist2)
+      //     .updateProjectMaxInvocations(
+      //       config.projectOne,
+      //       config.maxInvocations
+      //     );
 
-        // configure minter for project one
-        await config.minterFilter
-          .connect(config.accounts.deployer)
-          .setMinterForProject(config.projectOne, config.minter.address);
-        await config.minter
-          .connect(config.accounts.artist2)
-          .updatePricePerTokenInWei(config.projectOne, 0);
+      //   // configure minter for project one
+      //   await config.minterFilter
+      //     .connect(config.accounts.deployer)
+      //     .setMinterForProject(config.projectOne, config.minter.address);
+      //   await config.minter
+      //     .connect(config.accounts.artist2)
+      //     .updatePricePerTokenInWei(config.projectOne, 0);
 
-        // mint token for projectOne
-        await config.minter
-          .connect(config.accounts.artist2)
-          .purchase(config.projectOne);
+      //   // mint token for projectOne
+      //   await config.minter
+      //     .connect(config.accounts.artist2)
+      //     .purchase(config.projectOne);
 
-        // configure royalties for projectOne
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectSecondaryMarketRoyaltyPercentage(config.projectOne, 10);
-        // artist2 populates an addditional payee
-        await updateArtistFinance(
-          config,
-          config.projectOne,
-          config.accounts.artist2,
-          {
-            artistAddress: config.accounts.artist2.address,
-            additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
-            additionalPayeePrimarySalesPercentage: 0,
-            additionalPayeeSecondarySalesAddress:
-              config.accounts.additional2.address,
-            additionalPayeeSecondarySalesPercentage: 51,
-          }
-        );
-        // update provider secondary BPS to 2.25% and 2.75%
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
-            // intentionally use different render and platform provider values
-            // for purposes of testing
-            225, // _renderProviderSecondarySalesBPS
-            275 // _platformProviderSecondarySalesBPS
-          );
-        // change provider payment addresses to random address
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSalesAddresses(
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional.address, // _renderProviderPrimarySalesAddress
-            config.accounts.user.address, // _renderProviderSecondarySalesAddress
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional2.address, // _platformProviderPrimarySalesAddress
-            config.accounts.user2.address // _platformProviderSecondarySalesAddress
-          );
+      //   // configure royalties for projectOne
+      //   await config.genArt721Core
+      //     .connect(config.accounts.artist2)
+      //     .updateProjectSecondaryMarketRoyaltyPercentage(config.projectOne, 10);
+      //   // artist2 populates an addditional payee
+      //   await updateArtistFinance(
+      //     config,
+      //     config.projectOne,
+      //     config.accounts.artist2,
+      //     {
+      //       artistAddress: config.accounts.artist2.address,
+      //       additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
+      //       additionalPayeePrimarySalesPercentage: 0,
+      //       additionalPayeeSecondarySalesAddress:
+      //         config.accounts.additional2.address,
+      //       additionalPayeeSecondarySalesPercentage: 51,
+      //     }
+      //   );
+      //   // update provider secondary BPS to 2.25% and 2.75%
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .updateProviderSecondarySalesBPS(
+      //       // intentionally use different render and platform provider values
+      //       // for purposes of testing
+      //       225, // _renderProviderSecondarySalesBPS
+      //       275 // _platformProviderSecondarySalesBPS
+      //     );
+      //   // change provider payment addresses to random address
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .updateProviderSalesAddresses(
+      //       // primary address is intentionally different than primary for testing here
+      //       config.accounts.additional.address, // _renderProviderPrimarySalesAddress
+      //       config.accounts.user.address, // _renderProviderSecondarySalesAddress
+      //       // primary address is intentionally different than primary for testing here
+      //       config.accounts.additional2.address, // _platformProviderPrimarySalesAddress
+      //       config.accounts.user2.address // _platformProviderSecondarySalesAddress
+      //     );
 
-        // check for expected values
-        const royaltiesData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .getRoyalties(config.projectOneTokenZero.toNumber());
-        // validate data size
-        expect(royaltiesData.recipients.length).to.be.equal(4);
-        expect(royaltiesData.bps.length).to.be.equal(4);
-        // Artist
-        const artistAddress = config.accounts.artist2.address;
-        expect(royaltiesData.recipients[0]).to.be.equal(artistAddress);
-        // artist BPS = 10% * 100 (BPS/%) * 0.49 to artist = 490 BPS
-        expect(royaltiesData.bps[0]).to.be.equal(490);
-        // Additional Payee
-        const projectIdToAdditionalPayeeSecondarySales =
-          config.accounts.additional2.address;
-        expect(royaltiesData.recipients[1]).to.be.equal(
-          projectIdToAdditionalPayeeSecondarySales
-        );
-        // artist BPS = 10% * 100 (BPS/%) * 0.51 to additional = 510 BPS
-        expect(royaltiesData.bps[1]).to.be.equal(510);
-        // Render provider
-        const renderProviderSecondarySalesAddress =
-          config.accounts.user.address;
-        expect(royaltiesData.recipients[2]).to.be.equal(
-          renderProviderSecondarySalesAddress
-        );
-        expect(royaltiesData.bps[2]).to.be.equal(225);
-        // Platform provider
-        const platformProviderSecondarySalesAddress =
-          config.accounts.user2.address;
-        expect(royaltiesData.recipients[3]).to.be.equal(
-          platformProviderSecondarySalesAddress
-        );
-        expect(royaltiesData.bps[3]).to.be.equal(275);
-      });
+      //   // check for expected values
+      //   const royaltiesData = await config.genArt721Core
+      //     .connect(config.accounts.user)
+      //     .getRoyalties(config.projectOneTokenZero.toNumber());
+      //   // validate data size
+      //   expect(royaltiesData.recipients.length).to.be.equal(4);
+      //   expect(royaltiesData.bps.length).to.be.equal(4);
+      //   // Artist
+      //   const artistAddress = config.accounts.artist2.address;
+      //   expect(royaltiesData.recipients[0]).to.be.equal(artistAddress);
+      //   // artist BPS = 10% * 100 (BPS/%) * 0.49 to artist = 490 BPS
+      //   expect(royaltiesData.bps[0]).to.be.equal(490);
+      //   // Additional Payee
+      //   const projectIdToAdditionalPayeeSecondarySales =
+      //     config.accounts.additional2.address;
+      //   expect(royaltiesData.recipients[1]).to.be.equal(
+      //     projectIdToAdditionalPayeeSecondarySales
+      //   );
+      //   // artist BPS = 10% * 100 (BPS/%) * 0.51 to additional = 510 BPS
+      //   expect(royaltiesData.bps[1]).to.be.equal(510);
+      //   // Render provider
+      //   const renderProviderSecondarySalesAddress =
+      //     config.accounts.user.address;
+      //   expect(royaltiesData.recipients[2]).to.be.equal(
+      //     renderProviderSecondarySalesAddress
+      //   );
+      //   expect(royaltiesData.bps[2]).to.be.equal(225);
+      //   // Platform provider
+      //   const platformProviderSecondarySalesAddress =
+      //     config.accounts.user2.address;
+      //   expect(royaltiesData.recipients[3]).to.be.equal(
+      //     platformProviderSecondarySalesAddress
+      //   );
+      //   expect(royaltiesData.bps[3]).to.be.equal(275);
+      // });
 
-      it("returns expected configured values for valid projectOne token, only artist royalties are zero", async function () {
-        const config = await loadFixture(_beforeEach);
-        // add project
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .addProject("name", config.accounts.artist2.address);
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .toggleProjectIsActive(config.projectOne);
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectMaxInvocations(
-            config.projectOne,
-            config.maxInvocations
-          );
+      // it("returns expected configured values for valid projectOne token, only artist royalties are zero", async function () {
+      //   const config = await loadFixture(_beforeEach);
+      //   // add project
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .addProject("name", config.accounts.artist2.address);
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .toggleProjectIsActive(config.projectOne);
+      //   await config.genArt721Core
+      //     .connect(config.accounts.artist2)
+      //     .updateProjectMaxInvocations(
+      //       config.projectOne,
+      //       config.maxInvocations
+      //     );
 
-        // configure minter for project one
-        await config.minterFilter
-          .connect(config.accounts.deployer)
-          .setMinterForProject(config.projectOne, config.minter.address);
-        await config.minter
-          .connect(config.accounts.artist2)
-          .updatePricePerTokenInWei(config.projectOne, 0);
+      //   // configure minter for project one
+      //   await config.minterFilter
+      //     .connect(config.accounts.deployer)
+      //     .setMinterForProject(config.projectOne, config.minter.address);
+      //   await config.minter
+      //     .connect(config.accounts.artist2)
+      //     .updatePricePerTokenInWei(config.projectOne, 0);
 
-        // mint token for projectOne
-        await config.minter
-          .connect(config.accounts.artist2)
-          .purchase(config.projectOne);
+      //   // mint token for projectOne
+      //   await config.minter
+      //     .connect(config.accounts.artist2)
+      //     .purchase(config.projectOne);
 
-        // configure royalties for projectOne
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectSecondaryMarketRoyaltyPercentage(config.projectOne, 10);
-        // artist2 populates an addditional payee
-        const proposeArtistPaymentAddressesAndSplitsArgs = [
-          config.projectOne,
-          config.accounts.artist2.address,
-          constants.ZERO_ADDRESS,
-          0,
-          config.accounts.additional2.address, // additional secondary address
-          100, // additonal secondary percentage
-        ];
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .proposeArtistPaymentAddressesAndSplits(
-            ...proposeArtistPaymentAddressesAndSplitsArgs
-          );
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .adminAcceptArtistAddressesAndSplits(
-            ...proposeArtistPaymentAddressesAndSplitsArgs
-          );
-        // update provider secondary BPS to 2.25% and 2.75%
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
-            // intentionally use different render and platform provider values
-            // for purposes of testing
-            225, // _renderProviderSecondarySalesBPS
-            275 // _platformProviderSecondarySalesBPS
-          );
-        // change Render and Platform payment addresses to random address
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSalesAddresses(
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional.address, // _renderProviderPrimarySalesAddress
-            config.accounts.user.address, // _renderProviderSecondarySalesAddress
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional2.address, // _platformProviderPrimarySalesAddress
-            config.accounts.user2.address // _platformProviderSecondarySalesAddress
-          );
+      //   // configure royalties for projectOne
+      //   await config.genArt721Core
+      //     .connect(config.accounts.artist2)
+      //     .updateProjectSecondaryMarketRoyaltyPercentage(config.projectOne, 10);
+      //   // artist2 populates an addditional payee
+      //   const proposeArtistPaymentAddressesAndSplitsArgs = [
+      //     config.projectOne,
+      //     config.accounts.artist2.address,
+      //     constants.ZERO_ADDRESS,
+      //     0,
+      //     config.accounts.additional2.address, // additional secondary address
+      //     100, // additonal secondary percentage
+      //   ];
+      //   await config.genArt721Core
+      //     .connect(config.accounts.artist2)
+      //     .proposeArtistPaymentAddressesAndSplits(
+      //       ...proposeArtistPaymentAddressesAndSplitsArgs
+      //     );
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .adminAcceptArtistAddressesAndSplits(
+      //       ...proposeArtistPaymentAddressesAndSplitsArgs
+      //     );
+      //   // update provider secondary BPS to 2.25% and 2.75%
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .updateProviderSecondarySalesBPS(
+      //       // intentionally use different render and platform provider values
+      //       // for purposes of testing
+      //       225, // _renderProviderSecondarySalesBPS
+      //       275 // _platformProviderSecondarySalesBPS
+      //     );
+      //   // change Render and Platform payment addresses to random address
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .updateProviderSalesAddresses(
+      //       // primary address is intentionally different than primary for testing here
+      //       config.accounts.additional.address, // _renderProviderPrimarySalesAddress
+      //       config.accounts.user.address, // _renderProviderSecondarySalesAddress
+      //       // primary address is intentionally different than primary for testing here
+      //       config.accounts.additional2.address, // _platformProviderPrimarySalesAddress
+      //       config.accounts.user2.address // _platformProviderSecondarySalesAddress
+      //     );
 
-        // check for expected values
-        const royaltiesData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .getRoyalties(config.projectOneTokenZero.toNumber());
-        // validate data size
-        expect(royaltiesData.recipients.length).to.be.equal(3);
-        expect(royaltiesData.bps.length).to.be.equal(3);
-        // Artist
-        // This is a special case where expected revenue is 0, so not included in the array
-        // Additional Payee
-        const projectIdToAdditionalPayeeSecondarySales =
-          config.accounts.additional2.address;
-        expect(royaltiesData.recipients[0]).to.be.equal(
-          projectIdToAdditionalPayeeSecondarySales
-        );
-        // artist BPS = 10% * 100 (BPS/%) * 1.00 to additional = 1000 BPS
-        expect(royaltiesData.bps[0]).to.be.equal(1000);
-        // Render provider
-        const renderProviderSecondarySalesAddress =
-          config.accounts.user.address;
-        expect(royaltiesData.recipients[1]).to.be.equal(
-          renderProviderSecondarySalesAddress
-        );
-        expect(royaltiesData.bps[1]).to.be.equal(225);
-        // Platform provider
-        const platformProviderSecondarySalesAddress =
-          config.accounts.user2.address;
-        expect(royaltiesData.recipients[2]).to.be.equal(
-          platformProviderSecondarySalesAddress
-        );
-        expect(royaltiesData.bps[2]).to.be.equal(275);
-      });
+      //   // check for expected values
+      //   const royaltiesData = await config.genArt721Core
+      //     .connect(config.accounts.user)
+      //     .getRoyalties(config.projectOneTokenZero.toNumber());
+      //   // validate data size
+      //   expect(royaltiesData.recipients.length).to.be.equal(3);
+      //   expect(royaltiesData.bps.length).to.be.equal(3);
+      //   // Artist
+      //   // This is a special case where expected revenue is 0, so not included in the array
+      //   // Additional Payee
+      //   const projectIdToAdditionalPayeeSecondarySales =
+      //     config.accounts.additional2.address;
+      //   expect(royaltiesData.recipients[0]).to.be.equal(
+      //     projectIdToAdditionalPayeeSecondarySales
+      //   );
+      //   // artist BPS = 10% * 100 (BPS/%) * 1.00 to additional = 1000 BPS
+      //   expect(royaltiesData.bps[0]).to.be.equal(1000);
+      //   // Render provider
+      //   const renderProviderSecondarySalesAddress =
+      //     config.accounts.user.address;
+      //   expect(royaltiesData.recipients[1]).to.be.equal(
+      //     renderProviderSecondarySalesAddress
+      //   );
+      //   expect(royaltiesData.bps[1]).to.be.equal(225);
+      //   // Platform provider
+      //   const platformProviderSecondarySalesAddress =
+      //     config.accounts.user2.address;
+      //   expect(royaltiesData.recipients[2]).to.be.equal(
+      //     platformProviderSecondarySalesAddress
+      //   );
+      //   expect(royaltiesData.bps[2]).to.be.equal(275);
+      // });
 
-      it("returns expected configured values for valid projectOne token, only additional payee royalties are zero", async function () {
-        const config = await loadFixture(_beforeEach);
-        // add project
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .addProject("name", config.accounts.artist2.address);
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .toggleProjectIsActive(config.projectOne);
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectMaxInvocations(
-            config.projectOne,
-            config.maxInvocations
-          );
+      // it("returns expected configured values for valid projectOne token, only additional payee royalties are zero", async function () {
+      //   const config = await loadFixture(_beforeEach);
+      //   // add project
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .addProject("name", config.accounts.artist2.address);
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .toggleProjectIsActive(config.projectOne);
+      //   await config.genArt721Core
+      //     .connect(config.accounts.artist2)
+      //     .updateProjectMaxInvocations(
+      //       config.projectOne,
+      //       config.maxInvocations
+      //     );
 
-        // configure minter for project one
-        await config.minterFilter
-          .connect(config.accounts.deployer)
-          .setMinterForProject(config.projectOne, config.minter.address);
-        await config.minter
-          .connect(config.accounts.artist2)
-          .updatePricePerTokenInWei(config.projectOne, 0);
+      //   // configure minter for project one
+      //   await config.minterFilter
+      //     .connect(config.accounts.deployer)
+      //     .setMinterForProject(config.projectOne, config.minter.address);
+      //   await config.minter
+      //     .connect(config.accounts.artist2)
+      //     .updatePricePerTokenInWei(config.projectOne, 0);
 
-        // mint token for projectOne
-        await config.minter
-          .connect(config.accounts.artist2)
-          .purchase(config.projectOne);
+      //   // mint token for projectOne
+      //   await config.minter
+      //     .connect(config.accounts.artist2)
+      //     .purchase(config.projectOne);
 
-        // configure royalties for projectOne
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectSecondaryMarketRoyaltyPercentage(config.projectOne, 10);
-        // artist2 populates an addditional payee
-        await updateArtistFinance(
-          config,
-          config.projectOne,
-          config.accounts.artist2,
-          {
-            artistAddress: config.accounts.artist2.address,
-            additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
-            additionalPayeePrimarySalesPercentage: 0,
-            additionalPayeeSecondarySalesAddress:
-              config.accounts.additional2.address,
-            additionalPayeeSecondarySalesPercentage: 0,
-          }
-        );
-        // update provider secondary BPS to 2.25% and 2.75%
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
-            // intentionally use different render and platform provider values
-            // for purposes of testing
-            225, // _renderProviderSecondarySalesBPS
-            275 // _platformProviderSecondarySalesBPS
-          );
-        // change Render and Platform payment addresses to random address
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSalesAddresses(
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional.address, // _renderProviderPrimarySalesAddress
-            config.accounts.user.address, // _renderProviderSecondarySalesAddress
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional2.address, // _platformProviderPrimarySalesAddress
-            config.accounts.user2.address // _platformProviderSecondarySalesAddress
-          );
+      //   // configure royalties for projectOne
+      //   await config.genArt721Core
+      //     .connect(config.accounts.artist2)
+      //     .updateProjectSecondaryMarketRoyaltyPercentage(config.projectOne, 10);
+      //   // artist2 populates an addditional payee
+      //   await updateArtistFinance(
+      //     config,
+      //     config.projectOne,
+      //     config.accounts.artist2,
+      //     {
+      //       artistAddress: config.accounts.artist2.address,
+      //       additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
+      //       additionalPayeePrimarySalesPercentage: 0,
+      //       additionalPayeeSecondarySalesAddress:
+      //         config.accounts.additional2.address,
+      //       additionalPayeeSecondarySalesPercentage: 0,
+      //     }
+      //   );
+      //   // update provider secondary BPS to 2.25% and 2.75%
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .updateProviderSecondarySalesBPS(
+      //       // intentionally use different render and platform provider values
+      //       // for purposes of testing
+      //       225, // _renderProviderSecondarySalesBPS
+      //       275 // _platformProviderSecondarySalesBPS
+      //     );
+      //   // change Render and Platform payment addresses to random address
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .updateProviderSalesAddresses(
+      //       // primary address is intentionally different than primary for testing here
+      //       config.accounts.additional.address, // _renderProviderPrimarySalesAddress
+      //       config.accounts.user.address, // _renderProviderSecondarySalesAddress
+      //       // primary address is intentionally different than primary for testing here
+      //       config.accounts.additional2.address, // _platformProviderPrimarySalesAddress
+      //       config.accounts.user2.address // _platformProviderSecondarySalesAddress
+      //     );
 
-        // check for expected values
-        const royaltiesData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .getRoyalties(config.projectOneTokenZero.toNumber());
-        // validate data size
-        expect(royaltiesData.recipients.length).to.be.equal(3);
-        expect(royaltiesData.bps.length).to.be.equal(3);
-        // Artist
-        const artistAddress = config.accounts.artist2.address;
-        expect(royaltiesData.recipients[0]).to.be.equal(artistAddress);
-        // artist BPS = 10% * 100 (BPS/%) * 1.00 to artist = 1000 BPS
-        expect(royaltiesData.bps[0]).to.be.equal(1000);
-        // Additional Payee
-        // This is a special case where expected revenue is 0, so not included in the array
-        // Render provider
-        const renderProviderSecondarySalesAddress =
-          config.accounts.user.address;
-        expect(royaltiesData.recipients[1]).to.be.equal(
-          renderProviderSecondarySalesAddress
-        );
-        expect(royaltiesData.bps[1]).to.be.equal(225);
-        // Platform provider
-        const platformProviderSecondarySalesAddress =
-          config.accounts.user2.address;
-        expect(royaltiesData.recipients[2]).to.be.equal(
-          platformProviderSecondarySalesAddress
-        );
-        expect(royaltiesData.bps[2]).to.be.equal(275);
-      });
+      //   // check for expected values
+      //   const royaltiesData = await config.genArt721Core
+      //     .connect(config.accounts.user)
+      //     .getRoyalties(config.projectOneTokenZero.toNumber());
+      //   // validate data size
+      //   expect(royaltiesData.recipients.length).to.be.equal(3);
+      //   expect(royaltiesData.bps.length).to.be.equal(3);
+      //   // Artist
+      //   const artistAddress = config.accounts.artist2.address;
+      //   expect(royaltiesData.recipients[0]).to.be.equal(artistAddress);
+      //   // artist BPS = 10% * 100 (BPS/%) * 1.00 to artist = 1000 BPS
+      //   expect(royaltiesData.bps[0]).to.be.equal(1000);
+      //   // Additional Payee
+      //   // This is a special case where expected revenue is 0, so not included in the array
+      //   // Render provider
+      //   const renderProviderSecondarySalesAddress =
+      //     config.accounts.user.address;
+      //   expect(royaltiesData.recipients[1]).to.be.equal(
+      //     renderProviderSecondarySalesAddress
+      //   );
+      //   expect(royaltiesData.bps[1]).to.be.equal(225);
+      //   // Platform provider
+      //   const platformProviderSecondarySalesAddress =
+      //     config.accounts.user2.address;
+      //   expect(royaltiesData.recipients[2]).to.be.equal(
+      //     platformProviderSecondarySalesAddress
+      //   );
+      //   expect(royaltiesData.bps[2]).to.be.equal(275);
+      // });
 
-      it("returns expected configured values for valid projectOne token, only Art Blocks royalties are zero", async function () {
-        const config = await loadFixture(_beforeEach);
-        // add project
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .addProject("name", config.accounts.artist2.address);
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .toggleProjectIsActive(config.projectOne);
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectMaxInvocations(
-            config.projectOne,
-            config.maxInvocations
-          );
+      // it("returns expected configured values for valid projectOne token, only Art Blocks royalties are zero", async function () {
+      //   const config = await loadFixture(_beforeEach);
+      //   // add project
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .addProject("name", config.accounts.artist2.address);
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .toggleProjectIsActive(config.projectOne);
+      //   await config.genArt721Core
+      //     .connect(config.accounts.artist2)
+      //     .updateProjectMaxInvocations(
+      //       config.projectOne,
+      //       config.maxInvocations
+      //     );
 
-        // configure minter for project one
-        await config.minterFilter
-          .connect(config.accounts.deployer)
-          .setMinterForProject(config.projectOne, config.minter.address);
-        await config.minter
-          .connect(config.accounts.artist2)
-          .updatePricePerTokenInWei(config.projectOne, 0);
+      //   // configure minter for project one
+      //   await config.minterFilter
+      //     .connect(config.accounts.deployer)
+      //     .setMinterForProject(config.projectOne, config.minter.address);
+      //   await config.minter
+      //     .connect(config.accounts.artist2)
+      //     .updatePricePerTokenInWei(config.projectOne, 0);
 
-        // mint token for projectOne
-        await config.minter
-          .connect(config.accounts.artist2)
-          .purchase(config.projectOne);
+      //   // mint token for projectOne
+      //   await config.minter
+      //     .connect(config.accounts.artist2)
+      //     .purchase(config.projectOne);
 
-        // configure royalties for projectOne
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectSecondaryMarketRoyaltyPercentage(config.projectOne, 10);
-        // artist2 populates an addditional payee
-        await updateArtistFinance(
-          config,
-          config.projectOne,
-          config.accounts.artist2,
-          {
-            artistAddress: config.accounts.artist2.address,
-            additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
-            additionalPayeePrimarySalesPercentage: 0,
-            additionalPayeeSecondarySalesAddress:
-              config.accounts.additional2.address,
-            additionalPayeeSecondarySalesPercentage: 51,
-          }
-        );
-        // update provider secondary BPS to 0%
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
-            0, // _renderProviderSecondarySalesBPS
-            0 // _platformProviderSecondarySalesBPS
-          );
-        // change Render and Platform payment addresses to random address
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSalesAddresses(
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional.address, // _renderProviderPrimarySalesAddress
-            config.accounts.user.address, // _renderProviderSecondarySalesAddress
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional2.address, // _platformProviderPrimarySalesAddress
-            config.accounts.user2.address // _platformProviderSecondarySalesAddress
-          );
+      //   // configure royalties for projectOne
+      //   await config.genArt721Core
+      //     .connect(config.accounts.artist2)
+      //     .updateProjectSecondaryMarketRoyaltyPercentage(config.projectOne, 10);
+      //   // artist2 populates an addditional payee
+      //   await updateArtistFinance(
+      //     config,
+      //     config.projectOne,
+      //     config.accounts.artist2,
+      //     {
+      //       artistAddress: config.accounts.artist2.address,
+      //       additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
+      //       additionalPayeePrimarySalesPercentage: 0,
+      //       additionalPayeeSecondarySalesAddress:
+      //         config.accounts.additional2.address,
+      //       additionalPayeeSecondarySalesPercentage: 51,
+      //     }
+      //   );
+      //   // update provider secondary BPS to 0%
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .updateProviderSecondarySalesBPS(
+      //       0, // _renderProviderSecondarySalesBPS
+      //       0 // _platformProviderSecondarySalesBPS
+      //     );
+      //   // change Render and Platform payment addresses to random address
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .updateProviderSalesAddresses(
+      //       // primary address is intentionally different than primary for testing here
+      //       config.accounts.additional.address, // _renderProviderPrimarySalesAddress
+      //       config.accounts.user.address, // _renderProviderSecondarySalesAddress
+      //       // primary address is intentionally different than primary for testing here
+      //       config.accounts.additional2.address, // _platformProviderPrimarySalesAddress
+      //       config.accounts.user2.address // _platformProviderSecondarySalesAddress
+      //     );
 
-        // check for expected values
-        const royaltiesData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .getRoyalties(config.projectOneTokenZero.toNumber());
-        // validate data size
-        expect(royaltiesData.recipients.length).to.be.equal(2);
-        expect(royaltiesData.bps.length).to.be.equal(2);
-        // Artist
-        const artistAddress = config.accounts.artist2.address;
-        expect(royaltiesData.recipients[0]).to.be.equal(artistAddress);
-        // artist BPS = 10% * 100 (BPS/%) * 0.49 to artist = 490 BPS
-        expect(royaltiesData.bps[0]).to.be.equal(490);
-        // Additional Payee
-        const projectIdToAdditionalPayeeSecondarySales =
-          config.accounts.additional2.address;
-        expect(royaltiesData.recipients[1]).to.be.equal(
-          projectIdToAdditionalPayeeSecondarySales
-        );
-        // artist BPS = 10% * 100 (BPS/%) * 0.51 to additional = 510 BPS
-        expect(royaltiesData.bps[1]).to.be.equal(510);
-        // Art Blocks
-        // This is a special case where expected revenue is 0, so not included in the array
-      });
+      //   // check for expected values
+      //   const royaltiesData = await config.genArt721Core
+      //     .connect(config.accounts.user)
+      //     .getRoyalties(config.projectOneTokenZero.toNumber());
+      //   // validate data size
+      //   expect(royaltiesData.recipients.length).to.be.equal(2);
+      //   expect(royaltiesData.bps.length).to.be.equal(2);
+      //   // Artist
+      //   const artistAddress = config.accounts.artist2.address;
+      //   expect(royaltiesData.recipients[0]).to.be.equal(artistAddress);
+      //   // artist BPS = 10% * 100 (BPS/%) * 0.49 to artist = 490 BPS
+      //   expect(royaltiesData.bps[0]).to.be.equal(490);
+      //   // Additional Payee
+      //   const projectIdToAdditionalPayeeSecondarySales =
+      //     config.accounts.additional2.address;
+      //   expect(royaltiesData.recipients[1]).to.be.equal(
+      //     projectIdToAdditionalPayeeSecondarySales
+      //   );
+      //   // artist BPS = 10% * 100 (BPS/%) * 0.51 to additional = 510 BPS
+      //   expect(royaltiesData.bps[1]).to.be.equal(510);
+      //   // Art Blocks
+      //   // This is a special case where expected revenue is 0, so not included in the array
+      // });
 
-      it("returns expected configured values for valid projectOne token, all royalties are zero", async function () {
-        const config = await loadFixture(_beforeEach);
-        // add project
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .addProject("name", config.accounts.artist2.address);
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .toggleProjectIsActive(config.projectOne);
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectMaxInvocations(
-            config.projectOne,
-            config.maxInvocations
-          );
+      // it("returns expected configured values for valid projectOne token, all royalties are zero", async function () {
+      //   const config = await loadFixture(_beforeEach);
+      //   // add project
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .addProject("name", config.accounts.artist2.address);
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .toggleProjectIsActive(config.projectOne);
+      //   await config.genArt721Core
+      //     .connect(config.accounts.artist2)
+      //     .updateProjectMaxInvocations(
+      //       config.projectOne,
+      //       config.maxInvocations
+      //     );
 
-        // configure minter for project one
-        await config.minterFilter
-          .connect(config.accounts.deployer)
-          .setMinterForProject(config.projectOne, config.minter.address);
-        await config.minter
-          .connect(config.accounts.artist2)
-          .updatePricePerTokenInWei(config.projectOne, 0);
+      //   // configure minter for project one
+      //   await config.minterFilter
+      //     .connect(config.accounts.deployer)
+      //     .setMinterForProject(config.projectOne, config.minter.address);
+      //   await config.minter
+      //     .connect(config.accounts.artist2)
+      //     .updatePricePerTokenInWei(config.projectOne, 0);
 
-        // mint token for projectOne
-        await config.minter
-          .connect(config.accounts.artist2)
-          .purchase(config.projectOne);
+      //   // mint token for projectOne
+      //   await config.minter
+      //     .connect(config.accounts.artist2)
+      //     .purchase(config.projectOne);
 
-        // configure royalties for projectOne
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectSecondaryMarketRoyaltyPercentage(config.projectOne, 0);
-        // artist2 populates an addditional payee
-        await updateArtistFinance(
-          config,
-          config.projectOne,
-          config.accounts.artist2,
-          {
-            artistAddress: config.accounts.artist2.address,
-            additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
-            additionalPayeePrimarySalesPercentage: 0,
-            additionalPayeeSecondarySalesAddress:
-              config.accounts.additional2.address,
-            additionalPayeeSecondarySalesPercentage: 51,
-          }
-        );
-        // update provider secondary BPS to 0%
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
-            0, // _renderProviderSecondarySalesBPS
-            0 // _platformProviderSecondarySalesBPS
-          );
-        // change Render and Platform payment addresses to random address
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSalesAddresses(
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional.address, // _renderProviderPrimarySalesAddress
-            config.accounts.user.address, // _renderProviderSecondarySalesAddress
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional2.address, // _platformProviderPrimarySalesAddress
-            config.accounts.user2.address // _platformProviderSecondarySalesAddress
-          );
+      //   // configure royalties for projectOne
+      //   await config.genArt721Core
+      //     .connect(config.accounts.artist2)
+      //     .updateProjectSecondaryMarketRoyaltyPercentage(config.projectOne, 0);
+      //   // artist2 populates an addditional payee
+      //   await updateArtistFinance(
+      //     config,
+      //     config.projectOne,
+      //     config.accounts.artist2,
+      //     {
+      //       artistAddress: config.accounts.artist2.address,
+      //       additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
+      //       additionalPayeePrimarySalesPercentage: 0,
+      //       additionalPayeeSecondarySalesAddress:
+      //         config.accounts.additional2.address,
+      //       additionalPayeeSecondarySalesPercentage: 51,
+      //     }
+      //   );
+      //   // update provider secondary BPS to 0%
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .updateProviderSecondarySalesBPS(
+      //       0, // _renderProviderSecondarySalesBPS
+      //       0 // _platformProviderSecondarySalesBPS
+      //     );
+      //   // change Render and Platform payment addresses to random address
+      //   await config.genArt721Core
+      //     .connect(config.accounts.deployer)
+      //     .updateProviderSalesAddresses(
+      //       // primary address is intentionally different than primary for testing here
+      //       config.accounts.additional.address, // _renderProviderPrimarySalesAddress
+      //       config.accounts.user.address, // _renderProviderSecondarySalesAddress
+      //       // primary address is intentionally different than primary for testing here
+      //       config.accounts.additional2.address, // _platformProviderPrimarySalesAddress
+      //       config.accounts.user2.address // _platformProviderSecondarySalesAddress
+      //     );
 
-        // check for expected values
-        const royaltiesData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .getRoyalties(config.projectOneTokenZero.toNumber());
-        // Artist
-        // This is a special case where expected revenue is 0, so not included in the array
-        // Additional Payee
-        // This is a special case where expected revenue is 0, so not included in the array
-        // Art Blocks
-        // This is a special case where expected revenue is 0, so not included in the array
-        expect(royaltiesData.recipients.length).to.be.equal(0);
-        expect(royaltiesData.bps.length).to.be.equal(0);
-      });
+      //   // check for expected values
+      //   const royaltiesData = await config.genArt721Core
+      //     .connect(config.accounts.user)
+      //     .getRoyalties(config.projectOneTokenZero.toNumber());
+      //   // Artist
+      //   // This is a special case where expected revenue is 0, so not included in the array
+      //   // Additional Payee
+      //   // This is a special case where expected revenue is 0, so not included in the array
+      //   // Art Blocks
+      //   // This is a special case where expected revenue is 0, so not included in the array
+      //   expect(royaltiesData.recipients.length).to.be.equal(0);
+      //   expect(royaltiesData.bps.length).to.be.equal(0);
+      // });
 
       it("reverts when asking for invalid token", async function () {
         const config = await loadFixture(_beforeEach);
         await expectRevert(
           config.genArt721Core
             .connect(config.accounts.user)
-            .getRoyalties(config.projectZeroTokenZero.toNumber()),
+            .royaltyInfo(config.projectZeroTokenZero.toNumber(), SALE_AMOUNT),
           "Token ID does not exist"
         );
       });

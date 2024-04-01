@@ -4,8 +4,6 @@
 pragma solidity ^0.8.0;
 
 import "./IAdminACLV0.sol";
-/// use the Royalty Registry's IManifold interface for token royalties
-import "./IManifold.sol";
 
 /**
  * @title This interface is intended to house interface items that are common
@@ -14,7 +12,7 @@ import "./IManifold.sol";
  * add support the Royalty Registry by default.
  * @author Art Blocks Inc.
  */
-interface IGenArt721CoreContractV3_Base is IManifold {
+interface IGenArt721CoreContractV3_Base {
     /**
      * @notice Token ID `_tokenId` minted to `_to`.
      */

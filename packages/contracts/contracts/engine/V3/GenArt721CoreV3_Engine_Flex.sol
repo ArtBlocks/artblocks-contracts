@@ -8,9 +8,9 @@ import "../../interfaces/v0.8.x/IAdminACLV0.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
-import "../../interfaces/v0.8.x/IManifold.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
+import {IERC2981} from "@openzeppelin-4.7/contracts/interfaces/IERC2981.sol";
 import "../../libs/v0.8.x/ERC721_PackedHashSeed.sol";
 import "../../libs/v0.8.x/BytecodeStorageV1.sol";
 import "../../libs/v0.8.x/Bytes32Strings.sol";
@@ -102,8 +102,8 @@ import "../../libs/v0.8.x/Bytes32Strings.sol";
 contract GenArt721CoreV3_Engine_Flex is
     ERC721_PackedHashSeed,
     Ownable,
+    IERC2981,
     IDependencyRegistryCompatibleV0,
-    IManifold,
     IGenArt721CoreContractV3_Engine_Flex,
     IGenArt721CoreContractExposesHashSeed
 {
@@ -284,6 +284,9 @@ contract GenArt721CoreV3_Engine_Flex is
 
     /// default base URI to initialize all new project projectBaseURI values to
     string public defaultBaseURI;
+
+    // ERC2981 royalty support
+    bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a;
 
     function _onlyUnlockedProjectExternalAssetDependencies(
         uint256 _projectId
@@ -1824,74 +1827,21 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
-     * @notice Gets royalty Basis Points (BPS) for token ID `_tokenId`.
-     * This conforms to the IManifold interface designated in the Royalty
-     * Registry's RoyaltyEngineV1.sol contract.
-     * ref: https://github.com/manifoldxyz/royalty-registry-solidity
-     * @param _tokenId Token ID to be queried.
-     * @return recipients Array of royalty payment recipients
-     * @return bps Array of Basis Points (BPS) allocated to each recipient,
-     * aligned by index.
+     * @notice Gets ERC-2981 royalty information for token with ID `_tokenId`
+     * and sale price `_salePrice`.
+     * @param _tokenId Token ID to be queried for royalty information
+     * @param _salePrice the sale price of the NFT asset specified by _tokenId
+     * @return receiver address that should be sent the royalty payment
+     * @return royaltyAmount the royalty payment amount for `_salePrice
      * @dev reverts if invalid _tokenId
-     * @dev only returns recipients that have a non-zero BPS allocation
      */
-    function getRoyalties(
-        uint256 _tokenId
-    )
-        external
-        view
-        returns (address payable[] memory recipients, uint256[] memory bps)
-    {
+    function royaltyInfo(
+        uint256 _tokenId,
+        uint256 _salePrice
+    ) external view returns (address receiver, uint256 royaltyAmount) {
         _onlyValidTokenId(_tokenId);
-        // initialize arrays with maximum potential length
-        recipients = new address payable[](4);
-        bps = new uint256[](4);
-
-        uint256 projectId = tokenIdToProjectId(_tokenId);
-        ProjectFinance storage projectFinance = projectIdToFinancials[
-            projectId
-        ];
-        // load values into memory
-        uint256 royaltyPercentageForArtistAndAdditional = projectFinance
-            .secondaryMarketRoyaltyPercentage;
-        uint256 additionalPayeePercentage = projectFinance
-            .additionalPayeeSecondarySalesPercentage;
-        // calculate BPS = percentage * 100
-        uint256 artistBPS = (ONE_HUNDRED - additionalPayeePercentage) *
-            royaltyPercentageForArtistAndAdditional;
-
-        uint256 additionalBPS = additionalPayeePercentage *
-            royaltyPercentageForArtistAndAdditional;
-        uint256 renderProviderBPS = renderProviderSecondarySalesBPS;
-        uint256 platformProviderBPS = platformProviderSecondarySalesBPS;
-        // populate arrays
-        uint256 payeeCount;
-        if (artistBPS > 0) {
-            recipients[payeeCount] = projectFinance.artistAddress;
-            bps[payeeCount++] = artistBPS;
-        }
-        if (additionalBPS > 0) {
-            recipients[payeeCount] = projectFinance
-                .additionalPayeeSecondarySales;
-            bps[payeeCount++] = additionalBPS;
-        }
-        if (renderProviderBPS > 0) {
-            recipients[payeeCount] = renderProviderSecondarySalesAddress;
-            bps[payeeCount++] = renderProviderBPS;
-        }
-        if (platformProviderBPS > 0) {
-            recipients[payeeCount] = platformProviderSecondarySalesAddress;
-            bps[payeeCount++] = platformProviderBPS;
-        }
-        // trim arrays if necessary
-        if (4 > payeeCount) {
-            assembly {
-                let decrease := sub(4, payeeCount)
-                mstore(recipients, sub(mload(recipients), decrease))
-                mstore(bps, sub(mload(bps), decrease))
-            }
-        }
-        return (recipients, bps);
+        // TODO - implement this function
+        revert("not implemented");
     }
 
     /**
@@ -2101,9 +2051,15 @@ contract GenArt721CoreV3_Engine_Flex is
      */
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override returns (bool) {
+    )
+        public
+        view
+        virtual
+        override(ERC721_PackedHashSeed, IERC165)
+        returns (bool)
+    {
         return
-            interfaceId == type(IManifold).interfaceId ||
+            interfaceId == _INTERFACE_ID_ERC2981 ||
             super.supportsInterface(interfaceId);
     }
 

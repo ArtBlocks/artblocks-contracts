@@ -331,14 +331,24 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("supportsInterface", function () {
-      it("supports IManifold", async function () {
+      it("supports ERC-2981", async function () {
         const config = await loadFixture(_beforeEach);
-        // expected true for supporting: bytes4(keccak256('getRoyalties(uint256)')) == 0xbb3bafd6
+        // expected true for supporting: bytes4(keccak256("royaltyInfo(uint256,uint256)")) == 0x2a55205a
+        expect(
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
+            .supportsInterface(0x2a55205a)
+        ).to.be.true;
+      });
+
+      it("doesn't support IManifold", async function () {
+        const config = await loadFixture(_beforeEach);
+        // expected false for supporting: bytes4(keccak256('getRoyalties(uint256)')) == 0xbb3bafd6
         expect(
           await config.genArt721Core
             .connect(config.accounts.deployer)
             .supportsInterface(0xbb3bafd6)
-        ).to.be.true;
+        ).to.be.false;
       });
 
       it("supports IERC721", async function () {
