@@ -96,13 +96,11 @@ export const revertMessages = {
   actionNotSupported: "Action not supported",
   onlyPreAuction: "Only pre-auction",
   onlyLiveAuction: "Only live auction",
-  onlyPostAuctionSellOutAdminArtistMint: "Only post-auction admin-artist-only",
-  onlyPostAuctionOpenMintOrAdminArtistMint:
-    "Only post-auction open mint or admin artist mint period",
+  onlyStateC: "Only state C",
+  onlyStateCOrD: "Only state C or D",
   onlyPostAuctionOpenMint: "Only post-auction open mint",
-  onlyPostAuctionOpenMintOrBidsHandled:
-    "Only post-auction open mint or all bids handled",
-  onlyStatePostAuctionBidsHandled: "Only post-auction all bids handled",
+  onlyStateDOrE: "Only state D or E",
+  onlyStateE: "Only state E",
   onlyStateErrorE1: "Only in state E1",
   onlyEmergencyLTMax: "Only emergency hours lt max",
   notInExtraTime: "Not allowed in extra time",

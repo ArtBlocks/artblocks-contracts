@@ -690,7 +690,7 @@ library RAMLib {
                     ProjectMinterStates.PostAuctionSellOutAdminArtistMint ||
                     projectMinterState ==
                     ProjectMinterStates.PostAuctionOpenMint,
-                "Only post-auction open mint or admin artist mint period"
+                "Only state C or D"
             );
         }
 
@@ -871,7 +871,7 @@ library RAMLib {
             require(
                 projectMinterState ==
                     ProjectMinterStates.PostAuctionSellOutAdminArtistMint,
-                "Only post-auction admin-artist-only"
+                "Only state C"
             );
             // require numTokensToMint does not exceed number of tokens
             // owed
@@ -963,60 +963,6 @@ library RAMLib {
         RAMProjectConfig_.numBidsMintedTokens += uint24(numNewTokensMinted);
         // @dev safe to cast to uint32 because directly derived from bid ID
         RAMProjectConfig_.latestMintedBidId = uint32(currentLatestMintedBidId);
-    }
-
-    /**
-     * @notice Function to mint and settle bid if not already settled.
-     * Assumes check that bidder for bid `bidId` is not null
-     * @param projectId Project ID to mint token on.
-     * @param coreContract Core contract address for the given project.
-     * @param projectPrice Price of a token for the given project.
-     * @param slotIndex Slot index of bid.
-     * @param bidId ID of bid to settle.
-     * @param minterFilter Minter filter contract address
-     * @param minterRefundGasLimit Gas limit to use when settling bid, prior to using fallback force-send to refund
-     */
-    function _mintAndSettle(
-        uint256 projectId,
-        address coreContract,
-        uint256 projectPrice,
-        uint256 slotIndex,
-        uint256 bidId,
-        IMinterFilterV1 minterFilter,
-        uint256 minterRefundGasLimit
-    ) internal {
-        // load project config
-        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
-            projectId: projectId,
-            coreContract: coreContract
-        });
-        Bid storage bid = RAMProjectConfig_.bids[bidId];
-        // Mark bid as minted
-        _setBidPackedBool({bid: bid, index: INDEX_IS_MINTED, value: true});
-
-        // Mint token for bid
-        _mintTokenForBid({
-            projectId: projectId,
-            coreContract: coreContract,
-            bidId: uint32(bidId),
-            bidder: bid.bidder,
-            minterFilter: minterFilter
-        });
-
-        // Settle if not already settled
-        // @dev collector could have previously settled bid, so need to
-        // settle only if not already settled
-        if (!(_getBidPackedBool(bid, INDEX_IS_SETTLED))) {
-            _settleBid({
-                RAMProjectConfig_: RAMProjectConfig_,
-                projectId: projectId,
-                coreContract: coreContract,
-                projectPrice: projectPrice,
-                slotIndex: slotIndex,
-                bidId: uint32(bidId),
-                minterRefundGasLimit: minterRefundGasLimit
-            });
-        }
     }
 
     /**
@@ -1161,7 +1107,7 @@ library RAMLib {
             require(
                 projectMinterState ==
                     ProjectMinterStates.PostAuctionSellOutAdminArtistMint,
-                "Only post-auction admin-artist-only"
+                "Only state C"
             );
             // require is in state E1
             (bool isErrorE1_, uint256 numBidsToResolveE1, ) = isErrorE1FlagF1({
@@ -1291,7 +1237,7 @@ library RAMLib {
         });
         require(
             projectMinterState == ProjectMinterStates.PostAuctionAllBidsHandled,
-            "Only post-auction all bids handled"
+            "Only state E"
         );
         // require revenues not already withdrawn
         require(
@@ -1366,7 +1312,7 @@ library RAMLib {
                 projectMinterState == ProjectMinterStates.PostAuctionOpenMint ||
                     projectMinterState ==
                     ProjectMinterStates.PostAuctionAllBidsHandled,
-                "Only post-auction open mint or all bids handled"
+                "Only state D or E"
             );
             // require Flag F1, i.e. at least one excess token available to be
             // minted
@@ -2164,6 +2110,60 @@ library RAMLib {
             bidId: bidId,
             tokenId: tokenId
         });
+    }
+
+    /**
+     * @notice private helper function to mint and settle bid if not already settled.
+     * Assumes check that bidder for bid `bidId` is not null
+     * @param projectId Project ID to mint token on.
+     * @param coreContract Core contract address for the given project.
+     * @param projectPrice Price of a token for the given project.
+     * @param slotIndex Slot index of bid.
+     * @param bidId ID of bid to settle.
+     * @param minterFilter Minter filter contract address
+     * @param minterRefundGasLimit Gas limit to use when settling bid, prior to using fallback force-send to refund
+     */
+    function _mintAndSettle(
+        uint256 projectId,
+        address coreContract,
+        uint256 projectPrice,
+        uint256 slotIndex,
+        uint256 bidId,
+        IMinterFilterV1 minterFilter,
+        uint256 minterRefundGasLimit
+    ) private {
+        // load project config
+        RAMProjectConfig storage RAMProjectConfig_ = getRAMProjectConfig({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+        Bid storage bid = RAMProjectConfig_.bids[bidId];
+        // Mark bid as minted
+        _setBidPackedBool({bid: bid, index: INDEX_IS_MINTED, value: true});
+
+        // Mint token for bid
+        _mintTokenForBid({
+            projectId: projectId,
+            coreContract: coreContract,
+            bidId: uint32(bidId),
+            bidder: bid.bidder,
+            minterFilter: minterFilter
+        });
+
+        // Settle if not already settled
+        // @dev collector could have previously settled bid, so need to
+        // settle only if not already settled
+        if (!(_getBidPackedBool(bid, INDEX_IS_SETTLED))) {
+            _settleBid({
+                RAMProjectConfig_: RAMProjectConfig_,
+                projectId: projectId,
+                coreContract: coreContract,
+                projectPrice: projectPrice,
+                slotIndex: slotIndex,
+                bidId: uint32(bidId),
+                minterRefundGasLimit: minterRefundGasLimit
+            });
+        }
     }
 
     /**

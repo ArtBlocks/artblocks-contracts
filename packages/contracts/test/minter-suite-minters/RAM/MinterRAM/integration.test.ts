@@ -702,7 +702,7 @@ runForEach.forEach((params) => {
                 value: config.basePrice,
               }
             ),
-          revertMessages.onlyPostAuctionOpenMintOrBidsHandled
+          revertMessages.onlyStateDOrE
         );
         // configure auction in State A
         await configureDefaultProjectZero(config);
@@ -717,7 +717,7 @@ runForEach.forEach((params) => {
                 value: config.basePrice,
               }
             ),
-          revertMessages.onlyPostAuctionOpenMintOrBidsHandled
+          revertMessages.onlyStateDOrE
         );
         // advance to State B
         await advanceToAuctionStartTime(config);
@@ -732,7 +732,7 @@ runForEach.forEach((params) => {
                 value: config.basePrice,
               }
             ),
-          revertMessages.onlyPostAuctionOpenMintOrBidsHandled
+          revertMessages.onlyStateDOrE
         );
       });
 
@@ -755,7 +755,7 @@ runForEach.forEach((params) => {
                 value: config.basePrice,
               }
             ),
-          revertMessages.onlyPostAuctionOpenMintOrBidsHandled
+          revertMessages.onlyStateDOrE
         );
       });
 
@@ -1014,7 +1014,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               [0]
             ),
-          revertMessages.onlyPostAuctionOpenMintOrAdminArtistMint
+          revertMessages.onlyStateCOrD
         );
         // configure auction in State A
         await configureDefaultProjectZero(config);
@@ -1026,7 +1026,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               [0]
             ),
-          revertMessages.onlyPostAuctionOpenMintOrAdminArtistMint
+          revertMessages.onlyStateCOrD
         );
         // advance to State B
         await advanceToAuctionStartTime(config);
@@ -1038,7 +1038,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               [0]
             ),
-          revertMessages.onlyPostAuctionOpenMintOrAdminArtistMint
+          revertMessages.onlyStateCOrD
         );
       });
 
@@ -1054,7 +1054,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               [0]
             ),
-          revertMessages.onlyPostAuctionOpenMintOrAdminArtistMint
+          revertMessages.onlyStateCOrD
         );
       });
 
@@ -1329,7 +1329,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               0
             ),
-          revertMessages.onlyPostAuctionSellOutAdminArtistMint
+          revertMessages.onlyStateC
         );
         // configure auction in State A
         await configureDefaultProjectZero(config);
@@ -1341,7 +1341,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               0
             ),
-          revertMessages.onlyPostAuctionSellOutAdminArtistMint
+          revertMessages.onlyStateC
         );
         // advance to State B
         await advanceToAuctionStartTime(config);
@@ -1353,7 +1353,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               0
             ),
-          revertMessages.onlyPostAuctionSellOutAdminArtistMint
+          revertMessages.onlyStateC
         );
       });
 
@@ -1369,7 +1369,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               1
             ),
-          revertMessages.onlyPostAuctionSellOutAdminArtistMint
+          revertMessages.onlyStateC
         );
       });
 
@@ -2035,7 +2035,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               1
             ),
-          revertMessages.onlyPostAuctionSellOutAdminArtistMint
+          revertMessages.onlyStateC
         );
         // configure auction in State A
         await configureDefaultProjectZero(config);
@@ -2047,7 +2047,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               1
             ),
-          revertMessages.onlyPostAuctionSellOutAdminArtistMint
+          revertMessages.onlyStateC
         );
         // advance to State B
         await advanceToAuctionStartTime(config);
@@ -2059,7 +2059,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               1
             ),
-          revertMessages.onlyPostAuctionSellOutAdminArtistMint
+          revertMessages.onlyStateC
         );
         // advance to State D
         await ethers.provider.send("evm_mine", [
@@ -2073,7 +2073,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               1
             ),
-          revertMessages.onlyPostAuctionSellOutAdminArtistMint
+          revertMessages.onlyStateC
         );
       });
 
