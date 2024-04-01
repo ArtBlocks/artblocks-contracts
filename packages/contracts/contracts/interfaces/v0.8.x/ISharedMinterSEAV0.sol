@@ -8,8 +8,5 @@ pragma solidity ^0.8.0;
  * @author Art Blocks Inc.
  */
 interface ISharedMinterSEAV0 {
-    function createBid(
-        uint256 projectId,
-        address coreContract
-    ) external payable;
+    function createBid(uint256 tokenId, address coreContract) external payable;
 }
