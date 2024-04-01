@@ -90,7 +90,7 @@ for (const coreContractName of coreContractsToTest) {
       beforeEach(async function () {
         const config = await loadFixture(_beforeEach);
         if (coreContractName === "GenArt721CoreV3") {
-          config.maxABPrimarySalesPercentage = 25; // 25% maximum percentage on V3 core
+          config.maxABPrimarySalesPercentage = 100; // 100% maximum percentage on V3 core
         } else if (coreContractName === "GenArt721CoreV3_Explorations") {
           config.maxABPrimarySalesPercentage = 100; // 100% maximum percentage on V3 core explorations
         } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
@@ -163,7 +163,7 @@ for (const coreContractName of coreContractsToTest) {
               .updateArtblocksPrimarySalesPercentage(
                 config.maxABPrimarySalesPercentage + 1
               ),
-            "Max of ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE percent"
+            "Max of 100 percent"
           );
         });
 
