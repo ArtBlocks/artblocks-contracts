@@ -4,7 +4,7 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title This interface adds support for serial English auction minting.
+ * @title This interface adds support for ranked auction minting.
  * @author Art Blocks Inc.
  */
 interface ISharedMinterRAMV0 {
