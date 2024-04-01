@@ -775,7 +775,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               config.startTime + config.defaultAuctionLengthSeconds
             ),
-          revertMessages.noPerviousAdminExtension
+          revertMessages.noPreviousAdminExtension
         );
       });
 
