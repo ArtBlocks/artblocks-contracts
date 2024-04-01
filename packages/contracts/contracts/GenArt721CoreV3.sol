@@ -103,7 +103,7 @@ contract GenArt721CoreV3 is
     uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
 
     // numeric constants
-    uint256 constant ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE = 25; // 25%
+    // max art blocks primary sales percentage is 100%
     uint256 constant ART_BLOCKS_MAX_SECONDARY_SALES_BPS = 10000; // 10_000 BPS = 100%
     uint256 constant ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE = 95; // 95%
 
@@ -550,11 +550,8 @@ contract GenArt721CoreV3 is
         uint256 artblocksPrimarySalesPercentage_
     ) external {
         _onlyAdminACL(this.updateArtblocksPrimarySalesPercentage.selector);
-        require(
-            artblocksPrimarySalesPercentage_ <=
-                ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE,
-            "Max of ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE percent"
-        );
+        // anything above 100 percent is illogical
+        require(artblocksPrimarySalesPercentage_ <= 100, "Max of 100 percent");
         _artblocksPrimarySalesPercentage = uint8(
             artblocksPrimarySalesPercentage_
         );
