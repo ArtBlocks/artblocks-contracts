@@ -80,6 +80,11 @@ contract SplitProviderV0 is ISplitProviderV0 {
                 _creator: address(this),
                 _salt: _SALT
             });
+            // emit event for new splitter creation
+            emit SplitterCreated({
+                splitter: splitter,
+                providerSplitParams: providerSplitParams
+            });
         }
         return splitter;
     }

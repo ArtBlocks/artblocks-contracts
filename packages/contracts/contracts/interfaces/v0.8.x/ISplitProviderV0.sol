@@ -7,6 +7,16 @@ import {ISplitFactoryV2} from "./integration-refs/splits-0x-v2/ISplitFactoryV2.s
 
 interface ISplitProviderV0 {
     /**
+     * @notice Emitted when a new splitter contract is created.
+     * @param splitter address of the splitter contract
+     * @param providerSplitParams The split parameters in the format used for inputs to this contract.
+     */
+    event SplitterCreated(
+        address indexed splitter,
+        ProviderSplitParams providerSplitParams
+    );
+
+    /**
      * @notice Packed split data for a single split
      * @dev This is in the format used for inputs to this contract, and is not the same as the
      * 0xSplits Split struct.
