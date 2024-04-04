@@ -30,9 +30,6 @@ jobs:
       - name: Build
         run: yarn run build
         working-directory: packages/sdk
-      - name: Typechain
-        run: yarn run build:typechain
-        working-directory: packages/sdk
       - name: Run Tests
         run: yarn run test
         working-directory: packages/sdk
