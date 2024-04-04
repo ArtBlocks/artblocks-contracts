@@ -7,50 +7,65 @@ import {ISplitFactoryV2} from "./integration-refs/splits-0x-v2/ISplitFactoryV2.s
 
 interface ISplitProviderV0 {
     /**
+     * @notice SplitInputs struct defines the inputs for requested splitters.
+     * It is defined in a way easily communicated from the Art Blocks GenArt721V3 contract,
+     * to allow for easy integration and minimal additional bytecode in the GenArt721V3 contract.
+     */
+    struct SplitInputs {
+        address platformProviderSecondarySalesAddress;
+        uint16 platformProviderSecondarySalesBPS;
+        address renderProviderSecondarySalesAddress;
+        uint16 renderProviderSecondarySalesBPS;
+        uint8 artistTotalRoyaltyPercentage;
+        address artist;
+        address additionalPayee;
+        uint8 additionalPayeePercentage;
+    }
+
+    /**
      * @notice Emitted when a new splitter contract is created.
      * @param splitter address of the splitter contract
-     * @param providerSplitParams The split parameters in the format used for inputs to this contract.
+     * @param splitParams The split parameters
      */
     event SplitterCreated(
         address indexed splitter,
-        ProviderSplitParams providerSplitParams
+        ISplitFactoryV2.Split splitParams
     );
 
     /**
-     * @notice Packed split data for a single split
-     * @dev This is in the format used for inputs to this contract, and is not the same as the
-     * 0xSplits Split struct.
-     * @param recipient The address of the recipient
-     * @param basisPoints The basis points of the split
+     * @notice Emitted when an existing splitter contract is updated.
+     * @param splitter address of the splitter contract
+     * @param splitParams The split parameters
      */
-    struct ProviderSplit {
-        address recipient;
-        uint16 basisPoints;
-    }
+    event SplitterUpdated(
+        address indexed splitter,
+        ISplitFactoryV2.Split splitParams
+    );
 
     /**
-     * @notice Complete split data for a single split.
-     * @dev This is in the format used for inputs to this contract, and is not the same as the
-     * 0xSplits Split struct.
-     * @param splitParams The split parameters.
+     * @notice Creates a new splitter contract owned by this contract at a new address.
+     * Sets msg.sender as the only authorized address to modify the splitter via future
+     * calls to `modifySplitter` on this contract.
+     * @dev Uses the 0xSplits v2 implementation to create an owned splitter contract,
+     * with owner as this SplitProvider contract.
+     * @param splitInputs The split input parameters.
+     * @return splitter The newly created splitter contract address.
      */
-    struct ProviderSplitParams {
-        ProviderSplit[] providerSplits;
-        // incentive for distribution, defined in BPS (DIFFERENT THAN 0XSPLITS FACTORY WHICH USES 1e6)
-        uint16 distributionIncentiveBPS;
-    }
-
-    /**
-     * @notice Get or create an immutable splitter contract at an address determined
-     * by the split parameters (as well as 0xSplits SplitFactoryV2 address).
-     * @dev Uses the 0xSplits v2 implementation to create immutable splitter contracts,
-     * with owner of 0 and salt of 0.
-     * @param providerSplitParams The split provider's input split parameters.
-     * @return splitter The splitter contract address.
-     */
-    function getOrCreateSplitter(
-        ProviderSplitParams calldata providerSplitParams
+    function createSplitter(
+        SplitInputs calldata splitInputs
     ) external returns (address);
+
+    /**
+     * @notice Modifies the split parameters of an existing splitter contract.
+     * Only the original caller of the `createSplitter` function may call this function.
+     * @dev Uses the 0xSplits v2 implementation to modify the split parameters of an existing splitter contract.
+     * @param splitter The splitter contract address to modify. Must be owned by this contract.
+     * @param splitInputs The split input parameters.
+     */
+    function updateSplitter(
+        address splitter,
+        SplitInputs calldata splitInputs
+    ) external;
 
     /**
      * @notice Indicates the type of the contract, e.g. `ISplitProviderV0`.

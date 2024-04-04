@@ -5,6 +5,7 @@ pragma solidity 0.8.22;
 
 import {ISplitProviderV0} from "../../interfaces/v0.8.x/ISplitProviderV0.sol";
 import {ISplitFactoryV2} from "../../interfaces/v0.8.x/integration-refs/splits-0x-v2/ISplitFactoryV2.sol";
+import {ISplitWalletV2} from "../../interfaces/v0.8.x/integration-refs/splits-0x-v2/ISplitWalletV2.sol";
 
 /**
  * @title SplitProviderV0
@@ -23,13 +24,9 @@ contract SplitProviderV0 is ISplitProviderV0 {
     bytes32 private constant _SALT = bytes32(0); // zero salt for cheapest execution gas
     address private constant _OWNER = address(0); // no owner, immutable
 
-    // factor for converting from BPS to 0xSplits percentage basis factor of 1e6
-    uint256 private constant BPS_TO_0XSPLITS_PERCENTAGE_BASIS_FACTOR =
-        1_000_000 / 10_000;
-    // cap on distribution incentive BPS to 6.5%
-    uint256 private constant MAX_DISTRIBUTION_INCENTIVE_BPS = 650;
-
     ISplitFactoryV2 private immutable _splitFactoryV2;
+
+    mapping(address splitter => address creator) private _splitterCreators;
 
     /**
      * @notice Construct a new SplitProviderV0 contract.
@@ -37,104 +34,66 @@ contract SplitProviderV0 is ISplitProviderV0 {
      */
     constructor(ISplitFactoryV2 splitFactoryV2Address) {
         _splitFactoryV2 = ISplitFactoryV2(splitFactoryV2Address);
-        // validate max distribution BPS cannot overflow uint16, eliminating need for check in _validateAndGetSplitParams0xSplits
-        require(
-            MAX_DISTRIBUTION_INCENTIVE_BPS *
-                BPS_TO_0XSPLITS_PERCENTAGE_BASIS_FACTOR <=
-                type(uint16).max,
-            "invalid max distribution incentive BPS"
-        );
     }
 
     /**
-     * @notice Get or create an immutable splitter contract at an address determined
-     * by the split parameters (as well as 0xSplits _splitFactoryV2 address).
-     * @dev Uses the 0xSplits v2 implementation to create immutable splitter contracts,
-     * with owner of 0 and salt of 0.
-     * @param providerSplitParams The split parameters in the format used for inputs to this contract.
-     * @return splitter The splitter contract address.
+     * @notice Creates a new splitter contract owned by this contract at a new address.
+     * Sets msg.sender as the creator of the new splitter, enabling it to update the splitter
+     * via future calls to `updateSplitter` on this contract.
+     * @dev Uses the 0xSplits v2 implementation to create an owned splitter contract,
+     * with owner as this SplitProvider contract.
+     * @param splitInputs The split input parameters.
+     * @return splitter The newly created splitter contract address.
      */
-    function getOrCreateSplitter(
-        ProviderSplitParams calldata providerSplitParams
-    ) external returns (address) {
-        // convert input split params to 0xSplits Split struct format
-        // @dev also validate input split params at same time for gas efficiency
-        ISplitFactoryV2.Split
-            memory splitParams0xSplits = _validateAndGetSplitParams0xSplits({
-                providerSplitParams: providerSplitParams
-            });
-        // return existing splitter if already exists
-        // @dev fully deterministic deployment address based on splitParams, owner, and salt
-        // @dev design choice to delegate to 0xSplits SplitFactoryV2 for isDeployed check, - it could be done here but would introduce more contract risk
-        (address splitter, bool isDeployed_) = _splitFactoryV2.isDeployed({
-            _splitParams: splitParams0xSplits,
-            _owner: _OWNER,
-            _salt: _SALT
+    function createSplitter(
+        SplitInputs calldata splitInputs
+    ) external override returns (address) {
+        // create Split struct from SplitInputs
+        ISplitFactoryV2.Split memory splitParams = _getSplitParams({
+            splitInputs: splitInputs
         });
-        if (!isDeployed_) {
-            // need to deploy new splitter
-            // @dev no need to re-assign returned address, as it is deterministic and already assigned during isDeployed call
-            _splitFactoryV2.createSplitDeterministic({
-                _splitParams: splitParams0xSplits,
-                _owner: _OWNER,
-                _creator: address(this),
-                _salt: _SALT
-            });
-            // emit event for new splitter creation
-            emit SplitterCreated({
-                splitter: splitter,
-                providerSplitParams: providerSplitParams
-            });
-        }
-        return splitter;
+        // create new splitter contract
+        address newSplitter = _splitFactoryV2.createSplit({
+            _splitParams: splitParams,
+            _owner: address(this),
+            _creator: msg.sender
+        });
+        // update storage with msg.sender as the creator of the new splitter
+        _splitterCreators[newSplitter] = msg.sender;
+
+        // emit event for new splitter creation
+        emit SplitterCreated({splitter: newSplitter, splitParams: splitParams});
+
+        return newSplitter;
     }
 
     /**
-     * @notice Check if splitter already exists for a given providerSplitParams.
-     * @dev This function assumes the behavior of this contract; owner of 0 and salt of 0.
-     * @dev Forwards the call to the 0xSplits SplitFactoryV2 implementation.
-     * @param providerSplitParams The split parameters in the format used for inputs to this contract.
-     * @return spliterAddress The split factory address.
-     * @return isDeployed_ True if the splitter already exists.
+     * @notice Modifies the split parameters of an existing splitter contract.
+     * Only the original creator of the splitter may call this function.
+     * @dev Uses the 0xSplits v2 implementation to modify the split parameters of an existing splitter contract.
+     * @param splitter The splitter contract address to modify. Must be owned by this contract.
+     * @param splitInputs The split input parameters.
      */
-    function isDeployed(
-        ProviderSplitParams calldata providerSplitParams
-    ) external view returns (address spliterAddress, bool isDeployed_) {
-        // convert input split params to 0xSplits Split struct format
-        // @dev also validate input split params at same time for gas efficiency
-        ISplitFactoryV2.Split
-            memory splitParams0xSplits = _validateAndGetSplitParams0xSplits({
-                providerSplitParams: providerSplitParams
-            });
-        // assign return values via call to 0xSplits SplitFactoryV2
-        (spliterAddress, isDeployed_) = _splitFactoryV2.isDeployed({
-            _splitParams: splitParams0xSplits,
-            _owner: _OWNER,
-            _salt: _SALT
+    function updateSplitter(
+        address splitter,
+        SplitInputs calldata splitInputs
+    ) external override {
+        // verify caller is the creator of the splitter
+        // @dev this also verifies the splitter exists and is a valid splitter contract,
+        // as only valid splitter contracts will have a creator
+        _onlyCreator(splitter);
+        // create Split struct from SplitInputs
+        ISplitFactoryV2.Split memory splitParams = _getSplitParams({
+            splitInputs: splitInputs
         });
-    }
+        // distribute funds prior to updating the split to avoid misallocation
+        // of previously sent funds that are undistributed
+        // TODO distributeFunds(splitter);
+        // modify existing splitter contract
+        ISplitWalletV2(splitter).updateSplit({_split: splitParams});
 
-    /**
-     * @notice Predict the address of a new split based on the providerSplitParams
-     * (as well as 0xSplits _splitFactoryV2 address).
-     * @param providerSplitParams The split parameters in the format used for inputs to this contract.
-     * @return spliterAddress Address of the split, if created.
-     */
-    function getDeterministicAddress(
-        ProviderSplitParams calldata providerSplitParams
-    ) external view returns (address spliterAddress) {
-        // convert input split params to 0xSplits Split struct format
-        // @dev also validate input split params at same time for gas efficiency
-        ISplitFactoryV2.Split
-            memory splitParams0xSplits = _validateAndGetSplitParams0xSplits({
-                providerSplitParams: providerSplitParams
-            });
-        // assign return value via call to 0xSplits SplitFactoryV2
-        spliterAddress = _splitFactoryV2.predictDeterministicAddress({
-            _splitParams: splitParams0xSplits,
-            _owner: _OWNER,
-            _salt: _SALT
-        });
+        // emit event for updated splitter
+        emit SplitterUpdated({splitter: splitter, splitParams: splitParams});
     }
 
     /**
@@ -146,11 +105,16 @@ contract SplitProviderV0 is ISplitProviderV0 {
     }
 
     /**
-     * @notice Get the maximum distribution incentive BPS allowed by this SplitProviderV0.
-     * @return MAX_DISTRIBUTION_INCENTIVE_BPS The maximum distribution incentive BPS.
+     * Gets the creator of a splitter contract.
+     * The creator of a splitter is the msg.sender that called `createSplitter` to deploy the splitter.
+     * Returns the zero address if the splitter was not deployed via a call to `deploySplitter` on this contract.
+     * @param splitter Splitter to get the creator of.
+     * @return creator The creator of the splitter.
      */
-    function getMaxDistributionIncentiveBPS() external pure returns (uint256) {
-        return MAX_DISTRIBUTION_INCENTIVE_BPS;
+    function getSplitterCreator(
+        address splitter
+    ) external view returns (address creator) {
+        creator = _splitterCreators[splitter];
     }
 
     /**
@@ -162,44 +126,90 @@ contract SplitProviderV0 is ISplitProviderV0 {
     }
 
     /**
-     * Validates and converts the input split parameters to 0xSplits Split struct format.
-     * Reverts if the input split parameters are invalid.
-     * @param providerSplitParams The split provider's input split parameters.
-     * @return splitParams0xSplits The split parameters in 0xSplits Split struct format.
+     * @notice Reverts if the caller is not the creator of the splitter contract.
+     * @param splitter The splitter contract address to modify.
      */
-    function _validateAndGetSplitParams0xSplits(
-        ProviderSplitParams calldata providerSplitParams
-    ) private pure returns (ISplitFactoryV2.Split memory splitParams0xSplits) {
-        uint256 totalAllocation; // init value of zero, require 10_000 total allocation after iteration
-        uint256 splitParamsLength = providerSplitParams.providerSplits.length;
-        splitParams0xSplits.recipients = new address[](splitParamsLength);
-        splitParams0xSplits.allocations = new uint256[](splitParamsLength);
-        for (uint256 i = 0; i < splitParamsLength; i++) {
-            splitParams0xSplits.recipients[i] = providerSplitParams
-                .providerSplits[i]
-                .recipient;
-            uint256 basisPoints = providerSplitParams
-                .providerSplits[i]
-                .basisPoints;
-            splitParams0xSplits.allocations[i] = basisPoints;
-            totalAllocation += basisPoints;
-        }
-        require(totalAllocation == 10_000, "total allocation must be 10_000");
-        // @dev assign to constant instead of MLOAD for gas efficiency
-        splitParams0xSplits.totalAllocation = 10_000;
-        // validate input distribution incentive BPS is lte MAX_DISTRIBUTION_INCENTIVE_BPS
+    function _onlyCreator(address splitter) private view {
         require(
-            providerSplitParams.distributionIncentiveBPS <=
-                MAX_DISTRIBUTION_INCENTIVE_BPS,
-            "only dist incentive lte 6.5%"
+            _splitterCreators[splitter] == msg.sender,
+            "SplitProviderV0: Only creator"
         );
-        // assign distribution incentive, converting from BPS to 0xSplits percentage basis factor
-        // @dev check for overflow/truncation not needed, as max limits were already checked in constructor
-        splitParams0xSplits.distributionIncentive = uint16(
-            providerSplitParams.distributionIncentiveBPS *
-                BPS_TO_0XSPLITS_PERCENTAGE_BASIS_FACTOR
-        );
+    }
 
-        return splitParams0xSplits;
+    function _getSplitParams(
+        SplitInputs calldata splitInputs
+    ) private pure returns (ISplitFactoryV2.Split memory splitParams) {
+        // define allocations in BPS to avoid any rounding errors
+        uint256 ArtistAndAdditionalRoyaltyPercentage = splitInputs
+            .artistTotalRoyaltyPercentage;
+        uint256 ArtistAndAdditionalRoyaltyBPS = 100 *
+            ArtistAndAdditionalRoyaltyPercentage;
+        // load render provider royalty BPS
+        uint256 renderProviderRoyaltyBPS = splitInputs
+            .renderProviderSecondarySalesBPS;
+        // load platform provider royalty BPS
+        uint256 platformProviderRoyaltyBPS = splitInputs
+            .platformProviderSecondarySalesBPS;
+
+        // edge case: no royalties due; revert
+        if (
+            ArtistAndAdditionalRoyaltyPercentage +
+                renderProviderRoyaltyBPS +
+                platformProviderRoyaltyBPS ==
+            0
+        ) {
+            revert("SplitProviderV0: No royalties due");
+        }
+
+        bool artistNonZero = ArtistAndAdditionalRoyaltyPercentage > 0 &&
+            splitInputs.additionalPayeePercentage < 100;
+        bool additionalPayeeNonZero = ArtistAndAdditionalRoyaltyPercentage >
+            0 &&
+            splitInputs.additionalPayeePercentage > 0;
+        bool renderNonZero = renderProviderRoyaltyBPS > 0;
+        bool platformNonZero = platformProviderRoyaltyBPS > 0;
+
+        // allocate memory for splitParams arrays
+        uint256 partyLength = (artistNonZero ? 1 : 0) +
+            (additionalPayeeNonZero ? 1 : 0) +
+            (renderNonZero ? 1 : 0) +
+            (platformNonZero ? 1 : 0);
+        splitParams.recipients = new address[](partyLength);
+        splitParams.allocations = new uint256[](partyLength);
+        splitParams.totalAllocation =
+            ArtistAndAdditionalRoyaltyBPS +
+            renderProviderRoyaltyBPS +
+            platformProviderRoyaltyBPS;
+
+        // populate each party's split
+        uint256 currentIndex = 0;
+        if (artistNonZero) {
+            splitParams.recipients[currentIndex] = splitInputs.artist;
+            // @dev percent * 100 converts to BPS
+            splitParams.allocations[currentIndex++] =
+                ArtistAndAdditionalRoyaltyPercentage *
+                (100 - splitInputs.additionalPayeePercentage);
+        }
+        if (additionalPayeeNonZero) {
+            splitParams.recipients[currentIndex] = splitInputs.additionalPayee;
+            // @dev percent * 100 converts to BPS
+            splitParams.allocations[currentIndex++] =
+                ArtistAndAdditionalRoyaltyPercentage *
+                splitInputs.additionalPayeePercentage;
+        }
+        if (renderNonZero) {
+            splitParams.recipients[currentIndex] = splitInputs
+                .renderProviderSecondarySalesAddress;
+            splitParams.allocations[currentIndex++] = renderProviderRoyaltyBPS;
+        }
+        if (platformNonZero) {
+            splitParams.recipients[currentIndex] = splitInputs
+                .platformProviderSecondarySalesAddress;
+            splitParams.allocations[
+                currentIndex // no need to increment, last element
+            ] = platformProviderRoyaltyBPS;
+        }
+
+        // @dev TODO leave distribution incentive as zero
     }
 }
