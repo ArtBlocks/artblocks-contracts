@@ -1,7 +1,4 @@
-import { CodegenConfig } from "@graphql-codegen/cli";
-import { IGraphQLConfig, SchemaPointerSingle } from "graphql-config";
-
-// TODO: Add types
+import { IGraphQLConfig } from "graphql-config";
 
 const baseConfig = {
   schema: {
@@ -24,7 +21,7 @@ const basePluginConfig = {
   },
 };
 
-const config = {
+const config: IGraphQLConfig = {
   projects: {
     contracts: {
       ...baseConfig,
