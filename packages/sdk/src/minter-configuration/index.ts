@@ -97,7 +97,7 @@ export async function generateProjectMinterConfigurationForms(
     project: project as ProjectWithMinterFilter,
   };
 
-  const minterSelectionForm = generateSelectMinterForm(context);
+  const minterSelectionForm = await generateSelectMinterForm(context);
   let configurationForms = [minterSelectionForm];
 
   // If no minter has been selected, return only the minter selection form
@@ -118,29 +118,32 @@ export async function generateProjectMinterConfigurationForms(
     return { data: project, forms: configurationForms };
   }
 
-  configurationForms = configurationForms.concat(
-    Object.entries(minterConfigurationSchema.properties).map(([key, value]) => {
-      return generateMinterForm({
-        ...context,
-        key,
-        formSchema: value,
-        minterConfiguration,
-      });
-    })
+  const configForms = await Promise.all(
+    Object.entries(minterConfigurationSchema.properties).map(
+      async ([key, value]) => {
+        return generateMinterForm({
+          ...context,
+          key,
+          formSchema: value,
+          minterConfiguration,
+        });
+      }
+    )
   );
+  configurationForms = configurationForms.concat(configForms);
 
   return { data: project, forms: configurationForms };
 }
 
 // Form to choose a minter
-function generateSelectMinterForm({
+async function generateSelectMinterForm({
   sdk,
   project,
   projectId,
   projectIndex,
   coreContractAddress,
   onConfigurationChange,
-}: GenerateProjectMinterConfigurationFormsContext): FormBlueprint {
+}: GenerateProjectMinterConfigurationFormsContext): Promise<FormBlueprint> {
   const minterConfiguration = project.minter_configuration;
   const minterSelectionFormSchema = generateMinterSelectionFormSchema(
     project.contract.minter_filter.type ===
@@ -178,9 +181,10 @@ function generateSelectMinterForm({
   const form = {
     key: "setMinterForProject",
     formSchema: minterSelectionFormSchemaWithMinters,
-    initialFormValues: getInitialMinterConfigurationValuesForFormField(
+    initialFormValues: await getInitialMinterConfigurationValuesForFormField(
       minterSelectionFormSchemaWithMinters,
-      minterConfiguration ?? null
+      minterConfiguration ?? null,
+      sdk.publicClient
     ),
     zodSchema: formFieldSchemaToZod(minterSelectionFormSchemaWithMinters),
     handleSubmit: async (
@@ -265,7 +269,9 @@ type GenerateMinterFormArgs = GenerateProjectMinterConfigurationFormsContext & {
 };
 
 // Forms to configure a minter for a project
-function generateMinterForm(args: GenerateMinterFormArgs): FormBlueprint {
+async function generateMinterForm(
+  args: GenerateMinterFormArgs
+): Promise<FormBlueprint> {
   const {
     sdk,
     key,
@@ -279,10 +285,12 @@ function generateMinterForm(args: GenerateMinterFormArgs): FormBlueprint {
 
   const processedFormSchema = processFormSchema(formSchema);
 
-  const initialFormValues = getInitialMinterConfigurationValuesForFormField(
-    processedFormSchema,
-    minterConfiguration
-  );
+  const initialFormValues =
+    await getInitialMinterConfigurationValuesForFormField(
+      processedFormSchema,
+      minterConfiguration,
+      sdk.publicClient
+    );
 
   return {
     key,

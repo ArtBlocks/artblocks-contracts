@@ -1,12 +1,13 @@
 /**
  * @jest-environment ./src/test-env.ts
  */
-import { parseEther } from "viem";
+import { parseEther, parseUnits, PublicClient } from "viem";
 import { processProjectMinterConfigurationFormValuesForSubmission } from "./index";
 import { processAllowlistFileToMerkleRoot } from "./process-allowlist-file-to-merkle-root";
 import { processProjectContractTokenHolderList } from "./process-project-contract-token-holder-list";
 import { generateTransformProjectMinterConfigurationFormValuesArgs } from "./test-helpers";
 import { processAuctionDetailsToHalfLifeSeconds } from "./process-auction-details-to-half-life-seconds";
+import { generateRandomAddress } from "../../utils/test-helpers";
 
 // Mock the necessary functions
 jest.mock("./process-allowlist-file-to-merkle-root");
@@ -205,7 +206,7 @@ describe("processProjectMinterConfigurationFormValuesForSubmission", () => {
   it("does ethToWei submissionProcessing", async () => {
     const args = generateTransformProjectMinterConfigurationFormValuesArgs({
       formValues: {
-        base_price: 1,
+        base_price: "1",
       },
       schema: {
         type: "object",
@@ -256,6 +257,70 @@ describe("processProjectMinterConfigurationFormValuesForSubmission", () => {
     const result =
       await processProjectMinterConfigurationFormValuesForSubmission(args);
     expect(result).toEqual({ base_price: parseEther("1") });
+  });
+  it("does ethToWei submissionProcessing for ERC-20 currency", async () => {
+    const args = generateTransformProjectMinterConfigurationFormValuesArgs({
+      formValues: {
+        base_price: 1,
+      },
+      schema: {
+        type: "object",
+        title: "Update price per token in ETH",
+        onChain: true,
+        required: ["base_price"],
+        properties: {
+          base_price: {
+            type: "number",
+            title: "Base price in display unit (e.g. ether)",
+            default: "",
+            displayProcessing: "weiToEth",
+            submissionProcessing: "ethToWei",
+          },
+        },
+        transactionDetails: {
+          abi: [
+            {
+              name: "updatePricePerTokenInWei",
+              type: "function",
+              inputs: [
+                {
+                  name: "_projectId",
+                  type: "uint256",
+                  internalType: "uint256",
+                },
+                {
+                  name: "_coreContract",
+                  type: "address",
+                  internalType: "address",
+                },
+                {
+                  name: "_pricePerTokenInWei",
+                  type: "uint248",
+                  internalType: "uint248",
+                },
+              ],
+              outputs: [],
+              stateMutability: "nonpayable",
+            },
+          ],
+          args: ["projectIndex", "coreContractAddress", "base_price"],
+          functionName: "updatePricePerTokenInWei",
+        },
+      },
+    });
+
+    args.minterConfiguration.currency_address = generateRandomAddress();
+    const mockReadContract = jest.fn();
+    args.sdk.publicClient = {
+      readContract: mockReadContract,
+    } as unknown as PublicClient;
+
+    const decimals = 6;
+    mockReadContract.mockResolvedValue(decimals);
+
+    const result =
+      await processProjectMinterConfigurationFormValuesForSubmission(args);
+    expect(result).toEqual({ base_price: parseUnits("1", decimals) });
   });
   it("does datetimeToUnixTimestamp submissionProcessing", async () => {
     const args = generateTransformProjectMinterConfigurationFormValuesArgs({

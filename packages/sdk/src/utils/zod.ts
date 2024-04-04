@@ -151,6 +151,10 @@ export function formFieldSchemaToZod(
         zodProp = zodStringProp;
         break;
       }
+      case "boolean": {
+        zodProp = z.boolean();
+        break;
+      }
       case "object": {
         zodProp = createNestedZodSchema(prop.properties || {}, prop);
         if (prop.validationDependencies) {

@@ -1,5 +1,6 @@
+import { ProjectMinterConfigurationDetailsFragment } from "../../generated/graphql";
 import { BaseFormFieldSchema } from "../../json-schema";
-import { formatEther } from "viem";
+import { formatEther, formatUnits, Hex, PublicClient, zeroAddress } from "viem";
 
 /**
  * This function processes a value for display based on the provided displayProcessing type.
@@ -12,10 +13,14 @@ import { formatEther } from "viem";
  *
  * @throws Will throw an error if the value type is not compatible with the transformation type.
  */
-export function processValueForDisplay(
-  value: unknown,
-  displayProcessing?: BaseFormFieldSchema["displayProcessing"]
-): any {
+export async function processValueForDisplay(args: {
+  value: unknown;
+  displayProcessing?: BaseFormFieldSchema["displayProcessing"];
+  minterConfiguration: ProjectMinterConfigurationDetailsFragment | null;
+  publicClient: PublicClient;
+}): Promise<any> {
+  const { value, displayProcessing, minterConfiguration, publicClient } = args;
+
   const valueType = typeof value;
   switch (displayProcessing) {
     case "weiToEth": {
@@ -32,6 +37,42 @@ export function processValueForDisplay(
 
       if (value === undefined || value === null) {
         return "";
+      }
+
+      if (
+        minterConfiguration?.currency_address &&
+        minterConfiguration.currency_address !== zeroAddress
+      ) {
+        try {
+          const decimals = await publicClient.readContract({
+            address: minterConfiguration.currency_address as Hex,
+            abi: [
+              {
+                inputs: [],
+                name: "decimals",
+                outputs: [
+                  {
+                    internalType: "uint8",
+                    name: "",
+                    type: "uint8",
+                  },
+                ],
+                stateMutability: "view",
+                type: "function",
+              },
+            ] as const,
+            functionName: "decimals",
+          });
+
+          return Number(
+            formatUnits(BigInt(value as string | number | bigint), decimals)
+          );
+        } catch (e) {
+          console.warn(
+            "Failed to fetch currency decimals, falling back to 18",
+            e
+          );
+        }
       }
 
       return Number(formatEther(BigInt(value as string | number | bigint)));

@@ -1,12 +1,12 @@
 import get from "lodash/get";
 import set from "lodash/set";
 import merge from "lodash/merge";
-import { parseEther } from "viem";
 
 import { TransformProjectMinterConfigurationFormValuesArgs } from "../types";
 import { processAllowlistFileToMerkleRoot } from "./process-allowlist-file-to-merkle-root";
 import { processProjectContractTokenHolderList } from "./process-project-contract-token-holder-list";
 import { processAuctionDetailsToHalfLifeSeconds } from "./process-auction-details-to-half-life-seconds";
+import { processEthToWei } from "./process-eth-to-wei";
 
 /**
  * Transforms project minter configuration form values for on-chain submission.
@@ -54,7 +54,7 @@ export async function processProjectMinterConfigurationFormValuesForSubmission(
           break;
         }
         case "ethToWei": {
-          const weiValue = parseEther(`${formFieldValue}`);
+          const weiValue = await processEthToWei(formFieldValue, args);
           set(transformedFormValues, fieldName, weiValue);
           break;
         }

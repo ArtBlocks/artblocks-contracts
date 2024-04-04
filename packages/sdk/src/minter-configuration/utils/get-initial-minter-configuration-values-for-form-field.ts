@@ -3,6 +3,7 @@ import set from "lodash/set";
 import { ProjectMinterConfigurationDetailsFragment } from "../../generated/graphql";
 import { FormFieldSchema, BaseFormFieldSchema } from "../../json-schema";
 import { processValueForDisplay } from "../display-processing";
+import { PublicClient } from "viem";
 
 /**
  * This function generates initial values for a form field based on the minter configuration of a project.
@@ -15,19 +16,20 @@ import { processValueForDisplay } from "../display-processing";
  *
  * @returns {Record<string, any>} - An object containing the initial values for each property of the form field.
  */
-export function getInitialMinterConfigurationValuesForFormField(
+export async function getInitialMinterConfigurationValuesForFormField(
   formField: FormFieldSchema,
-  projectMinterConfiguration: ProjectMinterConfigurationDetailsFragment | null
-): Record<string, any> {
+  projectMinterConfiguration: ProjectMinterConfigurationDetailsFragment | null,
+  publicClient: PublicClient
+): Promise<Record<string, any>> {
   // Object to hold the initial values
   const initialValues: Record<string, any> = {};
 
   // Recursive function to traverse the schema and set initial values
-  function recursiveInitialValues(
+  async function recursiveInitialValues(
     schema: BaseFormFieldSchema,
     configuration: ProjectMinterConfigurationDetailsFragment | null,
     parentKey = ""
-  ): void {
+  ): Promise<void> {
     // Check if the current schema is of type object and has properties
     if (schema.type === "object" && schema.properties) {
       // Iterate through the properties of the schema
@@ -38,7 +40,7 @@ export function getInitialMinterConfigurationValuesForFormField(
         // Construct the full key for the current property (e.g., "parent.child")
         const fullKey = parentKey ? `${parentKey}.${key}` : key;
         // Call the function recursively for the current property
-        recursiveInitialValues(propSchema, configuration, fullKey);
+        await recursiveInitialValues(propSchema, configuration, fullKey);
       }
     } else {
       // If the current schema is a leaf field (not an object), set the initial value
@@ -50,17 +52,19 @@ export function getInitialMinterConfigurationValuesForFormField(
         schema.default ?? null
       );
 
-      const processedInitialValue = processValueForDisplay(
-        initialValue,
-        schema.displayProcessing
-      );
+      const processedInitialValue = await processValueForDisplay({
+        value: initialValue,
+        displayProcessing: schema.displayProcessing,
+        minterConfiguration: configuration,
+        publicClient,
+      });
 
       set(initialValues, parentKey, processedInitialValue);
     }
   }
 
   // Start the recursion from the root form field
-  recursiveInitialValues(formField, projectMinterConfiguration);
+  await recursiveInitialValues(formField, projectMinterConfiguration);
 
   // Return the populated initialValues object
   return initialValues;

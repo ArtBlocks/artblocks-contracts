@@ -1,5 +1,8 @@
+import { PublicClient } from "viem";
 import { FormFieldSchema } from "../../json-schema";
 import { getInitialMinterConfigurationValuesForFormField } from "./get-initial-minter-configuration-values-for-form-field";
+
+const mockPublicClient = jest.fn() as unknown as PublicClient;
 
 const TEST_FORM_FIELD_SCHEMA: FormFieldSchema = {
   type: "object",
@@ -47,7 +50,7 @@ const TEST_FORM_FIELD_SCHEMA: FormFieldSchema = {
 };
 
 describe("getInitialMinterConfigurationValuesForFormField", () => {
-  it("generates initial values correctly for a simple schema", () => {
+  it("generates initial values correctly for a simple schema", async () => {
     const projectMinterConfiguration = {
       id: "0x000-0",
       project_id: "0",
@@ -56,9 +59,10 @@ describe("getInitialMinterConfigurationValuesForFormField", () => {
       max_invocations: 3,
     };
 
-    const result = getInitialMinterConfigurationValuesForFormField(
+    const result = await getInitialMinterConfigurationValuesForFormField(
       TEST_FORM_FIELD_SCHEMA,
-      projectMinterConfiguration
+      projectMinterConfiguration,
+      mockPublicClient
     );
 
     expect(result).toEqual({
@@ -66,7 +70,7 @@ describe("getInitialMinterConfigurationValuesForFormField", () => {
     });
   });
 
-  it("generates initial values correctly for a nested schema", () => {
+  it("generates initial values correctly for a nested schema", async () => {
     const formField: FormFieldSchema = {
       ...TEST_FORM_FIELD_SCHEMA,
       properties: {
@@ -90,9 +94,10 @@ describe("getInitialMinterConfigurationValuesForFormField", () => {
       },
     };
 
-    const result = getInitialMinterConfigurationValuesForFormField(
+    const result = await getInitialMinterConfigurationValuesForFormField(
       formField,
-      projectMinterConfiguration
+      projectMinterConfiguration,
+      mockPublicClient
     );
 
     expect(result).toEqual({
@@ -103,10 +108,11 @@ describe("getInitialMinterConfigurationValuesForFormField", () => {
     });
   });
 
-  it("falls back to default values if no configuration is provided", () => {
-    const result = getInitialMinterConfigurationValuesForFormField(
+  it("falls back to default values if no configuration is provided", async () => {
+    const result = await getInitialMinterConfigurationValuesForFormField(
       TEST_FORM_FIELD_SCHEMA,
-      null
+      null,
+      mockPublicClient
     );
 
     expect(result).toEqual({
