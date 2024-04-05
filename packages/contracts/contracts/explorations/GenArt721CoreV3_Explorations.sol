@@ -920,14 +920,11 @@ contract GenArt721CoreV3_Explorations is
         // copy default platform and render provider royalties to ProjectFinance
         projectFinance.platformProviderSecondarySalesAddress = address(0); // no platform on non-engine
         projectFinance.platformProviderSecondarySalesBPS = 0; // no platform on non-engine
-        address currentRenderProviderAddress = artblocksSecondarySalesAddress;
-        uint16 currentRenderProviderSecondarySalesBPS = uint16(
+        projectFinance
+            .renderProviderSecondarySalesAddress = artblocksSecondarySalesAddress;
+        projectFinance.renderProviderSecondarySalesBPS = uint16(
             artblocksSecondarySalesBPS
         );
-        projectFinance
-            .renderProviderSecondarySalesAddress = currentRenderProviderAddress;
-        projectFinance
-            .renderProviderSecondarySalesBPS = currentRenderProviderSecondarySalesBPS;
 
         _nextProjectId = uint248(projectId) + 1;
 
@@ -1005,12 +1002,8 @@ contract GenArt721CoreV3_Explorations is
             "Max of ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent"
         );
 
-        ProjectFinance storage projectFinance = projectIdToFinancials[
-            _projectId
-        ];
-        projectFinance.secondaryMarketRoyaltyPercentage = uint8(
-            _secondMarketRoyalty
-        );
+        projectIdToFinancials[_projectId]
+            .secondaryMarketRoyaltyPercentage = uint8(_secondMarketRoyalty);
 
         // assign project's splitter
         // @dev only call after all previous storage updates
@@ -1039,14 +1032,10 @@ contract GenArt721CoreV3_Explorations is
         // update project finance for project in storage
         projectFinance.platformProviderSecondarySalesAddress = address(0); // no platform on non-engine
         projectFinance.platformProviderSecondarySalesBPS = 0; // no platform on non-engine
-        address defaultRenderProviderSecondarySalesAddress = artblocksSecondarySalesAddress;
-        uint16 defaultRenderProviderSecondarySalesBPS = uint16(
-            artblocksSecondarySalesBPS
-        );
         projectFinance
-            .renderProviderSecondarySalesAddress = defaultRenderProviderSecondarySalesAddress;
+            .renderProviderSecondarySalesAddress = artblocksSecondarySalesAddress;
         projectFinance.renderProviderSecondarySalesBPS = uint16(
-            defaultRenderProviderSecondarySalesBPS
+            artblocksSecondarySalesBPS
         );
 
         // assign project's splitter
