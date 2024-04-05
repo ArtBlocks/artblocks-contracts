@@ -6,6 +6,7 @@ pragma solidity 0.8.22;
 import "./interfaces/v0.8.x/IRandomizer_V3CoreBase.sol";
 import "./interfaces/v0.8.x/IAdminACLV0.sol";
 import "./interfaces/v0.8.x/IGenArt721CoreContractV3.sol";
+import "./interfaces/v0.8.x/IGenArt721CoreContractV3_RoyaltySplitters.sol";
 import "./interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import {ISplitProviderV0} from "./interfaces/v0.8.x/ISplitProviderV0.sol";
 
@@ -93,7 +94,8 @@ contract GenArt721CoreV3 is
     Ownable,
     IERC2981,
     IGenArt721CoreContractV3,
-    IGenArt721CoreContractExposesHashSeed
+    IGenArt721CoreContractExposesHashSeed,
+    IGenArt721CoreContractV3_RoyaltySplitters
 {
     using BytecodeStorageWriter for string;
     using Bytes32Strings for bytes32;
@@ -2030,7 +2032,7 @@ contract GenArt721CoreV3 is
         ];
         // assign project's royalty splitter
         // @dev loads values from storage, so need to ensure storage has been updated
-        project.royaltySplitter = splitProvider.getOrCreateSplitter(
+        address royaltySplitter = splitProvider.getOrCreateSplitter(
             ISplitProviderV0.SplitInputs({
                 platformProviderSecondarySalesAddress: projectFinance
                     .platformProviderSecondarySalesAddress,
@@ -2048,6 +2050,13 @@ contract GenArt721CoreV3 is
                     .additionalPayeeSecondarySalesPercentage
             })
         );
+
+        project.royaltySplitter = royaltySplitter;
+
+        emit ProjectRoyaltySplitterUpdated({
+            projectId: projectId,
+            royaltySplitter: royaltySplitter
+        });
     }
 
     /**
