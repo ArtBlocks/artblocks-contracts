@@ -4396,10 +4396,10 @@
   resolved "https://registry.yarnpkg.com/@pkgr/core/-/core-0.1.0.tgz#7d8dacb7fdef0e4387caf7396cbd77f179867d06"
   integrity sha512-Zwq5OCzuwJC2jwqmpEQt7Ds1DTi6BWSwoGkbb1n9pO3hzb35BoJELx7c0T23iDkBGkh2e7tvOtjF3tr3OaQHDQ==
 
-"@remix-project/remixd@^0.6.26":
-  version "0.6.26"
-  resolved "https://registry.yarnpkg.com/@remix-project/remixd/-/remixd-0.6.26.tgz#d79b38d80bc05ec261bf3b883eaa61d2f34341e2"
-  integrity sha512-RYwV/T5lgF8rxQB3H8ZSwINlXxTQ7xDdWpNNrVsj2KCeqsj61X/4KaoAa5SUrnDulXwgAGWc1walLWqaIQDqnQ==
+"@remix-project/remixd@^0.6.29":
+  version "0.6.29"
+  resolved "https://registry.yarnpkg.com/@remix-project/remixd/-/remixd-0.6.29.tgz#b5d044d3c7916ee186974ff424d8f2faf2abd5dd"
+  integrity sha512-9B2aBtzMZKzSkQHmgxrLqoiJ8gdTBR1NxXuIt2VG5/zsQPfBG0z7sxtGRDFyj8MX3uK2cTEyT8Xsupgkg4w5tA==
   dependencies:
     "@remixproject/plugin" "0.3.33"
     "@remixproject/plugin-api" "0.3.33"
