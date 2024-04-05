@@ -22,7 +22,6 @@ import {ERC165} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165.sol
  */
 contract SplitProviderV0 is ISplitProviderV0, ERC165 {
     bytes32 private constant TYPE = "SplitProviderV0";
-    bytes32 private constant _SALT = bytes32(0); // zero salt for cheapest execution gas
 
     ISplitFactoryV2 private immutable _splitFactoryV2;
 
@@ -52,11 +51,13 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
         ISplitFactoryV2.Split memory splitParams = _getSplitParams({
             splitInputs: splitInputs
         });
+        // use sender as salt to ensure unique splitters across contracts/partners for accounting
+        bytes32 salt = bytes32(bytes20(msg.sender));
         // determine if splitter already exists
         (address splitter, bool exists) = _splitFactoryV2.isDeployed({
             _splitParams: splitParams,
             _owner: address(0), // no owner, immutable,
-            _salt: _SALT
+            _salt: salt
         });
         if (!exists) {
             // create new splitter contract
@@ -65,7 +66,7 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
                 _splitParams: splitParams,
                 _owner: address(0), // no owner, immutable
                 _creator: address(this),
-                _salt: _SALT
+                _salt: salt
             });
 
             // emit event for new splitter creation
