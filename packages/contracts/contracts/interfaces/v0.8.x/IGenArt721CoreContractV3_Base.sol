@@ -46,6 +46,27 @@ interface IGenArt721CoreContractV3_Base {
 
     event AcceptedArtistAddressesAndSplits(uint256 indexed _projectId);
 
+    // /// packed struct containing project financial information
+    // struct ProjectFinance {
+    //     address payable additionalPayeePrimarySales;
+    //     // packed uint: max of 95, max uint8 = 255
+    //     uint8 secondaryMarketRoyaltyPercentage;
+    //     address payable additionalPayeeSecondarySales;
+    //     // packed uint: max of 100, max uint8 = 255
+    //     uint8 additionalPayeeSecondarySalesPercentage;
+    //     address payable artistAddress;
+    //     // packed uint: max of 100, max uint8 = 255
+    //     uint8 additionalPayeePrimarySalesPercentage;
+    //     address platformProviderSecondarySalesAddress;
+    //     // packed uint: max of 10_000 max uint16 = 65_535
+    //     uint16 platformProviderSecondarySalesBPS;
+    //     address renderProviderSecondarySalesAddress;
+    //     // packed uint: max of 10_000 max uint16 = 65_535
+    //     uint16 renderProviderSecondarySalesBPS;
+    //     // address to send ERC-2981 royalties to
+    //     address royaltySplitter;
+    // }
+
     // version and type of the core contract
     // coreVersion is a string of the form "0.x.y"
     function coreVersion() external view returns (string memory);
@@ -92,18 +113,6 @@ interface IGenArt721CoreContractV3_Base {
     function projectIdToArtistAddress(
         uint256 _projectId
     ) external view returns (address payable);
-
-    function projectIdToAdditionalPayeePrimarySales(
-        uint256 _projectId
-    ) external view returns (address payable);
-
-    function projectIdToAdditionalPayeePrimarySalesPercentage(
-        uint256 _projectId
-    ) external view returns (uint256);
-
-    function projectIdToSecondaryMarketRoyaltyPercentage(
-        uint256 _projectId
-    ) external view returns (uint256);
 
     function projectURIInfo(
         uint256 _projectId

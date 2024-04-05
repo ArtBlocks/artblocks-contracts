@@ -6,6 +6,8 @@ pragma solidity 0.8.22;
 import {ISplitProviderV0} from "../../interfaces/v0.8.x/ISplitProviderV0.sol";
 import {ISplitFactoryV2} from "../../interfaces/v0.8.x/integration-refs/splits-0x-v2/ISplitFactoryV2.sol";
 
+import {ERC165} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165.sol";
+
 /**
  * @title SplitProviderV0
  * @author Art Blocks Inc.
@@ -18,7 +20,7 @@ import {ISplitFactoryV2} from "../../interfaces/v0.8.x/integration-refs/splits-0
  * - The split contract will be created at a deterministic address, given the
  *   input split parameters (as well as the 0xSplits SplitFactoryV2 address).
  */
-contract SplitProviderV0 is ISplitProviderV0 {
+contract SplitProviderV0 is ISplitProviderV0, ERC165 {
     bytes32 private constant TYPE = "SplitProviderV0";
     bytes32 private constant _SALT = bytes32(0); // zero salt for cheapest execution gas
 
@@ -38,6 +40,8 @@ contract SplitProviderV0 is ISplitProviderV0 {
      * so we can safely create the splitter contract at a deterministic address (or use
      * the existing splitter contract if it already exists at that address).
      * @dev Uses the 0xSplits v2 implementation to create a splitter contract
+     * @dev Intentionally unpermissioned; no owner required; all created splits
+     * are immutable and deterministic
      * @param splitInputs The split input parameters.
      * @return splitter The newly created splitter contract address.
      */
@@ -80,6 +84,20 @@ contract SplitProviderV0 is ISplitProviderV0 {
      */
     function getSplitFactoryV2() external view returns (ISplitFactoryV2) {
         return _splitFactoryV2;
+    }
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override returns (bool) {
+        // broadcast support of the getOrCreateSplitter function
+        // @dev intentionally only including getOrCreateSplitter, as that is the only function
+        // that is intended to be used for on-chain integration (_type is for indexing and introspection only)
+        return
+            interfaceId == this.getOrCreateSplitter.selector ||
+            super.supportsInterface(interfaceId);
     }
 
     /**

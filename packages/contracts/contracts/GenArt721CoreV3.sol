@@ -199,8 +199,6 @@ contract GenArt721CoreV3 is
         string aspectRatio;
         // mapping from script index to address storing script in bytecode
         mapping(uint256 => address) scriptBytecodeAddresses;
-        // address to send ERC-2981 royalties to
-        address royaltySplitter;
     }
 
     mapping(uint256 => Project) projects;
@@ -222,9 +220,17 @@ contract GenArt721CoreV3 is
         address renderProviderSecondarySalesAddress;
         // packed uint: max of 10_000 max uint16 = 65_535
         uint16 renderProviderSecondarySalesBPS;
+        // address to send ERC-2981 royalties to
+        address royaltySplitter;
     }
-    // Project financials mapping
-    mapping(uint256 => ProjectFinance) projectIdToFinancials;
+
+    // /**
+    //  * @notice Returns all project finance information for project `_projectId`.
+    //  * @dev use public mapping due to bytecode size optimization (saves ~0.2 mb)
+    //  * @param _projectId Project to be queried
+    //  * @return projectFinance ProjectFinance struct for project `_projectId`
+    //  */
+    mapping(uint256 _projectId => ProjectFinance) public projectIdToFinancials;
 
     /// hash of artist's proposed payment updates to be approved by admin
     mapping(uint256 => bytes32) public proposedArtistAddressesAndSplitsHash;
@@ -628,6 +634,17 @@ contract GenArt721CoreV3 is
         _onlyAdminACL(this.updateRandomizerAddress.selector);
         _onlyNonZeroAddress(_randomizerAddress);
         _updateRandomizerAddress(_randomizerAddress);
+    }
+
+    /**
+     * @notice Updates split provider address to `_splitProviderAddress`.
+     * Reverts if `_splitProviderAddress` does not indicate ERC165 support
+     * for the getOrCreateSplitter function selector defined in ISplitProviderV0.
+     * @param _splitProviderAddress New split provider address.
+     */
+    function updateSplitProvider(address _splitProviderAddress) external {
+        _onlyAdminACL(this.updateSplitProvider.selector);
+        _updateSplitProvider(_splitProviderAddress);
     }
 
     /**
@@ -1382,73 +1399,6 @@ contract GenArt721CoreV3 is
     }
 
     /**
-     * @notice View function returning Artist's secondary market royalty
-     * percentage for project `_projectId`.
-     * This does not include Art Blocks portion of secondary market royalties.
-     * @param _projectId Project ID to be queried.
-     * @return uint256 Artist's secondary market royalty percentage.
-     */
-    function projectIdToSecondaryMarketRoyaltyPercentage(
-        uint256 _projectId
-    ) external view returns (uint256) {
-        return
-            projectIdToFinancials[_projectId].secondaryMarketRoyaltyPercentage;
-    }
-
-    /**
-     * @notice View function returning Artist's additional payee address for
-     * primary sales, for project `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return address Artist's additional payee address for primary sales.
-     */
-    function projectIdToAdditionalPayeePrimarySales(
-        uint256 _projectId
-    ) external view returns (address payable) {
-        return projectIdToFinancials[_projectId].additionalPayeePrimarySales;
-    }
-
-    /**
-     * @notice View function returning Artist's additional payee primary sales
-     * percentage, for project `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return uint256 Artist's additional payee primary sales percentage.
-     */
-    function projectIdToAdditionalPayeePrimarySalesPercentage(
-        uint256 _projectId
-    ) external view returns (uint256) {
-        return
-            projectIdToFinancials[_projectId]
-                .additionalPayeePrimarySalesPercentage;
-    }
-
-    /**
-     * @notice View function returning Artist's additional payee address for
-     * secondary sales, for project `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return address payable Artist's additional payee address for secondary
-     * sales.
-     */
-    function projectIdToAdditionalPayeeSecondarySales(
-        uint256 _projectId
-    ) external view returns (address payable) {
-        return projectIdToFinancials[_projectId].additionalPayeeSecondarySales;
-    }
-
-    /**
-     * @notice View function returning Artist's additional payee secondary
-     * sales percentage, for project `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return uint256 Artist's additional payee secondary sales percentage.
-     */
-    function projectIdToAdditionalPayeeSecondarySalesPercentage(
-        uint256 _projectId
-    ) external view returns (uint256) {
-        return
-            projectIdToFinancials[_projectId]
-                .additionalPayeeSecondarySalesPercentage;
-    }
-
-    /**
      * @notice Returns project details for project `_projectId`.
      * @param _projectId Project to be queried.
      * @return projectName Name of project
@@ -1517,53 +1467,6 @@ contract GenArt721CoreV3 is
         paused = project.paused;
         completedTimestamp = project.completedTimestamp;
         locked = !_projectUnlocked(_projectId);
-    }
-
-    /**
-     * @notice Returns artist payment information for project `_projectId`.
-     * @param _projectId Project to be queried
-     * @return artistAddress Project Artist's address
-     * @return additionalPayeePrimarySales Additional payee address for primary
-     * sales
-     * @return additionalPayeePrimarySalesPercentage Percentage of artist revenue
-     * to be sent to the additional payee address for primary sales
-     * @return additionalPayeeSecondarySales Additional payee address for secondary
-     * sales royalties
-     * @return additionalPayeeSecondarySalesPercentage Percentage of artist revenue
-     * to be sent to the additional payee address for secondary sales royalties
-     * @return secondaryMarketRoyaltyPercentage Royalty percentage to be sent to
-     * combination of artist and additional payee. This does not include the
-     * platform's percentage of secondary sales royalties, which is defined by
-     * `artblocksSecondarySalesBPS`.
-     */
-    function projectArtistPaymentInfo(
-        uint256 _projectId
-    )
-        external
-        view
-        returns (
-            address artistAddress,
-            address additionalPayeePrimarySales,
-            uint256 additionalPayeePrimarySalesPercentage,
-            address additionalPayeeSecondarySales,
-            uint256 additionalPayeeSecondarySalesPercentage,
-            uint256 secondaryMarketRoyaltyPercentage
-        )
-    {
-        ProjectFinance storage projectFinance = projectIdToFinancials[
-            _projectId
-        ];
-        artistAddress = projectFinance.artistAddress;
-        additionalPayeePrimarySales = projectFinance
-            .additionalPayeePrimarySales;
-        additionalPayeePrimarySalesPercentage = projectFinance
-            .additionalPayeePrimarySalesPercentage;
-        additionalPayeeSecondarySales = projectFinance
-            .additionalPayeeSecondarySales;
-        additionalPayeeSecondarySalesPercentage = projectFinance
-            .additionalPayeeSecondarySalesPercentage;
-        secondaryMarketRoyaltyPercentage = projectFinance
-            .secondaryMarketRoyaltyPercentage;
     }
 
     /**
@@ -1688,43 +1591,6 @@ contract GenArt721CoreV3 is
     }
 
     /**
-     * @notice Backwards-compatible (pre-V3) function.
-     * Gets artist + artist's additional payee royalty data for token ID
-     `_tokenId`.
-     * WARNING: Does not include Art Blocks portion of royalties.
-     * @param _tokenId Token ID to be queried.
-     * @return artistAddress Artist's payment address
-     * @return additionalPayee Additional payee's payment address
-     * @return additionalPayeePercentage Percentage of artist revenue
-     * to be sent to the additional payee's address
-     * @return royaltyFeeByID Total royalty percentage to be sent to
-     * combination of artist and additional payee
-     * @dev Does not include Art Blocks portion of royalties.
-     */
-    function getRoyaltyData(
-        uint256 _tokenId
-    )
-        external
-        view
-        returns (
-            address artistAddress,
-            address additionalPayee,
-            uint256 additionalPayeePercentage,
-            uint256 royaltyFeeByID
-        )
-    {
-        uint256 projectId = tokenIdToProjectId(_tokenId);
-        ProjectFinance storage projectFinance = projectIdToFinancials[
-            projectId
-        ];
-        artistAddress = projectFinance.artistAddress;
-        additionalPayee = projectFinance.additionalPayeeSecondarySales;
-        additionalPayeePercentage = projectFinance
-            .additionalPayeeSecondarySalesPercentage;
-        royaltyFeeByID = projectFinance.secondaryMarketRoyaltyPercentage;
-    }
-
-    /**
      * @notice Gets ERC-2981 royalty information for token with ID `_tokenId`
      * and sale price `_salePrice`.
      * @param _tokenId Token ID to be queried for royalty information
@@ -1743,12 +1609,12 @@ contract GenArt721CoreV3 is
         // @dev royalty splitter created upon project creation, so will always exist
         // for valid token ID
         uint256 projectId = tokenIdToProjectId(_tokenId);
-        receiver = projects[projectId].royaltySplitter;
-
-        // populate royaltyAmount with calculated royalty amount
         ProjectFinance storage projectFinance = projectIdToFinancials[
             projectId
         ];
+        receiver = projectFinance.royaltySplitter;
+
+        // populate royaltyAmount with calculated royalty amount
         uint256 totalRoyaltyBPS = 100 *
             projectFinance.secondaryMarketRoyaltyPercentage +
             projectFinance.platformProviderSecondarySalesBPS +
@@ -2006,12 +1872,22 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates split provider address to `_splitProviderAddress`.
+     * Reverts if the input address does not broadcast ERC165 support the
+     * getOrCreateSplitter function defined in ISplitProviderV0.
      * @param _splitProviderAddress New split provider address.
      * @dev Note that this method does not check that the input address is
      * not `address(0)`, as it is expected that callers of this method should
      * perform input validation where applicable.
      */
     function _updateSplitProvider(address _splitProviderAddress) internal {
+        // require new split provider broadcast ERC165 support of
+        // getOrCreateSplitter function as defined in ISplitProviderV0
+        require(
+            IERC165(_splitProviderAddress).supportsInterface(
+                ISplitProviderV0.getOrCreateSplitter.selector
+            ),
+            "Invalid split provider"
+        );
         splitProvider = ISplitProviderV0(_splitProviderAddress);
         emit PlatformUpdated(FIELD_SPLIT_PROVIDER);
     }
@@ -2026,7 +1902,6 @@ contract GenArt721CoreV3 is
      * @param projectId Project ID to be updated.
      */
     function _assignSplitter(uint256 projectId) private {
-        Project storage project = projects[projectId];
         ProjectFinance storage projectFinance = projectIdToFinancials[
             projectId
         ];
@@ -2051,7 +1926,7 @@ contract GenArt721CoreV3 is
             })
         );
 
-        project.royaltySplitter = royaltySplitter;
+        projectFinance.royaltySplitter = royaltySplitter;
 
         emit ProjectRoyaltySplitterUpdated({
             projectId: projectId,
