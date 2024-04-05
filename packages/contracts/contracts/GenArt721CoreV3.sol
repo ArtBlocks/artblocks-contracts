@@ -37,7 +37,7 @@ import "./libs/v0.8.x/Bytes32Strings.sol";
  * - updateArtblocksDependencyRegistryAddress
  * - updateArtblocksPrimarySalesAddress
  * - updateArtblocksSecondarySalesAddress
- * - updateArtblocksPrimarySalesPercentage (up to 25%)
+ * - updateArtblocksPrimarySalesPercentage (up to 100%)
  * - updateArtblocksSecondarySalesBPS (up to 100%)
  * - updateMinterContract
  * - updateRandomizerAddress
@@ -202,27 +202,6 @@ contract GenArt721CoreV3 is
     }
 
     mapping(uint256 => Project) projects;
-
-    /// packed struct containing project financial information
-    struct ProjectFinance {
-        address payable additionalPayeePrimarySales;
-        // packed uint: max of 95, max uint8 = 255
-        uint8 secondaryMarketRoyaltyPercentage;
-        address payable additionalPayeeSecondarySales;
-        // packed uint: max of 100, max uint8 = 255
-        uint8 additionalPayeeSecondarySalesPercentage;
-        address payable artistAddress;
-        // packed uint: max of 100, max uint8 = 255
-        uint8 additionalPayeePrimarySalesPercentage;
-        address platformProviderSecondarySalesAddress;
-        // packed uint: max of 10_000 max uint16 = 65_535
-        uint16 platformProviderSecondarySalesBPS;
-        address renderProviderSecondarySalesAddress;
-        // packed uint: max of 10_000 max uint16 = 65_535
-        uint16 renderProviderSecondarySalesBPS;
-        // address to send ERC-2981 royalties to
-        address royaltySplitter;
-    }
 
     // /**
     //  * @notice Returns all project finance information for project `_projectId`.
@@ -559,7 +538,7 @@ contract GenArt721CoreV3 is
      * `_artblocksSecondarySalesAddress`.
      * note: This does not update splitter contracts for all projects on
      * this core contract. If updated splitter contracts are desired, they must be
-     * created after this update via the `updateProviderSecondaryPaymentsForProject` function.
+     * updated after this update via the `syncProviderSecondaryForProjectToDefaults` function.
      * @param _artblocksSecondarySalesAddress Address of new secondary sales
      * payment address.
      */
@@ -594,7 +573,7 @@ contract GenArt721CoreV3 is
      * `_artblocksSecondarySalesBPS`.
      * note: This does not update splitter contracts for all projects on
      * this core contract. If updated splitter contracts are desired, they must be
-     * created after this update via the `updateProviderSecondaryPaymentsForProject` function.
+     * updated after this update via the `syncProviderSecondaryForProjectToDefaults` function.
      * @param _artblocksSecondarySalesBPS New secondary sales royalty Basis
      * points.
      * @dev Due to secondary royalties being ultimately enforced via social
@@ -771,7 +750,7 @@ contract GenArt721CoreV3 is
             // @dev only call after all previous storage updates
             _assignSplitter(_projectId);
 
-            // emit events for off-chain indexing
+            // emit event for off-chain indexing
             emit AcceptedArtistAddressesAndSplits(_projectId);
         } else {
             proposedArtistAddressesAndSplitsHash[_projectId] = keccak256(
@@ -1019,6 +998,7 @@ contract GenArt721CoreV3 is
             _secondMarketRoyalty <= ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE,
             "Max of ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent"
         );
+
         ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
         ];
