@@ -6,6 +6,7 @@ pragma solidity 0.8.22;
 import "./interfaces/v0.8.x/IRandomizer_V3CoreBase.sol";
 import "./interfaces/v0.8.x/IAdminACLV0.sol";
 import "./interfaces/v0.8.x/IGenArt721CoreContractV3.sol";
+import {IGenArt721CoreContractV3_ProjectFinance} from "./interfaces/v0.8.x/IGenArt721CoreContractV3_ProjectFinance.sol";
 import "./interfaces/v0.8.x/IGenArt721CoreContractV3_RoyaltySplitters.sol";
 import "./interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import {ISplitProviderV0} from "./interfaces/v0.8.x/ISplitProviderV0.sol";
@@ -94,6 +95,7 @@ contract GenArt721CoreV3 is
     Ownable,
     IERC2981,
     IGenArt721CoreContractV3,
+    IGenArt721CoreContractV3_ProjectFinance,
     IGenArt721CoreContractExposesHashSeed,
     IGenArt721CoreContractV3_RoyaltySplitters
 {
@@ -863,10 +865,8 @@ contract GenArt721CoreV3 is
             this.updateProjectArtistAddress.selector
         );
         _onlyNonZeroAddress(_artistAddress);
-        ProjectFinance storage projectFinance = projectIdToFinancials[
-            _projectId
-        ];
-        projectFinance.artistAddress = _artistAddress;
+
+        projectIdToFinancials[_projectId].artistAddress = _artistAddress;
 
         // assign project's splitter
         // @dev only call after all previous storage updates

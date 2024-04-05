@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.19;
+pragma solidity 0.8.22;
 
 // Created By: Art Blocks Inc.
 
 import "../../interfaces/v0.8.x/IRandomizer_V3CoreBase.sol";
 import "../../interfaces/v0.8.x/IAdminACLV0.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
+import {IGenArt721CoreContractV3_ProjectFinance} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_ProjectFinance.sol";
+import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_RoyaltySplitters.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
+import {ISplitProviderV0} from "../../interfaces/v0.8.x/ISplitProviderV0.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import {IERC2981} from "@openzeppelin-4.7/contracts/interfaces/IERC2981.sol";
@@ -105,7 +108,9 @@ contract GenArt721CoreV3_Engine_Flex is
     IERC2981,
     IDependencyRegistryCompatibleV0,
     IGenArt721CoreContractV3_Engine_Flex,
-    IGenArt721CoreContractExposesHashSeed
+    IGenArt721CoreContractV3_ProjectFinance,
+    IGenArt721CoreContractExposesHashSeed,
+    IGenArt721CoreContractV3_RoyaltySplitters
 {
     using BytecodeStorageWriter for string;
     using Bytes32Strings for bytes32;
@@ -133,6 +138,7 @@ contract GenArt721CoreV3_Engine_Flex is
     bytes32 constant FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
     bytes32 constant FIELD_DEFAULT_BASE_URI = "defaultBaseURI";
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
+    bytes32 constant FIELD_SPLIT_PROVIDER = "splitProvider";
     bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
         "dependencyRegistryAddress";
     bytes32 constant FIELD_PROVIDER_SALES_ADDRESSES = "providerSalesAddresses";
@@ -201,20 +207,13 @@ contract GenArt721CoreV3_Engine_Flex is
     string public preferredIPFSGateway;
     string public preferredArweaveGateway;
 
-    /// packed struct containing project financial information
-    struct ProjectFinance {
-        address payable additionalPayeePrimarySales;
-        // packed uint: max of 95, max uint8 = 255
-        uint8 secondaryMarketRoyaltyPercentage;
-        address payable additionalPayeeSecondarySales;
-        // packed uint: max of 100, max uint8 = 255
-        uint8 additionalPayeeSecondarySalesPercentage;
-        address payable artistAddress;
-        // packed uint: max of 100, max uint8 = 255
-        uint8 additionalPayeePrimarySalesPercentage;
-    }
-    // Project financials mapping
-    mapping(uint256 => ProjectFinance) projectIdToFinancials;
+    // /**
+    //  * @notice Returns all project finance information for project `_projectId`.
+    //  * @dev use public mapping due to bytecode size optimization (saves ~0.2 mb)
+    //  * @param _projectId Project to be queried
+    //  * @return projectFinance ProjectFinance struct for project `_projectId`
+    //  */
+    mapping(uint256 _projectId => ProjectFinance) public projectIdToFinancials;
 
     /// hash of artist's proposed payment updates to be approved by admin
     mapping(uint256 => bytes32) public proposedArtistAddressesAndSplitsHash;
@@ -270,7 +269,7 @@ contract GenArt721CoreV3_Engine_Flex is
     bool public immutable autoApproveArtistSplitProposals;
 
     /// version & type of this core contract
-    bytes32 constant CORE_VERSION = "v3.1.4";
+    bytes32 constant CORE_VERSION = "v3.2.5";
 
     function coreVersion() external pure returns (string memory) {
         return CORE_VERSION.toString();
@@ -285,8 +284,12 @@ contract GenArt721CoreV3_Engine_Flex is
     /// default base URI to initialize all new project projectBaseURI values to
     string public defaultBaseURI;
 
-    // ERC2981 royalty support
+    // ERC2981 royalty support and default royalty values
     bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a;
+    uint8 private constant _DEFAULT_ARTIST_SECONDARY_ROYALTY_PERCENTAGE = 5;
+
+    // royalty split provider
+    ISplitProviderV0 public splitProvider;
 
     function _onlyUnlockedProjectExternalAssetDependencies(
         uint256 _projectId
@@ -389,11 +392,13 @@ contract GenArt721CoreV3_Engine_Flex is
         address _randomizerContract,
         address _adminACLContract,
         uint248 _startingProjectId,
-        bool _autoApproveArtistSplitProposals
+        bool _autoApproveArtistSplitProposals,
+        address _splitProviderAddress
     ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
         _onlyNonZeroAddress(_renderProviderAddress);
         _onlyNonZeroAddress(_platformProviderAddress);
         _onlyNonZeroAddress(_randomizerContract);
+        _updateSplitProvider(_splitProviderAddress);
         _onlyNonZeroAddress(_adminACLContract);
         // setup immutable `autoApproveArtistSplitProposals` config
         autoApproveArtistSplitProposals = _autoApproveArtistSplitProposals;
@@ -739,6 +744,9 @@ contract GenArt721CoreV3_Engine_Flex is
     /**
      * @notice Updates sales addresses for the platform and render providers to
      * the input parameters.
+     * note: This does not update splitter contracts for all projects on
+     * this core contract. If updated splitter contracts are desired, they must be
+     * updated after this update via the `syncProviderSecondaryForProjectToDefaults` function.
      * @param _renderProviderPrimarySalesAddress Address of new primary sales
      * payment address.
      * @param _renderProviderSecondarySalesAddress Address of new secondary sales
@@ -800,6 +808,9 @@ contract GenArt721CoreV3_Engine_Flex is
     /**
      * @notice Updates render and platform provider secondary sales royalty Basis Points to
      * the provided inputs.
+     * note: This does not update splitter contracts for all projects on
+     * this core contract. If updated splitter contracts are desired, they must be
+     * updated after this update via the `syncProviderSecondaryForProjectToDefaults` function.
      * @param _renderProviderSecondarySalesBPS New secondary sales royalty Basis
      * points.
      * @param _platformProviderSecondarySalesBPS New secondary sales royalty Basis
@@ -846,6 +857,17 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyAdminACL(this.updateRandomizerAddress.selector);
         _onlyNonZeroAddress(_randomizerAddress);
         _updateRandomizerAddress(_randomizerAddress);
+    }
+
+    /**
+     * @notice Updates split provider address to `_splitProviderAddress`.
+     * Reverts if `_splitProviderAddress` does not indicate ERC165 support
+     * for the getOrCreateSplitter function selector defined in ISplitProviderV0.
+     * @param _splitProviderAddress New split provider address.
+     */
+    function updateSplitProvider(address _splitProviderAddress) external {
+        _onlyAdminACL(this.updateSplitProvider.selector);
+        _updateSplitProvider(_splitProviderAddress);
     }
 
     /**
@@ -955,6 +977,7 @@ contract GenArt721CoreV3_Engine_Flex is
         if (automaticAccept) {
             // clear any previously proposed values
             proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
+
             // update storage
             // artist address can change during automatic accept if
             // autoApproveArtistSplitProposals is true
@@ -971,6 +994,11 @@ contract GenArt721CoreV3_Engine_Flex is
             projectFinance.additionalPayeeSecondarySalesPercentage = uint8(
                 _additionalPayeeSecondarySalesPercentage
             );
+
+            // assign project's splitter
+            // @dev only call after all previous storage updates
+            _assignSplitter(_projectId);
+
             // emit event for off-chain indexing
             emit AcceptedArtistAddressesAndSplits(_projectId);
         } else {
@@ -1056,6 +1084,11 @@ contract GenArt721CoreV3_Engine_Flex is
         );
         // clear proposed values
         proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
+
+        // assign project's splitter
+        // @dev only call after all previous storage updates
+        _assignSplitter(_projectId);
+
         // emit event for off-chain indexing
         emit AcceptedArtistAddressesAndSplits(_projectId);
     }
@@ -1077,7 +1110,13 @@ contract GenArt721CoreV3_Engine_Flex is
             this.updateProjectArtistAddress.selector
         );
         _onlyNonZeroAddress(_artistAddress);
+
         projectIdToFinancials[_projectId].artistAddress = _artistAddress;
+
+        // assign project's splitter
+        // @dev only call after all previous storage updates
+        _assignSplitter(_projectId);
+
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_ADDRESS);
     }
 
@@ -1106,13 +1145,35 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyNonZeroAddress(_artistAddress);
         require(!newProjectsForbidden, "New projects forbidden");
         uint256 projectId = _nextProjectId;
-        projectIdToFinancials[projectId].artistAddress = _artistAddress;
+        ProjectFinance storage projectFinance = projectIdToFinancials[
+            projectId
+        ];
+        projectFinance.artistAddress = _artistAddress;
         projects[projectId].name = _projectName;
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION_UINT24;
         projects[projectId].projectBaseURI = defaultBaseURI;
+        // assign default artist royalty of 5% to artist
+        projectFinance
+            .secondaryMarketRoyaltyPercentage = _DEFAULT_ARTIST_SECONDARY_ROYALTY_PERCENTAGE;
+        // copy default platform and render provider royalties to ProjectFinance
+        projectFinance
+            .platformProviderSecondarySalesAddress = platformProviderSecondarySalesAddress;
+        projectFinance.platformProviderSecondarySalesBPS = uint16(
+            platformProviderSecondarySalesBPS
+        );
+        projectFinance
+            .renderProviderSecondarySalesAddress = renderProviderSecondarySalesAddress;
+        projectFinance.renderProviderSecondarySalesBPS = uint16(
+            renderProviderSecondarySalesBPS
+        );
 
         _nextProjectId = uint248(projectId) + 1;
+
+        // assign project's splitter
+        // @dev only call after all previous storage updates
+        _assignSplitter(projectId);
+
         emit ProjectUpdated(projectId, FIELD_PROJECT_CREATED);
     }
 
@@ -1164,6 +1225,7 @@ contract GenArt721CoreV3_Engine_Flex is
     /**
      * @notice Updates artist secondary market royalties for project
      * `_projectId` to be `_secondMarketRoyalty` percent.
+     * This deploys a new splitter contract if needed.
      * This DOES NOT include the secondary market royalty percentages collected
      * by the issuing platform; it is only the total percentage of royalties
      * that will be split to artist and additionalSecondaryPayee.
@@ -1183,10 +1245,46 @@ contract GenArt721CoreV3_Engine_Flex is
         );
         projectIdToFinancials[_projectId]
             .secondaryMarketRoyaltyPercentage = uint8(_secondMarketRoyalty);
+
+        // assign project's splitter
+        // @dev only call after all previous storage updates
+        _assignSplitter(_projectId);
+
         emit ProjectUpdated(
             _projectId,
             FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE
         );
+    }
+
+    /**
+     * @notice Updates platform and render provider secondary market royalty addresses
+     * and BPS to the contract-level default values for project `_projectId`.
+     * This updates the splitter parameters on the existing splitter for the project.
+     * Reverts if called by a non-admin address.
+     * @param _projectId Project ID.
+     */
+    function syncProviderSecondaryForProjectToDefaults(
+        uint256 _projectId
+    ) external {
+        _onlyAdminACL(this.syncProviderSecondaryForProjectToDefaults.selector);
+        ProjectFinance storage projectFinance = projectIdToFinancials[
+            _projectId
+        ];
+        // update project finance for project in storage
+        projectFinance
+            .platformProviderSecondarySalesAddress = platformProviderSecondarySalesAddress;
+        projectFinance.platformProviderSecondarySalesBPS = uint16(
+            platformProviderSecondarySalesBPS
+        );
+        projectFinance
+            .renderProviderSecondarySalesAddress = renderProviderSecondarySalesAddress;
+        projectFinance.renderProviderSecondarySalesBPS = uint16(
+            renderProviderSecondarySalesBPS
+        );
+
+        // assign project's splitter
+        // @dev only call after all previous storage updates
+        _assignSplitter(_projectId);
     }
 
     /**
@@ -1536,74 +1634,6 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
-     * @notice View function returning Artist's secondary market royalty
-     * percentage for project `_projectId`.
-     * This does not include render/platform providers portions of secondary
-     * market royalties.
-     * @param _projectId Project ID to be queried.
-     * @return uint256 Artist's secondary market royalty percentage.
-     */
-    function projectIdToSecondaryMarketRoyaltyPercentage(
-        uint256 _projectId
-    ) external view returns (uint256) {
-        return
-            projectIdToFinancials[_projectId].secondaryMarketRoyaltyPercentage;
-    }
-
-    /**
-     * @notice View function returning Artist's additional payee address for
-     * primary sales, for project `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return address Artist's additional payee address for primary sales.
-     */
-    function projectIdToAdditionalPayeePrimarySales(
-        uint256 _projectId
-    ) external view returns (address payable) {
-        return projectIdToFinancials[_projectId].additionalPayeePrimarySales;
-    }
-
-    /**
-     * @notice View function returning Artist's additional payee primary sales
-     * percentage, for project `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return uint256 Artist's additional payee primary sales percentage.
-     */
-    function projectIdToAdditionalPayeePrimarySalesPercentage(
-        uint256 _projectId
-    ) external view returns (uint256) {
-        return
-            projectIdToFinancials[_projectId]
-                .additionalPayeePrimarySalesPercentage;
-    }
-
-    /**
-     * @notice View function returning Artist's additional payee address for
-     * secondary sales, for project `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return address payable Artist's additional payee address for secondary
-     * sales.
-     */
-    function projectIdToAdditionalPayeeSecondarySales(
-        uint256 _projectId
-    ) external view returns (address payable) {
-        return projectIdToFinancials[_projectId].additionalPayeeSecondarySales;
-    }
-
-    /**
-     * @notice View function returning Artist's additional payee secondary
-     * sales percentage, for project `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return uint256 Artist's additional payee secondary sales percentage.
-     */
-    function projectIdToAdditionalPayeeSecondarySalesPercentage(
-        uint256 _projectId
-    ) external view returns (uint256) {
-        return
-            projectIdToFinancials[_projectId]
-                .additionalPayeeSecondarySalesPercentage;
-    }
-
-    /**
      * @notice Returns project details for project `_projectId`.
      * @param _projectId Project to be queried.
      * @return projectName Name of project
@@ -1672,54 +1702,6 @@ contract GenArt721CoreV3_Engine_Flex is
         paused = project.paused;
         completedTimestamp = project.completedTimestamp;
         locked = !_projectUnlocked(_projectId);
-    }
-
-    /**
-     * @notice Returns artist payment information for project `_projectId`.
-     * @param _projectId Project to be queried
-     * @return artistAddress Project Artist's address
-     * @return additionalPayeePrimarySales Additional payee address for primary
-     * sales
-     * @return additionalPayeePrimarySalesPercentage Percentage of artist revenue
-     * to be sent to the additional payee address for primary sales
-     * @return additionalPayeeSecondarySales Additional payee address for secondary
-     * sales royalties
-     * @return additionalPayeeSecondarySalesPercentage Percentage of artist revenue
-     * to be sent to the additional payee address for secondary sales royalties
-     * @return secondaryMarketRoyaltyPercentage Royalty percentage to be sent to
-     * combination of artist and additional payee. This does not include the
-     * platform's percentage of secondary sales royalties, which is defined as
-     * the sum of `renderProviderSecondarySalesBPS`
-     * and `platformProviderSecondarySalesBPS`.
-     */
-    function projectArtistPaymentInfo(
-        uint256 _projectId
-    )
-        external
-        view
-        returns (
-            address artistAddress,
-            address additionalPayeePrimarySales,
-            uint256 additionalPayeePrimarySalesPercentage,
-            address additionalPayeeSecondarySales,
-            uint256 additionalPayeeSecondarySalesPercentage,
-            uint256 secondaryMarketRoyaltyPercentage
-        )
-    {
-        ProjectFinance storage projectFinance = projectIdToFinancials[
-            _projectId
-        ];
-        artistAddress = projectFinance.artistAddress;
-        additionalPayeePrimarySales = projectFinance
-            .additionalPayeePrimarySales;
-        additionalPayeePrimarySalesPercentage = projectFinance
-            .additionalPayeePrimarySalesPercentage;
-        additionalPayeeSecondarySales = projectFinance
-            .additionalPayeeSecondarySales;
-        additionalPayeeSecondarySalesPercentage = projectFinance
-            .additionalPayeeSecondarySalesPercentage;
-        secondaryMarketRoyaltyPercentage = projectFinance
-            .secondaryMarketRoyaltyPercentage;
     }
 
     /**
@@ -1840,8 +1822,27 @@ contract GenArt721CoreV3_Engine_Flex is
         uint256 _salePrice
     ) external view returns (address receiver, uint256 royaltyAmount) {
         _onlyValidTokenId(_tokenId);
-        // TODO - implement this function
-        revert("not implemented");
+
+        // populate receiver with project's royalty splitter
+        // @dev royalty splitter created upon project creation, so will always exist
+        // for valid token ID
+        uint256 projectId = tokenIdToProjectId(_tokenId);
+        ProjectFinance storage projectFinance = projectIdToFinancials[
+            projectId
+        ];
+        receiver = projectFinance.royaltySplitter;
+
+        // populate royaltyAmount with calculated royalty amount
+        uint256 totalRoyaltyBPS = 100 *
+            projectFinance.secondaryMarketRoyaltyPercentage +
+            projectFinance.platformProviderSecondarySalesBPS +
+            projectFinance.renderProviderSecondarySalesBPS;
+        // @dev totalRoyaltyBPS guaranteed to be <= 10,000,
+        require(totalRoyaltyBPS <= 10_000, "Only total BPS <= 10,000");
+        // @dev overflow automatically checked in solidity 0.8
+        // @dev totalRoyaltyBPS guaranteed to be <= 10_000,
+        // so overflow only possible with unreasonably high _salePrice values near uint256 max
+        royaltyAmount = (_salePrice * totalRoyaltyBPS) / 10_000;
     }
 
     /**
@@ -2139,6 +2140,70 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
+     * @notice Updates split provider address to `_splitProviderAddress`.
+     * Reverts if the input address does not broadcast ERC165 support the
+     * getOrCreateSplitter function defined in ISplitProviderV0.
+     * @param _splitProviderAddress New split provider address.
+     * @dev Note that this method does not check that the input address is
+     * not `address(0)`, as it is expected that callers of this method should
+     * perform input validation where applicable.
+     */
+    function _updateSplitProvider(address _splitProviderAddress) internal {
+        // require new split provider broadcast ERC165 support of
+        // getOrCreateSplitter function as defined in ISplitProviderV0
+        require(
+            IERC165(_splitProviderAddress).supportsInterface(
+                ISplitProviderV0.getOrCreateSplitter.selector
+            ),
+            "Invalid split provider"
+        );
+        splitProvider = ISplitProviderV0(_splitProviderAddress);
+        emit PlatformUpdated(FIELD_SPLIT_PROVIDER);
+    }
+
+    /**
+     * @notice internal function to update a splitter contract for a project,
+     * based on the project's financials in this contract's storage.
+     * @dev Warning: this function uses storage reads to get the project's
+     * financials, so ensure storage has been updated before calling this
+     * @dev This function includes a trusted interaction that is entrusted to
+     * not reenter this contract.
+     * @param projectId Project ID to be updated.
+     */
+    function _assignSplitter(uint256 projectId) private {
+        ProjectFinance storage projectFinance = projectIdToFinancials[
+            projectId
+        ];
+        // assign project's royalty splitter
+        // @dev loads values from storage, so need to ensure storage has been updated
+        address royaltySplitter = splitProvider.getOrCreateSplitter(
+            ISplitProviderV0.SplitInputs({
+                platformProviderSecondarySalesAddress: projectFinance
+                    .platformProviderSecondarySalesAddress,
+                platformProviderSecondarySalesBPS: projectFinance
+                    .platformProviderSecondarySalesBPS,
+                renderProviderSecondarySalesAddress: projectFinance
+                    .renderProviderSecondarySalesAddress,
+                renderProviderSecondarySalesBPS: projectFinance
+                    .renderProviderSecondarySalesBPS,
+                artistTotalRoyaltyPercentage: projectFinance
+                    .secondaryMarketRoyaltyPercentage,
+                artist: projectFinance.artistAddress,
+                additionalPayee: projectFinance.additionalPayeeSecondarySales,
+                additionalPayeePercentage: projectFinance
+                    .additionalPayeeSecondarySalesPercentage
+            })
+        );
+
+        projectFinance.royaltySplitter = royaltySplitter;
+
+        emit ProjectRoyaltySplitterUpdated({
+            projectId: projectId,
+            royaltySplitter: royaltySplitter
+        });
+    }
+
+    /**
      * @notice Updates default base URI to `_defaultBaseURI`.
      * When new projects are added, their `projectBaseURI` is automatically
      * initialized to `_defaultBaseURI`.
@@ -2172,6 +2237,7 @@ contract GenArt721CoreV3_Engine_Flex is
      */
     function _projectUnlocked(uint256 _projectId) internal view returns (bool) {
         _onlyValidProjectId(_projectId);
+
         uint256 projectCompletedTimestamp = projects[_projectId]
             .completedTimestamp;
         bool projectOpen = projectCompletedTimestamp == 0;
