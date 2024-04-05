@@ -43,29 +43,17 @@ interface ISplitProviderV0 {
     );
 
     /**
-     * @notice Creates a new splitter contract owned by this contract at a new address.
-     * Sets msg.sender as the only authorized address to modify the splitter via future
-     * calls to `modifySplitter` on this contract.
-     * @dev Uses the 0xSplits v2 implementation to create an owned splitter contract,
-     * with owner as this SplitProvider contract.
+     * @notice Gets or creates an immutable splitter contract at a deterministic address.
+     * Splits in the splitter contract are determined by the input split parameters,
+     * so we can safely create the splitter contract at a deterministic address (or use
+     * the existing splitter contract if it already exists at that address).
+     * @dev Uses the 0xSplits v2 implementation to create a splitter contract
      * @param splitInputs The split input parameters.
      * @return splitter The newly created splitter contract address.
      */
-    function createSplitter(
+    function getOrCreateSplitter(
         SplitInputs calldata splitInputs
     ) external returns (address);
-
-    /**
-     * @notice Modifies the split parameters of an existing splitter contract.
-     * Only the original caller of the `createSplitter` function may call this function.
-     * @dev Uses the 0xSplits v2 implementation to modify the split parameters of an existing splitter contract.
-     * @param splitter The splitter contract address to modify. Must be owned by this contract.
-     * @param splitInputs The split input parameters.
-     */
-    function updateSplitter(
-        address splitter,
-        SplitInputs calldata splitInputs
-    ) external;
 
     /**
      * @notice Indicates the type of the contract, e.g. `ISplitProviderV0`.

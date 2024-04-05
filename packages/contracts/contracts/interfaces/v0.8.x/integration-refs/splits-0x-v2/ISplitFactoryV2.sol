@@ -38,11 +38,25 @@ interface ISplitFactoryV2 {
      * @param _splitParams Params to create split with.
      * @param _owner Owner of created split.
      * @param _creator Creator of created split.
+     * @param _salt Salt for create2.
      * @return split Address of the created split.
      */
-    function createSplit(
+    function createSplitDeterministic(
         Split calldata _splitParams,
         address _owner,
-        address _creator
+        address _creator,
+        bytes32 _salt
     ) external returns (address split);
+
+    /**
+     * @notice Predict the address of a new split and check if it is deployed.
+     * @param _splitParams Params to create split with.
+     * @param _owner Owner of created split.
+     * @param _salt Salt for create2.
+     */
+    function isDeployed(
+        Split calldata _splitParams,
+        address _owner,
+        bytes32 _salt
+    ) external view returns (address split, bool exists);
 }

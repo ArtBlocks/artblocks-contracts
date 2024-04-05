@@ -5,7 +5,6 @@ pragma solidity 0.8.22;
 
 import {ISplitProviderV0} from "../../interfaces/v0.8.x/ISplitProviderV0.sol";
 import {ISplitFactoryV2} from "../../interfaces/v0.8.x/integration-refs/splits-0x-v2/ISplitFactoryV2.sol";
-import {ISplitWalletV2} from "../../interfaces/v0.8.x/integration-refs/splits-0x-v2/ISplitWalletV2.sol";
 
 /**
  * @title SplitProviderV0
@@ -22,11 +21,8 @@ import {ISplitWalletV2} from "../../interfaces/v0.8.x/integration-refs/splits-0x
 contract SplitProviderV0 is ISplitProviderV0 {
     bytes32 private constant TYPE = "SplitProviderV0";
     bytes32 private constant _SALT = bytes32(0); // zero salt for cheapest execution gas
-    address private constant _OWNER = address(0); // no owner, immutable
 
     ISplitFactoryV2 private immutable _splitFactoryV2;
-
-    mapping(address splitter => address creator) private _splitterCreators;
 
     /**
      * @notice Construct a new SplitProviderV0 contract.
@@ -37,63 +33,45 @@ contract SplitProviderV0 is ISplitProviderV0 {
     }
 
     /**
-     * @notice Creates a new splitter contract owned by this contract at a new address.
-     * Sets msg.sender as the creator of the new splitter, enabling it to update the splitter
-     * via future calls to `updateSplitter` on this contract.
-     * @dev Uses the 0xSplits v2 implementation to create an owned splitter contract,
-     * with owner as this SplitProvider contract.
+     * @notice Gets or creates an immutable splitter contract at a deterministic address.
+     * Splits in the splitter contract are determined by the input split parameters,
+     * so we can safely create the splitter contract at a deterministic address (or use
+     * the existing splitter contract if it already exists at that address).
+     * @dev Uses the 0xSplits v2 implementation to create a splitter contract
      * @param splitInputs The split input parameters.
      * @return splitter The newly created splitter contract address.
      */
-    function createSplitter(
+    function getOrCreateSplitter(
         SplitInputs calldata splitInputs
     ) external override returns (address) {
         // create Split struct from SplitInputs
         ISplitFactoryV2.Split memory splitParams = _getSplitParams({
             splitInputs: splitInputs
         });
-        // create new splitter contract
-        address newSplitter = _splitFactoryV2.createSplit({
+        // determine if splitter already exists
+        (address splitter, bool exists) = _splitFactoryV2.isDeployed({
             _splitParams: splitParams,
-            _owner: address(this),
-            _creator: msg.sender
+            _owner: address(0), // no owner, immutable,
+            _salt: _SALT
         });
-        // update storage with msg.sender as the creator of the new splitter
-        _splitterCreators[newSplitter] = msg.sender;
+        if (!exists) {
+            // create new splitter contract
+            // @dev no need to re-assign returned address; isDeployed already populated
+            _splitFactoryV2.createSplitDeterministic({
+                _splitParams: splitParams,
+                _owner: address(0), // no owner, immutable
+                _creator: address(this),
+                _salt: _SALT
+            });
 
-        // emit event for new splitter creation
-        emit SplitterCreated({splitter: newSplitter, splitParams: splitParams});
+            // emit event for new splitter creation
+            emit SplitterCreated({
+                splitter: splitter,
+                splitParams: splitParams
+            });
+        }
 
-        return newSplitter;
-    }
-
-    /**
-     * @notice Modifies the split parameters of an existing splitter contract.
-     * Only the original creator of the splitter may call this function.
-     * @dev Uses the 0xSplits v2 implementation to modify the split parameters of an existing splitter contract.
-     * @param splitter The splitter contract address to modify. Must be owned by this contract.
-     * @param splitInputs The split input parameters.
-     */
-    function updateSplitter(
-        address splitter,
-        SplitInputs calldata splitInputs
-    ) external override {
-        // verify caller is the creator of the splitter
-        // @dev this also verifies the splitter exists and is a valid splitter contract,
-        // as only valid splitter contracts will have a creator
-        _onlyCreator(splitter);
-        // create Split struct from SplitInputs
-        ISplitFactoryV2.Split memory splitParams = _getSplitParams({
-            splitInputs: splitInputs
-        });
-        // distribute funds prior to updating the split to avoid misallocation
-        // of previously sent funds that are undistributed
-        // TODO distributeFunds(splitter);
-        // modify existing splitter contract
-        ISplitWalletV2(splitter).updateSplit({_split: splitParams});
-
-        // emit event for updated splitter
-        emit SplitterUpdated({splitter: splitter, splitParams: splitParams});
+        return splitter;
     }
 
     /**
@@ -105,35 +83,11 @@ contract SplitProviderV0 is ISplitProviderV0 {
     }
 
     /**
-     * Gets the creator of a splitter contract.
-     * The creator of a splitter is the msg.sender that called `createSplitter` to deploy the splitter.
-     * Returns the zero address if the splitter was not deployed via a call to `deploySplitter` on this contract.
-     * @param splitter Splitter to get the creator of.
-     * @return creator The creator of the splitter.
-     */
-    function getSplitterCreator(
-        address splitter
-    ) external view returns (address creator) {
-        creator = _splitterCreators[splitter];
-    }
-
-    /**
      * @notice Indicates the type of the contract, e.g. `SplitProviderV0`.
      * @return type_ The type of the contract.
      */
     function type_() external pure returns (bytes32) {
         return TYPE;
-    }
-
-    /**
-     * @notice Reverts if the caller is not the creator of the splitter contract.
-     * @param splitter The splitter contract address to modify.
-     */
-    function _onlyCreator(address splitter) private view {
-        require(
-            _splitterCreators[splitter] == msg.sender,
-            "SplitProviderV0: Only creator"
-        );
     }
 
     function _getSplitParams(
