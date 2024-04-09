@@ -66,7 +66,8 @@ library BytecodeStorageReader {
     bytes32 public constant V1_VERSION_STRING =
         "BytecodeStorage_V1.0.0_________ ";
     // The first versioned storage contract, deployed by an updated version of this library
-    bytes32 public constant V2_VERSION_STRING = "BytecodeStorage_V2.0.0_____ ";
+    bytes32 public constant V2_VERSION_STRING =
+        "BytecodeStorage_V2.0.0_________ ";
     // The current version of this library.
     bytes32 public constant CURRENT_VERSION = V2_VERSION_STRING;
 
@@ -366,7 +367,7 @@ library BytecodeStorageReader {
             // note: must check against literal strings, as Yul does not allow for
             //       dynamic strings in switch statements.
             switch mload(versionString)
-            case "BytecodeStorage_V2.0.0_____ " {
+            case "BytecodeStorage_V2.0.0_________ " {
                 version := V2_VERSION_STRING
             }
             case "BytecodeStorage_V1.0.0_________ " {
