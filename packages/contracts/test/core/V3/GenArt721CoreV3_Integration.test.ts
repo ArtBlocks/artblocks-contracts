@@ -299,6 +299,8 @@ for (const coreContractName of coreContractsToTest) {
           targetCoreVersion = "v3.2.2";
         } else if (coreContractName === "GenArt721CoreV3_Explorations") {
           targetCoreVersion = "v3.2.3";
+        } else if (coreContractName.includes("GenArt721CoreV3_Engine_Flex")) {
+          targetCoreVersion = "v3.1.7";
         } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
           targetCoreVersion = "v3.1.4";
         } else {
