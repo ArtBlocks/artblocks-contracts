@@ -204,7 +204,7 @@ contract GenArt721CoreV3_Engine_Flex is
 
     // /**
     //  * @notice Returns all project finance information for project `_projectId`.
-    //  * @dev use public mapping due to bytecode size optimization (saves ~0.2 mb)
+    //  * @dev use public mapping due to bytecode size optimization (saves ~0.2 kb)
     //  * @param _projectId Project to be queried
     //  * @return projectFinance ProjectFinance struct for project `_projectId`
     //  */
