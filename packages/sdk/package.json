@@ -9,7 +9,7 @@
   "devDependencies": {
     "@babel/core": "^7.23.9",
     "@babel/preset-env": "^7.23.9",
-    "@babel/preset-typescript": "^7.23.3",
+    "@babel/preset-typescript": "^7.24.1",
     "@jest/globals": "^29.7.0",
     "@typechain/ethers-v5": "^11.1.2",
     "eslint-config-custom": "*",
