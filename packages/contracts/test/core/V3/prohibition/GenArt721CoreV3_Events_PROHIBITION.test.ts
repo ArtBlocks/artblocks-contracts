@@ -99,7 +99,7 @@ for (const coreContractName of coreContractsToTest) {
         // Note that for testing purposes, we deploy a new version of the library,
         // but in production we would use the same library deployment for all contracts
         const libraryFactory = await ethers.getContractFactory(
-          "BytecodeStorageReader"
+          "contracts/libs/v0.8.x/BytecodeStorageV1.sol:BytecodeStorageReader"
         );
         const library = await libraryFactory
           .connect(config.accounts.deployer)
