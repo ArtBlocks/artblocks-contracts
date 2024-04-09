@@ -181,13 +181,26 @@ export async function deployWithStorageLibraryAndGet(
     .connect(config.accounts.deployer)
     .deploy(/* no args for library ever */);
 
+  let libraries = {
+    libraries: {
+      BytecodeStorageReader: library.address,
+    },
+  };
+  if (coreContractName.endsWith("Flex")) {
+    const flexLibraryFactory = await ethers.getContractFactory("V3FlexLib", {
+      libraries: { BytecodeStorageReader: library.address },
+    });
+    const flexLibrary = await flexLibraryFactory
+      .connect(config.accounts.deployer)
+      .deploy(/* no args for library ever */);
+    libraries.libraries.V3FlexLib = flexLibrary.address;
+  }
+
   // Deploy actual contract (with library linked)
   const coreContractFactory = await ethers.getContractFactory(
     coreContractName,
     {
-      libraries: {
-        BytecodeStorageReader: library.address,
-      },
+      ...libraries,
     }
   );
   return await coreContractFactory
