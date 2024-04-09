@@ -17,8 +17,10 @@ import {ERC165} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165.sol
  * All split contracts will be created with the following properties:
  * - The split contract will be immutable.
  * - The split contract will be created with the provided split parameters.
+ * - The split contract includes zero distribution incentive.
  * - The split contract will be created at a deterministic address, given the
- *   input split parameters (as well as the 0xSplits SplitFactoryV2 address).
+ *   input split parameters and contract calling this contract (as well as the
+ *   third party 0xSplits SplitFactoryV2 address).
  */
 contract SplitProviderV0 is ISplitProviderV0, ERC165 {
     bytes32 private constant TYPE = "SplitProviderV0";
@@ -183,6 +185,6 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
             ] = platformProviderRoyaltyBPS;
         }
 
-        // @dev TODO leave distribution incentive as zero
+        // @dev leave distribution incentive as zero on all splits
     }
 }
