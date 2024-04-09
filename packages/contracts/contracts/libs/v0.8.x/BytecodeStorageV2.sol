@@ -240,6 +240,18 @@ library BytecodeStorageReader {
     }
 
     /**
+     * @notice Get if data are stored in compressed format for given contract bytecode
+     * @param _address address of deployed contract with bytecode stored in the V0, V1, or V2 format
+     * @return isCompressed boolean indicating if the stored data are compressed
+     */
+    function getIsCompressedForBytecode(
+        address _address
+    ) public view returns (bool) {
+        (, bool isCompressed) = _bytecodeDataOffsetAndIsCompressedAt(_address);
+        return isCompressed;
+    }
+
+    /**
      * Utility function to get the compressed form of a message string using solady LibZip's
      * flz compress algorithm.
      * The compressed message is returned as bytes, which may be used as the input to
