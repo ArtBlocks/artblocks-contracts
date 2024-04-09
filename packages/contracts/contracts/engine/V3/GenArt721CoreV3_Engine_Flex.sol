@@ -13,6 +13,7 @@ import "../../interfaces/v0.8.x/IManifold.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "../../libs/v0.8.x/ERC721_PackedHashSeed.sol";
 import "../../libs/v0.8.x/BytecodeStorageV1.sol";
+import {V3FlexLib} from "../../libs/v0.8.x/V3FlexLib.sol";
 import "../../libs/v0.8.x/Bytes32Strings.sol";
 
 /**
@@ -191,15 +192,9 @@ contract GenArt721CoreV3_Engine_Flex is
         string aspectRatio;
         // mapping from script index to address storing script in bytecode
         mapping(uint256 => address) scriptBytecodeAddresses;
-        bool externalAssetDependenciesLocked;
-        uint24 externalAssetDependencyCount;
-        mapping(uint256 => ExternalAssetDependency) externalAssetDependencies;
     }
 
     mapping(uint256 => Project) projects;
-
-    string public preferredIPFSGateway;
-    string public preferredArweaveGateway;
 
     /// packed struct containing project financial information
     struct ProjectFinance {
@@ -270,7 +265,7 @@ contract GenArt721CoreV3_Engine_Flex is
     bool public immutable autoApproveArtistSplitProposals;
 
     /// version & type of this core contract
-    bytes32 constant CORE_VERSION = "v3.1.4";
+    bytes32 constant CORE_VERSION = "v3.1.7";
 
     function coreVersion() external pure returns (string memory) {
         return CORE_VERSION.toString();
@@ -284,15 +279,6 @@ contract GenArt721CoreV3_Engine_Flex is
 
     /// default base URI to initialize all new project projectBaseURI values to
     string public defaultBaseURI;
-
-    function _onlyUnlockedProjectExternalAssetDependencies(
-        uint256 _projectId
-    ) internal view {
-        require(
-            !projects[_projectId].externalAssetDependenciesLocked,
-            "External dependencies locked"
-        );
-    }
 
     function _onlyNonZeroAddress(address _address) internal pure {
         require(_address != address(0), "Must input non-zero address");
@@ -426,8 +412,7 @@ contract GenArt721CoreV3_Engine_Flex is
      */
     function updateIPFSGateway(string calldata _gateway) public {
         _onlyAdminACL(this.updateIPFSGateway.selector);
-        preferredIPFSGateway = _gateway;
-        emit GatewayUpdated(ExternalAssetDependencyType.IPFS, _gateway);
+        V3FlexLib.updateIPFSGateway({_gateway: _gateway});
     }
 
     /**
@@ -435,21 +420,20 @@ contract GenArt721CoreV3_Engine_Flex is
      */
     function updateArweaveGateway(string calldata _gateway) public {
         _onlyAdminACL(this.updateArweaveGateway.selector);
-        preferredArweaveGateway = _gateway;
-        emit GatewayUpdated(ExternalAssetDependencyType.ARWEAVE, _gateway);
+        V3FlexLib.updateArweaveGateway({_gateway: _gateway});
     }
 
     /**
      * @notice Locks external asset dependencies for project `_projectId`.
      */
     function lockProjectExternalAssetDependencies(uint256 _projectId) external {
-        _onlyUnlockedProjectExternalAssetDependencies(_projectId);
         _onlyArtistOrAdminACL(
             _projectId,
             this.lockProjectExternalAssetDependencies.selector
         );
-        projects[_projectId].externalAssetDependenciesLocked = true;
-        emit ProjectExternalAssetDependenciesLocked(_projectId);
+        V3FlexLib.lockProjectExternalAssetDependencies({
+            _projectId: _projectId
+        });
     }
 
     /**
@@ -468,45 +452,16 @@ contract GenArt721CoreV3_Engine_Flex is
         string memory _cidOrData,
         ExternalAssetDependencyType _dependencyType
     ) external {
-        _onlyUnlockedProjectExternalAssetDependencies(_projectId);
         _onlyArtistOrAdminACL(
             _projectId,
             this.updateProjectExternalAssetDependency.selector
         );
-        uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
-        require(_index < assetCount, "Asset index out of range");
-        ExternalAssetDependency storage _oldDependency = projects[_projectId]
-            .externalAssetDependencies[_index];
-        ExternalAssetDependencyType _oldDependencyType = _oldDependency
-            .dependencyType;
-        projects[_projectId]
-            .externalAssetDependencies[_index]
-            .dependencyType = _dependencyType;
-        // if the incoming dependency type is onchain, we need to write the data to bytecode
-        if (_dependencyType == ExternalAssetDependencyType.ONCHAIN) {
-            if (_oldDependencyType != ExternalAssetDependencyType.ONCHAIN) {
-                // we only need to set the cid to an empty string if we are replacing an offchain asset
-                // an onchain asset will already have an empty cid
-                projects[_projectId].externalAssetDependencies[_index].cid = "";
-            }
-
-            projects[_projectId]
-                .externalAssetDependencies[_index]
-                .bytecodeAddress = _cidOrData.writeToBytecode();
-            // we don't want to emit data, so we emit the cid as an empty string
-            _cidOrData = "";
-        } else {
-            projects[_projectId]
-                .externalAssetDependencies[_index]
-                .cid = _cidOrData;
-        }
-        emit ExternalAssetDependencyUpdated(
-            _projectId,
-            _index,
-            _cidOrData,
-            _dependencyType,
-            assetCount
-        );
+        V3FlexLib.updateProjectExternalAssetDependency({
+            _projectId: _projectId,
+            _index: _index,
+            _cidOrData: _cidOrData,
+            _dependencyType: _dependencyType
+        });
     }
 
     /**
@@ -520,26 +475,14 @@ contract GenArt721CoreV3_Engine_Flex is
         uint256 _projectId,
         uint256 _index
     ) external {
-        _onlyUnlockedProjectExternalAssetDependencies(_projectId);
         _onlyArtistOrAdminACL(
             _projectId,
             this.removeProjectExternalAssetDependency.selector
         );
-        uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
-        require(_index < assetCount, "Asset index out of range");
-
-        uint24 lastElementIndex = assetCount - 1;
-
-        // copy last element to index of element to be removed
-        projects[_projectId].externalAssetDependencies[_index] = projects[
-            _projectId
-        ].externalAssetDependencies[lastElementIndex];
-
-        delete projects[_projectId].externalAssetDependencies[lastElementIndex];
-
-        projects[_projectId].externalAssetDependencyCount = lastElementIndex;
-
-        emit ExternalAssetDependencyRemoved(_projectId, _index);
+        V3FlexLib.removeProjectExternalAssetDependency({
+            _projectId: _projectId,
+            _index: _index
+        });
     }
 
     /**
@@ -556,34 +499,15 @@ contract GenArt721CoreV3_Engine_Flex is
         string memory _cidOrData,
         ExternalAssetDependencyType _dependencyType
     ) external {
-        _onlyUnlockedProjectExternalAssetDependencies(_projectId);
         _onlyArtistOrAdminACL(
             _projectId,
             this.addProjectExternalAssetDependency.selector
         );
-        uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
-        address _bytecodeAddress = address(0);
-        // if the incoming dependency type is onchain, we need to write the data to bytecode
-        if (_dependencyType == ExternalAssetDependencyType.ONCHAIN) {
-            _bytecodeAddress = _cidOrData.writeToBytecode();
-            // we don't want to emit data, so we emit the cid as an empty string
-            _cidOrData = "";
-        }
-        ExternalAssetDependency memory asset = ExternalAssetDependency({
-            cid: _cidOrData,
-            dependencyType: _dependencyType,
-            bytecodeAddress: _bytecodeAddress
+        V3FlexLib.addProjectExternalAssetDependency({
+            _projectId: _projectId,
+            _cidOrData: _cidOrData,
+            _dependencyType: _dependencyType
         });
-        projects[_projectId].externalAssetDependencies[assetCount] = asset;
-        projects[_projectId].externalAssetDependencyCount = assetCount + 1;
-
-        emit ExternalAssetDependencyUpdated(
-            _projectId,
-            assetCount,
-            _cidOrData,
-            _dependencyType,
-            assetCount + 1
-        );
     }
 
     /**
@@ -1991,19 +1915,10 @@ contract GenArt721CoreV3_Engine_Flex is
         uint256 _projectId,
         uint256 _index
     ) external view returns (ExternalAssetDependencyWithData memory) {
-        ExternalAssetDependency storage _dependency = projects[_projectId]
-            .externalAssetDependencies[_index];
-        address _bytecodeAddress = _dependency.bytecodeAddress;
-
         return
-            ExternalAssetDependencyWithData({
-                dependencyType: _dependency.dependencyType,
-                cid: _dependency.cid,
-                bytecodeAddress: _bytecodeAddress,
-                data: (_dependency.dependencyType ==
-                    ExternalAssetDependencyType.ONCHAIN)
-                    ? _readFromBytecode(_bytecodeAddress)
-                    : ""
+            V3FlexLib.projectExternalAssetDependencyByIndex({
+                _projectId: _projectId,
+                _index: _index
             });
     }
 
@@ -2013,7 +1928,24 @@ contract GenArt721CoreV3_Engine_Flex is
     function projectExternalAssetDependencyCount(
         uint256 _projectId
     ) external view returns (uint256) {
-        return uint256(projects[_projectId].externalAssetDependencyCount);
+        return
+            V3FlexLib.projectExternalAssetDependencyCount({
+                _projectId: _projectId
+            });
+    }
+
+    /**
+     * @notice Returns the preferred IPFS gateway for the platform.
+     */
+    function preferredIPFSGateway() external view returns (string memory) {
+        return V3FlexLib.preferredIPFSGateway();
+    }
+
+    /**
+     * @notice Returns the preferred Arweave gateway for the platform.
+     */
+    function preferredArweaveGateway() external view returns (string memory) {
+        return V3FlexLib.preferredArweaveGateway();
     }
 
     /**

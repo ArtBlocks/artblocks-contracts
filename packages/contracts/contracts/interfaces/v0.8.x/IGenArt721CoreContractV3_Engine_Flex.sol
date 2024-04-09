@@ -63,6 +63,15 @@ interface IGenArt721CoreContractV3_Engine_Flex is
     }
 
     /**
+     * @notice Project storage that relate to Flex data.
+     */
+    struct ProjectFlex {
+        bool externalAssetDependenciesLocked;
+        uint24 externalAssetDependencyCount;
+        mapping(uint256 => ExternalAssetDependency) externalAssetDependencies;
+    }
+
+    /**
      * @notice An external asset dependency. This is a struct that contains the CID of the dependency,
      * the type of the dependency, and the address of the bytecode for this dependency.
      */
