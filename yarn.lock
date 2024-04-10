@@ -3008,13 +3008,13 @@
     change-case-all "1.0.15"
     tslib "~2.6.0"
 
-"@graphql-codegen/typescript-document-nodes@^4.0.4":
-  version "4.0.4"
-  resolved "https://registry.yarnpkg.com/@graphql-codegen/typescript-document-nodes/-/typescript-document-nodes-4.0.4.tgz#28a3b75d3559cfb506b7637175c49bb440bd5da7"
-  integrity sha512-dZCnaycqaqFZwb4gY3USF72dZp8qEel9RjgHBLquK1ZaDleA6F/7BW/iqHdeDeigS+463c0jxuySInDbDWVqwg==
+"@graphql-codegen/typescript-document-nodes@^4.0.6":
+  version "4.0.6"
+  resolved "https://registry.yarnpkg.com/@graphql-codegen/typescript-document-nodes/-/typescript-document-nodes-4.0.6.tgz#a518280a37343120441d197c9f7f35cbec5a930d"
+  integrity sha512-4YtB9tCnNYWaakk25tsMVdZIKvjote29wxHdpYONmIloF9Besf98zbwaApelQ1uUEs4HGqKUajpd8GynK+SW8g==
   dependencies:
     "@graphql-codegen/plugin-helpers" "^5.0.3"
-    "@graphql-codegen/visitor-plugin-common" "4.1.2"
+    "@graphql-codegen/visitor-plugin-common" "5.1.0"
     auto-bind "~4.0.0"
     tslib "~2.6.0"
 
