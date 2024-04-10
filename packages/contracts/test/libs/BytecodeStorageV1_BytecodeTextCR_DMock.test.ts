@@ -102,7 +102,7 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock/BytecodeV1LibCallsMock Libr
     // but in production we would use the same library if we were using the approach of
     // "CALL instead of DELEGATECALL by way of 'library wrapping'"
     const libraryFactory = await ethers.getContractFactory(
-      "BytecodeStorageReader"
+      "contracts/libs/v0.8.x/BytecodeStorageV1.sol:BytecodeStorageReader"
     );
     const library = await libraryFactory
       .connect(config.accounts.deployer)
