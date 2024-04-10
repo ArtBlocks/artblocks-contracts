@@ -377,4 +377,60 @@ describe("BytecodeStorageV2 Backwards Compatible Reads Tests", async function ()
       );
     });
   });
+
+  describe("validate getIsCompressedForBytecode works across versions", function () {
+    it("reverts on read of unknown contract from V2 library", async function () {
+      const config = await loadFixture(_beforeEach);
+      await config.sstore2Mock
+        .connect(config.accounts.deployer)
+        .createText("zip zipppity zoooop zop");
+      const textBytecodeAddress = getLatestTextDeploymentAddressSSTORE2(
+        config.sstore2Mock
+      );
+
+      // reverts on read SSTORE2 isCompressed from V2 library, as it is not supported
+      await expectRevert(
+        config.bytecodeV2TextCR_DMock?.readIsCompressedForTextAtAddress(
+          textBytecodeAddress
+        ),
+        "ContractAsStorage: Unsupported Version"
+      );
+    });
+
+    it("read V0 as not compressed from V2 library", async function () {
+      const config = await loadFixture(_beforeEach);
+      await config.bytecodeV0TextCR_DMock
+        .connect(config.accounts.deployer)
+        .createText("zip zipppity zoooop zop");
+      const textBytecodeAddress = getLatestTextDeploymentAddressV0(
+        config.bytecodeV0TextCR_DMock
+      );
+
+      // read V0 version from V2 library
+      const isCompressed =
+        await config.bytecodeV2TextCR_DMock.readIsCompressedForTextAtAddress(
+          textBytecodeAddress
+        );
+      // hard-coded expected value
+      expect(isCompressed).to.be.false;
+    });
+
+    it("read V2 version from V2 library", async function () {
+      const config = await loadFixture(_beforeEach);
+      await config.bytecodeV2TextCR_DMock
+        .connect(config.accounts.deployer)
+        .createText("zip zipppity zoooop zop");
+      const textBytecodeAddress = getLatestTextDeploymentAddressV2(
+        config.bytecodeV2TextCR_DMock
+      );
+
+      // read V2 version from V2 library
+      const isCompressed =
+        await config.bytecodeV2TextCR_DMock.readIsCompressedForTextAtAddress(
+          textBytecodeAddress
+        );
+      // hard-coded expected value
+      expect(isCompressed).to.be.false;
+    });
+  });
 });
