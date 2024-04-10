@@ -235,6 +235,10 @@ contract GenArt721CoreV3_Explorations is
     /// default behavior is to allow new projects
     bool public newProjectsForbidden;
 
+    // configuration variable (determined at time of deployment) that determines
+    // if artists are allowed to activate their own projects
+    bool public immutable allowArtistProjectActivation;
+
     /// version & type of this core contract
     /// coreVersion is updated from Flagship V3 core due to minor changes
     /// implemented in the Explorations version of the contract.
@@ -330,6 +334,8 @@ contract GenArt721CoreV3_Explorations is
      * @param _adminACLContract Address of admin access control contract, to be
      * set as contract owner.
      * @param _startingProjectId The initial next project ID.
+     * @param _splitProviderAddress Address to use as royalty splitter provider for the contract.
+     * @param _allowArtistProjectActivation Allow artist to activate their own projects.
      * @dev _startingProjectId should be set to a value much, much less than
      * max(uint248), but an explicit input type of `uint248` is used as it is
      * safer to cast up to `uint256` than it is to cast down for the purposes
@@ -341,7 +347,8 @@ contract GenArt721CoreV3_Explorations is
         address _randomizerContract,
         address _adminACLContract,
         uint248 _startingProjectId,
-        address _splitProviderAddress
+        address _splitProviderAddress,
+        bool _allowArtistProjectActivation
     ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
         _onlyNonZeroAddress(_randomizerContract);
         // record contracts starting project ID
@@ -351,6 +358,8 @@ contract GenArt721CoreV3_Explorations is
         _updateArtblocksSecondarySalesAddress(msg.sender);
         _updateRandomizerAddress(_randomizerContract);
         _updateSplitProvider(_splitProviderAddress);
+        // setup immutable `allowArtistProjectActivation` config
+        allowArtistProjectActivation = _allowArtistProjectActivation;
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
         // initialize default base URI
@@ -639,7 +648,14 @@ contract GenArt721CoreV3_Explorations is
      * @param _projectId Project ID to be toggled.
      */
     function toggleProjectIsActive(uint256 _projectId) external {
-        _onlyAdminACL(this.toggleProjectIsActive.selector);
+        if (allowArtistProjectActivation) {
+            _onlyArtistOrAdminACL(
+                _projectId,
+                this.toggleProjectIsActive.selector
+            );
+        } else {
+            _onlyAdminACL(this.toggleProjectIsActive.selector);
+        }
         _onlyValidProjectId(_projectId);
         projects[_projectId].active = !projects[_projectId].active;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ACTIVE);

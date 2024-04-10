@@ -263,6 +263,14 @@ contract GenArt721CoreV3_Engine_Flex is
     /// ^does not apply in the case where contract-ownership itself is revoked
     bool public immutable autoApproveArtistSplitProposals;
 
+    // configuration variable (determined at time of deployment) that determines
+    // if platform provider fees and addresses are always required to be set to zero
+    bool public immutable nullPlatformProvider;
+
+    // configuration variable (determined at time of deployment) that determines
+    // if artists are allowed to activate their own projects
+    bool public immutable allowArtistProjectActivation;
+
     /// version & type of this core contract
     bytes32 constant CORE_VERSION = "v3.2.5";
 
@@ -365,6 +373,9 @@ contract GenArt721CoreV3_Engine_Flex is
      * @param _startingProjectId The initial next project ID.
      * @param _autoApproveArtistSplitProposals Whether or not to always
      * auto-approve proposed artist split updates.
+     * @param _splitProviderAddress Address to use as royalty splitter provider for the contract.
+     * @param _nullPlatformProvider Enforce always setting zero platform provider fees and addresses.
+     * @param _allowArtistProjectActivation Allow artist to activate their own projects.
      * @dev _startingProjectId should be set to a value much, much less than
      * max(uint248), but an explicit input type of `uint248` is used as it is
      * safer to cast up to `uint256` than it is to cast down for the purposes
@@ -379,18 +390,30 @@ contract GenArt721CoreV3_Engine_Flex is
         address _adminACLContract,
         uint248 _startingProjectId,
         bool _autoApproveArtistSplitProposals,
-        address _splitProviderAddress
+        address _splitProviderAddress,
+        bool _nullPlatformProvider,
+        bool _allowArtistProjectActivation
     ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
         _onlyNonZeroAddress(_renderProviderAddress);
-        _onlyNonZeroAddress(_platformProviderAddress);
+        // @dev checks on platform provider addresses performed in _updateProviderSalesAddresses
+        if (_nullPlatformProvider) {
+            // set platform to zero revenue splits
+            _platformProviderPrimarySalesPercentage = 0;
+            platformProviderSecondarySalesBPS = 0;
+        }
         _onlyNonZeroAddress(_randomizerContract);
         _updateSplitProvider(_splitProviderAddress);
         _onlyNonZeroAddress(_adminACLContract);
         // setup immutable `autoApproveArtistSplitProposals` config
         autoApproveArtistSplitProposals = _autoApproveArtistSplitProposals;
+        // setup immutable `nullPlatformProvider` config
+        nullPlatformProvider = _nullPlatformProvider;
+        // setup immutable `allowArtistProjectActivation` config
+        allowArtistProjectActivation = _allowArtistProjectActivation;
         // record contracts starting project ID
         // casting-up is safe
         startingProjectId = uint256(_startingProjectId);
+        // @dev nullPlatformProvider must be set before calling _updateProviderSalesAddresses
         _updateProviderSalesAddresses(
             _renderProviderAddress,
             _renderProviderAddress,
@@ -689,8 +712,7 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyAdminACL(this.updateProviderSalesAddresses.selector);
         _onlyNonZeroAddress(_renderProviderPrimarySalesAddress);
         _onlyNonZeroAddress(_renderProviderSecondarySalesAddress);
-        _onlyNonZeroAddress(_platformProviderPrimarySalesAddress);
-        _onlyNonZeroAddress(_platformProviderSecondarySalesAddress);
+        // @dev checks on platform provider addresses performed in _updateProviderSalesAddresses
         _updateProviderSalesAddresses(
             _renderProviderPrimarySalesAddress,
             _renderProviderSecondarySalesAddress,
@@ -702,6 +724,8 @@ contract GenArt721CoreV3_Engine_Flex is
     /**
      * @notice Updates the render and platform provider primary sales revenue percentage to
      * the provided inputs.
+     * If contract is configured to have a null platform provider, the platform provider
+     * primary sales percentage must be set to zero.
      * @param renderProviderPrimarySalesPercentage_ New primary sales revenue % for the render provider
      * @param platformProviderPrimarySalesPercentage_ New primary sales revenue % for the platform provider
      * percentage.
@@ -711,6 +735,13 @@ contract GenArt721CoreV3_Engine_Flex is
         uint256 platformProviderPrimarySalesPercentage_
     ) external {
         _onlyAdminACL(this.updateProviderPrimarySalesPercentages.selector);
+        // require no platform provider payment if null platform provider
+        if (nullPlatformProvider) {
+            require(
+                platformProviderPrimarySalesPercentage_ == 0,
+                "Only null platform provider"
+            );
+        }
 
         // Validate that the sum of the proposed %s, does not exceed 100%.
         require(
@@ -732,6 +763,8 @@ contract GenArt721CoreV3_Engine_Flex is
     /**
      * @notice Updates render and platform provider secondary sales royalty Basis Points to
      * the provided inputs.
+     * If contract is configured to have a null platform provider, the platform provider
+     * secondary sales BPS must be set to zero.
      * note: This does not update splitter contracts for all projects on
      * this core contract. If updated splitter contracts are desired, they must be
      * updated after this update via the `syncProviderSecondaryForProjectToDefaults` function.
@@ -750,6 +783,13 @@ contract GenArt721CoreV3_Engine_Flex is
         uint256 _platformProviderSecondarySalesBPS
     ) external {
         _onlyAdminACL(this.updateProviderSecondarySalesBPS.selector);
+        // require no platform provider payment if null platform provider
+        if (nullPlatformProvider) {
+            require(
+                _platformProviderSecondarySalesBPS == 0,
+                "Only null platform provider"
+            );
+        }
         // Validate that the sum of the proposed provider BPS, does not exceed 10_000 BPS.
         require(
             (_renderProviderSecondarySalesBPS +
@@ -799,7 +839,14 @@ contract GenArt721CoreV3_Engine_Flex is
      * @param _projectId Project ID to be toggled.
      */
     function toggleProjectIsActive(uint256 _projectId) external {
-        _onlyAdminACL(this.toggleProjectIsActive.selector);
+        if (allowArtistProjectActivation) {
+            _onlyArtistOrAdminACL(
+                _projectId,
+                this.toggleProjectIsActive.selector
+            );
+        } else {
+            _onlyAdminACL(this.toggleProjectIsActive.selector);
+        }
         _onlyValidProjectId(_projectId);
         projects[_projectId].active = !projects[_projectId].active;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ACTIVE);
@@ -2024,6 +2071,9 @@ contract GenArt721CoreV3_Engine_Flex is
     /**
      * @notice Updates sales addresses for the platform and render providers to
      * the input parameters.
+     * Reverts if invalid platform provider addresses are provided given the
+     * contract's immutably configured nullPlatformProvider state.
+     * Does not check render provider addresses in any way.
      * @param _renderProviderPrimarySalesAddress Address of new primary sales
      * payment address.
      * @param _renderProviderSecondarySalesAddress Address of new secondary sales
@@ -2032,9 +2082,6 @@ contract GenArt721CoreV3_Engine_Flex is
      * payment address.
      * @param _platformProviderSecondarySalesAddress Address of new secondary sales
      * payment address.
-     * @dev Note that this method does not check that the input address is
-     * not `address(0)`, as it is expected that callers of this method should
-     * perform input validation where applicable.
      */
     function _updateProviderSalesAddresses(
         address _renderProviderPrimarySalesAddress,
@@ -2042,6 +2089,17 @@ contract GenArt721CoreV3_Engine_Flex is
         address _platformProviderPrimarySalesAddress,
         address _platformProviderSecondarySalesAddress
     ) internal {
+        if (nullPlatformProvider) {
+            // require null platform provider address
+            require(
+                _platformProviderPrimarySalesAddress == address(0) &&
+                    _platformProviderSecondarySalesAddress == address(0),
+                "only null platform provider"
+            );
+        } else {
+            _onlyNonZeroAddress(_platformProviderPrimarySalesAddress);
+            _onlyNonZeroAddress(_platformProviderSecondarySalesAddress);
+        }
         platformProviderPrimarySalesAddress = payable(
             _platformProviderPrimarySalesAddress
         );
