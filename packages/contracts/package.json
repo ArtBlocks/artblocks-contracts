@@ -116,7 +116,7 @@
   "author": "Art Blocks, Inc",
   "license": "LGPL-3.0-only",
   "dependencies": {
-    "@nomicfoundation/hardhat-verify": "^2.0.4",
+    "@nomicfoundation/hardhat-verify": "^2.0.5",
     "@openzeppelin-0.5/contracts": "npm:@openzeppelin/contracts@2.5.1",
     "@openzeppelin-4.5/contracts": "npm:@openzeppelin/contracts@4.5.0",
     "@openzeppelin-4.7/contracts": "npm:@openzeppelin/contracts@4.7.1",
