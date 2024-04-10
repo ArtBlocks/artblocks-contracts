@@ -368,7 +368,8 @@ describe("BytecodeStorageV2 + BytecodeV2TextCR_DMock/BytecodeV2LibCallsMock Libr
     });
   });
 
-  describe("validate compressed writeToBytecode behavior at size-limit boundaries", function () {
+  // @dev skip on coverage due to memory constraints when getting large compressed scripts
+  describe("validate compressed writeToBytecode behavior at size-limit boundaries [ @skip-on-coverage ]", function () {
     // hard-code gas limit because ethers sometimes estimates too high
     const GAS_LIMIT = 30000000;
     it("uploads and recalls 2x23.95 KB script", async function () {
@@ -389,7 +390,8 @@ describe("BytecodeStorageV2 + BytecodeV2TextCR_DMock/BytecodeV2LibCallsMock Libr
     });
   });
 
-  describe("measure gas used when getting compressed", function () {
+  // @dev skip on coverage due to memory constraints when getting large compressed scripts
+  describe("measure gas used when getting compressed [ @skip-on-coverage ]", function () {
     it("compresses squiggle script", async function () {
       const config = await loadFixture(_beforeEach);
       const targetText = SQUIGGLE_SCRIPT;
@@ -400,7 +402,8 @@ describe("BytecodeStorageV2 + BytecodeV2TextCR_DMock/BytecodeV2LibCallsMock Libr
     });
   });
 
-  describe("measure gas used when reading compressed", function () {
+  // @dev skip on coverage due to memory constraints when getting large compressed scripts
+  describe("measure gas used when reading compressed [ @skip-on-coverage ]", function () {
     // hard-code gas limit because ethers sometimes estimates too high
     const GAS_LIMIT = 30000000;
     it("reads 23.95 KB script", async function () {
