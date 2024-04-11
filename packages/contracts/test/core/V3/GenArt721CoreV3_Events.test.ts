@@ -296,7 +296,7 @@ for (const coreContractName of coreContractsToTest) {
         await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateNextContract(
+            .updateNextCoreContract(
               config.accounts.artist.address // dummy address
             )
         )
