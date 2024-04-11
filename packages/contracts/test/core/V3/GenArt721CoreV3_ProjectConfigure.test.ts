@@ -28,6 +28,7 @@ import {
   GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT,
   MULTI_BYTE_UTF_EIGHT_SCRIPT,
 } from "../../util/example-scripts";
+import { GenArt721CoreV3 } from "../../../scripts/contracts";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -496,7 +497,7 @@ for (const coreContractName of coreContractsToTest) {
             ),
           "Only Admin ACL allowed"
         );
-        config.genArt721Core
+        await config.genArt721Core
           .connect(config.accounts.deployer)
           .updateProjectArtistAddress(
             config.projectZero,
@@ -506,7 +507,7 @@ for (const coreContractName of coreContractsToTest) {
 
       it("reflects updated artist address", async function () {
         const config = await loadFixture(_beforeEach);
-        config.genArt721Core
+        await config.genArt721Core
           .connect(config.accounts.deployer)
           .updateProjectArtistAddress(
             config.projectZero,
