@@ -161,3 +161,19 @@ https://sepolia.etherscan.io/address/0x9Fa2FDE53148e0dcbA6335E51Bd539BedCe633E4#
 [INFO] Deployment details written/appended to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/DEPLOYMENTS.md
 [INFO] Done!
 [ACTION] MinterSEAV1: call approveMinterGlobally(0x9Fa2FDE53148e0dcbA6335E51Bd539BedCe633E4) on 0x29e9f09244497503f304FA549d50eFC751D818d2 from admin wallet
+----------------------------------------
+[INFO] Datetime of deployment: 2024-04-03T17:22:59.908Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/shared-minter-deploy-config-02.dev.ts
+[INFO] MinterRAMV0 deployed at 0xaCdAeb402C6733CeaeF332383AEaB1763e712722
+[INFO] MinterRAMV0 approved globally on minter filter at 0x29e9f09244497503f304FA549d50eFC751D818d2
+[INFO] Verifying MinterRAMV0 contract deployment...
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterRAMV0.sol:MinterRAMV0 at 0xaCdAeb402C6733CeaeF332383AEaB1763e712722
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterRAMV0 on the block explorer.
+https://sepolia.etherscan.io/address/0xaCdAeb402C6733CeaeF332383AEaB1763e712722#code
+
+[INFO] MinterRAMV0 contract verified on Etherscan at 0xaCdAeb402C6733CeaeF332383AEaB1763e712722
+[INFO] Deployment details written/appended to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/DEPLOYMENTS.md
+[INFO] Done!
