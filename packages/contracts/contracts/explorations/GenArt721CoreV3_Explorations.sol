@@ -125,7 +125,7 @@ contract GenArt721CoreV3_Explorations is
     bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_ADDRESS =
         "artblocksSecondarySalesAddress";
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
-    bytes32 constant FIELD_NEXT_CONTRACT = "nextContract";
+    bytes32 constant FIELD_NEXT_CORE_CONTRACT = "nextCoreContract";
     // note: Curation registry address will never be updated on V3 Explorations
     bytes32 constant FIELD_ARTBLOCKS_CURATION_REGISTRY_ADDRESS =
         "curationRegistryAddress";
@@ -155,8 +155,8 @@ contract GenArt721CoreV3_Explorations is
     bytes32 constant FIELD_PROJECT_ASPECT_RATIO = "aspectRatio";
     bytes32 constant FIELD_PROJECT_BASE_URI = "baseURI";
 
-    /// pointer to next contract associated with this contract
-    address public nextContract;
+    /// pointer to next core contract associated with this contract
+    address public nextCoreContract;
 
     /// Curation registry is not relevant for Art Blocks Explorations, and will
     /// remain null for interface-conformance purposes only, specifically for
@@ -494,13 +494,13 @@ contract GenArt721CoreV3_Explorations is
     }
 
     /**
-     * @notice Updates reference to next contract, associated with this contract.
-     * @param _nextContract Address of the next contract
+     * @notice Updates reference to next core contract, associated with this contract.
+     * @param _nextCoreContract Address of the next core contract
      */
-    function updateNextContract(address _nextContract) external {
-        _onlyAdminACL(this.updateNextContract.selector);
-        nextContract = _nextContract;
-        emit PlatformUpdated(FIELD_NEXT_CONTRACT);
+    function updateNextCoreContract(address _nextCoreContract) external {
+        _onlyAdminACL(this.updateNextCoreContract.selector);
+        nextCoreContract = _nextCoreContract;
+        emit PlatformUpdated(FIELD_NEXT_CORE_CONTRACT);
     }
 
     /**

@@ -290,7 +290,7 @@ for (const coreContractName of coreContractsToTest) {
           );
       });
 
-      it("emits 'nextContract'", async function () {
+      it("emits 'nextCoreContract'", async function () {
         const config = await loadFixture(_beforeEach);
         // emits expected event arg(s)
         await expect(
@@ -301,7 +301,7 @@ for (const coreContractName of coreContractsToTest) {
             )
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
-          .withArgs(ethers.utils.formatBytes32String("nextContract"));
+          .withArgs(ethers.utils.formatBytes32String("nextCoreContract"));
       });
 
       it("emits '{artblocks,provider}PrimaryPercentage'", async function () {

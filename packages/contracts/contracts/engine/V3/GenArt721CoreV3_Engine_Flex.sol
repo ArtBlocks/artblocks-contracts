@@ -134,7 +134,7 @@ contract GenArt721CoreV3_Engine_Flex is
     bytes32 constant FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
     bytes32 constant FIELD_DEFAULT_BASE_URI = "defaultBaseURI";
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
-    bytes32 constant FIELD_NEXT_CONTRACT = "nextContract";
+    bytes32 constant FIELD_NEXT_CORE_CONTRACT = "nextCoreContract";
     bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
         "dependencyRegistryAddress";
     bytes32 constant FIELD_PROVIDER_SALES_ADDRESSES = "providerSalesAddresses";
@@ -162,8 +162,8 @@ contract GenArt721CoreV3_Engine_Flex is
     bytes32 constant FIELD_PROJECT_ASPECT_RATIO = "aspectRatio";
     bytes32 constant FIELD_PROJECT_BASE_URI = "baseURI";
 
-    /// pointer to next contract associated with this contract
-    address public nextContract;
+    /// pointer to next core contract associated with this contract
+    address public nextCoreContract;
 
     /// Dependency registry managed by Art Blocks
     address public artblocksDependencyRegistryAddress;
@@ -648,13 +648,13 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
-     * @notice Updates reference to next contract, associated with this contract.
-     * @param _nextContract Address of the next contract
+     * @notice Updates reference to next core contract, associated with this contract.
+     * @param _nextCoreContract Address of the next core contract
      */
-    function updateNextContract(address _nextContract) external {
-        _onlyAdminACL(this.updateNextContract.selector);
-        nextContract = _nextContract;
-        emit PlatformUpdated(FIELD_NEXT_CONTRACT);
+    function updateNextCoreContract(address _nextCoreContract) external {
+        _onlyAdminACL(this.updateNextCoreContract.selector);
+        nextCoreContract = _nextCoreContract;
+        emit PlatformUpdated(FIELD_NEXT_CORE_CONTRACT);
     }
 
     /**
