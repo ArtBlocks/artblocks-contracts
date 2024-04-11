@@ -127,6 +127,7 @@ contract GenArt721CoreV3_Engine is
     bytes32 constant FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
     bytes32 constant FIELD_DEFAULT_BASE_URI = "defaultBaseURI";
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
+    bytes32 constant FIELD_NEXT_CORE_CONTRACT = "nextCoreContract";
     bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
         "dependencyRegistryAddress";
     bytes32 constant FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS =
@@ -155,6 +156,9 @@ contract GenArt721CoreV3_Engine is
     bytes32 constant FIELD_PROJECT_SCRIPT_TYPE = "scriptType";
     bytes32 constant FIELD_PROJECT_ASPECT_RATIO = "aspectRatio";
     bytes32 constant FIELD_PROJECT_BASE_URI = "baseURI";
+
+    /// pointer to next core contract associated with this contract
+    address public nextCoreContract;
 
     /// Dependency registry managed by Art Blocks
     address public artblocksDependencyRegistryAddress;
@@ -535,6 +539,16 @@ contract GenArt721CoreV3_Engine is
         _forbidNewProjects();
         // renounce ownership viw Ownable
         Ownable.renounceOwnership();
+    }
+
+    /**
+     * @notice Updates reference to next core contract, associated with this contract.
+     * @param _nextCoreContract Address of the next core contract
+     */
+    function updateNextCoreContract(address _nextCoreContract) external {
+        _onlyAdminACL(this.updateNextCoreContract.selector);
+        nextCoreContract = _nextCoreContract;
+        emit PlatformUpdated(FIELD_NEXT_CORE_CONTRACT);
     }
 
     /**

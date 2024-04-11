@@ -396,11 +396,7 @@ library BytecodeStorageReader {
         address _address,
         bytes32 _version
     ) private view returns (bool isCompressed) {
-        if (
-            _version == V0_VERSION_STRING ||
-            _version == V1_VERSION_STRING ||
-            _version == UNKNOWN_VERSION_STRING
-        ) {
+        if (_version == V0_VERSION_STRING || _version == V1_VERSION_STRING) {
             // V0 and V1 and unknown contracts do not support compression
             return false;
         }

@@ -125,6 +125,7 @@ contract GenArt721CoreV3 is
     bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_ADDRESS =
         "artblocksSecondarySalesAddress";
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
+    bytes32 constant FIELD_NEXT_CORE_CONTRACT = "nextCoreContract";
     bytes32 constant FIELD_ARTBLOCKS_CURATION_REGISTRY_ADDRESS =
         "curationRegistryAddress";
     bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
@@ -162,6 +163,8 @@ contract GenArt721CoreV3 is
     /// Art Blocks Project ID range: [3-373]
     address public constant ART_BLOCKS_ERC721TOKEN_ADDRESS_V1 =
         0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270;
+    /// pointer to next core contract associated with this contract
+    address public nextCoreContract;
 
     /// Curation registry managed by Art Blocks
     address public artblocksCurationRegistryAddress;
@@ -486,6 +489,16 @@ contract GenArt721CoreV3 is
         _forbidNewProjects();
         // renounce ownership viw Ownable
         Ownable.renounceOwnership();
+    }
+
+    /**
+     * @notice Updates reference to next core contract, associated with this contract.
+     * @param _nextCoreContract Address of the next core contract
+     */
+    function updateNextCoreContract(address _nextCoreContract) external {
+        _onlyAdminACL(this.updateNextCoreContract.selector);
+        nextCoreContract = _nextCoreContract;
+        emit PlatformUpdated(FIELD_NEXT_CORE_CONTRACT);
     }
 
     /**
