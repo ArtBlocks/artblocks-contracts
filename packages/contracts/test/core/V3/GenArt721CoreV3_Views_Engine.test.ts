@@ -185,6 +185,49 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
+    describe("nextCoreContract", function () {
+      it("returns expected default value", async function () {
+        const config = await loadFixture(_beforeEach);
+        const reference = await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .nextCoreContract();
+        expect(reference).to.be.equal(constants.ZERO_ADDRESS);
+      });
+
+      it("returns expected populated value", async function () {
+        const config = await loadFixture(_beforeEach);
+        // admin set to dummy address
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateNextCoreContract(config.accounts.additional.address);
+        // expect value to be updated
+        const reference = await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .nextCoreContract();
+        expect(reference).to.be.equal(config.accounts.additional.address);
+      });
+
+      it("only allows admin to update value", async function () {
+        const config = await loadFixture(_beforeEach);
+        // expect revert when non-admin attempts to update
+        for (const account of [
+          config.accounts.artist,
+          config.accounts.additional,
+        ]) {
+          await expectRevert(
+            config.genArt721Core
+              .connect(account)
+              .updateNextCoreContract(config.accounts.additional.address),
+            "Only Admin ACL allowed"
+          );
+        }
+        // admin allowed to update
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateNextCoreContract(config.accounts.additional.address);
+      });
+    });
+
     describe("projectScriptDetails", function () {
       it("returns expected default values", async function () {
         const config = await loadFixture(_beforeEach);
