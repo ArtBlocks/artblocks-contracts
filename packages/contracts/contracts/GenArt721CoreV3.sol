@@ -12,7 +12,7 @@ import "./interfaces/v0.8.x/IManifold.sol";
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "./libs/v0.8.x/ERC721_PackedHashSeed.sol";
-import "./libs/v0.8.x/BytecodeStorageV1.sol";
+import "./libs/v0.8.x/BytecodeStorageV2.sol";
 import "./libs/v0.8.x/Bytes32Strings.sol";
 
 /**
@@ -49,7 +49,7 @@ import "./libs/v0.8.x/Bytes32Strings.sol";
  * - updateProjectName
  * - updateProjectArtistName
  * - updateProjectLicense
- * - Change project script via addProjectScript, updateProjectScript,
+ * - Change project script via addProjectScript, addProjectScriptCompressed, updateProjectScript, updateProjectScriptCompressed,
  *   and removeProjectLastScript
  * - updateProjectScriptType
  * - updateProjectAspectRatio
@@ -94,6 +94,7 @@ contract GenArt721CoreV3 is
     IGenArt721CoreContractExposesHashSeed
 {
     using BytecodeStorageWriter for string;
+    using BytecodeStorageWriter for bytes;
     using Bytes32Strings for bytes32;
     using Strings for uint256;
     uint256 constant ONE_HUNDRED = 100;
@@ -1062,6 +1063,27 @@ contract GenArt721CoreV3 is
     }
 
     /**
+     * @notice Adds a pre-compressed script to project `_projectId`.
+     * @param _projectId Project to be updated.
+     * @param _compressedScript Pre-compressed script to be added. A script can be pre-compressed by calling `getProjectScriptCompressed`.
+     * Assumes string is non-empty. Validation for empty strings occurs in `getProjectScriptCompressed`.
+     */
+    function addProjectScriptCompressed(
+        uint256 _projectId,
+        bytes memory _compressedScript
+    ) external {
+        _onlyUnlocked(_projectId);
+        _onlyArtistOrAdminACL(_projectId, this.addProjectScript.selector);
+
+        Project storage project = projects[_projectId];
+        // store compressed script in contract bytecode
+        project.scriptBytecodeAddresses[project.scriptCount] = _compressedScript
+            .writeToBytecodeCompressed();
+        project.scriptCount = project.scriptCount + 1;
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
+    }
+
+    /**
      * @notice Updates script for project `_projectId` at script ID `_scriptId`.
      * @param _projectId Project to be updated.
      * @param _scriptId Script ID to be updated.
@@ -1081,6 +1103,28 @@ contract GenArt721CoreV3 is
         // store script in contract bytecode, replacing reference address from
         // the old storage contract with the newly created one
         project.scriptBytecodeAddresses[_scriptId] = _script.writeToBytecode();
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
+    }
+
+    /**
+     * @notice Updates pre-compressed script for project `_projectId` at script ID `_scriptId`.
+     * @param _projectId Project to be updated.
+     * @param _scriptId Script ID to be updated.
+     * @param _compressedScript The updated script value. Assumed to be the compressed non-empty output of `getProjectScriptCompressed`.
+     */
+    function updateProjectScriptCompressed(
+        uint256 _projectId,
+        uint256 _scriptId,
+        bytes memory _compressedScript
+    ) external {
+        _onlyUnlocked(_projectId);
+        _onlyArtistOrAdminACL(_projectId, this.updateProjectScript.selector);
+        Project storage project = projects[_projectId];
+        require(_scriptId < project.scriptCount, "scriptId out of range");
+        // store script in contract bytecode, replacing reference address from
+        // the old storage contract with the newly created one
+        project.scriptBytecodeAddresses[_scriptId] = _compressedScript
+            .writeToBytecodeCompressed();
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
@@ -1477,6 +1521,18 @@ contract GenArt721CoreV3 is
         scriptTypeAndVersion = project.scriptTypeAndVersion.toString();
         aspectRatio = project.aspectRatio;
         scriptCount = project.scriptCount;
+    }
+
+    /**
+     * @notice Returns the compressed form of a string in bytes using solady LibZip's flz compress algorithm.
+     * @param _script Script to be compressed. Required to be a non-empty string, but no further validaton is performed.
+     * @return bytes compressed bytes
+     */
+    function getProjectScriptCompressed(
+        string memory _script
+    ) external view returns (bytes memory) {
+        _onlyNonEmptyString(_script);
+        return BytecodeStorageReader.getCompressed(_script);
     }
 
     /**
