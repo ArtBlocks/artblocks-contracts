@@ -121,3 +121,59 @@ https://sepolia.etherscan.io/address/0x725b18673125Bb1384c65a558D24A13fbb88D812#
 [INFO] MinterDALinHolderV5 contract verified on Etherscan at 0x725b18673125Bb1384c65a558D24A13fbb88D812
 [INFO] Deployment details written/appended to /Users/benyo/Development/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/DEPLOYMENTS.md
 [INFO] Done!
+----------------------------------------
+[INFO] Datetime of deployment: 2024-01-23T18:46:06.084Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/shared-minter-deploy-config-01.dev.ts
+[INFO] MinterSEAV1 deployed at 0x9Fa2FDE53148e0dcbA6335E51Bd539BedCe633E4
+[ERROR] MinterSEAV1 failed to approve globally on minter filter at 0x29e9f09244497503f304FA549d50eFC751D818d2
+Error: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (reason="execution reverted: Only Admin ACL allowed", method="estimateGas", transaction={"from":"0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef","to":"0x29e9f09244497503f304FA549d50eFC751D818d2","data":"0x84b19f1e0000000000000000000000009fa2fde53148e0dcba6335e51bd539bedce633e4","accessList":null}, error={"name":"ProviderError","_stack":"ProviderError: execution reverted: Only Admin ACL allowed\n    at HttpProvider.request (/Users/lindsaygilbert/Documents/Projects/artblocks-contracts/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at EthersProviderWrapper.send (/Users/lindsaygilbert/Documents/Projects/artblocks-contracts/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":3,"_isProviderError":true,"data":"0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000164f6e6c792041646d696e2041434c20616c6c6f77656400000000000000000000"}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.7.2)
+    at Logger.makeError (/Users/lindsaygilbert/Documents/Projects/artblocks-contracts/node_modules/@ethersproject/logger/src.ts/index.ts:269:28)
+    at Logger.throwError (/Users/lindsaygilbert/Documents/Projects/artblocks-contracts/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at checkError (/Users/lindsaygilbert/Documents/Projects/artblocks-contracts/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:78:20)
+    at EthersProviderWrapper.<anonymous> (/Users/lindsaygilbert/Documents/Projects/artblocks-contracts/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
+    at step (/Users/lindsaygilbert/Documents/Projects/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
+    at Object.throw (/Users/lindsaygilbert/Documents/Projects/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:29:53)
+    at rejected (/Users/lindsaygilbert/Documents/Projects/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:21:65)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  reason: 'execution reverted: Only Admin ACL allowed',
+  code: 'UNPREDICTABLE_GAS_LIMIT',
+  method: 'estimateGas',
+  transaction: {
+    from: '0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef',
+    to: '0x29e9f09244497503f304FA549d50eFC751D818d2',
+    data: '0x84b19f1e0000000000000000000000009fa2fde53148e0dcba6335e51bd539bedce633e4',
+    accessList: null
+  },
+  error: ProviderError: execution reverted: Only Admin ACL allowed
+      at HttpProvider.request (/Users/lindsaygilbert/Documents/Projects/artblocks-contracts/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
+      at processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at EthersProviderWrapper.send (/Users/lindsaygilbert/Documents/Projects/artblocks-contracts/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)
+}
+[INFO] Verifying MinterSEAV1 contract deployment...
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSEAV1.sol:MinterSEAV1 at 0x9Fa2FDE53148e0dcbA6335E51Bd539BedCe633E4
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSEAV1 on the block explorer.
+https://sepolia.etherscan.io/address/0x9Fa2FDE53148e0dcbA6335E51Bd539BedCe633E4#code
+
+[INFO] MinterSEAV1 contract verified on Etherscan at 0x9Fa2FDE53148e0dcbA6335E51Bd539BedCe633E4
+[INFO] Deployment details written/appended to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/DEPLOYMENTS.md
+[INFO] Done!
+[ACTION] MinterSEAV1: call approveMinterGlobally(0x9Fa2FDE53148e0dcbA6335E51Bd539BedCe633E4) on 0x29e9f09244497503f304FA549d50eFC751D818d2 from admin wallet
+----------------------------------------
+[INFO] Datetime of deployment: 2024-04-03T17:22:59.908Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/shared-minter-deploy-config-02.dev.ts
+[INFO] MinterRAMV0 deployed at 0xaCdAeb402C6733CeaeF332383AEaB1763e712722
+[INFO] MinterRAMV0 approved globally on minter filter at 0x29e9f09244497503f304FA549d50eFC751D818d2
+[INFO] Verifying MinterRAMV0 contract deployment...
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterRAMV0.sol:MinterRAMV0 at 0xaCdAeb402C6733CeaeF332383AEaB1763e712722
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterRAMV0 on the block explorer.
+https://sepolia.etherscan.io/address/0xaCdAeb402C6733CeaeF332383AEaB1763e712722#code
+
+[INFO] MinterRAMV0 contract verified on Etherscan at 0xaCdAeb402C6733CeaeF332383AEaB1763e712722
+[INFO] Deployment details written/appended to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/minters/sepolia-dev/DEPLOYMENTS.md
+[INFO] Done!

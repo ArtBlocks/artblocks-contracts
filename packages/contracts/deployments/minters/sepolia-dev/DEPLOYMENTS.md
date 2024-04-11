@@ -195,3 +195,41 @@ Date: 2023-11-08T18:56:18.083Z
 **Deployment Args:** 0x29e9f09244497503f304FA549d50eFC751D818d2,0x00000000000076A84feF008CDAbe6409d2FE638B
 
 ---
+
+# Shared Minter Deployment
+
+Date: 2024-01-23T18:47:00.289Z
+
+## **Network:** sepolia
+
+## **Environment:** dev
+
+**Deployment Input File:** `deployments/minters/sepolia-dev/shared-minter-deploy-config-01.dev.ts`
+
+**MinterSEAV1:** https://sepolia.etherscan.io/address/0x9Fa2FDE53148e0dcbA6335E51Bd539BedCe633E4#code
+
+**Associated Minter Filter:** 0x29e9f09244497503f304FA549d50eFC751D818d2
+
+**Deployment Args:** 0x29e9f09244497503f304FA549d50eFC751D818d2
+
+---
+
+
+# Shared Minter Deployment
+
+Date: 2024-04-03T17:24:43.723Z
+
+## **Network:** sepolia
+
+## **Environment:** dev
+
+**Deployment Input File:** `deployments/minters/sepolia-dev/shared-minter-deploy-config-02.dev.ts`
+
+**MinterRAMV0:** https://sepolia.etherscan.io/address/0xaCdAeb402C6733CeaeF332383AEaB1763e712722#code
+
+**Associated Minter Filter:** 0x29e9f09244497503f304FA549d50eFC751D818d2
+
+**Deployment Args:** 0x29e9f09244497503f304FA549d50eFC751D818d2
+
+---
+

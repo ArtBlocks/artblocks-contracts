@@ -7,21 +7,21 @@
   "author": "Art Blocks, Inc. <privacy@artblocks.io>",
   "license": "MIT",
   "devDependencies": {
-    "@babel/core": "^7.23.7",
-    "@babel/preset-env": "^7.23.8",
-    "@babel/preset-typescript": "^7.23.3",
+    "@babel/core": "^7.23.9",
+    "@babel/preset-env": "^7.24.4",
+    "@babel/preset-typescript": "^7.24.1",
     "@jest/globals": "^29.7.0",
     "@typechain/ethers-v5": "^11.1.2",
     "eslint-config-custom": "*",
     "jest": "^29.7.0",
     "jsdoc": "^4.0.2",
     "jsdoc-plugin-typescript": "^2.2.1",
-    "lint-staged": "^15.2.0",
-    "prettier": "^3.2.4",
+    "lint-staged": "^15.2.2",
+    "prettier": "^3.2.5",
     "tsconfig": "*",
-    "tsup": "^8.0.1",
+    "tsup": "^8.0.2",
     "typechain": "^8.3.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.4.4"
   },
   "scripts": {
     "build": "tsup src/index.ts --dts",

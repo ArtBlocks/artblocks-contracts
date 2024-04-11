@@ -103,7 +103,7 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
       const ownerBalance = await config.accounts.user.getBalance();
       const deployerBalance = await config.accounts.deployer.getBalance();
 
-      config.genArt721Core
+      await config.genArt721Core
         .connect(config.accounts.artist)
         .toggleProjectIsPaused(config.projectZero);
 
@@ -148,14 +148,14 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
       const deployerBalance = await config.accounts.deployer.getBalance();
 
       const additionalPayeePercentage = 10;
-      config.genArt721Core
+      await config.genArt721Core
         .connect(config.accounts.artist)
         .updateProjectAdditionalPayeeInfo(
           config.projectZero,
           config.accounts.additional.address,
           additionalPayeePercentage
         );
-      config.genArt721Core
+      await config.genArt721Core
         .connect(config.accounts.artist)
         .toggleProjectIsPaused(config.projectZero);
 

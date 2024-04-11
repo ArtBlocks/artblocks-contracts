@@ -286,7 +286,7 @@ describe("BytecodeStorageV0 + BytecodeV0TextCR_DMock Library Tests", async funct
   });
 
   describe("validate purgeBytecode behavior", function () {
-    it("writes text, and then purges it", async function () {
+    it("writes text, and then purges it (SENDALL after dencun)", async function () {
       const config = await loadFixture(_beforeEach);
       const targetText = "silly willy billy dilly dilly";
       await validateCreateAndRead(
@@ -313,12 +313,12 @@ describe("BytecodeStorageV0 + BytecodeV0TextCR_DMock Library Tests", async funct
         .connect(config.accounts.deployer)
         .deleteText(textSlotId);
 
-      const removedBytecode =
-        await ethers.provider.getCode(textBytecodeAddress);
-      expect(removedBytecode).to.equal("0x");
+      // after dencun, the deployed bytecode is unchanged
+      const newBytecode = await ethers.provider.getCode(textBytecodeAddress);
+      expect(newBytecode).to.equal(deployedBytecode);
     });
 
-    it("SELFDESTRUCT via direct call data possible with 0xFF", async function () {
+    it("SENDALL via direct call data possible with 0xFF", async function () {
       const config = await loadFixture(_beforeEach);
       const targetText = "silly willy billy dilly dilly";
       await validateCreateAndRead(
@@ -341,9 +341,9 @@ describe("BytecodeStorageV0 + BytecodeV0TextCR_DMock Library Tests", async funct
         .connect(config.accounts.deployer)
         .callWithNonsenseData(textBytecodeAddress, "0xFF");
 
-      const removedBytecode =
-        await ethers.provider.getCode(textBytecodeAddress);
-      expect(removedBytecode).to.equal("0x");
+      // after dencun, the deployed bytecode is unchanged
+      const newBytecode = await ethers.provider.getCode(textBytecodeAddress);
+      expect(newBytecode).to.equal(deployedBytecode);
     });
 
     it("SELFDESTRUCT is NOT possible via call-data prodding", async function () {
