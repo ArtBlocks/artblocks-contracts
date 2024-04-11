@@ -66,7 +66,8 @@ library BytecodeStorageReader {
     bytes32 public constant V1_VERSION_STRING =
         "BytecodeStorage_V1.0.0_________ ";
     // The first versioned storage contract, deployed by an updated version of this library
-    bytes32 public constant V2_VERSION_STRING = "BytecodeStorage_V2.0.0_____ ";
+    bytes32 public constant V2_VERSION_STRING =
+        "BytecodeStorage_V2.0.0_________ ";
     // The current version of this library.
     bytes32 public constant CURRENT_VERSION = V2_VERSION_STRING;
 
@@ -240,6 +241,18 @@ library BytecodeStorageReader {
     }
 
     /**
+     * @notice Get if data are stored in compressed format for given contract bytecode
+     * @param _address address of deployed contract with bytecode stored in the V0, V1, or V2 format
+     * @return isCompressed boolean indicating if the stored data are compressed
+     */
+    function getIsCompressedForBytecode(
+        address _address
+    ) public view returns (bool) {
+        (, bool isCompressed) = _bytecodeDataOffsetAndIsCompressedAt(_address);
+        return isCompressed;
+    }
+
+    /**
      * Utility function to get the compressed form of a message string using solady LibZip's
      * flz compress algorithm.
      * The compressed message is returned as bytes, which may be used as the input to
@@ -354,7 +367,7 @@ library BytecodeStorageReader {
             // note: must check against literal strings, as Yul does not allow for
             //       dynamic strings in switch statements.
             switch mload(versionString)
-            case "BytecodeStorage_V2.0.0_____ " {
+            case "BytecodeStorage_V2.0.0_________ " {
                 version := V2_VERSION_STRING
             }
             case "BytecodeStorage_V1.0.0_________ " {
