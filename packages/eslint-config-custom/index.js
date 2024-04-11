@@ -1,6 +1,6 @@
 module.exports = {
   env: { "shared-node-browser": true, es6: true },
-  extends: ["eslint:recommended", "plugin:prettier/recommended"],
+  extends: ["eslint:recommended", "prettier"],
   parser: "@typescript-eslint/parser",
   parserOptions: {
     ecmaFeatures: { jsx: true },
