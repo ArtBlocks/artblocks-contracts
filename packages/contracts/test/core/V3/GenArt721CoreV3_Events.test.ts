@@ -497,7 +497,7 @@ for (const coreContractName of coreContractsToTest) {
         // emits expected event arg(s)
         await expect(
           config.genArt721Core
-            .connect(config.accounts.deployer)
+            .connect(config.accounts.artist)
             .updateProjectArtistName(config.projectZero, "new artist name")
         )
           .to.emit(config.genArt721Core, "ProjectUpdated")

@@ -280,7 +280,7 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("updateProjectDescription", function () {
-      const errorMessage = "Only artist when unlocked, owner when locked";
+      const errorMessage = "Only artist, owner when locked";
       it("owner cannot update when unlocked", async function () {
         const config = await loadFixture(_beforeEach);
         await expectRevert(
@@ -341,7 +341,6 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("updateProjectName", function () {
-      const errorMessage = "Only artist when unlocked, owner when locked";
       it("owner can update when unlocked", async function () {
         const config = await loadFixture(_beforeEach);
         await config.genArt721Core
@@ -389,8 +388,72 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
+    describe("updateProjectArtistName", function () {
+      it("owner can not update when unlocked", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateProjectArtistName(config.projectZero, "new name"),
+          "Only artist, owner when locked"
+        );
+      });
+
+      it("artist can update when unlocked", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectArtistName(config.projectZero, "new name");
+        // expect view to be updated
+        const projectDetails = await config.genArt721Core
+          .connect(config.accounts.user)
+          .projectDetails(config.projectZero);
+        expect(projectDetails.artist).to.equal("new name");
+      });
+
+      it("owner can update when locked", async function () {
+        const config = await loadFixture(_beforeEach);
+        await mintProjectUntilRemaining(
+          config,
+          config.projectZero,
+          config.accounts.artist,
+          0
+        );
+        await advanceEVMByTime(FOUR_WEEKS + 1);
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateProjectArtistName(config.projectZero, "new artist");
+      });
+
+      it("artist can not update when locked", async function () {
+        const config = await loadFixture(_beforeEach);
+        await mintProjectUntilRemaining(
+          config,
+          config.projectZero,
+          config.accounts.artist,
+          0
+        );
+        await advanceEVMByTime(FOUR_WEEKS + 1);
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .updateProjectArtistName(config.projectZero, "new artist"),
+          "Only artist, owner when locked"
+        );
+      });
+
+      it("user cannot update", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.user)
+            .updateProjectArtistName(config.projectZero, "new artist"),
+          "Only artist, owner when locked"
+        );
+      });
+    });
+
     describe("updateProjectScriptType", function () {
-      const errorMessage = "Only artist when unlocked, owner when locked";
       it("owner can update when unlocked", async function () {
         const config = await loadFixture(_beforeEach);
         await config.genArt721Core

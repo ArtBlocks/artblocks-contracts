@@ -1079,6 +1079,8 @@ contract GenArt721CoreV3_Engine_Flex is
     /**
      * @notice Updates artist name for project `_projectId` to be
      * `_projectArtistName`.
+     * @dev allows admin to update after project is locked, due to our
+     * experiences of artist name changes being requested post-lock.
      * @param _projectId Project ID.
      * @param _projectArtistName New artist name.
      */
@@ -1086,10 +1088,16 @@ contract GenArt721CoreV3_Engine_Flex is
         uint256 _projectId,
         string memory _projectArtistName
     ) external {
-        _onlyUnlocked(_projectId);
-        _onlyArtistOrAdminACL(
-            _projectId,
-            this.updateProjectArtistName.selector
+        // if unlocked, only artist may update, if locked, only admin may update
+        require(
+            _projectUnlocked(_projectId)
+                ? msg.sender == projectIdToFinancials[_projectId].artistAddress
+                : adminACLAllowed(
+                    msg.sender,
+                    address(this),
+                    this.updateProjectArtistName.selector
+                ),
+            "Only artist, owner when locked"
         );
         _onlyNonEmptyString(_projectArtistName);
         projects[_projectId].artist = _projectArtistName;
@@ -1150,7 +1158,7 @@ contract GenArt721CoreV3_Engine_Flex is
                     address(this),
                     this.updateProjectDescription.selector
                 ),
-            "Only artist when unlocked, owner when locked"
+            "Only artist, owner when locked"
         );
         // effects
         // store description in contract bytecode, replacing reference address from
