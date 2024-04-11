@@ -174,9 +174,9 @@ module.exports = {
     ],
   },
   gasReporter: {
+    enabled: false,
     currency: "USD",
     gasPrice: 100,
-    enabled: true,
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
   },
   mocha: {

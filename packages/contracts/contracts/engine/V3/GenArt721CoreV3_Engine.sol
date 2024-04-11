@@ -127,6 +127,7 @@ contract GenArt721CoreV3_Engine is
     bytes32 constant FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
     bytes32 constant FIELD_DEFAULT_BASE_URI = "defaultBaseURI";
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
+    bytes32 constant FIELD_NEXT_CORE_CONTRACT = "nextCoreContract";
     bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
         "dependencyRegistryAddress";
     bytes32 constant FIELD_PROVIDER_SALES_ADDRESSES = "providerSalesAddresses";
@@ -153,6 +154,9 @@ contract GenArt721CoreV3_Engine is
     bytes32 constant FIELD_PROJECT_SCRIPT_TYPE = "scriptType";
     bytes32 constant FIELD_PROJECT_ASPECT_RATIO = "aspectRatio";
     bytes32 constant FIELD_PROJECT_BASE_URI = "baseURI";
+
+    /// pointer to next core contract associated with this contract
+    address public nextCoreContract;
 
     /// Dependency registry managed by Art Blocks
     address public artblocksDependencyRegistryAddress;
@@ -531,6 +535,16 @@ contract GenArt721CoreV3_Engine is
         _forbidNewProjects();
         // renounce ownership viw Ownable
         Ownable.renounceOwnership();
+    }
+
+    /**
+     * @notice Updates reference to next core contract, associated with this contract.
+     * @param _nextCoreContract Address of the next core contract
+     */
+    function updateNextCoreContract(address _nextCoreContract) external {
+        _onlyAdminACL(this.updateNextCoreContract.selector);
+        nextCoreContract = _nextCoreContract;
+        emit PlatformUpdated(FIELD_NEXT_CORE_CONTRACT);
     }
 
     /**
@@ -955,6 +969,8 @@ contract GenArt721CoreV3_Engine is
     /**
      * @notice Updates artist name for project `_projectId` to be
      * `_projectArtistName`.
+     * @dev allows admin to update after project is locked, due to our
+     * experiences of artist name changes being requested post-lock.
      * @param _projectId Project ID.
      * @param _projectArtistName New artist name.
      */
@@ -962,10 +978,16 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         string memory _projectArtistName
     ) external {
-        _onlyUnlocked(_projectId);
-        _onlyArtistOrAdminACL(
-            _projectId,
-            this.updateProjectArtistName.selector
+        // if unlocked, only artist may update, if locked, only admin may update
+        require(
+            _projectUnlocked(_projectId)
+                ? msg.sender == projectIdToFinancials[_projectId].artistAddress
+                : adminACLAllowed(
+                    msg.sender,
+                    address(this),
+                    this.updateProjectArtistName.selector
+                ),
+            "Only artist, owner when locked"
         );
         _onlyNonEmptyString(_projectArtistName);
         projects[_projectId].artist = _projectArtistName;
@@ -1026,7 +1048,7 @@ contract GenArt721CoreV3_Engine is
                     address(this),
                     this.updateProjectDescription.selector
                 ),
-            "Only artist when unlocked, owner when locked"
+            "Only artist, owner when locked"
         );
         // effects
         // store description in contract bytecode, replacing reference address from

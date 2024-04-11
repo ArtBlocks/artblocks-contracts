@@ -242,6 +242,14 @@ for (const coreContractName of coreContractsToTest) {
 
       it("updateProjectArtistName", async function () {
         const config = await loadFixture(_beforeEach);
+        // admin may only call when in a locked state
+        await mintProjectUntilRemaining(
+          config,
+          config.projectZero,
+          config.accounts.artist,
+          0
+        );
+        await advanceEVMByTime(FOUR_WEEKS + 1);
         await validateAdminACLRequest(config, "updateProjectArtistName", [
           config.projectZero,
           "New Artist Name",
