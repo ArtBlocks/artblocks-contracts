@@ -496,7 +496,7 @@ for (const coreContractName of coreContractsToTest) {
             ),
           "Only Admin ACL allowed"
         );
-        config.genArt721Core
+        await config.genArt721Core
           .connect(config.accounts.deployer)
           .updateProjectArtistAddress(
             config.projectZero,
@@ -506,7 +506,7 @@ for (const coreContractName of coreContractsToTest) {
 
       it("reflects updated artist address", async function () {
         const config = await loadFixture(_beforeEach);
-        config.genArt721Core
+        await config.genArt721Core
           .connect(config.accounts.deployer)
           .updateProjectArtistAddress(
             config.projectZero,
