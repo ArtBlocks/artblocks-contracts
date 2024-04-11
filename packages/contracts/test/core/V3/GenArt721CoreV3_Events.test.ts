@@ -290,6 +290,20 @@ for (const coreContractName of coreContractsToTest) {
           );
       });
 
+      it("emits 'nextCoreContract'", async function () {
+        const config = await loadFixture(_beforeEach);
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateNextCoreContract(
+              config.accounts.artist.address // dummy address
+            )
+        )
+          .to.emit(config.genArt721Core, "PlatformUpdated")
+          .withArgs(ethers.utils.formatBytes32String("nextCoreContract"));
+      });
+
       it("emits '{artblocks,provider}PrimaryPercentage'", async function () {
         const config = await loadFixture(_beforeEach);
         if (coreContractName.includes("GenArt721CoreV3_Engine")) {
