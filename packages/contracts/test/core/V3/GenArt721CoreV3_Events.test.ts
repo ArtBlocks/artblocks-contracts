@@ -613,6 +613,55 @@ for (const coreContractName of coreContractsToTest) {
           );
       });
 
+      it("emits script when adding/editing compressed script", async function () {
+        const config = await loadFixture(_beforeEach);
+        // emits expected event arg(s)
+        // get compressed script
+        const compressedScript1 = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed(`console.log("hello world")`);
+        // add script
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .addProjectScriptCompressed(config.projectZero, compressedScript1)
+        )
+          .to.emit(config.genArt721Core, "ProjectUpdated")
+          .withArgs(
+            config.projectZero,
+            ethers.utils.formatBytes32String("script")
+          );
+        // edit script
+        const compressedScript2 = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed(`console.log("hello world 2")`);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .updateProjectScriptCompressed(
+              config.projectZero,
+              0,
+              compressedScript2
+            )
+        )
+          .to.emit(config.genArt721Core, "ProjectUpdated")
+          .withArgs(
+            config.projectZero,
+            ethers.utils.formatBytes32String("script")
+          );
+        // remove script
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .removeProjectLastScript(config.projectZero)
+        )
+          .to.emit(config.genArt721Core, "ProjectUpdated")
+          .withArgs(
+            config.projectZero,
+            ethers.utils.formatBytes32String("script")
+          );
+      });
+
       it("emits scriptType", async function () {
         const config = await loadFixture(_beforeEach);
         // emits expected event arg(s)

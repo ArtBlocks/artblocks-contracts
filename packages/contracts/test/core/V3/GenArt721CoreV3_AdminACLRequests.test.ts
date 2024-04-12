@@ -264,6 +264,17 @@ for (const coreContractName of coreContractsToTest) {
         ]);
       });
 
+      it("addProjectScriptCompressed", async function () {
+        const config = await loadFixture(_beforeEach);
+        const compressedScript = await config.genArt721Core
+          ?.connect(config.accounts.deployer)
+          .getProjectScriptCompressed("console.log('hello world')");
+        await validateAdminACLRequest(config, "addProjectScriptCompressed", [
+          config.projectZero,
+          compressedScript,
+        ]);
+      });
+
       describe("update/remove project scripts", async function () {
         beforeEach(async function () {
           const config = await loadFixture(_beforeEach);
@@ -293,6 +304,35 @@ for (const coreContractName of coreContractsToTest) {
           await validateAdminACLRequest(config, "removeProjectLastScript", [
             config.projectZero,
           ]);
+        });
+      });
+
+      describe("update compressed project scripts", async function () {
+        beforeEach(async function () {
+          const config = await loadFixture(_beforeEach);
+          // add a project to be modified
+          const compressedScript = await config.genArt721Core
+            ?.connect(config.accounts.deployer)
+            .getProjectScriptCompressed("console.log('hello world')");
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
+            .addProjectScriptCompressed(config.projectZero, compressedScript);
+          // pass config to tests in this describe block
+          this.config = config;
+        });
+
+        it("updateProjectScriptCompressed", async function () {
+          // get config from beforeEach
+          const config = this.config;
+          // update the script
+          const compressedScript = await config.genArt721Core
+            ?.connect(config.accounts.deployer)
+            .getProjectScriptCompressed("console.log('hello world')");
+          await validateAdminACLRequest(
+            config,
+            "updateProjectScriptCompressed",
+            [config.projectZero, 0, compressedScript]
+          );
         });
       });
 

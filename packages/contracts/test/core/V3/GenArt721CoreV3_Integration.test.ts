@@ -289,6 +289,27 @@ for (const coreContractName of coreContractsToTest) {
           "Only if unlocked"
         );
       });
+      it("reverts if try to add compressed script", async function () {
+        const config = await loadFixture(_beforeEach);
+        await mintProjectUntilRemaining(
+          config,
+          config.projectZero,
+          config.accounts.artist,
+          0
+        );
+        // wait until project is locked
+        await advanceEVMByTime(FOUR_WEEKS + 1);
+        const compressedScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed("lorem ipsum");
+        // expect revert
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .addProjectScriptCompressed(config.projectZero, compressedScript),
+          "Only if unlocked"
+        );
+      });
     });
 
     describe("coreVersion", function () {

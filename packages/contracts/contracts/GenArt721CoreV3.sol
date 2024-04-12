@@ -1065,8 +1065,9 @@ contract GenArt721CoreV3 is
     /**
      * @notice Adds a pre-compressed script to project `_projectId`.
      * @param _projectId Project to be updated.
-     * @param _compressedScript Pre-compressed script to be added. A script can be pre-compressed by calling `getProjectScriptCompressed`.
-     * Assumes string is non-empty. Validation for empty strings occurs in `getProjectScriptCompressed`.
+     * @param _compressedScript Pre-compressed script to be added.
+     * Required to be non-empty, but no further validation is performed.
+     * @dev  A script can be pre-compressed by calling `getProjectScriptCompressed`.
      */
     function addProjectScriptCompressed(
         uint256 _projectId,
@@ -1074,7 +1075,7 @@ contract GenArt721CoreV3 is
     ) external {
         _onlyUnlocked(_projectId);
         _onlyArtistOrAdminACL(_projectId, this.addProjectScript.selector);
-
+        require(_compressedScript.length > 0, "Must input non-empty script");
         Project storage project = projects[_projectId];
         // store compressed script in contract bytecode
         project.scriptBytecodeAddresses[project.scriptCount] = _compressedScript
@@ -1107,10 +1108,12 @@ contract GenArt721CoreV3 is
     }
 
     /**
-     * @notice Updates pre-compressed script for project `_projectId` at script ID `_scriptId`.
+     * @notice Updates script for project `_projectId` at script ID `_scriptId` with a pre-compressed script.
      * @param _projectId Project to be updated.
      * @param _scriptId Script ID to be updated.
-     * @param _compressedScript The updated script value. Assumed to be the compressed non-empty output of `getProjectScriptCompressed`.
+     * @param _compressedScript The updated pre-compressed script value.
+     * Required to be non-empty, but no further validation is performed.
+     * @dev  A script can be pre-compressed by calling `getProjectScriptCompressed`.
      */
     function updateProjectScriptCompressed(
         uint256 _projectId,
@@ -1119,6 +1122,7 @@ contract GenArt721CoreV3 is
     ) external {
         _onlyUnlocked(_projectId);
         _onlyArtistOrAdminACL(_projectId, this.updateProjectScript.selector);
+        require(_compressedScript.length > 0, "Must input non-empty script");
         Project storage project = projects[_projectId];
         require(_scriptId < project.scriptCount, "scriptId out of range");
         // store script in contract bytecode, replacing reference address from

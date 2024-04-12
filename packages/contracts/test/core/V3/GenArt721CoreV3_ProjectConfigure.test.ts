@@ -27,6 +27,7 @@ import {
   CONTRACT_SIZE_LIMIT_SCRIPT,
   GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT,
   MULTI_BYTE_UTF_EIGHT_SCRIPT,
+  MUCH_GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT,
 } from "../../util/example-scripts";
 
 // test the following V3 core contract derivatives:
@@ -1242,6 +1243,270 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
+    describe("addProjectScriptCompressed", function () {
+      it("fails to upload empty bytes script", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .addProjectScriptCompressed(config.projectZero, "0x"),
+          "Must input non-empty script"
+        );
+      });
+      it("fails to upload a script if it's an empty string", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .getProjectScriptCompressed(""),
+          "Must input non-empty string"
+        );
+      });
+      it("uploads and recalls a single-byte pre-compressed script", async function () {
+        const config = await loadFixture(_beforeEach);
+        const compressedScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed("0");
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(config.projectZero, compressedScript);
+        const script = await config.genArt721Core.projectScriptByIndex(
+          config.projectZero,
+          0
+        );
+        expect(script).to.equal("0");
+      });
+
+      it("uploads and recalls an short script < 32 bytes", async function () {
+        const config = await loadFixture(_beforeEach);
+        const targetScript = "console.log(hello world)";
+        const compressedTargetScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed(targetScript);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(
+            config.projectZero,
+            compressedTargetScript
+          );
+        const script = await config.genArt721Core.projectScriptByIndex(
+          config.projectZero,
+          0
+        );
+        expect(script).to.equal(targetScript);
+      });
+
+      it("uploads and recalls chromie squiggle script", async function () {
+        const config = await loadFixture(_beforeEach);
+        const compressedSquiggleScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed(SQUIGGLE_SCRIPT);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(
+            config.projectZero,
+            compressedSquiggleScript
+          );
+        const script = await config.genArt721Core.projectScriptByIndex(
+          config.projectZero,
+          0
+        );
+        expect(script).to.equal(SQUIGGLE_SCRIPT);
+      });
+
+      it("uploads and recalls different script", async function () {
+        const config = await loadFixture(_beforeEach);
+        const compressedSkulptuurScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed(SKULPTUUR_SCRIPT_APPROX);
+
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(
+            config.projectZero,
+            compressedSkulptuurScript
+          );
+        const script = await config.genArt721Core.projectScriptByIndex(
+          config.projectZero,
+          0
+        );
+        expect(script).to.equal(SKULPTUUR_SCRIPT_APPROX);
+      });
+
+      it("uploads and recalls 23.95 KB script", async function () {
+        const config = await loadFixture(_beforeEach);
+        const compressedContractSizeLimitScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed(CONTRACT_SIZE_LIMIT_SCRIPT);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(
+            config.projectZero,
+            compressedContractSizeLimitScript,
+            {
+              gasLimit: 30000000, // hard-code gas limit because ethers sometimes estimates too high
+            }
+          );
+        const script = await config.genArt721Core.projectScriptByIndex(
+          config.projectZero,
+          0
+        );
+        expect(script).to.equal(CONTRACT_SIZE_LIMIT_SCRIPT);
+      });
+
+      // skip on coverage because contract max sizes are ignored
+      it("fails to upload 50 KB (pre-compressed) script [ @skip-on-coverage ]", async function () {
+        const config = await loadFixture(_beforeEach);
+        const compressedContractSizeLimitScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed(
+            MUCH_GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT
+          );
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .addProjectScriptCompressed(
+              config.projectZero,
+              compressedContractSizeLimitScript,
+              { gasLimit: 30000000 } // hard-code gas limit because ethers sometimes estimates too high
+            ),
+          "ContractAsStorage: Write Error"
+        );
+      });
+
+      it("uploads and recalls misc. UTF-8 script", async function () {
+        const config = await loadFixture(_beforeEach);
+        const compressedScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed(MULTI_BYTE_UTF_EIGHT_SCRIPT);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(config.projectZero, compressedScript);
+        const script = await config.genArt721Core.projectScriptByIndex(
+          config.projectZero,
+          0
+        );
+        expect(script).to.equal(MULTI_BYTE_UTF_EIGHT_SCRIPT);
+      });
+
+      it("uploads and recalls chromie squiggle script and different script, both compressed", async function () {
+        const config = await loadFixture(_beforeEach);
+        // index 0: squiggle (compressed)
+        const compressedSquiggleScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed(SQUIGGLE_SCRIPT);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(
+            config.projectZero,
+            compressedSquiggleScript
+          );
+        // index 1: skulptuur-like (compressed)
+        const compressedSkulptuurScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed(SKULPTUUR_SCRIPT_APPROX);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(
+            config.projectZero,
+            compressedSkulptuurScript
+          );
+        // verify results
+        const scriptZero = await config.genArt721Core.projectScriptByIndex(
+          config.projectZero,
+          0
+        );
+        expect(scriptZero).to.equal(SQUIGGLE_SCRIPT);
+        const scriptOne = await config.genArt721Core.projectScriptByIndex(
+          config.projectZero,
+          1
+        );
+        expect(scriptOne).to.equal(SKULPTUUR_SCRIPT_APPROX);
+      });
+
+      it("uploads and recalls chromie squiggle script (compressed) and different script (not compressed)", async function () {
+        const config = await loadFixture(_beforeEach);
+        // index 0: squiggle (compressed)
+        const compressedSquiggleScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed(SQUIGGLE_SCRIPT);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(
+            config.projectZero,
+            compressedSquiggleScript
+          );
+        // index 1: skulptuur-like (not compressed)
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScript(config.projectZero, SKULPTUUR_SCRIPT_APPROX);
+        // verify results
+        const scriptZero = await config.genArt721Core.projectScriptByIndex(
+          config.projectZero,
+          0
+        );
+        expect(scriptZero).to.equal(SQUIGGLE_SCRIPT);
+        const scriptOne = await config.genArt721Core.projectScriptByIndex(
+          config.projectZero,
+          1
+        );
+        expect(scriptOne).to.equal(SKULPTUUR_SCRIPT_APPROX);
+      });
+
+      it("fails to upload non-compressed script", async function () {
+        const config = await loadFixture(_beforeEach);
+        // index 0: squiggle (not compressed)
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .addProjectScriptCompressed(config.projectZero, SQUIGGLE_SCRIPT),
+          "INVALID_ARGUMENT"
+        );
+      });
+
+      it("doesn't selfdestruct script storage contract when safeTransferFrom to script storage contract", async function () {
+        const config = await loadFixture(_beforeEach);
+        // upload compressed script and get address
+        const compressedSquiggleScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed(SQUIGGLE_SCRIPT);
+
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(
+            config.projectZero,
+            compressedSquiggleScript
+          );
+        const scriptAddress =
+          await config.genArt721Core.projectScriptBytecodeAddressByIndex(
+            config.projectZero,
+            0
+          );
+        const scriptByteCode = await ethers.provider.getCode(scriptAddress);
+        expect(scriptByteCode).to.not.equal("0x");
+
+        // mint a token on project zero
+        await config.minter
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero);
+
+        // attempt to safe-transfer token to script storage contract
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            [
+              "safeTransferFrom(address,address,uint256)"
+            ](config.accounts.artist.address, scriptAddress, config.projectZeroTokenZero.toNumber()),
+          "ERC721: transfer to non ERC721Receiver implementer"
+        );
+
+        // verify script storage contract still exists
+        const sameScriptByteCode = await ethers.provider.getCode(scriptAddress);
+        expect(sameScriptByteCode).to.equal(scriptByteCode);
+        expect(sameScriptByteCode).to.not.equal("0x");
+      });
+    });
+
     describe("projectScriptBytecodeAddressByIndex", function () {
       it("uploads and recalls a single-byte script", async function () {
         const config = await loadFixture(_beforeEach);
@@ -1329,6 +1594,142 @@ for (const coreContractName of coreContractsToTest) {
         await config.genArt721Core
           .connect(config.accounts.artist)
           .updateProjectScript(config.projectZero, 0, "// script 0.1");
+
+        const newScriptAddress =
+          await config.genArt721Core.projectScriptBytecodeAddressByIndex(
+            config.projectZero,
+            0
+          );
+        const newScriptByteCode =
+          await ethers.provider.getCode(newScriptAddress);
+        expect(newScriptByteCode).to.not.equal("0x");
+        expect(newScriptByteCode).to.not.equal(scriptByteCode);
+      });
+    });
+
+    describe("updateProjectScriptCompressed", function () {
+      beforeEach(async function () {
+        const config = await loadFixture(_beforeEach);
+        const compressedScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed("// script 0");
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(config.projectZero, compressedScript);
+        // pass config to tests in this describe block
+        this.config = config;
+      });
+
+      it("owner can update when unlocked", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const compressedScript = await config.genArt721Core
+          ?.connect(config.accounts.deployer)
+          .getProjectScriptCompressed("// script 0.1");
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateProjectScriptCompressed(
+            config.projectZero,
+            0,
+            compressedScript
+          );
+      });
+
+      it("artist can update when unlocked", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const compressedScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed("// script 0.1");
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectScriptCompressed(
+            config.projectZero,
+            0,
+            compressedScript
+          );
+      });
+
+      it("artist cannot update when locked", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await mintProjectUntilRemaining(
+          config,
+          config.projectZero,
+          config.accounts.artist,
+          0
+        );
+        await advanceEVMByTime(FOUR_WEEKS + 1);
+        const compressedScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed("// script 0.1");
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .updateProjectScriptCompressed(
+              config.projectZero,
+              0,
+              compressedScript
+            ),
+          "Only if unlocked"
+        );
+      });
+
+      it("artist cannot update non-existing script index", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const compressedScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed("// script 0.1");
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .updateProjectScriptCompressed(
+              config.projectZero,
+              1,
+              compressedScript
+            ),
+          "scriptId out of range"
+        );
+      });
+
+      it("artist can update a previously pre-compressed script with a non-compressed script", async function () {
+        const config = this.config;
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectScript(config.projectZero, 0, SQUIGGLE_SCRIPT);
+        const script = await config.genArt721Core.projectScriptByIndex(
+          config.projectZero,
+          0
+        );
+        expect(script).to.equal(SQUIGGLE_SCRIPT);
+      });
+
+      it("bytecode contracts deployed as expected in updates", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const originalScriptAddress =
+          await config.genArt721Core.projectScriptBytecodeAddressByIndex(
+            config.projectZero,
+            0
+          );
+
+        const scriptByteCode = await ethers.provider.getCode(
+          originalScriptAddress
+        );
+        expect(scriptByteCode).to.not.equal("0x");
+
+        const compressedScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getProjectScriptCompressed("// script 0.1");
+
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectScriptCompressed(
+            config.projectZero,
+            0,
+            compressedScript
+          );
 
         const newScriptAddress =
           await config.genArt721Core.projectScriptBytecodeAddressByIndex(
