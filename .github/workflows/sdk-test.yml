@@ -22,11 +22,13 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: yarn --frozen-lockfile
         working-directory: packages/sdk
+      - run: yarn codegen
+        env:
+          HASURA_GRAPHQL_API_ENDPOINT: ${{ secrets.HASURA_GRAPHQL_API_ENDPOINT }}
+          HASURA_ADMIN_SECRET: ${{ secrets.HASURA_ADMIN_SECRET }}
+        working-directory: packages/sdk
       - name: Build
         run: yarn run build
-        working-directory: packages/sdk
-      - name: Typechain
-        run: yarn run build:typechain
         working-directory: packages/sdk
       - name: Run Tests
         run: yarn run test

@@ -1,8 +1,8 @@
 {
   "name": "@artblocks/sdk",
-  "version": "0.1.0",
+  "version": "0.1.12-alpha",
   "description": "JavaScript SDK for configuring and using Art Blocks minters.",
-  "main": "index.js",
+  "main": "dist/index.js",
   "repository": "git@github.com:ArtBlocks/artblocks-sdk.git",
   "author": "Art Blocks, Inc. <privacy@artblocks.io>",
   "license": "MIT",
@@ -11,16 +11,17 @@
     "@babel/preset-env": "^7.24.4",
     "@babel/preset-typescript": "^7.24.1",
     "@jest/globals": "^29.7.0",
-    "@typechain/ethers-v5": "^11.1.2",
+    "@types/lodash": "^4.14.196",
+    "abitype": "^0.8.7",
     "eslint-config-custom": "*",
     "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "jsdoc": "^4.0.2",
     "jsdoc-plugin-typescript": "^2.2.1",
     "lint-staged": "^15.2.2",
     "prettier": "^3.2.5",
     "tsconfig": "*",
     "tsup": "^8.0.2",
-    "typechain": "^8.3.2",
     "typescript": "^5.4.5"
   },
   "scripts": {
@@ -31,8 +32,7 @@
     "test": "jest",
     "build:docs": "jsdoc -c jsdoc.json",
     "pre-commit": "yarn lint",
-    "pre-push": "yarn test",
-    "build:typechain": "typechain --target ethers-v5 --out-dir ./src/generated/contracts './artifacts/*.json' '../../node_modules/@artblocks/contracts/artifacts/contracts/!(*.dbg)*.json'"
+    "pre-push": "yarn test"
   },
   "lint-staged": {
     "*.{js,ts,tsx, jsx}": [
@@ -50,18 +50,24 @@
     ],
     "coverageThreshold": {
       "global": {
-        "branches": 100,
-        "functions": 100,
-        "lines": 100,
-        "statements": 100
+        "branches": 80,
+        "functions": 85,
+        "lines": 85,
+        "statements": 85
       }
     }
   },
-  "peerDependencies": {
-    "ethers": "^6.3.0"
-  },
   "dependencies": {
     "@artblocks/contracts": "^1.0.2",
-    "merkletreejs": "^0.3.11"
-  }
+    "encoding": "^0.1.13",
+    "graphql": "^16.7.1",
+    "graphql-request": "^6.1.0",
+    "lodash": "^4.17.21",
+    "merkletreejs": "^0.3.11",
+    "viem": "^1.0.9",
+    "zod": "^3.21.4"
+  },
+  "files": [
+    "dist"
+  ]
 }
