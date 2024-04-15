@@ -345,7 +345,7 @@ for (const coreContractName of coreContractsToTest) {
         // add pre-compressed script
         const compressedScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed("if(false){}");
+          .getCompressed("if(false){}");
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectScriptCompressed(config.projectZero, compressedScript);
@@ -757,11 +757,11 @@ for (const coreContractName of coreContractsToTest) {
             .addProjectScriptCompressed("0x"),
           "Must input non-empty script"
         );
-        // getProjectScriptCompressed
+        // getCompressed
         expectRevert(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .getProjectScriptCompressed(""),
+            .getCompressed(""),
           "Must input non-empty string"
         );
         // updateProjectScript
@@ -1819,7 +1819,7 @@ for (const coreContractName of coreContractsToTest) {
         // add a pre-compressed project script
         const compressedScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed("console.log(hello world)");
+          .getCompressed("console.log(hello world)");
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectScriptCompressed(config.projectZero, compressedScript);

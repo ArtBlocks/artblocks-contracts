@@ -180,7 +180,7 @@ describe("GenArt721CoreV3 Gas Tests - Script Upload", async function () {
       const config = await loadFixture(_beforeEach);
       const compressedSquiggleScript = await config.genArt721Core
         ?.connect(config.accounts.artist)
-        .getProjectScriptCompressed(SQUIGGLE_SCRIPT);
+        .getCompressed(SQUIGGLE_SCRIPT);
       const tx = await config.genArt721Core
         .connect(config.accounts.artist)
         .addProjectScriptCompressed(
@@ -214,7 +214,7 @@ describe("GenArt721CoreV3 Gas Tests - Script Upload", async function () {
       const config = await loadFixture(_beforeEach);
       const compressedSkulptuurScript = await config.genArt721Core
         ?.connect(config.accounts.artist)
-        .getProjectScriptCompressed(SKULPTUUR_SCRIPT_APPROX);
+        .getCompressed(SKULPTUUR_SCRIPT_APPROX);
       const tx = await config.genArt721Core
         .connect(config.accounts.artist)
         .addProjectScriptCompressed(
@@ -248,7 +248,7 @@ describe("GenArt721CoreV3 Gas Tests - Script Upload", async function () {
       const config = await loadFixture(_beforeEach);
       const compressedScript = await config.genArt721Core
         ?.connect(config.accounts.artist)
-        .getProjectScriptCompressed(CONTRACT_SIZE_LIMIT_SCRIPT);
+        .getCompressed(CONTRACT_SIZE_LIMIT_SCRIPT);
       const tx = await config.genArt721Core
         .connect(config.accounts.artist)
         .addProjectScriptCompressed(config.projectThree, compressedScript, {

@@ -301,7 +301,7 @@ for (const coreContractName of coreContractsToTest) {
         await advanceEVMByTime(FOUR_WEEKS + 1);
         const compressedScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed("lorem ipsum");
+          .getCompressed("lorem ipsum");
         // expect revert
         await expectRevert(
           config.genArt721Core

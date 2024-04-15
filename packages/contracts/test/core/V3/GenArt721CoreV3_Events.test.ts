@@ -619,7 +619,7 @@ for (const coreContractName of coreContractsToTest) {
         // get compressed script
         const compressedScript1 = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed(`console.log("hello world")`);
+          .getCompressed(`console.log("hello world")`);
         // add script
         await expect(
           config.genArt721Core
@@ -634,7 +634,7 @@ for (const coreContractName of coreContractsToTest) {
         // edit script
         const compressedScript2 = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed(`console.log("hello world 2")`);
+          .getCompressed(`console.log("hello world 2")`);
         await expect(
           config.genArt721Core
             .connect(config.accounts.artist)

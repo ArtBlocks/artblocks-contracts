@@ -1069,18 +1069,22 @@ contract GenArt721CoreV3_Explorations is
     }
 
     /**
-     * @notice Adds a pre-compressed script to project `_projectId`.
+     * @notice Adds a pre-compressed script to project `_projectId`. The script should be compressed using `getCompressed`. This function stores the script in a compressed
+     * format on-chain. For reads, the compressed script is decompressed on-chain, ensuring the original text is
+     * reconstructed without external dependencies.
      * @param _projectId Project to be updated.
      * @param _compressedScript Pre-compressed script to be added.
      * Required to be non-empty, but no further validation is performed.
-     * @dev  A script can be pre-compressed by calling `getProjectScriptCompressed`.
      */
     function addProjectScriptCompressed(
         uint256 _projectId,
         bytes memory _compressedScript
     ) external {
         _onlyUnlocked(_projectId);
-        _onlyArtistOrAdminACL(_projectId, this.addProjectScript.selector);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.addProjectScriptCompressed.selector
+        );
         require(_compressedScript.length > 0, "Must input non-empty script");
         Project storage project = projects[_projectId];
         // store compressed script in contract bytecode
@@ -1115,11 +1119,13 @@ contract GenArt721CoreV3_Explorations is
 
     /**
      * @notice Updates script for project `_projectId` at script ID `_scriptId` with a pre-compressed script.
+     * The script should be compressed using `getCompressed`. This function stores the script in a compressed
+     * format on-chain. For reads, the compressed script is decompressed on-chain, ensuring the original text is
+     * reconstructed without external dependencies.
      * @param _projectId Project to be updated.
      * @param _scriptId Script ID to be updated.
      * @param _compressedScript The updated pre-compressed script value.
      * Required to be non-empty, but no further validation is performed.
-     * @dev  A script can be pre-compressed by calling `getProjectScriptCompressed`.
      */
     function updateProjectScriptCompressed(
         uint256 _projectId,
@@ -1127,7 +1133,10 @@ contract GenArt721CoreV3_Explorations is
         bytes memory _compressedScript
     ) external {
         _onlyUnlocked(_projectId);
-        _onlyArtistOrAdminACL(_projectId, this.updateProjectScript.selector);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.updateProjectScriptCompressed.selector
+        );
         require(_compressedScript.length > 0, "Must input non-empty script");
         Project storage project = projects[_projectId];
         require(_scriptId < project.scriptCount, "scriptId out of range");
@@ -1534,11 +1543,11 @@ contract GenArt721CoreV3_Explorations is
     }
 
     /**
-     * @notice Returns the compressed form of a string in bytes using solady LibZip's flz compress algorithm.
+     * @notice Returns the compressed form of a string in bytes using solady LibZip's flz compress algorithm. The bytes output from this function are intended to be used as input to `addProjectScriptCompressed` and `updateProjectScriptCompressed`.
      * @param _script Script to be compressed. Required to be a non-empty string, but no further validaton is performed.
      * @return bytes compressed bytes
      */
-    function getProjectScriptCompressed(
+    function getCompressed(
         string memory _script
     ) external view returns (bytes memory) {
         _onlyNonEmptyString(_script);

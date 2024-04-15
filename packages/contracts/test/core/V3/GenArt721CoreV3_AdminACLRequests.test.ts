@@ -268,7 +268,7 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         const compressedScript = await config.genArt721Core
           ?.connect(config.accounts.deployer)
-          .getProjectScriptCompressed("console.log('hello world')");
+          .getCompressed("console.log('hello world')");
         await validateAdminACLRequest(config, "addProjectScriptCompressed", [
           config.projectZero,
           compressedScript,
@@ -313,7 +313,7 @@ for (const coreContractName of coreContractsToTest) {
           // add a project to be modified
           const compressedScript = await config.genArt721Core
             ?.connect(config.accounts.deployer)
-            .getProjectScriptCompressed("console.log('hello world')");
+            .getCompressed("console.log('hello world')");
           await config.genArt721Core
             .connect(config.accounts.deployer)
             .addProjectScriptCompressed(config.projectZero, compressedScript);
@@ -327,7 +327,7 @@ for (const coreContractName of coreContractsToTest) {
           // update the script
           const compressedScript = await config.genArt721Core
             ?.connect(config.accounts.deployer)
-            .getProjectScriptCompressed("console.log('hello world')");
+            .getCompressed("console.log('hello world')");
           await validateAdminACLRequest(
             config,
             "updateProjectScriptCompressed",

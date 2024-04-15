@@ -1258,7 +1258,7 @@ for (const coreContractName of coreContractsToTest) {
         await expectRevert(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .getProjectScriptCompressed(""),
+            .getCompressed(""),
           "Must input non-empty string"
         );
       });
@@ -1266,7 +1266,7 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         const compressedScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed("0");
+          .getCompressed("0");
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectScriptCompressed(config.projectZero, compressedScript);
@@ -1282,7 +1282,7 @@ for (const coreContractName of coreContractsToTest) {
         const targetScript = "console.log(hello world)";
         const compressedTargetScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed(targetScript);
+          .getCompressed(targetScript);
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectScriptCompressed(
@@ -1300,7 +1300,7 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         const compressedSquiggleScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed(SQUIGGLE_SCRIPT);
+          .getCompressed(SQUIGGLE_SCRIPT);
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectScriptCompressed(
@@ -1318,7 +1318,7 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         const compressedSkulptuurScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed(SKULPTUUR_SCRIPT_APPROX);
+          .getCompressed(SKULPTUUR_SCRIPT_APPROX);
 
         await config.genArt721Core
           .connect(config.accounts.artist)
@@ -1333,11 +1333,11 @@ for (const coreContractName of coreContractsToTest) {
         expect(script).to.equal(SKULPTUUR_SCRIPT_APPROX);
       });
 
-      it("uploads and recalls 23.95 KB script", async function () {
+      it("uploads and recalls 23.95 KB script [ @skip-on-coverage ]", async function () {
         const config = await loadFixture(_beforeEach);
         const compressedContractSizeLimitScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed(CONTRACT_SIZE_LIMIT_SCRIPT);
+          .getCompressed(CONTRACT_SIZE_LIMIT_SCRIPT);
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectScriptCompressed(
@@ -1355,13 +1355,11 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       // skip on coverage because contract max sizes are ignored
-      it("fails to upload 50 KB (pre-compressed) script [ @skip-on-coverage ]", async function () {
+      it("fails to upload 70 KB (pre-compressed) script [ @skip-on-coverage ]", async function () {
         const config = await loadFixture(_beforeEach);
         const compressedContractSizeLimitScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed(
-            MUCH_GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT
-          );
+          .getCompressed(MUCH_GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT);
         await expectRevert(
           config.genArt721Core
             .connect(config.accounts.artist)
@@ -1378,7 +1376,7 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         const compressedScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed(MULTI_BYTE_UTF_EIGHT_SCRIPT);
+          .getCompressed(MULTI_BYTE_UTF_EIGHT_SCRIPT);
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectScriptCompressed(config.projectZero, compressedScript);
@@ -1394,7 +1392,7 @@ for (const coreContractName of coreContractsToTest) {
         // index 0: squiggle (compressed)
         const compressedSquiggleScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed(SQUIGGLE_SCRIPT);
+          .getCompressed(SQUIGGLE_SCRIPT);
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectScriptCompressed(
@@ -1404,7 +1402,7 @@ for (const coreContractName of coreContractsToTest) {
         // index 1: skulptuur-like (compressed)
         const compressedSkulptuurScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed(SKULPTUUR_SCRIPT_APPROX);
+          .getCompressed(SKULPTUUR_SCRIPT_APPROX);
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectScriptCompressed(
@@ -1429,7 +1427,7 @@ for (const coreContractName of coreContractsToTest) {
         // index 0: squiggle (compressed)
         const compressedSquiggleScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed(SQUIGGLE_SCRIPT);
+          .getCompressed(SQUIGGLE_SCRIPT);
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectScriptCompressed(
@@ -1469,7 +1467,7 @@ for (const coreContractName of coreContractsToTest) {
         // upload compressed script and get address
         const compressedSquiggleScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed(SQUIGGLE_SCRIPT);
+          .getCompressed(SQUIGGLE_SCRIPT);
 
         await config.genArt721Core
           .connect(config.accounts.artist)
@@ -1612,7 +1610,7 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         const compressedScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed("// script 0");
+          .getCompressed("// script 0");
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectScriptCompressed(config.projectZero, compressedScript);
@@ -1625,7 +1623,7 @@ for (const coreContractName of coreContractsToTest) {
         const config = this.config;
         const compressedScript = await config.genArt721Core
           ?.connect(config.accounts.deployer)
-          .getProjectScriptCompressed("// script 0.1");
+          .getCompressed("// script 0.1");
         await config.genArt721Core
           .connect(config.accounts.deployer)
           .updateProjectScriptCompressed(
@@ -1640,7 +1638,7 @@ for (const coreContractName of coreContractsToTest) {
         const config = this.config;
         const compressedScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed("// script 0.1");
+          .getCompressed("// script 0.1");
         await config.genArt721Core
           .connect(config.accounts.artist)
           .updateProjectScriptCompressed(
@@ -1662,7 +1660,7 @@ for (const coreContractName of coreContractsToTest) {
         await advanceEVMByTime(FOUR_WEEKS + 1);
         const compressedScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed("// script 0.1");
+          .getCompressed("// script 0.1");
         await expectRevert(
           config.genArt721Core
             .connect(config.accounts.artist)
@@ -1680,7 +1678,7 @@ for (const coreContractName of coreContractsToTest) {
         const config = this.config;
         const compressedScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed("// script 0.1");
+          .getCompressed("// script 0.1");
         await expectRevert(
           config.genArt721Core
             .connect(config.accounts.artist)
@@ -1721,7 +1719,7 @@ for (const coreContractName of coreContractsToTest) {
 
         const compressedScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
-          .getProjectScriptCompressed("// script 0.1");
+          .getCompressed("// script 0.1");
 
         await config.genArt721Core
           .connect(config.accounts.artist)
