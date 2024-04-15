@@ -1,5 +1,5 @@
 import { MerkleTree } from "merkletreejs";
-import { keccak256, solidityKeccak256 } from "ethers/lib/utils";
+import { Hex, encodePacked, keccak256 } from "viem";
 
 /**
  * @summary Error thrown when a user is not in the provided allowlist.
@@ -32,12 +32,16 @@ export const generateUserMerkleProof = (
   }
 
   const merkleTree = new MerkleTree(
-    addresses.map((addr) => solidityKeccak256(["address"], [addr])),
+    addresses.map((addr) =>
+      keccak256(encodePacked(["address"], [addr as Hex]))
+    ),
     keccak256,
     {
       sortPairs: true,
     }
   );
 
-  return merkleTree.getHexProof(solidityKeccak256(["address"], [userAddress]));
+  return merkleTree.getHexProof(
+    keccak256(encodePacked(["address"], [userAddress as Hex]))
+  );
 };

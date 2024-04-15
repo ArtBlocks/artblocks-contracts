@@ -84,10 +84,10 @@ describe("GenArt721MinterBurner_PBAB", async function () {
     await config.genArt721Core
       .connect(config.accounts.artist)
       .toggleProjectIsPaused(config.projectZero);
-    config.genArt721Core
+    await config.genArt721Core
       .connect(config.accounts.artist)
       .toggleProjectIsPaused(config.projectOne);
-    config.genArt721Core
+    await config.genArt721Core
       .connect(config.accounts.artist)
       .toggleProjectIsPaused(config.projectTwo);
 
