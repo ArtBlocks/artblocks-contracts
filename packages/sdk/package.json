@@ -21,7 +21,7 @@
     "tsconfig": "*",
     "tsup": "^8.0.2",
     "typechain": "^8.3.2",
-    "typescript": "^5.4.4"
+    "typescript": "^5.4.5"
   },
   "scripts": {
     "build": "tsup src/index.ts --dts",
