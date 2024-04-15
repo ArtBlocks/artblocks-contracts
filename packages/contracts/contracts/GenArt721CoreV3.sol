@@ -126,10 +126,13 @@ contract GenArt721CoreV3 is
     bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_ADDRESS =
         "artblocksSecondarySalesAddress";
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
+    bytes32 constant FIELD_NEXT_CORE_CONTRACT = "nextCoreContract";
     bytes32 constant FIELD_ARTBLOCKS_CURATION_REGISTRY_ADDRESS =
         "curationRegistryAddress";
     bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
         "dependencyRegistryAddress";
+    bytes32 constant FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS =
+        "onChainGeneratorAddress";
     bytes32 constant FIELD_ARTBLOCKS_PRIMARY_SALES_PERCENTAGE =
         "artblocksPrimaryPercentage";
     bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_BPS =
@@ -161,11 +164,15 @@ contract GenArt721CoreV3 is
     /// Art Blocks Project ID range: [3-373]
     address public constant ART_BLOCKS_ERC721TOKEN_ADDRESS_V1 =
         0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270;
+    /// pointer to next core contract associated with this contract
+    address public nextCoreContract;
 
     /// Curation registry managed by Art Blocks
     address public artblocksCurationRegistryAddress;
     /// Dependency registry managed by Art Blocks
     address public artblocksDependencyRegistryAddress;
+    /// On chain generator managed by Art Blocks
+    address public artblocksOnChainGeneratorAddress;
 
     /// current randomizer contract
     IRandomizer_V3CoreBase public randomizerContract;
@@ -486,6 +493,16 @@ contract GenArt721CoreV3 is
     }
 
     /**
+     * @notice Updates reference to next core contract, associated with this contract.
+     * @param _nextCoreContract Address of the next core contract
+     */
+    function updateNextCoreContract(address _nextCoreContract) external {
+        _onlyAdminACL(this.updateNextCoreContract.selector);
+        nextCoreContract = _nextCoreContract;
+        emit PlatformUpdated(FIELD_NEXT_CORE_CONTRACT);
+    }
+
+    /**
      * @notice Updates reference to Art Blocks Curation Registry contract.
      * @param _artblocksCurationRegistryAddress Address of new Curation
      * Registry.
@@ -511,6 +528,19 @@ contract GenArt721CoreV3 is
         _onlyNonZeroAddress(_artblocksDependencyRegistryAddress);
         artblocksDependencyRegistryAddress = _artblocksDependencyRegistryAddress;
         emit PlatformUpdated(FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS);
+    }
+
+    /**
+     * @notice Updates reference to Art Blocks On Chain Generator contract.
+     * @param _artblocksOnChainGeneratorAddress Address of new on chain generator.
+     */
+    function updateArtblocksOnChainGeneratorAddress(
+        address _artblocksOnChainGeneratorAddress
+    ) external {
+        _onlyAdminACL(this.updateArtblocksOnChainGeneratorAddress.selector);
+        _onlyNonZeroAddress(_artblocksOnChainGeneratorAddress);
+        artblocksOnChainGeneratorAddress = _artblocksOnChainGeneratorAddress;
+        emit PlatformUpdated(FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS);
     }
 
     /**
@@ -894,6 +924,8 @@ contract GenArt721CoreV3 is
     /**
      * @notice Updates artist name for project `_projectId` to be
      * `_projectArtistName`.
+     * @dev allows admin to update after project is locked, due to our
+     * experiences of artist name changes being requested post-lock.
      * @param _projectId Project ID.
      * @param _projectArtistName New artist name.
      */
@@ -901,10 +933,17 @@ contract GenArt721CoreV3 is
         uint256 _projectId,
         string memory _projectArtistName
     ) external {
-        _onlyUnlocked(_projectId);
-        _onlyArtistOrAdminACL(
-            _projectId,
-            this.updateProjectArtistName.selector
+        // checks
+        // if unlocked, only artist may update, if locked, only admin may update
+        require(
+            _projectUnlocked(_projectId)
+                ? msg.sender == projectIdToFinancials[_projectId].artistAddress
+                : adminACLAllowed(
+                    msg.sender,
+                    address(this),
+                    this.updateProjectArtistName.selector
+                ),
+            "Only artist, owner when locked"
         );
         _onlyNonEmptyString(_projectArtistName);
         projects[_projectId].artist = _projectArtistName;
@@ -965,7 +1004,7 @@ contract GenArt721CoreV3 is
                     address(this),
                     this.updateProjectDescription.selector
                 ),
-            "Only artist when unlocked, owner when locked"
+            "Only artist, owner when locked"
         );
         // effects
         // store description in contract bytecode, replacing reference address from

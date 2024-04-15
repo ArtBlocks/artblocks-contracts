@@ -274,6 +274,22 @@ for (const coreContractName of coreContractsToTest) {
         }
       });
 
+      it("emits 'onChainGeneratorAddress'", async function () {
+        const config = await loadFixture(_beforeEach);
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateArtblocksOnChainGeneratorAddress(
+              config.accounts.artist.address
+            )
+        )
+          .to.emit(config.genArt721Core, "PlatformUpdated")
+          .withArgs(
+            ethers.utils.formatBytes32String("onChainGeneratorAddress")
+          );
+      });
+
       it("emits 'dependencyRegistryAddress'", async function () {
         const config = await loadFixture(_beforeEach);
         // emits expected event arg(s)
@@ -288,6 +304,20 @@ for (const coreContractName of coreContractsToTest) {
           .withArgs(
             ethers.utils.formatBytes32String("dependencyRegistryAddress")
           );
+      });
+
+      it("emits 'nextCoreContract'", async function () {
+        const config = await loadFixture(_beforeEach);
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateNextCoreContract(
+              config.accounts.artist.address // dummy address
+            )
+        )
+          .to.emit(config.genArt721Core, "PlatformUpdated")
+          .withArgs(ethers.utils.formatBytes32String("nextCoreContract"));
       });
 
       it("emits '{artblocks,provider}PrimaryPercentage'", async function () {
@@ -483,7 +513,7 @@ for (const coreContractName of coreContractsToTest) {
         // emits expected event arg(s)
         await expect(
           config.genArt721Core
-            .connect(config.accounts.deployer)
+            .connect(config.accounts.artist)
             .updateProjectArtistName(config.projectZero, "new artist name")
         )
           .to.emit(config.genArt721Core, "ProjectUpdated")
