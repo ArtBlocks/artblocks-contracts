@@ -28,7 +28,6 @@ import {
   GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT,
   MULTI_BYTE_UTF_EIGHT_SCRIPT,
 } from "../../util/example-scripts";
-import { GenArt721CoreV3 } from "../../../scripts/contracts";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
