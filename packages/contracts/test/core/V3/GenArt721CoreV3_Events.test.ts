@@ -274,6 +274,22 @@ for (const coreContractName of coreContractsToTest) {
         }
       });
 
+      it("emits 'onChainGeneratorAddress'", async function () {
+        const config = await loadFixture(_beforeEach);
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateArtblocksOnChainGeneratorAddress(
+              config.accounts.artist.address
+            )
+        )
+          .to.emit(config.genArt721Core, "PlatformUpdated")
+          .withArgs(
+            ethers.utils.formatBytes32String("onChainGeneratorAddress")
+          );
+      });
+
       it("emits 'dependencyRegistryAddress'", async function () {
         const config = await loadFixture(_beforeEach);
         // emits expected event arg(s)

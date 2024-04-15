@@ -130,6 +130,8 @@ contract GenArt721CoreV3_Engine is
     bytes32 constant FIELD_NEXT_CORE_CONTRACT = "nextCoreContract";
     bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
         "dependencyRegistryAddress";
+    bytes32 constant FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS =
+        "onChainGeneratorAddress";
     bytes32 constant FIELD_PROVIDER_SALES_ADDRESSES = "providerSalesAddresses";
     bytes32 constant FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES =
         "providerPrimaryPercentages";
@@ -160,6 +162,8 @@ contract GenArt721CoreV3_Engine is
 
     /// Dependency registry managed by Art Blocks
     address public artblocksDependencyRegistryAddress;
+    /// On chain generator managed by Art Blocks
+    address public artblocksOnChainGeneratorAddress;
 
     /// current randomizer contract
     IRandomizer_V3CoreBase public randomizerContract;
@@ -559,6 +563,19 @@ contract GenArt721CoreV3_Engine is
         _onlyNonZeroAddress(_artblocksDependencyRegistryAddress);
         artblocksDependencyRegistryAddress = _artblocksDependencyRegistryAddress;
         emit PlatformUpdated(FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS);
+    }
+
+    /**
+     * @notice Updates reference to Art Blocks On Chain Generator contract.
+     * @param _artblocksOnChainGeneratorAddress Address of new on chain generator.
+     */
+    function updateArtblocksOnChainGeneratorAddress(
+        address _artblocksOnChainGeneratorAddress
+    ) external {
+        _onlyAdminACL(this.updateArtblocksOnChainGeneratorAddress.selector);
+        _onlyNonZeroAddress(_artblocksOnChainGeneratorAddress);
+        artblocksOnChainGeneratorAddress = _artblocksOnChainGeneratorAddress;
+        emit PlatformUpdated(FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS);
     }
 
     /**
