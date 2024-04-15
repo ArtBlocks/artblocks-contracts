@@ -25,7 +25,7 @@
     "typescript": "^5.4.5"
   },
   "scripts": {
-    "build": "tsup src/index.ts --dts",
+    "build": "yarn codegen && tsup src/index.ts --dts",
     "codegen": "yarn --cwd=\"../..\" run codegen:project sdk",
     "lint": "prettier --check src/**/*.ts && eslint src/**/*.ts",
     "fmt": "prettier --write src/**/*.ts && eslint src/**/*.ts --fix",
