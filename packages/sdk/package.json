@@ -32,7 +32,7 @@
     "test": "jest",
     "build:docs": "jsdoc -c jsdoc.json",
     "pre-commit": "yarn lint",
-    "pre-push": "yarn test"
+    "pre-push": "yarn codegen && yarn test"
   },
   "lint-staged": {
     "*.{js,ts,tsx, jsx}": [
