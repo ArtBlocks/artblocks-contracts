@@ -7,7 +7,6 @@ module.exports = {
     ecmaVersion: 2018,
     sourceType: "module",
   },
-  plugins: ["@typescript-eslint"],
   root: true,
   rules: {
     "no-var": "error",

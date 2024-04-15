@@ -1,4 +1,4 @@
-import { CodegenConfig } from "@graphql-codegen/cli";
+import { IGraphQLConfig } from "graphql-config";
 
 const baseConfig = {
   schema: {
@@ -21,7 +21,7 @@ const basePluginConfig = {
   },
 };
 
-const config = {
+const config: IGraphQLConfig = {
   projects: {
     contracts: {
       ...baseConfig,
@@ -46,7 +46,11 @@ const config = {
     },
     sdk: {
       ...baseConfig,
-      documents: ["packages/sdk/**/*.graphql", "packages/sdk/**/*.ts"],
+      documents: [
+        "packages/sdk/**/*.graphql",
+        "packages/sdk/**/*.ts",
+        "!packages/sdk/**/node_modules/**",
+      ],
       extensions: {
         codegen: {
           generates: {
@@ -54,6 +58,9 @@ const config = {
               preset: "client",
               config: {
                 ...basePluginConfig,
+              },
+              presetConfig: {
+                fragmentMasking: false,
               },
             },
           },
