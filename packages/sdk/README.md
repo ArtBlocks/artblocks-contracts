@@ -8,10 +8,6 @@ The Art Blocks SDK is a TypeScript library that can be used to simplify the proc
 
 - Configure a project's current minter
 - Query available minters and update the selected minter for a project
-- Retrieve pricing information and metadata for a project
-- Initiate a purchase transaction to mint a new token
-- Check if a wallet is allowed to mint a token
-- Retrieve the allowlist (if configured) for a minter
 
 ### Add the SDK to your project
 
@@ -29,14 +25,14 @@ yarn add @artblocks/sdk
 
 ### Import and initialize the SDK
 
-Once installed, you can import the SDK into your project and initialize it with your backend authentication token and an [ethers.js provider](https://docs.ethers.org/v5/api/providers/):
+Once installed, you can import the SDK into your project and initialize it with your backend authentication token and a [viem PublicClient](https://viem.sh/docs/clients/public.html):
 
 ```javascript
-import { ArtBlocksSDK } from '@artblocks/sdk';
-import { ethers } from 'ethers';
+import { ArtBlocksSDK } from "@artblocks/sdk";
+import { createPublicClient } from "viem";
 
 const artBlocksSDK = new ArtBlocksSDK({
-    jwt: 'my-jwt',  // backend authentication token
-    provider: ethers.getDefaultProvider('homestead')  // ethers.js provider
+  jwt: "my-jwt", // backend authentication token
+  provider: createPublicClient(/*public client params*/), // viem PublicClient
 });
 ```
