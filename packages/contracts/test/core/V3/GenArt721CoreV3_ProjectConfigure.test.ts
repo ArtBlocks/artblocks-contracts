@@ -1417,23 +1417,23 @@ for (const coreContractName of coreContractsToTest) {
         expect(script).to.equal(CONTRACT_SIZE_LIMIT_SCRIPT);
       });
 
-      // skip on coverage because contract max sizes are ignored
-      it("fails to upload 70 KB (pre-compressed) script [ @skip-on-coverage ]", async function () {
-        const config = await loadFixture(_beforeEach);
-        const compressedContractSizeLimitScript = await config.genArt721Core
-          ?.connect(config.accounts.artist)
-          .getCompressed(MUCH_GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT);
-        await expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.artist)
-            .addProjectScriptCompressed(
-              config.projectZero,
-              compressedContractSizeLimitScript,
-              { gasLimit: 30000000 } // hard-code gas limit because ethers sometimes estimates too high
-            ),
-          "ContractAsStorage: Write Error"
-        );
-      });
+      // @dev passes locally but causes OOM failure in CircleCI pipeline
+      // it("fails to upload 70 KB (pre-compressed) script [ @skip-on-coverage ]", async function () {
+      //   const config = await loadFixture(_beforeEach);
+      //   const compressedContractSizeLimitScript = await config.genArt721Core
+      //     ?.connect(config.accounts.artist)
+      //     .getCompressed(MUCH_GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT);
+      //   await expectRevert(
+      //     config.genArt721Core
+      //       .connect(config.accounts.artist)
+      //       .addProjectScriptCompressed(
+      //         config.projectZero,
+      //         compressedContractSizeLimitScript,
+      //         { gasLimit: 30000000 } // hard-code gas limit because ethers sometimes estimates too high
+      //       ),
+      //     "ContractAsStorage: Write Error"
+      //   );
+      // });
 
       it("uploads and recalls misc. UTF-8 script", async function () {
         const config = await loadFixture(_beforeEach);

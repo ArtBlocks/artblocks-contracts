@@ -22,7 +22,7 @@ jobs:
   test:
     docker:
       - image: "cimg/base:stable"
-    resource_class: xlarge
+    resource_class: large
     parallelism: 8
     steps:
       - checkout
@@ -31,7 +31,6 @@ jobs:
           node-version: "20.10"
       - node/install-packages:
           pkg-manager: yarn
-          cache-version: v2
       - run:
           name: debug list files
           command: |
@@ -53,7 +52,7 @@ jobs:
   coverage-parallel:
     docker:
       - image: "cimg/base:stable"
-    resource_class: xlarge
+    resource_class: large
     parallelism: 8
     steps:
       - checkout
@@ -62,7 +61,6 @@ jobs:
           node-version: "20.10"
       - node/install-packages:
           pkg-manager: yarn
-          cache-version: v2
       - run:
           name: compile contracts
           command: |
