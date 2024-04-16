@@ -444,7 +444,7 @@ for (const coreContractName of coreContractsToTest) {
         const projectScriptDetailsAfter = await config.genArt721Core
           .connect(config.accounts.deployer)
           .projectScriptDetails(config.projectZero);
-        expect(projectScriptDetails.scriptCount).to.be.equal(2);
+        expect(projectScriptDetailsAfter.scriptCount).to.be.equal(2);
       });
 
       it("validates aspect ratio format details", async function () {
