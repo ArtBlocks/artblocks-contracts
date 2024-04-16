@@ -300,9 +300,9 @@ for (const coreContractName of coreContractsToTest) {
         } else if (coreContractName === "GenArt721CoreV3_Explorations") {
           targetCoreVersion = "v3.2.3";
         } else if (coreContractName.includes("GenArt721CoreV3_Engine_Flex")) {
-          targetCoreVersion = "v3.1.7";
+          targetCoreVersion = "v3.2.5";
         } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          targetCoreVersion = "v3.1.4";
+          targetCoreVersion = "v3.2.4";
         } else {
           throw new Error("Unexpected core contract name");
         }
@@ -412,6 +412,7 @@ for (const coreContractName of coreContractsToTest) {
               config.adminACL.address,
               nextProjectId,
               false,
+              config.splitProvider.address,
             ]
           );
         } else {
@@ -424,6 +425,7 @@ for (const coreContractName of coreContractsToTest) {
               config.randomizer.address,
               config.adminACL.address,
               nextProjectId,
+              config.splitProvider.address,
             ]
           );
         }
@@ -460,6 +462,7 @@ for (const coreContractName of coreContractsToTest) {
               config.adminACL.address,
               nextProjectId,
               false,
+              config.splitProvider.address,
             ]
           );
         } else {
@@ -472,6 +475,7 @@ for (const coreContractName of coreContractsToTest) {
               config.randomizer.address,
               config.adminACL.address,
               nextProjectId,
+              config.splitProvider.address,
             ]
           );
         }

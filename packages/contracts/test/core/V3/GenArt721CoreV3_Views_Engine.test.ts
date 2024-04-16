@@ -115,9 +115,9 @@ for (const coreContractName of coreContractsToTest) {
     describe("coreVersion", function () {
       it("returns expected value", async function () {
         const config = await loadFixture(_beforeEach);
-        let targetCoreVersion = "v3.1.4";
+        let targetCoreVersion = "v3.2.4"; // Engine (not flex)
         if (coreContractName === "GenArt721CoreV3_Engine_Flex") {
-          targetCoreVersion = "v3.1.7";
+          targetCoreVersion = "v3.2.5";
         }
         const coreVersion = await config.genArt721Core
           .connect(config.accounts.deployer)
@@ -417,27 +417,25 @@ for (const coreContractName of coreContractsToTest) {
     describe("projectArtistPaymentInfo", function () {
       it("returns expected default values", async function () {
         const config = await loadFixture(_beforeEach);
-        const projectArtistPaymentInfo = await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .projectArtistPaymentInfo(config.projectZero);
-        expect(projectArtistPaymentInfo.artistAddress).to.be.equal(
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectZero
+        );
+        expect(projectFinance.artistAddress).to.be.equal(
           config.accounts.artist.address
         );
+        expect(projectFinance.additionalPayeePrimarySales).to.be.equal(
+          constants.ZERO_ADDRESS
+        );
         expect(
-          projectArtistPaymentInfo.additionalPayeePrimarySales
-        ).to.be.equal(constants.ZERO_ADDRESS);
-        expect(
-          projectArtistPaymentInfo.additionalPayeePrimarySalesPercentage
+          projectFinance.additionalPayeePrimarySalesPercentage
         ).to.be.equal(0);
+        expect(projectFinance.additionalPayeeSecondarySales).to.be.equal(
+          constants.ZERO_ADDRESS
+        );
         expect(
-          projectArtistPaymentInfo.additionalPayeeSecondarySales
-        ).to.be.equal(constants.ZERO_ADDRESS);
-        expect(
-          projectArtistPaymentInfo.additionalPayeeSecondarySalesPercentage
+          projectFinance.additionalPayeeSecondarySalesPercentage
         ).to.be.equal(0);
-        expect(
-          projectArtistPaymentInfo.secondaryMarketRoyaltyPercentage
-        ).to.be.equal(0);
+        expect(projectFinance.secondaryMarketRoyaltyPercentage).to.be.equal(5);
       });
 
       it("returns expected values after updating artist payment addresses and splits, and secondary royalty percentage", async function () {
@@ -462,27 +460,23 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist2)
           .updateProjectSecondaryMarketRoyaltyPercentage(config.projectZero, 5);
         // check for expected values
-        const projectArtistPaymentInfo = await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .projectArtistPaymentInfo(config.projectZero);
-        expect(projectArtistPaymentInfo.artistAddress).to.be.equal(
-          valuesToUpdateTo[1]
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectZero
+        );
+        expect(projectFinance.artistAddress).to.be.equal(valuesToUpdateTo[1]);
+        expect(projectFinance.additionalPayeePrimarySales).to.be.equal(
+          valuesToUpdateTo[2]
         );
         expect(
-          projectArtistPaymentInfo.additionalPayeePrimarySales
-        ).to.be.equal(valuesToUpdateTo[2]);
-        expect(
-          projectArtistPaymentInfo.additionalPayeePrimarySalesPercentage
+          projectFinance.additionalPayeePrimarySalesPercentage
         ).to.be.equal(valuesToUpdateTo[3]);
+        expect(projectFinance.additionalPayeeSecondarySales).to.be.equal(
+          valuesToUpdateTo[4]
+        );
         expect(
-          projectArtistPaymentInfo.additionalPayeeSecondarySales
-        ).to.be.equal(valuesToUpdateTo[4]);
-        expect(
-          projectArtistPaymentInfo.additionalPayeeSecondarySalesPercentage
+          projectFinance.additionalPayeeSecondarySalesPercentage
         ).to.be.equal(valuesToUpdateTo[5]);
-        expect(
-          projectArtistPaymentInfo.secondaryMarketRoyaltyPercentage
-        ).to.be.equal(5);
+        expect(projectFinance.secondaryMarketRoyaltyPercentage).to.be.equal(5);
       });
     });
 
@@ -905,13 +899,13 @@ for (const coreContractName of coreContractsToTest) {
         await config.minter
           .connect(config.accounts.artist)
           .purchase(config.projectZero);
-        // for now, expect revert
-        await expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.user)
-            .royaltyInfo(config.projectZeroTokenZero.toNumber(), SALE_AMOUNT),
-          "not implemented"
-        );
+        // // for now, expect revert
+        // await expectRevert(
+        //   config.genArt721Core
+        //     .connect(config.accounts.user)
+        //     .royaltyInfo(config.projectZeroTokenZero.toNumber(), SALE_AMOUNT),
+        //   "not implemented"
+        // );
         // // check for expected values
         // const royaltiesData = await config.genArt721Core
         //   .connect(config.accounts.user)
@@ -1468,10 +1462,10 @@ for (const coreContractName of coreContractsToTest) {
       it("returns expected default value", async function () {
         const config = await loadFixture(_beforeEach);
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToSecondaryMarketRoyaltyPercentage(config.projectZero);
-        expect(viewData).to.be.equal(0);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectZero
+        );
+        expect(projectFinance.secondaryMarketRoyaltyPercentage).to.be.equal(5);
       });
 
       it("returns expected configured values for projectZero", async function () {
@@ -1485,10 +1479,10 @@ for (const coreContractName of coreContractsToTest) {
           );
 
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToSecondaryMarketRoyaltyPercentage(config.projectZero);
-        expect(viewData).to.be.equal(10);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectZero
+        );
+        expect(projectFinance.secondaryMarketRoyaltyPercentage).to.be.equal(10);
       });
     });
 
@@ -1496,10 +1490,12 @@ for (const coreContractName of coreContractsToTest) {
       it("returns expected default value", async function () {
         const config = await loadFixture(_beforeEach);
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToAdditionalPayeePrimarySales(config.projectZero);
-        expect(viewData).to.be.equal(constants.ZERO_ADDRESS);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectZero
+        );
+        expect(projectFinance.additionalPayeePrimarySales).to.be.equal(
+          constants.ZERO_ADDRESS
+        );
       });
 
       it("returns expected configured values for projectOne", async function () {
@@ -1524,10 +1520,12 @@ for (const coreContractName of coreContractsToTest) {
           }
         );
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToAdditionalPayeePrimarySales(config.projectOne);
-        expect(viewData).to.be.equal(config.accounts.additional.address);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectOne
+        );
+        expect(projectFinance.additionalPayeePrimarySales).to.be.equal(
+          config.accounts.additional.address
+        );
       });
     });
 
@@ -1535,10 +1533,12 @@ for (const coreContractName of coreContractsToTest) {
       it("returns expected default value", async function () {
         const config = await loadFixture(_beforeEach);
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToAdditionalPayeePrimarySalesPercentage(config.projectZero);
-        expect(viewData).to.be.equal(0);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectZero
+        );
+        expect(
+          projectFinance.additionalPayeePrimarySalesPercentage
+        ).to.be.equal(0);
       });
 
       it("returns expected configured values for projectOne", async function () {
@@ -1563,21 +1563,24 @@ for (const coreContractName of coreContractsToTest) {
           }
         );
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToAdditionalPayeePrimarySalesPercentage(config.projectOne);
-        expect(viewData).to.be.equal(49);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectOne
+        );
+        expect(
+          projectFinance.additionalPayeePrimarySalesPercentage
+        ).to.be.equal(49);
       });
     });
 
     describe("projectIdToAdditionalPayeeSecondarySales", function () {
       it("returns expected default value", async function () {
         const config = await loadFixture(_beforeEach);
-        // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToAdditionalPayeeSecondarySales(config.projectZero);
-        expect(viewData).to.be.equal(constants.ZERO_ADDRESS);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectZero
+        );
+        expect(projectFinance.additionalPayeeSecondarySales).to.be.equal(
+          constants.ZERO_ADDRESS
+        );
       });
 
       it("returns expected configured values for projectOne", async function () {
@@ -1602,10 +1605,12 @@ for (const coreContractName of coreContractsToTest) {
           }
         );
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToAdditionalPayeeSecondarySales(config.projectOne);
-        expect(viewData).to.be.equal(config.accounts.additional2.address);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectOne
+        );
+        expect(projectFinance.additionalPayeeSecondarySales).to.be.equal(
+          config.accounts.additional2.address
+        );
       });
     });
 
@@ -1613,12 +1618,12 @@ for (const coreContractName of coreContractsToTest) {
       it("returns expected default value", async function () {
         const config = await loadFixture(_beforeEach);
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToAdditionalPayeeSecondarySalesPercentage(
-            config.projectZero
-          );
-        expect(viewData).to.be.equal(0);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectZero
+        );
+        expect(
+          projectFinance.additionalPayeeSecondarySalesPercentage
+        ).to.be.equal(0);
       });
 
       it("returns expected configured values for projectOne", async function () {
@@ -1643,12 +1648,12 @@ for (const coreContractName of coreContractsToTest) {
           }
         );
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToAdditionalPayeeSecondarySalesPercentage(
-            config.projectOne
-          );
-        expect(viewData).to.be.equal(51);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectOne
+        );
+        expect(
+          projectFinance.additionalPayeeSecondarySalesPercentage
+        ).to.be.equal(51);
       });
     });
 

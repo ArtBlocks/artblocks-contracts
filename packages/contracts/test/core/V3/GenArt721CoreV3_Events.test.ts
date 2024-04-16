@@ -152,7 +152,8 @@ for (const coreContractName of coreContractsToTest) {
               config.accounts.additional.address,
               config.accounts.additional.address,
               365,
-              false
+              false,
+              config.splitProvider.address // split provider
             );
           const receipt = await tx.deployTransaction.wait();
           // target event is in the last log
@@ -175,7 +176,8 @@ for (const coreContractName of coreContractsToTest) {
               "symbol",
               config.accounts.additional.address,
               constants.ZERO_ADDRESS,
-              365
+              365,
+              config.splitProvider.address // split provider
             );
           const receipt = await tx.deployTransaction.wait();
           // target event is the last log
