@@ -6,6 +6,7 @@ import { ethers } from "hardhat";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract, BigNumber } from "ethers";
 import { ONE_MINUTE } from "./constants";
+import { SplitProviderV0 } from "../../scripts/contracts/split/split-provider/SplitProviderV0";
 
 export type TestAccountsArtBlocks = {
   deployer: SignerWithAddress;
@@ -88,6 +89,7 @@ export type T_Config = {
   splitterImplementation?: Contract;
   splitterFactory?: Contract;
   splitter?: Contract;
+  splitProvider?: SplitProviderV0;
   // split configs
   validSplit?: T_Split;
   invalidSplit?: T_Split;
@@ -280,9 +282,9 @@ export async function deployCoreWithMinterFilter(
       "Mock0xSplitsV2PullFactory",
       []
     );
-    const splitProvider = await deployAndGet(config, "SplitProviderV0", [
+    config.splitProvider = (await deployAndGet(config, "SplitProviderV0", [
       mockSplitterFactory.address, // _splitterFactory
-    ]);
+    ])) as SplitProviderV0;
     genArt721Core = await deployWithStorageLibraryAndGet(
       config,
       coreContractName,
@@ -292,7 +294,7 @@ export async function deployCoreWithMinterFilter(
         randomizer.address,
         adminACL.address,
         0, // _startingProjectId
-        splitProvider.address, // _splitProviderAddress
+        config.splitProvider.address, // _splitProviderAddress
       ]
     );
     // assign core contract for randomizer to use
@@ -336,9 +338,9 @@ export async function deployCoreWithMinterFilter(
       "Mock0xSplitsV2PullFactory",
       []
     );
-    const splitProvider = await deployAndGet(config, "SplitProviderV0", [
+    config.splitProvider = (await deployAndGet(config, "SplitProviderV0", [
       mockSplitterFactory.address, // _splitterFactory
-    ]);
+    ])) as SplitProviderV0;
     // Note: in the common tests, set `autoApproveArtistSplitProposals` to false, which
     //       mirrors the approval-flow behavior of the other (non-Engine) V3 contracts
     const constructorArgs = [
@@ -356,7 +358,7 @@ export async function deployCoreWithMinterFilter(
       !coreContractName.includes("PROHIBITION") &&
       !coreContractName.includes("IncorrectCoreType")
     ) {
-      constructorArgs.push(splitProvider.address); // _splitProviderAddress
+      constructorArgs.push(config.splitProvider.address); // _splitProviderAddress
     }
     genArt721Core = await deployWithStorageLibraryAndGet(
       config,
@@ -453,9 +455,9 @@ export async function deployCore(
       "Mock0xSplitsV2PullFactory",
       []
     );
-    const splitProvider = await deployAndGet(config, "SplitProviderV0", [
+    config.splitProvider = (await deployAndGet(config, "SplitProviderV0", [
       mockSplitterFactory.address, // _splitterFactory
-    ]);
+    ])) as SplitProviderV0;
     genArt721Core = await deployWithStorageLibraryAndGet(
       config,
       coreContractName,
@@ -465,7 +467,7 @@ export async function deployCore(
         randomizer.address,
         adminACL.address,
         config.projectZero, // starting project ID
-        splitProvider.address, // _splitProviderAddress
+        config.splitProvider.address, // _splitProviderAddress
       ]
     );
     // register core contract on CoreRegistryV1
@@ -503,9 +505,9 @@ export async function deployCore(
       "Mock0xSplitsV2PullFactory",
       []
     );
-    const splitProvider = await deployAndGet(config, "SplitProviderV0", [
+    config.splitProvider = (await deployAndGet(config, "SplitProviderV0", [
       mockSplitterFactory.address, // _splitterFactory
-    ]);
+    ])) as SplitProviderV0;
     const deployArgs = [
       config.name, // _tokenName
       config.symbol, // _tokenSymbol
@@ -517,7 +519,7 @@ export async function deployCore(
       false, // _autoApproveArtistSplitProposals
     ];
     if (!coreContractName.endsWith("_PROHIBITION")) {
-      deployArgs.push(splitProvider.address); // _splitProviderAddress
+      deployArgs.push(config.splitProvider.address); // _splitProviderAddress
     }
     // Note: in the common tests, set `autoApproveArtistSplitProposals` to false, which
     //       mirrors the approval-flow behavior of the other (non-Engine) V3 contracts

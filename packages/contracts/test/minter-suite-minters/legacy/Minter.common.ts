@@ -24,7 +24,14 @@ export const Minter_Common = async (_beforeEach: () => Promise<T_Config>) => {
       const token2 = await deployWithStorageLibraryAndGet(
         config,
         "GenArt721CoreV3",
-        [config.name, config.symbol, config.randomizer.address, adminACL, 0]
+        [
+          config.name,
+          config.symbol,
+          config.randomizer.address,
+          adminACL,
+          0,
+          config.splitProvider.address,
+        ]
       );
 
       const minterFilterFactory =
