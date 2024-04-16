@@ -22,7 +22,7 @@ jobs:
   test:
     docker:
       - image: "cimg/base:stable"
-    resource_class: large
+    resource_class: xlarge
     parallelism: 8
     steps:
       - checkout
@@ -52,7 +52,7 @@ jobs:
   coverage-parallel:
     docker:
       - image: "cimg/base:stable"
-    resource_class: large
+    resource_class: xlarge
     parallelism: 8
     steps:
       - checkout
