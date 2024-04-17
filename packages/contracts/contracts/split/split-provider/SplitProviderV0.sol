@@ -115,10 +115,10 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
         SplitInputs calldata splitInputs
     ) private pure returns (ISplitFactoryV2.Split memory splitParams) {
         // define allocations in BPS to avoid any rounding errors
-        uint256 ArtistAndAdditionalRoyaltyPercentage = splitInputs
+        uint256 artistAndAdditionalRoyaltyPercentage = splitInputs
             .artistTotalRoyaltyPercentage;
-        uint256 ArtistAndAdditionalRoyaltyBPS = 100 *
-            ArtistAndAdditionalRoyaltyPercentage;
+        uint256 artistAndAdditionalRoyaltyBPS = 100 *
+            artistAndAdditionalRoyaltyPercentage;
         // load render provider royalty BPS
         uint256 renderProviderRoyaltyBPS = splitInputs
             .renderProviderSecondarySalesBPS;
@@ -128,7 +128,7 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
 
         // edge case: no royalties due; revert
         if (
-            ArtistAndAdditionalRoyaltyPercentage +
+            artistAndAdditionalRoyaltyPercentage +
                 renderProviderRoyaltyBPS +
                 platformProviderRoyaltyBPS ==
             0
@@ -136,9 +136,9 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
             revert("SplitProviderV0: No royalties due");
         }
 
-        bool artistNonZero = ArtistAndAdditionalRoyaltyPercentage > 0 &&
+        bool artistNonZero = artistAndAdditionalRoyaltyPercentage > 0 &&
             splitInputs.additionalPayeePercentage < 100;
-        bool additionalPayeeNonZero = ArtistAndAdditionalRoyaltyPercentage >
+        bool additionalPayeeNonZero = artistAndAdditionalRoyaltyPercentage >
             0 &&
             splitInputs.additionalPayeePercentage > 0;
         bool renderNonZero = renderProviderRoyaltyBPS > 0;
@@ -152,7 +152,7 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
         splitParams.recipients = new address[](partyLength);
         splitParams.allocations = new uint256[](partyLength);
         splitParams.totalAllocation =
-            ArtistAndAdditionalRoyaltyBPS +
+            artistAndAdditionalRoyaltyBPS +
             renderProviderRoyaltyBPS +
             platformProviderRoyaltyBPS;
 
@@ -162,14 +162,14 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
             splitParams.recipients[currentIndex] = splitInputs.artist;
             // @dev percent * 100 converts to BPS
             splitParams.allocations[currentIndex++] =
-                ArtistAndAdditionalRoyaltyPercentage *
+                artistAndAdditionalRoyaltyPercentage *
                 (100 - splitInputs.additionalPayeePercentage);
         }
         if (additionalPayeeNonZero) {
             splitParams.recipients[currentIndex] = splitInputs.additionalPayee;
             // @dev percent * 100 converts to BPS
             splitParams.allocations[currentIndex++] =
-                ArtistAndAdditionalRoyaltyPercentage *
+                artistAndAdditionalRoyaltyPercentage *
                 splitInputs.additionalPayeePercentage;
         }
         if (renderNonZero) {
