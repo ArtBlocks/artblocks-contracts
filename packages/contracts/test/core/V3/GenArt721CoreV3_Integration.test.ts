@@ -294,9 +294,9 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         let targetCoreVersion;
         if (coreContractName === "GenArt721CoreV3") {
-          targetCoreVersion = "v3.2.2";
+          throw new Error("Untested core contract version");
         } else if (coreContractName === "GenArt721CoreV3_Explorations") {
-          targetCoreVersion = "v3.2.3";
+          throw new Error("Untested core contract version");
         } else if (coreContractName.includes("GenArt721CoreV3_Engine_Flex")) {
           targetCoreVersion = "v3.1.7";
         } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
@@ -325,7 +325,7 @@ for (const coreContractName of coreContractsToTest) {
           expect(coreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
         } else {
           // coreType is same for GenArt721CoreV3 & GenArt721CoreV3_Explorations
-          expect(coreType).to.be.equal("GenArt721CoreV3");
+          throw new Error("Untested core contract version");
         }
       });
     });
