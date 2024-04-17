@@ -3,17 +3,17 @@ pragma solidity 0.8.19;
 
 // Created By: Art Blocks Inc.
 
-import "./interfaces/v0.8.x/IRandomizer_V3CoreBase.sol";
-import "./interfaces/v0.8.x/IAdminACLV0.sol";
-import "./interfaces/v0.8.x/IGenArt721CoreContractV3.sol";
-import "./interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
-import "./interfaces/v0.8.x/IManifold.sol";
+import "../interfaces/v0.8.x/IRandomizer_V3CoreBase.sol";
+import "../interfaces/v0.8.x/IAdminACLV0.sol";
+import "../interfaces/v0.8.x/IGenArt721CoreContractV3.sol";
+import "../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
+import "../interfaces/v0.8.x/IManifold.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
-import "./libs/v0.8.x/ERC721_PackedHashSeed.sol";
-import "./libs/v0.8.x/BytecodeStorageV1.sol";
-import "./libs/v0.8.x/Bytes32Strings.sol";
+import "../libs/v0.8.x/ERC721_PackedHashSeed.sol";
+import "../libs/v0.8.x/BytecodeStorageV1.sol";
+import "../libs/v0.8.x/Bytes32Strings.sol";
 
 /**
  * @title Art Blocks ERC-721 core contract, V3.
