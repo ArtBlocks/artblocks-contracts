@@ -2,7 +2,6 @@ import { BN, constants } from "@openzeppelin/test-helpers";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 const { MerkleTree } = require("merkletreejs");
-import { hashAddress } from "../../minter-suite-minters/legacy/MinterMerkle/MinterMerkle.common";
 const keccak256 = require("keccak256");
 
 const numInitialMints = 500;
@@ -21,6 +20,18 @@ import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../util/constants";
 import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
+
+/**
+ * @notice This returns the same result as solidity:
+ * `keccak256(abi.encodePacked(_address));`
+ * @dev mirrors `hashAddress` function in MinterMerkleV0 contract
+ */
+function hashAddress(_address) {
+  return Buffer.from(
+    ethers.utils.solidityKeccak256(["address"], [_address]).slice(2),
+    "hex"
+  );
+}
 
 /**
  * General Gas tests for V3 core.
