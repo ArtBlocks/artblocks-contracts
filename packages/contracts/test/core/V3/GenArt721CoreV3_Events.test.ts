@@ -23,8 +23,6 @@ import {
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
-  "GenArt721CoreV3", // flagship V3 core
-  "GenArt721CoreV3_Explorations", // V3 core explorations contract
   "GenArt721CoreV3_Engine", // V3 core Engine contract
   "GenArt721CoreV3_Engine_Flex", // V3 core Engine Flex contract
 ];
@@ -256,18 +254,7 @@ for (const coreContractName of coreContractsToTest) {
             "Action not supported"
           );
         } else if (coreContractName === "GenArt721CoreV3") {
-          // emits expected event arg(s)
-          await expect(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateArtblocksCurationRegistryAddress(
-                config.accounts.artist.address
-              )
-          )
-            .to.emit(config.genArt721Core, "PlatformUpdated")
-            .withArgs(
-              ethers.utils.formatBytes32String("curationRegistryAddress")
-            );
+          throw new Error("Untested core contract version");
         } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
           // Do nothing.
           // This core contract variant doesn't support config interface component.

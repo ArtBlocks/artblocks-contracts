@@ -23,8 +23,6 @@ import { FOUR_WEEKS } from "../../util/constants";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
-  "GenArt721CoreV3", // flagship V3 core
-  "GenArt721CoreV3_Explorations", // V3 core explorations contract
   "GenArt721CoreV3_Engine", // V3 core Engine contract
   "GenArt721CoreV3_Engine_Flex", // V3 core Engine Flex contract
 ];
@@ -90,9 +88,9 @@ for (const coreContractName of coreContractsToTest) {
       beforeEach(async function () {
         const config = await loadFixture(_beforeEach);
         if (coreContractName === "GenArt721CoreV3") {
-          config.maxABPrimarySalesPercentage = 100; // 100% maximum percentage on V3 core
+          throw new Error("Untested core contract version");
         } else if (coreContractName === "GenArt721CoreV3_Explorations") {
-          config.maxABPrimarySalesPercentage = 100; // 100% maximum percentage on V3 core explorations
+          throw new Error("Untested core contract version");
         } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
           config.maxProviderPrimarySalesPercentage = 100; // 100% maxmimum percentage on V3 core engine
         } else {

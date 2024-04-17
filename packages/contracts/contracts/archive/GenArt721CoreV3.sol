@@ -3,20 +3,20 @@ pragma solidity 0.8.22;
 
 // Created By: Art Blocks Inc.
 
-import "./interfaces/v0.8.x/IRandomizer_V3CoreBase.sol";
-import "./interfaces/v0.8.x/IAdminACLV0.sol";
-import "./interfaces/v0.8.x/IGenArt721CoreContractV3.sol";
-import {IGenArt721CoreContractV3_ProjectFinance} from "./interfaces/v0.8.x/IGenArt721CoreContractV3_ProjectFinance.sol";
-import "./interfaces/v0.8.x/IGenArt721CoreContractV3_RoyaltySplitters.sol";
-import "./interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
-import {ISplitProviderV0} from "./interfaces/v0.8.x/ISplitProviderV0.sol";
+import "../interfaces/v0.8.x/IRandomizer_V3CoreBase.sol";
+import "../interfaces/v0.8.x/IAdminACLV0.sol";
+import "../interfaces/v0.8.x/IGenArt721CoreContractV3.sol";
+import {IGenArt721CoreContractV3_ProjectFinance} from "../interfaces/v0.8.x/IGenArt721CoreContractV3_ProjectFinance.sol";
+import "../interfaces/v0.8.x/IGenArt721CoreContractV3_RoyaltySplitters.sol";
+import "../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
+import {ISplitProviderV0} from "../interfaces/v0.8.x/ISplitProviderV0.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import {IERC2981} from "@openzeppelin-4.7/contracts/interfaces/IERC2981.sol";
-import "./libs/v0.8.x/ERC721_PackedHashSeed.sol";
-import "./libs/v0.8.x/BytecodeStorageV1.sol";
-import "./libs/v0.8.x/Bytes32Strings.sol";
+import "../libs/v0.8.x/ERC721_PackedHashSeed.sol";
+import "../libs/v0.8.x/BytecodeStorageV1.sol";
+import "../libs/v0.8.x/Bytes32Strings.sol";
 
 /**
  * @title Art Blocks ERC-721 core contract, V3.
