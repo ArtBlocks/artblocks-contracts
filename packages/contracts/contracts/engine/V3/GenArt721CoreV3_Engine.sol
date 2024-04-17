@@ -48,7 +48,8 @@ import "../../libs/v0.8.x/Bytes32Strings.sol";
  * - updateProjectName
  * - updateProjectArtistName
  * - updateProjectLicense
- * - Change project script via addProjectScript, addProjectScriptCompressed, updateProjectScript, updateProjectScriptCompressed,
+ * - Change project script via addProjectScript, addProjectScriptCompressed,
+ *   updateProjectScript, updateProjectScriptCompressed,
  *   and removeProjectLastScript
  * - updateProjectScriptType
  * - updateProjectAspectRatio
@@ -288,6 +289,10 @@ contract GenArt721CoreV3_Engine is
 
     function _onlyNonEmptyString(string memory _string) internal pure {
         require(bytes(_string).length != 0, "Must input non-empty string");
+    }
+
+    function _onlyNonEmptyBytes(bytes memory _bytes) internal pure {
+        require(_bytes.length != 0, "Must input non-empty bytes");
     }
 
     function _onlyValidTokenId(uint256 _tokenId) internal view {
@@ -1161,9 +1166,11 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
-     * @notice Adds a pre-compressed script to project `_projectId`. The script should be compressed using `getCompressed`. This function stores the script in a compressed
-     * format on-chain. For reads, the compressed script is decompressed on-chain, ensuring the original text is
-     * reconstructed without external dependencies.
+     * @notice Adds a pre-compressed script to project `_projectId`. The script
+     * should be compressed using `getCompressed`. This function stores the script
+     * in a compressed format on-chain. For reads, the compressed script is
+     * decompressed on-chain, ensuring the original text is reconstructed without
+     * external dependencies.
      * @param _projectId Project to be updated.
      * @param _compressedScript Pre-compressed script to be added.
      * Required to be non-empty, but no further validation is performed.
@@ -1177,7 +1184,7 @@ contract GenArt721CoreV3_Engine is
             _projectId,
             this.addProjectScriptCompressed.selector
         );
-        require(_compressedScript.length > 0, "Must input non-empty script");
+        _onlyNonEmptyBytes(_compressedScript);
         Project storage project = projects[_projectId];
         // store compressed script in contract bytecode
         project.scriptBytecodeAddresses[project.scriptCount] = _compressedScript
@@ -1210,10 +1217,11 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
-     * @notice Updates script for project `_projectId` at script ID `_scriptId` with a pre-compressed script.
-     * The script should be compressed using `getCompressed`. This function stores the script in a compressed
-     * format on-chain. For reads, the compressed script is decompressed on-chain, ensuring the original text is
-     * reconstructed without external dependencies.
+     * @notice Updates script for project `_projectId` at script ID `_scriptId`
+     * with a pre-compressed script. The script should be compressed using
+     * `getCompressed`. This function stores the script in a compressed format
+     * on-chain. For reads, the compressed script is decompressed on-chain, ensuring
+     * the original text is reconstructed without external dependencies.
      * @param _projectId Project to be updated.
      * @param _scriptId Script ID to be updated.
      * @param _compressedScript The updated pre-compressed script value.
@@ -1229,7 +1237,7 @@ contract GenArt721CoreV3_Engine is
             _projectId,
             this.updateProjectScriptCompressed.selector
         );
-        require(_compressedScript.length > 0, "Must input non-empty script");
+        _onlyNonEmptyBytes(_compressedScript);
         Project storage project = projects[_projectId];
         require(_scriptId < project.scriptCount, "scriptId out of range");
         // store script in contract bytecode, replacing reference address from
