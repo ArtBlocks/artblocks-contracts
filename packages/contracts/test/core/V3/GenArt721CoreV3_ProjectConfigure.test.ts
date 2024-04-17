@@ -1313,7 +1313,7 @@ for (const coreContractName of coreContractsToTest) {
           config.genArt721Core
             .connect(config.accounts.artist)
             .addProjectScriptCompressed(config.projectZero, "0x"),
-          "Must input non-empty script"
+          "Must input non-empty bytes"
         );
       });
       it("fails to upload a script if it's an empty string", async function () {

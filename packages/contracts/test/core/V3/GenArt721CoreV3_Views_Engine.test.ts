@@ -782,7 +782,7 @@ for (const coreContractName of coreContractsToTest) {
           config.genArt721Core
             .connect(config.accounts.deployer)
             .addProjectScriptCompressed("0x"),
-          "Must input non-empty script"
+          "Must input non-empty bytes"
         );
         // getCompressed
         expectRevert(
