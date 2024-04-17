@@ -376,7 +376,6 @@ for (const coreContractName of coreContractsToTest) {
         ) {
           expect(coreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
         } else {
-          // coreType is same for GenArt721CoreV3 & GenArt721CoreV3_Explorations
           throw new Error("Untested core contract version");
         }
       });
