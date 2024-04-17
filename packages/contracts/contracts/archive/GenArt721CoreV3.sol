@@ -49,8 +49,7 @@ import "../libs/v0.8.x/Bytes32Strings.sol";
  * - updateProjectName
  * - updateProjectArtistName
  * - updateProjectLicense
- * - Change project script via addProjectScript, addProjectScriptCompressed,
- *   updateProjectScript, updateProjectScriptCompressed,
+ * - Change project script via addProjectScript, updateProjectScript,
  *   and removeProjectLastScript
  * - updateProjectScriptType
  * - updateProjectAspectRatio
@@ -95,7 +94,6 @@ contract GenArt721CoreV3 is
     IGenArt721CoreContractExposesHashSeed
 {
     using BytecodeStorageWriter for string;
-    using BytecodeStorageWriter for bytes;
     using Bytes32Strings for bytes32;
     using Strings for uint256;
     uint256 constant ONE_HUNDRED = 100;
@@ -262,10 +260,6 @@ contract GenArt721CoreV3 is
 
     function _onlyNonEmptyString(string memory _string) internal pure {
         require(bytes(_string).length != 0, "Must input non-empty string");
-    }
-
-    function _onlyNonEmptyBytes(bytes memory _bytes) internal pure {
-        require(_bytes.length != 0, "Must input non-empty bytes");
     }
 
     function _onlyValidTokenId(uint256 _tokenId) internal view {
@@ -1107,34 +1101,6 @@ contract GenArt721CoreV3 is
     }
 
     /**
-     * @notice Adds a pre-compressed script to project `_projectId`. The script
-     * should be compressed using `getCompressed`. This function stores the script
-     * in a compressed format on-chain. For reads, the compressed script is
-     * decompressed on-chain, ensuring the original text is reconstructed without
-     * external dependencies.
-     * @param _projectId Project to be updated.
-     * @param _compressedScript Pre-compressed script to be added.
-     * Required to be non-empty, but no further validation is performed.
-     */
-    function addProjectScriptCompressed(
-        uint256 _projectId,
-        bytes memory _compressedScript
-    ) external {
-        _onlyUnlocked(_projectId);
-        _onlyArtistOrAdminACL(
-            _projectId,
-            this.addProjectScriptCompressed.selector
-        );
-        _onlyNonEmptyBytes(_compressedScript);
-        Project storage project = projects[_projectId];
-        // store compressed script in contract bytecode
-        project.scriptBytecodeAddresses[project.scriptCount] = _compressedScript
-            .writeToBytecodeCompressed();
-        project.scriptCount = project.scriptCount + 1;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
-    }
-
-    /**
      * @notice Updates script for project `_projectId` at script ID `_scriptId`.
      * @param _projectId Project to be updated.
      * @param _scriptId Script ID to be updated.
@@ -1154,37 +1120,6 @@ contract GenArt721CoreV3 is
         // store script in contract bytecode, replacing reference address from
         // the old storage contract with the newly created one
         project.scriptBytecodeAddresses[_scriptId] = _script.writeToBytecode();
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
-    }
-
-    /**
-     * @notice Updates script for project `_projectId` at script ID `_scriptId`
-     * with a pre-compressed script. The script should be compressed using
-     * `getCompressed`. This function stores the script in a compressed format
-     * on-chain. For reads, the compressed script is decompressed on-chain, ensuring
-     * the original text is reconstructed without external dependencies.
-     * @param _projectId Project to be updated.
-     * @param _scriptId Script ID to be updated.
-     * @param _compressedScript The updated pre-compressed script value.
-     * Required to be non-empty, but no further validation is performed.
-     */
-    function updateProjectScriptCompressed(
-        uint256 _projectId,
-        uint256 _scriptId,
-        bytes memory _compressedScript
-    ) external {
-        _onlyUnlocked(_projectId);
-        _onlyArtistOrAdminACL(
-            _projectId,
-            this.updateProjectScriptCompressed.selector
-        );
-        _onlyNonEmptyBytes(_compressedScript);
-        Project storage project = projects[_projectId];
-        require(_scriptId < project.scriptCount, "scriptId out of range");
-        // store script in contract bytecode, replacing reference address from
-        // the old storage contract with the newly created one
-        project.scriptBytecodeAddresses[_scriptId] = _compressedScript
-            .writeToBytecodeCompressed();
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
@@ -1581,18 +1516,6 @@ contract GenArt721CoreV3 is
         scriptTypeAndVersion = project.scriptTypeAndVersion.toString();
         aspectRatio = project.aspectRatio;
         scriptCount = project.scriptCount;
-    }
-
-    /**
-     * @notice Returns the compressed form of a string in bytes using solady LibZip's flz compress algorithm. The bytes output from this function are intended to be used as input to `addProjectScriptCompressed` and `updateProjectScriptCompressed`.
-     * @param _script Script to be compressed. Required to be a non-empty string, but no further validaton is performed.
-     * @return bytes compressed bytes
-     */
-    function getCompressed(
-        string memory _script
-    ) external view returns (bytes memory) {
-        _onlyNonEmptyString(_script);
-        return BytecodeStorageReader.getCompressed(_script);
     }
 
     /**
