@@ -1466,6 +1466,7 @@ for (const coreContractName of coreContractsToTest) {
             0, // _startingProjectId
             true, // _autoApproveArtistSplitProposals
             config.splitProvider.address, // _splitProviderAddress
+            false, // null platform provider
             false, // allow artist project activation
           ]
         );
