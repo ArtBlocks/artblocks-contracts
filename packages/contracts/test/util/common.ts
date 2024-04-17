@@ -294,7 +294,6 @@ export async function deployCoreWithMinterFilter(
         randomizer.address,
         adminACL.address,
         0, // _startingProjectId
-        config.splitProvider.address, // _splitProviderAddress
       ]
     );
     // assign core contract for randomizer to use
@@ -467,7 +466,6 @@ export async function deployCore(
         randomizer.address,
         adminACL.address,
         config.projectZero, // starting project ID
-        config.splitProvider.address, // _splitProviderAddress
       ]
     );
     // register core contract on CoreRegistryV1
