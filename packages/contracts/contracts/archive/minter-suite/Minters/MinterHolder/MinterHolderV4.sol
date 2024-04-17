@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
-import "../../interfaces/v0.8.x/IMinterFilterV0.sol";
-import "../../interfaces/v0.8.x/IFilteredMinterHolderV2.sol";
-import "../../interfaces/v0.8.x/IRandomizerPolyptychV0.sol";
-import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
-import "./MinterBase_v0_1_1.sol";
+import "../../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../../../../interfaces/v0.8.x/IMinterFilterV0.sol";
+import "../../../../interfaces/v0.8.x/IFilteredMinterHolderV2.sol";
+import "../MinterBase_v0_1_1.sol";
+import "../../../../interfaces/v0.8.x/IDelegationRegistry.sol";
 
 import "@openzeppelin-4.5/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
@@ -16,36 +14,12 @@ import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 pragma solidity 0.8.19;
 
 /**
- * @title Core contract interface for accessing the randomizer from the minter
- * @notice This interface provides the minter with access to the randomizer, allowing the
- * token hash seed for a newly-minted token to be assigned by the minter if the artist
- * has enabled the project as a polyptych. Polytptych projects must use the V3 core
- * contract, polyptych minter, and polyptych randomizer - this interface allows the
- * minter to access the randomizer.
- */
-interface IGenArt721CoreContractV3WithRandomizer is
-    IGenArt721CoreContractV3_Base,
-    IGenArt721CoreContractExposesHashSeed
-{
-    /// current randomizer contract
-    function randomizerContract() external returns (IRandomizerPolyptychV0);
-}
-
-/**
- * @title Filtered Minter contract that allows tokens to be minted with ETH or ERC20 tokens
- * when purchaser owns an allowlisted ERC-721 NFT. This contract must be used with
- * an accompanying randomizer contract that is configured to copy the token hash seed
- * from the allowlisted token to a corresponding newly-minted token.
- * The source token may only be used to mint one additional polyptych "panel" if the token
- * has not yet been used to mint a panel with the currently configured panel ID. To add
- * an additional panel to a project, the panel ID may be incremented for the project
- * using the `incrementPolyptychProjectPanelId` function. Panel IDs for a project may only
- * be incremented such that panels must be minted in the order of their panel ID. Tokens
- * of the same project and panel ID may be minted in any order.
- * This is designed to be used with IGenArt721CoreContractExposesHashSeed contracts with an
- * active IPolyptychRandomizerV0 randomizer available for this minter to use.
- * This minter requires both a properly configured core contract and polyptych
- * randomizer in order to mint polyptych tokens.
+ * @title Filtered Minter contract that allows tokens to be minted with ETH
+ * when purchaser owns an allowlisted ERC-721 NFT. This contract does NOT track
+ * if a purchaser has/has not minted already -- it simply restricts purchasing
+ * to anybody that holds one or more of a specified list of ERC-721 NFTs.
+ * This is designed to be used with GenArt721CoreContractV3 flagship or
+ * engine contracts.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
  * This contract is designed to be managed, with limited powers.
@@ -65,7 +39,6 @@ interface IGenArt721CoreContractV3WithRandomizer is
  * - removeHoldersOfProjects
  * - allowRemoveHoldersOfProjects
  * - updatePricePerTokenInWei
- * - updateProjectCurrencyInfo
  * - setProjectMaxInvocations
  * - manuallyLimitProjectMaxInvocations
  * ----------------------------------------------------------------------------
@@ -85,9 +58,9 @@ interface IGenArt721CoreContractV3WithRandomizer is
  * Delegations must be configured by the vault owner prior to purchase. Supported
  * delegation types include token-level, contract-level (via genArt721CoreAddress), or
  * wallet-level delegation. Contract-level delegations must be configured for the core
- * token contract as returned by the owned token's core contract address.
+ * token contract as returned by the public immutable variable `genArt721CoreAddress`.
  */
-contract MinterPolyptychV0 is
+contract MinterHolderV4 is
     ReentrancyGuard,
     MinterBase,
     IFilteredMinterHolderV2
@@ -104,8 +77,8 @@ contract MinterPolyptychV0 is
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
-    /// This contract handles cores with interface IV3
-    IGenArt721CoreContractV3WithRandomizer private immutable genArtCoreContract;
+    /// The core contract integrates with V3 contracts
+    IGenArt721CoreContractV3_Base private immutable genArtCoreContract_Base;
 
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
@@ -113,16 +86,11 @@ contract MinterPolyptychV0 is
     /// Minter filter this minter may interact with.
     IMinterFilterV0 private immutable minterFilter;
 
-    // Stores whether a panel with an ID has been minted for a given token hash seed
-    // panelId => hashSeed => panelIsMinted
-    mapping(uint256 => mapping(bytes12 => bool))
-        public polyptychPanelHashSeedIsMinted;
-
     /// minterType for this minter
-    string public constant minterType = "MinterPolyptychV0";
+    string public constant minterType = "MinterHolderV4";
 
     /// minter version for this minter
-    string public constant minterVersion = "v0.1.0";
+    string public constant minterVersion = "v4.1.0";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -130,10 +98,7 @@ contract MinterPolyptychV0 is
         bool maxHasBeenInvoked;
         bool priceIsConfigured;
         uint24 maxInvocations;
-        uint24 polyptychPanelId;
-        address currencyAddress;
         uint256 pricePerTokenInWei;
-        string currencySymbol;
     }
 
     mapping(uint256 => ProjectConfig) public projectConfig;
@@ -152,7 +117,7 @@ contract MinterPolyptychV0 is
     // @dev defers which ACL contract is used to the core contract
     function _onlyCoreAdminACL(bytes4 _selector) internal {
         require(
-            genArtCoreContract.adminACLAllowed(
+            genArtCoreContract_Base.adminACLAllowed(
                 msg.sender,
                 address(this),
                 _selector
@@ -164,7 +129,7 @@ contract MinterPolyptychV0 is
     function _onlyArtist(uint256 _projectId) internal view {
         require(
             msg.sender ==
-                genArtCoreContract.projectIdToArtistAddress(_projectId),
+                genArtCoreContract_Base.projectIdToArtistAddress(_projectId),
             "Only Artist"
         );
     }
@@ -185,7 +150,9 @@ contract MinterPolyptychV0 is
         address _delegationRegistryAddress
     ) ReentrancyGuard() MinterBase(_genArt721Address) {
         genArt721CoreAddress = _genArt721Address;
-        genArtCoreContract = IGenArt721CoreContractV3WithRandomizer(
+        // always populate immutable engine contracts, but only use appropriate
+        // interface based on isEngine in the rest of the contract
+        genArtCoreContract_Base = IGenArt721CoreContractV3_Base(
             _genArt721Address
         );
         delegationRegistryAddress = _delegationRegistryAddress;
@@ -199,28 +166,6 @@ contract MinterPolyptychV0 is
             minterFilter.genArt721CoreAddress() == _genArt721Address,
             "Illegal contract pairing"
         );
-        // currently, this minter only supports Engine V3 core contracts
-        require(MinterBase.isEngine, "Only supports V3 Engine core");
-    }
-
-    /**
-     * @notice Return whether or not a token has been used to mint a polyptych panel with the given ID
-     * @param _panelId The ID of the polyptych panel being checked
-     * @param _ownedNFTAddress ERC-721 NFT address holding the project token
-     * owned by msg.sender being used to prove right to purchase
-     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
-     * to prove right to purchase
-     */
-    function polyptychPanelMintedWithToken(
-        uint24 _panelId,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTTokenId
-    ) external view returns (bool panelMinted) {
-        bytes12 _tokenHash = IGenArt721CoreContractExposesHashSeed(
-            _ownedNFTAddress
-        ).tokenIdToHashSeed(_ownedNFTTokenId);
-        require(_tokenHash != bytes32(0), "Invalid token hash seed");
-        return polyptychPanelHashSeedIsMinted[_panelId][_tokenHash];
     }
 
     /**
@@ -232,8 +177,6 @@ contract MinterPolyptychV0 is
      */
     function registerNFTAddress(address _NFTAddress) external {
         _onlyCoreAdminACL(this.registerNFTAddress.selector);
-        // check that core contract implements the `tokenIdToHashSeed` function
-        IGenArt721CoreContractExposesHashSeed(_NFTAddress).tokenIdToHashSeed(0);
         _registeredNFTAddresses.add(_NFTAddress);
         emit RegisteredNFTAddress(_NFTAddress);
     }
@@ -248,6 +191,91 @@ contract MinterPolyptychV0 is
         _onlyCoreAdminACL(this.unregisterNFTAddress.selector);
         _registeredNFTAddresses.remove(_NFTAddress);
         emit UnregisteredNFTAddress(_NFTAddress);
+    }
+
+    /**
+     * @notice Allows holders of NFTs at addresses `_ownedNFTAddresses`,
+     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
+     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
+     * e.g. Allows holders of project `_ownedNFTProjectIds[0]` on token
+     * contract `_ownedNFTAddresses[0]` to mint `_projectId`.
+     * @param _projectId Project ID to enable minting on.
+     * @param _ownedNFTAddresses NFT core addresses of projects to be
+     * allowlisted. Indexes must align with `_ownedNFTProjectIds`.
+     * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
+     * holders shall be allowlisted to mint project `_projectId`. Indexes must
+     * align with `_ownedNFTAddresses`.
+     */
+    function allowHoldersOfProjects(
+        uint256 _projectId,
+        address[] memory _ownedNFTAddresses,
+        uint256[] memory _ownedNFTProjectIds
+    ) public {
+        _onlyArtist(_projectId);
+        // require same length arrays
+        require(
+            _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
+            "Length of add arrays must match"
+        );
+        // for each approved project
+        for (uint256 i = 0; i < _ownedNFTAddresses.length; i++) {
+            // ensure registered address
+            require(
+                _registeredNFTAddresses.contains(_ownedNFTAddresses[i]),
+                "Only Registered NFT Addresses"
+            );
+            // approve
+            allowedProjectHolders[_projectId][_ownedNFTAddresses[i]][
+                _ownedNFTProjectIds[i]
+            ] = true;
+        }
+        // emit approve event
+        emit AllowedHoldersOfProjects(
+            _projectId,
+            _ownedNFTAddresses,
+            _ownedNFTProjectIds
+        );
+    }
+
+    /**
+     * @notice Removes holders of NFTs at addresses `_ownedNFTAddresses`,
+     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`. If
+     * other projects owned by a holder are still allowed to mint, holder will
+     * maintain ability to purchase.
+     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
+     * e.g. Removes holders of project `_ownedNFTProjectIds[0]` on token
+     * contract `_ownedNFTAddresses[0]` from mint allowlist of `_projectId`.
+     * @param _projectId Project ID to enable minting on.
+     * @param _ownedNFTAddresses NFT core addresses of projects to be removed
+     * from allowlist. Indexes must align with `_ownedNFTProjectIds`.
+     * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
+     * holders will be removed from allowlist to mint project `_projectId`.
+     * Indexes must align with `_ownedNFTAddresses`.
+     */
+    function removeHoldersOfProjects(
+        uint256 _projectId,
+        address[] memory _ownedNFTAddresses,
+        uint256[] memory _ownedNFTProjectIds
+    ) public {
+        _onlyArtist(_projectId);
+        // require same length arrays
+        require(
+            _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
+            "Length of remove arrays must match"
+        );
+        // for each removed project
+        for (uint256 i = 0; i < _ownedNFTAddresses.length; i++) {
+            // revoke
+            allowedProjectHolders[_projectId][_ownedNFTAddresses[i]][
+                _ownedNFTProjectIds[i]
+            ] = false;
+        }
+        // emit removed event
+        emit RemovedHoldersOfProjects(
+            _projectId,
+            _ownedNFTAddresses,
+            _ownedNFTProjectIds
+        );
     }
 
     /**
@@ -299,6 +327,27 @@ contract MinterPolyptychV0 is
     }
 
     /**
+     * @notice Returns if token is an allowlisted NFT for project `_projectId`.
+     * @param _projectId Project ID to be checked.
+     * @param _ownedNFTAddress ERC-721 NFT token address to be checked.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID to be checked.
+     * @return bool Token is allowlisted
+     * @dev does not check if token has been used to purchase
+     * @dev assumes project ID can be derived from tokenId / 1_000_000
+     */
+    function isAllowlistedNFT(
+        uint256 _projectId,
+        address _ownedNFTAddress,
+        uint256 _ownedNFTTokenId
+    ) public view returns (bool) {
+        uint256 ownedNFTProjectId = _ownedNFTTokenId / ONE_MILLION;
+        return
+            allowedProjectHolders[_projectId][_ownedNFTAddress][
+                ownedNFTProjectId
+            ];
+    }
+
+    /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
      * the value currently defined in the core contract.
      * @param _projectId Project ID to set the maximum invocations for.
@@ -308,7 +357,7 @@ contract MinterPolyptychV0 is
     function setProjectMaxInvocations(uint256 _projectId) public {
         uint256 maxInvocations;
         uint256 invocations;
-        (invocations, maxInvocations, , , , ) = genArtCoreContract
+        (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
             .projectStateData(_projectId);
         // update storage with results
         projectConfig[_projectId].maxInvocations = uint24(maxInvocations);
@@ -343,7 +392,7 @@ contract MinterPolyptychV0 is
         // ensure that the manually set maxInvocations is not greater than what is set on the core contract
         uint256 maxInvocations;
         uint256 invocations;
-        (invocations, maxInvocations, , , , ) = genArtCoreContract
+        (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
             .projectStateData(_projectId);
         require(
             _maxInvocations <= maxInvocations,
@@ -363,6 +412,58 @@ contract MinterPolyptychV0 is
             invocations == _maxInvocations;
 
         emit ProjectMaxInvocationsLimitUpdated(_projectId, _maxInvocations);
+    }
+
+    /**
+     * @notice Warning: Disabling purchaseTo is not supported on this minter.
+     * This method exists purely for interface-conformance purposes.
+     */
+    function togglePurchaseToDisabled(uint256 _projectId) external view {
+        _onlyArtist(_projectId);
+        revert("Action not supported");
+    }
+
+    /**
+     * @notice projectId => has project reached its maximum number of
+     * invocations? Note that this returns a local cache of the core contract's
+     * state, and may be out of sync with the core contract. This is
+     * intentional, as it only enables gas optimization of mints after a
+     * project's maximum invocations has been reached. A false negative will
+     * only result in a gas cost increase, since the core contract will still
+     * enforce a maxInvocation check during minting. A false positive is not
+     * possible because the V3 core contract only allows maximum invocations
+     * to be reduced, not increased. Based on this rationale, we intentionally
+     * do not do input validation in this method as to whether or not the input
+     * `_projectId` is an existing project ID.
+     */
+    function projectMaxHasBeenInvoked(
+        uint256 _projectId
+    ) external view returns (bool) {
+        return projectConfig[_projectId].maxHasBeenInvoked;
+    }
+
+    /**
+     * @notice projectId => project's maximum number of invocations.
+     * Optionally synced with core contract value, for gas optimization.
+     * Note that this returns a local cache of the core contract's
+     * state, and may be out of sync with the core contract. This is
+     * intentional, as it only enables gas optimization of mints after a
+     * project's maximum invocations has been reached.
+     * @dev A number greater than the core contract's project max invocations
+     * will only result in a gas cost increase, since the core contract will
+     * still enforce a maxInvocation check during minting. A number less than
+     * the core contract's project max invocations is only possible when the
+     * project's max invocations have not been synced on this minter, since the
+     * V3 core contract only allows maximum invocations to be reduced, not
+     * increased. When this happens, the minter will enable minting, allowing
+     * the core contract to enforce the max invocations check. Based on this
+     * rationale, we intentionally do not do input validation in this method as
+     * to whether or not the input `_projectId` is an existing project ID.
+     */
+    function projectMaxInvocations(
+        uint256 _projectId
+    ) external view returns (uint256) {
+        return uint256(projectConfig[_projectId].maxInvocations);
     }
 
     /**
@@ -394,32 +495,17 @@ contract MinterPolyptychV0 is
     }
 
     /**
-     * @notice Updates payment currency of project `_projectId` to be
-     * `_currencySymbol` at address `_currencyAddress`.
-     * @param _projectId Project ID to update.
-     * @param _currencySymbol Currency symbol.
-     * @param _currencyAddress Currency address.
+     * @notice Inactive function - requires NFT ownership to purchase.
      */
-    function updateProjectCurrencyInfo(
-        uint256 _projectId,
-        string memory _currencySymbol,
-        address _currencyAddress
-    ) external {
-        _onlyArtist(_projectId);
-        // require null address if symbol is "ETH"
-        require(
-            (keccak256(abi.encodePacked(_currencySymbol)) ==
-                keccak256(abi.encodePacked("ETH"))) ==
-                (_currencyAddress == address(0)),
-            "ETH is only null address"
-        );
-        projectConfig[_projectId].currencySymbol = _currencySymbol;
-        projectConfig[_projectId].currencyAddress = _currencyAddress;
-        emit ProjectCurrencyInfoUpdated(
-            _projectId,
-            _currencyAddress,
-            _currencySymbol
-        );
+    function purchase(uint256) external payable returns (uint256) {
+        revert("Must claim NFT ownership");
+    }
+
+    /**
+     * @notice Inactive function - requires NFT ownership to purchase.
+     */
+    function purchaseTo(address, uint256) public payable returns (uint256) {
+        revert("Must claim NFT ownership");
     }
 
     /**
@@ -522,94 +608,121 @@ contract MinterPolyptychV0 is
     }
 
     /**
-     * @notice Inactive function - requires NFT ownership to purchase.
+     * @notice gas-optimized version of purchaseTo(address,uint256,address,uint256,address).
+     * @param _to Address to be the new token's owner.
+     * @param _projectId Project ID to mint a token on.
+     * @param _ownedNFTAddress ERC-721 NFT address holding the project token owned by _vault
+     *         (or msg.sender if no _vault is provided) being used to claim right to purchase.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by _vault (or msg.sender if
+     *         no _vault is provided) being used to claim right to purchase.
+     * @param _vault Vault being purchased on behalf of. Acceptable to be `address(0)` if no vault.
+     * @return tokenId Token ID of minted token
      */
-    function purchase(uint256) external payable returns (uint256) {
-        revert("Must claim NFT ownership");
-    }
+    function purchaseTo_dlc(
+        address _to,
+        uint256 _projectId,
+        address _ownedNFTAddress,
+        uint256 _ownedNFTTokenId,
+        address _vault
+    ) public payable nonReentrant returns (uint256 tokenId) {
+        // CHECKS
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
 
-    /**
-     * @notice Warning: Disabling purchaseTo is not supported on this minter.
-     * This method exists purely for interface-conformance purposes.
-     */
-    function togglePurchaseToDisabled(uint256 _projectId) external view {
-        _onlyArtist(_projectId);
-        revert("Action not supported");
-    }
-
-    /**
-     * @notice projectId => has project reached its maximum number of
-     * invocations? Note that this returns a local cache of the core contract's
-     * state, and may be out of sync with the core contract. This is
-     * intentional, as it only enables gas optimization of mints after a
-     * project's maximum invocations has been reached. A false negative will
-     * only result in a gas cost increase, since the core contract will still
-     * enforce a maxInvocation check during minting. A false positive is not
-     * possible because the V3 core contract only allows maximum invocations
-     * to be reduced, not increased. Based on this rationale, we intentionally
-     * do not do input validation in this method as to whether or not the input
-     * `_projectId` is an existing project ID.
-     */
-    function projectMaxHasBeenInvoked(
-        uint256 _projectId
-    ) external view returns (bool) {
-        return projectConfig[_projectId].maxHasBeenInvoked;
-    }
-
-    /**
-     * @notice projectId => project's maximum number of invocations.
-     * Optionally synced with core contract value, for gas optimization.
-     * Note that this returns a local cache of the core contract's
-     * state, and may be out of sync with the core contract. This is
-     * intentional, as it only enables gas optimization of mints after a
-     * project's maximum invocations has been reached.
-     * @dev A number greater than the core contract's project max invocations
-     * will only result in a gas cost increase, since the core contract will
-     * still enforce a maxInvocation check during minting. A number less than
-     * the core contract's project max invocations is only possible when the
-     * project's max invocations have not been synced on this minter, since the
-     * V3 core contract only allows maximum invocations to be reduced, not
-     * increased. When this happens, the minter will enable minting, allowing
-     * the core contract to enforce the max invocations check. Based on this
-     * rationale, we intentionally do not do input validation in this method as
-     * to whether or not the input `_projectId` is an existing project ID.
-     */
-    function projectMaxInvocations(
-        uint256 _projectId
-    ) external view returns (uint256) {
-        return uint256(projectConfig[_projectId].maxInvocations);
-    }
-
-    /**
-     * @notice Gets your balance of the ERC-20 token currently set
-     * as the payment currency for project `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return balance Balance of ERC-20
-     */
-    function getYourBalanceOfProjectERC20(
-        uint256 _projectId
-    ) external view returns (uint256 balance) {
-        balance = IERC20(projectConfig[_projectId].currencyAddress).balanceOf(
-            msg.sender
+        // Note that `maxHasBeenInvoked` is only checked here to reduce gas
+        // consumption after a project has been fully minted.
+        // `_projectConfig.maxHasBeenInvoked` is locally cached to reduce
+        // gas consumption, but if not in sync with the core contract's value,
+        // the core contract also enforces its own max invocation check during
+        // minting.
+        require(
+            !_projectConfig.maxHasBeenInvoked,
+            "Maximum number of invocations reached"
         );
-        return balance;
-    }
 
-    /**
-     * @notice Gets your allowance for this minter of the ERC-20
-     * token currently set as the payment currency for project
-     * `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return remaining Remaining allowance of ERC-20
-     */
-    function checkYourAllowanceOfProjectERC20(
-        uint256 _projectId
-    ) external view returns (uint256 remaining) {
-        remaining = IERC20(projectConfig[_projectId].currencyAddress).allowance(
-            msg.sender,
-            address(this)
+        // load price of token into memory
+        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
+
+        require(
+            msg.value >= pricePerTokenInWei,
+            "Must send minimum value to mint!"
         );
-        return remaining;
+
+        // require artist to have configured price of token on this minter
+        require(_projectConfig.priceIsConfigured, "Price not configured");
+
+        // require token used to claim to be in set of allowlisted NFTs
+        require(
+            isAllowlistedNFT(_projectId, _ownedNFTAddress, _ownedNFTTokenId),
+            "Only allowlisted NFTs"
+        );
+
+        // NOTE: delegate-vault handling **begins here**.
+
+        // handle that the vault may be either the `msg.sender` in the case
+        // that there is not a true vault, or may be `_vault` if one is
+        // provided explicitly (and it is valid).
+        address vault = msg.sender;
+        if (_vault != address(0)) {
+            // If a vault is provided, it must be valid, otherwise throw rather
+            // than optimistically-minting with original `msg.sender`.
+            // Note, we do not check `checkDelegateForAll` or `checkDelegateForContract` as well,
+            // as they are known to be implicitly checked by calling `checkDelegateForToken`.
+            bool isValidVault = delegationRegistryContract
+                .checkDelegateForToken(
+                    msg.sender, // delegate
+                    _vault, // vault
+                    genArt721CoreAddress, // contract
+                    _ownedNFTTokenId // tokenId
+                );
+            require(isValidVault, "Invalid delegate-vault pairing");
+            vault = _vault;
+        }
+
+        // EFFECTS
+        tokenId = minterFilter.mint(_to, _projectId, vault);
+
+        // NOTE: delegate-vault handling **ends here**.
+
+        // invocation is token number plus one, and will never overflow due to
+        // limit of 1e6 invocations per project. block scope for gas efficiency
+        // (i.e. avoid an unnecessary var initialization to 0).
+        unchecked {
+            uint256 tokenInvocation = (tokenId % ONE_MILLION) + 1;
+            uint256 localMaxInvocations = _projectConfig.maxInvocations;
+            // handle the case where the token invocation == minter local max
+            // invocations occurred on a different minter, and we have a stale
+            // local maxHasBeenInvoked value returning a false negative.
+            // @dev this is a CHECK after EFFECTS, so security was considered
+            // in detail here.
+            require(
+                tokenInvocation <= localMaxInvocations,
+                "Maximum invocations reached"
+            );
+            // in typical case, update the local maxHasBeenInvoked value
+            // to true if the token invocation == minter local max invocations
+            // (enables gas efficient reverts after sellout)
+            if (tokenInvocation == localMaxInvocations) {
+                _projectConfig.maxHasBeenInvoked = true;
+            }
+        }
+
+        // INTERACTIONS
+        // require sender to own NFT used to redeem
+        /**
+         * @dev Considered an interaction because calling ownerOf on an NFT
+         * contract. Plan is to only register AB/PBAB NFTs on the minter, but
+         * in case other NFTs are registered, better to check here. Also,
+         * function is non-reentrant, so being extra cautious.
+         */
+        require(
+            IERC721(_ownedNFTAddress).ownerOf(_ownedNFTTokenId) == vault,
+            "Only owner of NFT"
+        );
+
+        // split funds
+        splitFundsETH(_projectId, pricePerTokenInWei, genArt721CoreAddress);
+
+        return tokenId;
     }
 
     /**
@@ -662,338 +775,7 @@ contract MinterPolyptychV0 is
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         isConfigured = _projectConfig.priceIsConfigured;
         tokenPriceInWei = _projectConfig.pricePerTokenInWei;
-        currencyAddress = _projectConfig.currencyAddress;
-        if (currencyAddress == address(0)) {
-            // defaults to ETH
-            currencySymbol = "ETH";
-        } else {
-            currencySymbol = _projectConfig.currencySymbol;
-        }
-    }
-
-    /**
-     * @notice Inactive function - requires NFT ownership to purchase.
-     */
-    function purchaseTo(address, uint256) public payable returns (uint256) {
-        revert("Must claim NFT ownership");
-    }
-
-    /**
-     * @notice gas-optimized version of purchaseTo(address,uint256,address,uint256,address).
-     * @param _to Address to be the new token's owner.
-     * @param _projectId Project ID to mint a token on.
-     * @param _ownedNFTAddress ERC-721 NFT address holding the project token owned by _vault
-     *         (or msg.sender if no _vault is provided) being used to claim right to purchase.
-     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by _vault (or msg.sender if
-     *         no _vault is provided) being used to claim right to purchase.
-     * @param _vault Vault being purchased on behalf of. Acceptable to be `address(0)` if no vault.
-     * @return tokenId Token ID of minted token
-     */
-    function purchaseTo_dlc(
-        address _to,
-        uint256 _projectId,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTTokenId,
-        address _vault
-    ) public payable nonReentrant returns (uint256 tokenId) {
-        // CHECKS
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
-
-        // Note that `maxHasBeenInvoked` is only checked here to reduce gas
-        // consumption after a project has been fully minted.
-        // `_projectConfig.maxHasBeenInvoked` is locally cached to reduce
-        // gas consumption, but if not in sync with the core contract's value,
-        // the core contract also enforces its own max invocation check during
-        // minting.
-        require(
-            !_projectConfig.maxHasBeenInvoked,
-            "Maximum number of invocations reached"
-        );
-
-        // require artist to have configured price of token on this minter
-        require(_projectConfig.priceIsConfigured, "Price not configured");
-
-        // require token used to claim to be in set of allowlisted NFTs
-        require(
-            isAllowlistedNFT(_projectId, _ownedNFTAddress, _ownedNFTTokenId),
-            "Only allowlisted NFTs"
-        );
-
-        // NOTE: delegate-vault handling **begins here**.
-
-        // handle that the vault may be either the `msg.sender` in the case
-        // that there is not a true vault, or may be `_vault` if one is
-        // provided explicitly (and it is valid).
-        address vault = msg.sender;
-        if (_vault != address(0)) {
-            // If a vault is provided, it must be valid, otherwise throw rather
-            // than optimistically-minting with original `msg.sender`.
-            // Note, we do not check `checkDelegateForAll` or `checkDelegateForContract` as well,
-            // as they are known to be implicitly checked by calling `checkDelegateForToken`.
-            bool isValidVault = delegationRegistryContract
-                .checkDelegateForToken(
-                    msg.sender, // delegate
-                    _vault, // vault
-                    _ownedNFTAddress, // contract
-                    _ownedNFTTokenId // tokenId
-                );
-            require(isValidVault, "Invalid delegate-vault pairing");
-            vault = _vault;
-        }
-
-        // we need the new token ID in advance of the randomizer setting a token hash
-        (uint256 _invocations, , , , , ) = genArtCoreContract.projectStateData(
-            _projectId
-        );
-
-        address _artist = genArtCoreContract.projectIdToArtistAddress(
-            _projectId
-        );
-
-        uint256 _newTokenId = (_projectId * ONE_MILLION) + _invocations;
-
-        // EFFECTS
-
-        // we need to store the new token ID before it is minted so the randomizer can query it
-        IGenArt721CoreContractExposesHashSeed _ownedNFTCoreContract = IGenArt721CoreContractExposesHashSeed(
-                _ownedNFTAddress
-            );
-        bytes12 _targetHashSeed = _ownedNFTCoreContract.tokenIdToHashSeed(
-            _ownedNFTTokenId
-        );
-
-        _requireCurrentPanelIsMintedOnce(_projectId, _targetHashSeed);
-
-        genArtCoreContract.randomizerContract().setPolyptychHashSeed(
-            _newTokenId,
-            _targetHashSeed
-        );
-
-        // once mint() is called, the polyptych randomizer will either:
-        // 1) assign a random token hash
-        // 2) if configured, obtain the token hash from the `polyptychSeedHashes` mapping
-        tokenId = minterFilter.mint(_to, _projectId, vault);
-
-        // NOTE: delegate-vault handling **ends here**.
-
-        // redundant check against reentrancy
-        bytes12 _assignedHashSeed = genArtCoreContract.tokenIdToHashSeed(
-            tokenId
-        );
-        require(
-            _assignedHashSeed == _targetHashSeed,
-            "Unexpected token hash seed"
-        );
-
-        // invocation is token number plus one, and will never overflow due to
-        // limit of 1e6 invocations per project. block scope for gas efficiency
-        // (i.e. avoid an unnecessary var initialization to 0).
-        unchecked {
-            uint256 tokenInvocation = (tokenId % ONE_MILLION) + 1;
-            uint256 localMaxInvocations = _projectConfig.maxInvocations;
-            // handle the case where the token invocation == minter local max
-            // invocations occurred on a different minter, and we have a stale
-            // local maxHasBeenInvoked value returning a false negative.
-            // @dev this is a CHECK after EFFECTS, so security was considered
-            // in detail here.
-            require(
-                tokenInvocation <= localMaxInvocations,
-                "Maximum invocations reached"
-            );
-            // in typical case, update the local maxHasBeenInvoked value
-            // to true if the token invocation == minter local max invocations
-            // (enables gas efficient reverts after sellout)
-            if (tokenInvocation == localMaxInvocations) {
-                _projectConfig.maxHasBeenInvoked = true;
-            }
-        }
-
-        // INTERACTIONS
-        // require sender to own NFT used to redeem
-        /**
-         * @dev Considered an interaction because calling ownerOf on an NFT
-         * contract. Plan is to only register AB/PBAB NFTs on the minter, but
-         * in case other NFTs are registered, better to check here. Also,
-         * function is non-reentrant, so being extra cautious.
-         */
-        if (msg.sender == _artist) {
-            require(
-                IERC721(_ownedNFTAddress).ownerOf(_ownedNFTTokenId) == _to,
-                "Only owner of NFT"
-            );
-        } else {
-            require(
-                IERC721(_ownedNFTAddress).ownerOf(_ownedNFTTokenId) == vault,
-                "Only owner of NFT"
-            );
-        }
-
-        // split funds
-        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
-        address currencyAddress = _projectConfig.currencyAddress;
-        if (currencyAddress != address(0)) {
-            require(
-                msg.value == 0,
-                "this project accepts a different currency and cannot accept ETH"
-            );
-            require(
-                IERC20(currencyAddress).allowance(msg.sender, address(this)) >=
-                    pricePerTokenInWei,
-                "Insufficient Funds Approved for TX"
-            );
-            require(
-                IERC20(currencyAddress).balanceOf(msg.sender) >=
-                    pricePerTokenInWei,
-                "Insufficient balance."
-            );
-            splitFundsERC20(
-                _projectId,
-                pricePerTokenInWei,
-                currencyAddress,
-                genArt721CoreAddress
-            );
-        } else {
-            require(
-                msg.value >= pricePerTokenInWei,
-                "Must send minimum value to mint!"
-            );
-            splitFundsETH(_projectId, pricePerTokenInWei, genArt721CoreAddress);
-        }
-
-        return tokenId;
-    }
-
-    /**
-     * @notice Allows holders of NFTs at addresses `_ownedNFTAddresses`,
-     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
-     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
-     * e.g. Allows holders of project `_ownedNFTProjectIds[0]` on token
-     * contract `_ownedNFTAddresses[0]` to mint `_projectId`.
-     * @param _projectId Project ID to enable minting on.
-     * @param _ownedNFTAddresses NFT core addresses of projects to be
-     * allowlisted. Indexes must align with `_ownedNFTProjectIds`.
-     * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
-     * holders shall be allowlisted to mint project `_projectId`. Indexes must
-     * align with `_ownedNFTAddresses`.
-     */
-    function allowHoldersOfProjects(
-        uint256 _projectId,
-        address[] memory _ownedNFTAddresses,
-        uint256[] memory _ownedNFTProjectIds
-    ) public {
-        _onlyArtist(_projectId);
-        // require same length arrays
-        require(
-            _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
-            "Length of add arrays must match"
-        );
-        // for each approved project
-        for (uint256 i = 0; i < _ownedNFTAddresses.length; i++) {
-            // ensure registered address
-            require(
-                _registeredNFTAddresses.contains(_ownedNFTAddresses[i]),
-                "Only Registered NFT Addresses"
-            );
-            // approve
-            allowedProjectHolders[_projectId][_ownedNFTAddresses[i]][
-                _ownedNFTProjectIds[i]
-            ] = true;
-        }
-        // emit approve event
-        emit AllowedHoldersOfProjects(
-            _projectId,
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
-    }
-
-    /**
-     * @notice Removes holders of NFTs at addresses `_ownedNFTAddresses`,
-     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`. If
-     * other projects owned by a holder are still allowed to mint, holder will
-     * maintain ability to purchase.
-     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
-     * e.g. Removes holders of project `_ownedNFTProjectIds[0]` on token
-     * contract `_ownedNFTAddresses[0]` from mint allowlist of `_projectId`.
-     * @param _projectId Project ID to enable minting on.
-     * @param _ownedNFTAddresses NFT core addresses of projects to be removed
-     * from allowlist. Indexes must align with `_ownedNFTProjectIds`.
-     * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
-     * holders will be removed from allowlist to mint project `_projectId`.
-     * Indexes must align with `_ownedNFTAddresses`.
-     */
-    function removeHoldersOfProjects(
-        uint256 _projectId,
-        address[] memory _ownedNFTAddresses,
-        uint256[] memory _ownedNFTProjectIds
-    ) public {
-        _onlyArtist(_projectId);
-        // require same length arrays
-        require(
-            _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
-            "Length of remove arrays must match"
-        );
-        // for each removed project
-        for (uint256 i = 0; i < _ownedNFTAddresses.length; i++) {
-            // revoke
-            allowedProjectHolders[_projectId][_ownedNFTAddresses[i]][
-                _ownedNFTProjectIds[i]
-            ] = false;
-        }
-        // emit removed event
-        emit RemovedHoldersOfProjects(
-            _projectId,
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
-    }
-
-    /**
-     * @notice Allows the artist to increment the minter to the next polyptych panel
-     * @param _projectId Project ID to increment to its next polyptych panel
-     */
-    function incrementPolyptychProjectPanelId(uint256 _projectId) public {
-        _onlyArtist(_projectId);
-        projectConfig[_projectId].polyptychPanelId++;
-    }
-
-    /**
-     * @notice Returns if token is an allowlisted NFT for project `_projectId`.
-     * @param _projectId Project ID to be checked.
-     * @param _ownedNFTAddress ERC-721 NFT token address to be checked.
-     * @param _ownedNFTTokenId ERC-721 NFT token ID to be checked.
-     * @return bool Token is allowlisted
-     * @dev does not check if token has been used to purchase
-     * @dev assumes project ID can be derived from tokenId / 1_000_000
-     */
-    function isAllowlistedNFT(
-        uint256 _projectId,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTTokenId
-    ) public view returns (bool) {
-        uint256 ownedNFTProjectId = _ownedNFTTokenId / ONE_MILLION;
-        return
-            allowedProjectHolders[_projectId][_ownedNFTAddress][
-                ownedNFTProjectId
-            ];
-    }
-
-    function _requireCurrentPanelIsMintedOnce(
-        uint256 _projectId,
-        bytes12 _tokenHashSeed
-    ) private {
-        // mark the polyptych panel as minted so the same panel cannot be minted twice
-        uint256 _panelId = projectConfig[_projectId].polyptychPanelId;
-
-        require(
-            _tokenHashSeed != bytes12(0),
-            "Cannot have an empty hash seed to copy."
-        );
-
-        require(
-            !polyptychPanelHashSeedIsMinted[_panelId][_tokenHashSeed],
-            "Panel already minted"
-        );
-        polyptychPanelHashSeedIsMinted[_panelId][_tokenHashSeed] = true;
+        currencySymbol = "ETH";
+        currencyAddress = address(0);
     }
 }

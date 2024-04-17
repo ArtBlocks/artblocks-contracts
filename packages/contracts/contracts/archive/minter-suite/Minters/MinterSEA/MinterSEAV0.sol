@@ -3,10 +3,10 @@
 
 pragma solidity 0.8.19;
 
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/v0.8.x/IMinterFilterV0.sol";
-import "../../interfaces/v0.8.x/IFilteredMinterSEAV0.sol";
-import "./MinterBase_v0_1_1.sol";
+import "../../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../../../../interfaces/v0.8.x/IMinterFilterV0.sol";
+import "../../../../interfaces/v0.8.x/IFilteredMinterSEAV0.sol";
+import "../MinterBase_v0_1_1.sol";
 
 import "@openzeppelin-4.7/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
