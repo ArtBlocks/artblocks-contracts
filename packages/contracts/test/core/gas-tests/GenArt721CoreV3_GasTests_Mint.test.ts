@@ -49,7 +49,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       randomizer: config.randomizer,
     } = await deployCoreWithMinterFilter(
       config,
-      "GenArt721CoreV3",
+      "GenArt721CoreV3_Engine",
       "MinterFilterV1"
     ));
 
