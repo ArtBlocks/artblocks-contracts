@@ -31,6 +31,7 @@ export const Minter_Common = async (_beforeEach: () => Promise<T_Config>) => {
           adminACL,
           0,
           config.splitProvider.address,
+          false, // allow artist project activation
         ]
       );
 

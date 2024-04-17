@@ -413,6 +413,8 @@ for (const coreContractName of coreContractsToTest) {
               nextProjectId,
               false,
               config.splitProvider.address,
+              false, // null platform provider
+              false, // allow artist project activation
             ]
           );
         } else {
@@ -426,6 +428,7 @@ for (const coreContractName of coreContractsToTest) {
               config.adminACL.address,
               nextProjectId,
               config.splitProvider.address,
+              false, // allow artist project activation
             ]
           );
         }
@@ -463,6 +466,8 @@ for (const coreContractName of coreContractsToTest) {
               nextProjectId,
               false,
               config.splitProvider.address,
+              false, // null platform provider
+              false, // allow artist project activation
             ]
           );
         } else {
@@ -476,6 +481,7 @@ for (const coreContractName of coreContractsToTest) {
               config.adminACL.address,
               nextProjectId,
               config.splitProvider.address,
+              false, // allow artist project activation
             ]
           );
         }

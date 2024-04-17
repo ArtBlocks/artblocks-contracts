@@ -153,7 +153,9 @@ for (const coreContractName of coreContractsToTest) {
               config.accounts.additional.address,
               365,
               false,
-              config.splitProvider.address // split provider
+              config.splitProvider.address, // split provider
+              false, // null platform provider
+              false // allow artist project activation
             );
           const receipt = await tx.deployTransaction.wait();
           // target event is in the last log
@@ -177,7 +179,8 @@ for (const coreContractName of coreContractsToTest) {
               config.accounts.additional.address,
               constants.ZERO_ADDRESS,
               365,
-              config.splitProvider.address // split provider
+              config.splitProvider.address, // split provider
+              false // allow artist project activation
             );
           const receipt = await tx.deployTransaction.wait();
           // target event is the last log

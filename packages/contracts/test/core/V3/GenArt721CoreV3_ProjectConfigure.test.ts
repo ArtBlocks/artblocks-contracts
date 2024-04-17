@@ -1481,6 +1481,7 @@ for (const coreContractName of coreContractsToTest) {
             0, // _startingProjectId
             true, // _autoApproveArtistSplitProposals
             config.splitProvider.address, // _splitProviderAddress
+            false, // allow artist project activation
           ]
         );
         // assign core contract for randomizer to use
