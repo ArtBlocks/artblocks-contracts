@@ -23,8 +23,6 @@ import {
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
-  "GenArt721CoreV3", // flagship V3 core
-  "GenArt721CoreV3_Explorations", // V3 core explorations contract
   "GenArt721CoreV3_Engine", // V3 core Engine contract
   "GenArt721CoreV3_Engine_Flex", // V3 core Engine Flex contract
 ];
@@ -136,100 +134,54 @@ for (const coreContractName of coreContractsToTest) {
         // it is OK that config construction addresses aren't particularly valid
         // addresses for the purposes of config test
         let tx;
-        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          const engineRegistryFactory =
-            await ethers.getContractFactory("EngineRegistryV0");
-          const engineRegistry = await engineRegistryFactory
-            .connect(config.accounts.deployer)
-            .deploy();
-          tx = await coreContractFactory
-            .connect(config.accounts.deployer)
-            .deploy(
-              "name",
-              "symbol",
-              config.accounts.additional.address,
-              config.accounts.additional.address,
-              config.accounts.additional.address,
-              config.accounts.additional.address,
-              365,
-              false,
-              config.splitProvider.address, // split provider
-              false, // null platform provider
-              false // allow artist project activation
-            );
-          const receipt = await tx.deployTransaction.wait();
-          // target event is in the last log
-          const targetLog = receipt.logs[receipt.logs.length - 1];
-          // expect "PlatformUpdated" event as log 0
-          await expect(targetLog.topics[0]).to.be.equal(
-            ethers.utils.keccak256(
-              ethers.utils.toUtf8Bytes("PlatformUpdated(bytes32)")
-            )
-          );
-          // expect field to be bytes32 of "nextProjectId" as log 1
-          await expect(targetLog.topics[1]).to.be.equal(
-            ethers.utils.formatBytes32String("nextProjectId")
-          );
-        } else {
-          tx = await coreContractFactory
-            .connect(config.accounts.deployer)
-            .deploy(
-              "name",
-              "symbol",
-              config.accounts.additional.address,
-              constants.ZERO_ADDRESS,
-              365,
-              config.splitProvider.address, // split provider
-              false // allow artist project activation
-            );
-          const receipt = await tx.deployTransaction.wait();
-          // target event is the last log
-          const targetLog = receipt.logs[receipt.logs.length - 1];
-          // expect "PlatformUpdated" event as log 0
-          await expect(targetLog.topics[0]).to.be.equal(
-            ethers.utils.keccak256(
-              ethers.utils.toUtf8Bytes("PlatformUpdated(bytes32)")
-            )
-          );
-          // expect field to be bytes32 of "nextProjectId" as log 1
-          await expect(targetLog.topics[1]).to.be.equal(
-            ethers.utils.formatBytes32String("nextProjectId")
-          );
-        }
+        const engineRegistryFactory =
+          await ethers.getContractFactory("EngineRegistryV0");
+        const engineRegistry = await engineRegistryFactory
+          .connect(config.accounts.deployer)
+          .deploy();
+        tx = await coreContractFactory.connect(config.accounts.deployer).deploy(
+          "name",
+          "symbol",
+          config.accounts.additional.address,
+          config.accounts.additional.address,
+          config.accounts.additional.address,
+          config.accounts.additional.address,
+          365,
+          false,
+          config.splitProvider.address, // split provider
+          false, // null platform provider
+          false // allow artist project activation
+        );
+        const receipt = await tx.deployTransaction.wait();
+        // target event is in the last log
+        const targetLog = receipt.logs[receipt.logs.length - 1];
+        // expect "PlatformUpdated" event as log 0
+        await expect(targetLog.topics[0]).to.be.equal(
+          ethers.utils.keccak256(
+            ethers.utils.toUtf8Bytes("PlatformUpdated(bytes32)")
+          )
+        );
+        // expect field to be bytes32 of "nextProjectId" as log 1
+        await expect(targetLog.topics[1]).to.be.equal(
+          ethers.utils.formatBytes32String("nextProjectId")
+        );
       });
 
       it("emits {artblocksSecondary,provider}SalesAddress", async function () {
         const config = await loadFixture(_beforeEach);
-        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          // emits expected event arg(s)
-          await expect(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateProviderSalesAddresses(
-                config.accounts.deployer2.address,
-                config.accounts.deployer2.address,
-                config.accounts.deployer2.address,
-                config.accounts.deployer2.address
-              )
-          )
-            .to.emit(config.genArt721Core, "PlatformUpdated")
-            .withArgs(
-              ethers.utils.formatBytes32String("providerSalesAddresses")
-            );
-        } else {
-          // emits expected event arg(s)
-          await expect(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateArtblocksSecondarySalesAddress(
-                config.accounts.artist.address
-              )
-          )
-            .to.emit(config.genArt721Core, "PlatformUpdated")
-            .withArgs(
-              ethers.utils.formatBytes32String("artblocksSecondarySalesAddress")
-            );
-        }
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateProviderSalesAddresses(
+              config.accounts.deployer2.address,
+              config.accounts.deployer2.address,
+              config.accounts.deployer2.address,
+              config.accounts.deployer2.address
+            )
+        )
+          .to.emit(config.genArt721Core, "PlatformUpdated")
+          .withArgs(ethers.utils.formatBytes32String("providerSalesAddresses"));
       });
 
       it("emits 'randomizerAddress'", async function () {
@@ -244,39 +196,6 @@ for (const coreContractName of coreContractsToTest) {
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
           .withArgs(ethers.utils.formatBytes32String("randomizerAddress"));
-      });
-
-      it("emits 'curationRegistryAddress'", async function () {
-        const config = await loadFixture(_beforeEach);
-        if (coreContractName === "GenArt721CoreV3_Explorations") {
-          // action not supported by config core version
-          await expectRevert(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateArtblocksCurationRegistryAddress(
-                config.accounts.additional.address
-              ),
-            "Action not supported"
-          );
-        } else if (coreContractName === "GenArt721CoreV3") {
-          // emits expected event arg(s)
-          await expect(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateArtblocksCurationRegistryAddress(
-                config.accounts.artist.address
-              )
-          )
-            .to.emit(config.genArt721Core, "PlatformUpdated")
-            .withArgs(
-              ethers.utils.formatBytes32String("curationRegistryAddress")
-            );
-        } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          // Do nothing.
-          // This core contract variant doesn't support config interface component.
-        } else {
-          throw new Error("Unexpected core contract name");
-        }
       });
 
       it("emits 'onChainGeneratorAddress'", async function () {
@@ -327,54 +246,28 @@ for (const coreContractName of coreContractsToTest) {
 
       it("emits '{artblocks,provider}PrimaryPercentage'", async function () {
         const config = await loadFixture(_beforeEach);
-        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          // emits expected event arg(s)
-          await expect(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateProviderPrimarySalesPercentages(11, 11)
-          )
-            .to.emit(config.genArt721Core, "PlatformUpdated")
-            .withArgs(
-              ethers.utils.formatBytes32String("providerPrimaryPercentages")
-            );
-        } else {
-          // emits expected event arg(s)
-          await expect(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateArtblocksPrimarySalesPercentage(11)
-          )
-            .to.emit(config.genArt721Core, "PlatformUpdated")
-            .withArgs(
-              ethers.utils.formatBytes32String("artblocksPrimaryPercentage")
-            );
-        }
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateProviderPrimarySalesPercentages(11, 11)
+        )
+          .to.emit(config.genArt721Core, "PlatformUpdated")
+          .withArgs(
+            ethers.utils.formatBytes32String("providerPrimaryPercentages")
+          );
       });
 
       it("emits '{artblocks,provider}SecondaryBPS'", async function () {
         const config = await loadFixture(_beforeEach);
-        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          // emits expected event arg(s)
-          await expect(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateProviderSecondarySalesBPS(240, 240)
-          )
-            .to.emit(config.genArt721Core, "PlatformUpdated")
-            .withArgs(ethers.utils.formatBytes32String("providerSecondaryBPS"));
-        } else {
-          // emits expected event arg(s)
-          await expect(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateArtblocksSecondarySalesBPS(240)
-          )
-            .to.emit(config.genArt721Core, "PlatformUpdated")
-            .withArgs(
-              ethers.utils.formatBytes32String("artblocksSecondaryBPS")
-            );
-        }
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateProviderSecondarySalesBPS(240, 240)
+        )
+          .to.emit(config.genArt721Core, "PlatformUpdated")
+          .withArgs(ethers.utils.formatBytes32String("providerSecondaryBPS"));
       });
 
       it("emits 'newProjectsForbidden'", async function () {

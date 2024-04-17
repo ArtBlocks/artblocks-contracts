@@ -31,8 +31,6 @@ import {
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
-  "GenArt721CoreV3", // flagship V3 core
-  "GenArt721CoreV3_Explorations", // V3 core explorations contract
   "GenArt721CoreV3_Engine", // V3 core Engine contract
   "GenArt721CoreV3_Engine_Flex", // V3 core Engine Flex contract
 ];
@@ -132,10 +130,7 @@ for (const coreContractName of coreContractsToTest) {
 
       it("only allows maxInvocations to be reduced", async function () {
         const config = await loadFixture(_beforeEach);
-        let revertString = "maxInvocations may only be decreased";
-        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          revertString = "Only maxInvocations decrease";
-        }
+        let revertString = "Only maxInvocations decrease";
         // invocations must be reduced
         await expectRevert(
           config.genArt721Core
@@ -157,10 +152,7 @@ for (const coreContractName of coreContractsToTest) {
 
       it("only allows maxInvocations to be gte current invocations", async function () {
         const config = await loadFixture(_beforeEach);
-        let revertString = "Only max invocations gte current invocations";
-        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          revertString = "Only gte invocations";
-        }
+        let revertString = "Only gte invocations";
         // mint a token on project zero
         await config.minter
           .connect(config.accounts.artist)
@@ -1124,11 +1116,7 @@ for (const coreContractName of coreContractsToTest) {
 
       it("artist cannot update > 95%", async function () {
         const config = await loadFixture(_beforeEach);
-        let revertString =
-          "Max of ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent";
-        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          revertString = "Over max percent";
-        }
+        let revertString = "Over max percent";
         await expectRevert(
           config.genArt721Core
             .connect(config.accounts.artist)
@@ -1436,10 +1424,7 @@ for (const coreContractName of coreContractsToTest) {
       it("artist cannot update non-existing script index", async function () {
         // get config from beforeEach
         const config = this.config;
-        let revertString = "there are no scripts to remove";
-        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          revertString = "No scripts to remove";
-        }
+        let revertString = "No scripts to remove";
         // remove existing script
         await config.genArt721Core
           .connect(config.accounts.artist)
