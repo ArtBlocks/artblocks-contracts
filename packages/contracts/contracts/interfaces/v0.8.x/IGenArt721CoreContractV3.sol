@@ -59,4 +59,21 @@ interface IGenArt721CoreContractV3 is IGenArt721CoreContractV3_Base {
 
     // @dev Basis points of secondary sales allocated to Art Blocks
     function artblocksSecondarySalesBPS() external view returns (uint256);
+
+    /**
+     * @notice Backwards-compatible (pre-V3) function  that gets artist +
+     * artist's additional payee royalty data for token ID `_tokenId`.
+     * WARNING: Does not include Art Blocks portion of royalties.
+     */
+    function getRoyaltyData(
+        uint256 _tokenId
+    )
+        external
+        view
+        returns (
+            address artistAddress,
+            address additionalPayee,
+            uint256 additionalPayeePercentage,
+            uint256 royaltyFeeByID
+        );
 }
