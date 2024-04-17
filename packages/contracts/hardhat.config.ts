@@ -68,6 +68,7 @@ module.exports = {
       gasPrice: 100000000000, // 100 gwei
       initialBaseFeePerGas: 0,
       maxNominalGasPriceGwei: 200, // gwei
+      allowUnlimitedContractSize: true,
     },
     mainnet: {
       url: MAINNET_JSON_RPC_PROVIDER_URL,
