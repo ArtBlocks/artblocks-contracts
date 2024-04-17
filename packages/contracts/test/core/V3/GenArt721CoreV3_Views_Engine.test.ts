@@ -311,6 +311,17 @@ for (const coreContractName of coreContractsToTest) {
         );
         expect(projectScriptDetails.aspectRatio).to.be.equal("1.777777778");
         expect(projectScriptDetails.scriptCount).to.be.equal(1);
+        // add pre-compressed script
+        const compressedScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getCompressed("if(false){}");
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(config.projectZero, compressedScript);
+        const projectScriptDetailsAfter = await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .projectScriptDetails(config.projectZero);
+        expect(projectScriptDetailsAfter.scriptCount).to.be.equal(2);
       });
 
       it("validates aspect ratio format details", async function () {
@@ -758,6 +769,20 @@ for (const coreContractName of coreContractsToTest) {
           config.genArt721Core
             .connect(config.accounts.deployer)
             .addProjectScript(config.projectZero, ""),
+          "Must input non-empty string"
+        );
+        // addProjectScriptCompressed
+        expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .addProjectScriptCompressed("0x"),
+          "Must input non-empty bytes"
+        );
+        // getCompressed
+        expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .getCompressed(""),
           "Must input non-empty string"
         );
         // updateProjectScript
@@ -1737,10 +1762,21 @@ for (const coreContractName of coreContractsToTest) {
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectScript(config.projectZero, "console.log('world')");
+        // add a pre-compressed project script
+        const compressedScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getCompressed("console.log(hello world)");
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(config.projectZero, compressedScript);
         const projectScript = await config.genArt721Core
           .connect(config.accounts.user)
           .projectScriptByIndex(config.projectZero, 1);
+        const projectScript2 = await config.genArt721Core
+          .connect(config.accounts.user)
+          .projectScriptByIndex(config.projectZero, 2);
         expect(projectScript).to.be.equal("console.log('world')");
+        expect(projectScript2).to.be.equal("console.log(hello world)");
       });
     });
 
