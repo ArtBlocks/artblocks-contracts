@@ -122,50 +122,6 @@ contract GenArt721CoreV3_Engine_Flex is
     uint256 constant MAX_PROVIDER_SECONDARY_SALES_BPS = 10000; // 10_000 BPS = 100%
     uint256 constant ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE = 95; // 95%
 
-    // // This contract emits generic events that contain fields that indicate
-    // // which parameter has been updated. This is sufficient for application
-    // // state management, while also simplifying the contract and indexing code.
-    // // This was done as an alternative to having custom events that emit what
-    // // field-values have changed for each event, given that changed values can
-    // // be introspected by indexers due to the design of this smart contract
-    // // exposing these state changes via publicly viewable fields.
-    // //
-    // // The following fields are used to indicate which contract-level parameter
-    // // has been updated in the `PlatformUpdated` event:
-    // enum PlatformUpdatedFields {
-    //     FIELD_NEXT_PROJECT_ID,
-    //     FIELD_NEW_PROJECTS_FORBIDDEN,
-    //     FIELD_DEFAULT_BASE_URI,
-    //     FIELD_RANDOMIZER_ADDRESS,
-    //     FIELD_NEXT_CORE_CONTRACT,
-    //     FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS,
-    //     FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS,
-    //     FIELD_PROVIDER_SALES_ADDRESSES,
-    //     FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES,
-    //     FIELD_PROVIDER_SECONDARY_SALES_BPS
-    // }
-    // // The following fields are used to indicate which project-level parameter
-    // // has been updated in the `ProjectUpdated` event:
-    // // @dev only append to the end of this enum in the case of future updates
-    // enum ProjectUpdatedFields {
-    //     FIELD_PROJECT_COMPLETED,
-    //     FIELD_PROJECT_ACTIVE,
-    //     FIELD_PROJECT_ARTIST_ADDRESS,
-    //     FIELD_PROJECT_PAUSED,
-    //     FIELD_PROJECT_CREATED,
-    //     FIELD_PROJECT_NAME,
-    //     FIELD_PROJECT_ARTIST_NAME,
-    //     FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE,
-    //     FIELD_PROJECT_DESCRIPTION,
-    //     FIELD_PROJECT_WEBSITE,
-    //     FIELD_PROJECT_LICENSE,
-    //     FIELD_PROJECT_MAX_INVOCATIONS,
-    //     FIELD_PROJECT_SCRIPT,
-    //     FIELD_PROJECT_SCRIPT_TYPE,
-    //     FIELD_PROJECT_ASPECT_RATIO,
-    //     FIELD_PROJECT_BASE_URI
-    // }
-
     /// pointer to next core contract associated with this contract
     address public nextCoreContract;
 
