@@ -35,7 +35,7 @@ interface IGenArt721CoreContractV3_Base {
         FIELD_PROVIDER_SALES_ADDRESSES, // 7
         FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES, // 8
         FIELD_PROVIDER_SECONDARY_SALES_BPS, // 9
-        FIELD_SPLIT_PROVIDER, // 10
+        FIELD_SPLIT_PROVIDER // 10
     }
 
     // The following fields are used to indicate which project-level parameter

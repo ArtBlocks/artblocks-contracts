@@ -2108,7 +2108,9 @@ contract GenArt721CoreV3_Engine is
             "Invalid split provider"
         );
         splitProvider = ISplitProviderV0(_splitProviderAddress);
-        emit PlatformUpdated(FIELD_SPLIT_PROVIDER);
+        emit PlatformUpdated(
+            bytes32(uint256(PlatformUpdatedFields.FIELD_SPLIT_PROVIDER))
+        );
     }
 
     /**
