@@ -394,6 +394,7 @@ contract GenArt721CoreV3_Engine is
         address _splitProviderAddress,
         bool _nullPlatformProvider,
         bool _allowArtistProjectActivation
+        // TODO: Fork ERC721_PackedHashSeed and create an initialize function
     ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
         _onlyNonZeroAddress(_renderProviderAddress);
         // @dev checks on platform provider addresses performed in _updateProviderSalesAddresses
