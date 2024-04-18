@@ -127,51 +127,6 @@ contract GenArt721CoreV3_Engine_Flex is
     uint256 constant MAX_PROVIDER_SECONDARY_SALES_BPS = 10000; // 10_000 BPS = 100%
     uint256 constant ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE = 95; // 95%
 
-    // This contract emits generic events that contain fields that indicate
-    // which parameter has been updated. This is sufficient for application
-    // state management, while also simplifying the contract and indexing code.
-    // This was done as an alternative to having custom events that emit what
-    // field-values have changed for each event, given that changed values can
-    // be introspected by indexers due to the design of this smart contract
-    // exposing these state changes via publicly viewable fields.
-    //
-    // The following fields are used to indicate which contract-level parameter
-    // has been updated in the `PlatformUpdated` event:
-    bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";
-    bytes32 constant FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
-    bytes32 constant FIELD_DEFAULT_BASE_URI = "defaultBaseURI";
-    bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
-    bytes32 constant FIELD_SPLIT_PROVIDER = "splitProvider";
-    bytes32 constant FIELD_NEXT_CORE_CONTRACT = "nextCoreContract";
-    bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
-        "dependencyRegistryAddress";
-    bytes32 constant FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS =
-        "onChainGeneratorAddress";
-    bytes32 constant FIELD_PROVIDER_SALES_ADDRESSES = "providerSalesAddresses";
-    bytes32 constant FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES =
-        "providerPrimaryPercentages";
-    bytes32 constant FIELD_PROVIDER_SECONDARY_SALES_BPS =
-        "providerSecondaryBPS";
-    // The following fields are used to indicate which project-level parameter
-    // has been updated in the `ProjectUpdated` event:
-    bytes32 constant FIELD_PROJECT_COMPLETED = "completed";
-    bytes32 constant FIELD_PROJECT_ACTIVE = "active";
-    bytes32 constant FIELD_PROJECT_ARTIST_ADDRESS = "artistAddress";
-    bytes32 constant FIELD_PROJECT_PAUSED = "paused";
-    bytes32 constant FIELD_PROJECT_CREATED = "created";
-    bytes32 constant FIELD_PROJECT_NAME = "name";
-    bytes32 constant FIELD_PROJECT_ARTIST_NAME = "artistName";
-    bytes32 constant FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
-        "royaltyPercentage";
-    bytes32 constant FIELD_PROJECT_DESCRIPTION = "description";
-    bytes32 constant FIELD_PROJECT_WEBSITE = "website";
-    bytes32 constant FIELD_PROJECT_LICENSE = "license";
-    bytes32 constant FIELD_PROJECT_MAX_INVOCATIONS = "maxInvocations";
-    bytes32 constant FIELD_PROJECT_SCRIPT = "script";
-    bytes32 constant FIELD_PROJECT_SCRIPT_TYPE = "scriptType";
-    bytes32 constant FIELD_PROJECT_ASPECT_RATIO = "aspectRatio";
-    bytes32 constant FIELD_PROJECT_BASE_URI = "baseURI";
-
     /// pointer to next core contract associated with this contract
     address public nextCoreContract;
 
@@ -424,7 +379,9 @@ contract GenArt721CoreV3_Engine_Flex is
         );
         // initialize next project ID
         _nextProjectId = _startingProjectId;
-        emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
+        emit PlatformUpdated(
+            bytes32(uint256(PlatformUpdatedFields.FIELD_NEXT_PROJECT_ID))
+        );
         // @dev follow-on action: This contract does not self-register. A core
         // registry owner must register contract in a subsequent call.
     }
@@ -672,7 +629,9 @@ contract GenArt721CoreV3_Engine_Flex is
     function updateNextCoreContract(address _nextCoreContract) external {
         _onlyAdminACL(this.updateNextCoreContract.selector);
         nextCoreContract = _nextCoreContract;
-        emit PlatformUpdated(FIELD_NEXT_CORE_CONTRACT);
+        emit PlatformUpdated(
+            bytes32(uint256(PlatformUpdatedFields.FIELD_NEXT_CORE_CONTRACT))
+        );
     }
 
     /**
@@ -686,7 +645,14 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyAdminACL(this.updateArtblocksDependencyRegistryAddress.selector);
         _onlyNonZeroAddress(_artblocksDependencyRegistryAddress);
         artblocksDependencyRegistryAddress = _artblocksDependencyRegistryAddress;
-        emit PlatformUpdated(FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS);
+        emit PlatformUpdated(
+            bytes32(
+                uint256(
+                    PlatformUpdatedFields
+                        .FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS
+                )
+            )
+        );
     }
 
     /**
@@ -699,7 +665,14 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyAdminACL(this.updateArtblocksOnChainGeneratorAddress.selector);
         _onlyNonZeroAddress(_artblocksOnChainGeneratorAddress);
         artblocksOnChainGeneratorAddress = _artblocksOnChainGeneratorAddress;
-        emit PlatformUpdated(FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS);
+        emit PlatformUpdated(
+            bytes32(
+                uint256(
+                    PlatformUpdatedFields
+                        .FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS
+                )
+            )
+        );
     }
 
     /**
@@ -763,7 +736,14 @@ contract GenArt721CoreV3_Engine_Flex is
         _platformProviderPrimarySalesPercentage = uint8(
             platformProviderPrimarySalesPercentage_
         );
-        emit PlatformUpdated(FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES);
+        emit PlatformUpdated(
+            bytes32(
+                uint256(
+                    PlatformUpdatedFields
+                        .FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES
+                )
+            )
+        );
     }
 
     /**
@@ -796,7 +776,13 @@ contract GenArt721CoreV3_Engine_Flex is
         );
         renderProviderSecondarySalesBPS = _renderProviderSecondarySalesBPS;
         platformProviderSecondarySalesBPS = _platformProviderSecondarySalesBPS;
-        emit PlatformUpdated(FIELD_PROVIDER_SECONDARY_SALES_BPS);
+        emit PlatformUpdated(
+            bytes32(
+                uint256(
+                    PlatformUpdatedFields.FIELD_PROVIDER_SECONDARY_SALES_BPS
+                )
+            )
+        );
     }
 
     /**
@@ -839,7 +825,10 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyAdminACL(this.toggleProjectIsActive.selector);
         _onlyValidProjectId(_projectId);
         projects[_projectId].active = !projects[_projectId].active;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_ACTIVE);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_ACTIVE))
+        );
     }
 
     /**
@@ -1078,7 +1067,10 @@ contract GenArt721CoreV3_Engine_Flex is
         // @dev only call after all previous storage updates
         _assignSplitter(_projectId);
 
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_ADDRESS);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_ARTIST_ADDRESS))
+        );
     }
 
     /**
@@ -1088,7 +1080,10 @@ contract GenArt721CoreV3_Engine_Flex is
     function toggleProjectIsPaused(uint256 _projectId) external {
         _onlyArtist(_projectId);
         projects[_projectId].paused = !projects[_projectId].paused;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_PAUSED);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_PAUSED))
+        );
     }
 
     /**
@@ -1135,7 +1130,10 @@ contract GenArt721CoreV3_Engine_Flex is
         // @dev only call after all previous storage updates
         _assignSplitter(projectId);
 
-        emit ProjectUpdated(projectId, FIELD_PROJECT_CREATED);
+        emit ProjectUpdated(
+            projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_CREATED))
+        );
     }
 
     /**
@@ -1160,7 +1158,10 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyArtistOrAdminACL(_projectId, this.updateProjectName.selector);
         _onlyNonEmptyString(_projectName);
         projects[_projectId].name = _projectName;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_NAME);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_NAME))
+        );
     }
 
     /**
@@ -1188,7 +1189,10 @@ contract GenArt721CoreV3_Engine_Flex is
         );
         _onlyNonEmptyString(_projectArtistName);
         projects[_projectId].artist = _projectArtistName;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_NAME);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_ARTIST_NAME))
+        );
     }
 
     /**
@@ -1221,7 +1225,12 @@ contract GenArt721CoreV3_Engine_Flex is
 
         emit ProjectUpdated(
             _projectId,
-            FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE
+            bytes32(
+                uint256(
+                    ProjectUpdatedFields
+                        .FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE
+                )
+            )
         );
     }
 
@@ -1289,7 +1298,10 @@ contract GenArt721CoreV3_Engine_Flex is
         // the old storage description with the newly created one
         projects[_projectId].descriptionAddress = _projectDescription
             .writeToBytecode();
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_DESCRIPTION);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_DESCRIPTION))
+        );
     }
 
     /**
@@ -1304,7 +1316,10 @@ contract GenArt721CoreV3_Engine_Flex is
     ) external {
         _onlyArtist(_projectId);
         projects[_projectId].website = _projectWebsite;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_WEBSITE);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_WEBSITE))
+        );
     }
 
     /**
@@ -1320,7 +1335,10 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyArtistOrAdminACL(_projectId, this.updateProjectLicense.selector);
         _onlyNonEmptyString(_projectLicense);
         projects[_projectId].license = _projectLicense;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_LICENSE);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_LICENSE))
+        );
     }
 
     /**
@@ -1347,7 +1365,10 @@ contract GenArt721CoreV3_Engine_Flex is
         require(_maxInvocations >= _invocations, "Only gte invocations");
         // EFFECTS
         project.maxInvocations = _maxInvocations;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_MAX_INVOCATIONS);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_MAX_INVOCATIONS))
+        );
 
         // register completed timestamp if action completed the project
         if (_maxInvocations == _invocations) {
@@ -1373,7 +1394,10 @@ contract GenArt721CoreV3_Engine_Flex is
         project.scriptBytecodeAddresses[project.scriptCount] = _script
             .writeToBytecode();
         project.scriptCount = project.scriptCount + 1;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT))
+        );
     }
 
     /**
@@ -1401,7 +1425,10 @@ contract GenArt721CoreV3_Engine_Flex is
         project.scriptBytecodeAddresses[project.scriptCount] = _compressedScript
             .writeToBytecodeCompressed();
         project.scriptCount = project.scriptCount + 1;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT))
+        );
     }
 
     /**
@@ -1424,7 +1451,10 @@ contract GenArt721CoreV3_Engine_Flex is
         // store script in contract bytecode, replacing reference address from
         // the old storage contract with the newly created one
         project.scriptBytecodeAddresses[_scriptId] = _script.writeToBytecode();
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT))
+        );
     }
 
     /**
@@ -1455,7 +1485,10 @@ contract GenArt721CoreV3_Engine_Flex is
         // the old storage contract with the newly created one
         project.scriptBytecodeAddresses[_scriptId] = _compressedScript
             .writeToBytecodeCompressed();
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT))
+        );
     }
 
     /**
@@ -1475,7 +1508,10 @@ contract GenArt721CoreV3_Engine_Flex is
         unchecked {
             project.scriptCount = project.scriptCount - 1;
         }
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT))
+        );
     }
 
     /**
@@ -1503,7 +1539,10 @@ contract GenArt721CoreV3_Engine_Flex is
             "must contain exactly one @"
         );
         project.scriptTypeAndVersion = _scriptTypeAndVersion;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TYPE);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT_TYPE))
+        );
     }
 
     /**
@@ -1551,7 +1590,10 @@ contract GenArt721CoreV3_Engine_Flex is
         require(hasSeenNumber, "Aspect ratio has no numbers");
 
         projects[_projectId].aspectRatio = _aspectRatio;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_ASPECT_RATIO);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_ASPECT_RATIO))
+        );
     }
 
     /**
@@ -1569,7 +1611,10 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyArtist(_projectId);
         _onlyNonEmptyString(_newBaseURI);
         projects[_projectId].projectBaseURI = _newBaseURI;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_BASE_URI))
+        );
     }
 
     /**
@@ -1766,7 +1811,7 @@ contract GenArt721CoreV3_Engine_Flex is
      */
     function getCompressed(
         string memory _script
-    ) external view returns (bytes memory) {
+    ) external pure returns (bytes memory) {
         _onlyNonEmptyString(_script);
         return BytecodeStorageReader.getCompressed(_script);
     }
@@ -2120,7 +2165,11 @@ contract GenArt721CoreV3_Engine_Flex is
     function _forbidNewProjects() internal {
         if (!newProjectsForbidden) {
             newProjectsForbidden = true;
-            emit PlatformUpdated(FIELD_NEW_PROJECTS_FORBIDDEN);
+            emit PlatformUpdated(
+                bytes32(
+                    uint256(PlatformUpdatedFields.FIELD_NEW_PROJECTS_FORBIDDEN)
+                )
+            );
         }
     }
 
@@ -2170,7 +2219,11 @@ contract GenArt721CoreV3_Engine_Flex is
         renderProviderSecondarySalesAddress = payable(
             _renderProviderSecondarySalesAddress
         );
-        emit PlatformUpdated(FIELD_PROVIDER_SALES_ADDRESSES);
+        emit PlatformUpdated(
+            bytes32(
+                uint256(PlatformUpdatedFields.FIELD_PROVIDER_SALES_ADDRESSES)
+            )
+        );
     }
 
     /**
@@ -2184,7 +2237,9 @@ contract GenArt721CoreV3_Engine_Flex is
         randomizerContract = IRandomizer_V3CoreBase(_randomizerAddress);
         // populate historical randomizer array
         _historicalRandomizerAddresses.push(_randomizerAddress);
-        emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
+        emit PlatformUpdated(
+            bytes32(uint256(PlatformUpdatedFields.FIELD_RANDOMIZER_ADDRESS))
+        );
     }
 
     /**
@@ -2262,7 +2317,9 @@ contract GenArt721CoreV3_Engine_Flex is
      */
     function _updateDefaultBaseURI(string memory _defaultBaseURI) internal {
         defaultBaseURI = _defaultBaseURI;
-        emit PlatformUpdated(FIELD_DEFAULT_BASE_URI);
+        emit PlatformUpdated(
+            bytes32(uint256(PlatformUpdatedFields.FIELD_DEFAULT_BASE_URI))
+        );
     }
 
     /**
@@ -2271,7 +2328,10 @@ contract GenArt721CoreV3_Engine_Flex is
      */
     function _completeProject(uint256 _projectId) internal {
         projects[_projectId].completedTimestamp = uint64(block.timestamp);
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_COMPLETED);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_COMPLETED))
+        );
     }
 
     /**

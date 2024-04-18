@@ -19,6 +19,8 @@ import {
   deployCoreWithMinterFilter,
   mintProjectUntilRemaining,
   advanceEVMByTime,
+  PLATFORM_UPDATED_FIELDS,
+  PROJECT_UPDATED_FIELDS,
 } from "../../util/common";
 
 // test the following V3 core contract derivatives:
@@ -161,7 +163,7 @@ for (const coreContractName of coreContractsToTest) {
         );
         // expect field to be bytes32 of "nextProjectId" as log 1
         await expect(targetLog.topics[1]).to.be.equal(
-          ethers.utils.formatBytes32String("nextProjectId")
+          PLATFORM_UPDATED_FIELDS.FIELD_NEXT_PROJECT_ID
         );
       });
 
@@ -179,7 +181,7 @@ for (const coreContractName of coreContractsToTest) {
             )
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
-          .withArgs(ethers.utils.formatBytes32String("providerSalesAddresses"));
+          .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_PROVIDER_SALES_ADDRESSES);
       });
 
       it("emits 'randomizerAddress'", async function () {
@@ -193,7 +195,7 @@ for (const coreContractName of coreContractsToTest) {
             .updateRandomizerAddress(config.accounts.additional.address)
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
-          .withArgs(ethers.utils.formatBytes32String("randomizerAddress"));
+          .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_RANDOMIZER_ADDRESS);
       });
 
       it("emits 'onChainGeneratorAddress'", async function () {
@@ -208,7 +210,7 @@ for (const coreContractName of coreContractsToTest) {
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
           .withArgs(
-            ethers.utils.formatBytes32String("onChainGeneratorAddress")
+            PLATFORM_UPDATED_FIELDS.FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS
           );
       });
 
@@ -224,7 +226,7 @@ for (const coreContractName of coreContractsToTest) {
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
           .withArgs(
-            ethers.utils.formatBytes32String("dependencyRegistryAddress")
+            PLATFORM_UPDATED_FIELDS.FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS
           );
       });
 
@@ -239,7 +241,7 @@ for (const coreContractName of coreContractsToTest) {
             )
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
-          .withArgs(ethers.utils.formatBytes32String("nextCoreContract"));
+          .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_NEXT_CORE_CONTRACT);
       });
 
       it("emits '{artblocks,provider}PrimaryPercentage'", async function () {
@@ -252,7 +254,7 @@ for (const coreContractName of coreContractsToTest) {
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
           .withArgs(
-            ethers.utils.formatBytes32String("providerPrimaryPercentages")
+            PLATFORM_UPDATED_FIELDS.FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES
           );
       });
 
@@ -265,7 +267,7 @@ for (const coreContractName of coreContractsToTest) {
             .updateProviderSecondarySalesBPS(240, 240)
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
-          .withArgs(ethers.utils.formatBytes32String("providerSecondaryBPS"));
+          .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_PROVIDER_SECONDARY_SALES_BPS);
       });
 
       it("emits 'newProjectsForbidden'", async function () {
@@ -277,7 +279,7 @@ for (const coreContractName of coreContractsToTest) {
             .forbidNewProjects()
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
-          .withArgs(ethers.utils.formatBytes32String("newProjectsForbidden"));
+          .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_NEW_PROJECTS_FORBIDDEN);
       });
 
       it("emits `defaultBaseURI`", async function () {
@@ -289,7 +291,7 @@ for (const coreContractName of coreContractsToTest) {
             .updateDefaultBaseURI("https://newbaseuri.com/token/")
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
-          .withArgs(ethers.utils.formatBytes32String("defaultBaseURI"));
+          .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_DEFAULT_BASE_URI);
       });
     });
 
@@ -311,7 +313,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("completed")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_COMPLETED
           );
       });
 
@@ -326,7 +328,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("active")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_ACTIVE
           );
         // emits expected event arg(s) when toggling project active
         await expect(
@@ -337,7 +339,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("active")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_ACTIVE
           );
       });
 
@@ -355,7 +357,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("artistAddress")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_ARTIST_ADDRESS
           );
       });
 
@@ -370,7 +372,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("paused")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_PAUSED
           );
       });
 
@@ -385,7 +387,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectOne,
-            ethers.utils.formatBytes32String("created")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_CREATED
           );
       });
 
@@ -400,7 +402,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("name")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_NAME
           );
       });
 
@@ -415,7 +417,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("artistName")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_ARTIST_NAME
           );
       });
 
@@ -433,7 +435,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("royaltyPercentage")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE
           );
       });
 
@@ -448,7 +450,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("description")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_DESCRIPTION
           );
       });
 
@@ -463,7 +465,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("website")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_WEBSITE
           );
       });
 
@@ -478,7 +480,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("license")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_LICENSE
           );
       });
 
@@ -493,7 +495,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("maxInvocations")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_MAX_INVOCATIONS
           );
       });
 
@@ -509,7 +511,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("script")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SCRIPT
           );
         // edit script
         await expect(
@@ -524,7 +526,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("script")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SCRIPT
           );
         // remove script
         await expect(
@@ -535,7 +537,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("script")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SCRIPT
           );
       });
 
@@ -555,7 +557,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("script")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SCRIPT
           );
         // edit script
         const compressedScript2 = await config.genArt721Core
@@ -573,7 +575,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("script")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SCRIPT
           );
         // remove script
         await expect(
@@ -584,7 +586,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("script")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SCRIPT
           );
       });
 
@@ -602,7 +604,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("scriptType")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SCRIPT_TYPE
           );
       });
 
@@ -617,7 +619,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("aspectRatio")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_ASPECT_RATIO
           );
       });
 
@@ -635,7 +637,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("baseURI")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_BASE_URI
           );
       });
     });
