@@ -1,5 +1,4 @@
 require("dotenv").config();
-import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-truffle5";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
@@ -11,6 +10,7 @@ import "@openzeppelin/hardhat-upgrades";
 import "@nomicfoundation/hardhat-ledger";
 import { solidityConfig } from "./hardhat.solidity-config";
 import { getDeployerWallet } from "./scripts/util/get-deployer-wallet";
+require("@nomicfoundation/hardhat-chai-matchers");
 
 // ----- WALLET CONFIGURATION -----
 // initialize with dummy fallback private key
