@@ -200,6 +200,13 @@ for (const coreContractName of coreContractsToTest) {
         ]);
       });
 
+      it("updateSplitProvider", async function () {
+        const config = await loadFixture(_beforeEach);
+        await validateAdminACLRequest(config, "updateSplitProvider", [
+          config.splitProvider.address,
+        ]);
+      });
+
       it("toggleProjectIsActive", async function () {
         const config = await loadFixture(_beforeEach);
         await validateAdminACLRequest(config, "toggleProjectIsActive", [

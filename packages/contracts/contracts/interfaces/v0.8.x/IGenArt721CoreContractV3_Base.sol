@@ -57,7 +57,8 @@ interface IGenArt721CoreContractV3_Base {
         FIELD_PROJECT_SCRIPT, // 12
         FIELD_PROJECT_SCRIPT_TYPE, // 13
         FIELD_PROJECT_ASPECT_RATIO, // 14
-        FIELD_PROJECT_BASE_URI // 15
+        FIELD_PROJECT_BASE_URI, // 15
+        FIELD_PROVIDER_SECONDARY_FINANCIALS // 16
     }
 
     /**
@@ -101,7 +102,8 @@ interface IGenArt721CoreContractV3_Base {
         ScriptTypeAndVersionFormat, // 32
         AspectRatioTooLong, // 33
         AspectRatioNoNumbers, // 34
-        AspectRatioImproperFormat // 35
+        AspectRatioImproperFormat, // 35
+        InvalidSplitProvider // 36
     }
 
     /**

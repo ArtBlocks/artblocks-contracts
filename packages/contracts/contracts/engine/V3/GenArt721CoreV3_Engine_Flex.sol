@@ -13,6 +13,7 @@ import "../../interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
 import {ISplitProviderV0} from "../../interfaces/v0.8.x/ISplitProviderV0.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
+import {ERC165Checker} from "@openzeppelin-4.7/contracts/utils/introspection/ERC165Checker.sol";
 import {IERC2981} from "@openzeppelin-4.7/contracts/interfaces/IERC2981.sol";
 import "../../libs/v0.8.x/ERC721_PackedHashSeed.sol";
 import "../../libs/v0.8.x/BytecodeStorageV2.sol";
@@ -1276,6 +1277,7 @@ contract GenArt721CoreV3_Engine_Flex is
         uint256 _projectId
     ) external {
         _onlyAdminACL(this.syncProviderSecondaryForProjectToDefaults.selector);
+        _onlyValidProjectId(_projectId);
         ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
         ];
@@ -1289,6 +1291,15 @@ contract GenArt721CoreV3_Engine_Flex is
             .renderProviderSecondarySalesAddress = renderProviderSecondarySalesAddress;
         projectFinance.renderProviderSecondarySalesBPS = uint16(
             renderProviderSecondarySalesBPS
+        );
+
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(
+                uint256(
+                    ProjectUpdatedFields.FIELD_PROVIDER_SECONDARY_FINANCIALS
+                )
+            )
         );
 
         // assign project's splitter
@@ -1966,8 +1977,9 @@ contract GenArt721CoreV3_Engine_Flex is
         receiver = projectFinance.royaltySplitter;
 
         // populate royaltyAmount with calculated royalty amount
-        uint256 totalRoyaltyBPS = 100 *
-            projectFinance.secondaryMarketRoyaltyPercentage +
+        // @dev important to cast to uint256 before multiplying to avoid overflow
+        uint256 totalRoyaltyBPS = (100 *
+            uint256(projectFinance.secondaryMarketRoyaltyPercentage)) +
             projectFinance.platformProviderSecondarySalesBPS +
             projectFinance.renderProviderSecondarySalesBPS;
         // @dev totalRoyaltyBPS guaranteed to be <= 10,000,
@@ -2303,7 +2315,8 @@ contract GenArt721CoreV3_Engine_Flex is
         // require new split provider broadcast ERC165 support of
         // getOrCreateSplitter function as defined in ISplitProviderV0
         if (
-            !IERC165(_splitProviderAddress).supportsInterface(
+            !ERC165Checker.supportsInterface(
+                _splitProviderAddress,
                 ISplitProviderV0.getOrCreateSplitter.selector
             )
         ) {

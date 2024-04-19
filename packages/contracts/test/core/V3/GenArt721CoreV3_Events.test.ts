@@ -198,6 +198,18 @@ for (const coreContractName of coreContractsToTest) {
           .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_RANDOMIZER_ADDRESS);
       });
 
+      it("emits 'split provider address'", async function () {
+        const config = await loadFixture(_beforeEach);
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateSplitProvider(config.splitProvider.address)
+        )
+          .to.emit(config.genArt721Core, "PlatformUpdated")
+          .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_SPLIT_PROVIDER);
+      });
+
       it("emits 'onChainGeneratorAddress'", async function () {
         const config = await loadFixture(_beforeEach);
         // emits expected event arg(s)
@@ -436,6 +448,21 @@ for (const coreContractName of coreContractsToTest) {
           .withArgs(
             config.projectZero,
             PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE
+          );
+      });
+
+      it("emits sync provider financials updated", async function () {
+        const config = await loadFixture(_beforeEach);
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .syncProviderSecondaryForProjectToDefaults(config.projectZero)
+        )
+          .to.emit(config.genArt721Core, "ProjectUpdated")
+          .withArgs(
+            config.projectZero,
+            PROJECT_UPDATED_FIELDS.FIELD_PROVIDER_SECONDARY_FINANCIALS
           );
       });
 

@@ -1029,44 +1029,29 @@ for (const coreContractName of coreContractsToTest) {
     // eip-2981 royaltyInfo
     describe("royaltyInfo", function () {
       const SALE_AMOUNT = 10_000;
+
       it("returns expected default values for valid projectZero token", async function () {
         const config = await loadFixture(_beforeEach);
         // mint token for projectZero
         await config.minter
           .connect(config.accounts.artist)
           .purchase(config.projectZero);
-        // // for now, expect revert
-        // await expectRevert(
-        //   config.genArt721Core
-        //     .connect(config.accounts.user)
-        //     .royaltyInfo(config.projectZeroTokenZero.toNumber(), SALE_AMOUNT),
-        //   "not implemented"
-        // );
-        // // check for expected values
-        // const royaltiesData = await config.genArt721Core
-        //   .connect(config.accounts.user)
-        //   .getRoyalties(config.projectZeroTokenZero.toNumber());
-        // // generalized check on response size
-        // expect(royaltiesData.recipients.length).to.be.equal(2);
-        // expect(royaltiesData.bps.length).to.be.equal(2);
-        // // Artist
-        // // This is a special case where expected revenue is 0, so not included in the array
-        // // Additional Payee
-        // // This is a special case where expected revenue is 0, so not included in the array
-        // // Render provider
-        // const renderProviderSecondarySalesAddress =
-        //   await config.genArt721Core.renderProviderSecondarySalesAddress();
-        // expect(royaltiesData.recipients[0]).to.be.equal(
-        //   renderProviderSecondarySalesAddress
-        // );
-        // expect(royaltiesData.bps[0]).to.be.equal(250);
-        // // Platform provider
-        // const platformProviderSecondarySalesAddress =
-        //   await config.genArt721Core.platformProviderSecondarySalesAddress();
-        // expect(royaltiesData.recipients[1]).to.be.equal(
-        //   platformProviderSecondarySalesAddress
-        // );
-        // expect(royaltiesData.bps[1]).to.be.equal(250);
+        // get royalty info
+        const royaltyInfo = await config.genArt721Core
+          .connect(config.accounts.user)
+          .royaltyInfo(config.projectZeroTokenZero.toNumber(), SALE_AMOUNT);
+        // check for expected values
+        // recipient should be active splitter contract
+        const projectFinancials =
+          await config.genArt721Core.projectIdToFinancials(config.projectZero);
+        expect(royaltyInfo.receiver).to.be.equal(
+          projectFinancials.royaltySplitter
+        );
+        // expect(royaltyInfo.receiver).to.not.be.equal(constants.ZERO_ADDRESS);
+        // royalty amount should be 10% of sale amount
+        expect(royaltyInfo.royaltyAmount).to.be.equal(
+          (SALE_AMOUNT * 1_000) / 10_000
+        );
       });
 
       // it("returns expected configured values for valid projectOne token, three non-zero royalties", async function () {
