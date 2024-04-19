@@ -1,13 +1,5 @@
-import {
-  BN,
-  constants,
-  expectEvent,
-  expectRevert,
-  balance,
-  ether,
-} from "@openzeppelin/test-helpers";
+import { constants } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
-import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import {
@@ -16,10 +8,9 @@ import {
   assignDefaultConstants,
   deployAndGet,
   deployCoreWithMinterFilter,
-  mintProjectUntilRemaining,
-  advanceEVMByTime,
+  GENART721_ERROR_NAME,
+  GENART721_ERROR_CODES,
 } from "../../util/common";
-import { FOUR_WEEKS } from "../../util/constants";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -103,24 +94,32 @@ for (const coreContractName of coreContractsToTest) {
       it("does not allow a value > ONE_HUNDRED", async function () {
         // get config from beforeEach
         const config = this.config;
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .updateProviderPrimarySalesPercentages(
               config.maxProviderPrimarySalesPercentage + 1, // renderProviderPrimarySalesPercentage_
               0 // platformProviderPrimarySalesPercentage_
-            ),
-          "Max sum of ONE_HUNDRED %"
-        );
-        await expectRevert(
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OverMaxSumOfPercentages);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .updateProviderPrimarySalesPercentages(
               0, // renderProviderPrimarySalesPercentage_
               config.maxProviderPrimarySalesPercentage + 1 // platformProviderPrimarySalesPercentage_
-            ),
-          "Max sum of ONE_HUNDRED %"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OverMaxSumOfPercentages);
       });
 
       it("does allow a value of ONE_HUNDRED", async function () {
@@ -155,24 +154,32 @@ for (const coreContractName of coreContractsToTest) {
     describe("update{Artblocks,Provider}SecondarySalesBPS", function () {
       it("does not allow a value > 100%", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .updateProviderSecondarySalesBPS(
               10001, // _renderProviderSecondarySalesBPS
               0 // _platformProviderSecondarySalesBPS
-            ),
-          "Over max sum of BPS"
-        );
-        await expectRevert(
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OverMaxSumOfBPS);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .updateProviderSecondarySalesBPS(
               0, // _renderProviderSecondarySalesBPS
               10001 // _platformProviderSecondarySalesBPS
-            ),
-          "Over max sum of BPS"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OverMaxSumOfBPS);
       });
 
       it("does allow a value of 2.5%", async function () {
@@ -218,12 +225,16 @@ for (const coreContractName of coreContractsToTest) {
         await config.genArt721Core
           .connect(config.accounts.deployer)
           .forbidNewProjects();
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .addProject("shouldn't work", config.accounts.artist.address),
-          "New projects forbidden"
-        );
+            .addProject("shouldn't work", config.accounts.artist.address)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.NewProjectsForbidden);
       });
 
       it("does not allow to call forbidNewProjects more than once", async function () {
@@ -231,12 +242,16 @@ for (const coreContractName of coreContractsToTest) {
         await config.genArt721Core
           .connect(config.accounts.deployer)
           .forbidNewProjects();
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .forbidNewProjects(),
-          "Already forbidden"
-        );
+            .forbidNewProjects()
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.NewProjectsAlreadyForbidden);
       });
 
       it("does not allow to call forbidNewProjects after revoking ownership", async function () {
@@ -249,12 +264,16 @@ for (const coreContractName of coreContractsToTest) {
         )
           .to.emit(config.genArt721Core, "OwnershipTransferred")
           .withArgs(config.adminACL.address, constants.ZERO_ADDRESS);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .forbidNewProjects(),
-          "Only Admin ACL allowed" // there is no longer ownership, so config will always throw
-        );
+            .forbidNewProjects()
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyAdminACL);
       });
 
       it("does allow to call renounceOwnership after forbidding new projects", async function () {
@@ -277,12 +296,16 @@ for (const coreContractName of coreContractsToTest) {
     describe("updateDefaultBaseURI", function () {
       it("does not allow non-admin to call", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .updateDefaultBaseURI("https://token.newuri.com/"),
-          "Only Admin ACL allowed"
-        );
+            .updateDefaultBaseURI("https://token.newuri.com/")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyAdminACL);
       });
 
       it("does allow admin to call", async function () {

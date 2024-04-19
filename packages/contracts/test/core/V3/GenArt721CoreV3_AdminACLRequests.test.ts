@@ -1,12 +1,4 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import {
-  BN,
-  constants,
-  expectEvent,
-  expectRevert,
-  balance,
-  ether,
-} from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
@@ -19,6 +11,8 @@ import {
   mintProjectUntilRemaining,
   advanceEVMByTime,
   deployCoreWithMinterFilter,
+  GENART721_ERROR_NAME,
+  GENART721_ERROR_CODES,
 } from "../../util/common";
 import { FOUR_WEEKS } from "../../util/constants";
 
@@ -46,10 +40,9 @@ async function expectRevertFromAdminACLRequest(
 ) {
   const targetSelector = config.coreInterface.getSighash(functionName);
   // emits event when being minted out
-  await expectRevert(
-    config.genArt721Core.connect(signer_)[functionName](...args),
-    "Only Admin ACL allowed"
-  );
+  await expect(config.genArt721Core.connect(signer_)[functionName](...args))
+    .to.be.revertedWithCustomError(config.genArt721Core, GENART721_ERROR_NAME)
+    .withArgs(GENART721_ERROR_CODES.OnlyAdminACL);
 }
 
 // test the following V3 core contract derivatives:
