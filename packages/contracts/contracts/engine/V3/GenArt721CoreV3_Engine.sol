@@ -2149,12 +2149,13 @@ contract GenArt721CoreV3_Engine is
     function _updateSplitProvider(address _splitProviderAddress) internal {
         // require new split provider broadcast ERC165 support of
         // getOrCreateSplitter function as defined in ISplitProviderV0
-        require(
-            IERC165(_splitProviderAddress).supportsInterface(
+        if (
+            !IERC165(_splitProviderAddress).supportsInterface(
                 ISplitProviderV0.getOrCreateSplitter.selector
-            ),
-            "Invalid split provider"
-        );
+            )
+        ) {
+            revert GenArt721Error(ErrorCodes.InvalidSplitProvider);
+        }
         splitProvider = ISplitProviderV0(_splitProviderAddress);
         emit PlatformUpdated(
             bytes32(uint256(PlatformUpdatedFields.FIELD_SPLIT_PROVIDER))
