@@ -170,7 +170,7 @@ runForEach.forEach((params) => {
               .updateMinterTimeBufferSeconds(60)
           )
             .to.emit(
-              await ethers.getContractFactory("SEALib"),
+              await ethers.getContractAt("SEALib", config.minter.address),
               "MinterTimeBufferUpdated"
             )
             .withArgs(60);
@@ -186,7 +186,7 @@ runForEach.forEach((params) => {
               .updateRefundGasLimit(45_000)
           )
             .to.emit(
-              await ethers.getContractFactory("SEALib"),
+              await ethers.getContractAt("SEALib", config.minter.address),
               "MinterRefundGasLimitUpdated"
             )
             .withArgs(45_000);
@@ -210,7 +210,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("SEALib"),
+            await ethers.getContractAt("SEALib", config.minter.address),
             "ConfiguredFutureAuctions"
           )
           .withArgs(
@@ -253,7 +253,7 @@ runForEach.forEach((params) => {
             })
         )
           .to.emit(
-            await ethers.getContractFactory("SEALib"),
+            await ethers.getContractAt("SEALib", config.minter.address),
             "AuctionInitialized"
           )
           .withArgs(
@@ -273,7 +273,10 @@ runForEach.forEach((params) => {
               value: config.basePrice.mul(2),
             })
         )
-          .to.emit(await ethers.getContractFactory("SEALib"), "AuctionBid")
+          .to.emit(
+            await ethers.getContractAt("SEALib", config.minter.address),
+            "AuctionBid"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -306,7 +309,10 @@ runForEach.forEach((params) => {
             .connect(config.accounts.user)
             .settleAuction(targetToken, config.genArt721Core.address)
         )
-          .to.emit(await ethers.getContractFactory("SEALib"), "AuctionSettled")
+          .to.emit(
+            await ethers.getContractAt("SEALib", config.minter.address),
+            "AuctionSettled"
+          )
           .withArgs(
             targetToken,
             config.genArt721Core.address,
@@ -339,7 +345,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("SEALib"),
+            await ethers.getContractAt("SEALib", config.minter.address),
             "ResetAuctionDetails"
           )
           .withArgs(config.projectZero, config.genArt721Core.address);
@@ -366,7 +372,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("SEALib"),
+            await ethers.getContractAt("SEALib", config.minter.address),
             "ProjectNextTokenUpdated"
           )
           .withArgs(
@@ -411,7 +417,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("SEALib"),
+            await ethers.getContractAt("SEALib", config.minter.address),
             "ProjectNextTokenEjected"
           )
           .withArgs(config.projectZero, config.genArt721Core.address);

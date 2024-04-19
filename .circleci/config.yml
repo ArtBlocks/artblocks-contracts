@@ -31,7 +31,6 @@ jobs:
           node-version: "20.10"
       - node/install-packages:
           pkg-manager: yarn
-          cache-version: v2
       - run:
           name: debug list files
           command: |
@@ -62,7 +61,6 @@ jobs:
           node-version: "20.10"
       - node/install-packages:
           pkg-manager: yarn
-          cache-version: v2
       - run:
           name: compile contracts
           command: |

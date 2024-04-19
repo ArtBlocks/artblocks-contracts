@@ -19,12 +19,12 @@ import {
   deployCoreWithMinterFilter,
   mintProjectUntilRemaining,
   advanceEVMByTime,
+  PLATFORM_UPDATED_FIELDS,
+  PROJECT_UPDATED_FIELDS,
 } from "../../util/common";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
-  "GenArt721CoreV3", // flagship V3 core
-  "GenArt721CoreV3_Explorations", // V3 core explorations contract
   "GenArt721CoreV3_Engine", // V3 core Engine contract
   "GenArt721CoreV3_Engine_Flex", // V3 core Engine Flex contract
 ];
@@ -136,97 +136,54 @@ for (const coreContractName of coreContractsToTest) {
         // it is OK that config construction addresses aren't particularly valid
         // addresses for the purposes of config test
         let tx;
-        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          const engineRegistryFactory =
-            await ethers.getContractFactory("EngineRegistryV0");
-          const engineRegistry = await engineRegistryFactory
-            .connect(config.accounts.deployer)
-            .deploy();
-          tx = await coreContractFactory
-            .connect(config.accounts.deployer)
-            .deploy(
-              "name",
-              "symbol",
-              config.accounts.additional.address,
-              config.accounts.additional.address,
-              config.accounts.additional.address,
-              config.accounts.additional.address,
-              365,
-              false,
-              config.splitProvider.address // split provider
-            );
-          const receipt = await tx.deployTransaction.wait();
-          // target event is in the last log
-          const targetLog = receipt.logs[receipt.logs.length - 1];
-          // expect "PlatformUpdated" event as log 0
-          await expect(targetLog.topics[0]).to.be.equal(
-            ethers.utils.keccak256(
-              ethers.utils.toUtf8Bytes("PlatformUpdated(bytes32)")
-            )
-          );
-          // expect field to be bytes32 of "nextProjectId" as log 1
-          await expect(targetLog.topics[1]).to.be.equal(
-            ethers.utils.formatBytes32String("nextProjectId")
-          );
-        } else {
-          tx = await coreContractFactory
-            .connect(config.accounts.deployer)
-            .deploy(
-              "name",
-              "symbol",
-              config.accounts.additional.address,
-              constants.ZERO_ADDRESS,
-              365,
-              config.splitProvider.address // split provider
-            );
-          const receipt = await tx.deployTransaction.wait();
-          // target event is the last log
-          const targetLog = receipt.logs[receipt.logs.length - 1];
-          // expect "PlatformUpdated" event as log 0
-          await expect(targetLog.topics[0]).to.be.equal(
-            ethers.utils.keccak256(
-              ethers.utils.toUtf8Bytes("PlatformUpdated(bytes32)")
-            )
-          );
-          // expect field to be bytes32 of "nextProjectId" as log 1
-          await expect(targetLog.topics[1]).to.be.equal(
-            ethers.utils.formatBytes32String("nextProjectId")
-          );
-        }
+        const engineRegistryFactory =
+          await ethers.getContractFactory("EngineRegistryV0");
+        const engineRegistry = await engineRegistryFactory
+          .connect(config.accounts.deployer)
+          .deploy();
+        tx = await coreContractFactory.connect(config.accounts.deployer).deploy(
+          "name",
+          "symbol",
+          config.accounts.additional.address,
+          config.accounts.additional.address,
+          config.accounts.additional.address,
+          config.accounts.additional.address,
+          365,
+          false,
+          config.splitProvider.address, // split provider
+          false, // null platform provider
+          false // allow artist project activation
+        );
+        const receipt = await tx.deployTransaction.wait();
+        // target event is in the last log
+        const targetLog = receipt.logs[receipt.logs.length - 1];
+        // expect "PlatformUpdated" event as log 0
+        await expect(targetLog.topics[0]).to.be.equal(
+          ethers.utils.keccak256(
+            ethers.utils.toUtf8Bytes("PlatformUpdated(bytes32)")
+          )
+        );
+        // expect field to be bytes32 of "nextProjectId" as log 1
+        await expect(targetLog.topics[1]).to.be.equal(
+          PLATFORM_UPDATED_FIELDS.FIELD_NEXT_PROJECT_ID
+        );
       });
 
       it("emits {artblocksSecondary,provider}SalesAddress", async function () {
         const config = await loadFixture(_beforeEach);
-        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          // emits expected event arg(s)
-          await expect(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateProviderSalesAddresses(
-                config.accounts.deployer2.address,
-                config.accounts.deployer2.address,
-                config.accounts.deployer2.address,
-                config.accounts.deployer2.address
-              )
-          )
-            .to.emit(config.genArt721Core, "PlatformUpdated")
-            .withArgs(
-              ethers.utils.formatBytes32String("providerSalesAddresses")
-            );
-        } else {
-          // emits expected event arg(s)
-          await expect(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateArtblocksSecondarySalesAddress(
-                config.accounts.artist.address
-              )
-          )
-            .to.emit(config.genArt721Core, "PlatformUpdated")
-            .withArgs(
-              ethers.utils.formatBytes32String("artblocksSecondarySalesAddress")
-            );
-        }
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateProviderSalesAddresses(
+              config.accounts.deployer2.address,
+              config.accounts.deployer2.address,
+              config.accounts.deployer2.address,
+              config.accounts.deployer2.address
+            )
+        )
+          .to.emit(config.genArt721Core, "PlatformUpdated")
+          .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_PROVIDER_SALES_ADDRESSES);
       });
 
       it("emits 'randomizerAddress'", async function () {
@@ -240,40 +197,7 @@ for (const coreContractName of coreContractsToTest) {
             .updateRandomizerAddress(config.accounts.additional.address)
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
-          .withArgs(ethers.utils.formatBytes32String("randomizerAddress"));
-      });
-
-      it("emits 'curationRegistryAddress'", async function () {
-        const config = await loadFixture(_beforeEach);
-        if (coreContractName === "GenArt721CoreV3_Explorations") {
-          // action not supported by config core version
-          await expectRevert(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateArtblocksCurationRegistryAddress(
-                config.accounts.additional.address
-              ),
-            "Action not supported"
-          );
-        } else if (coreContractName === "GenArt721CoreV3") {
-          // emits expected event arg(s)
-          await expect(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateArtblocksCurationRegistryAddress(
-                config.accounts.artist.address
-              )
-          )
-            .to.emit(config.genArt721Core, "PlatformUpdated")
-            .withArgs(
-              ethers.utils.formatBytes32String("curationRegistryAddress")
-            );
-        } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          // Do nothing.
-          // This core contract variant doesn't support config interface component.
-        } else {
-          throw new Error("Unexpected core contract name");
-        }
+          .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_RANDOMIZER_ADDRESS);
       });
 
       it("emits 'onChainGeneratorAddress'", async function () {
@@ -288,7 +212,7 @@ for (const coreContractName of coreContractsToTest) {
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
           .withArgs(
-            ethers.utils.formatBytes32String("onChainGeneratorAddress")
+            PLATFORM_UPDATED_FIELDS.FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS
           );
       });
 
@@ -304,7 +228,7 @@ for (const coreContractName of coreContractsToTest) {
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
           .withArgs(
-            ethers.utils.formatBytes32String("dependencyRegistryAddress")
+            PLATFORM_UPDATED_FIELDS.FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS
           );
       });
 
@@ -319,59 +243,33 @@ for (const coreContractName of coreContractsToTest) {
             )
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
-          .withArgs(ethers.utils.formatBytes32String("nextCoreContract"));
+          .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_NEXT_CORE_CONTRACT);
       });
 
       it("emits '{artblocks,provider}PrimaryPercentage'", async function () {
         const config = await loadFixture(_beforeEach);
-        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          // emits expected event arg(s)
-          await expect(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateProviderPrimarySalesPercentages(11, 11)
-          )
-            .to.emit(config.genArt721Core, "PlatformUpdated")
-            .withArgs(
-              ethers.utils.formatBytes32String("providerPrimaryPercentages")
-            );
-        } else {
-          // emits expected event arg(s)
-          await expect(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateArtblocksPrimarySalesPercentage(11)
-          )
-            .to.emit(config.genArt721Core, "PlatformUpdated")
-            .withArgs(
-              ethers.utils.formatBytes32String("artblocksPrimaryPercentage")
-            );
-        }
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateProviderPrimarySalesPercentages(11, 11)
+        )
+          .to.emit(config.genArt721Core, "PlatformUpdated")
+          .withArgs(
+            PLATFORM_UPDATED_FIELDS.FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES
+          );
       });
 
       it("emits '{artblocks,provider}SecondaryBPS'", async function () {
         const config = await loadFixture(_beforeEach);
-        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          // emits expected event arg(s)
-          await expect(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateProviderSecondarySalesBPS(240, 240)
-          )
-            .to.emit(config.genArt721Core, "PlatformUpdated")
-            .withArgs(ethers.utils.formatBytes32String("providerSecondaryBPS"));
-        } else {
-          // emits expected event arg(s)
-          await expect(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateArtblocksSecondarySalesBPS(240)
-          )
-            .to.emit(config.genArt721Core, "PlatformUpdated")
-            .withArgs(
-              ethers.utils.formatBytes32String("artblocksSecondaryBPS")
-            );
-        }
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateProviderSecondarySalesBPS(240, 240)
+        )
+          .to.emit(config.genArt721Core, "PlatformUpdated")
+          .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_PROVIDER_SECONDARY_SALES_BPS);
       });
 
       it("emits 'newProjectsForbidden'", async function () {
@@ -383,7 +281,7 @@ for (const coreContractName of coreContractsToTest) {
             .forbidNewProjects()
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
-          .withArgs(ethers.utils.formatBytes32String("newProjectsForbidden"));
+          .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_NEW_PROJECTS_FORBIDDEN);
       });
 
       it("emits `defaultBaseURI`", async function () {
@@ -395,7 +293,7 @@ for (const coreContractName of coreContractsToTest) {
             .updateDefaultBaseURI("https://newbaseuri.com/token/")
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
-          .withArgs(ethers.utils.formatBytes32String("defaultBaseURI"));
+          .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_DEFAULT_BASE_URI);
       });
     });
 
@@ -417,7 +315,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("completed")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_COMPLETED
           );
       });
 
@@ -432,7 +330,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("active")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_ACTIVE
           );
         // emits expected event arg(s) when toggling project active
         await expect(
@@ -443,7 +341,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("active")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_ACTIVE
           );
       });
 
@@ -461,7 +359,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("artistAddress")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_ARTIST_ADDRESS
           );
       });
 
@@ -476,7 +374,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("paused")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_PAUSED
           );
       });
 
@@ -491,7 +389,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectOne,
-            ethers.utils.formatBytes32String("created")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_CREATED
           );
       });
 
@@ -506,7 +404,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("name")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_NAME
           );
       });
 
@@ -521,7 +419,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("artistName")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_ARTIST_NAME
           );
       });
 
@@ -539,7 +437,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("royaltyPercentage")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE
           );
       });
 
@@ -554,7 +452,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("description")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_DESCRIPTION
           );
       });
 
@@ -569,7 +467,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("website")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_WEBSITE
           );
       });
 
@@ -584,7 +482,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("license")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_LICENSE
           );
       });
 
@@ -599,7 +497,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("maxInvocations")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_MAX_INVOCATIONS
           );
       });
 
@@ -615,7 +513,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("script")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SCRIPT
           );
         // edit script
         await expect(
@@ -630,7 +528,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("script")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SCRIPT
           );
         // remove script
         await expect(
@@ -641,7 +539,56 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("script")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SCRIPT
+          );
+      });
+
+      it("emits script when adding/editing compressed script", async function () {
+        const config = await loadFixture(_beforeEach);
+        // emits expected event arg(s)
+        // get compressed script
+        const compressedScript1 = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getCompressed(`console.log("hello world")`);
+        // add script
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .addProjectScriptCompressed(config.projectZero, compressedScript1)
+        )
+          .to.emit(config.genArt721Core, "ProjectUpdated")
+          .withArgs(
+            config.projectZero,
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SCRIPT
+          );
+        // edit script
+        const compressedScript2 = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getCompressed(`console.log("hello world 2")`);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .updateProjectScriptCompressed(
+              config.projectZero,
+              0,
+              compressedScript2
+            )
+        )
+          .to.emit(config.genArt721Core, "ProjectUpdated")
+          .withArgs(
+            config.projectZero,
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SCRIPT
+          );
+        // remove script
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .removeProjectLastScript(config.projectZero)
+        )
+          .to.emit(config.genArt721Core, "ProjectUpdated")
+          .withArgs(
+            config.projectZero,
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SCRIPT
           );
       });
 
@@ -659,7 +606,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("scriptType")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SCRIPT_TYPE
           );
       });
 
@@ -674,7 +621,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("aspectRatio")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_ASPECT_RATIO
           );
       });
 
@@ -692,7 +639,7 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "ProjectUpdated")
           .withArgs(
             config.projectZero,
-            ethers.utils.formatBytes32String("baseURI")
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_BASE_URI
           );
       });
     });

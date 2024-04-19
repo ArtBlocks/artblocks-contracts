@@ -15,7 +15,7 @@ import {ISplitProviderV0} from "../../interfaces/v0.8.x/ISplitProviderV0.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import {IERC2981} from "@openzeppelin-4.7/contracts/interfaces/IERC2981.sol";
 import "../../libs/v0.8.x/ERC721_PackedHashSeed.sol";
-import "../../libs/v0.8.x/BytecodeStorageV1.sol";
+import "../../libs/v0.8.x/BytecodeStorageV2.sol";
 import {V3FlexLib} from "../../libs/v0.8.x/V3FlexLib.sol";
 import "../../libs/v0.8.x/Bytes32Strings.sol";
 
@@ -53,7 +53,8 @@ import "../../libs/v0.8.x/Bytes32Strings.sol";
  * - updateProjectName
  * - updateProjectArtistName
  * - updateProjectLicense
- * - Change project script via addProjectScript, updateProjectScript,
+ * - Change project script via addProjectScript, addProjectScriptCompressed,
+ *   updateProjectScript, updateProjectScriptCompressed,
  *   and removeProjectLastScript
  * - updateProjectScriptType
  * - updateProjectAspectRatio
@@ -114,6 +115,7 @@ contract GenArt721CoreV3_Engine_Flex is
     IGenArt721CoreContractV3_RoyaltySplitters
 {
     using BytecodeStorageWriter for string;
+    using BytecodeStorageWriter for bytes;
     using Bytes32Strings for bytes32;
     uint256 constant ONE_HUNDRED = 100;
     uint256 constant ONE_MILLION = 1_000_000;
@@ -124,51 +126,6 @@ contract GenArt721CoreV3_Engine_Flex is
     // numeric constants
     uint256 constant MAX_PROVIDER_SECONDARY_SALES_BPS = 10000; // 10_000 BPS = 100%
     uint256 constant ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE = 95; // 95%
-
-    // This contract emits generic events that contain fields that indicate
-    // which parameter has been updated. This is sufficient for application
-    // state management, while also simplifying the contract and indexing code.
-    // This was done as an alternative to having custom events that emit what
-    // field-values have changed for each event, given that changed values can
-    // be introspected by indexers due to the design of this smart contract
-    // exposing these state changes via publicly viewable fields.
-    //
-    // The following fields are used to indicate which contract-level parameter
-    // has been updated in the `PlatformUpdated` event:
-    bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";
-    bytes32 constant FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
-    bytes32 constant FIELD_DEFAULT_BASE_URI = "defaultBaseURI";
-    bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
-    bytes32 constant FIELD_SPLIT_PROVIDER = "splitProvider";
-    bytes32 constant FIELD_NEXT_CORE_CONTRACT = "nextCoreContract";
-    bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
-        "dependencyRegistryAddress";
-    bytes32 constant FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS =
-        "onChainGeneratorAddress";
-    bytes32 constant FIELD_PROVIDER_SALES_ADDRESSES = "providerSalesAddresses";
-    bytes32 constant FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES =
-        "providerPrimaryPercentages";
-    bytes32 constant FIELD_PROVIDER_SECONDARY_SALES_BPS =
-        "providerSecondaryBPS";
-    // The following fields are used to indicate which project-level parameter
-    // has been updated in the `ProjectUpdated` event:
-    bytes32 constant FIELD_PROJECT_COMPLETED = "completed";
-    bytes32 constant FIELD_PROJECT_ACTIVE = "active";
-    bytes32 constant FIELD_PROJECT_ARTIST_ADDRESS = "artistAddress";
-    bytes32 constant FIELD_PROJECT_PAUSED = "paused";
-    bytes32 constant FIELD_PROJECT_CREATED = "created";
-    bytes32 constant FIELD_PROJECT_NAME = "name";
-    bytes32 constant FIELD_PROJECT_ARTIST_NAME = "artistName";
-    bytes32 constant FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
-        "royaltyPercentage";
-    bytes32 constant FIELD_PROJECT_DESCRIPTION = "description";
-    bytes32 constant FIELD_PROJECT_WEBSITE = "website";
-    bytes32 constant FIELD_PROJECT_LICENSE = "license";
-    bytes32 constant FIELD_PROJECT_MAX_INVOCATIONS = "maxInvocations";
-    bytes32 constant FIELD_PROJECT_SCRIPT = "script";
-    bytes32 constant FIELD_PROJECT_SCRIPT_TYPE = "scriptType";
-    bytes32 constant FIELD_PROJECT_ASPECT_RATIO = "aspectRatio";
-    bytes32 constant FIELD_PROJECT_BASE_URI = "baseURI";
 
     /// pointer to next core contract associated with this contract
     address public nextCoreContract;
@@ -303,53 +260,65 @@ contract GenArt721CoreV3_Engine_Flex is
     ISplitProviderV0 public splitProvider;
 
     function _onlyNonZeroAddress(address _address) internal pure {
-        require(_address != address(0), "Must input non-zero address");
+        if (_address == address(0)) {
+            revert GenArt721Error(ErrorCodes.OnlyNonZeroAddress);
+        }
     }
 
     function _onlyNonEmptyString(string memory _string) internal pure {
-        require(bytes(_string).length != 0, "Must input non-empty string");
+        if (bytes(_string).length == 0) {
+            revert GenArt721Error(ErrorCodes.OnlyNonEmptyString);
+        }
+    }
+
+    function _onlyNonEmptyBytes(bytes memory _bytes) internal pure {
+        if (_bytes.length == 0) {
+            revert GenArt721Error(ErrorCodes.OnlyNonEmptyBytes);
+        }
     }
 
     function _onlyValidTokenId(uint256 _tokenId) internal view {
-        require(_exists(_tokenId), "Token ID does not exist");
+        if (!_exists(_tokenId)) {
+            revert GenArt721Error(ErrorCodes.TokenDoesNotExist);
+        }
     }
 
     function _onlyValidProjectId(uint256 _projectId) internal view {
-        require(
-            (_projectId >= startingProjectId) && (_projectId < _nextProjectId),
-            "Project ID does not exist"
-        );
+        if (_projectId < startingProjectId || _projectId >= _nextProjectId) {
+            revert GenArt721Error(ErrorCodes.ProjectDoesNotExist);
+        }
     }
 
     function _onlyUnlocked(uint256 _projectId) internal view {
         // Note: calling `_projectUnlocked` enforces that the `_projectId`
         //       passed in is valid.`
-        require(_projectUnlocked(_projectId), "Only if unlocked");
+        if (!_projectUnlocked(_projectId)) {
+            revert GenArt721Error(ErrorCodes.OnlyUnlockedProjects);
+        }
     }
 
     function _onlyAdminACL(bytes4 _selector) internal {
-        require(
-            adminACLAllowed(msg.sender, address(this), _selector),
-            "Only Admin ACL allowed"
-        );
+        if (!adminACLAllowed(msg.sender, address(this), _selector)) {
+            revert GenArt721Error(ErrorCodes.OnlyAdminACL);
+        }
     }
 
     function _onlyArtist(uint256 _projectId) internal view {
-        require(
-            msg.sender == projectIdToFinancials[_projectId].artistAddress,
-            "Only artist"
-        );
+        if (msg.sender != projectIdToFinancials[_projectId].artistAddress) {
+            revert GenArt721Error(ErrorCodes.OnlyArtist);
+        }
     }
 
     function _onlyArtistOrAdminACL(
         uint256 _projectId,
         bytes4 _selector
     ) internal {
-        require(
-            msg.sender == projectIdToFinancials[_projectId].artistAddress ||
-                adminACLAllowed(msg.sender, address(this), _selector),
-            "Only artist or Admin ACL allowed"
-        );
+        if (
+            !(msg.sender == projectIdToFinancials[_projectId].artistAddress ||
+                adminACLAllowed(msg.sender, address(this), _selector))
+        ) {
+            revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminACL);
+        }
     }
 
     /**
@@ -362,13 +331,20 @@ contract GenArt721CoreV3_Engine_Flex is
         uint256 _projectId,
         bytes4 _selector
     ) internal {
-        require(
-            adminACLAllowed(msg.sender, address(this), _selector) ||
-                (owner() == address(0) &&
-                    msg.sender ==
-                    projectIdToFinancials[_projectId].artistAddress),
-            "Only Admin ACL allowed, or artist if owner has renounced"
-        );
+        // check if Admin ACL is allowed to call this function
+        if (adminACLAllowed(msg.sender, address(this), _selector)) {
+            return;
+        }
+        // check if the owner has renounced ownership and the caller is the
+        // artist of the project
+        if (
+            owner() == address(0) &&
+            msg.sender == projectIdToFinancials[_projectId].artistAddress
+        ) {
+            return;
+        }
+        // neither of the above conditions were met, revert
+        revert GenArt721Error(ErrorCodes.OnlyAdminACLOrRenouncedArtist);
     }
 
     /**
@@ -441,7 +417,9 @@ contract GenArt721CoreV3_Engine_Flex is
         );
         // initialize next project ID
         _nextProjectId = _startingProjectId;
-        emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
+        emit PlatformUpdated(
+            bytes32(uint256(PlatformUpdatedFields.FIELD_NEXT_PROJECT_ID))
+        );
         // @dev follow-on action: This contract does not self-register. A core
         // registry owner must register contract in a subsequent call.
     }
@@ -566,7 +544,9 @@ contract GenArt721CoreV3_Engine_Flex is
         address _by
     ) external returns (uint256 _tokenId) {
         // CHECKS
-        require(msg.sender == minterContract, "Must mint from minter contract");
+        if (msg.sender != minterContract) {
+            revert GenArt721Error(ErrorCodes.OnlyMinterContract);
+        }
         Project storage project = projects[_projectId];
         // load invocations into memory
         uint24 invocationsBefore = project.invocations;
@@ -577,21 +557,21 @@ contract GenArt721CoreV3_Engine_Flex is
             invocationsAfter = invocationsBefore + 1;
         }
         uint24 maxInvocations = project.maxInvocations;
-
-        require(
-            invocationsBefore < maxInvocations,
-            "Must not exceed max invocations"
-        );
-        require(
-            project.active ||
-                _by == projectIdToFinancials[_projectId].artistAddress,
-            "Project must exist and be active"
-        );
-        require(
-            !project.paused ||
-                _by == projectIdToFinancials[_projectId].artistAddress,
-            "Purchases are paused."
-        );
+        if (invocationsBefore >= maxInvocations) {
+            revert GenArt721Error(ErrorCodes.MaxInvocationsReached);
+        }
+        if (
+            !(project.active ||
+                _by == projectIdToFinancials[_projectId].artistAddress)
+        ) {
+            revert GenArt721Error(ErrorCodes.ProjectMustExistAndBeActive);
+        }
+        if (
+            project.paused &&
+            _by != projectIdToFinancials[_projectId].artistAddress
+        ) {
+            revert GenArt721Error(ErrorCodes.PurchasesPaused);
+        }
 
         // EFFECTS
         // increment project's invocations
@@ -643,15 +623,15 @@ contract GenArt721CoreV3_Engine_Flex is
         OwnerAndHashSeed storage ownerAndHashSeed = _ownersAndHashSeeds[
             _tokenId
         ];
-        require(
-            msg.sender == address(randomizerContract),
-            "Only randomizer may set"
-        );
-        require(
-            ownerAndHashSeed.hashSeed == bytes12(0),
-            "Token hash already set"
-        );
-        require(_hashSeed != bytes12(0), "No zero hash seed");
+        if (msg.sender != address(randomizerContract)) {
+            revert GenArt721Error(ErrorCodes.OnlyRandomizer);
+        }
+        if (ownerAndHashSeed.hashSeed != bytes12(0)) {
+            revert GenArt721Error(ErrorCodes.TokenHashAlreadySet);
+        }
+        if (_hashSeed == bytes12(0)) {
+            revert GenArt721Error(ErrorCodes.NoZeroHashSeed);
+        }
         ownerAndHashSeed.hashSeed = bytes12(_hashSeed);
     }
 
@@ -689,7 +669,9 @@ contract GenArt721CoreV3_Engine_Flex is
     function updateNextCoreContract(address _nextCoreContract) external {
         _onlyAdminACL(this.updateNextCoreContract.selector);
         nextCoreContract = _nextCoreContract;
-        emit PlatformUpdated(FIELD_NEXT_CORE_CONTRACT);
+        emit PlatformUpdated(
+            bytes32(uint256(PlatformUpdatedFields.FIELD_NEXT_CORE_CONTRACT))
+        );
     }
 
     /**
@@ -703,7 +685,14 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyAdminACL(this.updateArtblocksDependencyRegistryAddress.selector);
         _onlyNonZeroAddress(_artblocksDependencyRegistryAddress);
         artblocksDependencyRegistryAddress = _artblocksDependencyRegistryAddress;
-        emit PlatformUpdated(FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS);
+        emit PlatformUpdated(
+            bytes32(
+                uint256(
+                    PlatformUpdatedFields
+                        .FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS
+                )
+            )
+        );
     }
 
     /**
@@ -716,7 +705,14 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyAdminACL(this.updateArtblocksOnChainGeneratorAddress.selector);
         _onlyNonZeroAddress(_artblocksOnChainGeneratorAddress);
         artblocksOnChainGeneratorAddress = _artblocksOnChainGeneratorAddress;
-        emit PlatformUpdated(FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS);
+        emit PlatformUpdated(
+            bytes32(
+                uint256(
+                    PlatformUpdatedFields
+                        .FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS
+                )
+            )
+        );
     }
 
     /**
@@ -775,11 +771,12 @@ contract GenArt721CoreV3_Engine_Flex is
         }
 
         // Validate that the sum of the proposed %s, does not exceed 100%.
-        require(
+        if (
             (renderProviderPrimarySalesPercentage_ +
-                platformProviderPrimarySalesPercentage_) <= ONE_HUNDRED,
-            "Max sum of ONE_HUNDRED %"
-        );
+                platformProviderPrimarySalesPercentage_) > ONE_HUNDRED
+        ) {
+            revert GenArt721Error(ErrorCodes.OverMaxSumOfPercentages);
+        }
         // Casting to `uint8` here is safe due check above, which does not allow
         // overflow as of solidity version ^0.8.0.
         _renderProviderPrimarySalesPercentage = uint8(
@@ -788,7 +785,14 @@ contract GenArt721CoreV3_Engine_Flex is
         _platformProviderPrimarySalesPercentage = uint8(
             platformProviderPrimarySalesPercentage_
         );
-        emit PlatformUpdated(FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES);
+        emit PlatformUpdated(
+            bytes32(
+                uint256(
+                    PlatformUpdatedFields
+                        .FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES
+                )
+            )
+        );
     }
 
     /**
@@ -822,15 +826,22 @@ contract GenArt721CoreV3_Engine_Flex is
             );
         }
         // Validate that the sum of the proposed provider BPS, does not exceed 10_000 BPS.
-        require(
-            (_renderProviderSecondarySalesBPS +
-                _platformProviderSecondarySalesBPS) <=
-                MAX_PROVIDER_SECONDARY_SALES_BPS,
-            "Over max sum of BPS"
-        );
+        if (
+            _renderProviderSecondarySalesBPS +
+                _platformProviderSecondarySalesBPS >
+            MAX_PROVIDER_SECONDARY_SALES_BPS
+        ) {
+            revert GenArt721Error(ErrorCodes.OverMaxSumOfBPS);
+        }
         renderProviderSecondarySalesBPS = _renderProviderSecondarySalesBPS;
         platformProviderSecondarySalesBPS = _platformProviderSecondarySalesBPS;
-        emit PlatformUpdated(FIELD_PROVIDER_SECONDARY_SALES_BPS);
+        emit PlatformUpdated(
+            bytes32(
+                uint256(
+                    PlatformUpdatedFields.FIELD_PROVIDER_SECONDARY_SALES_BPS
+                )
+            )
+        );
     }
 
     /**
@@ -880,7 +891,10 @@ contract GenArt721CoreV3_Engine_Flex is
         }
         _onlyValidProjectId(_projectId);
         projects[_projectId].active = !projects[_projectId].active;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_ACTIVE);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_ACTIVE))
+        );
     }
 
     /**
@@ -929,21 +943,24 @@ contract GenArt721CoreV3_Engine_Flex is
             _projectId
         ];
         // checks
-        require(
-            _additionalPayeePrimarySalesPercentage <= ONE_HUNDRED &&
-                _additionalPayeeSecondarySalesPercentage <= ONE_HUNDRED,
-            "Max of 100%"
-        );
-        require(
-            _additionalPayeePrimarySalesPercentage == 0 ||
-                _additionalPayeePrimarySales != address(0),
-            "Primary payee is zero address"
-        );
-        require(
-            _additionalPayeeSecondarySalesPercentage == 0 ||
-                _additionalPayeeSecondarySales != address(0),
-            "Secondary payee is zero address"
-        );
+        if (
+            _additionalPayeePrimarySalesPercentage > ONE_HUNDRED ||
+            _additionalPayeeSecondarySalesPercentage > ONE_HUNDRED
+        ) {
+            revert GenArt721Error(ErrorCodes.MaxOf100Percent);
+        }
+        if (
+            _additionalPayeePrimarySalesPercentage > 0 &&
+            _additionalPayeePrimarySales == address(0)
+        ) {
+            revert GenArt721Error(ErrorCodes.PrimaryPayeeIsZeroAddress);
+        }
+        if (
+            _additionalPayeeSecondarySalesPercentage > 0 &&
+            _additionalPayeeSecondarySales == address(0)
+        ) {
+            revert GenArt721Error(ErrorCodes.SecondaryPayeeIsZeroAddress);
+        }
         // effects
         // emit event for off-chain indexing
         // note: always emit a proposal event, even in the pathway of
@@ -1056,19 +1073,20 @@ contract GenArt721CoreV3_Engine_Flex is
         );
         _onlyNonZeroAddress(_artistAddress);
         // checks
-        require(
-            proposedArtistAddressesAndSplitsHash[_projectId] ==
-                keccak256(
-                    abi.encode(
-                        _artistAddress,
-                        _additionalPayeePrimarySales,
-                        _additionalPayeePrimarySalesPercentage,
-                        _additionalPayeeSecondarySales,
-                        _additionalPayeeSecondarySalesPercentage
-                    )
-                ),
-            "Must match artist proposal"
-        );
+        if (
+            proposedArtistAddressesAndSplitsHash[_projectId] !=
+            keccak256(
+                abi.encode(
+                    _artistAddress,
+                    _additionalPayeePrimarySales,
+                    _additionalPayeePrimarySalesPercentage,
+                    _additionalPayeeSecondarySales,
+                    _additionalPayeeSecondarySalesPercentage
+                )
+            )
+        ) {
+            revert GenArt721Error(ErrorCodes.MustMatchArtistProposal);
+        }
         // effects
         ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
@@ -1119,7 +1137,10 @@ contract GenArt721CoreV3_Engine_Flex is
         // @dev only call after all previous storage updates
         _assignSplitter(_projectId);
 
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_ADDRESS);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_ARTIST_ADDRESS))
+        );
     }
 
     /**
@@ -1129,7 +1150,10 @@ contract GenArt721CoreV3_Engine_Flex is
     function toggleProjectIsPaused(uint256 _projectId) external {
         _onlyArtist(_projectId);
         projects[_projectId].paused = !projects[_projectId].paused;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_PAUSED);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_PAUSED))
+        );
     }
 
     /**
@@ -1145,7 +1169,9 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyAdminACL(this.addProject.selector);
         _onlyNonEmptyString(_projectName);
         _onlyNonZeroAddress(_artistAddress);
-        require(!newProjectsForbidden, "New projects forbidden");
+        if (newProjectsForbidden) {
+            revert GenArt721Error(ErrorCodes.NewProjectsForbidden);
+        }
         uint256 projectId = _nextProjectId;
         ProjectFinance storage projectFinance = projectIdToFinancials[
             projectId
@@ -1176,7 +1202,10 @@ contract GenArt721CoreV3_Engine_Flex is
         // @dev only call after all previous storage updates
         _assignSplitter(projectId);
 
-        emit ProjectUpdated(projectId, FIELD_PROJECT_CREATED);
+        emit ProjectUpdated(
+            projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_CREATED))
+        );
     }
 
     /**
@@ -1184,7 +1213,9 @@ contract GenArt721CoreV3_Engine_Flex is
      */
     function forbidNewProjects() external {
         _onlyAdminACL(this.forbidNewProjects.selector);
-        require(!newProjectsForbidden, "Already forbidden");
+        if (newProjectsForbidden) {
+            revert GenArt721Error(ErrorCodes.NewProjectsAlreadyForbidden);
+        }
         _forbidNewProjects();
     }
 
@@ -1201,7 +1232,10 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyArtistOrAdminACL(_projectId, this.updateProjectName.selector);
         _onlyNonEmptyString(_projectName);
         projects[_projectId].name = _projectName;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_NAME);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_NAME))
+        );
     }
 
     /**
@@ -1217,19 +1251,27 @@ contract GenArt721CoreV3_Engine_Flex is
         string memory _projectArtistName
     ) external {
         // if unlocked, only artist may update, if locked, only admin may update
-        require(
-            _projectUnlocked(_projectId)
-                ? msg.sender == projectIdToFinancials[_projectId].artistAddress
-                : adminACLAllowed(
+        if (_projectUnlocked(_projectId)) {
+            if (msg.sender != projectIdToFinancials[_projectId].artistAddress) {
+                revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
+            }
+        } else {
+            if (
+                !adminACLAllowed(
                     msg.sender,
                     address(this),
                     this.updateProjectArtistName.selector
-                ),
-            "Only artist, owner when locked"
-        );
+                )
+            ) {
+                revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
+            }
+        }
         _onlyNonEmptyString(_projectArtistName);
         projects[_projectId].artist = _projectArtistName;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_NAME);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_ARTIST_NAME))
+        );
     }
 
     /**
@@ -1249,10 +1291,9 @@ contract GenArt721CoreV3_Engine_Flex is
         uint256 _secondMarketRoyalty
     ) external {
         _onlyArtist(_projectId);
-        require(
-            _secondMarketRoyalty <= ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE,
-            "Over max percent"
-        );
+        if (_secondMarketRoyalty > ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE) {
+            revert GenArt721Error(ErrorCodes.OverMaxSecondaryRoyaltyPercentage);
+        }
         projectIdToFinancials[_projectId]
             .secondaryMarketRoyaltyPercentage = uint8(_secondMarketRoyalty);
 
@@ -1262,7 +1303,12 @@ contract GenArt721CoreV3_Engine_Flex is
 
         emit ProjectUpdated(
             _projectId,
-            FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE
+            bytes32(
+                uint256(
+                    ProjectUpdatedFields
+                        .FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE
+                )
+            )
         );
     }
 
@@ -1315,22 +1361,31 @@ contract GenArt721CoreV3_Engine_Flex is
         string memory _projectDescription
     ) external {
         // checks
-        require(
-            _projectUnlocked(_projectId)
-                ? msg.sender == projectIdToFinancials[_projectId].artistAddress
-                : adminACLAllowed(
+        // if unlocked, only artist may update, if locked, only admin may update
+        if (_projectUnlocked(_projectId)) {
+            if (msg.sender != projectIdToFinancials[_projectId].artistAddress) {
+                revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
+            }
+        } else {
+            if (
+                !adminACLAllowed(
                     msg.sender,
                     address(this),
                     this.updateProjectDescription.selector
-                ),
-            "Only artist, owner when locked"
-        );
+                )
+            ) {
+                revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
+            }
+        }
         // effects
         // store description in contract bytecode, replacing reference address from
         // the old storage description with the newly created one
         projects[_projectId].descriptionAddress = _projectDescription
             .writeToBytecode();
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_DESCRIPTION);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_DESCRIPTION))
+        );
     }
 
     /**
@@ -1345,7 +1400,10 @@ contract GenArt721CoreV3_Engine_Flex is
     ) external {
         _onlyArtist(_projectId);
         projects[_projectId].website = _projectWebsite;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_WEBSITE);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_WEBSITE))
+        );
     }
 
     /**
@@ -1361,7 +1419,10 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyArtistOrAdminACL(_projectId, this.updateProjectLicense.selector);
         _onlyNonEmptyString(_projectLicense);
         projects[_projectId].license = _projectLicense;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_LICENSE);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_LICENSE))
+        );
     }
 
     /**
@@ -1381,14 +1442,18 @@ contract GenArt721CoreV3_Engine_Flex is
         // CHECKS
         Project storage project = projects[_projectId];
         uint256 _invocations = project.invocations;
-        require(
-            (_maxInvocations < project.maxInvocations),
-            "Only maxInvocations decrease"
-        );
-        require(_maxInvocations >= _invocations, "Only gte invocations");
+        if (_maxInvocations >= project.maxInvocations) {
+            revert GenArt721Error(ErrorCodes.OnlyMaxInvocationsDecrease);
+        }
+        if (_maxInvocations < _invocations) {
+            revert GenArt721Error(ErrorCodes.OnlyGteInvocations);
+        }
         // EFFECTS
         project.maxInvocations = _maxInvocations;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_MAX_INVOCATIONS);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_MAX_INVOCATIONS))
+        );
 
         // register completed timestamp if action completed the project
         if (_maxInvocations == _invocations) {
@@ -1414,7 +1479,41 @@ contract GenArt721CoreV3_Engine_Flex is
         project.scriptBytecodeAddresses[project.scriptCount] = _script
             .writeToBytecode();
         project.scriptCount = project.scriptCount + 1;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT))
+        );
+    }
+
+    /**
+     * @notice Adds a pre-compressed script to project `_projectId`. The script
+     * should be compressed using `getCompressed`. This function stores the script
+     * in a compressed format on-chain. For reads, the compressed script is
+     * decompressed on-chain, ensuring the original text is reconstructed without
+     * external dependencies.
+     * @param _projectId Project to be updated.
+     * @param _compressedScript Pre-compressed script to be added.
+     * Required to be non-empty, but no further validation is performed.
+     */
+    function addProjectScriptCompressed(
+        uint256 _projectId,
+        bytes memory _compressedScript
+    ) external {
+        _onlyUnlocked(_projectId);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.addProjectScriptCompressed.selector
+        );
+        _onlyNonEmptyBytes(_compressedScript);
+        Project storage project = projects[_projectId];
+        // store compressed script in contract bytecode
+        project.scriptBytecodeAddresses[project.scriptCount] = _compressedScript
+            .writeToBytecodeCompressed();
+        project.scriptCount = project.scriptCount + 1;
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT))
+        );
     }
 
     /**
@@ -1433,11 +1532,52 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyArtistOrAdminACL(_projectId, this.updateProjectScript.selector);
         _onlyNonEmptyString(_script);
         Project storage project = projects[_projectId];
-        require(_scriptId < project.scriptCount, "scriptId out of range");
+        if (_scriptId >= project.scriptCount) {
+            revert GenArt721Error(ErrorCodes.ScriptIdOutOfRange);
+        }
         // store script in contract bytecode, replacing reference address from
         // the old storage contract with the newly created one
         project.scriptBytecodeAddresses[_scriptId] = _script.writeToBytecode();
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT))
+        );
+    }
+
+    /**
+     * @notice Updates script for project `_projectId` at script ID `_scriptId`
+     * with a pre-compressed script. The script should be compressed using
+     * `getCompressed`. This function stores the script in a compressed format
+     * on-chain. For reads, the compressed script is decompressed on-chain, ensuring
+     * the original text is reconstructed without external dependencies.
+     * @param _projectId Project to be updated.
+     * @param _scriptId Script ID to be updated.
+     * @param _compressedScript The updated pre-compressed script value.
+     * Required to be non-empty, but no further validation is performed.
+     */
+    function updateProjectScriptCompressed(
+        uint256 _projectId,
+        uint256 _scriptId,
+        bytes memory _compressedScript
+    ) external {
+        _onlyUnlocked(_projectId);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.updateProjectScriptCompressed.selector
+        );
+        _onlyNonEmptyBytes(_compressedScript);
+        Project storage project = projects[_projectId];
+        if (_scriptId >= project.scriptCount) {
+            revert GenArt721Error(ErrorCodes.ScriptIdOutOfRange);
+        }
+        // store script in contract bytecode, replacing reference address from
+        // the old storage contract with the newly created one
+        project.scriptBytecodeAddresses[_scriptId] = _compressedScript
+            .writeToBytecodeCompressed();
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT))
+        );
     }
 
     /**
@@ -1451,13 +1591,18 @@ contract GenArt721CoreV3_Engine_Flex is
             this.removeProjectLastScript.selector
         );
         Project storage project = projects[_projectId];
-        require(project.scriptCount > 0, "No scripts to remove");
+        if (project.scriptCount == 0) {
+            revert GenArt721Error(ErrorCodes.NoScriptsToRemove);
+        }
         // delete reference to old storage contract address
         delete project.scriptBytecodeAddresses[project.scriptCount - 1];
         unchecked {
             project.scriptCount = project.scriptCount - 1;
         }
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT))
+        );
     }
 
     /**
@@ -1477,15 +1622,19 @@ contract GenArt721CoreV3_Engine_Flex is
         );
         Project storage project = projects[_projectId];
         // require exactly one @ symbol in _scriptTypeAndVersion
-        require(
-            _scriptTypeAndVersion.containsExactCharacterQty(
+        if (
+            !_scriptTypeAndVersion.containsExactCharacterQty(
                 AT_CHARACTER_CODE,
                 uint8(1)
-            ),
-            "must contain exactly one @"
-        );
+            )
+        ) {
+            revert GenArt721Error(ErrorCodes.ScriptTypeAndVersionFormat);
+        }
         project.scriptTypeAndVersion = _scriptTypeAndVersion;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TYPE);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT_TYPE))
+        );
     }
 
     /**
@@ -1508,7 +1657,9 @@ contract GenArt721CoreV3_Engine_Flex is
         // Perform more detailed input validation for aspect ratio.
         bytes memory aspectRatioBytes = bytes(_aspectRatio);
         uint256 bytesLength = aspectRatioBytes.length;
-        require(bytesLength <= 11, "Aspect ratio format too long");
+        if (bytesLength > 11) {
+            revert GenArt721Error(ErrorCodes.AspectRatioTooLong);
+        }
         bool hasSeenDecimalSeparator = false;
         bool hasSeenNumber = false;
         for (uint256 i; i < bytesLength; i++) {
@@ -1528,12 +1679,17 @@ contract GenArt721CoreV3_Engine_Flex is
                     continue;
                 }
             }
-            revert("Improperly formatted aspect ratio");
+            revert GenArt721Error(ErrorCodes.AspectRatioImproperFormat);
         }
-        require(hasSeenNumber, "Aspect ratio has no numbers");
+        if (!hasSeenNumber) {
+            revert GenArt721Error(ErrorCodes.AspectRatioNoNumbers);
+        }
 
         projects[_projectId].aspectRatio = _aspectRatio;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_ASPECT_RATIO);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_ASPECT_RATIO))
+        );
     }
 
     /**
@@ -1551,7 +1707,10 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyArtist(_projectId);
         _onlyNonEmptyString(_newBaseURI);
         projects[_projectId].projectBaseURI = _newBaseURI;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_BASE_URI))
+        );
     }
 
     /**
@@ -1753,6 +1912,18 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
+     * @notice Returns the compressed form of a string in bytes using solady LibZip's flz compress algorithm. The bytes output from this function are intended to be used as input to `addProjectScriptCompressed` and `updateProjectScriptCompressed`.
+     * @param _script Script to be compressed. Required to be a non-empty string, but no further validaton is performed.
+     * @return bytes compressed bytes
+     */
+    function getCompressed(
+        string memory _script
+    ) external pure returns (bytes memory) {
+        _onlyNonEmptyString(_script);
+        return BytecodeStorageReader.getCompressed(_script);
+    }
+
+    /**
      * @notice Returns script for project `_projectId` at script index `_index`.
      * @param _projectId Project to be queried.
      * @param _index Index of script to be queried.
@@ -1811,10 +1982,9 @@ contract GenArt721CoreV3_Engine_Flex is
     function getHistoricalRandomizerAt(
         uint256 _index
     ) external view returns (address) {
-        require(
-            _index < _historicalRandomizerAddresses.length,
-            "Index out of bounds"
-        );
+        if (_index >= _historicalRandomizerAddresses.length) {
+            revert GenArt721Error(ErrorCodes.IndexOutOfBounds);
+        }
         return _historicalRandomizerAddresses[_index];
     }
 
@@ -2090,7 +2260,11 @@ contract GenArt721CoreV3_Engine_Flex is
     function _forbidNewProjects() internal {
         if (!newProjectsForbidden) {
             newProjectsForbidden = true;
-            emit PlatformUpdated(FIELD_NEW_PROJECTS_FORBIDDEN);
+            emit PlatformUpdated(
+                bytes32(
+                    uint256(PlatformUpdatedFields.FIELD_NEW_PROJECTS_FORBIDDEN)
+                )
+            );
         }
     }
 
@@ -2151,7 +2325,11 @@ contract GenArt721CoreV3_Engine_Flex is
         renderProviderSecondarySalesAddress = payable(
             _renderProviderSecondarySalesAddress
         );
-        emit PlatformUpdated(FIELD_PROVIDER_SALES_ADDRESSES);
+        emit PlatformUpdated(
+            bytes32(
+                uint256(PlatformUpdatedFields.FIELD_PROVIDER_SALES_ADDRESSES)
+            )
+        );
     }
 
     /**
@@ -2165,7 +2343,9 @@ contract GenArt721CoreV3_Engine_Flex is
         randomizerContract = IRandomizer_V3CoreBase(_randomizerAddress);
         // populate historical randomizer array
         _historicalRandomizerAddresses.push(_randomizerAddress);
-        emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
+        emit PlatformUpdated(
+            bytes32(uint256(PlatformUpdatedFields.FIELD_RANDOMIZER_ADDRESS))
+        );
     }
 
     /**
@@ -2187,7 +2367,9 @@ contract GenArt721CoreV3_Engine_Flex is
             "Invalid split provider"
         );
         splitProvider = ISplitProviderV0(_splitProviderAddress);
-        emit PlatformUpdated(FIELD_SPLIT_PROVIDER);
+        emit PlatformUpdated(
+            bytes32(uint256(PlatformUpdatedFields.FIELD_SPLIT_PROVIDER))
+        );
     }
 
     /**
@@ -2243,7 +2425,9 @@ contract GenArt721CoreV3_Engine_Flex is
      */
     function _updateDefaultBaseURI(string memory _defaultBaseURI) internal {
         defaultBaseURI = _defaultBaseURI;
-        emit PlatformUpdated(FIELD_DEFAULT_BASE_URI);
+        emit PlatformUpdated(
+            bytes32(uint256(PlatformUpdatedFields.FIELD_DEFAULT_BASE_URI))
+        );
     }
 
     /**
@@ -2252,7 +2436,10 @@ contract GenArt721CoreV3_Engine_Flex is
      */
     function _completeProject(uint256 _projectId) internal {
         projects[_projectId].completedTimestamp = uint64(block.timestamp);
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_COMPLETED);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_COMPLETED))
+        );
     }
 
     /**

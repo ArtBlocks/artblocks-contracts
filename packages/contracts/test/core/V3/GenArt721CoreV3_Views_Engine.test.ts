@@ -1,12 +1,5 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import {
-  BN,
-  constants,
-  expectEvent,
-  expectRevert,
-  balance,
-  ether,
-} from "@openzeppelin/test-helpers";
+import { constants } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
@@ -17,6 +10,8 @@ import {
   assignDefaultConstants,
   deployAndGet,
   deployCoreWithMinterFilter,
+  GENART721_ERROR_NAME,
+  GENART721_ERROR_CODES,
 } from "../../util/common";
 
 export type ArtistFinanceProposal = {
@@ -167,14 +162,18 @@ for (const coreContractName of coreContractsToTest) {
           config.accounts.artist,
           config.accounts.additional,
         ]) {
-          await expectRevert(
+          await expect(
             config.genArt721Core
               .connect(account)
               .updateArtblocksOnChainGeneratorAddress(
                 config.accounts.additional.address
-              ),
-            "Only Admin ACL allowed"
-          );
+              )
+          )
+            .to.be.revertedWithCustomError(
+              config.genArt721Core,
+              GENART721_ERROR_NAME
+            )
+            .withArgs(GENART721_ERROR_CODES.OnlyAdminACL);
         }
         // admin allowed to update
         await config.genArt721Core
@@ -216,14 +215,18 @@ for (const coreContractName of coreContractsToTest) {
           config.accounts.artist,
           config.accounts.additional,
         ]) {
-          await expectRevert(
+          await expect(
             config.genArt721Core
               .connect(account)
               .updateArtblocksDependencyRegistryAddress(
                 config.accounts.additional.address
-              ),
-            "Only Admin ACL allowed"
-          );
+              )
+          )
+            .to.be.revertedWithCustomError(
+              config.genArt721Core,
+              GENART721_ERROR_NAME
+            )
+            .withArgs(GENART721_ERROR_CODES.OnlyAdminACL);
         }
         // admin allowed to update
         await config.genArt721Core
@@ -263,12 +266,16 @@ for (const coreContractName of coreContractsToTest) {
           config.accounts.artist,
           config.accounts.additional,
         ]) {
-          await expectRevert(
+          await expect(
             config.genArt721Core
               .connect(account)
-              .updateNextCoreContract(config.accounts.additional.address),
-            "Only Admin ACL allowed"
-          );
+              .updateNextCoreContract(config.accounts.additional.address)
+          )
+            .to.be.revertedWithCustomError(
+              config.genArt721Core,
+              GENART721_ERROR_NAME
+            )
+            .withArgs(GENART721_ERROR_CODES.OnlyAdminACL);
         }
         // admin allowed to update
         await config.genArt721Core
@@ -311,34 +318,61 @@ for (const coreContractName of coreContractsToTest) {
         );
         expect(projectScriptDetails.aspectRatio).to.be.equal("1.777777778");
         expect(projectScriptDetails.scriptCount).to.be.equal(1);
+        // add pre-compressed script
+        const compressedScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getCompressed("if(false){}");
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(config.projectZero, compressedScript);
+        const projectScriptDetailsAfter = await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .projectScriptDetails(config.projectZero);
+        expect(projectScriptDetailsAfter.scriptCount).to.be.equal(2);
       });
 
       it("validates aspect ratio format details", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .updateProjectAspectRatio(config.projectZero, "1.7777777778"),
-          "Aspect ratio format too long"
-        );
-        await expectRevert(
+            .updateProjectAspectRatio(config.projectZero, "1.7777777778")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.AspectRatioTooLong);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .updateProjectAspectRatio(config.projectZero, "2/3"),
-          "Improperly formatted aspect ratio"
-        );
-        await expectRevert(
+            .updateProjectAspectRatio(config.projectZero, "2/3")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.AspectRatioImproperFormat);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .updateProjectAspectRatio(config.projectZero, "1.2.3.4"),
-          "Improperly formatted aspect ratio"
-        );
-        await expectRevert(
+            .updateProjectAspectRatio(config.projectZero, "1.2.3.4")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.AspectRatioImproperFormat);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .updateProjectAspectRatio(config.projectZero, "."),
-          "Aspect ratio has no numbers"
-        );
+            .updateProjectAspectRatio(config.projectZero, ".")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.AspectRatioNoNumbers);
       });
     });
 
@@ -612,21 +646,29 @@ for (const coreContractName of coreContractsToTest) {
       it("reverts on improper address inputs", async function () {
         const config = await loadFixture(_beforeEach);
         // addProject
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .addProject("name", constants.ZERO_ADDRESS),
-          "Must input non-zero address"
-        );
+            .addProject("name", constants.ZERO_ADDRESS)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
         // updateArtblocksDependencyRegistryAddress
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateArtblocksDependencyRegistryAddress(constants.ZERO_ADDRESS),
-          "Must input non-zero address"
-        );
+            .updateArtblocksDependencyRegistryAddress(constants.ZERO_ADDRESS)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
         // updateProviderSalesAddresses
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .updateProviderSalesAddresses(
@@ -634,10 +676,14 @@ for (const coreContractName of coreContractsToTest) {
               config.accounts.additional.address,
               config.accounts.additional.address,
               config.accounts.additional.address
-            ),
-          "Must input non-zero address"
-        );
-        expectRevert(
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .updateProviderSalesAddresses(
@@ -645,10 +691,14 @@ for (const coreContractName of coreContractsToTest) {
               constants.ZERO_ADDRESS,
               config.accounts.additional.address,
               config.accounts.additional.address
-            ),
-          "Must input non-zero address"
-        );
-        expectRevert(
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .updateProviderSalesAddresses(
@@ -656,10 +706,14 @@ for (const coreContractName of coreContractsToTest) {
               config.accounts.additional.address,
               constants.ZERO_ADDRESS,
               config.accounts.additional.address
-            ),
-          "Must input non-zero address"
-        );
-        expectRevert(
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .updateProviderSalesAddresses(
@@ -667,33 +721,49 @@ for (const coreContractName of coreContractsToTest) {
               config.accounts.additional.address,
               config.accounts.additional.address,
               constants.ZERO_ADDRESS
-            ),
-          "Must input non-zero address"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
         // updateMinterContract
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateMinterContract(constants.ZERO_ADDRESS),
-          "Must input non-zero address"
-        );
+            .updateMinterContract(constants.ZERO_ADDRESS)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
         // updateRandomizerAddress
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateRandomizerAddress(constants.ZERO_ADDRESS),
-          "Must input non-zero address"
-        );
+            .updateRandomizerAddress(constants.ZERO_ADDRESS)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
         // updateProjectArtistAddress
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .updateProjectArtistAddress(
               config.projectZero,
               constants.ZERO_ADDRESS
-            ),
-          "Must input non-zero address"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
 
         const proposeArtistPaymentAddressesAndSplitsArgs = [
           config.projectZero,
@@ -704,90 +774,156 @@ for (const coreContractName of coreContractsToTest) {
           0,
         ];
         // proposeArtistPaymentAddressesAndSplits
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
             .proposeArtistPaymentAddressesAndSplits(
               ...proposeArtistPaymentAddressesAndSplitsArgs
-            ),
-          "Must input non-zero address"
-        );
+            )
+        )
+          .to.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
         // adminAcceptArtistAddressesAndSplits
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .adminAcceptArtistAddressesAndSplits(
               ...proposeArtistPaymentAddressesAndSplitsArgs
-            ),
-          "Must input non-zero address"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
       });
 
       it("reverts on improper string inputs", async function () {
         const config = await loadFixture(_beforeEach);
         // addProject
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .addProject("", config.accounts.artist.address),
-          "Must input non-empty string"
-        );
+            .addProject("", config.accounts.artist.address)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
         // updateProjectName
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateProjectName(config.projectZero, ""),
-          "Must input non-empty string"
-        );
+            .updateProjectName(config.projectZero, "")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
         // updateProjectArtistName
-        expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.deployer)
-            .updateProjectArtistName(config.projectZero, ""),
-          "Must input non-empty string"
-        );
-        // updateProjectLicense
-        expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.deployer)
-            .updateProjectLicense(config.projectZero, ""),
-          "Must input non-empty string"
-        );
-        // addProjectScript
-        expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.deployer)
-            .addProjectScript(config.projectZero, ""),
-          "Must input non-empty string"
-        );
-        // updateProjectScript
-        expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.deployer)
-            .updateProjectScript(config.projectZero, 0, ""),
-          "Must input non-empty string"
-        );
-        // updateProjectAspectRatio
-        expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.deployer)
-            .updateProjectAspectRatio(config.projectZero, ""),
-          "Must input non-empty string"
-        );
-        // updateProjectBaseURI
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .updateProjectBaseURI(config.projectZero, ""),
-          "Must input non-empty string"
-        );
-        // updateDefaultBaseURI
-        expectRevert(
+            .updateProjectArtistName(config.projectZero, "")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
+        // updateProjectLicense
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateDefaultBaseURI(""),
-          "Must input non-empty string"
-        );
+            .updateProjectLicense(config.projectZero, "")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
+        // addProjectScript
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .addProjectScript(config.projectZero, "")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
+        // addProjectScriptCompressed
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .addProjectScriptCompressed(config.projectZero, "0x")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyBytes);
+        // getCompressed
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .getCompressed("")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
+        // updateProjectScript
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateProjectScript(config.projectZero, 0, "")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
+        // updateProjectAspectRatio
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateProjectAspectRatio(config.projectZero, "")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
+        // updateProjectBaseURI
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .updateProjectBaseURI(config.projectZero, "")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
+        // updateDefaultBaseURI
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateDefaultBaseURI("")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
       });
 
       it("returns expected values for projectOne, with updated payment addresses and percentages only to Additional Payee Primary", async function () {
@@ -1413,12 +1549,16 @@ for (const coreContractName of coreContractsToTest) {
 
       it("reverts when asking for invalid token", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.user)
-            .royaltyInfo(config.projectZeroTokenZero.toNumber(), SALE_AMOUNT),
-          "Token ID does not exist"
-        );
+            .royaltyInfo(config.projectZeroTokenZero.toNumber(), SALE_AMOUNT)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TokenDoesNotExist);
       });
     });
 
@@ -1710,12 +1850,16 @@ for (const coreContractName of coreContractsToTest) {
       it("reverts when invalid index is queried", async function () {
         const config = await loadFixture(_beforeEach);
         // expect revert when query out of bounds index
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.user)
-            .getHistoricalRandomizerAt(2),
-          "Index out of bounds"
-        );
+            .getHistoricalRandomizerAt(2)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.IndexOutOfBounds);
       });
     });
 
@@ -1737,10 +1881,21 @@ for (const coreContractName of coreContractsToTest) {
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectScript(config.projectZero, "console.log('world')");
+        // add a pre-compressed project script
+        const compressedScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getCompressed("console.log(hello world)");
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(config.projectZero, compressedScript);
         const projectScript = await config.genArt721Core
           .connect(config.accounts.user)
           .projectScriptByIndex(config.projectZero, 1);
+        const projectScript2 = await config.genArt721Core
+          .connect(config.accounts.user)
+          .projectScriptByIndex(config.projectZero, 2);
         expect(projectScript).to.be.equal("console.log('world')");
+        expect(projectScript2).to.be.equal("console.log(hello world)");
       });
     });
 
@@ -1886,12 +2041,16 @@ for (const coreContractName of coreContractsToTest) {
       it("reverts when token does not exist", async function () {
         const config = await loadFixture(_beforeEach);
         // expect revert when token does not exist
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.user)
-            .tokenURI(config.projectZeroTokenZero.toNumber()),
-          "Token ID does not exist"
-        );
+            .tokenURI(config.projectZeroTokenZero.toNumber())
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TokenDoesNotExist);
       });
     });
 

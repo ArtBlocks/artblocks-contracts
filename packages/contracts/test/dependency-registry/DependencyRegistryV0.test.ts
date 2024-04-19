@@ -32,12 +32,6 @@ const ONLY_NON_EMPTY_STRING_ERROR = "Must input non-empty string";
 const ONLY_NON_ZERO_ADDRESS_ERROR = "Must input non-zero address";
 const INDEX_OUT_OF_RANGE_ERROR = "Index out of range";
 
-// test the following V3 core contract derivatives:
-const coreContractsToTest = [
-  "GenArt721CoreV3", // flagship V3 core
-  "GenArt721CoreV3_Explorations", // V3 core explorations contract
-];
-
 interface DependencyRegistryV0TestContext extends Mocha.Context {
   dependencyRegistry: DependencyRegistryV0;
   genArt721Core: GenArt721CoreV3;

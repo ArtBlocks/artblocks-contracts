@@ -101,6 +101,123 @@ export type T_Config = {
   weth?: Contract;
 };
 
+export const PLATFORM_UPDATED_FIELDS = {
+  FIELD_NEXT_PROJECT_ID: ethers.utils.hexZeroPad(ethers.utils.hexlify(0), 32),
+  FIELD_NEW_PROJECTS_FORBIDDEN: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(1),
+    32
+  ),
+  FIELD_DEFAULT_BASE_URI: ethers.utils.hexZeroPad(ethers.utils.hexlify(2), 32),
+  FIELD_RANDOMIZER_ADDRESS: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(3),
+    32
+  ),
+  FIELD_NEXT_CORE_CONTRACT: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(4),
+    32
+  ),
+  FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(5),
+    32
+  ),
+  FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(6),
+    32
+  ),
+  FIELD_PROVIDER_SALES_ADDRESSES: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(7),
+    32
+  ),
+  FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(8),
+    32
+  ),
+  FIELD_PROVIDER_SECONDARY_SALES_BPS: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(9),
+    32
+  ),
+};
+
+export const PROJECT_UPDATED_FIELDS = {
+  FIELD_PROJECT_COMPLETED: ethers.utils.hexZeroPad(ethers.utils.hexlify(0), 32),
+  FIELD_PROJECT_ACTIVE: ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32),
+  FIELD_PROJECT_ARTIST_ADDRESS: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(2),
+    32
+  ),
+  FIELD_PROJECT_PAUSED: ethers.utils.hexZeroPad(ethers.utils.hexlify(3), 32),
+  FIELD_PROJECT_CREATED: ethers.utils.hexZeroPad(ethers.utils.hexlify(4), 32),
+  FIELD_PROJECT_NAME: ethers.utils.hexZeroPad(ethers.utils.hexlify(5), 32),
+  FIELD_PROJECT_ARTIST_NAME: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(6),
+    32
+  ),
+  FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(7),
+    32
+  ),
+  FIELD_PROJECT_DESCRIPTION: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(8),
+    32
+  ),
+  FIELD_PROJECT_WEBSITE: ethers.utils.hexZeroPad(ethers.utils.hexlify(9), 32),
+  FIELD_PROJECT_LICENSE: ethers.utils.hexZeroPad(ethers.utils.hexlify(10), 32),
+  FIELD_PROJECT_MAX_INVOCATIONS: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(11),
+    32
+  ),
+  FIELD_PROJECT_SCRIPT: ethers.utils.hexZeroPad(ethers.utils.hexlify(12), 32),
+  FIELD_PROJECT_SCRIPT_TYPE: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(13),
+    32
+  ),
+  FIELD_PROJECT_ASPECT_RATIO: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(14),
+    32
+  ),
+  FIELD_PROJECT_BASE_URI: ethers.utils.hexZeroPad(ethers.utils.hexlify(15), 32),
+};
+
+export const GENART721_ERROR_NAME = "GenArt721Error";
+export const GENART721_ERROR_CODES = {
+  OnlyNonZeroAddress: 0,
+  OnlyNonEmptyString: 1,
+  OnlyNonEmptyBytes: 2,
+  TokenDoesNotExist: 3,
+  ProjectDoesNotExist: 4,
+  OnlyUnlockedProjects: 5,
+  OnlyAdminACL: 6,
+  OnlyArtist: 7,
+  OnlyArtistOrAdminACL: 8,
+  OnlyAdminACLOrRenouncedArtist: 9,
+  OnlyMinterContract: 10,
+  MaxInvocationsReached: 11,
+  ProjectMustExistAndBeActive: 12,
+  PurchasesPaused: 13,
+  OnlyRandomizer: 14,
+  TokenHashAlreadySet: 15,
+  NoZeroHashSeed: 16,
+  OverMaxSumOfPercentages: 17,
+  IndexOutOfBounds: 18,
+  OverMaxSumOfBPS: 19,
+  MaxOf100Percent: 20,
+  PrimaryPayeeIsZeroAddress: 21,
+  SecondaryPayeeIsZeroAddress: 22,
+  MustMatchArtistProposal: 23,
+  NewProjectsForbidden: 24,
+  NewProjectsAlreadyForbidden: 25,
+  OnlyArtistOrAdminIfLocked: 26,
+  OverMaxSecondaryRoyaltyPercentage: 27,
+  OnlyMaxInvocationsDecrease: 28,
+  OnlyGteInvocations: 29,
+  ScriptIdOutOfRange: 30,
+  NoScriptsToRemove: 31,
+  ScriptTypeAndVersionFormat: 32,
+  AspectRatioTooLong: 33,
+  AspectRatioNoNumbers: 34,
+  AspectRatioImproperFormat: 35,
+};
+
 export async function getAccounts(): Promise<TestAccountsArtBlocks> {
   const [
     deployer,
@@ -294,7 +411,6 @@ export async function deployCoreWithMinterFilter(
         randomizer.address,
         adminACL.address,
         0, // _startingProjectId
-        config.splitProvider.address, // _splitProviderAddress
       ]
     );
     // assign core contract for randomizer to use
@@ -359,6 +475,8 @@ export async function deployCoreWithMinterFilter(
       !coreContractName.includes("IncorrectCoreType")
     ) {
       constructorArgs.push(config.splitProvider.address); // _splitProviderAddress
+      constructorArgs.push(false); // _nullPlatformProvider
+      constructorArgs.push(false); // _allowArtistProjectActivation
     }
     genArt721Core = await deployWithStorageLibraryAndGet(
       config,
@@ -467,7 +585,6 @@ export async function deployCore(
         randomizer.address,
         adminACL.address,
         config.projectZero, // starting project ID
-        config.splitProvider.address, // _splitProviderAddress
       ]
     );
     // register core contract on CoreRegistryV1
@@ -520,6 +637,8 @@ export async function deployCore(
     ];
     if (!coreContractName.endsWith("_PROHIBITION")) {
       deployArgs.push(config.splitProvider.address); // _splitProviderAddress
+      deployArgs.push(false); // _nullPlatformProvider
+      deployArgs.push(false); // _allowArtistProjectActivation
     }
     // Note: in the common tests, set `autoApproveArtistSplitProposals` to false, which
     //       mirrors the approval-flow behavior of the other (non-Engine) V3 contracts
