@@ -1,7 +1,6 @@
-import { constants, expectRevert } from "@openzeppelin/test-helpers";
+import { constants } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import {
   T_Config,
@@ -9,26 +8,10 @@ import {
   assignDefaultConstants,
   deployAndGet,
   deployCoreWithMinterFilter,
-  mintProjectUntilRemaining,
-  advanceEVMByTime,
   deployWithStorageLibraryAndGet,
-  GENART721_ERROR_NAME,
-  GENART721_ERROR_CODES,
 } from "../../util/common";
-import { FOUR_WEEKS } from "../../util/constants";
-import {
-  SQUIGGLE_SCRIPT,
-  SKULPTUUR_SCRIPT_APPROX,
-  CONTRACT_SIZE_LIMIT_SCRIPT,
-  GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT,
-  MULTI_BYTE_UTF_EIGHT_SCRIPT,
-  MUCH_GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT,
-} from "../../util/example-scripts";
 
-import {
-  Mock0xSplitsV2Splitter,
-  Mock0xSplitsV2Splitter__factory,
-} from "../../../scripts/contracts";
+import { Mock0xSplitsV2Splitter } from "../../../scripts/contracts";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -37,7 +20,7 @@ const coreContractsToTest = [
 ];
 
 /**
- * Tests for V3 core dealing with configuring projects.
+ * Tests for V3 core dealing with configuring splitters on projects.
  */
 for (const coreContractName of coreContractsToTest) {
   describe(`${coreContractName} Project Configure`, async function () {

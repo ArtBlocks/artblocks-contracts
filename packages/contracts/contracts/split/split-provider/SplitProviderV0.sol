@@ -82,10 +82,7 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
             });
 
             // emit event for new splitter creation
-            emit SplitterCreated({
-                splitter: splitter,
-                splitParams: splitParams
-            });
+            emit SplitterCreated({splitter: splitter});
         }
 
         return splitter;
