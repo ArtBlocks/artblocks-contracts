@@ -166,12 +166,10 @@ runForEach.forEach((params) => {
               "ERC20",
               config.ERC20.address
             )
-        )
-          .to.not.emit(
-            await ethers.getContractAt("SetPriceLib", config.minter.address),
-            "PricePerTokenReset"
-          )
-          .withArgs(config.projectZero, config.genArt721Core.address);
+        ).to.not.emit(
+          await ethers.getContractAt("SetPriceLib", config.minter.address),
+          "PricePerTokenReset"
+        );
         // subsequent currency configuring should emit price reset
         await expect(
           config.minter

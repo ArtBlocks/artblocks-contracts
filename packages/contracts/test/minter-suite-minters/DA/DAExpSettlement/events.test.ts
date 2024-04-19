@@ -628,16 +628,14 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address
             )
-        )
-          .to.not.emit(
-            // event is defined in MaxInvocationsLib
-            await ethers.getContractAt(
-              "MaxInvocationsLib",
-              config.minter.address
-            ),
-            "ProjectMaxInvocationsLimitUpdated"
-          )
-          .withArgs(config.projectZero, config.genArt721Core.address, 1);
+        ).to.not.emit(
+          // event is defined in MaxInvocationsLib
+          await ethers.getContractAt(
+            "MaxInvocationsLib",
+            config.minter.address
+          ),
+          "ProjectMaxInvocationsLimitUpdated"
+        );
       });
 
       it("does not emit during withdrawArtistAndAdminRevenues when minter-local max invocations are not updated", async function () {

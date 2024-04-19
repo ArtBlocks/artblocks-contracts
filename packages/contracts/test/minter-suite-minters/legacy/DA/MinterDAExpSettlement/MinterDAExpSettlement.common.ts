@@ -735,8 +735,7 @@ export const MinterDAExpSettlement_Common = async (
           .connect(config.accounts.user)
           .purchase(config.projectZero, {
             value: config.startingPrice,
-          }),
-        "Must not exceed max invocations"
+          })
       );
     });
   });
