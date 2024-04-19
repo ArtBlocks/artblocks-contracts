@@ -1027,9 +1027,7 @@ for (const coreContractName of coreContractsToTest) {
           config.genArt721Core
             .connect(config.accounts.artist2)
             .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo)
-        )
-          .to.not.emit(config.genArt721Core, "AcceptedArtistAddressesAndSplits")
-          .withArgs(config.projectZero);
+        ).to.not.emit(config.genArt721Core, "AcceptedArtistAddressesAndSplits");
         // artist changes to an auto-approved request (only percentages changed)
         valuesToUpdateTo = [
           valuesToUpdateTo[0],

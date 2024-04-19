@@ -2,7 +2,13 @@ import { expectRevert } from "@openzeppelin/test-helpers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
-import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
+import {
+  deployAndGet,
+  deployCore,
+  safeAddProject,
+  GENART721_ERROR_NAME,
+  GENART721_ERROR_CODES,
+} from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import { ethers } from "hardhat";
 import { revertMessages } from "../../constants";
@@ -1412,16 +1418,33 @@ runForEach.forEach((params) => {
           .connect(config.accounts.artist)
           .updateProjectMaxInvocations(config.projectZero, 14);
         // expect revert from core when num tokens to mint gt tokens owed due to E1
-        await expectRevert(
-          config.minter
-            .connect(config.accounts.artist)
-            .adminArtistAutoMintTokensToWinners(
-              config.projectZero,
-              config.genArt721Core.address,
-              2
-            ),
-          revertMessages.noExceedMaxInvocations
-        );
+        if (params.core.includes("Engine")) {
+          await expect(
+            config.minter
+              .connect(config.accounts.artist)
+              .adminArtistAutoMintTokensToWinners(
+                config.projectZero,
+                config.genArt721Core.address,
+                2
+              )
+          )
+            .to.be.revertedWithCustomError(
+              config.genArt721Core,
+              GENART721_ERROR_NAME
+            )
+            .withArgs(GENART721_ERROR_CODES.MaxInvocationsReached);
+        } else {
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.artist)
+              .adminArtistAutoMintTokensToWinners(
+                config.projectZero,
+                config.genArt721Core.address,
+                2
+              ),
+            revertMessages.noExceedMaxInvocations
+          );
+        }
       });
 
       it("updates state when successful", async function () {
@@ -1703,16 +1726,33 @@ runForEach.forEach((params) => {
           .connect(config.accounts.artist)
           .updateProjectMaxInvocations(config.projectZero, 14);
         // expect revert from core when num tokens to mint gt tokens owed due to E1
-        await expectRevert(
-          config.minter
-            .connect(config.accounts.artist)
-            .adminArtistDirectMintTokensToWinners(
-              config.projectZero,
-              config.genArt721Core.address,
-              [14, 15]
-            ),
-          revertMessages.noExceedMaxInvocations
-        );
+        if (params.core.includes("Engine")) {
+          await expect(
+            config.minter
+              .connect(config.accounts.artist)
+              .adminArtistDirectMintTokensToWinners(
+                config.projectZero,
+                config.genArt721Core.address,
+                [14, 15]
+              )
+          )
+            .to.be.revertedWithCustomError(
+              config.genArt721Core,
+              GENART721_ERROR_NAME
+            )
+            .withArgs(GENART721_ERROR_CODES.MaxInvocationsReached);
+        } else {
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.artist)
+              .adminArtistDirectMintTokensToWinners(
+                config.projectZero,
+                config.genArt721Core.address,
+                [14, 15]
+              ),
+            revertMessages.noExceedMaxInvocations
+          );
+        }
       });
 
       it("reverts in minter code when minting non-existent bid", async function () {

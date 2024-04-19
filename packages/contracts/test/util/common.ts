@@ -176,6 +176,46 @@ export const PROJECT_UPDATED_FIELDS = {
   FIELD_PROJECT_BASE_URI: ethers.utils.hexZeroPad(ethers.utils.hexlify(15), 32),
 };
 
+export const GENART721_ERROR_NAME = "GenArt721Error";
+export const GENART721_ERROR_CODES = {
+  OnlyNonZeroAddress: 0,
+  OnlyNonEmptyString: 1,
+  OnlyNonEmptyBytes: 2,
+  TokenDoesNotExist: 3,
+  ProjectDoesNotExist: 4,
+  OnlyUnlockedProjects: 5,
+  OnlyAdminACL: 6,
+  OnlyArtist: 7,
+  OnlyArtistOrAdminACL: 8,
+  OnlyAdminACLOrRenouncedArtist: 9,
+  OnlyMinterContract: 10,
+  MaxInvocationsReached: 11,
+  ProjectMustExistAndBeActive: 12,
+  PurchasesPaused: 13,
+  OnlyRandomizer: 14,
+  TokenHashAlreadySet: 15,
+  NoZeroHashSeed: 16,
+  OverMaxSumOfPercentages: 17,
+  IndexOutOfBounds: 18,
+  OverMaxSumOfBPS: 19,
+  MaxOf100Percent: 20,
+  PrimaryPayeeIsZeroAddress: 21,
+  SecondaryPayeeIsZeroAddress: 22,
+  MustMatchArtistProposal: 23,
+  NewProjectsForbidden: 24,
+  NewProjectsAlreadyForbidden: 25,
+  OnlyArtistOrAdminIfLocked: 26,
+  OverMaxSecondaryRoyaltyPercentage: 27,
+  OnlyMaxInvocationsDecrease: 28,
+  OnlyGteInvocations: 29,
+  ScriptIdOutOfRange: 30,
+  NoScriptsToRemove: 31,
+  ScriptTypeAndVersionFormat: 32,
+  AspectRatioTooLong: 33,
+  AspectRatioNoNumbers: 34,
+  AspectRatioImproperFormat: 35,
+};
+
 export async function getAccounts(): Promise<TestAccountsArtBlocks> {
   const [
     deployer,
