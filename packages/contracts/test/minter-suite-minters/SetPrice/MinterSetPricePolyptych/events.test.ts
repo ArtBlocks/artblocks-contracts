@@ -203,7 +203,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("TokenHolderLib"),
+            await ethers.getContractAt("TokenHolderLib", config.minter.address),
             "AllowedHoldersOfProjects"
           )
           .withArgs(
@@ -227,7 +227,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("TokenHolderLib"),
+            await ethers.getContractAt("TokenHolderLib", config.minter.address),
             "AllowedHoldersOfProjects"
           )
           .withArgs(
@@ -253,7 +253,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("TokenHolderLib"),
+            await ethers.getContractAt("TokenHolderLib", config.minter.address),
             "RemovedHoldersOfProjects"
           )
           .withArgs(
@@ -277,7 +277,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("TokenHolderLib"),
+            await ethers.getContractAt("TokenHolderLib", config.minter.address),
             "RemovedHoldersOfProjects"
           )
           .withArgs(
@@ -305,7 +305,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("TokenHolderLib"),
+            await ethers.getContractAt("TokenHolderLib", config.minter.address),
             "AllowedHoldersOfProjects"
           )
           .withArgs(
@@ -328,7 +328,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("TokenHolderLib"),
+            await ethers.getContractAt("TokenHolderLib", config.minter.address),
             "RemovedHoldersOfProjects"
           )
           .withArgs(
@@ -354,7 +354,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("TokenHolderLib"),
+            await ethers.getContractAt("TokenHolderLib", config.minter.address),
             "AllowedHoldersOfProjects"
           )
           .withArgs(
@@ -380,7 +380,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("TokenHolderLib"),
+            await ethers.getContractAt("TokenHolderLib", config.minter.address),
             "RemovedHoldersOfProjects"
           )
           .withArgs(
@@ -408,7 +408,10 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("GenericMinterEventsLib"),
+            await ethers.getContractAt(
+              "GenericMinterEventsLib",
+              config.minter.address
+            ),
             "ConfigValueSet(uint256,address,bytes32,uint256)"
           )
           .withArgs(

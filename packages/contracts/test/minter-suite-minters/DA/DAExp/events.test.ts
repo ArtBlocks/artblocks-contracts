@@ -8,6 +8,8 @@ import { ONE_MINUTE } from "../../../util/constants";
 import { configureProjectZeroAuction } from "./helpers";
 import { Common_Events } from "../../common.events";
 import { Logger } from "@ethersproject/logger";
+import { DAExpLib, DALib } from "../../../../scripts/contracts";
+import { ContractFactory } from "ethers";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
 
@@ -149,7 +151,7 @@ runForEach.forEach((params) => {
             .setMinimumPriceDecayHalfLifeSeconds(1)
         )
           .to.emit(
-            await ethers.getContractFactory("DAExpLib"),
+            await ethers.getContractAt("DAExpLib", config.minter.address),
             "AuctionMinHalfLifeSecondsUpdated"
           )
           .withArgs(1);
@@ -172,7 +174,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("DAExpLib"),
+            await ethers.getContractAt("DAExpLib", config.minter.address),
             "SetAuctionDetailsExp"
           )
           .withArgs(
@@ -199,7 +201,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("DALib"),
+            await ethers.getContractAt("DALib", config.minter.address),
             "ResetAuctionDetails"
           )
           .withArgs(config.projectZero, config.genArt721Core.address);

@@ -1,11 +1,4 @@
-import {
-  BN,
-  constants,
-  expectEvent,
-  expectRevert,
-  balance,
-  ether,
-} from "@openzeppelin/test-helpers";
+import { constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
@@ -19,6 +12,8 @@ import {
   mintProjectUntilRemaining,
   advanceEVMByTime,
   deployWithStorageLibraryAndGet,
+  GENART721_ERROR_NAME,
+  GENART721_ERROR_CODES,
 } from "../../util/common";
 import { FOUR_WEEKS } from "../../util/constants";
 import {
@@ -111,15 +106,19 @@ for (const coreContractName of coreContractsToTest) {
       it("only allows artist to update", async function () {
         const config = await loadFixture(_beforeEach);
         // deployer cannot update
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .updateProjectMaxInvocations(
               config.projectZero,
               config.maxInvocations - 1
-            ),
-          "Only artist"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtist);
         // artist can update
         await config.genArt721Core
           .connect(config.accounts.artist)
@@ -131,17 +130,20 @@ for (const coreContractName of coreContractsToTest) {
 
       it("only allows maxInvocations to be reduced", async function () {
         const config = await loadFixture(_beforeEach);
-        let revertString = "Only maxInvocations decrease";
         // invocations must be reduced
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
             .updateProjectMaxInvocations(
               config.projectZero,
               config.maxInvocations
-            ),
-          revertString
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyMaxInvocationsDecrease);
         // artist can reduce
         await config.genArt721Core
           .connect(config.accounts.artist)
@@ -153,18 +155,21 @@ for (const coreContractName of coreContractsToTest) {
 
       it("only allows maxInvocations to be gte current invocations", async function () {
         const config = await loadFixture(_beforeEach);
-        let revertString = "Only gte invocations";
         // mint a token on project zero
         await config.minter
           .connect(config.accounts.artist)
           .purchase(config.projectZero);
         // invocations cannot be < current invocations
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .updateProjectMaxInvocations(config.projectZero, 0),
-          revertString
-        );
+            .updateProjectMaxInvocations(config.projectZero, 0)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyGteInvocations);
         // artist can set to greater than current invocations
         await config.genArt721Core
           .connect(config.accounts.artist)
@@ -188,12 +193,16 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist)
           .updateProjectMaxInvocations(config.projectZero, 1);
         // expect project to not mint when completed
-        expectRevert(
+        await expect(
           config.minter
             .connect(config.accounts.artist)
-            .purchase(config.projectZero),
-          "Must not exceed max invocations"
-        );
+            .purchase(config.projectZero)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.MaxInvocationsReached);
         // confirm project is completed via view function
         const projectStateData = await config.genArt721Core.projectStateData(
           config.projectZero
@@ -210,12 +219,16 @@ for (const coreContractName of coreContractsToTest) {
             .purchase(config.projectZero);
         }
         // expect project to not mint when completed
-        expectRevert(
+        await expect(
           config.minter
             .connect(config.accounts.artist)
-            .purchase(config.projectZero),
-          "Must not exceed max invocations"
-        );
+            .purchase(config.projectZero)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.MaxInvocationsReached);
         // confirm project is completed via view function
         const projectStateData = await config.genArt721Core.projectStateData(
           config.projectZero
@@ -273,15 +286,18 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("updateProjectDescription", function () {
-      const errorMessage = "Only artist, owner when locked";
       it("owner cannot update when unlocked", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateProjectDescription(config.projectZero, "new description"),
-          errorMessage
-        );
+            .updateProjectDescription(config.projectZero, "new description")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtistOrAdminIfLocked);
       });
 
       it("artist can update when unlocked", async function () {
@@ -324,12 +340,16 @@ for (const coreContractName of coreContractsToTest) {
           0
         );
         await advanceEVMByTime(FOUR_WEEKS + 1);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .updateProjectDescription(config.projectZero, "new description"),
-          errorMessage
-        );
+            .updateProjectDescription(config.projectZero, "new description")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtistOrAdminIfLocked);
       });
     });
 
@@ -362,34 +382,46 @@ for (const coreContractName of coreContractsToTest) {
           0
         );
         await advanceEVMByTime(FOUR_WEEKS + 1);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateProjectName(config.projectZero, "new description"),
-          "Only if unlocked"
-        );
+            .updateProjectName(config.projectZero, "new description")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyUnlockedProjects);
       });
 
       it("user cannot update", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.user)
-            .updateProjectName(config.projectZero, "new description"),
-          "Only artist or Admin ACL allowed"
-        );
+            .updateProjectName(config.projectZero, "new description")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtistOrAdminACL);
       });
     });
 
     describe("updateProjectArtistName", function () {
       it("owner can not update when unlocked", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateProjectArtistName(config.projectZero, "new name"),
-          "Only artist, owner when locked"
-        );
+            .updateProjectArtistName(config.projectZero, "new name")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtistOrAdminIfLocked);
       });
 
       it("artist can update when unlocked", async function () {
@@ -427,22 +459,30 @@ for (const coreContractName of coreContractsToTest) {
           0
         );
         await advanceEVMByTime(FOUR_WEEKS + 1);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .updateProjectArtistName(config.projectZero, "new artist"),
-          "Only artist, owner when locked"
-        );
+            .updateProjectArtistName(config.projectZero, "new artist")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtistOrAdminIfLocked);
       });
 
       it("user cannot update", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.user)
-            .updateProjectArtistName(config.projectZero, "new artist"),
-          "Only artist, owner when locked"
-        );
+            .updateProjectArtistName(config.projectZero, "new artist")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtistOrAdminIfLocked);
       });
     });
 
@@ -485,25 +525,33 @@ for (const coreContractName of coreContractsToTest) {
       it("value must contain exactly one `@`", async function () {
         const config = await loadFixture(_beforeEach);
         // test too few @
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
             .updateProjectScriptType(
               config.projectZero,
               ethers.utils.formatBytes32String("p5js_v1.2.3")
-            ),
-          "must contain exactly one @"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.ScriptTypeAndVersionFormat);
         // test too many @
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
             .updateProjectScriptType(
               config.projectZero,
               ethers.utils.formatBytes32String("p5@js@v1.2.3")
-            ),
-          "must contain exactly one @"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.ScriptTypeAndVersionFormat);
       });
 
       it("owner can not update when locked", async function () {
@@ -515,43 +563,55 @@ for (const coreContractName of coreContractsToTest) {
           0
         );
         await advanceEVMByTime(FOUR_WEEKS + 1);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .updateProjectScriptType(
               config.projectZero,
               ethers.utils.formatBytes32String("p5js@v1.2.3")
-            ),
-          "Only if unlocked"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyUnlockedProjects);
       });
 
       it("user cannot update", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.user)
             .updateProjectScriptType(
               config.projectZero,
               ethers.utils.formatBytes32String("p5js@v1.2.3")
-            ),
-          "Only artist or Admin ACL allowed"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtistOrAdminACL);
       });
     });
 
     describe("updateProjectArtistAddress", function () {
       it("only allows owner to update project artist address", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
             .updateProjectArtistAddress(
               config.projectZero,
               config.accounts.artist2.address
-            ),
-          "Only Admin ACL allowed"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyAdminACLOrRenouncedArtist);
         await config.genArt721Core
           .connect(config.accounts.deployer)
           .updateProjectArtistAddress(
@@ -597,19 +657,27 @@ for (const coreContractName of coreContractsToTest) {
         // get config from beforeEach
         const config = this.config;
         // rejects deployer as a proposer of updates
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo),
-          "Only artist"
-        );
+            .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtist);
         // rejects user as a proposer of updates
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.user)
-            .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo),
-          "Only artist"
-        );
+            .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtist);
         // allows artist to propose new values
         await config.genArt721Core
           .connect(config.accounts.artist)
@@ -620,7 +688,7 @@ for (const coreContractName of coreContractsToTest) {
         // get config from beforeEach
         const config = this.config;
         // rejects artist proposal primary >100% to additional
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
             .proposeArtistPaymentAddressesAndSplits(
@@ -630,11 +698,15 @@ for (const coreContractName of coreContractsToTest) {
               101,
               config.accounts.additional2.address,
               0
-            ),
-          "Max of 100%"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.MaxOf100Percent);
         // rejects artist proposal secondary >100% to additional
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
             .proposeArtistPaymentAddressesAndSplits(
@@ -644,9 +716,13 @@ for (const coreContractName of coreContractsToTest) {
               0,
               config.accounts.additional2.address,
               101
-            ),
-          "Max of 100%"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.MaxOf100Percent);
       });
 
       it("only allows adminACL-allowed account to accept updates if owner has not renounced ownership", async function () {
@@ -657,19 +733,27 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist)
           .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo);
         // rejects artist as an acceptor of updates
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .adminAcceptArtistAddressesAndSplits(...config.valuesToUpdateTo),
-          "Only Admin ACL allowed"
-        );
+            .adminAcceptArtistAddressesAndSplits(...config.valuesToUpdateTo)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyAdminACLOrRenouncedArtist);
         // rejects user as an acceptor of updates
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.user)
-            .adminAcceptArtistAddressesAndSplits(...config.valuesToUpdateTo),
-          "Only Admin ACL allowed"
-        );
+            .adminAcceptArtistAddressesAndSplits(...config.valuesToUpdateTo)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyAdminACLOrRenouncedArtist);
         // allows deployer to accept new values
         await config.genArt721Core
           .connect(config.accounts.deployer)
@@ -688,19 +772,27 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.deployer)
           .renounceOwnershipOn(config.genArt721Core.address);
         // deployer may no longer accept proposed values
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .adminAcceptArtistAddressesAndSplits(...config.valuesToUpdateTo),
-          "Only Admin ACL allowed, or artist if owner has renounced"
-        );
+            .adminAcceptArtistAddressesAndSplits(...config.valuesToUpdateTo)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyAdminACLOrRenouncedArtist);
         // user may not accept proposed values
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.user)
-            .adminAcceptArtistAddressesAndSplits(...config.valuesToUpdateTo),
-          "Only Admin ACL allowed, or artist if owner has renounced"
-        );
+            .adminAcceptArtistAddressesAndSplits(...config.valuesToUpdateTo)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyAdminACLOrRenouncedArtist);
         // artist may accept proposed values
         await config.genArt721Core
           .connect(config.accounts.artist)
@@ -715,7 +807,7 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist)
           .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo);
         // rejects deployer's updates if they don't match artist's proposed values
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .adminAcceptArtistAddressesAndSplits(
@@ -725,10 +817,14 @@ for (const coreContractName of coreContractsToTest) {
               config.valuesToUpdateTo[3],
               config.valuesToUpdateTo[4],
               config.valuesToUpdateTo[5] + 1
-            ),
-          "Must match artist proposal"
-        );
-        await expectRevert(
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.MustMatchArtistProposal);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .adminAcceptArtistAddressesAndSplits(
@@ -738,10 +834,14 @@ for (const coreContractName of coreContractsToTest) {
               config.valuesToUpdateTo[3],
               config.valuesToUpdateTo[2],
               config.valuesToUpdateTo[5]
-            ),
-          "Must match artist proposal"
-        );
-        await expectRevert(
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.MustMatchArtistProposal);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .adminAcceptArtistAddressesAndSplits(
@@ -751,10 +851,14 @@ for (const coreContractName of coreContractsToTest) {
               config.valuesToUpdateTo[3] - 1,
               config.valuesToUpdateTo[4],
               config.valuesToUpdateTo[5]
-            ),
-          "Must match artist proposal"
-        );
-        await expectRevert(
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.MustMatchArtistProposal);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .adminAcceptArtistAddressesAndSplits(
@@ -764,10 +868,14 @@ for (const coreContractName of coreContractsToTest) {
               config.valuesToUpdateTo[3],
               config.valuesToUpdateTo[4],
               config.valuesToUpdateTo[5]
-            ),
-          "Must match artist proposal"
-        );
-        await expectRevert(
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.MustMatchArtistProposal);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .adminAcceptArtistAddressesAndSplits(
@@ -777,10 +885,14 @@ for (const coreContractName of coreContractsToTest) {
               config.valuesToUpdateTo[3],
               config.valuesToUpdateTo[4],
               config.valuesToUpdateTo[5]
-            ),
-          "Must match artist proposal"
-        );
-        await expectRevert(
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.MustMatchArtistProposal);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .adminAcceptArtistAddressesAndSplits(
@@ -790,9 +902,13 @@ for (const coreContractName of coreContractsToTest) {
               config.valuesToUpdateTo[3],
               config.valuesToUpdateTo[4],
               config.valuesToUpdateTo[5]
-            ),
-          "Must match artist proposal"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.MustMatchArtistProposal);
       });
 
       it("only allows adminACL-allowed account to accept updates once (i.e. proposal is cleared upon acceptance)", async function () {
@@ -807,12 +923,16 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.deployer)
           .adminAcceptArtistAddressesAndSplits(...config.valuesToUpdateTo);
         // reverts if deployer tries to accept again
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .adminAcceptArtistAddressesAndSplits(...config.valuesToUpdateTo),
-          "Must match artist proposal"
-        );
+            .adminAcceptArtistAddressesAndSplits(...config.valuesToUpdateTo)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.MustMatchArtistProposal);
       });
 
       it("does not allow proposing payment to the zero address", async function () {
@@ -828,12 +948,16 @@ for (const coreContractName of coreContractsToTest) {
           51,
         ];
         // artist proposes new values
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo),
-          "Primary payee is zero address"
-        );
+            .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.PrimaryPayeeIsZeroAddress);
         // update additional secondary to zero address and non-zero percentage
         valuesToUpdateTo = [
           config.projectZero,
@@ -844,12 +968,16 @@ for (const coreContractName of coreContractsToTest) {
           51,
         ];
         // artist proposes new values
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo),
-          "Secondary payee is zero address"
-        );
+            .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.SecondaryPayeeIsZeroAddress);
       });
 
       it("automatically accepts when only percentages are changed", async function () {
@@ -1018,9 +1146,7 @@ for (const coreContractName of coreContractsToTest) {
           config.genArt721Core
             .connect(config.accounts.artist2)
             .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo)
-        )
-          .to.not.emit(config.genArt721Core, "AcceptedArtistAddressesAndSplits")
-          .withArgs(config.projectZero);
+        ).to.not.emit(config.genArt721Core, "AcceptedArtistAddressesAndSplits");
         // artist changes to an auto-approved request (only percentages changed)
         valuesToUpdateTo = [
           valuesToUpdateTo[0],
@@ -1046,15 +1172,19 @@ for (const coreContractName of coreContractsToTest) {
     describe("updateProjectSecondaryMarketRoyaltyPercentage", function () {
       it("owner can not update when unlocked", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .updateProjectSecondaryMarketRoyaltyPercentage(
               config.projectZero,
               10
-            ),
-          "Only artist"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtist);
       });
 
       it("artist can update when unlocked", async function () {
@@ -1117,16 +1247,19 @@ for (const coreContractName of coreContractsToTest) {
 
       it("artist cannot update > 95%", async function () {
         const config = await loadFixture(_beforeEach);
-        let revertString = "Over max percent";
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
             .updateProjectSecondaryMarketRoyaltyPercentage(
               config.projectZero,
               96
-            ),
-          revertString
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OverMaxSecondaryRoyaltyPercentage);
       });
     });
 
@@ -1281,21 +1414,27 @@ for (const coreContractName of coreContractsToTest) {
     describe("addProjectScriptCompressed", function () {
       it("fails to upload empty bytes script", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .addProjectScriptCompressed(config.projectZero, "0x"),
-          "Must input non-empty bytes"
-        );
+            .addProjectScriptCompressed(config.projectZero, "0x")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyBytes);
       });
       it("fails to upload a script if it's an empty string", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.artist)
-            .getCompressed(""),
-          "Must input non-empty string"
-        );
+        await expect(
+          config.genArt721Core.connect(config.accounts.artist).getCompressed("")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
       });
       it("uploads and recalls a single-byte pre-compressed script", async function () {
         const config = await loadFixture(_beforeEach);
@@ -1591,23 +1730,31 @@ for (const coreContractName of coreContractsToTest) {
           0
         );
         await advanceEVMByTime(FOUR_WEEKS + 1);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .updateProjectScript(config.projectZero, 0, "// script 0.1"),
-          "Only if unlocked"
-        );
+            .updateProjectScript(config.projectZero, 0, "// script 0.1")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyUnlockedProjects);
       });
 
       it("artist cannot update non-existing script index", async function () {
         // get config from beforeEach
         const config = this.config;
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .updateProjectScript(config.projectZero, 1, "// script 1"),
-          "scriptId out of range"
-        );
+            .updateProjectScript(config.projectZero, 1, "// script 1")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.ScriptIdOutOfRange);
       });
 
       it("bytecode contracts deployed as expected in updates", async function () {
@@ -1696,16 +1843,20 @@ for (const coreContractName of coreContractsToTest) {
         const compressedScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
           .getCompressed("// script 0.1");
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
             .updateProjectScriptCompressed(
               config.projectZero,
               0,
               compressedScript
-            ),
-          "Only if unlocked"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyUnlockedProjects);
       });
 
       it("artist cannot update non-existing script index", async function () {
@@ -1714,16 +1865,20 @@ for (const coreContractName of coreContractsToTest) {
         const compressedScript = await config.genArt721Core
           ?.connect(config.accounts.artist)
           .getCompressed("// script 0.1");
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
             .updateProjectScriptCompressed(
               config.projectZero,
               1,
               compressedScript
-            ),
-          "scriptId out of range"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.ScriptIdOutOfRange);
       });
 
       it("artist can update a previously pre-compressed script with a non-compressed script", async function () {
@@ -1812,29 +1967,36 @@ for (const coreContractName of coreContractsToTest) {
           0
         );
         await advanceEVMByTime(FOUR_WEEKS + 1);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .removeProjectLastScript(config.projectZero),
-          "Only if unlocked"
-        );
+            .removeProjectLastScript(config.projectZero)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyUnlockedProjects);
       });
 
       it("artist cannot update non-existing script index", async function () {
         // get config from beforeEach
         const config = this.config;
-        let revertString = "No scripts to remove";
         // remove existing script
         await config.genArt721Core
           .connect(config.accounts.artist)
           .removeProjectLastScript(config.projectZero);
         // expect revert when tyring to remove again
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .removeProjectLastScript(config.projectZero),
-          revertString
-        );
+            .removeProjectLastScript(config.projectZero)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.NoScriptsToRemove);
       });
     });
 

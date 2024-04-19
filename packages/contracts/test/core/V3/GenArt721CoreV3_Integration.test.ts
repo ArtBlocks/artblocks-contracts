@@ -1,14 +1,6 @@
-import {
-  BN,
-  constants,
-  expectEvent,
-  expectRevert,
-  balance,
-  ether,
-} from "@openzeppelin/test-helpers";
+import { constants } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import {
@@ -20,6 +12,8 @@ import {
   deployCoreWithMinterFilter,
   mintProjectUntilRemaining,
   advanceEVMByTime,
+  GENART721_ERROR_NAME,
+  GENART721_ERROR_CODES,
 } from "../../util/common";
 import { FOUR_WEEKS } from "../../util/constants";
 
@@ -258,12 +252,16 @@ for (const coreContractName of coreContractsToTest) {
           constants.ZERO_ADDRESS
         );
         // ensure prior adminACL may not perform an admin function
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .addProject("new project", config.accounts.artist2.address),
-          "Only Admin ACL allowed"
-        );
+            .addProject("new project", config.accounts.artist2.address)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyAdminACL);
       });
     });
 
@@ -280,12 +278,16 @@ for (const coreContractName of coreContractsToTest) {
         // wait until project is locked
         await advanceEVMByTime(FOUR_WEEKS + 1);
         // expect revert
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .addProjectScript(config.projectZero, "lorem ipsum"),
-          "Only if unlocked"
-        );
+            .addProjectScript(config.projectZero, "lorem ipsum")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyUnlockedProjects);
       });
       it("reverts if try to add compressed script", async function () {
         const config = await loadFixture(_beforeEach);
@@ -301,12 +303,16 @@ for (const coreContractName of coreContractsToTest) {
           ?.connect(config.accounts.artist)
           .getCompressed("lorem ipsum");
         // expect revert
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .addProjectScriptCompressed(config.projectZero, compressedScript),
-          "Only if unlocked"
-        );
+            .addProjectScriptCompressed(config.projectZero, compressedScript)
+        )
+          .to.be.reverseWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyUnlockedProjects);
       });
     });
 
@@ -507,16 +513,20 @@ for (const coreContractName of coreContractsToTest) {
     describe("mint_ECF", function () {
       it("reverts if not called by the minter contract", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
             .mint_Ecf(
               config.accounts.artist.address,
               config.projectZero,
               config.accounts.artist.address
-            ),
-          "Must mint from minter contract"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyMinterContract);
       });
 
       it("reverts if try to mint non-active project", async function () {
@@ -524,22 +534,30 @@ for (const coreContractName of coreContractsToTest) {
         await config.genArt721Core
           .connect(config.accounts.deployer)
           .toggleProjectIsActive(config.projectZero);
-        await expectRevert(
+        await expect(
           config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero),
-          "Project must exist and be active"
-        );
+            .purchase(config.projectZero)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.ProjectMustExistAndBeActive);
       });
 
       it("reverts if try to mint paused from non-artist account", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero),
-          "Purchases are paused."
-        );
+            .purchase(config.projectZero)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.PurchasesPaused);
       });
     });
 
@@ -552,15 +570,19 @@ for (const coreContractName of coreContractsToTest) {
           .purchase(config.projectZero);
 
         // call directly from non-randomizer account and expect revert
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
             .setTokenHash_8PT(
               config.projectZeroTokenZero.toNumber(),
               ethers.constants.MaxInt256
-            ),
-          "Only randomizer may set"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyRandomizer);
       });
 
       it("does allow randomizer to call, and updates token hash", async function () {
@@ -613,12 +635,16 @@ for (const coreContractName of coreContractsToTest) {
           config.projectZeroTokenZero.toNumber()
         );
         // expect revert when attempting to overwrite the token hash
-        await expectRevert(
+        await expect(
           mockRandomizer.actuallyAssignTokenHash(
             config.projectZeroTokenZero.toNumber()
-          ),
-          "Token hash already set"
-        );
+          )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TokenHashAlreadySet);
       });
 
       it("does not allow randomizer to set token hash seed to zero", async function () {
@@ -642,12 +668,16 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist)
           .purchase(config.projectZero);
         // expect revert when attempting to set token hash to zero
-        await expectRevert(
+        await expect(
           mockRandomizer.actuallyAssignZeroTokenHash(
             config.projectZeroTokenZero.toNumber()
-          ),
-          "No zero hash seed"
-        );
+          )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.NoZeroHashSeed);
       });
 
       it("does not allow randomizer to assign hash if token does not yet exist", async function () {
@@ -667,12 +697,16 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.deployer)
           .updateRandomizerAddress(mockRandomizer.address);
         // expect revert when attempting to set token hash of non-existing token
-        await expectRevert(
+        await expect(
           mockRandomizer.actuallyAssignTokenHash(
             config.projectZeroTokenZero.toNumber()
-          ),
-          "Token ID does not exist"
-        );
+          )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TokenDoesNotExist);
       });
     });
 
@@ -701,12 +735,16 @@ for (const coreContractName of coreContractsToTest) {
       it("does not allow invalid project when using onlyValidProjectId modifier", async function () {
         const config = await loadFixture(_beforeEach);
         // mint token zero so it is a valid token
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .toggleProjectIsActive(999),
-          "Project ID does not exist"
-        );
+            .toggleProjectIsActive(999)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.ProjectDoesNotExist);
       });
     });
   });
