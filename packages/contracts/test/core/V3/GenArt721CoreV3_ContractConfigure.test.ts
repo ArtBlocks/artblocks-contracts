@@ -315,5 +315,16 @@ for (const coreContractName of coreContractsToTest) {
           .updateDefaultBaseURI("https://token.newuri.com/");
       });
     });
+
+    describe("renounceOwnershipPermissioned", function () {
+      it("does not allow non-owner to call", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .renounceOwnership()
+        ).to.be.revertedWith("Ownable: caller is not the owner");
+      });
+    });
   });
 }
