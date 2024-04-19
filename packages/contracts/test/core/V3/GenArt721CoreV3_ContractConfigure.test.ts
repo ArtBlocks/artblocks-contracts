@@ -1,6 +1,7 @@
 import { constants } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { SplitProviderV0 } from "../../../scripts/contracts";
 
 import {
   T_Config,
@@ -313,6 +314,144 @@ for (const coreContractName of coreContractsToTest) {
         await config.genArt721Core
           .connect(config.accounts.deployer)
           .updateDefaultBaseURI("https://token.newuri.com/");
+      });
+    });
+
+    describe("updateSplitProvider", function () {
+      it("does not allow non-admin to call", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .updateSplitProvider(config.accounts.artist.address)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyAdminACL);
+      });
+
+      it("does allow admin to call", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateSplitProvider(config.splitProvider.address);
+      });
+
+      it("reverts when split provider doesn't indicate ierc165 interface support", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateSplitProvider(config.accounts.deployer.address)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.InvalidSplitProvider);
+      });
+
+      it("updates state", async function () {
+        const config = await loadFixture(_beforeEach);
+        // deploy new valid split provider
+        const mockSplitterFactory = await deployAndGet(
+          config,
+          "Mock0xSplitsV2PullFactory",
+          []
+        );
+        const newSplitProvider = (await deployAndGet(
+          config,
+          "SplitProviderV0",
+          [
+            mockSplitterFactory.address, // _splitterFactory
+          ]
+        )) as SplitProviderV0;
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateSplitProvider(newSplitProvider.address);
+        const updatedSplitProvider = await config.genArt721Core.splitProvider();
+        expect(updatedSplitProvider).to.equal(newSplitProvider.address);
+      });
+    });
+
+    describe("syncProviderSecondaryForProjectToDefaults", function () {
+      it("does not allow non-admin to call", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .syncProviderSecondaryForProjectToDefaults(config.projectZero)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyAdminACL);
+      });
+
+      it("does allow admin to call", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .syncProviderSecondaryForProjectToDefaults(config.projectZero);
+      });
+
+      it("reverts when project is invalid", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .syncProviderSecondaryForProjectToDefaults(999) // invalid project id
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.ProjectDoesNotExist);
+      });
+
+      it("updates state", async function () {
+        const config = await loadFixture(_beforeEach);
+        // update default platform payment addresses and royalty BPS at contract level
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateProviderSalesAddresses(
+            config.accounts.user.address, // render primary
+            config.accounts.user2.address, // render secondary
+            config.accounts.additional.address, // platform primary
+            config.accounts.additional2.address // platform secondary
+          );
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateProviderSecondarySalesBPS(31, 32);
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .syncProviderSecondaryForProjectToDefaults(config.projectZero);
+        // verify state update
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectZero
+        );
+        expect(projectFinance.renderProviderSecondarySalesAddress).to.equal(
+          config.accounts.user2.address
+        );
+        expect(projectFinance.platformProviderSecondarySalesAddress).to.equal(
+          config.accounts.additional2.address
+        );
+        expect(projectFinance.renderProviderSecondarySalesBPS).to.equal(31);
+        expect(projectFinance.platformProviderSecondarySalesBPS).to.equal(32);
+      });
+    });
+
+    describe("renounceOwnership", function () {
+      it("does not allow non-owner to call", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .renounceOwnership()
+        ).to.be.revertedWith("Ownable: caller is not the owner");
       });
     });
   });

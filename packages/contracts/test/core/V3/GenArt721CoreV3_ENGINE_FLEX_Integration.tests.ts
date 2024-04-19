@@ -412,23 +412,32 @@ for (const coreContractName of coreContractsToTest) {
 
       it("can update contract preferred IPFS & Arweave gateways", async function () {
         const config = await loadFixture(_beforeEach);
+        const targetIPFSGateway = "https://ipfs.io/ipfs/";
         // setting IPFS gateway
         await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateIPFSGateway("https://ipfs.io/ipfs/")
+            .updateIPFSGateway(targetIPFSGateway)
         )
           .to.emit(config.genArt721Core, "GatewayUpdated")
-          .withArgs(0, "https://ipfs.io/ipfs/");
+          .withArgs(0, targetIPFSGateway);
+        // check for state update
+        const ipfsGateway = await config.genArt721Core.preferredIPFSGateway();
+        expect(ipfsGateway).to.equal(targetIPFSGateway);
 
         // setting Arweave gateway
+        const targetArweaveGateway = "https://arweave.net/";
         await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateArweaveGateway("https://arweave.net/")
+            .updateArweaveGateway(targetArweaveGateway)
         )
           .to.emit(config.genArt721Core, "GatewayUpdated")
-          .withArgs(1, "https://arweave.net/");
+          .withArgs(1, targetArweaveGateway);
+        // check for state update
+        const arweaveGateway =
+          await config.genArt721Core.preferredArweaveGateway();
+        expect(arweaveGateway).to.equal(targetArweaveGateway);
       });
     });
   });

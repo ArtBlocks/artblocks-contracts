@@ -40,6 +40,7 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
      * Splits in the splitter contract are determined by the input split parameters,
      * so we can safely create the splitter contract at a deterministic address (or use
      * the existing splitter contract if it already exists at that address).
+     * Returns null address if no royalties are due.
      * @dev Uses the 0xSplits v2 implementation to create a splitter contract
      * @dev Intentionally unpermissioned; no owner required; all created splits
      * are immutable and deterministic
@@ -49,6 +50,15 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
     function getOrCreateSplitter(
         SplitInputs calldata splitInputs
     ) external override returns (address) {
+        // edge case: no royalties due; return zero address
+        if (
+            splitInputs.artistTotalRoyaltyPercentage +
+                splitInputs.renderProviderSecondarySalesBPS +
+                splitInputs.platformProviderSecondarySalesBPS ==
+            0
+        ) {
+            return address(0);
+        }
         // create Split struct from SplitInputs
         ISplitFactoryV2.Split memory splitParams = _getSplitParams({
             splitInputs: splitInputs
@@ -72,10 +82,7 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
             });
 
             // emit event for new splitter creation
-            emit SplitterCreated({
-                splitter: splitter,
-                splitParams: splitParams
-            });
+            emit SplitterCreated({splitter: splitter});
         }
 
         return splitter;
@@ -111,6 +118,12 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
         return TYPE;
     }
 
+    /**
+     * Converts the split inputs to the split parameters used by 0xSplits V2.
+     * This function assumes there is at least one party with a non-zero allocation.
+     * @param splitInputs The split input parameters.
+     * @return splitParams The split parameters in the form used by 0xSplits V2.
+     */
     function _getSplitParams(
         SplitInputs calldata splitInputs
     ) private pure returns (ISplitFactoryV2.Split memory splitParams) {
@@ -125,16 +138,6 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
         // load platform provider royalty BPS
         uint256 platformProviderRoyaltyBPS = splitInputs
             .platformProviderSecondarySalesBPS;
-
-        // edge case: no royalties due; revert
-        if (
-            artistAndAdditionalRoyaltyPercentage +
-                renderProviderRoyaltyBPS +
-                platformProviderRoyaltyBPS ==
-            0
-        ) {
-            revert("SplitProviderV0: No royalties due");
-        }
 
         bool artistNonZero = artistAndAdditionalRoyaltyPercentage > 0 &&
             splitInputs.additionalPayeePercentage < 100;
