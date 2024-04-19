@@ -1047,7 +1047,7 @@ for (const coreContractName of coreContractsToTest) {
         expect(royaltyInfo.receiver).to.be.equal(
           projectFinancials.royaltySplitter
         );
-        // expect(royaltyInfo.receiver).to.not.be.equal(constants.ZERO_ADDRESS);
+        expect(royaltyInfo.receiver).to.not.be.equal(constants.ZERO_ADDRESS);
         // royalty amount should be 10% of sale amount
         expect(royaltyInfo.royaltyAmount).to.be.equal(
           (SALE_AMOUNT * 1_000) / 10_000

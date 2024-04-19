@@ -668,5 +668,28 @@ for (const coreContractName of coreContractsToTest) {
           );
       });
     });
+
+    describe("ProjectRoyaltySplitterUpdated", function () {
+      it("emits ProjectRoyaltySplitterUpdated when updated", async function () {
+        const config = await loadFixture(_beforeEach);
+        // get predicted splitter address
+        // unchanged, so just get current splitter address
+        const projectFinance = await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .projectIdToFinancials(config.projectZero);
+        const predictedSplitterAddress = projectFinance.royaltySplitter;
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateProjectArtistAddress(
+              config.projectZero,
+              config.accounts.artist.address // no actual change to the configured splits
+            )
+        )
+          .to.emit(config.genArt721Core, "ProjectRoyaltySplitterUpdated")
+          .withArgs(config.projectZero, predictedSplitterAddress);
+      });
+    });
   });
 }
