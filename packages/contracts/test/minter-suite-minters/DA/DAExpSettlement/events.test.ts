@@ -155,7 +155,7 @@ runForEach.forEach((params) => {
             .setMinimumPriceDecayHalfLifeSeconds(1)
         )
           .to.emit(
-            await ethers.getContractFactory("DAExpLib"),
+            await ethers.getContractAt("DAExpLib", config.minter.address),
             "AuctionMinHalfLifeSecondsUpdated"
           )
           .withArgs(1);
@@ -178,7 +178,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("DAExpLib"),
+            await ethers.getContractAt("DAExpLib", config.minter.address),
             "SetAuctionDetailsExp"
           )
           .withArgs(
@@ -205,7 +205,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("DALib"),
+            await ethers.getContractAt("DALib", config.minter.address),
             "ResetAuctionDetails"
           )
           .withArgs(config.projectZero, config.genArt721Core.address);
@@ -235,7 +235,10 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("GenericMinterEventsLib"),
+            await ethers.getContractAt(
+              "GenericMinterEventsLib",
+              config.minter.address
+            ),
             "ConfigValueSet(uint256,address,bytes32,uint256)"
           )
           .withArgs(
@@ -259,7 +262,10 @@ runForEach.forEach((params) => {
               config.genArt721Core.address
             )
         ).to.not.emit(
-          await ethers.getContractFactory("GenericMinterEventsLib"),
+          await ethers.getContractAt(
+            "GenericMinterEventsLib",
+            config.minter.address
+          ),
           "ConfigValueSet(uint256,address,bytes32,uint256)"
         );
       });
@@ -279,7 +285,10 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("GenericMinterEventsLib"),
+            await ethers.getContractAt(
+              "GenericMinterEventsLib",
+              config.minter.address
+            ),
             "ConfigValueSet(uint256,address,bytes32,bool)"
           )
           .withArgs(
@@ -304,7 +313,10 @@ runForEach.forEach((params) => {
             })
         )
           .to.emit(
-            await ethers.getContractFactory("SettlementExpLib"),
+            await ethers.getContractAt(
+              "SettlementExpLib",
+              config.minter.address
+            ),
             "ReceiptUpdated"
           )
           .withArgs(
@@ -323,7 +335,10 @@ runForEach.forEach((params) => {
             })
         )
           .to.emit(
-            await ethers.getContractFactory("SettlementExpLib"),
+            await ethers.getContractAt(
+              "SettlementExpLib",
+              config.minter.address
+            ),
             "ReceiptUpdated"
           )
           .withArgs(
@@ -349,7 +364,10 @@ runForEach.forEach((params) => {
             })
         )
           .to.emit(
-            await ethers.getContractFactory("SettlementExpLib"),
+            await ethers.getContractAt(
+              "SettlementExpLib",
+              config.minter.address
+            ),
             "ReceiptUpdated"
           )
           .withArgs(
@@ -368,7 +386,10 @@ runForEach.forEach((params) => {
             })
         )
           .to.emit(
-            await ethers.getContractFactory("SettlementExpLib"),
+            await ethers.getContractAt(
+              "SettlementExpLib",
+              config.minter.address
+            ),
             "ReceiptUpdated"
           )
           .withArgs(
@@ -398,7 +419,10 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("SettlementExpLib"),
+            await ethers.getContractAt(
+              "SettlementExpLib",
+              config.minter.address
+            ),
             "ReceiptUpdated"
           )
           .withArgs(
@@ -435,7 +459,10 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("SettlementExpLib"),
+            await ethers.getContractAt(
+              "SettlementExpLib",
+              config.minter.address
+            ),
             "ReceiptUpdated"
           )
           .withArgs(
@@ -446,7 +473,10 @@ runForEach.forEach((params) => {
             selloutPrice // actual amount due (not necessarily posted amount)
           )
           .and.to.emit(
-            await ethers.getContractFactory("SettlementExpLib"),
+            await ethers.getContractAt(
+              "SettlementExpLib",
+              config.minter.address
+            ),
             "ReceiptUpdated"
           )
           .withArgs(
@@ -479,7 +509,10 @@ runForEach.forEach((params) => {
         )
           .to.emit(
             // event is defined in MaxInvocationsLib
-            await ethers.getContractFactory("MaxInvocationsLib"),
+            await ethers.getContractAt(
+              "MaxInvocationsLib",
+              config.minter.address
+            ),
             "ProjectMaxInvocationsLimitUpdated"
           )
           .withArgs(
@@ -516,7 +549,10 @@ runForEach.forEach((params) => {
             )
         ).to.not.emit(
           // event is defined in MaxInvocationsLib
-          await ethers.getContractFactory("MaxInvocationsLib"),
+          await ethers.getContractAt(
+            "MaxInvocationsLib",
+            config.minter.address
+          ),
           "ProjectMaxInvocationsLimitUpdated"
         );
       });
@@ -548,7 +584,10 @@ runForEach.forEach((params) => {
         )
           .to.emit(
             // event is defined in MaxInvocationsLib
-            await ethers.getContractFactory("MaxInvocationsLib"),
+            await ethers.getContractAt(
+              "MaxInvocationsLib",
+              config.minter.address
+            ),
             "ProjectMaxInvocationsLimitUpdated"
           )
           .withArgs(config.projectZero, config.genArt721Core.address, 1);
@@ -572,7 +611,10 @@ runForEach.forEach((params) => {
         )
           .to.emit(
             // event is defined in MaxInvocationsLib
-            await ethers.getContractFactory("MaxInvocationsLib"),
+            await ethers.getContractAt(
+              "MaxInvocationsLib",
+              config.minter.address
+            ),
             "ProjectMaxInvocationsLimitUpdated"
           )
           .withArgs(config.projectZero, config.genArt721Core.address, 1);
@@ -589,7 +631,10 @@ runForEach.forEach((params) => {
         )
           .to.not.emit(
             // event is defined in MaxInvocationsLib
-            await ethers.getContractFactory("MaxInvocationsLib"),
+            await ethers.getContractAt(
+              "MaxInvocationsLib",
+              config.minter.address
+            ),
             "ProjectMaxInvocationsLimitUpdated"
           )
           .withArgs(config.projectZero, config.genArt721Core.address, 1);
@@ -609,7 +654,10 @@ runForEach.forEach((params) => {
             )
         ).to.not.emit(
           // event is defined in MaxInvocationsLib
-          await ethers.getContractFactory("MaxInvocationsLib"),
+          await ethers.getContractAt(
+            "MaxInvocationsLib",
+            config.minter.address
+          ),
           "ProjectMaxInvocationsLimitUpdated"
         );
       });

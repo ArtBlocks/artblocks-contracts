@@ -223,7 +223,7 @@ runForEach.forEach((params) => {
             .setMinimumPriceDecayHalfLifeSeconds(1)
         )
           .to.emit(
-            await ethers.getContractFactory("DAExpLib"),
+            await ethers.getContractAt("DAExpLib", config.minter.address),
             "AuctionMinHalfLifeSecondsUpdated"
           )
           .withArgs(1);
@@ -246,7 +246,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("DAExpLib"),
+            await ethers.getContractAt("DAExpLib", config.minter.address),
             "SetAuctionDetailsExp"
           )
           .withArgs(
@@ -273,7 +273,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("DALib"),
+            await ethers.getContractAt("DALib", config.minter.address),
             "ResetAuctionDetails"
           )
           .withArgs(config.projectZero, config.genArt721Core.address);
@@ -294,7 +294,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("TokenHolderLib"),
+            await ethers.getContractAt("TokenHolderLib", config.minter.address),
             "AllowedHoldersOfProjects"
           )
           .withArgs(

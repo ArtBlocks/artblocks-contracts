@@ -133,7 +133,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("SplitFundsLib"),
+            await ethers.getContractAt("SplitFundsLib", config.minter.address),
             "ProjectCurrencyInfoUpdated"
           )
           .withArgs(
@@ -168,7 +168,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.not.emit(
-            await ethers.getContractFactory("SetPriceLib"),
+            await ethers.getContractAt("SetPriceLib", config.minter.address),
             "PricePerTokenReset"
           )
           .withArgs(config.projectZero, config.genArt721Core.address);
@@ -184,7 +184,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("SetPriceLib"),
+            await ethers.getContractAt("SetPriceLib", config.minter.address),
             "PricePerTokenReset"
           )
           .withArgs(config.projectZero, config.genArt721Core.address);
