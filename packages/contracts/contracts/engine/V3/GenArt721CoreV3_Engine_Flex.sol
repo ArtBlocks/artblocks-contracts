@@ -1983,7 +1983,9 @@ contract GenArt721CoreV3_Engine_Flex is
             projectFinance.platformProviderSecondarySalesBPS +
             projectFinance.renderProviderSecondarySalesBPS;
         // @dev totalRoyaltyBPS guaranteed to be <= 10,000,
-        require(totalRoyaltyBPS <= 10_000, "Only total BPS <= 10,000");
+        if (totalRoyaltyBPS > 10_000) {
+            revert GenArt721Error(ErrorCodes.OverMaxSumOfBPS);
+        }
         // @dev overflow automatically checked in solidity 0.8
         // @dev totalRoyaltyBPS guaranteed to be <= 10_000,
         // so overflow only possible with unreasonably high _salePrice values near uint256 max

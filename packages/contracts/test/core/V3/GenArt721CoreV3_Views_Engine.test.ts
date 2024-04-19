@@ -1054,6 +1054,39 @@ for (const coreContractName of coreContractsToTest) {
         );
       });
 
+      it("reverts when royalty total is > 100%", async function () {
+        const config = await loadFixture(_beforeEach);
+        // mint token for projectZero
+        await config.minter
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero);
+        // update project royalty percentage to 95%
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectSecondaryMarketRoyaltyPercentage(
+            config.projectZero,
+            95
+          );
+        // update provider secondary BPS to >5%
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateProviderSecondarySalesBPS(300, 300);
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .syncProviderSecondaryForProjectToDefaults(config.projectZero);
+        // get royalty info
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.user)
+            .royaltyInfo(config.projectZeroTokenZero.toNumber(), SALE_AMOUNT)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OverMaxSumOfBPS);
+      });
+
       // it("returns expected configured values for valid projectOne token, three non-zero royalties", async function () {
       //   const config = await loadFixture(_beforeEach);
       //   // add project
