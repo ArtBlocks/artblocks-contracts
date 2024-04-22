@@ -11,8 +11,6 @@ import "./IGenArt721CoreContractV3_Base.sol";
  * @param tokenName Name of token.
  * @param tokenSymbol Token symbol.
  * @param randomizerContract Randomizer contract.
- * @param adminACLContract Address of admin access control contract, to be
- * set as contract owner.
  * @param startingProjectId The initial next project ID.
  * @param autoApproveArtistSplitProposals Whether or not to always
  * auto-approve proposed artist split updates.
@@ -23,14 +21,13 @@ import "./IGenArt721CoreContractV3_Base.sol";
  * max(uint248), but an explicit input type of `uint248` is used as it is
  * safer to cast up to `uint256` than it is to cast down for the purposes
  * of setting `_nextProjectId`.
-*/
+ */
 struct EngineConfiguration {
     string tokenName;
     string tokenSymbol;
     address renderProviderAddress;
     address platformProviderAddress;
     address randomizerContract;
-    address adminACLContract;
     uint248 startingProjectId;
     bool autoApproveArtistSplitProposals;
     address splitProviderAddress;
@@ -46,8 +43,13 @@ interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
      * Only callable once.
      * @param engineConfiguration EngineConfiguration data to configure the contract
      * with.
+     * @param adminACLContract_ Address of admin access control contract, to be
+     * set as contract owner.
      */
-    function initialize(EngineConfiguration calldata engineConfiguration) external;
+    function initialize(
+        EngineConfiguration calldata engineConfiguration,
+        address adminACLContract_
+    ) external;
 
     // @dev new function in V3
     function getPrimaryRevenueSplits(
@@ -66,6 +68,12 @@ interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
             uint256 additionalPayeePrimaryRevenue_,
             address payable additionalPayeePrimaryAddress_
         );
+
+    // @dev The core type
+    function CORE_TYPE() external view returns (bytes32);
+
+    // @dev The core version
+    function CORE_VERSION() external view returns (bytes32);
 
     // @dev The render provider primary sales payment address
     function renderProviderPrimarySalesAddress()

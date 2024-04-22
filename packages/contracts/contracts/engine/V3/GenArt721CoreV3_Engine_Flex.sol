@@ -14,7 +14,7 @@ import {ISplitProviderV0} from "../../interfaces/v0.8.x/ISplitProviderV0.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import {IERC2981} from "@openzeppelin-4.7/contracts/interfaces/IERC2981.sol";
-import "../../libs/v0.8.x/ERC721_PackedHashSeed.sol";
+import "../../libs/v0.8.x/ERC721_PackedHashSeedV1.sol";
 import "../../libs/v0.8.x/BytecodeStorageV2.sol";
 import {V3FlexLib} from "../../libs/v0.8.x/V3FlexLib.sol";
 import "../../libs/v0.8.x/Bytes32Strings.sol";
@@ -105,7 +105,7 @@ import "../../libs/v0.8.x/Bytes32Strings.sol";
  * registries, and other contracts that may interact with this core contract.
  */
 contract GenArt721CoreV3_Engine_Flex is
-    ERC721_PackedHashSeed,
+    ERC721_PackedHashSeedV1,
     Ownable,
     IERC2981,
     IDependencyRegistryCompatibleV0,
@@ -134,6 +134,9 @@ contract GenArt721CoreV3_Engine_Flex is
     address public artblocksDependencyRegistryAddress;
     /// On chain generator managed by Art Blocks
     address public artblocksOnChainGeneratorAddress;
+
+    /// ensure initialization can only be performed once
+    bool private initialized;
 
     /// current randomizer contract
     IRandomizer_V3CoreBase public randomizerContract;
@@ -210,7 +213,8 @@ contract GenArt721CoreV3_Engine_Flex is
     address public minterContract;
 
     /// starting (initial) project ID on this contract
-    uint256 public immutable startingProjectId;
+    /// set on initialization
+    uint256 public startingProjectId;
 
     /// next project ID to be created
     uint248 private _nextProjectId;
@@ -219,31 +223,31 @@ contract GenArt721CoreV3_Engine_Flex is
     /// default behavior is to allow new projects
     bool public newProjectsForbidden;
 
-    /// configuration variable (determined at time of deployment)
+    /// configuration variable (determined at time of initialization)
     /// that determines whether or not admin approval^ should be required
     /// to accept artist address change proposals, or if these proposals
     /// should always auto-approve, as determined by the business process
     /// requirements of the Engine partner using this contract.
     ///
     /// ^does not apply in the case where contract-ownership itself is revoked
-    bool public immutable autoApproveArtistSplitProposals;
+    bool public autoApproveArtistSplitProposals;
 
-    // configuration variable (determined at time of deployment) that determines
+    // configuration variable (determined at time of initialization) that determines
     // if platform provider fees and addresses are always required to be set to zero
-    bool public immutable nullPlatformProvider;
+    bool public nullPlatformProvider;
 
-    // configuration variable (determined at time of deployment) that determines
+    // configuration variable (determined at time of initialization) that determines
     // if artists are allowed to activate their own projects
-    bool public immutable allowArtistProjectActivation;
+    bool public allowArtistProjectActivation;
 
     /// version & type of this core contract
-    bytes32 constant CORE_VERSION = "v3.2.5";
+    bytes32 public constant CORE_VERSION = "v3.2.5";
 
     function coreVersion() external pure returns (string memory) {
         return CORE_VERSION.toString();
     }
 
-    bytes32 constant CORE_TYPE = "GenArt721CoreV3_Engine_Flex";
+    bytes32 public constant CORE_TYPE = "GenArt721CoreV3_Engine_Flex";
 
     function coreType() external pure returns (string memory) {
         return CORE_TYPE.toString();
@@ -348,65 +352,58 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
-     * @notice Initializes contract.
-     * @param _tokenName Name of token.
-     * @param _tokenSymbol Token symbol.
-     * @param _randomizerContract Randomizer contract.
-     * @param _adminACLContract Address of admin access control contract, to be
-     * set as contract owner.
-     * @param _startingProjectId The initial next project ID.
-     * @param _autoApproveArtistSplitProposals Whether or not to always
-     * auto-approve proposed artist split updates.
-     * @param _splitProviderAddress Address to use as royalty splitter provider for the contract.
-     * @param _nullPlatformProvider Enforce always setting zero platform provider fees and addresses.
-     * @param _allowArtistProjectActivation Allow artist to activate their own projects.
-     * @dev _startingProjectId should be set to a value much, much less than
-     * max(uint248), but an explicit input type of `uint248` is used as it is
-     * safer to cast up to `uint256` than it is to cast down for the purposes
-     * of setting `_nextProjectId`.
+     * @notice Initializes the contract with the provided `engineConfiguration`.
+     * This function should be called atomically, immediately after deployment.
+     * Only callable once.
+     * @param engineConfiguration EngineConfiguration to configure the contract with.
+     * @param adminACLContract_ Address of admin access control contract, to be
+     * set as contract owner. A new contract will be deployed if address is null.
      */
-    constructor(
-        string memory _tokenName,
-        string memory _tokenSymbol,
-        address _renderProviderAddress,
-        address _platformProviderAddress,
-        address _randomizerContract,
-        address _adminACLContract,
-        uint248 _startingProjectId,
-        bool _autoApproveArtistSplitProposals,
-        address _splitProviderAddress,
-        bool _nullPlatformProvider,
-        bool _allowArtistProjectActivation
-    ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
-        _onlyNonZeroAddress(_renderProviderAddress);
+    function initialize(
+        EngineConfiguration calldata engineConfiguration,
+        address adminACLContract_
+    ) external {
+        // can only be initialized once
+        if (initialized) {
+            revert GenArt721Error(ErrorCodes.ContractInitialized);
+        }
+        // set token name and token symbol
+        ERC721_PackedHashSeedV1.initialize(
+            engineConfiguration.tokenName,
+            engineConfiguration.tokenSymbol
+        );
+        // validate and initialize contract
+        _onlyNonZeroAddress(engineConfiguration.renderProviderAddress);
         // @dev checks on platform provider addresses performed in _updateProviderSalesAddresses
-        if (_nullPlatformProvider) {
+        if (engineConfiguration.nullPlatformProvider) {
             // set platform to zero revenue splits
             _platformProviderPrimarySalesPercentage = 0;
             platformProviderSecondarySalesBPS = 0;
         }
-        _onlyNonZeroAddress(_randomizerContract);
-        _updateSplitProvider(_splitProviderAddress);
-        _onlyNonZeroAddress(_adminACLContract);
+        _onlyNonZeroAddress(engineConfiguration.randomizerContract);
+        _updateSplitProvider(engineConfiguration.splitProviderAddress);
+        _onlyNonZeroAddress(adminACLContract_);
         // setup immutable `autoApproveArtistSplitProposals` config
-        autoApproveArtistSplitProposals = _autoApproveArtistSplitProposals;
+        autoApproveArtistSplitProposals = engineConfiguration
+            .autoApproveArtistSplitProposals;
         // setup immutable `nullPlatformProvider` config
-        nullPlatformProvider = _nullPlatformProvider;
+        nullPlatformProvider = engineConfiguration.nullPlatformProvider;
         // setup immutable `allowArtistProjectActivation` config
-        allowArtistProjectActivation = _allowArtistProjectActivation;
+        allowArtistProjectActivation = engineConfiguration
+            .allowArtistProjectActivation;
         // record contracts starting project ID
         // casting-up is safe
-        startingProjectId = uint256(_startingProjectId);
+        startingProjectId = uint256(engineConfiguration.startingProjectId);
         // @dev nullPlatformProvider must be set before calling _updateProviderSalesAddresses
         _updateProviderSalesAddresses(
-            _renderProviderAddress,
-            _renderProviderAddress,
-            _platformProviderAddress,
-            _platformProviderAddress
+            engineConfiguration.renderProviderAddress,
+            engineConfiguration.renderProviderAddress,
+            engineConfiguration.platformProviderAddress,
+            engineConfiguration.platformProviderAddress
         );
-        _updateRandomizerAddress(_randomizerContract);
+        _updateRandomizerAddress(engineConfiguration.randomizerContract);
         // set AdminACL management contract as owner
-        _transferOwnership(_adminACLContract);
+        _transferOwnership(adminACLContract_);
         // initialize default base URI
         _updateDefaultBaseURI(
             string.concat(
@@ -416,10 +413,11 @@ contract GenArt721CoreV3_Engine_Flex is
             )
         );
         // initialize next project ID
-        _nextProjectId = _startingProjectId;
+        _nextProjectId = engineConfiguration.startingProjectId;
         emit PlatformUpdated(
             bytes32(uint256(PlatformUpdatedFields.FIELD_NEXT_PROJECT_ID))
         );
+        initialized = true;
         // @dev follow-on action: This contract does not self-register. A core
         // registry owner must register contract in a subsequent call.
     }
@@ -2244,7 +2242,7 @@ contract GenArt721CoreV3_Engine_Flex is
         public
         view
         virtual
-        override(ERC721_PackedHashSeed, IERC165)
+        override(ERC721_PackedHashSeedV1, IERC165)
         returns (bool)
     {
         return

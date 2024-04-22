@@ -34,40 +34,39 @@ interface IEngineFactoryV0 {
     event EngineFlexContractCreated(address indexed engineFlexContract);
     /**
      * @notice This contract was abandoned and no longer can be used to create
-     * new split atomic contracts.
+     * new Engine or Engine Flex contracts.
      */
     event Abandoned();
 
     /**
-     * @notice Initializes the Engine or Engine Flex contract with the provided
-     * `engineConfiguration` data.
-     * Only callable once.
-     * @param splits Splits to configure the contract with. Must add up to
-     * 10_000 BPS.
-     * @return splitAtomic The address of the newly created split atomic
-     * contract
+     * @notice Creates a new Engine or Engine Flex contract with the provided
+     * `engineConfiguration`, depending on the `engineCoreType`.
+     * @param engineCoreType Type of Engine Core contract.
+     * @param engineConfiguration EngineConfiguration data to configure the
+     * contract with.
+     * @param adminACLContract Address of admin access control contract, to be
+     * set as contract owner. A new contract will be deployed if address is null.
+     * @return engineContract The address of the newly created Engine or Engine Flex
+     * contract. The address is also emitted in both the `EngineCreated` and
+     * `EngineFlexCreated` events.
      */
     function createEngineContract(
         EngineCoreType engineCoreType,
-        EngineConfiguration calldata engineConfiguration
-    ) external returns (address splitAtomic);
+        EngineConfiguration calldata engineConfiguration,
+        address adminACLContract
+    ) external returns (address engineContract);
 
     /**
      * @notice The implementation contract that is cloned when creating new
-     * split atomic contracts.
+     * Engine Core contracts.
      */
-    function splitAtomicImplementation() external view returns (address);
+    function engineImplementation() external view returns (address);
 
     /**
-     * @notice The address that must be included in all splits.
+     * @notice The implementation contract that is cloned when creating new
+     * Engine Flex Core contracts.
      */
-    function requiredSplitAddress() external view returns (address);
-
-    /**
-     * @notice The basis points that must be included in all splits, for the
-     * required split address.
-     */
-    function requiredSplitBasisPoints() external view returns (uint16);
+    function engineFlexImplementation() external view returns (address);
 
     /**
      * @notice The deployer of the contract.
@@ -76,14 +75,14 @@ interface IEngineFactoryV0 {
 
     /**
      * @notice Indicates whether the contract is abandoned.
-     * Once abandoned, the contract can no longer be used to create new split
-     * atomic contracts.
+     * Once abandoned, the contract can no longer be used to create new Engine
+     * or Engine Flex contracts.
      * @return bool True if the contract is abandoned, false otherwise.
      */
     function isAbandoned() external view returns (bool);
 
     /**
-     * @notice Indicates the type of the contract, e.g. `SplitAtomicFactoryV0`.
+     * @notice Indicates the type of the contract, e.g. `EngineFactoryV0`.
      * @return type_ The type of the contract.
      */
     function type_() external pure returns (bytes32);
