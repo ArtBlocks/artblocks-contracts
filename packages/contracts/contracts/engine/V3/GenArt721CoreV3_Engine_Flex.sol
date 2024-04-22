@@ -1298,7 +1298,8 @@ contract GenArt721CoreV3_Engine_Flex is
             _projectId,
             bytes32(
                 uint256(
-                    ProjectUpdatedFields.FIELD_PROVIDER_SECONDARY_FINANCIALS
+                    ProjectUpdatedFields
+                        .FIELD_PROJECT_PROVIDER_SECONDARY_FINANCIALS
                 )
             )
         );
