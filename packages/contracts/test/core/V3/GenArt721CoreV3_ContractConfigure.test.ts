@@ -11,6 +11,7 @@ import {
   deployCoreWithMinterFilter,
   GENART721_ERROR_NAME,
   GENART721_ERROR_CODES,
+  deployWithStorageLibraryAndGet,
 } from "../../util/common";
 
 // test the following V3 core contract derivatives:
@@ -452,6 +453,151 @@ for (const coreContractName of coreContractsToTest) {
             .connect(config.accounts.deployer)
             .renounceOwnership()
         ).to.be.revertedWith("Ownable: caller is not the owner");
+      });
+    });
+
+    // @dev the following block tests for cases when nullPlatformProvider==true,
+    // because other tests across this test suite already test the default case
+    // when nullPlatformProvider==false
+    describe("nullPlatformProvider", function () {
+      beforeEach(async function () {
+        const config = await loadFixture(_beforeEach);
+
+        this.config = await loadFixture(_beforeEach);
+        // deploy new core with null platform provider as true
+        this.config.genArt721CoreWithNullProvider =
+          await deployWithStorageLibraryAndGet(config, coreContractName, [
+            config.name,
+            config.symbol,
+            config.accounts.deployer.address,
+            constants.ZERO_ADDRESS, // platform provider
+            config.randomizer.address,
+            config.adminACL.address,
+            0, // next project ID
+            true, // auto-approve
+            config.splitProvider.address,
+            true, // _nullPlatformProvider,
+            false, //  _allowArtistProjectActivation
+          ]);
+      });
+
+      it("enforces null platform address in constructor", async function () {
+        const config = await loadFixture(_beforeEach);
+        try {
+          // deploy new core with null platform provider as true, but with non-null platform provider address
+          await deployWithStorageLibraryAndGet(config, coreContractName, [
+            config.name,
+            config.symbol,
+            config.accounts.deployer.address,
+            config.accounts.additional2.address, // NON NULL platform provider
+            config.randomizer.address,
+            config.adminACL.address,
+            0, // next project ID
+            true, // auto-approve
+            config.splitProvider.address,
+            true, // _nullPlatformProvider, SET TO TRUE
+            false, //  _allowArtistProjectActivation
+          ]);
+          throw new Error("Should have reverted during deployment");
+        } catch (error) {
+          console.log("correctly reverted during deployment as expected");
+        }
+      });
+
+      it("enforces null platform address in updateProviderPrimarySalesPercentages", async function () {
+        await expect(
+          this.config.genArt721CoreWithNullProvider
+            .connect(this.config.accounts.deployer)
+            .updateProviderPrimarySalesPercentages(0, 1)
+        )
+          .to.be.revertedWithCustomError(
+            this.config.genArt721CoreWithNullProvider,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.NullPlatformProvider);
+      });
+
+      it("enforces null platform address in updateProviderSecondarySalesBPS", async function () {
+        await expect(
+          this.config.genArt721CoreWithNullProvider
+            .connect(this.config.accounts.deployer)
+            .updateProviderSecondarySalesBPS(0, 1)
+        )
+          .to.be.revertedWithCustomError(
+            this.config.genArt721CoreWithNullProvider,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.NullPlatformProvider);
+      });
+
+      it("enforces null platform address in updateProviderSalesAddresses", async function () {
+        await expect(
+          this.config.genArt721CoreWithNullProvider
+            .connect(this.config.accounts.deployer)
+            .updateProviderSalesAddresses(
+              this.config.accounts.user.address,
+              this.config.accounts.user2.address,
+              this.config.accounts.additional.address,
+              this.config.accounts.additional2.address
+            )
+        )
+          .to.be.revertedWithCustomError(
+            this.config.genArt721CoreWithNullProvider,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.NullPlatformProvider);
+      });
+    });
+
+    // @dev the following block tests for cases when allowArtistProjectActivation==true,
+    // because other tests across this test suite already test the default case
+    // when allowArtistProjectActivation==false
+    describe("allowArtistProjectActivation", function () {
+      beforeEach(async function () {
+        this.config = await loadFixture(_beforeEach);
+        // deploy new core with true allow artist project activation
+        this.config.genArt721CoreWithAllowArtistActivate =
+          await deployWithStorageLibraryAndGet(this.config, coreContractName, [
+            this.config.name,
+            this.config.symbol,
+            this.config.accounts.deployer.address,
+            this.config.accounts.additional2.address, // platform provider
+            this.config.randomizer.address,
+            this.config.adminACL.address,
+            0, // next project ID
+            true, // auto-approve
+            this.config.splitProvider.address,
+            false, // _nullPlatformProvider,
+            true, //  _allowArtistProjectActivation
+          ]);
+        await this.config.genArt721CoreWithAllowArtistActivate
+          .connect(this.config.accounts.deployer)
+          .addProject("name", this.config.accounts.artist.address);
+      });
+
+      it("allows artist project activation when true", async function () {
+        await this.config.genArt721CoreWithAllowArtistActivate
+          .connect(this.config.accounts.artist)
+          .toggleProjectIsActive(0);
+      });
+
+      it("allows deployer project activation when true", async function () {
+        await this.config.genArt721CoreWithAllowArtistActivate
+          .connect(this.config.accounts.deployer)
+          .toggleProjectIsActive(0);
+      });
+
+      it("does not allow user activation when true", async function () {
+        await expect(
+          this.config.genArt721CoreWithAllowArtistActivate
+            .connect(this.config.accounts.user)
+            .toggleProjectIsActive(0)
+        )
+          .to.be.revertedWithCustomError(
+            this.config.genArt721CoreWithAllowArtistActivate,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtistOrAdminACL);
       });
     });
   });
