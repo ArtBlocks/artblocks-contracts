@@ -1042,14 +1042,15 @@ contract GenArt721CoreV3_Engine is
 
         _nextProjectId = uint248(projectId) + 1;
 
-        // assign project's splitter
-        // @dev only call after all previous storage updates
-        _assignSplitter(projectId);
-
+        // @dev emit initial project created event before splitter event
         emit ProjectUpdated(
             projectId,
             bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_CREATED))
         );
+
+        // assign project's splitter
+        // @dev only call after all previous storage updates
+        _assignSplitter(projectId);
     }
 
     /**
