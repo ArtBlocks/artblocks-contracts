@@ -654,11 +654,10 @@ contract GenArt721CoreV3_Engine is
     ) external {
         _onlyAdminACL(this.updateProviderPrimarySalesPercentages.selector);
         // require no platform provider payment if null platform provider
-        if (nullPlatformProvider) {
-            require(
-                platformProviderPrimarySalesPercentage_ == 0,
-                "Only null platform provider"
-            );
+        if (
+            nullPlatformProvider && platformProviderPrimarySalesPercentage_ != 0
+        ) {
+            revert GenArt721Error(ErrorCodes.OnlyNullPlatformProvider);
         }
 
         // Validate that the sum of the proposed %s, does not exceed 100%.
@@ -710,13 +709,9 @@ contract GenArt721CoreV3_Engine is
     ) external {
         _onlyAdminACL(this.updateProviderSecondarySalesBPS.selector);
         // require no platform provider payment if null platform provider
-        if (nullPlatformProvider) {
-            require(
-                _platformProviderSecondarySalesBPS == 0,
-                "Only null platform provider"
-            );
+        if (nullPlatformProvider && _platformProviderSecondarySalesBPS != 0) {
+            revert GenArt721Error(ErrorCodes.OnlyNullPlatformProvider);
         }
-
         // Validate that the sum of the proposed provider BPS, does not exceed 10_000 BPS.
         if (
             _renderProviderSecondarySalesBPS +
@@ -2181,11 +2176,12 @@ contract GenArt721CoreV3_Engine is
     ) internal {
         if (nullPlatformProvider) {
             // require null platform provider address
-            require(
-                _platformProviderPrimarySalesAddress == address(0) &&
-                    _platformProviderSecondarySalesAddress == address(0),
-                "only null platform provider"
-            );
+            if (
+                _platformProviderPrimarySalesAddress != address(0) ||
+                _platformProviderSecondarySalesAddress != address(0)
+            ) {
+                revert GenArt721Error(ErrorCodes.OnlyNullPlatformProvider);
+            }
         } else {
             _onlyNonZeroAddress(_platformProviderPrimarySalesAddress);
             _onlyNonZeroAddress(_platformProviderSecondarySalesAddress);
