@@ -167,7 +167,7 @@ contract GenArt721CoreV3_Engine is
     //  * @param _projectId Project to be queried
     //  * @return projectFinance ProjectFinance struct for project `_projectId`
     //  */
-    mapping(uint256 _projectId => ProjectFinance) public projectIdToFinancials;
+    mapping(uint256 _projectId => ProjectFinance) public _projectIdToFinancials;
 
     /// hash of artist's proposed payment updates to be approved by admin
     mapping(uint256 => bytes32) public proposedArtistAddressesAndSplitsHash;
@@ -290,7 +290,7 @@ contract GenArt721CoreV3_Engine is
     }
 
     function _onlyArtist(uint256 _projectId) internal view {
-        if (msg.sender != projectIdToFinancials[_projectId].artistAddress) {
+        if (msg.sender != _projectIdToFinancials[_projectId].artistAddress) {
             revert GenArt721Error(ErrorCodes.OnlyArtist);
         }
     }
@@ -300,7 +300,7 @@ contract GenArt721CoreV3_Engine is
         bytes4 _selector
     ) internal {
         if (
-            !(msg.sender == projectIdToFinancials[_projectId].artistAddress ||
+            !(msg.sender == _projectIdToFinancials[_projectId].artistAddress ||
                 adminACLAllowed(msg.sender, address(this), _selector))
         ) {
             revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminACL);
@@ -325,7 +325,7 @@ contract GenArt721CoreV3_Engine is
         // artist of the project
         if (
             owner() == address(0) &&
-            msg.sender == projectIdToFinancials[_projectId].artistAddress
+            msg.sender == _projectIdToFinancials[_projectId].artistAddress
         ) {
             return;
         }
@@ -430,13 +430,13 @@ contract GenArt721CoreV3_Engine is
         }
         if (
             !(project.active ||
-                _by == projectIdToFinancials[_projectId].artistAddress)
+                _by == _projectIdToFinancials[_projectId].artistAddress)
         ) {
             revert GenArt721Error(ErrorCodes.ProjectMustExistAndBeActive);
         }
         if (
             project.paused &&
-            _by != projectIdToFinancials[_projectId].artistAddress
+            _by != _projectIdToFinancials[_projectId].artistAddress
         ) {
             revert GenArt721Error(ErrorCodes.PurchasesPaused);
         }
@@ -783,7 +783,7 @@ contract GenArt721CoreV3_Engine is
         _onlyValidProjectId(_projectId);
         _onlyArtist(_projectId);
         _onlyNonZeroAddress(_artistAddress);
-        ProjectFinance storage projectFinance = projectIdToFinancials[
+        ProjectFinance storage projectFinance = _projectIdToFinancials[
             _projectId
         ];
         // checks
@@ -932,7 +932,7 @@ contract GenArt721CoreV3_Engine is
             revert GenArt721Error(ErrorCodes.MustMatchArtistProposal);
         }
         // effects
-        ProjectFinance storage projectFinance = projectIdToFinancials[
+        ProjectFinance storage projectFinance = _projectIdToFinancials[
             _projectId
         ];
         projectFinance.artistAddress = _artistAddress;
@@ -975,7 +975,7 @@ contract GenArt721CoreV3_Engine is
         );
         _onlyNonZeroAddress(_artistAddress);
 
-        projectIdToFinancials[_projectId].artistAddress = _artistAddress;
+        _projectIdToFinancials[_projectId].artistAddress = _artistAddress;
 
         // assign project's splitter
         // @dev only call after all previous storage updates
@@ -1017,7 +1017,7 @@ contract GenArt721CoreV3_Engine is
             revert GenArt721Error(ErrorCodes.NewProjectsForbidden);
         }
         uint256 projectId = _nextProjectId;
-        ProjectFinance storage projectFinance = projectIdToFinancials[
+        ProjectFinance storage projectFinance = _projectIdToFinancials[
             projectId
         ];
         projectFinance.artistAddress = _artistAddress;
@@ -1097,7 +1097,9 @@ contract GenArt721CoreV3_Engine is
     ) external {
         // if unlocked, only artist may update, if locked, only admin may update
         if (_projectUnlocked(_projectId)) {
-            if (msg.sender != projectIdToFinancials[_projectId].artistAddress) {
+            if (
+                msg.sender != _projectIdToFinancials[_projectId].artistAddress
+            ) {
                 revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
             }
         } else {
@@ -1139,7 +1141,7 @@ contract GenArt721CoreV3_Engine is
         if (_secondMarketRoyalty > ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE) {
             revert GenArt721Error(ErrorCodes.OverMaxSecondaryRoyaltyPercentage);
         }
-        projectIdToFinancials[_projectId]
+        _projectIdToFinancials[_projectId]
             .secondaryMarketRoyaltyPercentage = uint8(_secondMarketRoyalty);
 
         // assign project's splitter
@@ -1169,7 +1171,7 @@ contract GenArt721CoreV3_Engine is
     ) external {
         _onlyAdminACL(this.syncProviderSecondaryForProjectToDefaults.selector);
         _onlyValidProjectId(_projectId);
-        ProjectFinance storage projectFinance = projectIdToFinancials[
+        ProjectFinance storage projectFinance = _projectIdToFinancials[
             _projectId
         ];
         // update project finance for project in storage
@@ -1219,7 +1221,9 @@ contract GenArt721CoreV3_Engine is
         // checks
         // if unlocked, only artist may update, if locked, only admin may update
         if (_projectUnlocked(_projectId)) {
-            if (msg.sender != projectIdToFinancials[_projectId].artistAddress) {
+            if (
+                msg.sender != _projectIdToFinancials[_projectId].artistAddress
+            ) {
                 revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
             }
         } else {
@@ -1655,7 +1659,7 @@ contract GenArt721CoreV3_Engine is
     function projectIdToArtistAddress(
         uint256 _projectId
     ) external view returns (address payable) {
-        return projectIdToFinancials[_projectId].artistAddress;
+        return _projectIdToFinancials[_projectId].artistAddress;
     }
 
     /**
@@ -1670,7 +1674,19 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId
     ) external view returns (uint256) {
         return
-            projectIdToFinancials[_projectId].secondaryMarketRoyaltyPercentage;
+            _projectIdToFinancials[_projectId].secondaryMarketRoyaltyPercentage;
+    }
+
+    /**
+     * @notice View function returning project financial details for project
+     * `_projectId`.
+     * @param _projectId Project ID to be queried.
+     * @return ProjectFinance Project financial details.
+     */
+    function projectIdToFinancials(
+        uint256 _projectId
+    ) external view returns (ProjectFinance memory) {
+        return _projectIdToFinancials[_projectId];
     }
 
     /**
@@ -1878,7 +1894,7 @@ contract GenArt721CoreV3_Engine is
         // @dev royalty splitter created upon project creation, so will always exist
         // for valid token ID
         uint256 projectId = tokenIdToProjectId(_tokenId);
-        ProjectFinance storage projectFinance = projectIdToFinancials[
+        ProjectFinance storage projectFinance = _projectIdToFinancials[
             projectId
         ];
         receiver = projectFinance.royaltySplitter;
@@ -1949,7 +1965,7 @@ contract GenArt721CoreV3_Engine is
             address payable additionalPayeePrimaryAddress_
         )
     {
-        ProjectFinance storage projectFinance = projectIdToFinancials[
+        ProjectFinance storage projectFinance = _projectIdToFinancials[
             _projectId
         ];
         // calculate revenues – this is a three-way split between the
@@ -2204,7 +2220,7 @@ contract GenArt721CoreV3_Engine is
      * @param projectId Project ID to be updated.
      */
     function _assignSplitter(uint256 projectId) private {
-        ProjectFinance storage projectFinance = projectIdToFinancials[
+        ProjectFinance storage projectFinance = _projectIdToFinancials[
             projectId
         ];
         // assign project's royalty splitter

@@ -34,4 +34,14 @@ interface IGenArt721CoreContractV3_ProjectFinance {
         // address to send ERC-2981 royalties to
         address royaltySplitter;
     }
+
+    /**
+     * @notice View function returning project financial details for project
+     * `_projectId`.
+     * @param _projectId Project ID to be queried.
+     * @return ProjectFinance Project financial details.
+     */
+    function projectIdToFinancials(
+        uint256 _projectId
+    ) external view returns (ProjectFinance memory);
 }
