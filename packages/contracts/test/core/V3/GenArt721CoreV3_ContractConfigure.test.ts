@@ -546,6 +546,53 @@ for (const coreContractName of coreContractsToTest) {
             GENART721_ERROR_NAME
           )
           .withArgs(GENART721_ERROR_CODES.NullPlatformProvider);
+        await expect(
+          this.config.genArt721CoreWithNullProvider
+            .connect(this.config.accounts.deployer)
+            .updateProviderSalesAddresses(
+              this.config.accounts.user.address,
+              this.config.accounts.user2.address,
+              this.config.accounts.additional.address,
+              this.config.accounts.additional2.address
+            )
+        )
+          .to.be.revertedWithCustomError(
+            this.config.genArt721CoreWithNullProvider,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.NullPlatformProvider);
+        // also test with only non-null secondary address
+        await expect(
+          this.config.genArt721CoreWithNullProvider
+            .connect(this.config.accounts.deployer)
+            .updateProviderSalesAddresses(
+              this.config.accounts.user.address,
+              this.config.accounts.user2.address,
+              constants.ZERO_ADDRESS,
+              this.config.accounts.additional2.address
+            )
+        )
+          .to.be.revertedWithCustomError(
+            this.config.genArt721CoreWithNullProvider,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.NullPlatformProvider);
+        // also test with only non-null primary address
+        await expect(
+          this.config.genArt721CoreWithNullProvider
+            .connect(this.config.accounts.deployer)
+            .updateProviderSalesAddresses(
+              this.config.accounts.user.address,
+              this.config.accounts.user2.address,
+              this.config.accounts.additional.address,
+              constants.ZERO_ADDRESS
+            )
+        )
+          .to.be.revertedWithCustomError(
+            this.config.genArt721CoreWithNullProvider,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.NullPlatformProvider);
       });
     });
 
