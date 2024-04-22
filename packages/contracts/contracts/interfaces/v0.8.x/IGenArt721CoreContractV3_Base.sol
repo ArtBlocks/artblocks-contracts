@@ -195,6 +195,10 @@ interface IGenArt721CoreContractV3_Base {
         uint256 _projectId
     ) external view returns (address payable);
 
+    function projectIdToSecondaryMarketRoyaltyPercentage(
+        uint256 _projectId
+    ) external view returns (uint256);
+
     function projectURIInfo(
         uint256 _projectId
     ) external view returns (string memory projectBaseURI);

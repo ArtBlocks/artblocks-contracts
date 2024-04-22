@@ -1767,6 +1767,21 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
+     * @notice View function returning Artist's secondary market royalty
+     * percentage for project `_projectId`.
+     * This does not include render/platform providers portions of secondary
+     * market royalties.
+     * @param _projectId Project ID to be queried.
+     * @return uint256 Artist's secondary market royalty percentage.
+     */
+    function projectIdToSecondaryMarketRoyaltyPercentage(
+        uint256 _projectId
+    ) external view returns (uint256) {
+        return
+            projectIdToFinancials[_projectId].secondaryMarketRoyaltyPercentage;
+    }
+
+    /**
      * @notice Returns project details for project `_projectId`.
      * @param _projectId Project to be queried.
      * @return projectName Name of project
