@@ -39,7 +39,7 @@ import "../../libs/v0.8.x/Bytes32Strings.sol";
  * - updateArtblocksDependencyRegistryAddress
  * - updateProviderSalesAddresses
  * - updateProviderPrimarySalesPercentages (up to 100%)
- * - updateProviderSecondarySalesBPS (up to 100%)
+ * - updateProviderDefaultSecondarySalesBPS (up to 100%)
  * - updateMinterContract
  * - updateRandomizerAddress
  * - toggleProjectIsActive
@@ -194,18 +194,22 @@ contract GenArt721CoreV3_Engine_Flex is
     // packed uint: max of 100, max uint8 = 255
     uint8 private _platformProviderPrimarySalesPercentage = 10;
 
-    /// The render provider payment address for all secondary sales royalty
-    /// revenues
-    address payable public renderProviderSecondarySalesAddress;
-    /// Basis Points of secondary sales royalties allocated to the
-    /// render provider
-    uint256 public renderProviderSecondarySalesBPS = 250;
-    /// The platform provider payment address for all secondary sales royalty
-    /// revenues
-    address payable public platformProviderSecondarySalesAddress;
-    /// Basis Points of secondary sales royalties allocated to the
-    /// platform provider
-    uint256 public platformProviderSecondarySalesBPS = 250;
+    /// The default render provider payment address for all secondary sales royalty
+    /// revenues, for all new projects. Individual project payment info is defined
+    /// in each project's ProjectFinance struct.
+    address payable public defaultRenderProviderSecondarySalesAddress;
+    /// The default basis points allocated to render provider for all secondary
+    /// sales royalty revenues, for all new projects. Individual project
+    /// payment info is defined in each project's ProjectFinance struct.
+    uint256 public defaultRenderProviderSecondarySalesBPS = 250;
+    /// The default platform provider payment address for all secondary sales royalty
+    /// revenues, for all new projects. Individual project payment info is defined
+    /// in each project's ProjectFinance struct.
+    address payable public defaultPlatformProviderSecondarySalesAddress;
+    /// The default basis points allocated to platform provider for all secondary
+    /// sales royalty revenues, for all new projects. Individual project
+    /// payment info is defined in each project's ProjectFinance struct.
+    uint256 public defaultPlatformProviderSecondarySalesBPS = 250;
 
     /// single minter allowed for this core contract
     address public minterContract;
@@ -701,29 +705,29 @@ contract GenArt721CoreV3_Engine_Flex is
      * updated after this update via the `syncProviderSecondaryForProjectToDefaults` function.
      * @param _renderProviderPrimarySalesAddress Address of new primary sales
      * payment address.
-     * @param _renderProviderSecondarySalesAddress Address of new secondary sales
+     * @param _defaultRenderProviderSecondarySalesAddress Default address of new secondary sales
      * payment address.
      * @param _platformProviderPrimarySalesAddress Address of new primary sales
      * payment address.
-     * @param _platformProviderSecondarySalesAddress Address of new secondary sales
+     * @param _defaultPlatformProviderSecondarySalesAddress Default address of new secondary sales
      * payment address.
      */
     function updateProviderSalesAddresses(
         address payable _renderProviderPrimarySalesAddress,
-        address payable _renderProviderSecondarySalesAddress,
+        address payable _defaultRenderProviderSecondarySalesAddress,
         address payable _platformProviderPrimarySalesAddress,
-        address payable _platformProviderSecondarySalesAddress
+        address payable _defaultPlatformProviderSecondarySalesAddress
     ) external {
         _onlyAdminACL(this.updateProviderSalesAddresses.selector);
         _onlyNonZeroAddress(_renderProviderPrimarySalesAddress);
-        _onlyNonZeroAddress(_renderProviderSecondarySalesAddress);
+        _onlyNonZeroAddress(_defaultRenderProviderSecondarySalesAddress);
         _onlyNonZeroAddress(_platformProviderPrimarySalesAddress);
-        _onlyNonZeroAddress(_platformProviderSecondarySalesAddress);
+        _onlyNonZeroAddress(_defaultPlatformProviderSecondarySalesAddress);
         _updateProviderSalesAddresses(
             _renderProviderPrimarySalesAddress,
-            _renderProviderSecondarySalesAddress,
+            _defaultRenderProviderSecondarySalesAddress,
             _platformProviderPrimarySalesAddress,
-            _platformProviderSecondarySalesAddress
+            _defaultPlatformProviderSecondarySalesAddress
         );
     }
 
@@ -766,14 +770,14 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
-     * @notice Updates render and platform provider secondary sales royalty Basis Points to
-     * the provided inputs.
+     * @notice Updates default render and platform provider secondary sales royalty
+     * Basis Points to the provided inputs.
      * note: This does not update splitter contracts for all projects on
      * this core contract. If updated splitter contracts are desired, they must be
      * updated after this update via the `syncProviderSecondaryForProjectToDefaults` function.
-     * @param _renderProviderSecondarySalesBPS New secondary sales royalty Basis
+     * @param _defaultRenderProviderSecondarySalesBPS New default secondary sales royalty Basis
      * points.
-     * @param _platformProviderSecondarySalesBPS New secondary sales royalty Basis
+     * @param _defaultPlatformProviderSecondarySalesBPS New default secondary sales royalty Basis
      * points.
      * @dev Due to secondary royalties being ultimately enforced via social
      * consensus, no hard upper limit is imposed on the BPS value, other than
@@ -781,21 +785,21 @@ contract GenArt721CoreV3_Engine_Flex is
      * changing this value is expected to either never occur, or be a rare
      * occurrence.
      */
-    function updateProviderSecondarySalesBPS(
-        uint256 _renderProviderSecondarySalesBPS,
-        uint256 _platformProviderSecondarySalesBPS
+    function updateProviderDefaultSecondarySalesBPS(
+        uint256 _defaultRenderProviderSecondarySalesBPS,
+        uint256 _defaultPlatformProviderSecondarySalesBPS
     ) external {
-        _onlyAdminACL(this.updateProviderSecondarySalesBPS.selector);
+        _onlyAdminACL(this.updateProviderDefaultSecondarySalesBPS.selector);
         // Validate that the sum of the proposed provider BPS, does not exceed 10_000 BPS.
         if (
-            _renderProviderSecondarySalesBPS +
-                _platformProviderSecondarySalesBPS >
+            _defaultRenderProviderSecondarySalesBPS +
+                _defaultPlatformProviderSecondarySalesBPS >
             MAX_PROVIDER_SECONDARY_SALES_BPS
         ) {
             revert GenArt721Error(ErrorCodes.OverMaxSumOfBPS);
         }
-        renderProviderSecondarySalesBPS = _renderProviderSecondarySalesBPS;
-        platformProviderSecondarySalesBPS = _platformProviderSecondarySalesBPS;
+        defaultRenderProviderSecondarySalesBPS = _defaultRenderProviderSecondarySalesBPS;
+        defaultPlatformProviderSecondarySalesBPS = _defaultPlatformProviderSecondarySalesBPS;
         emit PlatformUpdated(
             bytes32(
                 uint256(
@@ -1140,14 +1144,14 @@ contract GenArt721CoreV3_Engine_Flex is
             .secondaryMarketRoyaltyPercentage = _DEFAULT_ARTIST_SECONDARY_ROYALTY_PERCENTAGE;
         // copy default platform and render provider royalties to ProjectFinance
         projectFinance
-            .platformProviderSecondarySalesAddress = platformProviderSecondarySalesAddress;
+            .platformProviderSecondarySalesAddress = defaultPlatformProviderSecondarySalesAddress;
         projectFinance.platformProviderSecondarySalesBPS = uint16(
-            platformProviderSecondarySalesBPS
+            defaultPlatformProviderSecondarySalesBPS
         );
         projectFinance
-            .renderProviderSecondarySalesAddress = renderProviderSecondarySalesAddress;
+            .renderProviderSecondarySalesAddress = defaultRenderProviderSecondarySalesAddress;
         projectFinance.renderProviderSecondarySalesBPS = uint16(
-            renderProviderSecondarySalesBPS
+            defaultRenderProviderSecondarySalesBPS
         );
 
         _nextProjectId = uint248(projectId) + 1;
@@ -1286,14 +1290,14 @@ contract GenArt721CoreV3_Engine_Flex is
         ];
         // update project finance for project in storage
         projectFinance
-            .platformProviderSecondarySalesAddress = platformProviderSecondarySalesAddress;
+            .platformProviderSecondarySalesAddress = defaultPlatformProviderSecondarySalesAddress;
         projectFinance.platformProviderSecondarySalesBPS = uint16(
-            platformProviderSecondarySalesBPS
+            defaultPlatformProviderSecondarySalesBPS
         );
         projectFinance
-            .renderProviderSecondarySalesAddress = renderProviderSecondarySalesAddress;
+            .renderProviderSecondarySalesAddress = defaultRenderProviderSecondarySalesAddress;
         projectFinance.renderProviderSecondarySalesBPS = uint16(
-            renderProviderSecondarySalesBPS
+            defaultRenderProviderSecondarySalesBPS
         );
 
         emit ProjectUpdated(
@@ -2286,11 +2290,11 @@ contract GenArt721CoreV3_Engine_Flex is
      * the input parameters.
      * @param _renderProviderPrimarySalesAddress Address of new primary sales
      * payment address.
-     * @param _renderProviderSecondarySalesAddress Address of new secondary sales
+     * @param _defaultRenderProviderSecondarySalesAddress Address of new secondary sales
      * payment address.
      * @param _platformProviderPrimarySalesAddress Address of new primary sales
      * payment address.
-     * @param _platformProviderSecondarySalesAddress Address of new secondary sales
+     * @param _defaultPlatformProviderSecondarySalesAddress Address of new secondary sales
      * payment address.
      * @dev Note that this method does not check that the input address is
      * not `address(0)`, as it is expected that callers of this method should
@@ -2298,21 +2302,21 @@ contract GenArt721CoreV3_Engine_Flex is
      */
     function _updateProviderSalesAddresses(
         address _renderProviderPrimarySalesAddress,
-        address _renderProviderSecondarySalesAddress,
+        address _defaultRenderProviderSecondarySalesAddress,
         address _platformProviderPrimarySalesAddress,
-        address _platformProviderSecondarySalesAddress
+        address _defaultPlatformProviderSecondarySalesAddress
     ) internal {
         platformProviderPrimarySalesAddress = payable(
             _platformProviderPrimarySalesAddress
         );
-        platformProviderSecondarySalesAddress = payable(
-            _platformProviderSecondarySalesAddress
+        defaultPlatformProviderSecondarySalesAddress = payable(
+            _defaultPlatformProviderSecondarySalesAddress
         );
         renderProviderPrimarySalesAddress = payable(
             _renderProviderPrimarySalesAddress
         );
-        renderProviderSecondarySalesAddress = payable(
-            _renderProviderSecondarySalesAddress
+        defaultRenderProviderSecondarySalesAddress = payable(
+            _defaultRenderProviderSecondarySalesAddress
         );
         emit PlatformUpdated(
             bytes32(

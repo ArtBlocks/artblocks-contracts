@@ -276,7 +276,7 @@ for (const coreContractName of coreContractsToTest) {
         await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateProviderSecondarySalesBPS(240, 240)
+            .updateProviderDefaultSecondarySalesBPS(240, 240)
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
           .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_PROVIDER_SECONDARY_SALES_BPS);

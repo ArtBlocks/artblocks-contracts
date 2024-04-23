@@ -49,23 +49,42 @@ interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
         view
         returns (uint256);
 
-    // @dev The render provider secondary sales royalties payment address
-    function renderProviderSecondarySalesAddress()
+    /** @notice The default render provider payment address for all secondary sales royalty
+     * revenues, for all new projects. Individual project payment info is defined
+     * in each project's ProjectFinance struct.
+     * @return The default render provider payment address for secondary sales royalties.
+     */
+    function defaultRenderProviderSecondarySalesAddress()
         external
         view
         returns (address payable);
 
-    // @dev The platform provider secondary sales royalties payment address
-    function platformProviderSecondarySalesAddress()
+    /** @notice The default platform provider payment address for all secondary sales royalty
+     * revenues, for all new projects. Individual project payment info is defined
+     * in each project's ProjectFinance struct.
+     * @return The default platform provider payment address for secondary sales royalties.
+     */
+    function defaultPlatformProviderSecondarySalesAddress()
         external
         view
         returns (address payable);
 
-    // @dev Basis points of secondary sales allocated to the render provider
-    function renderProviderSecondarySalesBPS() external view returns (uint256);
+    /** @notice The default render provider payment basis points for all secondary sales royalty
+     * revenues, for all new projects. Individual project payment info is defined
+     * in each project's ProjectFinance struct.
+     * @return The default render provider payment basis points for secondary sales royalties.
+     */
+    function defaultRenderProviderSecondarySalesBPS()
+        external
+        view
+        returns (uint256);
 
-    // @dev Basis points of secondary sales allocated to the platform provider
-    function platformProviderSecondarySalesBPS()
+    /** @notice The default platform provider payment basis points for all secondary sales royalty
+     * revenues, for all new projects. Individual project payment info is defined
+     * in each project's ProjectFinance struct.
+     * @return The default platform provider payment basis points for secondary sales royalties.
+     */
+    function defaultPlatformProviderSecondarySalesBPS()
         external
         view
         returns (uint256);

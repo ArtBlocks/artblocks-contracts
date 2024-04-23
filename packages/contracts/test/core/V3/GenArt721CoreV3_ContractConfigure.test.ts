@@ -158,7 +158,7 @@ for (const coreContractName of coreContractsToTest) {
         await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateProviderSecondarySalesBPS(
+            .updateProviderDefaultSecondarySalesBPS(
               10001, // _renderProviderSecondarySalesBPS
               0 // _platformProviderSecondarySalesBPS
             )
@@ -171,7 +171,7 @@ for (const coreContractName of coreContractsToTest) {
         await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateProviderSecondarySalesBPS(
+            .updateProviderDefaultSecondarySalesBPS(
               0, // _renderProviderSecondarySalesBPS
               10001 // _platformProviderSecondarySalesBPS
             )
@@ -187,13 +187,13 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         await config.genArt721Core
           .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
+          .updateProviderDefaultSecondarySalesBPS(
             250, // _renderProviderSecondarySalesBPS
             0 // _platformProviderSecondarySalesBPS
           );
         await config.genArt721Core
           .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
+          .updateProviderDefaultSecondarySalesBPS(
             0, // _renderProviderSecondarySalesBPS
             250 // _platformProviderSecondarySalesBPS
           );
@@ -203,7 +203,7 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         await config.genArt721Core
           .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
+          .updateProviderDefaultSecondarySalesBPS(
             250, // _renderProviderSecondarySalesBPS
             250 // _platformProviderSecondarySalesBPS
           );
@@ -213,7 +213,7 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         await config.genArt721Core
           .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
+          .updateProviderDefaultSecondarySalesBPS(
             0, // _renderProviderSecondarySalesBPS
             0 // _platformProviderSecondarySalesBPS
           );
@@ -425,7 +425,7 @@ for (const coreContractName of coreContractsToTest) {
           );
         await config.genArt721Core
           .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(31, 32);
+          .updateProviderDefaultSecondarySalesBPS(31, 32);
         await config.genArt721Core
           .connect(config.accounts.deployer)
           .syncProviderSecondaryForProjectToDefaults(config.projectZero);
