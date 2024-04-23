@@ -135,11 +135,11 @@ for (const coreContractName of coreContractsToTest) {
         );
       });
 
-      it("updateProviderSecondarySalesBPS", async function () {
+      it("updateProviderDefaultSecondarySalesBPS", async function () {
         const config = await loadFixture(_beforeEach);
         await validateAdminACLRequest(
           config,
-          "updateProviderSecondarySalesBPS",
+          "updateProviderDefaultSecondarySalesBPS",
           [240, 420]
         );
       });

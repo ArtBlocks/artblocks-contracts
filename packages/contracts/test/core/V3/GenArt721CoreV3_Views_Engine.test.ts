@@ -1071,7 +1071,7 @@ for (const coreContractName of coreContractsToTest) {
         // update provider secondary BPS to >5%
         await config.genArt721Core
           .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(300, 300);
+          .updateProviderDefaultSecondarySalesBPS(300, 300);
         await config.genArt721Core
           .connect(config.accounts.deployer)
           .syncProviderSecondaryForProjectToDefaults(config.projectZero);

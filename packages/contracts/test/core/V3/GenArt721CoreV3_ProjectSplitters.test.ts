@@ -130,7 +130,7 @@ for (const coreContractName of coreContractsToTest) {
         // update provider fees and recipients
         await config.genArt721Core
           .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
+          .updateProviderDefaultSecondarySalesBPS(
             200, // render secondary of 2%
             300 // platform provider secondary of 3%
           );
@@ -194,7 +194,7 @@ for (const coreContractName of coreContractsToTest) {
         // update provider fees and recipients
         await config.genArt721Core
           .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
+          .updateProviderDefaultSecondarySalesBPS(
             0, // render secondary of 0%
             0 // platform provider secondary of 0%
           );
@@ -247,7 +247,7 @@ for (const coreContractName of coreContractsToTest) {
         // update provider fees and recipients
         await config.genArt721Core
           .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
+          .updateProviderDefaultSecondarySalesBPS(
             0, // render secondary of 0%
             0 // platform provider secondary of 0%
           );
@@ -519,7 +519,7 @@ for (const coreContractName of coreContractsToTest) {
         // update provider fees and recipients
         await config.genArt721Core
           .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
+          .updateProviderDefaultSecondarySalesBPS(
             200, // render secondary of 2%
             300 // platform provider secondary of 3%
           );
