@@ -30,6 +30,9 @@ contract ERC721_PackedHashSeedV1 is Context, ERC165, IERC721, IERC721Metadata {
     // Token symbol
     string private _symbol;
 
+    /// ensure initialization can only be performed once
+    bool private initialized;
+
     /// struct to pack a token owner and hash seed into same storage slot
     struct OwnerAndHashSeed {
         // 20 bytes for address of token's owner
@@ -223,8 +226,10 @@ contract ERC721_PackedHashSeedV1 is Context, ERC165, IERC721, IERC721Metadata {
      * @param symbol_ Symbol for the token collection.
      */
     function initialize(string memory name_, string memory symbol_) internal {
+        require(!initialized, "Already initialized");
         _name = name_;
         _symbol = symbol_;
+        initialized = true;
     }
 
     /**
