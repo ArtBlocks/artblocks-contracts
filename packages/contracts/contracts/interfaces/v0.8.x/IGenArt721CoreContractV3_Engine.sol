@@ -10,6 +10,7 @@ import "./IGenArt721CoreContractV3_Base.sol";
  * @notice Struct representing Engine contract configuration.
  * @param tokenName Name of token.
  * @param tokenSymbol Token symbol.
+ * @param renderProviderAddress address to send render provider revenue to
  * @param randomizerContract Randomizer contract.
  * @param startingProjectId The initial next project ID.
  * @param autoApproveArtistSplitProposals Whether or not to always
@@ -27,6 +28,7 @@ struct EngineConfiguration {
     string tokenSymbol;
     address renderProviderAddress;
     address platformProviderAddress;
+    address newSuperAdminAddress;
     address randomizerContract;
     uint248 startingProjectId;
     bool autoApproveArtistSplitProposals;

@@ -9,6 +9,7 @@ import {AdminACLV0} from "../../AdminACLV0.sol";
 import {IGenArt721CoreContractV3_Engine, EngineConfiguration} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import {ICoreRegistryV1} from "../../interfaces/v0.8.x/ICoreRegistryV1.sol";
 import {IEngineFactoryV0} from "../../interfaces/v0.8.x/IEngineFactoryV0.sol";
+import {IAdminACLV0} from "../../interfaces/v0.8.x/IAdminACLV0.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import {Clones} from "@openzeppelin-4.7/contracts/proxy/Clones.sol";
@@ -120,6 +121,16 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
             engineConfiguration,
             adminACLContract
         );
+        // update super admin address if not null address
+        if (engineConfiguration.newSuperAdminAddress != address(0)) {
+            address[] memory genArt721CoreAddressesToUpdate = new address[](1);
+            genArt721CoreAddressesToUpdate[0] = engineContract;
+
+            IAdminACLV0(adminACLContract).changeSuperAdmin(
+                engineConfiguration.newSuperAdminAddress,
+                genArt721CoreAddressesToUpdate
+            );
+        }
 
         bytes32 coreType = IGenArt721CoreContractV3_Engine(engineContract)
             .CORE_TYPE();
