@@ -91,16 +91,16 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("{artblocks,provider}SecondarySalesAddress", function () {
-      it("returns expected renderProviderSecondarySalesAddress", async function () {
+      it("returns expected defaultRenderProviderSecondarySalesAddress", async function () {
         const config = await loadFixture(_beforeEach);
         expect(
-          await config.genArt721Core.renderProviderSecondarySalesAddress()
+          await config.genArt721Core.defaultRenderProviderSecondarySalesAddress()
         ).to.be.equal(config.accounts.deployer.address);
       });
-      it("returns expected renderProviderSecondarySalesAddress", async function () {
+      it("returns expected defaultPlatformProviderSecondarySalesAddress", async function () {
         const config = await loadFixture(_beforeEach);
         expect(
-          await config.genArt721Core.platformProviderSecondarySalesAddress()
+          await config.genArt721Core.defaultPlatformProviderSecondarySalesAddress()
         ).to.be.equal(config.accounts.additional.address);
       });
     });
@@ -118,16 +118,16 @@ for (const coreContractName of coreContractsToTest) {
           await config.genArt721Core.platformProviderPrimarySalesPercentage()
         ).to.be.equal(10);
       });
-      it("returns expected renderProviderSecondarySalesBPS", async function () {
+      it("returns expected defaultRenderProviderSecondarySalesBPS", async function () {
         const config = await loadFixture(_beforeEach);
         expect(
-          await config.genArt721Core.renderProviderSecondarySalesBPS()
+          await config.genArt721Core.defaultRenderProviderSecondarySalesBPS()
         ).to.be.equal(250);
       });
-      it("returns expected platformProviderSecondarySalesBPS", async function () {
+      it("returns expected defaultPlatformProviderSecondarySalesBPS", async function () {
         const config = await loadFixture(_beforeEach);
         expect(
-          await config.genArt721Core.platformProviderSecondarySalesBPS()
+          await config.genArt721Core.defaultPlatformProviderSecondarySalesBPS()
         ).to.be.equal(250);
       });
     });

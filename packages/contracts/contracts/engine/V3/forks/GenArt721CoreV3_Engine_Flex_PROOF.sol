@@ -5,7 +5,7 @@ pragma solidity 0.8.19;
 
 import "../../../interfaces/v0.8.x/IRandomizerV2.sol";
 import "../../../interfaces/v0.8.x/IAdminACLV0.sol";
-import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
+import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex_PreV3p2.sol";
 import "../../../interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
 import "../../../interfaces/v0.8.x/IManifold.sol";
 
@@ -104,7 +104,7 @@ abstract contract GenArt721CoreV3_Engine_Flex_PROOF is
     Ownable,
     IDependencyRegistryCompatibleV0,
     IManifold,
-    IGenArt721CoreContractV3_Engine_Flex
+    IGenArt721CoreContractV3_Engine_Flex_PreV3p2
 {
     using BytecodeStorageWriter for string;
     using Bytes32Strings for bytes32;
