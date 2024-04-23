@@ -136,6 +136,7 @@ export const PLATFORM_UPDATED_FIELDS = {
     ethers.utils.hexlify(9),
     32
   ),
+  FIELD_SPLIT_PROVIDER: ethers.utils.hexZeroPad(ethers.utils.hexlify(10), 32),
 };
 
 export const PROJECT_UPDATED_FIELDS = {
@@ -176,6 +177,10 @@ export const PROJECT_UPDATED_FIELDS = {
     32
   ),
   FIELD_PROJECT_BASE_URI: ethers.utils.hexZeroPad(ethers.utils.hexlify(15), 32),
+  FIELD_PROVIDER_SECONDARY_FINANCIALS: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(16),
+    32
+  ),
 };
 
 export const GENART721_ERROR_NAME = "GenArt721Error";
@@ -216,6 +221,8 @@ export const GENART721_ERROR_CODES = {
   AspectRatioTooLong: 33,
   AspectRatioNoNumbers: 34,
   AspectRatioImproperFormat: 35,
+  InvalidSplitProvider: 36,
+  NullPlatformProvider: 37,
 };
 
 export async function getAccounts(): Promise<TestAccountsArtBlocks> {

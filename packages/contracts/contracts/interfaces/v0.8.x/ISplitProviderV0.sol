@@ -25,22 +25,8 @@ interface ISplitProviderV0 {
     /**
      * @notice Emitted when a new splitter contract is created.
      * @param splitter address of the splitter contract
-     * @param splitParams The split parameters
      */
-    event SplitterCreated(
-        address indexed splitter,
-        ISplitFactoryV2.Split splitParams
-    );
-
-    /**
-     * @notice Emitted when an existing splitter contract is updated.
-     * @param splitter address of the splitter contract
-     * @param splitParams The split parameters
-     */
-    event SplitterUpdated(
-        address indexed splitter,
-        ISplitFactoryV2.Split splitParams
-    );
+    event SplitterCreated(address indexed splitter);
 
     /**
      * @notice Gets or creates an immutable splitter contract at a deterministic address.

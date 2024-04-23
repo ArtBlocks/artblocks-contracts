@@ -57,7 +57,8 @@ interface IGenArt721CoreContractV3_Base {
         FIELD_PROJECT_SCRIPT, // 12
         FIELD_PROJECT_SCRIPT_TYPE, // 13
         FIELD_PROJECT_ASPECT_RATIO, // 14
-        FIELD_PROJECT_BASE_URI // 15
+        FIELD_PROJECT_BASE_URI, // 15
+        FIELD_PROVIDER_SECONDARY_FINANCIALS // 16
     }
 
     /**
@@ -102,7 +103,9 @@ interface IGenArt721CoreContractV3_Base {
         AspectRatioTooLong, // 33
         AspectRatioNoNumbers, // 34
         AspectRatioImproperFormat, // 35
-        ContractInitialized // 36
+        InvalidSplitProvider, // 36
+        OnlyNullPlatformProvider, // 37
+        ContractInitialized // 38
     }
 
     /**
@@ -193,6 +196,10 @@ interface IGenArt721CoreContractV3_Base {
     function projectIdToArtistAddress(
         uint256 _projectId
     ) external view returns (address payable);
+
+    function projectIdToSecondaryMarketRoyaltyPercentage(
+        uint256 _projectId
+    ) external view returns (uint256);
 
     function projectURIInfo(
         uint256 _projectId

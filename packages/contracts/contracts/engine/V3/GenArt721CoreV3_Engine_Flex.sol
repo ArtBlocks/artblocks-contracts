@@ -13,6 +13,7 @@ import "../../interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
 import {ISplitProviderV0} from "../../interfaces/v0.8.x/ISplitProviderV0.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
+import {ERC165Checker} from "@openzeppelin-4.7/contracts/utils/introspection/ERC165Checker.sol";
 import {IERC2981} from "@openzeppelin-4.7/contracts/interfaces/IERC2981.sol";
 import "../../libs/v0.8.x/ERC721_PackedHashSeedV1.sol";
 import "../../libs/v0.8.x/BytecodeStorageV2.sol";
@@ -761,11 +762,10 @@ contract GenArt721CoreV3_Engine_Flex is
     ) external {
         _onlyAdminACL(this.updateProviderPrimarySalesPercentages.selector);
         // require no platform provider payment if null platform provider
-        if (nullPlatformProvider) {
-            require(
-                platformProviderPrimarySalesPercentage_ == 0,
-                "Only null platform provider"
-            );
+        if (
+            nullPlatformProvider && platformProviderPrimarySalesPercentage_ != 0
+        ) {
+            revert GenArt721Error(ErrorCodes.OnlyNullPlatformProvider);
         }
 
         // Validate that the sum of the proposed %s, does not exceed 100%.
@@ -817,11 +817,8 @@ contract GenArt721CoreV3_Engine_Flex is
     ) external {
         _onlyAdminACL(this.updateProviderSecondarySalesBPS.selector);
         // require no platform provider payment if null platform provider
-        if (nullPlatformProvider) {
-            require(
-                _platformProviderSecondarySalesBPS == 0,
-                "Only null platform provider"
-            );
+        if (nullPlatformProvider && _platformProviderSecondarySalesBPS != 0) {
+            revert GenArt721Error(ErrorCodes.OnlyNullPlatformProvider);
         }
         // Validate that the sum of the proposed provider BPS, does not exceed 10_000 BPS.
         if (
@@ -1321,6 +1318,7 @@ contract GenArt721CoreV3_Engine_Flex is
         uint256 _projectId
     ) external {
         _onlyAdminACL(this.syncProviderSecondaryForProjectToDefaults.selector);
+        _onlyValidProjectId(_projectId);
         ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
         ];
@@ -1334,6 +1332,15 @@ contract GenArt721CoreV3_Engine_Flex is
             .renderProviderSecondarySalesAddress = renderProviderSecondarySalesAddress;
         projectFinance.renderProviderSecondarySalesBPS = uint16(
             renderProviderSecondarySalesBPS
+        );
+
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(
+                uint256(
+                    ProjectUpdatedFields.FIELD_PROVIDER_SECONDARY_FINANCIALS
+                )
+            )
         );
 
         // assign project's splitter
@@ -1801,6 +1808,21 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
+     * @notice View function returning Artist's secondary market royalty
+     * percentage for project `_projectId`.
+     * This does not include render/platform providers portions of secondary
+     * market royalties.
+     * @param _projectId Project ID to be queried.
+     * @return uint256 Artist's secondary market royalty percentage.
+     */
+    function projectIdToSecondaryMarketRoyaltyPercentage(
+        uint256 _projectId
+    ) external view returns (uint256) {
+        return
+            projectIdToFinancials[_projectId].secondaryMarketRoyaltyPercentage;
+    }
+
+    /**
      * @notice Returns project details for project `_projectId`.
      * @param _projectId Project to be queried.
      * @return projectName Name of project
@@ -2011,12 +2033,15 @@ contract GenArt721CoreV3_Engine_Flex is
         receiver = projectFinance.royaltySplitter;
 
         // populate royaltyAmount with calculated royalty amount
-        uint256 totalRoyaltyBPS = 100 *
-            projectFinance.secondaryMarketRoyaltyPercentage +
+        // @dev important to cast to uint256 before multiplying to avoid overflow
+        uint256 totalRoyaltyBPS = (100 *
+            uint256(projectFinance.secondaryMarketRoyaltyPercentage)) +
             projectFinance.platformProviderSecondarySalesBPS +
             projectFinance.renderProviderSecondarySalesBPS;
         // @dev totalRoyaltyBPS guaranteed to be <= 10,000,
-        require(totalRoyaltyBPS <= 10_000, "Only total BPS <= 10,000");
+        if (totalRoyaltyBPS > 10_000) {
+            revert GenArt721Error(ErrorCodes.OverMaxSumOfBPS);
+        }
         // @dev overflow automatically checked in solidity 0.8
         // @dev totalRoyaltyBPS guaranteed to be <= 10_000,
         // so overflow only possible with unreasonably high _salePrice values near uint256 max
@@ -2302,11 +2327,12 @@ contract GenArt721CoreV3_Engine_Flex is
     ) internal {
         if (nullPlatformProvider) {
             // require null platform provider address
-            require(
-                _platformProviderPrimarySalesAddress == address(0) &&
-                    _platformProviderSecondarySalesAddress == address(0),
-                "only null platform provider"
-            );
+            if (
+                _platformProviderPrimarySalesAddress != address(0) ||
+                _platformProviderSecondarySalesAddress != address(0)
+            ) {
+                revert GenArt721Error(ErrorCodes.OnlyNullPlatformProvider);
+            }
         } else {
             _onlyNonZeroAddress(_platformProviderPrimarySalesAddress);
             _onlyNonZeroAddress(_platformProviderSecondarySalesAddress);
@@ -2358,12 +2384,14 @@ contract GenArt721CoreV3_Engine_Flex is
     function _updateSplitProvider(address _splitProviderAddress) internal {
         // require new split provider broadcast ERC165 support of
         // getOrCreateSplitter function as defined in ISplitProviderV0
-        require(
-            IERC165(_splitProviderAddress).supportsInterface(
+        if (
+            !ERC165Checker.supportsInterface(
+                _splitProviderAddress,
                 ISplitProviderV0.getOrCreateSplitter.selector
-            ),
-            "Invalid split provider"
-        );
+            )
+        ) {
+            revert GenArt721Error(ErrorCodes.InvalidSplitProvider);
+        }
         splitProvider = ISplitProviderV0(_splitProviderAddress);
         emit PlatformUpdated(
             bytes32(uint256(PlatformUpdatedFields.FIELD_SPLIT_PROVIDER))

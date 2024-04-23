@@ -200,6 +200,18 @@ for (const coreContractName of coreContractsToTest) {
           .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_RANDOMIZER_ADDRESS);
       });
 
+      it("emits 'split provider address'", async function () {
+        const config = await loadFixture(_beforeEach);
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateSplitProvider(config.splitProvider.address)
+        )
+          .to.emit(config.genArt721Core, "PlatformUpdated")
+          .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_SPLIT_PROVIDER);
+      });
+
       it("emits 'onChainGeneratorAddress'", async function () {
         const config = await loadFixture(_beforeEach);
         // emits expected event arg(s)
@@ -441,6 +453,21 @@ for (const coreContractName of coreContractsToTest) {
           );
       });
 
+      it("emits sync provider financials updated", async function () {
+        const config = await loadFixture(_beforeEach);
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .syncProviderSecondaryForProjectToDefaults(config.projectZero)
+        )
+          .to.emit(config.genArt721Core, "ProjectUpdated")
+          .withArgs(
+            config.projectZero,
+            PROJECT_UPDATED_FIELDS.FIELD_PROVIDER_SECONDARY_FINANCIALS
+          );
+      });
+
       it("emits description", async function () {
         const config = await loadFixture(_beforeEach);
         // emits expected event arg(s)
@@ -641,6 +668,29 @@ for (const coreContractName of coreContractsToTest) {
             config.projectZero,
             PROJECT_UPDATED_FIELDS.FIELD_PROJECT_BASE_URI
           );
+      });
+    });
+
+    describe("ProjectRoyaltySplitterUpdated", function () {
+      it("emits ProjectRoyaltySplitterUpdated when updated", async function () {
+        const config = await loadFixture(_beforeEach);
+        // get predicted splitter address
+        // unchanged, so just get current splitter address
+        const projectFinance = await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .projectIdToFinancials(config.projectZero);
+        const predictedSplitterAddress = projectFinance.royaltySplitter;
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateProjectArtistAddress(
+              config.projectZero,
+              config.accounts.artist.address // no actual change to the configured splits
+            )
+        )
+          .to.emit(config.genArt721Core, "ProjectRoyaltySplitterUpdated")
+          .withArgs(config.projectZero, predictedSplitterAddress);
       });
     });
   });
