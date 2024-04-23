@@ -381,7 +381,7 @@ contract GenArt721CoreV3_Engine is
         if (_nullPlatformProvider) {
             // set platform to zero revenue splits
             _platformProviderPrimarySalesPercentage = 0;
-            platformProviderSecondarySalesBPS = 0;
+            defaultPlatformProviderSecondarySalesBPS = 0;
         }
         _onlyNonZeroAddress(_randomizerContract);
         _updateSplitProvider(_splitProviderAddress);
@@ -713,7 +713,10 @@ contract GenArt721CoreV3_Engine is
     ) external {
         _onlyAdminACL(this.updateProviderDefaultSecondarySalesBPS.selector);
         // require no platform provider payment if null platform provider
-        if (nullPlatformProvider && _platformProviderSecondarySalesBPS != 0) {
+        if (
+            nullPlatformProvider &&
+            _defaultPlatformProviderSecondarySalesBPS != 0
+        ) {
             revert GenArt721Error(ErrorCodes.OnlyNullPlatformProvider);
         }
         // Validate that the sum of the proposed provider BPS, does not exceed 10_000 BPS.
@@ -2200,13 +2203,13 @@ contract GenArt721CoreV3_Engine is
             // require null platform provider address
             if (
                 _platformProviderPrimarySalesAddress != address(0) ||
-                _platformProviderSecondarySalesAddress != address(0)
+                _defaultPlatformProviderSecondarySalesAddress != address(0)
             ) {
                 revert GenArt721Error(ErrorCodes.OnlyNullPlatformProvider);
             }
         } else {
             _onlyNonZeroAddress(_platformProviderPrimarySalesAddress);
-            _onlyNonZeroAddress(_platformProviderSecondarySalesAddress);
+            _onlyNonZeroAddress(_defaultPlatformProviderSecondarySalesAddress);
         }
         platformProviderPrimarySalesAddress = payable(
             _platformProviderPrimarySalesAddress
