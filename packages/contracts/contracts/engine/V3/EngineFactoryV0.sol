@@ -25,8 +25,7 @@ import {Create2} from "@openzeppelin-4.7/contracts/utils/Create2.sol";
  * Once abandoned, the contract can no longer be used to create new Engine and Engine
  * Flex Core contracts.
  * The contract is initialized with a required contract type.
- * All splits must include the required split address and basis points.
- * The contract is initialized with an implementation contract, which is cloned
+ * The contract is initialized with an Engine and Engine Flex implementation contract, which is cloned
  * when creating new Engine and Engine Flex Core contracts.
  */
 contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
@@ -47,9 +46,6 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     // Address of core registry contract.
     address public immutable coreRegistry;
 
-    // deployer of the contract is the only one who may abandon the contract
-    address public immutable deployer;
-
     /**
      * Indicates whether the contract is abandoned.
      * Once abandoned, the contract can no longer be used to create new Engine
@@ -69,11 +65,10 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         address engineImplementation_,
         address engineFlexImplementation_,
         address coreRegistry_
-    ) Ownable() {
+    ) {
         coreRegistry = coreRegistry_;
         engineFlexImplementation = engineFlexImplementation_;
         engineImplementation = engineImplementation_;
-        deployer = msg.sender;
         // set owner of core registry contract
         Ownable(coreRegistry_).transferOwnership(address(this));
         // emit event
@@ -102,72 +97,51 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         address adminACLContract
     ) external onlyOwner returns (address engineContract) {
         require(!isAbandoned, "factory is abandoned");
-        // TODO: engine configuration validation here?
+        // validate engine contract configuration
+        _onlyNonZeroAddress(engineConfiguration.renderProviderAddress);
+        _onlyNonZeroAddress(engineConfiguration.randomizerContract);
         if (adminACLContract == address(0)) {
             // deploy new AdminACLV0 contract
             adminACLContract = Create2.deploy({
                 amount: 0,
-                salt: blockhash(block.number - 1),
+                salt: keccak256(abi.encodePacked(msg.sender, block.timestamp)),
                 bytecode: type(AdminACLV0).creationCode
             });
         }
 
-        if (engineCoreType == IEngineFactoryV0.EngineCoreType.Engine) {
-            // Create the EIP 1167 Engine contract
-            engineContract = Clones.clone({
-                implementation: engineImplementation
-            });
-            // initialize the new Engine contract
-            IGenArt721CoreContractV3_Engine(engineContract).initialize(
-                engineConfiguration,
-                adminACLContract
-            );
-            bytes32 coreType = IGenArt721CoreContractV3_Engine(engineContract)
-                .CORE_TYPE();
-            bytes32 coreVersion = IGenArt721CoreContractV3_Engine(
-                engineContract
-            ).CORE_VERSION();
-            // register the new Engine contract
-            ICoreRegistryV1(coreRegistry).registerContract(
-                engineContract,
-                bytes32(coreVersion),
-                bytes32(coreType)
-            );
-            emit EngineContractCreated(engineContract);
-        } else {
-            // Create the EIP 1167 Engine Flex contract
-            engineContract = Clones.clone({
-                implementation: engineFlexImplementation
-            });
-            // initialize the new Engine contract
-            IGenArt721CoreContractV3_Engine(engineContract).initialize(
-                engineConfiguration,
-                adminACLContract
-            );
-            // register the new Engine contract
-            bytes32 coreType = IGenArt721CoreContractV3_Engine(engineContract)
-                .CORE_TYPE();
-            bytes32 coreVersion = IGenArt721CoreContractV3_Engine(
-                engineContract
-            ).CORE_VERSION();
-            ICoreRegistryV1(coreRegistry).registerContract(
-                engineContract,
-                bytes32(coreVersion),
-                bytes32(coreType)
-            );
-            // emit event
-            emit EngineFlexContractCreated(engineContract);
-        }
+        address implementation = engineCoreType ==
+            IEngineFactoryV0.EngineCoreType.Engine
+            ? engineImplementation
+            : engineFlexImplementation;
+
+        engineContract = Clones.clone({implementation: implementation});
+
+        IGenArt721CoreContractV3_Engine(engineContract).initialize(
+            engineConfiguration,
+            adminACLContract
+        );
+
+        bytes32 coreType = IGenArt721CoreContractV3_Engine(engineContract)
+            .CORE_TYPE();
+        bytes32 coreVersion = IGenArt721CoreContractV3_Engine(engineContract)
+            .CORE_VERSION();
+        // register the new Engine contract
+        ICoreRegistryV1(coreRegistry).registerContract(
+            engineContract,
+            coreVersion,
+            coreType
+        );
+        // emit event
+        emit EngineContractCreated(engineContract);
     }
 
     /**
      * @notice Abandons the contract, preventing it from being used to create
      * new Engine and Engine Flex contracts.
-     * Only callable by the deployer, and only once; reverts otherwise.
+     * Only callable by the owner, and only once; reverts otherwise.
      */
-    function abandon() external {
+    function abandon() external onlyOwner {
         require(!isAbandoned, "factory is abandoned");
-        require(msg.sender == deployer, "only deployer may abandon");
         // set isAbandoned to true
         isAbandoned = true;
         // emit event
@@ -207,5 +181,9 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
                 value: balance
             });
         }
+    }
+
+    function _onlyNonZeroAddress(address address_) internal pure {
+        require(address_ != address(0), "Must input non-zero address");
     }
 }

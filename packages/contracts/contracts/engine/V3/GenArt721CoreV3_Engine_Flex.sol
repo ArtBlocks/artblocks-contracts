@@ -355,10 +355,10 @@ contract GenArt721CoreV3_Engine_Flex is
     /**
      * @notice Initializes the contract with the provided `engineConfiguration`.
      * This function should be called atomically, immediately after deployment.
-     * Only callable once.
+     * Only callable once. Validation on `engineConfiguration` is performed by caller.
      * @param engineConfiguration EngineConfiguration to configure the contract with.
      * @param adminACLContract_ Address of admin access control contract, to be
-     * set as contract owner. A new contract will be deployed if address is null.
+     * set as contract owner.
      */
     function initialize(
         EngineConfiguration calldata engineConfiguration,
@@ -373,17 +373,14 @@ contract GenArt721CoreV3_Engine_Flex is
             engineConfiguration.tokenName,
             engineConfiguration.tokenSymbol
         );
-        // validate and initialize contract
-        _onlyNonZeroAddress(engineConfiguration.renderProviderAddress);
-        // @dev checks on platform provider addresses performed in _updateProviderSalesAddresses
+        // @dev assume renderProviderAddress, randomizer, and AdminACL non-zero
+        // checks on platform provider addresses performed in _updateProviderSalesAddresses
         if (engineConfiguration.nullPlatformProvider) {
             // set platform to zero revenue splits
             _platformProviderPrimarySalesPercentage = 0;
             platformProviderSecondarySalesBPS = 0;
         }
-        _onlyNonZeroAddress(engineConfiguration.randomizerContract);
         _updateSplitProvider(engineConfiguration.splitProviderAddress);
-        _onlyNonZeroAddress(adminACLContract_);
         // setup immutable `autoApproveArtistSplitProposals` config
         autoApproveArtistSplitProposals = engineConfiguration
             .autoApproveArtistSplitProposals;

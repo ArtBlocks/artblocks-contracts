@@ -23,15 +23,10 @@ interface IEngineFactoryV0 {
         bytes32 indexed type_
     );
     /**
-     * @notice New Engine contract was created.
+     * @notice New Engine or Engine Flex contract was created.
      * @param engineContract address of the newly created Engine contract
      */
     event EngineContractCreated(address indexed engineContract);
-    /**
-     * @notice New Engine Flex contract was created.
-     * @param engineFlexContract address of the newly created Engine Flex contract
-     */
-    event EngineFlexContractCreated(address indexed engineFlexContract);
     /**
      * @notice This contract was abandoned and no longer can be used to create
      * new Engine or Engine Flex contracts.
@@ -57,6 +52,22 @@ interface IEngineFactoryV0 {
     ) external returns (address engineContract);
 
     /**
+     * @notice Drains the contract's balance to the `recipient`.
+     * @param recipient The address to send funds to.
+     * Only callable by the owner.
+     */
+    function drainETH(address payable recipient) external;
+
+    /**
+     * @notice Drains the contract's balance of an input ERC20 token to
+     * the `recipient`.
+     * @param ERC20TokenAddress The address of the ERC20 token to withdraw.
+     * @param recipient The address to send ERC20 tokens to.
+     * Only callable by the owner.
+     */
+    function drainERC20(address ERC20TokenAddress, address recipient) external;
+
+    /**
      * @notice The implementation contract that is cloned when creating new
      * Engine Core contracts.
      */
@@ -67,11 +78,6 @@ interface IEngineFactoryV0 {
      * Engine Flex Core contracts.
      */
     function engineFlexImplementation() external view returns (address);
-
-    /**
-     * @notice The deployer of the contract.
-     */
-    function deployer() external view returns (address);
 
     /**
      * @notice Indicates whether the contract is abandoned.
