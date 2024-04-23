@@ -521,7 +521,7 @@ for (const coreContractName of coreContractsToTest) {
         await expect(
           this.config.genArt721CoreWithNullProvider
             .connect(this.config.accounts.deployer)
-            .updateProviderSecondarySalesBPS(0, 1)
+            .updateProviderDefaultSecondarySalesBPS(0, 1)
         )
           .to.be.revertedWithCustomError(
             this.config.genArt721CoreWithNullProvider,
