@@ -102,8 +102,7 @@ interface IGenArt721CoreContractV3_Base {
         ScriptTypeAndVersionFormat, // 32
         AspectRatioTooLong, // 33
         AspectRatioNoNumbers, // 34
-        AspectRatioImproperFormat, // 35
-        InvalidSplitProvider // 36
+        AspectRatioImproperFormat // 35
     }
 
     /**
