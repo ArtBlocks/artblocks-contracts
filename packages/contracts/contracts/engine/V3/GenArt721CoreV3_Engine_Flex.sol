@@ -173,7 +173,8 @@ contract GenArt721CoreV3_Engine_Flex is
     //  * @param _projectId Project to be queried
     //  * @return projectFinance ProjectFinance struct for project `_projectId`
     //  */
-    mapping(uint256 _projectId => ProjectFinance) public _projectIdToFinancials;
+    mapping(uint256 _projectId => ProjectFinance)
+        private _projectIdToFinancials;
 
     /// hash of artist's proposed payment updates to be approved by admin
     mapping(uint256 => bytes32) public proposedArtistAddressesAndSplitsHash;
