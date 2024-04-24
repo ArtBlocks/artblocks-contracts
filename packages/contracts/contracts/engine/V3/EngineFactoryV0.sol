@@ -117,10 +117,12 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
 
         engineContract = Clones.clone({implementation: implementation});
 
-        IGenArt721CoreContractV3_Engine(engineContract).initialize(
+        _initializeEngineContract(
+            engineContract,
             engineConfiguration,
             adminACLContract
         );
+
         // update super admin address if not null address
         if (engineConfiguration.newSuperAdminAddress != address(0)) {
             address[] memory genArt721CoreAddressesToUpdate = new address[](1);
@@ -192,6 +194,29 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
                 value: balance
             });
         }
+    }
+
+    function _initializeEngineContract(
+        address engineContract,
+        EngineConfiguration calldata engineConfiguration,
+        address adminACLContract
+    ) internal {
+        IGenArt721CoreContractV3_Engine(engineContract)
+            .initializeTokenNameAndSymbol(
+                engineConfiguration.tokenName,
+                engineConfiguration.tokenSymbol
+            );
+        IGenArt721CoreContractV3_Engine(engineContract).initialize(
+            engineConfiguration.renderProviderAddress,
+            engineConfiguration.platformProviderAddress,
+            engineConfiguration.randomizerContract,
+            engineConfiguration.splitProviderAddress,
+            adminACLContract,
+            engineConfiguration.startingProjectId,
+            engineConfiguration.autoApproveArtistSplitProposals,
+            engineConfiguration.nullPlatformProvider,
+            engineConfiguration.allowArtistProjectActivation
+        );
     }
 
     function _onlyNonZeroAddress(address address_) internal pure {

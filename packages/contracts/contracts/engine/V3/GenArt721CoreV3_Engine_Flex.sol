@@ -357,55 +357,76 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
-     * @notice Initializes the contract with the provided `engineConfiguration`.
+     * @notice Sets the token name and symbol.
      * This function should be called atomically, immediately after deployment.
-     * Only callable once. Validation on `engineConfiguration` is performed by caller.
-     * @param engineConfiguration EngineConfiguration to configure the contract with.
-     * @param adminACLContract_ Address of admin access control contract, to be
-     * set as contract owner.
+     * Only callable once.
+     * @param tokenName Name of token.
+     * @param tokenSymbol Token symbol.
+     */
+    function initializeTokenNameAndSymbol(
+        string calldata tokenName,
+        string calldata tokenSymbol
+    ) external {
+        // @dev reverts if already initialized
+        ERC721_PackedHashSeedV1.initialize(tokenName, tokenSymbol);
+    }
+
+    /**
+     * @notice Initializes the contract.
+     * This function should be called atomically, immediately after deployment.
+     * Only callable once. Validation performed by caller.
+     * @param _renderProviderAddress address to send render provider revenue to
+     * @param _randomizerContract Randomizer contract.
+     * @param _splitProviderAddress Address to use as royalty splitter provider for the contract.
+     * @param _adminACLContract Address of admin access control contract.
+     * @param _startingProjectId The initial next project ID.
+     * @param _autoApproveArtistSplitProposals Whether or not to always
+     * auto-approve proposed artist split updates.
+     * @param _nullPlatformProvider Enforce always setting zero platform provider fees and addresses.
+     * @param _allowArtistProjectActivation Allow artist to activate their own projects.
      */
     function initialize(
-        EngineConfiguration calldata engineConfiguration,
-        address adminACLContract_
+        address _renderProviderAddress,
+        address _platformProviderAddress,
+        address _randomizerContract,
+        address _splitProviderAddress,
+        address _adminACLContract,
+        uint248 _startingProjectId,
+        bool _autoApproveArtistSplitProposals,
+        bool _nullPlatformProvider,
+        bool _allowArtistProjectActivation
     ) external {
         // can only be initialized once
         if (initialized) {
             revert GenArt721Error(ErrorCodes.ContractInitialized);
         }
-        // set token name and token symbol
-        ERC721_PackedHashSeedV1.initialize(
-            engineConfiguration.tokenName,
-            engineConfiguration.tokenSymbol
-        );
         // @dev assume renderProviderAddress, randomizer, and AdminACL non-zero
         // checks on platform provider addresses performed in _updateProviderSalesAddresses
-        if (engineConfiguration.nullPlatformProvider) {
+        if (_nullPlatformProvider) {
             // set platform to zero revenue splits
             _platformProviderPrimarySalesPercentage = 0;
             defaultPlatformProviderSecondarySalesBPS = 0;
         }
-        _updateSplitProvider(engineConfiguration.splitProviderAddress);
+        _updateSplitProvider(_splitProviderAddress);
         // setup immutable `autoApproveArtistSplitProposals` config
-        autoApproveArtistSplitProposals = engineConfiguration
-            .autoApproveArtistSplitProposals;
+        autoApproveArtistSplitProposals = _autoApproveArtistSplitProposals;
         // setup immutable `nullPlatformProvider` config
-        nullPlatformProvider = engineConfiguration.nullPlatformProvider;
+        nullPlatformProvider = _nullPlatformProvider;
         // setup immutable `allowArtistProjectActivation` config
-        allowArtistProjectActivation = engineConfiguration
-            .allowArtistProjectActivation;
+        allowArtistProjectActivation = _allowArtistProjectActivation;
         // record contracts starting project ID
         // casting-up is safe
-        startingProjectId = uint256(engineConfiguration.startingProjectId);
+        startingProjectId = uint256(_startingProjectId);
         // @dev nullPlatformProvider must be set before calling _updateProviderSalesAddresses
         _updateProviderSalesAddresses(
-            engineConfiguration.renderProviderAddress,
-            engineConfiguration.renderProviderAddress,
-            engineConfiguration.platformProviderAddress,
-            engineConfiguration.platformProviderAddress
+            _renderProviderAddress,
+            _renderProviderAddress,
+            _platformProviderAddress,
+            _platformProviderAddress
         );
-        _updateRandomizerAddress(engineConfiguration.randomizerContract);
+        _updateRandomizerAddress(_randomizerContract);
         // set AdminACL management contract as owner
-        _transferOwnership(adminACLContract_);
+        _transferOwnership(_adminACLContract);
         // initialize default base URI
         _updateDefaultBaseURI(
             string.concat(
@@ -415,7 +436,7 @@ contract GenArt721CoreV3_Engine_Flex is
             )
         );
         // initialize next project ID
-        _nextProjectId = engineConfiguration.startingProjectId;
+        _nextProjectId = _startingProjectId;
         emit PlatformUpdated(
             bytes32(uint256(PlatformUpdatedFields.FIELD_NEXT_PROJECT_ID))
         );

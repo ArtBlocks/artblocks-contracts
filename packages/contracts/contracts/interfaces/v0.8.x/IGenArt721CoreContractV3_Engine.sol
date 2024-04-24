@@ -40,17 +40,41 @@ struct EngineConfiguration {
 interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
     // @dev new function in V3.2
     /**
-     * @notice Initializes the contract with the provided `engineConfiguration`.
+     * @notice Sets the token name and symbol.
      * This function should be called atomically, immediately after deployment.
      * Only callable once.
-     * @param engineConfiguration EngineConfiguration data to configure the contract
-     * with.
-     * @param adminACLContract_ Address of admin access control contract, to be
-     * set as contract owner.
+     * @param tokenName Name of token.
+     * @param tokenSymbol Token symbol.
+     */
+    function initializeTokenNameAndSymbol(
+        string calldata tokenName,
+        string calldata tokenSymbol
+    ) external;
+
+    /**
+     * @notice Initializes the contract.
+     * This function should be called atomically, immediately after deployment.
+     * Only callable once. Validation performed by caller.
+     * @param _renderProviderAddress address to send render provider revenue to
+     * @param _randomizerContract Randomizer contract.
+     * @param _splitProviderAddress Address to use as royalty splitter provider for the contract.
+     * @param _adminACLContract Address of admin access control contract.
+     * @param _startingProjectId The initial next project ID.
+     * @param _autoApproveArtistSplitProposals Whether or not to always
+     * auto-approve proposed artist split updates.
+     * @param _nullPlatformProvider Enforce always setting zero platform provider fees and addresses.
+     * @param _allowArtistProjectActivation Allow artist to activate their own projects.
      */
     function initialize(
-        EngineConfiguration calldata engineConfiguration,
-        address adminACLContract_
+        address _renderProviderAddress,
+        address _platformProviderAddress,
+        address _randomizerContract,
+        address _splitProviderAddress,
+        address _adminACLContract,
+        uint248 _startingProjectId,
+        bool _autoApproveArtistSplitProposals,
+        bool _nullPlatformProvider,
+        bool _allowArtistProjectActivation
     ) external;
 
     // @dev new function in V3
