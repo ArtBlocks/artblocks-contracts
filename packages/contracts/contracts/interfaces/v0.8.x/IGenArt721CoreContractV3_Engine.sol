@@ -40,41 +40,16 @@ struct EngineConfiguration {
 interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
     // @dev new function in V3.2
     /**
-     * @notice Sets the token name and symbol.
+     * @notice Initializes the contract with the provided `engineConfiguration`.
      * This function should be called atomically, immediately after deployment.
-     * Only callable once.
-     * @param tokenName Name of token.
-     * @param tokenSymbol Token symbol.
-     */
-    function initializeTokenNameAndSymbol(
-        string calldata tokenName,
-        string calldata tokenSymbol
-    ) external;
-
-    /**
-     * @notice Initializes the contract.
-     * This function should be called atomically, immediately after deployment.
-     * Only callable once. Validation performed by caller.
-     * @param _renderProviderAddress address to send render provider revenue to
-     * @param _randomizerContract Randomizer contract.
-     * @param _splitProviderAddress Address to use as royalty splitter provider for the contract.
-     * @param _adminACLContract Address of admin access control contract.
-     * @param _startingProjectId The initial next project ID.
-     * @param _autoApproveArtistSplitProposals Whether or not to always
-     * auto-approve proposed artist split updates.
-     * @param _nullPlatformProvider Enforce always setting zero platform provider fees and addresses.
-     * @param _allowArtistProjectActivation Allow artist to activate their own projects.
+     * Only callable once. Validation on `engineConfiguration` is performed by caller.
+     * @param engineConfiguration EngineConfiguration to configure the contract with.
+     * @param adminACLContract_ Address of admin access control contract, to be
+     * set as contract owner.
      */
     function initialize(
-        address _renderProviderAddress,
-        address _platformProviderAddress,
-        address _randomizerContract,
-        address _splitProviderAddress,
-        address _adminACLContract,
-        uint248 _startingProjectId,
-        bool _autoApproveArtistSplitProposals,
-        bool _nullPlatformProvider,
-        bool _allowArtistProjectActivation
+        EngineConfiguration calldata engineConfiguration,
+        address adminACLContract_
     ) external;
 
     // @dev new function in V3
@@ -94,12 +69,6 @@ interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
             uint256 additionalPayeePrimaryRevenue_,
             address payable additionalPayeePrimaryAddress_
         );
-
-    // @dev The core type
-    function CORE_TYPE() external view returns (bytes32);
-
-    // @dev The core version
-    function CORE_VERSION() external view returns (bytes32);
 
     // @dev The render provider primary sales payment address
     function renderProviderPrimarySalesAddress()

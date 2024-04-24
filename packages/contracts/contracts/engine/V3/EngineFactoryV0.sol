@@ -117,8 +117,7 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
 
         engineContract = Clones.clone({implementation: implementation});
 
-        _initializeEngineContract(
-            engineContract,
+        IGenArt721CoreContractV3_Engine(engineContract).initialize(
             engineConfiguration,
             adminACLContract
         );
@@ -134,15 +133,16 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
             );
         }
 
-        bytes32 coreType = IGenArt721CoreContractV3_Engine(engineContract)
-            .CORE_TYPE();
-        bytes32 coreVersion = IGenArt721CoreContractV3_Engine(engineContract)
-            .CORE_VERSION();
+        string memory coreType = IGenArt721CoreContractV3_Engine(engineContract)
+            .coreType();
+        string memory coreVersion = IGenArt721CoreContractV3_Engine(
+            engineContract
+        ).coreVersion();
         // register the new Engine contract
         ICoreRegistryV1(coreRegistry).registerContract(
             engineContract,
-            coreVersion,
-            coreType
+            stringToBytes32(coreVersion),
+            stringToBytes32(coreType)
         );
         // emit event
         emit EngineContractCreated(engineContract);
@@ -196,27 +196,17 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         }
     }
 
-    function _initializeEngineContract(
-        address engineContract,
-        EngineConfiguration calldata engineConfiguration,
-        address adminACLContract
-    ) internal {
-        IGenArt721CoreContractV3_Engine(engineContract)
-            .initializeTokenNameAndSymbol(
-                engineConfiguration.tokenName,
-                engineConfiguration.tokenSymbol
-            );
-        IGenArt721CoreContractV3_Engine(engineContract).initialize(
-            engineConfiguration.renderProviderAddress,
-            engineConfiguration.platformProviderAddress,
-            engineConfiguration.randomizerContract,
-            engineConfiguration.splitProviderAddress,
-            adminACLContract,
-            engineConfiguration.startingProjectId,
-            engineConfiguration.autoApproveArtistSplitProposals,
-            engineConfiguration.nullPlatformProvider,
-            engineConfiguration.allowArtistProjectActivation
-        );
+    function stringToBytes32(
+        string memory source
+    ) internal pure returns (bytes32 result) {
+        bytes memory tempString = bytes(source);
+        if (tempString.length == 0) {
+            return 0x0;
+        }
+
+        assembly {
+            result := mload(add(source, 32))
+        }
     }
 
     function _onlyNonZeroAddress(address address_) internal pure {
