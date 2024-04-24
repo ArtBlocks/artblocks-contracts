@@ -2,34 +2,63 @@ import { PublicClient } from "viem";
 import { FormBlueprint, SubmissionStatusEnum, SubmissionStatus } from "./types";
 import { generateProjectMinterConfigurationForms } from "./minter-configuration";
 import { ProjectMinterConfigurationData } from "./minter-configuration/types";
+import { GraphQLClient } from "graphql-request";
 
-export type ArtBlocksSDKOptions = {
+export type ArtBlocksClientOptions = {
   publicClient: PublicClient;
   graphqlEndpoint: string;
-  jwt?: string;
+  authToken?: string;
 };
 
-export default class ArtBlocksSDK {
+export type ArtBlocksClientContext = {
+  graphqlClient: GraphQLClient;
   publicClient: PublicClient;
-  graphqlEndpoint: string;
-  jwt?: string;
   userIsStaff: boolean;
+};
 
-  constructor({ publicClient, jwt, graphqlEndpoint }: ArtBlocksSDKOptions) {
-    this.publicClient = publicClient;
-    this.jwt = jwt;
-    this.graphqlEndpoint = graphqlEndpoint;
+export default class ArtBlocksClient {
+  context: ArtBlocksClientContext;
 
+  constructor({
+    publicClient,
+    authToken,
+    graphqlEndpoint,
+  }: ArtBlocksClientOptions) {
+    // Create a GraphQL client with the provided endpoint and auth token
+    const graphqlClient = new GraphQLClient(graphqlEndpoint, {
+      headers: (): { Authorization?: string } => {
+        if (!authToken) {
+          return {};
+        }
+
+        return {
+          Authorization: `Bearer ${authToken}`,
+        };
+      },
+    });
+
+    // Parse the JWT to determine if the user is staff
     const jwtString = Buffer.from(
-      this.jwt?.split(".")[1] ?? "",
+      authToken?.split(".")[1] ?? "",
       "base64"
     ).toString();
     const jwtData = jwtString ? JSON.parse(jwtString) : null;
+    const userIsStaff = Boolean(jwtData?.isStaff);
 
-    this.userIsStaff = jwtData?.isStaff ?? false;
+    this.context = {
+      graphqlClient,
+      publicClient,
+      userIsStaff,
+    };
   }
 
-  async getProjectMinterConfiguration(projectId: string) {
+  setAuthToken(authToken: string) {
+    this.context.graphqlClient.setHeaders({
+      Authorization: `Bearer ${authToken}`,
+    });
+  }
+
+  async getProjectMinterConfigurationContext(projectId: string) {
     // Create a list of subscribers
     let subscribers: Array<
       (config: {
@@ -51,7 +80,7 @@ export default class ArtBlocksSDK {
     const { forms, data } = await generateProjectMinterConfigurationForms({
       projectId,
       onConfigurationChange: notifySubscribers,
-      sdk: this,
+      clientContext: this.context,
     });
 
     return {
@@ -64,7 +93,7 @@ export default class ArtBlocksSDK {
         await generateProjectMinterConfigurationForms({
           projectId,
           onConfigurationChange: notifySubscribers,
-          sdk: this,
+          clientContext: this.context,
         });
       },
 

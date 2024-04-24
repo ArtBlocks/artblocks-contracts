@@ -1,4 +1,4 @@
-import ArtBlocksSDK from "..";
+import { ArtBlocksClientContext } from "..";
 import {
   GetProjectMinterConfigurationQuery,
   ProjectMinterConfigurationDetailsFragment,
@@ -12,7 +12,7 @@ export type GenerateProjectMinterConfigurationFormsArgs = {
     data: ProjectMinterConfigurationData;
     forms: FormBlueprint[];
   }) => void;
-  sdk: ArtBlocksSDK;
+  clientContext: ArtBlocksClientContext;
 };
 
 export type GenerateProjectMinterConfigurationFormsContext =

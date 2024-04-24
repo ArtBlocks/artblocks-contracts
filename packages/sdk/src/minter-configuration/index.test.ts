@@ -1,5 +1,5 @@
 import { generateProjectMinterConfigurationForms } from "./index";
-import ArtBlocksSDK, { SubmissionStatusEnum } from "..";
+import { ArtBlocksClientContext, SubmissionStatusEnum } from "..";
 import request from "graphql-request";
 import { Block, PublicClient, TransactionReceipt, WalletClient } from "viem";
 import * as submitTransactionHelpers from "../utils/submit-transaction";
@@ -19,36 +19,42 @@ describe("generateProjectMinterConfigurationForms", () => {
     jest.restoreAllMocks();
   });
 
-  const sdk = new ArtBlocksSDK({
+  const artblocksClientContext = {
     publicClient: {
       simulateContract: jest.fn(),
       waitForTransactionReceipt: jest.fn(),
       writeContract: jest.fn(),
       getBlock: jest.fn(),
     } as unknown as PublicClient,
-    graphqlEndpoint: "https://test.com/graphql",
-    jwt: "your-jwt",
-  });
+    graphqlClient: {
+      request: request as jest.MockedFunction<any>,
+    },
+    userIsStaff: false,
+  } as unknown as ArtBlocksClientContext;
 
   const projectId = "0x00-0";
   const [coreContractAddress, projectIndex] = projectId.split("-");
 
   describe("generateProjectMinterConfigurationForms", () => {
     it("should throw an error if the project does not exist", async () => {
-      (request as jest.Mock).mockResolvedValueOnce({
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce({
         projects_metadata_by_pk: null,
       });
       await expect(
         generateProjectMinterConfigurationForms({
           projectId,
           onConfigurationChange: jest.fn(),
-          sdk: sdk,
+          clientContext: artblocksClientContext,
         })
       ).rejects.toThrow(`Could not find project with id ${projectId}`);
     });
 
     it("should throw an error if the project does not have a minter filter", async () => {
-      (request as jest.Mock).mockResolvedValueOnce({
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce({
         projects_metadata_by_pk: {
           project_id: projectIndex,
           contract: {
@@ -60,7 +66,7 @@ describe("generateProjectMinterConfigurationForms", () => {
         generateProjectMinterConfigurationForms({
           projectId,
           onConfigurationChange: jest.fn(),
-          sdk: sdk,
+          clientContext: artblocksClientContext,
         })
       ).rejects.toThrow(
         `Project with id ${projectId} is not on a contract with an associated minter filter`
@@ -71,13 +77,15 @@ describe("generateProjectMinterConfigurationForms", () => {
       const testResponse = getTestResponse();
       const { minter_configuration, ...mockProjectData } =
         testResponse.projects_metadata_by_pk;
-      (request as jest.Mock).mockResolvedValueOnce({
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce({
         projects_metadata_by_pk: mockProjectData,
       });
       const { forms } = await generateProjectMinterConfigurationForms({
         projectId,
         onConfigurationChange: jest.fn(),
-        sdk: sdk,
+        clientContext: artblocksClientContext,
       });
 
       expect(forms.length).toEqual(1);
@@ -87,22 +95,26 @@ describe("generateProjectMinterConfigurationForms", () => {
       const mockProjectData = getTestResponse();
       mockProjectData.projects_metadata_by_pk.minter_configuration.minter.type.project_configuration_schema =
         {} as any;
-      (request as jest.Mock).mockResolvedValueOnce(mockProjectData);
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce(mockProjectData);
       const { forms } = await generateProjectMinterConfigurationForms({
         projectId,
         onConfigurationChange: jest.fn(),
-        sdk: sdk,
+        clientContext: artblocksClientContext,
       });
 
       expect(forms.length).toEqual(1);
       expect(forms[0].key).toEqual("setMinterForProject");
     });
     it("returns the minter selection form and the minter configuration form if the project minter has a configuration schema", async () => {
-      (request as jest.Mock).mockResolvedValueOnce(getTestResponse());
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce(getTestResponse());
       const { forms } = await generateProjectMinterConfigurationForms({
         projectId,
         onConfigurationChange: jest.fn(),
-        sdk: sdk,
+        clientContext: artblocksClientContext,
       });
 
       expect(forms.length).toEqual(4);
@@ -112,12 +124,14 @@ describe("generateProjectMinterConfigurationForms", () => {
       expect(forms[3].key).toEqual("manuallyLimitProjectMaxInvocations");
     });
     it("successfully submits the setMinterForProject form", async () => {
-      (request as jest.Mock).mockResolvedValueOnce(getTestResponse());
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce(getTestResponse());
       const handleConfigurationChange = jest.fn();
       const { forms } = await generateProjectMinterConfigurationForms({
         projectId,
         onConfigurationChange: handleConfigurationChange,
-        sdk: sdk,
+        clientContext: artblocksClientContext,
       });
 
       // submitTransaction mocks
@@ -125,7 +139,8 @@ describe("generateProjectMinterConfigurationForms", () => {
 
       // Mock simulateContract return value
       (
-        sdk.publicClient.simulateContract as jest.MockedFunction<
+        artblocksClientContext.publicClient
+          .simulateContract as jest.MockedFunction<
           PublicClient["simulateContract"]
         >
       ).mockResolvedValueOnce({
@@ -149,7 +164,8 @@ describe("generateProjectMinterConfigurationForms", () => {
 
       // Mock waitForTransactionReceipt return value
       (
-        sdk.publicClient.waitForTransactionReceipt as jest.MockedFunction<
+        artblocksClientContext.publicClient
+          .waitForTransactionReceipt as jest.MockedFunction<
           PublicClient["waitForTransactionReceipt"]
         >
       ).mockResolvedValueOnce({
@@ -161,7 +177,7 @@ describe("generateProjectMinterConfigurationForms", () => {
       const currentDate = new Date(timestamp * 1000);
       // Mock getBlock return value
       (
-        sdk.publicClient.getBlock as jest.MockedFunction<
+        artblocksClientContext.publicClient.getBlock as jest.MockedFunction<
           PublicClient["getBlock"]
         >
       ).mockResolvedValueOnce({
@@ -175,9 +191,9 @@ describe("generateProjectMinterConfigurationForms", () => {
       ).mockResolvedValueOnce();
 
       // Mock final call to refresh minter configuration
-      (request as jest.MockedFunction<any>).mockResolvedValueOnce(
-        getTestResponse()
-      );
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce(getTestResponse());
 
       // Mock onProgress callback
       const onProgress = jest.fn();
@@ -204,7 +220,7 @@ describe("generateProjectMinterConfigurationForms", () => {
       expect(onProgress).toHaveBeenCalledWith(SubmissionStatusEnum.SYNCING);
 
       expect(submitTransactionHelpers.submitTransaction).toHaveBeenCalledWith({
-        publicClient: sdk.publicClient,
+        publicClient: artblocksClientContext.publicClient,
         walletClient,
         address: "0x29e9f09244497503f304fa549d50efc751d818d2",
         abi: [
@@ -243,19 +259,21 @@ describe("generateProjectMinterConfigurationForms", () => {
       });
 
       expect(pollForProjectUpdates).toHaveBeenCalledWith(
-        sdk,
+        artblocksClientContext,
         projectId,
         currentDate,
         ["minter_configuration_id"]
       );
     });
     it("successfully submits the setAuctionDetails form", async () => {
-      (request as jest.Mock).mockResolvedValueOnce(getTestResponse());
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce(getTestResponse());
       const handleConfigurationChange = jest.fn();
       const { forms } = await generateProjectMinterConfigurationForms({
         projectId,
         onConfigurationChange: handleConfigurationChange,
-        sdk: sdk,
+        clientContext: artblocksClientContext,
       });
 
       // submitTransaction mocks
@@ -263,7 +281,8 @@ describe("generateProjectMinterConfigurationForms", () => {
 
       // Mock simulateContract return value
       (
-        sdk.publicClient.simulateContract as jest.MockedFunction<
+        artblocksClientContext.publicClient
+          .simulateContract as jest.MockedFunction<
           PublicClient["simulateContract"]
         >
       ).mockResolvedValueOnce({
@@ -287,7 +306,8 @@ describe("generateProjectMinterConfigurationForms", () => {
 
       // Mock waitForTransactionReceipt return value
       (
-        sdk.publicClient.waitForTransactionReceipt as jest.MockedFunction<
+        artblocksClientContext.publicClient
+          .waitForTransactionReceipt as jest.MockedFunction<
           PublicClient["waitForTransactionReceipt"]
         >
       ).mockResolvedValueOnce({
@@ -299,7 +319,7 @@ describe("generateProjectMinterConfigurationForms", () => {
       const currentDate = new Date(timestamp * 1000);
       // Mock getBlock return value
       (
-        sdk.publicClient.getBlock as jest.MockedFunction<
+        artblocksClientContext.publicClient.getBlock as jest.MockedFunction<
           PublicClient["getBlock"]
         >
       ).mockResolvedValueOnce({
@@ -313,9 +333,9 @@ describe("generateProjectMinterConfigurationForms", () => {
       ).mockResolvedValueOnce();
 
       // Mock final call to refresh minter configuration
-      (request as jest.MockedFunction<any>).mockResolvedValueOnce(
-        getTestResponse()
-      );
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce(getTestResponse());
 
       // Mock onProgress callback
       const onProgress = jest.fn();
@@ -347,7 +367,7 @@ describe("generateProjectMinterConfigurationForms", () => {
       expect(onProgress).toHaveBeenCalledWith(SubmissionStatusEnum.SYNCING);
 
       expect(submitTransactionHelpers.submitTransaction).toHaveBeenCalledWith({
-        publicClient: sdk.publicClient,
+        publicClient: artblocksClientContext.publicClient,
         walletClient,
         address: "0x7856a8aef94c7d73d764e3fd71f76a44ba79f78e",
         abi: [
@@ -404,7 +424,7 @@ describe("generateProjectMinterConfigurationForms", () => {
       });
 
       expect(pollForSyncedMinterConfigUpdates).toHaveBeenCalledWith(
-        sdk,
+        artblocksClientContext,
         projectId,
         currentDate,
         [

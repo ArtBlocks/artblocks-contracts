@@ -311,7 +311,7 @@ describe("processProjectMinterConfigurationFormValuesForSubmission", () => {
 
     args.minterConfiguration.currency_address = generateRandomAddress();
     const mockReadContract = jest.fn();
-    args.sdk.publicClient = {
+    args.clientContext.publicClient = {
       readContract: mockReadContract,
     } as unknown as PublicClient;
 

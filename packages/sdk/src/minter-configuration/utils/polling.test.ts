@@ -2,8 +2,7 @@ import {
   pollForSyncedMinterConfigUpdates,
   pollForProjectUpdates,
 } from "./polling";
-import ArtBlocksSDK from "../..";
-import request from "graphql-request";
+import ArtBlocksClient, { ArtBlocksClientContext } from "../..";
 import { asyncPoll } from "../../utils/async-poll";
 
 jest.mock("graphql-request");
@@ -14,18 +13,22 @@ describe("polling", () => {
     jest.resetAllMocks();
   });
 
-  const sdk = new ArtBlocksSDK({
+  const artblocksClientContext = {
     publicClient: {} as any,
-    graphqlEndpoint: "https://test.com/graphql",
-    jwt: "fake-jwt",
-  });
+    graphqlClient: {
+      request: jest.fn(),
+    },
+    userIsStaff: false,
+  } as unknown as ArtBlocksClientContext;
   const projectId = "test-project-id";
   const transactionConfirmedAt = new Date();
   const updateProperties = ["property1", "property2"];
 
   describe("pollForSyncedMinterConfigUpdates", () => {
     it("should poll for synced minter config updates", async () => {
-      (request as jest.Mock).mockResolvedValue({
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValue({
         projects_metadata_by_pk: {
           minter_configuration: {
             properties_updated_at: {
@@ -40,19 +43,21 @@ describe("polling", () => {
       });
 
       await pollForSyncedMinterConfigUpdates(
-        sdk,
+        artblocksClientContext,
         projectId,
         transactionConfirmedAt,
         updateProperties
       );
 
-      expect(request).toHaveBeenCalled();
+      expect(artblocksClientContext.graphqlClient.request).toHaveBeenCalled();
       expect(asyncPoll).toHaveBeenCalled();
     });
 
     it("should poll until the property is updated", async () => {
       // First call: the property is not updated yet
-      (request as jest.Mock).mockResolvedValueOnce({
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce({
         projects_metadata_by_pk: {
           minter_configuration: {
             properties_updated_at: {
@@ -65,7 +70,9 @@ describe("polling", () => {
       });
 
       // Second call: the property is updated
-      (request as jest.Mock).mockResolvedValueOnce({
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce({
         projects_metadata_by_pk: {
           minter_configuration: {
             properties_updated_at: {
@@ -84,20 +91,24 @@ describe("polling", () => {
       });
 
       await pollForSyncedMinterConfigUpdates(
-        sdk,
+        artblocksClientContext,
         projectId,
         transactionConfirmedAt,
         updateProperties
       );
 
       // Check that request was called twice
-      expect(request).toHaveBeenCalledTimes(2);
+      expect(
+        artblocksClientContext.graphqlClient.request
+      ).toHaveBeenCalledTimes(2);
       // Check that asyncPoll was called once
       expect(asyncPoll).toHaveBeenCalledTimes(1);
     });
 
     it("should throw an error if the project is not found", async () => {
-      (request as jest.Mock).mockResolvedValue({});
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValue({});
 
       (asyncPoll as jest.Mock).mockImplementation(async (callback) => {
         await callback();
@@ -105,7 +116,7 @@ describe("polling", () => {
 
       await expect(
         pollForSyncedMinterConfigUpdates(
-          sdk,
+          artblocksClientContext,
           projectId,
           transactionConfirmedAt,
           updateProperties
@@ -114,7 +125,9 @@ describe("polling", () => {
     });
 
     it("should throw an error if there is an API error", async () => {
-      (request as jest.Mock).mockRejectedValue(new Error("API error"));
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockRejectedValue(new Error("API error"));
 
       (asyncPoll as jest.Mock).mockImplementation(async (callback) => {
         await callback();
@@ -122,7 +135,7 @@ describe("polling", () => {
 
       await expect(
         pollForSyncedMinterConfigUpdates(
-          sdk,
+          artblocksClientContext,
           projectId,
           transactionConfirmedAt,
           updateProperties
@@ -133,7 +146,9 @@ describe("polling", () => {
 
   describe("pollForProjectUpdates", () => {
     it("should poll for project updates", async () => {
-      (request as jest.Mock).mockResolvedValue({
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValue({
         projects_metadata_by_pk: {
           properties_updated_at: {
             property1: new Date().toISOString(),
@@ -146,19 +161,21 @@ describe("polling", () => {
       });
 
       await pollForProjectUpdates(
-        sdk,
+        artblocksClientContext,
         projectId,
         transactionConfirmedAt,
         updateProperties
       );
 
-      expect(request).toHaveBeenCalled();
+      expect(artblocksClientContext.graphqlClient.request).toHaveBeenCalled();
       expect(asyncPoll).toHaveBeenCalled();
     });
 
     it("should poll until the property is updated", async () => {
       // First call: the property is not updated yet
-      (request as jest.Mock).mockResolvedValueOnce({
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce({
         projects_metadata_by_pk: {
           properties_updated_at: {
             property1: new Date(
@@ -169,7 +186,9 @@ describe("polling", () => {
       });
 
       // Second call: the property is updated
-      (request as jest.Mock).mockResolvedValueOnce({
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce({
         projects_metadata_by_pk: {
           properties_updated_at: {
             property1: new Date(
@@ -186,20 +205,24 @@ describe("polling", () => {
       });
 
       await pollForProjectUpdates(
-        sdk,
+        artblocksClientContext,
         projectId,
         transactionConfirmedAt,
         updateProperties
       );
 
       // Check that request was called twice
-      expect(request).toHaveBeenCalledTimes(2);
+      expect(
+        artblocksClientContext.graphqlClient.request
+      ).toHaveBeenCalledTimes(2);
       // Check that asyncPoll was called once
       expect(asyncPoll).toHaveBeenCalledTimes(1);
     });
 
     it("should throw an error if the project is not found", async () => {
-      (request as jest.Mock).mockResolvedValue({});
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValue({});
 
       (asyncPoll as jest.Mock).mockImplementation(async (callback) => {
         await callback();
@@ -207,7 +230,7 @@ describe("polling", () => {
 
       await expect(
         pollForProjectUpdates(
-          sdk,
+          artblocksClientContext,
           projectId,
           transactionConfirmedAt,
           updateProperties
@@ -216,7 +239,9 @@ describe("polling", () => {
     });
 
     it("should throw an error if there is an API error", async () => {
-      (request as jest.Mock).mockRejectedValue(new Error("API error"));
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockRejectedValue(new Error("API error"));
 
       (asyncPoll as jest.Mock).mockImplementation(async (callback) => {
         await callback();
@@ -224,7 +249,7 @@ describe("polling", () => {
 
       await expect(
         pollForProjectUpdates(
-          sdk,
+          artblocksClientContext,
           projectId,
           transactionConfirmedAt,
           updateProperties

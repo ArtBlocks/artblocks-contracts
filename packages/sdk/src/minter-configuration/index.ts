@@ -1,5 +1,4 @@
 // Third-party dependencies
-import request from "graphql-request";
 import { Abi, Hex, WalletClient } from "viem";
 import get from "lodash/get";
 
@@ -56,21 +55,18 @@ export async function generateProjectMinterConfigurationForms(
   data: GetProjectMinterConfigurationQuery["projects_metadata_by_pk"];
   forms: FormBlueprint[];
 }> {
-  const { projectId, sdk } = args;
+  const { projectId, clientContext } = args;
   const [coreContractAddress, projectIndexString] = projectId.split("-");
   const projectIndex = Number(projectIndexString);
 
   // Get current minter configuration details from the database
-  const res = await request(
-    sdk.graphqlEndpoint,
+  const res = await clientContext.graphqlClient.request(
     getProjectMinterConfigurationQueryDocument,
     {
       projectId,
-    },
-    {
-      Authorization: `Bearer ${sdk.jwt}`,
     }
   );
+
   const project = res.projects_metadata_by_pk;
 
   if (!project) {
@@ -84,7 +80,7 @@ export async function generateProjectMinterConfigurationForms(
   }
 
   const allowedPrivilegedRolesForProject = getAllowedPrivilegedRoles(
-    sdk.userIsStaff,
+    clientContext.userIsStaff,
     project.contract.user_is_allowlisted ?? false,
     project.user_is_artist ?? false
   );
@@ -137,7 +133,7 @@ export async function generateProjectMinterConfigurationForms(
 
 // Form to choose a minter
 async function generateSelectMinterForm({
-  sdk,
+  clientContext,
   project,
   projectId,
   projectIndex,
@@ -184,7 +180,7 @@ async function generateSelectMinterForm({
     initialFormValues: await getInitialMinterConfigurationValuesForFormField(
       minterSelectionFormSchemaWithMinters,
       minterConfiguration ?? null,
-      sdk.publicClient
+      clientContext.publicClient
     ),
     zodSchema: formFieldSchemaToZod(minterSelectionFormSchemaWithMinters),
     handleSubmit: async (
@@ -220,7 +216,7 @@ async function generateSelectMinterForm({
 
       // Submit the transaction
       const { blockHash } = await submitTransaction({
-        publicClient: sdk.publicClient,
+        publicClient: clientContext.publicClient,
         walletClient,
         address: minterFilterAddress,
         abi: minterSelectionFormSchemaWithMinters.transactionDetails.abi as Abi,
@@ -237,18 +233,23 @@ async function generateSelectMinterForm({
       onProgress?.(SubmissionStatusEnum.SYNCING);
 
       // Get block confirmation timestamp
-      const { timestamp } = await sdk.publicClient.getBlock({ blockHash });
+      const { timestamp } = await clientContext.publicClient.getBlock({
+        blockHash,
+      });
       const transactionConfirmedAt = new Date(Number(timestamp) * 1000);
 
       // Poll for updates to the configuration, this will return
       // when the minter_address column has been updated to a
       // time after the transaction was confirmed
-      await pollForProjectUpdates(sdk, projectId, transactionConfirmedAt, [
-        "minter_configuration_id",
-      ]);
+      await pollForProjectUpdates(
+        clientContext,
+        projectId,
+        transactionConfirmedAt,
+        ["minter_configuration_id"]
+      );
 
       const updatedForms = await generateProjectMinterConfigurationForms({
-        sdk,
+        clientContext,
         onConfigurationChange,
         projectId,
       });
@@ -273,7 +274,7 @@ async function generateMinterForm(
   args: GenerateMinterFormArgs
 ): Promise<FormBlueprint> {
   const {
-    sdk,
+    clientContext,
     key,
     projectId,
     formSchema,
@@ -289,7 +290,7 @@ async function generateMinterForm(
     await getInitialMinterConfigurationValuesForFormField(
       processedFormSchema,
       minterConfiguration,
-      sdk.publicClient
+      clientContext.publicClient
     );
 
   return {
@@ -332,7 +333,7 @@ async function generateMinterForm(
       );
 
       const { blockHash } = await submitTransaction({
-        publicClient: sdk.publicClient,
+        publicClient: clientContext.publicClient,
         walletClient,
         address: minterConfiguration.minter.address as `0x${string}`,
         abi: transactionDetails.abi as Abi,
@@ -346,7 +347,9 @@ async function generateMinterForm(
       onProgress?.(SubmissionStatusEnum.SYNCING);
 
       // Get block confirmation timestamp
-      const { timestamp } = await sdk.publicClient.getBlock({ blockHash });
+      const { timestamp } = await clientContext.publicClient.getBlock({
+        blockHash,
+      });
       const transactionConfirmedAt = new Date(Number(timestamp) * 1000);
 
       const expectedUpdates =
@@ -354,7 +357,7 @@ async function generateMinterForm(
 
       // Poll for updates to the configuration
       await pollForSyncedMinterConfigUpdates(
-        sdk,
+        clientContext,
         projectId,
         transactionConfirmedAt,
         expectedUpdates

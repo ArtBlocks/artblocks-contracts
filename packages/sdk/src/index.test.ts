@@ -1,35 +1,41 @@
-import ArtBlocksSDK from "./index";
+import ArtBlocksClient from "./index";
 import { PublicClient } from "viem";
 import { generateProjectMinterConfigurationForms } from "./minter-configuration";
 import { FormBlueprint } from "./types";
+import { GraphQLClient } from "graphql-request";
 
 // Mocking the external dependencies
 jest.mock("./minter-configuration", () => ({
   generateProjectMinterConfigurationForms: jest.fn(),
 }));
 
-describe("ArtBlocksSDK", () => {
-  let sdk: ArtBlocksSDK;
+describe("ArtBlocksClient", () => {
+  let abClient: ArtBlocksClient;
   const mockPublicClient = {} as PublicClient; // Mock as needed
   const graphqlEndpoint = "https://test.graphql.endpoint";
   const jwt = "test-jwt";
 
   beforeEach(() => {
-    sdk = new ArtBlocksSDK({
+    abClient = new ArtBlocksClient({
       publicClient: mockPublicClient,
       graphqlEndpoint,
-      jwt,
+      authToken: jwt,
     });
   });
 
   describe("constructor", () => {
     it("initializes with the correct properties", () => {
-      expect(sdk.publicClient).toBe(mockPublicClient);
-      expect(sdk.graphqlEndpoint).toBe(graphqlEndpoint);
-      expect(sdk.jwt).toBe(jwt);
-      // Assuming the constructor does something with the jwt to determine if the user is staff
-      // This is a simplified example. Adjust according to your actual jwt parsing logic.
-      expect(sdk.userIsStaff).toBe(false); // or true, based on your jwt mock
+      expect(abClient.context.publicClient).toBe(mockPublicClient);
+      expect(abClient.context.userIsStaff).toBe(false);
+
+      const headers =
+        typeof abClient.context.graphqlClient.requestConfig.headers ===
+        "function"
+          ? abClient.context.graphqlClient.requestConfig.headers()
+          : abClient.context.graphqlClient.requestConfig.headers;
+      expect(abClient.context.graphqlClient).toBeInstanceOf(GraphQLClient);
+      expect((abClient.context.graphqlClient as any).url).toBe(graphqlEndpoint);
+      expect(headers).toHaveProperty("Authorization", `Bearer ${jwt}`);
     });
   });
 
@@ -43,12 +49,13 @@ describe("ArtBlocksSDK", () => {
         data: mockData,
       });
 
-      const config = await sdk.getProjectMinterConfiguration(projectId);
+      const config =
+        await abClient.getProjectMinterConfigurationContext(projectId);
 
       expect(generateProjectMinterConfigurationForms).toHaveBeenCalledWith({
         projectId,
         onConfigurationChange: expect.any(Function),
-        sdk,
+        clientContext: abClient.context,
       });
       expect(config.data).toBe(mockData);
       expect(config.forms).toBe(mockForms);
@@ -72,7 +79,8 @@ describe("ArtBlocksSDK", () => {
     });
 
     it("correctly subscribes and notifies subscribers of configuration changes", async () => {
-      const config = await sdk.getProjectMinterConfiguration(projectId);
+      const config =
+        await abClient.getProjectMinterConfigurationContext(projectId);
       const subscriberMock = jest.fn();
 
       // Subscribe
@@ -89,7 +97,8 @@ describe("ArtBlocksSDK", () => {
     });
 
     it("allows subscribers to unsubscribe", async () => {
-      const config = await sdk.getProjectMinterConfiguration(projectId);
+      const config =
+        await abClient.getProjectMinterConfigurationContext(projectId);
       const subscriberMock = jest.fn();
 
       // Subscribe and then immediately unsubscribe
@@ -104,7 +113,8 @@ describe("ArtBlocksSDK", () => {
     });
 
     it("handles multiple subscribers", async () => {
-      const config = await sdk.getProjectMinterConfiguration(projectId);
+      const config =
+        await abClient.getProjectMinterConfigurationContext(projectId);
       const firstSubscriberMock = jest.fn();
       const secondSubscriberMock = jest.fn();
 

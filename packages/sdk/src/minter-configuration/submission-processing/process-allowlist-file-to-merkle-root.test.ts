@@ -43,7 +43,9 @@ describe("processAllowlistFileToMerkleRoot", () => {
     const fakeFileList = dataTransfer.files;
 
     // Mock the graphql request to get the url to upload the list to s3
-    (graphqlRequest.request as jest.Mock).mockResolvedValueOnce({
+    (
+      args.clientContext.graphqlClient.request as jest.Mock
+    ).mockResolvedValueOnce({
       getAllowlistUploadUrl: { key: "fake-key", url: "fake-url" },
     });
 
@@ -57,19 +59,17 @@ describe("processAllowlistFileToMerkleRoot", () => {
 
     // Mock the graphql request to update offchain_extra_minter_details
     // with the expected merkle root and s3 file url
-    (graphqlRequest.request as jest.Mock).mockResolvedValueOnce({});
+    (
+      args.clientContext.graphqlClient.request as jest.Mock
+    ).mockResolvedValueOnce({});
 
     const result = await processAllowlistFileToMerkleRoot(fakeFileList, args);
 
     // Request for the signed s3 upload url
-    expect(graphqlRequest.request).toHaveBeenCalledWith(
-      args.sdk.graphqlEndpoint,
+    expect(args.clientContext.graphqlClient.request).toHaveBeenCalledWith(
       getAllowlistUploadUrlQueryDocument,
       {
         projectId: args.projectId,
-      },
-      {
-        Authorization: `Bearer ${args.sdk.jwt}`,
       }
     );
 
@@ -90,8 +90,7 @@ describe("processAllowlistFileToMerkleRoot", () => {
     });
 
     // Update the offchain_extra_minter_details with the merkle root and s3 url
-    expect(graphqlRequest.request).toHaveBeenCalledWith(
-      args.sdk.graphqlEndpoint,
+    expect(args.clientContext.graphqlClient.request).toHaveBeenCalledWith(
       updateOffChainExtraMinterDetailsMutationDocument,
       {
         projectMinterConfigId: args.minterConfiguration.id,
@@ -102,12 +101,11 @@ describe("processAllowlistFileToMerkleRoot", () => {
       },
       {
         "x-hasura-role": "staff",
-        Authorization: `Bearer ${args.sdk.jwt}`,
       }
     );
 
     expect(result).toEqual("fake-merkle-root");
-    expect(graphqlRequest.request).toHaveBeenCalledTimes(2);
+    expect(args.clientContext.graphqlClient.request).toHaveBeenCalledTimes(2);
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
@@ -148,7 +146,9 @@ describe("processAllowlistFileToMerkleRoot", () => {
 
     // Mock the graphql request to get the url to upload the list to s3
     // but return an unexpected response (i.e. no key or url)
-    (graphqlRequest.request as jest.Mock).mockResolvedValueOnce({});
+    (
+      args.clientContext.graphqlClient.request as jest.Mock
+    ).mockResolvedValueOnce({});
 
     await expect(
       processAllowlistFileToMerkleRoot(fakeFileList, args)
@@ -168,7 +168,9 @@ describe("processAllowlistFileToMerkleRoot", () => {
       "fake-merkle-root"
     );
 
-    (graphqlRequest.request as jest.Mock).mockResolvedValueOnce({
+    (
+      args.clientContext.graphqlClient.request as jest.Mock
+    ).mockResolvedValueOnce({
       getAllowlistUploadUrl: { key: "fake-key", url: "fake-url" },
     });
 

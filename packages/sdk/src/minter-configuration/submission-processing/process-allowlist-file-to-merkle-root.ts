@@ -1,4 +1,3 @@
-import request from "graphql-request";
 import {
   getMerkleRoot,
   readFileAsText,
@@ -25,13 +24,11 @@ export async function processAllowlistFileToMerkleRoot(
   args: TransformProjectMinterConfigurationFormValuesArgs
 ): Promise<string> {
   const {
-    sdk,
+    clientContext,
     projectId,
     minterConfiguration,
     allowedPrivilegedRolesForProject,
   } = args;
-
-  const bearerToken = `Bearer ${sdk.jwt}`;
 
   // Expect the form value to be a FileList
   if (!(value instanceof FileList && value.length > 0)) {
@@ -55,14 +52,10 @@ export async function processAllowlistFileToMerkleRoot(
   const allowlist = textOrCsvAddressListToArray(allowlistFileText);
 
   // Get upload signed s3 upload url for allowlist file
-  const getAllowlistUploadUrlRes = await request(
-    sdk.graphqlEndpoint,
+  const getAllowlistUploadUrlRes = await clientContext.graphqlClient.request(
     getAllowlistUploadUrlQueryDocument,
     {
       projectId,
-    },
-    {
-      Authorization: bearerToken,
     }
   );
 
@@ -101,8 +94,7 @@ export async function processAllowlistFileToMerkleRoot(
   // we can confirm the synced merkle root matches the merkle root we generated
   // from the pending list.
   // TODO: Handle error if the mutation fails
-  await request(
-    sdk.graphqlEndpoint,
+  await clientContext.graphqlClient.request(
     updateOffChainExtraMinterDetailsMutationDocument,
     {
       projectMinterConfigId: minterConfiguration.id,
@@ -123,7 +115,6 @@ export async function processAllowlistFileToMerkleRoot(
           return "base_user";
         }
       })(),
-      Authorization: bearerToken,
     }
   );
 
