@@ -12,10 +12,10 @@ import "./IGenArt721CoreContractV3_Base.sol";
  * @param tokenSymbol Token symbol.
  * @param renderProviderAddress address to send render provider revenue to
  * @param randomizerContract Randomizer contract.
+ * @param splitProviderAddress Address to use as royalty splitter provider for the contract.
  * @param startingProjectId The initial next project ID.
  * @param autoApproveArtistSplitProposals Whether or not to always
  * auto-approve proposed artist split updates.
- * @param splitProviderAddress Address to use as royalty splitter provider for the contract.
  * @param nullPlatformProvider Enforce always setting zero platform provider fees and addresses.
  * @param allowArtistProjectActivation Allow artist to activate their own projects.
  * @dev _startingProjectId should be set to a value much, much less than
@@ -30,9 +30,9 @@ struct EngineConfiguration {
     address platformProviderAddress;
     address newSuperAdminAddress;
     address randomizerContract;
+    address splitProviderAddress;
     uint248 startingProjectId;
     bool autoApproveArtistSplitProposals;
-    address splitProviderAddress;
     bool nullPlatformProvider;
     bool allowArtistProjectActivation;
 }
