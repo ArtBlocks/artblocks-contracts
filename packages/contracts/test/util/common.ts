@@ -221,8 +221,7 @@ export const GENART721_ERROR_CODES = {
   AspectRatioTooLong: 33,
   AspectRatioNoNumbers: 34,
   AspectRatioImproperFormat: 35,
-  InvalidSplitProvider: 36,
-  NullPlatformProvider: 37,
+  NullPlatformProvider: 36,
 };
 
 export async function getAccounts(): Promise<TestAccountsArtBlocks> {
