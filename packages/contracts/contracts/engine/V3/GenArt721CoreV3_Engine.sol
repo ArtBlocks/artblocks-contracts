@@ -14,7 +14,6 @@ import {ISplitProviderV0} from "../../interfaces/v0.8.x/ISplitProviderV0.sol";
 
 import "@openzeppelin-5.0/contracts/utils/Strings.sol";
 import "@openzeppelin-5.0/contracts/access/Ownable.sol";
-import {ERC165Checker} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165Checker.sol";
 import {IERC2981} from "@openzeppelin-5.0/contracts/interfaces/IERC2981.sol";
 import "../../libs/v0.8.x/ERC721_PackedHashSeedV1.sol";
 import "../../libs/v0.8.x/BytecodeStorageV2.sol";
@@ -170,7 +169,8 @@ contract GenArt721CoreV3_Engine is
     //  * @param _projectId Project to be queried
     //  * @return projectFinance ProjectFinance struct for project `_projectId`
     //  */
-    mapping(uint256 _projectId => ProjectFinance) public _projectIdToFinancials;
+    mapping(uint256 _projectId => ProjectFinance)
+        private _projectIdToFinancials;
 
     /// hash of artist's proposed payment updates to be approved by admin
     mapping(uint256 => bytes32) public proposedArtistAddressesAndSplitsHash;
@@ -758,8 +758,7 @@ contract GenArt721CoreV3_Engine is
 
     /**
      * @notice Updates split provider address to `_splitProviderAddress`.
-     * Reverts if `_splitProviderAddress` does not indicate ERC165 support
-     * for the getOrCreateSplitter function selector defined in ISplitProviderV0.
+     * Reverts if `_splitProviderAddress` is zero address.
      * @param _splitProviderAddress New split provider address.
      */
     function updateSplitProvider(address _splitProviderAddress) external {
@@ -2245,24 +2244,15 @@ contract GenArt721CoreV3_Engine is
 
     /**
      * @notice Updates split provider address to `_splitProviderAddress`.
-     * Reverts if the input address does not broadcast ERC165 support the
-     * getOrCreateSplitter function defined in ISplitProviderV0.
+     * Reverts if `_splitProviderAddress` is the zero address.
      * @param _splitProviderAddress New split provider address.
      * @dev Note that this method does not check that the input address is
      * not `address(0)`, as it is expected that callers of this method should
      * perform input validation where applicable.
      */
     function _updateSplitProvider(address _splitProviderAddress) internal {
-        // require new split provider broadcast ERC165 support of
-        // getOrCreateSplitter function as defined in ISplitProviderV0
-        if (
-            !ERC165Checker.supportsInterface(
-                _splitProviderAddress,
-                ISplitProviderV0.getOrCreateSplitter.selector
-            )
-        ) {
-            revert GenArt721Error(ErrorCodes.InvalidSplitProvider);
-        }
+        // require non-zero split provider address
+        _onlyNonZeroAddress(_splitProviderAddress);
         splitProvider = ISplitProviderV0(_splitProviderAddress);
         emit PlatformUpdated(
             bytes32(uint256(PlatformUpdatedFields.FIELD_SPLIT_PROVIDER))
