@@ -160,12 +160,8 @@ contract GenArt721CoreV3_Engine is
 
     mapping(uint256 => Project) projects;
 
-    // /**
-    //  * @notice Returns all project finance information for project `_projectId`.
-    //  * @dev use public mapping due to bytecode size optimization (saves ~0.2 kb)
-    //  * @param _projectId Project to be queried
-    //  * @return projectFinance ProjectFinance struct for project `_projectId`
-    //  */
+    /// private mapping from project ID to project financial information. See
+    /// `projectIdToFinancials` getter for public access.
     mapping(uint256 _projectId => ProjectFinance)
         private _projectIdToFinancials;
 
