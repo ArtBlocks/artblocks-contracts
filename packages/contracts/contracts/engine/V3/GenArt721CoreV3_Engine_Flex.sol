@@ -190,22 +190,35 @@ contract GenArt721CoreV3_Engine_Flex is
     // packed uint: max of 100, max uint8 = 255
     uint8 private _platformProviderPrimarySalesPercentage = 10;
 
+    /// @dev Note on "default" provider secondary values - the only way these can
+    /// be different on a per project basis is if admin updates these and then
+    /// does not call syncProviderSecondaryForProjectToDefaults for the project.
+    /// -----------------------------------------------------------------------
     /// The default render provider payment address for all secondary sales royalty
     /// revenues, for all new projects. Individual project payment info is defined
     /// in each project's ProjectFinance struct.
+    /// Projects can be updated to this value by calling the
+    /// `syncProviderSecondaryForProjectToDefaults` function for each project.
     address payable public defaultRenderProviderSecondarySalesAddress;
     /// The default basis points allocated to render provider for all secondary
     /// sales royalty revenues, for all new projects. Individual project
     /// payment info is defined in each project's ProjectFinance struct.
+    /// Projects can be updated to this value by calling the
+    /// `syncProviderSecondaryForProjectToDefaults` function for each project.
     uint256 public defaultRenderProviderSecondarySalesBPS = 250;
     /// The default platform provider payment address for all secondary sales royalty
     /// revenues, for all new projects. Individual project payment info is defined
     /// in each project's ProjectFinance struct.
+    /// Projects can be updated to this value by calling the
+    /// `syncProviderSecondaryForProjectToDefaults` function for each project.
     address payable public defaultPlatformProviderSecondarySalesAddress;
     /// The default basis points allocated to platform provider for all secondary
     /// sales royalty revenues, for all new projects. Individual project
     /// payment info is defined in each project's ProjectFinance struct.
+    /// Projects can be updated to this value by calling the
+    /// `syncProviderSecondaryForProjectToDefaults` function for each project.
     uint256 public defaultPlatformProviderSecondarySalesBPS = 250;
+    /// -----------------------------------------------------------------------
 
     /// single minter allowed for this core contract
     address public minterContract;
