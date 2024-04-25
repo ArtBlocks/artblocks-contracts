@@ -12,9 +12,9 @@ import "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
 import {ISplitProviderV0} from "../../interfaces/v0.8.x/ISplitProviderV0.sol";
 
-import "@openzeppelin-4.7/contracts/access/Ownable.sol";
-import {ERC165Checker} from "@openzeppelin-4.7/contracts/utils/introspection/ERC165Checker.sol";
-import {IERC2981} from "@openzeppelin-4.7/contracts/interfaces/IERC2981.sol";
+import "@openzeppelin-5.0/contracts/access/Ownable.sol";
+import {ERC165Checker} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165Checker.sol";
+import {IERC2981} from "@openzeppelin-5.0/contracts/interfaces/IERC2981.sol";
 import "../../libs/v0.8.x/ERC721_PackedHashSeedV1.sol";
 import "../../libs/v0.8.x/BytecodeStorageV2.sol";
 import {V3FlexLib} from "../../libs/v0.8.x/V3FlexLib.sol";
@@ -268,6 +268,8 @@ contract GenArt721CoreV3_Engine_Flex is
     // royalty split provider
     ISplitProviderV0 public splitProvider;
 
+    constructor() Ownable(msg.sender) {}
+
     function _onlyNonZeroAddress(address _address) internal pure {
         if (_address == address(0)) {
             revert GenArt721Error(ErrorCodes.OnlyNonZeroAddress);
@@ -287,7 +289,7 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     function _onlyValidTokenId(uint256 _tokenId) internal view {
-        if (!_exists(_tokenId)) {
+        if (_ownerOf(_tokenId) == address(0)) {
             revert GenArt721Error(ErrorCodes.TokenDoesNotExist);
         }
     }
