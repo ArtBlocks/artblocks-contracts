@@ -101,6 +101,16 @@ export type T_Config = {
   weth?: Contract;
 };
 
+// type of arguments for V3PaymentProposal, V3 Engine
+export type T_V3PaymentProposalArgs = [
+  number,
+  string,
+  string,
+  number,
+  string,
+  number,
+];
+
 export const PLATFORM_UPDATED_FIELDS = {
   FIELD_NEXT_PROJECT_ID: ethers.utils.hexZeroPad(ethers.utils.hexlify(0), 32),
   FIELD_NEW_PROJECTS_FORBIDDEN: ethers.utils.hexZeroPad(

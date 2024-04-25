@@ -4,6 +4,7 @@ import { ethers } from "hardhat";
 
 import {
   T_Config,
+  T_V3PaymentProposalArgs,
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
@@ -12,6 +13,21 @@ import {
 } from "../../util/common";
 
 import { Mock0xSplitsV2Splitter } from "../../../scripts/contracts";
+
+import { GenArt721CoreV3_Engine } from "../../../scripts/contracts";
+import { GenArt721CoreV3_Engine_Flex } from "../../../scripts/contracts";
+import { SplitProviderV0 } from "../../../scripts/contracts";
+import { Contract } from "ethers";
+
+// extend T_Config to the configured settings for this test file
+interface GenArt721CoreV3_ProjectSplittersTestConfig extends T_Config {
+  genArt721Core: GenArt721CoreV3_Engine | GenArt721CoreV3_Engine_Flex;
+  splitProvider: SplitProviderV0;
+  randomizer: Contract;
+  adminACL: Contract;
+  projectZero: number;
+  projectTwo: number;
+}
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -23,7 +39,7 @@ const coreContractsToTest = [
  * Tests for V3 core dealing with configuring splitters on projects.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`${coreContractName} Project Configure`, async function () {
+  describe(`${coreContractName} Project Splitters`, async function () {
     async function _beforeEach() {
       let config: T_Config = {
         accounts: await getAccounts(),
@@ -73,7 +89,7 @@ for (const coreContractName of coreContractsToTest) {
       await config.minter
         .connect(config.accounts.artist)
         .updatePricePerTokenInWei(config.projectZero, 0);
-      return config;
+      return config as GenArt721CoreV3_ProjectSplittersTestConfig;
     }
 
     describe("splitter is created with appropriate splits", function () {
@@ -113,7 +129,7 @@ for (const coreContractName of coreContractsToTest) {
             10
           );
         // add additional payee receiving 40% of total artist royalty
-        const paymentArgs = [
+        const paymentArgs: T_V3PaymentProposalArgs = [
           config.projectZero,
           config.accounts.artist.address,
           constants.ZERO_ADDRESS, // primary
@@ -177,7 +193,7 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist)
           .updateProjectSecondaryMarketRoyaltyPercentage(config.projectZero, 1);
         // add additional payee receiving 40% of total artist royalty
-        const paymentArgs = [
+        const paymentArgs: T_V3PaymentProposalArgs = [
           config.projectZero,
           config.accounts.artist.address,
           constants.ZERO_ADDRESS, // primary
@@ -230,7 +246,7 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist)
           .updateProjectSecondaryMarketRoyaltyPercentage(config.projectZero, 0);
         // add additional payee receiving 40% of total artist royalty
-        const paymentArgs = [
+        const paymentArgs: T_V3PaymentProposalArgs = [
           config.projectZero,
           config.accounts.artist.address,
           constants.ZERO_ADDRESS, // primary
@@ -338,7 +354,7 @@ for (const coreContractName of coreContractsToTest) {
         const initialSplitterAddress = projectFinance.royaltySplitter;
         expect(initialSplitterAddress).to.not.equal(constants.ZERO_ADDRESS);
         // update artist payment info for project zero, auto-approved
-        const paymentArgs = [
+        const paymentArgs: T_V3PaymentProposalArgs = [
           config.projectZero,
           config.accounts.artist.address,
           constants.ZERO_ADDRESS, // primary
@@ -378,7 +394,7 @@ for (const coreContractName of coreContractsToTest) {
       it("updates splitter upon admin approval in proposeArtistPaymentAddressesAndSplits", async function () {
         const config = await _beforeEach();
         // update artist payment info for project zero, not auto-approved
-        const paymentArgs = [
+        const paymentArgs: T_V3PaymentProposalArgs = [
           config.projectZero,
           config.accounts.artist.address,
           constants.ZERO_ADDRESS, // primary
@@ -566,7 +582,7 @@ for (const coreContractName of coreContractsToTest) {
         const initialSplitterAddress = projectFinance.royaltySplitter;
         expect(initialSplitterAddress).to.not.equal(constants.ZERO_ADDRESS);
         // update artist payment info for project zero, not auto-approved
-        const paymentArgs = [
+        const paymentArgs: T_V3PaymentProposalArgs = [
           config.projectZero,
           config.accounts.artist.address,
           constants.ZERO_ADDRESS, // primary
@@ -578,7 +594,7 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist)
           .proposeArtistPaymentAddressesAndSplits(...paymentArgs);
         // get new project zero splitter
-        let projectFinance = await config.genArt721Core.projectIdToFinancials(
+        projectFinance = await config.genArt721Core.projectIdToFinancials(
           config.projectZero
         );
         const newSplitterAddress = projectFinance.royaltySplitter;
