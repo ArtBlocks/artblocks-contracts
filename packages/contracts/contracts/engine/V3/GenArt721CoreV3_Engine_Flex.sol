@@ -230,7 +230,7 @@ contract GenArt721CoreV3_Engine_Flex is
     bool public immutable autoApproveArtistSplitProposals;
 
     /// version & type of this core contract
-    bytes32 constant CORE_VERSION = "v3.2.5";
+    bytes32 constant CORE_VERSION = "v3.2.1";
 
     function coreVersion() external pure returns (string memory) {
         return CORE_VERSION.toString();
@@ -1134,7 +1134,7 @@ contract GenArt721CoreV3_Engine_Flex is
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION_UINT24;
         projects[projectId].projectBaseURI = defaultBaseURI;
-        // assign default artist royalty of 5% to artist
+        // assign default artist royalty to artist
         projectFinance
             .secondaryMarketRoyaltyPercentage = _DEFAULT_ARTIST_SECONDARY_ROYALTY_PERCENTAGE;
         // copy default platform and render provider royalties to ProjectFinance
@@ -1232,26 +1232,26 @@ contract GenArt721CoreV3_Engine_Flex is
 
     /**
      * @notice Updates artist secondary market royalties for project
-     * `_projectId` to be `_secondMarketRoyalty` percent.
+     * `_projectId` to be `_secondaryMarketRoyalty` percent.
      * This deploys a new splitter contract if needed.
      * This DOES NOT include the secondary market royalty percentages collected
      * by the issuing platform; it is only the total percentage of royalties
      * that will be split to artist and additionalSecondaryPayee.
      * @param _projectId Project ID.
-     * @param _secondMarketRoyalty Percent of secondary sales revenue that will
+     * @param _secondaryMarketRoyalty Percent of secondary sales revenue that will
      * be split to artist and additionalSecondaryPayee. This must be less than
      * or equal to ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent.
      */
     function updateProjectSecondaryMarketRoyaltyPercentage(
         uint256 _projectId,
-        uint256 _secondMarketRoyalty
+        uint256 _secondaryMarketRoyalty
     ) external {
         _onlyArtist(_projectId);
-        if (_secondMarketRoyalty > ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE) {
+        if (_secondaryMarketRoyalty > ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE) {
             revert GenArt721Error(ErrorCodes.OverMaxSecondaryRoyaltyPercentage);
         }
         _projectIdToFinancials[_projectId]
-            .secondaryMarketRoyaltyPercentage = uint8(_secondMarketRoyalty);
+            .secondaryMarketRoyaltyPercentage = uint8(_secondaryMarketRoyalty);
 
         // assign project's splitter
         // @dev only call after all previous storage updates
