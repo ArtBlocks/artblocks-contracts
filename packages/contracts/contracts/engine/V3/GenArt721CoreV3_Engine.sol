@@ -283,7 +283,16 @@ contract GenArt721CoreV3_Engine is
     // royalty split provider
     ISplitProviderV0 public splitProvider;
 
-    constructor() Ownable(msg.sender) {}
+    /**
+     * @dev This constructor sets the owner to a non-functional address as a formality.
+     * It is only ever ran on the implementation contract. The `Ownable` constructor is
+     * called to satisfy the contract's inheritance requirements. This owner has no
+     * operational significance and should not be considered secure or meaningful.
+     * The true ownership will be set in the `initialize` function post-deployment to
+     * ensure correct owner management in the proxy architecture.
+     * Explicitly setting the owner to '0xdead' to indicate non-operational use.
+     */
+    constructor() Ownable(0x000000000000000000000000000000000000dEaD) {}
 
     function _onlyNonZeroAddress(address _address) internal pure {
         if (_address == address(0)) {
