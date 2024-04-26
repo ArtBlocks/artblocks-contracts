@@ -523,6 +523,30 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
+     * @notice Updates external asset dependency for project `_projectId` at
+     * index `_index`, with data at BytecodeStorage-compatible address
+     * `_assetAddress`.
+     * @param _projectId Project to be updated.
+     * @param _index Asset index.
+     * @param _assetAddress Address of the on-chain asset.
+     */
+    function UpdateProjectAssetDependencyOnChainAtAddress(
+        uint256 _projectId,
+        uint256 _index,
+        address _assetAddress
+    ) external {
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.UpdateProjectAssetDependencyOnChainAtAddress.selector
+        );
+        V3FlexLib.UpdateProjectAssetDependencyOnChainAtAddress({
+            _projectId: _projectId,
+            _index: _index,
+            _assetAddress: _assetAddress
+        });
+    }
+
+    /**
      * @notice Removes external asset dependency for project `_projectId` at index `_index`.
      * Removal is done by swapping the element to be removed with the last element in the array, then deleting this last element.
      * Assets with indices higher than `_index` can have their indices adjusted as a result of this operation.
@@ -565,6 +589,27 @@ contract GenArt721CoreV3_Engine_Flex is
             _projectId: _projectId,
             _cidOrData: _cidOrData,
             _dependencyType: _dependencyType
+        });
+    }
+
+    /**
+     * @notice Adds an on-chain external asset dependency for project
+     * `_projectId`, with data at BytecodeStorage-compatible address
+     * `_assetAddress`.
+     * @param _projectId Project to be updated.
+     * @param _assetAddress Address of the BytecodeStorageReader-compatible on-chain asset.
+     */
+    function addProjectAssetDependencyOnChainAtAddress(
+        uint256 _projectId,
+        address _assetAddress
+    ) external {
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.addProjectAssetDependencyOnChainAtAddress.selector
+        );
+        V3FlexLib.addProjectAssetDependencyOnChainAtAddress({
+            _projectId: _projectId,
+            _assetAddress: _assetAddress
         });
     }
 

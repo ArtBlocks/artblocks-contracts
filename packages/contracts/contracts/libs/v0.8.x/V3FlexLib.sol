@@ -189,6 +189,50 @@ library V3FlexLib {
     }
 
     /**
+     * @notice Updates external asset dependency for project `_projectId` at
+     * index `_index`, with data at BytecodeStorage-compatible address
+     * `_assetAddress`.
+     * @param _projectId Project to be updated.
+     * @param _index Asset index.
+     * @param _assetAddress Address of the on-chain asset.
+     */
+    function UpdateProjectAssetDependencyOnChainAtAddress(
+        uint256 _projectId,
+        uint256 _index,
+        address _assetAddress
+    ) external {
+        // CHECKS
+        FlexProjectData storage flexProjectData = getFlexProjectData(
+            _projectId
+        );
+        _onlyUnlockedProjectExternalAssetDependencies(flexProjectData);
+        uint24 assetCount = flexProjectData.externalAssetDependencyCount;
+        require(_index < assetCount, "Asset index out of range");
+
+        // EFFECTS
+        // overwrite the relevant fields of the previous asset
+        IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependency
+            storage currentDependency = flexProjectData
+                .externalAssetDependencies[_index];
+        currentDependency.cid = "";
+        currentDependency.dependencyType = IGenArt721CoreContractV3_Engine_Flex
+            .ExternalAssetDependencyType
+            .ONCHAIN;
+        currentDependency.bytecodeAddress = _assetAddress;
+
+        // emit the event
+        emit ExternalAssetDependencyUpdated({
+            _projectId: _projectId,
+            _index: _index,
+            _cid: "",
+            _dependencyType: IGenArt721CoreContractV3_Engine_Flex
+                .ExternalAssetDependencyType
+                .ONCHAIN,
+            _externalAssetDependencyCount: assetCount
+        });
+    }
+
+    /**
      * @notice Removes external asset dependency for project `_projectId` at index `_index`.
      * Removal is done by swapping the element to be removed with the last element in the array, then deleting this last element.
      * Assets with indices higher than `_index` can have their indices adjusted as a result of this operation.
@@ -269,6 +313,47 @@ library V3FlexLib {
             _dependencyType,
             assetCount + 1
         );
+    }
+
+    /**
+     * @notice Adds an on-chain external asset dependency for project
+     * `_projectId`, with data at BytecodeStorage-compatible address
+     * `_assetAddress`.
+     * @param _projectId Project to be updated.
+     * @param _assetAddress  Address of the BytecodeStorageReader-compatible on-chain asset.
+     */
+    function addProjectAssetDependencyOnChainAtAddress(
+        uint256 _projectId,
+        address _assetAddress
+    ) external {
+        FlexProjectData storage flexProjectData = getFlexProjectData(
+            _projectId
+        );
+        _onlyUnlockedProjectExternalAssetDependencies(flexProjectData);
+
+        // assign the asset address to the bytecodeAddress directly
+        uint24 assetCount = flexProjectData.externalAssetDependencyCount;
+        flexProjectData.externalAssetDependencies[
+            assetCount
+        ] = IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependency({
+            cid: "",
+            dependencyType: IGenArt721CoreContractV3_Engine_Flex
+                .ExternalAssetDependencyType
+                .ONCHAIN,
+            bytecodeAddress: _assetAddress
+        });
+        // increment the asset count
+        flexProjectData.externalAssetDependencyCount = assetCount + 1;
+        // emit event indicating the asset has been added
+        emit ExternalAssetDependencyUpdated({
+            _projectId: _projectId,
+            _index: assetCount,
+            _cid: "",
+            _dependencyType: IGenArt721CoreContractV3_Engine_Flex
+                .ExternalAssetDependencyType
+                .ONCHAIN,
+            _externalAssetDependencyCount: assetCount + 1
+        });
     }
 
     /**
