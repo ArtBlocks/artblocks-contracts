@@ -21,6 +21,17 @@ interface IGenArt721CoreContractV3_Base {
     // be introspected by indexers due to the design of this smart contract
     // exposing these state changes via publicly viewable fields.
 
+    /**
+     * @notice Project's royalty splitter was updated to `_splitter`.
+     * @dev New event in v3.2
+     * @param projectId The project ID.
+     * @param royaltySplitter The new splitter address to receive royalties.
+     */
+    event ProjectRoyaltySplitterUpdated(
+        uint256 indexed projectId,
+        address indexed royaltySplitter
+    );
+
     // The following fields are used to indicate which contract-level parameter
     // has been updated in the `PlatformUpdated` event:
     // @dev only append to the end of this enum in the case of future updates

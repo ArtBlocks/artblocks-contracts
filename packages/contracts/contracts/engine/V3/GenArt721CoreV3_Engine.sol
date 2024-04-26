@@ -7,7 +7,6 @@ import "../../interfaces/v0.8.x/IRandomizer_V3CoreBase.sol";
 import "../../interfaces/v0.8.x/IAdminACLV0.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import {IGenArt721CoreContractV3_ProjectFinance} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_ProjectFinance.sol";
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_RoyaltySplitters.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
 import {ISplitProviderV0} from "../../interfaces/v0.8.x/ISplitProviderV0.sol";
@@ -102,8 +101,7 @@ contract GenArt721CoreV3_Engine is
     IDependencyRegistryCompatibleV0,
     IGenArt721CoreContractV3_Engine,
     IGenArt721CoreContractV3_ProjectFinance,
-    IGenArt721CoreContractExposesHashSeed,
-    IGenArt721CoreContractV3_RoyaltySplitters
+    IGenArt721CoreContractExposesHashSeed
 {
     using BytecodeStorageWriter for string;
     using BytecodeStorageWriter for bytes;
@@ -163,12 +161,8 @@ contract GenArt721CoreV3_Engine is
 
     mapping(uint256 => Project) projects;
 
-    // /**
-    //  * @notice Returns all project finance information for project `_projectId`.
-    //  * @dev use public mapping due to bytecode size optimization (saves ~0.2 kb)
-    //  * @param _projectId Project to be queried
-    //  * @return projectFinance ProjectFinance struct for project `_projectId`
-    //  */
+    /// private mapping from project ID to project financial information. See
+    /// `projectIdToFinancials` getter for public access.
     mapping(uint256 _projectId => ProjectFinance)
         private _projectIdToFinancials;
 
@@ -190,22 +184,35 @@ contract GenArt721CoreV3_Engine is
     // packed uint: max of 100, max uint8 = 255
     uint8 private _platformProviderPrimarySalesPercentage = 10;
 
+    /// @dev Note on "default" provider secondary values - the only way these can
+    /// be different on a per project basis is if admin updates these and then
+    /// does not call syncProviderSecondaryForProjectToDefaults for the project.
+    /// -----------------------------------------------------------------------
     /// The default render provider payment address for all secondary sales royalty
     /// revenues, for all new projects. Individual project payment info is defined
     /// in each project's ProjectFinance struct.
+    /// Projects can be updated to this value by calling the
+    /// `syncProviderSecondaryForProjectToDefaults` function for each project.
     address payable public defaultRenderProviderSecondarySalesAddress;
     /// The default basis points allocated to render provider for all secondary
     /// sales royalty revenues, for all new projects. Individual project
     /// payment info is defined in each project's ProjectFinance struct.
+    /// Projects can be updated to this value by calling the
+    /// `syncProviderSecondaryForProjectToDefaults` function for each project.
     uint256 public defaultRenderProviderSecondarySalesBPS = 250;
     /// The default platform provider payment address for all secondary sales royalty
     /// revenues, for all new projects. Individual project payment info is defined
     /// in each project's ProjectFinance struct.
+    /// Projects can be updated to this value by calling the
+    /// `syncProviderSecondaryForProjectToDefaults` function for each project.
     address payable public defaultPlatformProviderSecondarySalesAddress;
     /// The default basis points allocated to platform provider for all secondary
     /// sales royalty revenues, for all new projects. Individual project
     /// payment info is defined in each project's ProjectFinance struct.
+    /// Projects can be updated to this value by calling the
+    /// `syncProviderSecondaryForProjectToDefaults` function for each project.
     uint256 public defaultPlatformProviderSecondarySalesBPS = 250;
+    /// -----------------------------------------------------------------------
 
     /// single minter allowed for this core contract
     address public minterContract;
@@ -239,7 +246,7 @@ contract GenArt721CoreV3_Engine is
     bool public allowArtistProjectActivation;
 
     /// version & type of this core contract
-    bytes32 constant CORE_VERSION = "v3.2.4";
+    bytes32 constant CORE_VERSION = "v3.2.0";
 
     function coreVersion() external pure returns (string memory) {
         return CORE_VERSION.toString();
@@ -1071,7 +1078,7 @@ contract GenArt721CoreV3_Engine is
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION_UINT24;
         projects[projectId].projectBaseURI = defaultBaseURI;
-        // assign default artist royalty of 5% to artist
+        // assign default artist royalty to artist
         projectFinance
             .secondaryMarketRoyaltyPercentage = _DEFAULT_ARTIST_SECONDARY_ROYALTY_PERCENTAGE;
         // copy default platform and render provider royalties to ProjectFinance
@@ -1169,26 +1176,26 @@ contract GenArt721CoreV3_Engine is
 
     /**
      * @notice Updates artist secondary market royalties for project
-     * `_projectId` to be `_secondMarketRoyalty` percent.
+     * `_projectId` to be `_secondaryMarketRoyalty` percent.
      * This deploys a new splitter contract if needed.
      * This DOES NOT include the secondary market royalty percentages collected
      * by the issuing platform; it is only the total percentage of royalties
      * that will be split to artist and additionalSecondaryPayee.
      * @param _projectId Project ID.
-     * @param _secondMarketRoyalty Percent of secondary sales revenue that will
+     * @param _secondaryMarketRoyalty Percent of secondary sales revenue that will
      * be split to artist and additionalSecondaryPayee. This must be less than
      * or equal to ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent.
      */
     function updateProjectSecondaryMarketRoyaltyPercentage(
         uint256 _projectId,
-        uint256 _secondMarketRoyalty
+        uint256 _secondaryMarketRoyalty
     ) external {
         _onlyArtist(_projectId);
-        if (_secondMarketRoyalty > ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE) {
+        if (_secondaryMarketRoyalty > ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE) {
             revert GenArt721Error(ErrorCodes.OverMaxSecondaryRoyaltyPercentage);
         }
         _projectIdToFinancials[_projectId]
-            .secondaryMarketRoyaltyPercentage = uint8(_secondMarketRoyalty);
+            .secondaryMarketRoyaltyPercentage = uint8(_secondaryMarketRoyalty);
 
         // assign project's splitter
         // @dev only call after all previous storage updates
