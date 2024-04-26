@@ -99,7 +99,7 @@ import "../../../libs/v0.8.x/Bytes32Strings.sol";
  * Additional admin and artist privileged roles may be described on minters,
  * registries, and other contracts that may interact with this core contract.
  */
-abstract contract GenArt721CoreV3_Engine_Flex_PROOF is
+contract GenArt721CoreV3_Engine_Flex_PROOF is
     ERC721_PackedHashSeed,
     Ownable,
     IDependencyRegistryCompatibleV0,
