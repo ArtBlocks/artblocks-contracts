@@ -7,7 +7,6 @@ import "../../interfaces/v0.8.x/IRandomizer_V3CoreBase.sol";
 import "../../interfaces/v0.8.x/IAdminACLV0.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import {IGenArt721CoreContractV3_ProjectFinance} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_ProjectFinance.sol";
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_RoyaltySplitters.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
 import {ISplitProviderV0} from "../../interfaces/v0.8.x/ISplitProviderV0.sol";
@@ -102,8 +101,7 @@ contract GenArt721CoreV3_Engine is
     IDependencyRegistryCompatibleV0,
     IGenArt721CoreContractV3_Engine,
     IGenArt721CoreContractV3_ProjectFinance,
-    IGenArt721CoreContractExposesHashSeed,
-    IGenArt721CoreContractV3_RoyaltySplitters
+    IGenArt721CoreContractExposesHashSeed
 {
     using BytecodeStorageWriter for string;
     using BytecodeStorageWriter for bytes;
