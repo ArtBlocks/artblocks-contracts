@@ -41,6 +41,7 @@ interface IEngineFactoryV0 {
      * contract with.
      * @param adminACLContract Address of admin access control contract, to be
      * set as contract owner. A new contract will be deployed if address is null.
+     * @param salt Salt used to deterministically deploy the clone.
      * @return engineContract The address of the newly created Engine or Engine Flex
      * contract. The address is also emitted in both the `EngineCreated` and
      * `EngineFlexCreated` events.
@@ -48,7 +49,8 @@ interface IEngineFactoryV0 {
     function createEngineContract(
         EngineCoreType engineCoreType,
         EngineConfiguration calldata engineConfiguration,
-        address adminACLContract
+        address adminACLContract,
+        bytes32 salt
     ) external returns (address engineContract);
 
     /**

@@ -53,6 +53,13 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
      * and Engine Flex contracts.
      */
     bool public isAbandoned; // default false
+    /**
+     * Represents a generic call operation.
+     */
+    struct Call {
+        address to;
+        bytes data;
+    }
 
     /**
      * @notice validates and assigns immutable configuration variables
@@ -61,17 +68,21 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
      * @param engineFlexImplementation_ address of the Engine Flex
      * implementation contract
      * @param coreRegistry_ address of the core registry contract
+     * @param owner_ address of the initial owner
      */
     constructor(
         address engineImplementation_,
         address engineFlexImplementation_,
-        address coreRegistry_
-    ) {
-        coreRegistry = coreRegistry_;
-        engineFlexImplementation = engineFlexImplementation_;
+        address coreRegistry_,
+        address owner_
+    ) Ownable() {
+        _onlyNonZeroAddress(owner_);
         engineImplementation = engineImplementation_;
-        // set owner of core registry contract
-        Ownable(coreRegistry_).transferOwnership(address(this));
+        engineFlexImplementation = engineFlexImplementation_;
+        coreRegistry = coreRegistry_;
+
+        // transfer ownership to the initial owner
+        transferOwnership(owner_);
         // emit event
         emit Deployed({
             engineImplementation: engineImplementation_,
@@ -88,6 +99,7 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
      * contract with.
      * @param adminACLContract Address of admin access control contract, to be
      * set as contract owner. A new contract will be deployed if address is null.
+     * @param salt Salt used to deterministically deploy the clone.
      * @return engineContract The address of the newly created Engine or Engine Flex
      * contract. The address is also emitted in both the `EngineCreated` and
      * `EngineFlexCreated` events.
@@ -95,19 +107,28 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     function createEngineContract(
         IEngineFactoryV0.EngineCoreType engineCoreType,
         EngineConfiguration calldata engineConfiguration,
-        address adminACLContract
+        address adminACLContract,
+        bytes32 salt
     ) external onlyOwner returns (address engineContract) {
         require(!isAbandoned, "factory is abandoned");
         // validate engine contract configuration
         _onlyNonZeroAddress(engineConfiguration.renderProviderAddress);
         _onlyNonZeroAddress(engineConfiguration.randomizerContract);
+        _onlyNonZeroAddress(engineConfiguration.newSuperAdminAddress);
+
         if (adminACLContract == address(0)) {
-            // deploy new AdminACLV0 contract
+            // deploy new AdminACLV0 contract and update super admin
             adminACLContract = Create2.deploy({
                 amount: 0,
                 salt: keccak256(abi.encodePacked(msg.sender, block.timestamp)),
                 bytecode: type(AdminACLV0).creationCode
             });
+            address[] memory tmpEmptyArray = new address[](0);
+
+            IAdminACLV0(adminACLContract).changeSuperAdmin(
+                engineConfiguration.newSuperAdminAddress,
+                tmpEmptyArray
+            );
         }
 
         address implementation = engineCoreType ==
@@ -115,23 +136,15 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
             ? engineImplementation
             : engineFlexImplementation;
 
-        engineContract = Clones.clone({implementation: implementation});
+        engineContract = Clones.cloneDeterministic({
+            implementation: implementation,
+            salt: salt
+        });
 
         IGenArt721CoreContractV3_Engine(engineContract).initialize(
             engineConfiguration,
             adminACLContract
         );
-
-        // update super admin address if not null address
-        if (engineConfiguration.newSuperAdminAddress != address(0)) {
-            address[] memory genArt721CoreAddressesToUpdate = new address[](1);
-            genArt721CoreAddressesToUpdate[0] = engineContract;
-
-            IAdminACLV0(adminACLContract).changeSuperAdmin(
-                engineConfiguration.newSuperAdminAddress,
-                genArt721CoreAddressesToUpdate
-            );
-        }
 
         string memory coreType = IGenArt721CoreContractV3_Engine(engineContract)
             .coreType();
@@ -193,6 +206,38 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
                 to: recipient,
                 value: balance
             });
+        }
+    }
+
+    /**
+     * @notice Execute a batch of calls.
+     * @dev The calls are executed in order, reverting if any of them fails. Can
+     * only be called by the owner.
+     * @param _calls The calls to execute
+     */
+    function execCalls(
+        Call[] calldata _calls
+    )
+        external
+        onlyOwner
+        returns (uint256 blockNumber, bytes[] memory returnData)
+    {
+        blockNumber = block.number;
+        uint256 length = _calls.length;
+        returnData = new bytes[](length);
+
+        for (uint256 i = 0; i < length; ++i) {
+            Call calldata calli = _calls[i];
+
+            // check for existence of code at the target address
+            if (calli.to.code.length == 0) {
+                // when the call is to an EOA, the calldata must be empty.
+                require(calli.data.length == 0, "Invalid call data");
+            }
+
+            (bool success, bytes memory data) = calli.to.call(calli.data);
+            require(success, string(data));
+            returnData[i] = data;
         }
     }
 

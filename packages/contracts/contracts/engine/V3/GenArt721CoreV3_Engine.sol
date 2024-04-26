@@ -217,8 +217,11 @@ contract GenArt721CoreV3_Engine is
     /// single minter allowed for this core contract
     address public minterContract;
 
-    /// starting (initial) project ID on this contract
-    /// set on initialization
+    /// starting (initial) project ID on this contract configured
+    /// at time of deployment and intended to be immutable after initialization.
+    /// Not marked as immutable due to initialization requirements
+    /// under the ERC-1167 minimal proxy pattern, which necessitates
+    /// setting this value post-deployment.
     uint256 public startingProjectId;
 
     /// next project ID to be created
@@ -228,21 +231,33 @@ contract GenArt721CoreV3_Engine is
     /// default behavior is to allow new projects
     bool public newProjectsForbidden;
 
-    /// configuration variable (determined at time of initialization)
-    /// that determines whether or not admin approval^ should be required
-    /// to accept artist address change proposals, or if these proposals
-    /// should always auto-approve, as determined by the business process
-    /// requirements of the Engine partner using this contract.
+    /// configuration variable set at time of deployment, intended to be
+    /// immutable after initialization, that determines whether or not
+    /// admin approval^ should be required to accept artist address change
+    /// proposals, or if these proposals should always auto-approve, as
+    /// determined by the business process requirements of the Engine
+    /// partner using this contract.
     ///
     /// ^does not apply in the case where contract-ownership itself is revoked
+    /// Not marked as immutable due to initialization requirements
+    /// under the ERC-1167 minimal proxy pattern, which necessitates
+    /// setting this value post-deployment.
     bool public autoApproveArtistSplitProposals;
 
-    // configuration variable (determined at time of initialization) that determines
-    // if platform provider fees and addresses are always required to be set to zero
+    /// configuration variable set at time of deployment, intended to be
+    /// immutable after initialization, that determines if platform provider
+    /// fees and addresses are always required to be set to zero.
+    /// Not marked as immutable due to initialization requirements
+    /// under the ERC-1167 minimal proxy pattern, which necessitates
+    /// setting this value post-deployment.
     bool public nullPlatformProvider;
 
-    // configuration variable (determined at time of initialization) that determines
-    // if artists are allowed to activate their own projects
+    /// configuration variable set at time of deployment, intended to be
+    /// immutable after initialization, that determines if artists are allowed
+    /// to activate their own projects.
+    /// Not marked as immutable due to initialization requirements
+    /// under the ERC-1167 minimal proxy pattern, which necessitates
+    /// setting this value post-deployment.
     bool public allowArtistProjectActivation;
 
     /// version & type of this core contract
