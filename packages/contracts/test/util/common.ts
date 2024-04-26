@@ -231,6 +231,7 @@ export const GENART721_ERROR_CODES = {
   AspectRatioTooLong: 33,
   AspectRatioNoNumbers: 34,
   AspectRatioImproperFormat: 35,
+  NullPlatformProvider: 36,
 };
 
 export async function getAccounts(): Promise<TestAccountsArtBlocks> {
@@ -490,6 +491,8 @@ export async function deployCoreWithMinterFilter(
       !coreContractName.includes("IncorrectCoreType")
     ) {
       constructorArgs.push(config.splitProvider.address); // _splitProviderAddress
+      constructorArgs.push(false); // _nullPlatformProvider
+      constructorArgs.push(false); // _allowArtistProjectActivation
     }
     genArt721Core = await deployWithStorageLibraryAndGet(
       config,
@@ -650,6 +653,8 @@ export async function deployCore(
     ];
     if (!coreContractName.endsWith("_PROHIBITION")) {
       deployArgs.push(config.splitProvider.address); // _splitProviderAddress
+      deployArgs.push(false); // _nullPlatformProvider
+      deployArgs.push(false); // _allowArtistProjectActivation
     }
     // Note: in the common tests, set `autoApproveArtistSplitProposals` to false, which
     //       mirrors the approval-flow behavior of the other (non-Engine) V3 contracts

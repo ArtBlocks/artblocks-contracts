@@ -12,6 +12,7 @@ import {
   deployCoreWithMinterFilter,
   GENART721_ERROR_NAME,
   GENART721_ERROR_CODES,
+  deployWithStorageLibraryAndGet,
 } from "../../util/common";
 
 export type ArtistFinanceProposal = {
@@ -1645,6 +1646,86 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.user)
           .tokenIdToProjectId(config.projectTwoTokenOne.toNumber());
         expect(projectId).to.be.equal(config.projectTwo);
+      });
+    });
+
+    describe("nullPlatformProvider", function () {
+      it("returns false when false", async function () {
+        const config = await loadFixture(_beforeEach);
+        // expect false
+        expect(
+          await config.genArt721Core
+            .connect(config.accounts.user)
+            .nullPlatformProvider()
+        ).to.be.false;
+      });
+
+      it("returns true when true", async function () {
+        const config = await loadFixture(_beforeEach);
+        // deploy new core with null platform provider as true
+        const differentGenArt721Core = await deployWithStorageLibraryAndGet(
+          config,
+          coreContractName,
+          [
+            config.name,
+            config.symbol,
+            config.accounts.deployer.address,
+            constants.ZERO_ADDRESS, // platform provider
+            config.randomizer.address,
+            config.adminACL.address,
+            0, // next project ID
+            true, // auto-approve
+            config.splitProvider.address,
+            true, // _nullPlatformProvider,
+            false, //  _allowArtistProjectActivation
+          ]
+        );
+        // expect true
+        expect(
+          await differentGenArt721Core
+            .connect(config.accounts.user)
+            .nullPlatformProvider()
+        ).to.be.true;
+      });
+    });
+
+    describe("allowArtistProjectActivation", function () {
+      it("returns false when false", async function () {
+        const config = await loadFixture(_beforeEach);
+        // expect false
+        expect(
+          await config.genArt721Core
+            .connect(config.accounts.user)
+            .allowArtistProjectActivation()
+        ).to.be.false;
+      });
+
+      it("returns true when true", async function () {
+        const config = await loadFixture(_beforeEach);
+        // deploy new core with null platform provider as true
+        const differentGenArt721Core = await deployWithStorageLibraryAndGet(
+          config,
+          coreContractName,
+          [
+            config.name,
+            config.symbol,
+            config.accounts.deployer.address,
+            config.accounts.additional2.address, // platform provider
+            config.randomizer.address,
+            config.adminACL.address,
+            0, // next project ID
+            true, // auto-approve
+            config.splitProvider.address,
+            false, // _nullPlatformProvider,
+            true, //  _allowArtistProjectActivation
+          ]
+        );
+        // expect true
+        expect(
+          await differentGenArt721Core
+            .connect(config.accounts.user)
+            .allowArtistProjectActivation()
+        ).to.be.true;
       });
     });
   });

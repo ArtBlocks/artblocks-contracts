@@ -116,75 +116,33 @@ for (const coreContractName of coreContractsToTest) {
     }
 
     describe("requests appropriate selectors from AdminACL", function () {
-      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-        it("updateProviderSalesAddresses", async function () {
-          const config = await loadFixture(_beforeEach);
-          await validateAdminACLRequest(
-            config,
-            "updateProviderSalesAddresses",
-            [
-              config.accounts.user.address,
-              config.accounts.user.address,
-              config.accounts.user.address,
-              config.accounts.user.address,
-            ]
-          );
-        });
+      it("updateProviderSalesAddresses", async function () {
+        const config = await loadFixture(_beforeEach);
+        await validateAdminACLRequest(config, "updateProviderSalesAddresses", [
+          config.accounts.user.address,
+          config.accounts.user.address,
+          config.accounts.user.address,
+          config.accounts.user.address,
+        ]);
+      });
 
-        it("updateProviderPrimarySalesPercentages", async function () {
-          const config = await loadFixture(_beforeEach);
-          await validateAdminACLRequest(
-            config,
-            "updateProviderPrimarySalesPercentages",
-            [11, 22]
-          );
-        });
+      it("updateProviderPrimarySalesPercentages", async function () {
+        const config = await loadFixture(_beforeEach);
+        await validateAdminACLRequest(
+          config,
+          "updateProviderPrimarySalesPercentages",
+          [11, 22]
+        );
+      });
 
-        it("updateProviderDefaultSecondarySalesBPS", async function () {
-          const config = await loadFixture(_beforeEach);
-          await validateAdminACLRequest(
-            config,
-            "updateProviderDefaultSecondarySalesBPS",
-            [240, 420]
-          );
-        });
-      } else {
-        it("updateArtblocksPrimarySalesAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          await validateAdminACLRequest(
-            config,
-            "updateArtblocksPrimarySalesAddress",
-            [config.accounts.user.address]
-          );
-        });
-
-        it("updateArtblocksSecondarySalesAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          await validateAdminACLRequest(
-            config,
-            "updateArtblocksSecondarySalesAddress",
-            [config.accounts.user.address]
-          );
-        });
-
-        it("updateArtblocksPrimarySalesPercentage", async function () {
-          const config = await loadFixture(_beforeEach);
-          await validateAdminACLRequest(
-            config,
-            "updateArtblocksPrimarySalesPercentage",
-            [11]
-          );
-        });
-
-        it("updateArtblocksSecondarySalesBPS", async function () {
-          const config = await loadFixture(_beforeEach);
-          await validateAdminACLRequest(
-            config,
-            "updateArtblocksSecondarySalesBPS",
-            [240]
-          );
-        });
-      }
+      it("updateProviderDefaultSecondarySalesBPS", async function () {
+        const config = await loadFixture(_beforeEach);
+        await validateAdminACLRequest(
+          config,
+          "updateProviderDefaultSecondarySalesBPS",
+          [240, 420]
+        );
+      });
 
       it("updateMinterContract", async function () {
         const config = await loadFixture(_beforeEach);
@@ -377,42 +335,20 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("rejects non-admin calling admin-ACL protected functions", function () {
-      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-        it("updateProviderSalesAddresses", async function () {
-          const config = await loadFixture(_beforeEach);
-          await expectRevertFromAdminACLRequest(
-            config,
-            "updateProviderSalesAddresses",
-            config.accounts.user,
-            [
-              config.accounts.user.address,
-              config.accounts.user.address,
-              config.accounts.user.address,
-              config.accounts.user.address,
-            ]
-          );
-        });
-      } else {
-        it("updateArtblocksPrimarySalesAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          await expectRevertFromAdminACLRequest(
-            config,
-            "updateArtblocksPrimarySalesAddress",
-            config.accounts.user,
-            [config.accounts.user.address]
-          );
-        });
-
-        it("updateArtblocksSecondarySalesAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          await expectRevertFromAdminACLRequest(
-            config,
-            "updateArtblocksSecondarySalesAddress",
-            config.accounts.user,
-            [config.accounts.user.address]
-          );
-        });
-      }
+      it("updateProviderSalesAddresses", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevertFromAdminACLRequest(
+          config,
+          "updateProviderSalesAddresses",
+          config.accounts.user,
+          [
+            config.accounts.user.address,
+            config.accounts.user.address,
+            config.accounts.user.address,
+            config.accounts.user.address,
+          ]
+        );
+      });
     });
   });
 }

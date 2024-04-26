@@ -340,6 +340,8 @@ for (const coreContractName of coreContractsToTest) {
             0, // next project ID
             true, // auto-approve
             config.splitProvider.address,
+            false, // _nullPlatformProvider,
+            false, //  _allowArtistProjectActivation
           ]
         );
 

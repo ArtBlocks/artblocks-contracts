@@ -76,44 +76,18 @@ for (const coreContractName of coreContractsToTest) {
     }
 
     describe("{artblocks,provider}PrimarySalesAddress", function () {
-      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-        it("returns expected renderProviderPrimarySalesAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.renderProviderPrimarySalesAddress()
-          ).to.be.equal(config.accounts.deployer.address);
-        });
-        it("returns expected renderProviderPrimarySalesAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.platformProviderPrimarySalesAddress()
-          ).to.be.equal(config.accounts.additional.address);
-        });
-      } else {
-        it("returns expected artblocksPrimarySalesAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.artblocksPrimarySalesAddress()
-          ).to.be.equal(config.accounts.deployer.address);
-        });
-      }
-    });
-
-    describe("artblocksAddress", function () {
-      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-        it("always passes, non-relevant", async function () {
-          const config = await loadFixture(_beforeEach);
-          // This test is non-relevant for Engine variant V3 contracts.
-          expect(true);
-        });
-      } else {
-        it("returns expected artblocksAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(await config.genArt721Core.artblocksAddress()).to.be.equal(
-            config.accounts.deployer.address
-          );
-        });
-      }
+      it("returns expected renderProviderPrimarySalesAddress", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(
+          await config.genArt721Core.renderProviderPrimarySalesAddress()
+        ).to.be.equal(config.accounts.deployer.address);
+      });
+      it("returns expected renderProviderPrimarySalesAddress", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(
+          await config.genArt721Core.platformProviderPrimarySalesAddress()
+        ).to.be.equal(config.accounts.additional.address);
+      });
     });
 
     describe("{artblocks,provider}SecondarySalesAddress", function () {
@@ -401,41 +375,28 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         const nextProjectId = 365;
         let differentGenArt721Core;
-        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          const engineRegistryFactory =
-            await ethers.getContractFactory("EngineRegistryV0");
-          const engineRegistry = await engineRegistryFactory
-            .connect(config.accounts.deployer)
-            .deploy();
-          differentGenArt721Core = await deployWithStorageLibraryAndGet(
-            config,
-            coreContractName,
-            [
-              config.name,
-              config.symbol,
-              config.accounts.deployer.address,
-              config.accounts.additional.address,
-              config.randomizer.address,
-              config.adminACL.address,
-              nextProjectId,
-              false,
-              config.splitProvider.address,
-            ]
-          );
-        } else {
-          differentGenArt721Core = await deployWithStorageLibraryAndGet(
-            config,
-            coreContractName,
-            [
-              config.name,
-              config.symbol,
-              config.randomizer.address,
-              config.adminACL.address,
-              nextProjectId,
-              config.splitProvider.address,
-            ]
-          );
-        }
+        const engineRegistryFactory =
+          await ethers.getContractFactory("EngineRegistryV0");
+        const engineRegistry = await engineRegistryFactory
+          .connect(config.accounts.deployer)
+          .deploy();
+        differentGenArt721Core = await deployWithStorageLibraryAndGet(
+          config,
+          coreContractName,
+          [
+            config.name,
+            config.symbol,
+            config.accounts.deployer.address,
+            config.accounts.additional.address,
+            config.randomizer.address,
+            config.adminACL.address,
+            nextProjectId,
+            false,
+            config.splitProvider.address,
+            false, // null platform provider
+            false, // allow artist project activation
+          ]
+        );
         expect(await differentGenArt721Core.nextProjectId()).to.be.equal(365);
       });
     });
@@ -451,41 +412,28 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         const nextProjectId = 365;
         let differentGenArt721Core;
-        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          const engineRegistryFactory =
-            await ethers.getContractFactory("EngineRegistryV0");
-          const engineRegistry = await engineRegistryFactory
-            .connect(config.accounts.deployer)
-            .deploy();
-          differentGenArt721Core = await deployWithStorageLibraryAndGet(
-            config,
-            coreContractName,
-            [
-              config.name,
-              config.symbol,
-              config.accounts.deployer.address,
-              config.accounts.additional.address,
-              config.randomizer.address,
-              config.adminACL.address,
-              nextProjectId,
-              false,
-              config.splitProvider.address,
-            ]
-          );
-        } else {
-          differentGenArt721Core = await deployWithStorageLibraryAndGet(
-            config,
-            coreContractName,
-            [
-              config.name,
-              config.symbol,
-              config.randomizer.address,
-              config.adminACL.address,
-              nextProjectId,
-              config.splitProvider.address,
-            ]
-          );
-        }
+        const engineRegistryFactory =
+          await ethers.getContractFactory("EngineRegistryV0");
+        const engineRegistry = await engineRegistryFactory
+          .connect(config.accounts.deployer)
+          .deploy();
+        differentGenArt721Core = await deployWithStorageLibraryAndGet(
+          config,
+          coreContractName,
+          [
+            config.name,
+            config.symbol,
+            config.accounts.deployer.address,
+            config.accounts.additional.address,
+            config.randomizer.address,
+            config.adminACL.address,
+            nextProjectId,
+            false,
+            config.splitProvider.address,
+            false, // null platform provider
+            false, // allow artist project activation
+          ]
+        );
         expect(await differentGenArt721Core.startingProjectId()).to.be.equal(
           nextProjectId
         );
