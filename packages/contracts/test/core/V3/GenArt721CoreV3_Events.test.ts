@@ -136,61 +136,35 @@ for (const coreContractName of coreContractsToTest) {
         // it is OK that config construction addresses aren't particularly valid
         // addresses for the purposes of config test
         let tx;
-        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          const engineRegistryFactory =
-            await ethers.getContractFactory("EngineRegistryV0");
-          const engineRegistry = await engineRegistryFactory
-            .connect(config.accounts.deployer)
-            .deploy();
-          tx = await coreContractFactory
-            .connect(config.accounts.deployer)
-            .deploy(
-              "name",
-              "symbol",
-              config.accounts.additional.address,
-              config.accounts.additional.address,
-              config.accounts.additional.address,
-              config.accounts.additional.address,
-              365,
-              false
-            );
-          const receipt = await tx.deployTransaction.wait();
-          // target event is in the last log
-          const targetLog = receipt.logs[receipt.logs.length - 1];
-          // expect "PlatformUpdated" event as log 0
-          await expect(targetLog.topics[0]).to.be.equal(
-            ethers.utils.keccak256(
-              ethers.utils.toUtf8Bytes("PlatformUpdated(bytes32)")
-            )
-          );
-          // expect field to be bytes32 of "nextProjectId" as log 1
-          await expect(targetLog.topics[1]).to.be.equal(
-            PLATFORM_UPDATED_FIELDS.FIELD_NEXT_PROJECT_ID
-          );
-        } else {
-          tx = await coreContractFactory
-            .connect(config.accounts.deployer)
-            .deploy(
-              "name",
-              "symbol",
-              config.accounts.additional.address,
-              constants.ZERO_ADDRESS,
-              365
-            );
-          const receipt = await tx.deployTransaction.wait();
-          // target event is the last log
-          const targetLog = receipt.logs[receipt.logs.length - 1];
-          // expect "PlatformUpdated" event as log 0
-          await expect(targetLog.topics[0]).to.be.equal(
-            ethers.utils.keccak256(
-              ethers.utils.toUtf8Bytes("PlatformUpdated(bytes32)")
-            )
-          );
-          // expect field to be bytes32 of "nextProjectId" as log 1
-          await expect(targetLog.topics[1]).to.be.equal(
-            PLATFORM_UPDATED_FIELDS.FIELD_NEXT_PROJECT_ID
-          );
-        }
+        const engineRegistryFactory =
+          await ethers.getContractFactory("EngineRegistryV0");
+        const engineRegistry = await engineRegistryFactory
+          .connect(config.accounts.deployer)
+          .deploy();
+        tx = await coreContractFactory.connect(config.accounts.deployer).deploy(
+          "name",
+          "symbol",
+          config.accounts.additional.address,
+          config.accounts.additional.address,
+          config.accounts.additional.address,
+          config.accounts.additional.address,
+          365,
+          false,
+          config.splitProvider.address // split provider
+        );
+        const receipt = await tx.deployTransaction.wait();
+        // target event is in the last log
+        const targetLog = receipt.logs[receipt.logs.length - 1];
+        // expect "PlatformUpdated" event as log 0
+        await expect(targetLog.topics[0]).to.be.equal(
+          ethers.utils.keccak256(
+            ethers.utils.toUtf8Bytes("PlatformUpdated(bytes32)")
+          )
+        );
+        // expect field to be bytes32 of "nextProjectId" as log 1
+        await expect(targetLog.topics[1]).to.be.equal(
+          PLATFORM_UPDATED_FIELDS.FIELD_NEXT_PROJECT_ID
+        );
       });
 
       it("emits {artblocksSecondary,provider}SalesAddress", async function () {
@@ -224,26 +198,16 @@ for (const coreContractName of coreContractsToTest) {
           .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_RANDOMIZER_ADDRESS);
       });
 
-      it("emits 'curationRegistryAddress'", async function () {
+      it("emits 'split provider address'", async function () {
         const config = await loadFixture(_beforeEach);
-        if (coreContractName === "GenArt721CoreV3_Explorations") {
-          // action not supported by config core version
-          await expectRevert(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateArtblocksCurationRegistryAddress(
-                config.accounts.additional.address
-              ),
-            "Action not supported"
-          );
-        } else if (coreContractName === "GenArt721CoreV3") {
-          throw new Error("Untested core contract version");
-        } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          // Do nothing.
-          // This core contract variant doesn't support config interface component.
-        } else {
-          throw new Error("Unexpected core contract name");
-        }
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateSplitProvider(config.splitProvider.address)
+        )
+          .to.emit(config.genArt721Core, "PlatformUpdated")
+          .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_SPLIT_PROVIDER);
       });
 
       it("emits 'onChainGeneratorAddress'", async function () {
@@ -312,7 +276,7 @@ for (const coreContractName of coreContractsToTest) {
         await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateProviderSecondarySalesBPS(240, 240)
+            .updateProviderDefaultSecondarySalesBPS(240, 240)
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
           .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_PROVIDER_SECONDARY_SALES_BPS);
@@ -484,6 +448,21 @@ for (const coreContractName of coreContractsToTest) {
           .withArgs(
             config.projectZero,
             PROJECT_UPDATED_FIELDS.FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE
+          );
+      });
+
+      it("emits sync provider financials updated", async function () {
+        const config = await loadFixture(_beforeEach);
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .syncProviderSecondaryForProjectToDefaults(config.projectZero)
+        )
+          .to.emit(config.genArt721Core, "ProjectUpdated")
+          .withArgs(
+            config.projectZero,
+            PROJECT_UPDATED_FIELDS.FIELD_PROVIDER_SECONDARY_FINANCIALS
           );
       });
 
@@ -687,6 +666,29 @@ for (const coreContractName of coreContractsToTest) {
             config.projectZero,
             PROJECT_UPDATED_FIELDS.FIELD_PROJECT_BASE_URI
           );
+      });
+    });
+
+    describe("ProjectRoyaltySplitterUpdated", function () {
+      it("emits ProjectRoyaltySplitterUpdated when updated", async function () {
+        const config = await loadFixture(_beforeEach);
+        // get predicted splitter address
+        // unchanged, so just get current splitter address
+        const projectFinance = await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .projectIdToFinancials(config.projectZero);
+        const predictedSplitterAddress = projectFinance.royaltySplitter;
+        // emits expected event arg(s)
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateProjectArtistAddress(
+              config.projectZero,
+              config.accounts.artist.address // no actual change to the configured splits
+            )
+        )
+          .to.emit(config.genArt721Core, "ProjectRoyaltySplitterUpdated")
+          .withArgs(config.projectZero, predictedSplitterAddress);
       });
     });
   });

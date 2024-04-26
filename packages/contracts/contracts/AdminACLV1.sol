@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.19;
+pragma solidity 0.8.22;
 
 import "./interfaces/v0.8.x/IAdminACLV0.sol";
 import "./archive/GenArt721CoreV3.sol";

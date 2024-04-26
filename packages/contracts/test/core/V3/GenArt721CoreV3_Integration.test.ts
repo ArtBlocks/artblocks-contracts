@@ -117,63 +117,45 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("{artblocks,provider}SecondarySalesAddress", function () {
-      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-        it("returns expected renderProviderSecondarySalesAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.renderProviderSecondarySalesAddress()
-          ).to.be.equal(config.accounts.deployer.address);
-        });
-        it("returns expected renderProviderSecondarySalesAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.platformProviderSecondarySalesAddress()
-          ).to.be.equal(config.accounts.additional.address);
-        });
-      } else {
-        it("returns expected artblocksSecondarySalesAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.artblocksSecondarySalesAddress()
-          ).to.be.equal(config.accounts.deployer.address);
-        });
-      }
+      it("returns expected defaultRenderProviderSecondarySalesAddress", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(
+          await config.genArt721Core.defaultRenderProviderSecondarySalesAddress()
+        ).to.be.equal(config.accounts.deployer.address);
+      });
+      it("returns expected defaultPlatformProviderSecondarySalesAddress", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(
+          await config.genArt721Core.defaultPlatformProviderSecondarySalesAddress()
+        ).to.be.equal(config.accounts.additional.address);
+      });
     });
 
     describe("{artblocks,provider}Percentage", function () {
-      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-        it("returns expected renderProviderPrimarySalesPercentage", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.renderProviderPrimarySalesPercentage()
-          ).to.be.equal(10);
-        });
-        it("returns expected platformProviderPrimarySalesPercentage", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.platformProviderPrimarySalesPercentage()
-          ).to.be.equal(10);
-        });
-        it("returns expected renderProviderSecondarySalesBPS", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.renderProviderSecondarySalesBPS()
-          ).to.be.equal(250);
-        });
-        it("returns expected platformProviderSecondarySalesBPS", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.platformProviderSecondarySalesBPS()
-          ).to.be.equal(250);
-        });
-      } else {
-        it("returns expected artblocksPercentage", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(await config.genArt721Core.artblocksPercentage()).to.be.equal(
-            10
-          );
-        });
-      }
+      it("returns expected renderProviderPrimarySalesPercentage", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(
+          await config.genArt721Core.renderProviderPrimarySalesPercentage()
+        ).to.be.equal(10);
+      });
+      it("returns expected platformProviderPrimarySalesPercentage", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(
+          await config.genArt721Core.platformProviderPrimarySalesPercentage()
+        ).to.be.equal(10);
+      });
+      it("returns expected defaultRenderProviderSecondarySalesBPS", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(
+          await config.genArt721Core.defaultRenderProviderSecondarySalesBPS()
+        ).to.be.equal(250);
+      });
+      it("returns expected defaultPlatformProviderSecondarySalesBPS", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(
+          await config.genArt721Core.defaultPlatformProviderSecondarySalesBPS()
+        ).to.be.equal(250);
+      });
     });
 
     describe("owner", function () {
@@ -325,9 +307,9 @@ for (const coreContractName of coreContractsToTest) {
         } else if (coreContractName === "GenArt721CoreV3_Explorations") {
           throw new Error("Untested core contract version");
         } else if (coreContractName.includes("GenArt721CoreV3_Engine_Flex")) {
-          targetCoreVersion = "v3.1.7";
+          targetCoreVersion = "v3.2.1";
         } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          targetCoreVersion = "v3.1.4";
+          targetCoreVersion = "v3.2.0";
         } else {
           throw new Error("Unexpected core contract name");
         }
@@ -358,14 +340,24 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("supportsInterface", function () {
-      it("supports IManifold", async function () {
+      it("supports ERC-2981", async function () {
         const config = await loadFixture(_beforeEach);
-        // expected true for supporting: bytes4(keccak256('getRoyalties(uint256)')) == 0xbb3bafd6
+        // expected true for supporting: bytes4(keccak256("royaltyInfo(uint256,uint256)")) == 0x2a55205a
+        expect(
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
+            .supportsInterface(0x2a55205a)
+        ).to.be.true;
+      });
+
+      it("doesn't support IManifold", async function () {
+        const config = await loadFixture(_beforeEach);
+        // expected false for supporting: bytes4(keccak256('getRoyalties(uint256)')) == 0xbb3bafd6
         expect(
           await config.genArt721Core
             .connect(config.accounts.deployer)
             .supportsInterface(0xbb3bafd6)
-        ).to.be.true;
+        ).to.be.false;
       });
 
       it("supports IERC721", async function () {
@@ -427,6 +419,7 @@ for (const coreContractName of coreContractsToTest) {
               config.adminACL.address,
               nextProjectId,
               false,
+              config.splitProvider.address,
             ]
           );
         } else {
@@ -439,6 +432,7 @@ for (const coreContractName of coreContractsToTest) {
               config.randomizer.address,
               config.adminACL.address,
               nextProjectId,
+              config.splitProvider.address,
             ]
           );
         }
@@ -475,6 +469,7 @@ for (const coreContractName of coreContractsToTest) {
               config.adminACL.address,
               nextProjectId,
               false,
+              config.splitProvider.address,
             ]
           );
         } else {
@@ -487,6 +482,7 @@ for (const coreContractName of coreContractsToTest) {
               config.randomizer.address,
               config.adminACL.address,
               nextProjectId,
+              config.splitProvider.address,
             ]
           );
         }

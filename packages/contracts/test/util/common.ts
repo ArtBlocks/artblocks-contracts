@@ -6,6 +6,7 @@ import { ethers } from "hardhat";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract, BigNumber } from "ethers";
 import { ONE_MINUTE } from "./constants";
+import { SplitProviderV0 } from "../../scripts/contracts/split/split-provider/SplitProviderV0";
 
 export type TestAccountsArtBlocks = {
   deployer: SignerWithAddress;
@@ -88,6 +89,7 @@ export type T_Config = {
   splitterImplementation?: Contract;
   splitterFactory?: Contract;
   splitter?: Contract;
+  splitProvider?: SplitProviderV0;
   // split configs
   validSplit?: T_Split;
   invalidSplit?: T_Split;
@@ -98,6 +100,16 @@ export type T_Config = {
   ERC20?: Contract;
   weth?: Contract;
 };
+
+// type of arguments for V3PaymentProposal, V3 Engine
+export type T_V3PaymentProposalArgs = [
+  number,
+  string,
+  string,
+  number,
+  string,
+  number,
+];
 
 export const PLATFORM_UPDATED_FIELDS = {
   FIELD_NEXT_PROJECT_ID: ethers.utils.hexZeroPad(ethers.utils.hexlify(0), 32),
@@ -134,6 +146,7 @@ export const PLATFORM_UPDATED_FIELDS = {
     ethers.utils.hexlify(9),
     32
   ),
+  FIELD_SPLIT_PROVIDER: ethers.utils.hexZeroPad(ethers.utils.hexlify(10), 32),
 };
 
 export const PROJECT_UPDATED_FIELDS = {
@@ -174,6 +187,10 @@ export const PROJECT_UPDATED_FIELDS = {
     32
   ),
   FIELD_PROJECT_BASE_URI: ethers.utils.hexZeroPad(ethers.utils.hexlify(15), 32),
+  FIELD_PROVIDER_SECONDARY_FINANCIALS: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(16),
+    32
+  ),
 };
 
 export const GENART721_ERROR_NAME = "GenArt721Error";
@@ -391,6 +408,15 @@ export async function deployCoreWithMinterFilter(
       ? _adminACLContractName
       : adminACLContractName;
     adminACL = await deployAndGet(config, adminACLContractName, []);
+    // split provider
+    const mockSplitterFactory = await deployAndGet(
+      config,
+      "Mock0xSplitsV2PullFactory",
+      []
+    );
+    config.splitProvider = (await deployAndGet(config, "SplitProviderV0", [
+      mockSplitterFactory.address, // _splitterFactory
+    ])) as SplitProviderV0;
     genArt721Core = await deployWithStorageLibraryAndGet(
       config,
       coreContractName,
@@ -437,21 +463,38 @@ export async function deployCoreWithMinterFilter(
 
     adminACL = await deployAndGet(config, adminACLContractName, []);
     engineRegistry = await deployAndGet(config, "EngineRegistryV0", []);
+    // split provider
+    const mockSplitterFactory = await deployAndGet(
+      config,
+      "Mock0xSplitsV2PullFactory",
+      []
+    );
+    config.splitProvider = (await deployAndGet(config, "SplitProviderV0", [
+      mockSplitterFactory.address, // _splitterFactory
+    ])) as SplitProviderV0;
     // Note: in the common tests, set `autoApproveArtistSplitProposals` to false, which
     //       mirrors the approval-flow behavior of the other (non-Engine) V3 contracts
+    const constructorArgs = [
+      config.name, // _tokenName
+      config.symbol, // _tokenSymbol
+      config.accounts.deployer.address, // _renderProviderAddress
+      config.accounts.additional.address, // _platformProviderAddress
+      randomizer.address, // _randomizerContract
+      adminACL.address, // _adminACLContract
+      0, // _startingProjectId
+      false, // _autoApproveArtistSplitProposals
+    ];
+    // add additional v3.2 args if not a PROHIBITION contract
+    if (
+      !coreContractName.includes("PROHIBITION") &&
+      !coreContractName.includes("IncorrectCoreType")
+    ) {
+      constructorArgs.push(config.splitProvider.address); // _splitProviderAddress
+    }
     genArt721Core = await deployWithStorageLibraryAndGet(
       config,
       coreContractName,
-      [
-        config.name, // _tokenName
-        config.symbol, // _tokenSymbol
-        config.accounts.deployer.address, // _renderProviderAddress
-        config.accounts.additional.address, // _platformProviderAddress
-        randomizer.address, // _randomizerContract
-        adminACL.address, // _adminACLContract
-        0, // _startingProjectId
-        false, // _autoApproveArtistSplitProposals
-      ]
+      constructorArgs
     );
     // register core on engine registry
     const coreVersion = await genArt721Core.coreVersion();
@@ -537,6 +580,15 @@ export async function deployCore(
         ? "MockAdminACLV0Events"
         : "AdminACLV0";
     adminACL = await deployAndGet(config, adminACLContractName, []);
+    // split provider
+    const mockSplitterFactory = await deployAndGet(
+      config,
+      "Mock0xSplitsV2PullFactory",
+      []
+    );
+    config.splitProvider = (await deployAndGet(config, "SplitProviderV0", [
+      mockSplitterFactory.address, // _splitterFactory
+    ])) as SplitProviderV0;
     genArt721Core = await deployWithStorageLibraryAndGet(
       config,
       coreContractName,
@@ -577,21 +629,34 @@ export async function deployCore(
       : adminACLContractName;
 
     adminACL = await deployAndGet(config, adminACLContractName, []);
+    // split provider
+    const mockSplitterFactory = await deployAndGet(
+      config,
+      "Mock0xSplitsV2PullFactory",
+      []
+    );
+    config.splitProvider = (await deployAndGet(config, "SplitProviderV0", [
+      mockSplitterFactory.address, // _splitterFactory
+    ])) as SplitProviderV0;
+    const deployArgs = [
+      config.name, // _tokenName
+      config.symbol, // _tokenSymbol
+      config.accounts.deployer.address, // _renderProviderAddress
+      config.accounts.additional.address, // _platformProviderAddress
+      randomizer.address, // _randomizerContract
+      adminACL.address, // _adminACLContract
+      config.projectZero, // starting project ID
+      false, // _autoApproveArtistSplitProposals
+    ];
+    if (!coreContractName.endsWith("_PROHIBITION")) {
+      deployArgs.push(config.splitProvider.address); // _splitProviderAddress
+    }
     // Note: in the common tests, set `autoApproveArtistSplitProposals` to false, which
     //       mirrors the approval-flow behavior of the other (non-Engine) V3 contracts
     genArt721Core = await deployWithStorageLibraryAndGet(
       config,
       coreContractName,
-      [
-        config.name, // _tokenName
-        config.symbol, // _tokenSymbol
-        config.accounts.deployer.address, // _renderProviderAddress
-        config.accounts.additional.address, // _platformProviderAddress
-        randomizer.address, // _randomizerContract
-        adminACL.address, // _adminACLContract
-        config.projectZero, // starting project ID
-        false, // _autoApproveArtistSplitProposals
-      ]
+      [...deployArgs]
     );
     // register core on core registry
     const coreVersion = await genArt721Core.coreVersion();

@@ -140,11 +140,11 @@ for (const coreContractName of coreContractsToTest) {
           );
         });
 
-        it("updateProviderSecondarySalesBPS", async function () {
+        it("updateProviderDefaultSecondarySalesBPS", async function () {
           const config = await loadFixture(_beforeEach);
           await validateAdminACLRequest(
             config,
-            "updateProviderSecondarySalesBPS",
+            "updateProviderDefaultSecondarySalesBPS",
             [240, 420]
           );
         });
@@ -197,6 +197,13 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         await validateAdminACLRequest(config, "updateRandomizerAddress", [
           config.accounts.user.address,
+        ]);
+      });
+
+      it("updateSplitProvider", async function () {
+        const config = await loadFixture(_beforeEach);
+        await validateAdminACLRequest(config, "updateSplitProvider", [
+          config.splitProvider.address,
         ]);
       });
 

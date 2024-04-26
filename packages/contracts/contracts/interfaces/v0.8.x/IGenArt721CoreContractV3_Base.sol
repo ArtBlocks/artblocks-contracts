@@ -4,8 +4,6 @@
 pragma solidity ^0.8.0;
 
 import "./IAdminACLV0.sol";
-/// use the Royalty Registry's IManifold interface for token royalties
-import "./IManifold.sol";
 
 /**
  * @title This interface is intended to house interface items that are common
@@ -14,7 +12,7 @@ import "./IManifold.sol";
  * add support the Royalty Registry by default.
  * @author Art Blocks Inc.
  */
-interface IGenArt721CoreContractV3_Base is IManifold {
+interface IGenArt721CoreContractV3_Base {
     // This interface emits generic events that contain fields that indicate
     // which parameter has been updated. This is sufficient for application
     // state management, while also simplifying the contract and indexing code.
@@ -22,6 +20,17 @@ interface IGenArt721CoreContractV3_Base is IManifold {
     // field-values have changed for each event, given that changed values can
     // be introspected by indexers due to the design of this smart contract
     // exposing these state changes via publicly viewable fields.
+
+    /**
+     * @notice Project's royalty splitter was updated to `_splitter`.
+     * @dev New event in v3.2
+     * @param projectId The project ID.
+     * @param royaltySplitter The new splitter address to receive royalties.
+     */
+    event ProjectRoyaltySplitterUpdated(
+        uint256 indexed projectId,
+        address indexed royaltySplitter
+    );
 
     // The following fields are used to indicate which contract-level parameter
     // has been updated in the `PlatformUpdated` event:
@@ -36,7 +45,8 @@ interface IGenArt721CoreContractV3_Base is IManifold {
         FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS, // 6
         FIELD_PROVIDER_SALES_ADDRESSES, // 7
         FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES, // 8
-        FIELD_PROVIDER_SECONDARY_SALES_BPS // 9
+        FIELD_PROVIDER_SECONDARY_SALES_BPS, // 9
+        FIELD_SPLIT_PROVIDER // 10
     }
 
     // The following fields are used to indicate which project-level parameter
@@ -58,7 +68,8 @@ interface IGenArt721CoreContractV3_Base is IManifold {
         FIELD_PROJECT_SCRIPT, // 12
         FIELD_PROJECT_SCRIPT_TYPE, // 13
         FIELD_PROJECT_ASPECT_RATIO, // 14
-        FIELD_PROJECT_BASE_URI // 15
+        FIELD_PROJECT_BASE_URI, // 15
+        FIELD_PROJECT_PROVIDER_SECONDARY_FINANCIALS // 16
     }
 
     /**
@@ -193,14 +204,6 @@ interface IGenArt721CoreContractV3_Base is IManifold {
     function projectIdToArtistAddress(
         uint256 _projectId
     ) external view returns (address payable);
-
-    function projectIdToAdditionalPayeePrimarySales(
-        uint256 _projectId
-    ) external view returns (address payable);
-
-    function projectIdToAdditionalPayeePrimarySalesPercentage(
-        uint256 _projectId
-    ) external view returns (uint256);
 
     function projectIdToSecondaryMarketRoyaltyPercentage(
         uint256 _projectId
