@@ -182,14 +182,14 @@ contract GenArt721CoreV3_Engine_Flex is
     /// Percentage of primary sales revenue allocated to the render provider
     /// (packed)
     // packed uint: max of 100, max uint8 = 255
-    uint8 private _renderProviderPrimarySalesPercentage = 10;
+    uint8 private _renderProviderPrimarySalesPercentage;
     /// The platform provider payment address for all primary sales revenues
     /// (packed)
     address payable public platformProviderPrimarySalesAddress;
     /// Percentage of primary sales revenue allocated to the platform provider
     /// (packed)
     // packed uint: max of 100, max uint8 = 255
-    uint8 private _platformProviderPrimarySalesPercentage = 10;
+    uint8 private _platformProviderPrimarySalesPercentage;
 
     /// @dev Note on "default" provider secondary values - the only way these can
     /// be different on a per project basis is if admin updates these and then
@@ -206,7 +206,7 @@ contract GenArt721CoreV3_Engine_Flex is
     /// payment info is defined in each project's ProjectFinance struct.
     /// Projects can be updated to this value by calling the
     /// `syncProviderSecondaryForProjectToDefaults` function for each project.
-    uint256 public defaultRenderProviderSecondarySalesBPS = 250;
+    uint256 public defaultRenderProviderSecondarySalesBPS;
     /// The default platform provider payment address for all secondary sales royalty
     /// revenues, for all new projects. Individual project payment info is defined
     /// in each project's ProjectFinance struct.
@@ -218,7 +218,7 @@ contract GenArt721CoreV3_Engine_Flex is
     /// payment info is defined in each project's ProjectFinance struct.
     /// Projects can be updated to this value by calling the
     /// `syncProviderSecondaryForProjectToDefaults` function for each project.
-    uint256 public defaultPlatformProviderSecondarySalesBPS = 250;
+    uint256 public defaultPlatformProviderSecondarySalesBPS;
     /// -----------------------------------------------------------------------
 
     /// single minter allowed for this core contract
@@ -396,18 +396,26 @@ contract GenArt721CoreV3_Engine_Flex is
         if (initialized) {
             revert GenArt721Error(ErrorCodes.ContractInitialized);
         }
+        // @dev assume renderProviderAddress, randomizer, and AdminACL non-zero
+        // checks on platform provider addresses performed in _updateProviderSalesAddresses
+        // initialize default sales revenue percentages and basis points
+        _renderProviderPrimarySalesPercentage = 10;
+        defaultRenderProviderSecondarySalesBPS = 250;
+        _platformProviderPrimarySalesPercentage = engineConfiguration
+            .nullPlatformProvider
+            ? 0
+            : 10;
+        defaultPlatformProviderSecondarySalesBPS = engineConfiguration
+            .nullPlatformProvider
+            ? 0
+            : 250;
+
         // set token name and token symbol
         ERC721_PackedHashSeedV1.initialize(
             engineConfiguration.tokenName,
             engineConfiguration.tokenSymbol
         );
-        // @dev assume renderProviderAddress, randomizer, and AdminACL non-zero
-        // checks on platform provider addresses performed in _updateProviderSalesAddresses
-        if (engineConfiguration.nullPlatformProvider) {
-            // set platform to zero revenue splits
-            _platformProviderPrimarySalesPercentage = 0;
-            defaultPlatformProviderSecondarySalesBPS = 0;
-        }
+
         _updateSplitProvider(engineConfiguration.splitProviderAddress);
         // setup immutable `autoApproveArtistSplitProposals` config
         autoApproveArtistSplitProposals = engineConfiguration
