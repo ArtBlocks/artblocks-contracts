@@ -70,6 +70,26 @@ interface IEngineFactoryV0 {
     function drainERC20(address ERC20TokenAddress, address recipient) external;
 
     /**
+     * @notice Registers multiple contracts with the core registry.
+     * @param contractAddresses An array of contract addresses to register.
+     * @param coreVersions An array of versions corresponding to the contract addresses.
+     * @param coreTypes An array of types corresponding to the contract addresses.
+     */
+    function registerMultipleContracts(
+        address[] calldata contractAddresses,
+        bytes32[] calldata coreVersions,
+        bytes32[] calldata coreTypes
+    ) external;
+
+    /**
+     * @notice Unregisters multiple contracts from the core registry.
+     * @param contractAddresses An array of contract addresses to unregister.
+     */
+    function unregisterMultipleContracts(
+        address[] calldata contractAddresses
+    ) external;
+
+    /**
      * @notice The implementation contract that is cloned when creating new
      * Engine Core contracts.
      */

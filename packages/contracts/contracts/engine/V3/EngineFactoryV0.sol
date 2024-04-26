@@ -162,6 +162,40 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     }
 
     /**
+     * @notice Registers multiple contracts with the core registry.
+     * @param contractAddresses An array of contract addresses to register.
+     * @param coreVersions An array of versions corresponding to the contract addresses.
+     * @param coreTypes An array of types corresponding to the contract addresses.
+     */
+    function registerMultipleContracts(
+        address[] calldata contractAddresses,
+        bytes32[] calldata coreVersions,
+        bytes32[] calldata coreTypes
+    ) external onlyOwner {
+        require(
+            contractAddresses.length == coreVersions.length &&
+                contractAddresses.length == coreTypes.length,
+            "Mismatched input lengths"
+        );
+
+        ICoreRegistryV1(coreRegistry).registerContracts(
+            contractAddresses,
+            coreVersions,
+            coreTypes
+        );
+    }
+
+    /**
+     * @notice Unregisters multiple contracts from the core registry.
+     * @param contractAddresses An array of contract addresses to unregister.
+     */
+    function unregisterMultipleContracts(
+        address[] calldata contractAddresses
+    ) external onlyOwner {
+        ICoreRegistryV1(coreRegistry).unregisterContracts(contractAddresses);
+    }
+
+    /**
      * @notice Abandons the contract, preventing it from being used to create
      * new Engine and Engine Flex contracts.
      * Only callable by the owner, and only once; reverts otherwise.
