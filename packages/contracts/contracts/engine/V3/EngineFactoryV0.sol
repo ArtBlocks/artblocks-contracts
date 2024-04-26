@@ -82,7 +82,7 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         coreRegistry = coreRegistry_;
 
         // transfer ownership to the initial owner
-        transferOwnership(owner_);
+        _transferOwnership(owner_);
         // emit event
         emit Deployed({
             engineImplementation: engineImplementation_,
