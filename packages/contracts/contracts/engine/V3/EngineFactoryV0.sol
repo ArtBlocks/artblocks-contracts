@@ -114,9 +114,9 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         // validate engine contract configuration
         _onlyNonZeroAddress(engineConfiguration.renderProviderAddress);
         _onlyNonZeroAddress(engineConfiguration.randomizerContract);
-        _onlyNonZeroAddress(engineConfiguration.newSuperAdminAddress);
 
         if (adminACLContract == address(0)) {
+            _onlyNonZeroAddress(engineConfiguration.newSuperAdminAddress);
             // deploy new AdminACLV0 contract and update super admin
             adminACLContract = Create2.deploy({
                 amount: 0,
@@ -128,6 +128,12 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
             IAdminACLV0(adminACLContract).changeSuperAdmin(
                 engineConfiguration.newSuperAdminAddress,
                 tmpEmptyArray
+            );
+        } else {
+            // Use existing Admin ACL Contract, newSuperAdminAddress should not be populated
+            require(
+                engineConfiguration.newSuperAdminAddress == address(0),
+                "AdminACL already exists"
             );
         }
 
