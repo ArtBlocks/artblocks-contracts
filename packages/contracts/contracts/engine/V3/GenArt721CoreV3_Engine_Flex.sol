@@ -523,6 +523,33 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
+     * @notice Updates external asset dependency for project `_projectId` of type
+     * ONCHAIN using on-chain compression. This function stores the string
+     * in a compressed format on-chain. For reads, the compressed script is
+     * decompressed on-chain, ensuring the original text is reconstructed without
+     * external dependencies.
+     * @dev _compressedString in memory to minimize bytecode size.
+     * @param _projectId Project to be updated.
+     * @param _index Asset index.
+     * @param _compressedString Pre-compressed string asset to be added.
+     */
+    function updateProjectExternalAssetDependencyOnChainCompressed(
+        uint256 _projectId,
+        uint256 _index,
+        bytes memory _compressedString
+    ) external {
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.updateProjectExternalAssetDependencyOnChainCompressed.selector
+        );
+        V3FlexLib.updateProjectExternalAssetDependencyOnChainCompressed({
+            _projectId: _projectId,
+            _index: _index,
+            _compressedString: _compressedString
+        });
+    }
+
+    /**
      * @notice Updates external asset dependency for project `_projectId` at
      * index `_index`, with data at BytecodeStorage-compatible address
      * `_assetAddress`.
@@ -588,6 +615,30 @@ contract GenArt721CoreV3_Engine_Flex is
             _projectId: _projectId,
             _cidOrData: _cidOrData,
             _dependencyType: _dependencyType
+        });
+    }
+
+    /**
+     * @notice Adds external asset dependency for project `_projectId` of type
+     * ONCHAIN using on-chain compression. This function stores the string
+     * in a compressed format on-chain. For reads, the compressed script is
+     * decompressed on-chain, ensuring the original text is reconstructed without
+     * external dependencies.
+     * @dev _compressedString in memory to minimize bytecode size.
+     * @param _projectId Project to be updated.
+     * @param _compressedString Pre-compressed string asset to be added.
+     */
+    function addProjectExternalAssetDependencyOnChainCompressed(
+        uint256 _projectId,
+        bytes memory _compressedString
+    ) external {
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.addProjectExternalAssetDependencyOnChainCompressed.selector
+        );
+        V3FlexLib.addProjectExternalAssetDependencyOnChainCompressed({
+            _projectId: _projectId,
+            _compressedString: _compressedString
         });
     }
 
