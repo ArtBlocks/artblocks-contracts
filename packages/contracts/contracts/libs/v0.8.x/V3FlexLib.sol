@@ -178,7 +178,12 @@ library V3FlexLib {
             // we don't want to emit data, so we emit the cid as an empty string
             _cidOrData = "";
         } else {
+            // incoming dependency type is not ONCHAIN, so we need to set the cid directly
             flexProjectData.externalAssetDependencies[_index].cid = _cidOrData;
+            // clear any previously populated bytecode address
+            flexProjectData
+                .externalAssetDependencies[_index]
+                .bytecodeAddress = address(0);
         }
         emit ExternalAssetDependencyUpdated(
             _projectId,
@@ -209,12 +214,12 @@ library V3FlexLib {
         );
         _onlyUnlockedProjectExternalAssetDependencies(flexProjectData);
 
-        // assign the asset address to the bytecodeAddress directly
+        // check that the index is within the range of the asset count
         uint24 assetCount = flexProjectData.externalAssetDependencyCount;
         require(_index < assetCount, "Asset index out of range");
 
         // EFFECTS
-        // overwrite the relevant fields of the previous asset
+        // overwrite the relevant fields of the previous asset, assigning bytecodeAddress directly
         IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependency
             storage currentDependency = flexProjectData
                 .externalAssetDependencies[_index];
