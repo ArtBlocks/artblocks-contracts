@@ -26,8 +26,9 @@ library V3FlexLib {
      * @notice When an external asset dependency is updated or added, this event is emitted.
      * @param _projectId The project ID of the project that was updated.
      * @param _index The index of the external asset dependency that was updated.
-     * @param _cid The content ID of the external asset dependency. This is an empty string
-     * if the dependency type is ONCHAIN.
+     * @param _cid Field that contains the CID of the dependency if IPFS or ARWEAVE,
+     * empty string of ONCHAIN, or a string representation of the Art Blocks Dependency
+     * Registry's `dependencyNameAndVersion` if ART_BLOCKS_DEPENDENCY_REGISTRY.
      * @param _dependencyType The type of the external asset dependency.
      * @param _externalAssetDependencyCount The number of external asset dependencies.
      */
