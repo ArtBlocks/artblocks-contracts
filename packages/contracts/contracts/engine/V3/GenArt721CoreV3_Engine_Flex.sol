@@ -498,11 +498,14 @@ contract GenArt721CoreV3_Engine_Flex is
      * @notice Updates external asset dependency for project `_projectId`.
      * @param _projectId Project to be updated.
      * @param _index Asset index.
-     * @param _cidOrData Asset cid (Content identifier) or data string to be translated into bytecode.
+     * @param _cidOrData Field that contains the CID of the dependency if IPFS or ARWEAVE,
+     * empty string of ONCHAIN, or a string representation of the Art Blocks Dependency
+     * Registry's `dependencyNameAndVersion` if ART_BLOCKS_DEPENDENCY_REGISTRY.
      * @param _dependencyType Asset dependency type.
      *  0 - IPFS
      *  1 - ARWEAVE
      *  2 - ONCHAIN
+     *  3 - ART_BLOCKS_DEPENDENCY_REGISTRY
      */
     function updateProjectExternalAssetDependency(
         uint256 _projectId,
@@ -518,7 +521,8 @@ contract GenArt721CoreV3_Engine_Flex is
             _projectId: _projectId,
             _index: _index,
             _cidOrData: _cidOrData,
-            _dependencyType: _dependencyType
+            _dependencyType: _dependencyType,
+            _artblocksDependencyRegistryAddress: artblocksDependencyRegistryAddress
         });
     }
 
@@ -557,16 +561,16 @@ contract GenArt721CoreV3_Engine_Flex is
      * @param _index Asset index.
      * @param _assetAddress Address of the on-chain asset.
      */
-    function UpdateProjectAssetDependencyOnChainAtAddress(
+    function updateProjectAssetDependencyOnChainAtAddress(
         uint256 _projectId,
         uint256 _index,
         address _assetAddress
     ) external {
         _onlyArtistOrAdminACL(
             _projectId,
-            this.UpdateProjectAssetDependencyOnChainAtAddress.selector
+            this.updateProjectAssetDependencyOnChainAtAddress.selector
         );
-        V3FlexLib.UpdateProjectAssetDependencyOnChainAtAddress({
+        V3FlexLib.updateProjectAssetDependencyOnChainAtAddress({
             _projectId: _projectId,
             _index: _index,
             _assetAddress: _assetAddress
@@ -596,11 +600,14 @@ contract GenArt721CoreV3_Engine_Flex is
     /**
      * @notice Adds external asset dependency for project `_projectId`.
      * @param _projectId Project to be updated.
-     * @param _cidOrData Asset cid (Content identifier) or data string to be translated into bytecode.
+     * @param _cidOrData Field that contains the CID of the dependency if IPFS or ARWEAVE,
+     * empty string of ONCHAIN, or a string representation of the Art Blocks Dependency
+     * Registry's `dependencyNameAndVersion` if ART_BLOCKS_DEPENDENCY_REGISTRY.
      * @param _dependencyType Asset dependency type.
      *  0 - IPFS
      *  1 - ARWEAVE
      *  2 - ONCHAIN
+     *  3 - ART_BLOCKS_DEPENDENCY_REGISTRY
      */
     function addProjectExternalAssetDependency(
         uint256 _projectId,
@@ -614,7 +621,8 @@ contract GenArt721CoreV3_Engine_Flex is
         V3FlexLib.addProjectExternalAssetDependency({
             _projectId: _projectId,
             _cidOrData: _cidOrData,
-            _dependencyType: _dependencyType
+            _dependencyType: _dependencyType,
+            _artblocksDependencyRegistryAddress: artblocksDependencyRegistryAddress
         });
     }
 
