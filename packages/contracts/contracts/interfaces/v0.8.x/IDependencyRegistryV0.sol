@@ -97,35 +97,4 @@ interface IDependencyRegistryV0 {
         bytes32 dependencyNameAndVersion,
         uint256 index
     ) external view returns (string memory);
-
-    /**
-     * @notice Returns details for a given dependency type `dependencyNameAndVersion`.
-     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
-     * @return nameAndVersion String representation of `dependencyNameAndVersion`.
-     *                        (e.g. "p5js(atSymbol)1.0.0")
-     * @return licenseType License type for dependency
-     * @return preferredCDN Preferred CDN URL for dependency
-     * @return additionalCDNCount Count of additional CDN URLs for dependency
-     * @return preferredRepository Preferred repository URL for dependency
-     * @return additionalRepositoryCount Count of additional repository URLs for dependency
-     * @return dependencyWebsite Project website URL for dependency
-     * @return availableOnChain Whether dependency is available on chain
-     * @return scriptCount Count of on-chain scripts for dependency
-     */
-    function getDependencyDetails(
-        bytes32 dependencyNameAndVersion
-    )
-        external
-        view
-        returns (
-            string memory nameAndVersion,
-            string memory licenseType,
-            string memory preferredCDN,
-            uint24 additionalCDNCount,
-            string memory preferredRepository,
-            uint24 additionalRepositoryCount,
-            string memory dependencyWebsite,
-            bool availableOnChain,
-            uint24 scriptCount
-        );
 }
