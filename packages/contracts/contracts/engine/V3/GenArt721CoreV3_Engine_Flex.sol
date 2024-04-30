@@ -521,17 +521,17 @@ contract GenArt721CoreV3_Engine_Flex is
             _projectId: _projectId,
             _index: _index,
             _cidOrData: _cidOrData,
-            _dependencyType: _dependencyType,
-            _artblocksDependencyRegistryAddress: artblocksDependencyRegistryAddress
+            _dependencyType: _dependencyType
         });
     }
 
     /**
      * @notice Updates external asset dependency for project `_projectId` of type
-     * ONCHAIN using on-chain compression. This function stores the string
-     * in a compressed format on-chain. For reads, the compressed script is
-     * decompressed on-chain, ensuring the original text is reconstructed without
-     * external dependencies.
+     * ONCHAIN using on-chain compression. The string should be compressed using
+     * `getCompressed`.
+     * This function stores the string in a compressed format on-chain.
+     * For reads, the compressed script is decompressed on-chain, ensuring the
+     * original text is reconstructed without external dependencies.
      * @dev _compressedString in memory to minimize bytecode size.
      * @param _projectId Project to be updated.
      * @param _index Asset index.
@@ -621,17 +621,17 @@ contract GenArt721CoreV3_Engine_Flex is
         V3FlexLib.addProjectExternalAssetDependency({
             _projectId: _projectId,
             _cidOrData: _cidOrData,
-            _dependencyType: _dependencyType,
-            _artblocksDependencyRegistryAddress: artblocksDependencyRegistryAddress
+            _dependencyType: _dependencyType
         });
     }
 
     /**
      * @notice Adds external asset dependency for project `_projectId` of type
-     * ONCHAIN using on-chain compression. This function stores the string
-     * in a compressed format on-chain. For reads, the compressed script is
-     * decompressed on-chain, ensuring the original text is reconstructed without
-     * external dependencies.
+     * ONCHAIN using on-chain compression. The string should be compressed using
+     * `getCompressed`.
+     * This function stores the string in a compressed format on-chain.
+     * For reads, the compressed script is decompressed on-chain, ensuring the
+     * original text is reconstructed without external dependencies.
      * @dev _compressedString in memory to minimize bytecode size.
      * @param _projectId Project to be updated.
      * @param _compressedString Pre-compressed string asset to be added.
@@ -2305,6 +2305,9 @@ contract GenArt721CoreV3_Engine_Flex is
      * If the dependencyType is ONCHAIN, the `data` field will contain the extrated bytecode data and `cid`
      * will be an empty string. Conversly, for any other dependencyType, the `data` field will be an empty string
      * and the `bytecodeAddress` will point to the zero address.
+     * If the dependencyType is ART_BLOCKS_DEPENDENCY_REGISTRY, the `cid` field will contain the string
+     * representation of the dependencyNameAndVersion bytes32 value stored in the dependency registry (
+     * at public address `artblocksDependencyRegistryAddress`)
      */
     function projectExternalAssetDependencyByIndex(
         uint256 _projectId,

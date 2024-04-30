@@ -4,7 +4,6 @@
 pragma solidity ^0.8.0;
 
 import {IGenArt721CoreContractV3_Engine_Flex} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
-import {IDependencyRegistryV0} from "../../interfaces/v0.8.x/IDependencyRegistryV0.sol";
 
 import {BytecodeStorageWriter, BytecodeStorageReader} from "./BytecodeStorageV2.sol";
 
@@ -142,8 +141,7 @@ library V3FlexLib {
         uint256 _projectId,
         uint256 _index,
         string memory _cidOrData,
-        IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyType _dependencyType,
-        address _artblocksDependencyRegistryAddress
+        IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyType _dependencyType
     ) external {
         FlexProjectData storage flexProjectData = getFlexProjectData(
             _projectId
@@ -151,18 +149,9 @@ library V3FlexLib {
         _onlyUnlockedProjectExternalAssetDependencies(flexProjectData);
         uint24 assetCount = flexProjectData.externalAssetDependencyCount;
         require(_index < assetCount, "Asset index out of range");
-        // if Art Blocks Dependency Registry, validate dependencyNameAndVersion
-        if (
-            _dependencyType ==
-            IGenArt721CoreContractV3_Engine_Flex
-                .ExternalAssetDependencyType
-                .ART_BLOCKS_DEPENDENCY_REGISTRY
-        ) {
-            _validateDependencyNameAndVersion({
-                dependencyNameAndVersion: _cidOrData,
-                artblocksDependencyRegistryAddress: _artblocksDependencyRegistryAddress
-            });
-        }
+        // @dev dependencyNameAndVersion are not validated against the dependency registry
+        // due to limitations of L1 reads on L2 networks at this time
+
         IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependency
             storage _oldDependency = flexProjectData.externalAssetDependencies[
                 _index
@@ -355,25 +344,14 @@ library V3FlexLib {
     function addProjectExternalAssetDependency(
         uint256 _projectId,
         string memory _cidOrData,
-        IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyType _dependencyType,
-        address _artblocksDependencyRegistryAddress
+        IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyType _dependencyType
     ) external {
         FlexProjectData storage flexProjectData = getFlexProjectData(
             _projectId
         );
         _onlyUnlockedProjectExternalAssetDependencies(flexProjectData);
-        // if Art Blocks Dependency Registry, validate dependencyNameAndVersion
-        if (
-            _dependencyType ==
-            IGenArt721CoreContractV3_Engine_Flex
-                .ExternalAssetDependencyType
-                .ART_BLOCKS_DEPENDENCY_REGISTRY
-        ) {
-            _validateDependencyNameAndVersion({
-                dependencyNameAndVersion: _cidOrData,
-                artblocksDependencyRegistryAddress: _artblocksDependencyRegistryAddress
-            });
-        }
+        // @dev dependencyNameAndVersion are not validated against the dependency registry
+        // due to limitations of L1 reads on L2 networks at this time
 
         uint24 assetCount = flexProjectData.externalAssetDependencyCount;
         address _bytecodeAddress = address(0);
@@ -595,56 +573,5 @@ library V3FlexLib {
             !flexProjectData.externalAssetDependenciesLocked,
             "External dependencies locked"
         );
-    }
-
-    function _validateDependencyNameAndVersion(
-        string memory dependencyNameAndVersion,
-        address artblocksDependencyRegistryAddress
-    ) private view {
-        require(
-            bytes(dependencyNameAndVersion).length > 0,
-            "Dependency name and version cannot be empty"
-        );
-        // call the dependency registry to validate the dependency name and version
-        // @dev assume valid dependencyNameAndVersion was input - worst case validation fails if invalid
-        bytes32 dependencyNameAndVersionBytes32 = stringToBytes32(
-            dependencyNameAndVersion
-        );
-        (
-            string memory returnedNameAndVersion,
-            ,
-            ,
-            ,
-            ,
-            ,
-            ,
-            ,
-
-        ) = IDependencyRegistryV0(artblocksDependencyRegistryAddress)
-                .getDependencyDetails(dependencyNameAndVersionBytes32);
-        // verify that the returned name and version string matches the string being validated
-        require(
-            keccak256(abi.encodePacked(returnedNameAndVersion)) ==
-                keccak256(abi.encodePacked(dependencyNameAndVersion)),
-            "Invalid dependency name and version"
-        );
-    }
-
-    /**
-     * converts from a short string to a bytes32. Does not work with longer strings,
-     * so only use with strings intended to represent a bytes32-formatted string.
-     * @param source The short string to convert to bytes32
-     */
-    function stringToBytes32(
-        string memory source
-    ) private pure returns (bytes32 result) {
-        bytes memory tempString = bytes(source);
-        if (tempString.length == 0) {
-            return 0x0;
-        }
-
-        assembly {
-            result := mload(add(source, 32))
-        }
     }
 }
