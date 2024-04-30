@@ -6,12 +6,17 @@ import {
   deploySharedMinterFilter,
   deployAndGet,
 } from "./common";
+import { SplitProviderV0 } from "../../scripts/contracts/split/split-provider/SplitProviderV0";
 
 import { ethers } from "hardhat";
 
 import { Contract } from "ethers";
 
-import { SplitAtomicV0__factory } from "../../scripts/contracts";
+import {
+  SplitAtomicV0__factory,
+  GenArt721CoreV3_Engine__factory,
+  GenArt721CoreV3_Engine_Flex__factory,
+} from "../../scripts/contracts";
 
 /**
  * Fixture that sets up initial, default config.
@@ -53,6 +58,141 @@ export async function setupConfigWitMinterFilterV2Suite() {
   ]);
   // allowlist dummy shared minter on minter filter
   await config.minterFilter.approveMinterGlobally(config.minter.address);
+  return config;
+}
+
+export async function setupEngineFactory() {
+  const config = await loadFixture(setupConfig);
+  // Note that for testing purposes, we deploy a new version of the library,
+  // but in production we would use the same library deployment for all contracts
+  const libraryFactory = await ethers.getContractFactory(
+    "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+  );
+  const library = await libraryFactory
+    .connect(config.accounts.deployer)
+    .deploy(/* no args for library ever */);
+  let libraries = {
+    libraries: {
+      BytecodeStorageReader: library.address,
+    },
+  };
+  // deploy Engine implementations
+  const engineCoreContractFactory = await ethers.getContractFactory(
+    "GenArt721CoreV3_Engine",
+    {
+      ...libraries,
+    }
+  );
+  config.engineImplementation = await engineCoreContractFactory
+    .connect(config.accounts.deployer)
+    .deploy();
+
+  // deploy Engine Flex implementation with Flex libraries
+  const flexLibraryFactory = await ethers.getContractFactory("V3FlexLib", {
+    libraries: { BytecodeStorageReader: library.address },
+  });
+  const flexLibrary = await flexLibraryFactory
+    .connect(config.accounts.deployer)
+    .deploy(/* no args for library ever */);
+  libraries.libraries.V3FlexLib = flexLibrary.address;
+
+  const engineFlexCoreContractFactory = await ethers.getContractFactory(
+    "GenArt721CoreV3_Engine_Flex",
+    {
+      ...libraries,
+    }
+  );
+
+  config.engineFlexImplementation = await engineFlexCoreContractFactory
+    .connect(config.accounts.deployer)
+    .deploy();
+
+  // deploy admin ACL
+  config.adminACL = await deployAndGet(config, "AdminACLV0", []);
+  // deploy core registry
+  config.coreRegistry = await deployAndGet(config, "CoreRegistryV1", []);
+  // deploy Engine factory
+
+  config.engineFactory = await deployAndGet(config, "EngineFactoryV0", [
+    config.engineImplementation.address,
+    config.engineFlexImplementation.address,
+    config.coreRegistry.address,
+    config.accounts.deployer.address, // owner
+  ]);
+
+  // transfer ownership of core registry to engine factory
+  await config.coreRegistry
+    .connect(config.accounts.deployer)
+    .transferOwnership(config.engineFactory.address);
+
+  const randomizer = await deployAndGet(config, "BasicRandomizerV2", []);
+
+  // split provider
+  const mockSplitterFactory = await deployAndGet(
+    config,
+    "Mock0xSplitsV2PullFactory",
+    []
+  );
+  config.splitProvider = (await deployAndGet(config, "SplitProviderV0", [
+    mockSplitterFactory.address, // _splitterFactory
+  ])) as SplitProviderV0;
+
+  // define valid and invalid splits
+  config.validEngineConfigurationExistingAdminACL = {
+    tokenName: config.name,
+    tokenSymbol: config.symbol,
+    renderProviderAddress: config.accounts.deployer.address,
+    platformProviderAddress: config.accounts.additional.address,
+    newSuperAdminAddress: "0x0000000000000000000000000000000000000000",
+    randomizerContract: randomizer.address,
+    splitProviderAddress: config.splitProvider.address,
+    startingProjectId: 0,
+    autoApproveArtistSplitProposals: true,
+    nullPlatformProvider: false,
+    allowArtistProjectActivation: true,
+  };
+
+  // deploy valid Engine contract via factory
+  const tx1 = await config.engineFactory.createEngineContract(
+    0,
+    config.validEngineConfigurationExistingAdminACL,
+    config.adminACL.address,
+    ethers.utils.formatBytes32String("Unique salt Engine") // random salt
+  );
+
+  const receipt1 = await ethers.provider.getTransactionReceipt(tx1.hash);
+  // get engine address from logs
+  const engineCreationLog = receipt1.logs[receipt1.logs.length - 1];
+  const engineAddress = ethers.utils.defaultAbiCoder.decode(
+    ["address"],
+    engineCreationLog.topics[1]
+  )[0];
+
+  config.engine = GenArt721CoreV3_Engine__factory.connect(
+    engineAddress,
+    ethers.provider
+  );
+
+  // deploy valid Engine Flex contract via factory
+  const tx2 = await config.engineFactory.createEngineContract(
+    1,
+    config.validEngineConfigurationExistingAdminACL,
+    config.adminACL.address,
+    ethers.utils.formatBytes32String("Unique salt Engine Flex") // random salt
+  );
+
+  const receipt2 = await ethers.provider.getTransactionReceipt(tx2.hash);
+  // get engine address from logs
+  const engineFlexCreationLog = receipt2.logs[receipt2.logs.length - 1];
+  const engineFlexAddress = ethers.utils.defaultAbiCoder.decode(
+    ["address"],
+    engineFlexCreationLog.topics[1]
+  )[0];
+  config.engineFlex = GenArt721CoreV3_Engine_Flex__factory.connect(
+    engineFlexAddress,
+    ethers.provider
+  );
+
   return config;
 }
 

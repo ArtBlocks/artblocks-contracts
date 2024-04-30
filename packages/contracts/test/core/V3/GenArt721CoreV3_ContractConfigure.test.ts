@@ -42,7 +42,6 @@ for (const coreContractName of coreContractsToTest) {
         coreContractName,
         "MinterFilterV1"
       ));
-
       config.minter = await deployAndGet(config, "MinterSetPriceV2", [
         config.genArt721Core.address,
         config.minterFilter.address,
