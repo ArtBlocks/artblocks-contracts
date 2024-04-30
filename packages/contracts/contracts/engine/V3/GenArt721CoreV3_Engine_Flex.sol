@@ -548,8 +548,7 @@ contract GenArt721CoreV3_Engine_Flex is
 
     /**
      * @notice Removes external asset dependency for project `_projectId` at index `_index`.
-     * Removal is done by swapping the element to be removed with the last element in the array, then deleting this last element.
-     * Assets with indices higher than `_index` can have their indices adjusted as a result of this operation.
+     * As of v3.2, only allow removal of dependency at last index, for UX purposes.
      * @param _projectId Project to be updated.
      * @param _index Asset index
      */

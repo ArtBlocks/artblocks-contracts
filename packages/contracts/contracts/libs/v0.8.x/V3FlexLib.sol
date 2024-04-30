@@ -247,14 +247,15 @@ library V3FlexLib {
             _projectId
         );
         _onlyUnlockedProjectExternalAssetDependencies(flexProjectData);
+        // ensure the index is within the range of the asset count
         uint24 assetCount = flexProjectData.externalAssetDependencyCount;
         require(_index < assetCount, "Asset index out of range");
-
+        // @dev solidity underflow will revert on the following statement if assetCount is 0
         uint24 lastElementIndex = assetCount - 1;
+        // for UX purposes, only allow removal of the last lastElementIndex
+        require(_index == lastElementIndex, "Only removal of last asset");
 
-        // copy last element to index of element to be removed
-        flexProjectData.externalAssetDependencies[_index] = flexProjectData
-            .externalAssetDependencies[lastElementIndex];
+        // @dev simply delete last element; no need to copy last to deleted index due to require statement above
 
         delete flexProjectData.externalAssetDependencies[lastElementIndex];
 
