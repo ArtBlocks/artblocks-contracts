@@ -451,7 +451,12 @@ for (const coreContractName of coreContractsToTest) {
           config.genArt721Core
             .connect(config.accounts.deployer)
             .renounceOwnership()
-        ).to.be.revertedWith("Ownable: caller is not the owner");
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            "OwnableUnauthorizedAccount"
+          )
+          .withArgs(config.accounts.deployer.address);
       });
     });
 
