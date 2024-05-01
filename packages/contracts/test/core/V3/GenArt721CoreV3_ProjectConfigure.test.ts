@@ -1667,15 +1667,18 @@ for (const coreContractName of coreContractsToTest) {
           .purchase(config.projectZero);
 
         // attempt to safe-transfer token to script storage contract
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
             [
               "safeTransferFrom(address,address,uint256)"
-            ](config.accounts.artist.address, scriptAddress, config.projectZeroTokenZero.toNumber()),
-          "ERC721: transfer to non ERC721Receiver implementer"
-        );
-
+            ](config.accounts.artist.address, scriptAddress, config.projectZeroTokenZero.toNumber())
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            "ERC721InvalidReceiver"
+          )
+          .withArgs(scriptAddress);
         // verify script storage contract still exists
         const sameScriptByteCode = await ethers.provider.getCode(scriptAddress);
         expect(sameScriptByteCode).to.equal(scriptByteCode);
