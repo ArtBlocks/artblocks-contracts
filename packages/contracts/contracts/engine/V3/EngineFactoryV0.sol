@@ -12,10 +12,10 @@ import {IEngineFactoryV0} from "../../interfaces/v0.8.x/IEngineFactoryV0.sol";
 import {IAdminACLV0} from "../../interfaces/v0.8.x/IAdminACLV0.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
-import {Clones} from "@openzeppelin-5.0/contracts/proxy/Clones.sol";
-import {IERC20} from "@openzeppelin-5.0/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin-5.0/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Create2} from "@openzeppelin-5.0/contracts/utils/Create2.sol";
+import {Clones} from "@openzeppelin-4.7/contracts/proxy/Clones.sol";
+import {IERC20} from "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin-4.7/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Create2} from "@openzeppelin-4.7/contracts/utils/Create2.sol";
 
 /**
  * @title EngineFactoryV0
@@ -114,6 +114,11 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         // validate engine contract configuration
         _onlyNonZeroAddress(engineConfiguration.renderProviderAddress);
         _onlyNonZeroAddress(engineConfiguration.randomizerContract);
+
+        // check if salt is empty and generate a pseudorandom one if so
+        if (salt == bytes32(0)) {
+            salt = generatePseudorandomSalt();
+        }
 
         if (adminACLContract == address(0)) {
             _onlyNonZeroAddress(engineConfiguration.newSuperAdminAddress);
@@ -281,6 +286,13 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
             require(success, string(data));
             returnData[i] = data;
         }
+    }
+
+    function generatePseudorandomSalt() internal view returns (bytes32 result) {
+        return
+            keccak256(
+                abi.encodePacked(block.timestamp, block.number, address(this))
+            );
     }
 
     function stringToBytes32(
