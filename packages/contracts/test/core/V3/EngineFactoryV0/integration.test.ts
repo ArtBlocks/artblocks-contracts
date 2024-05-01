@@ -53,15 +53,19 @@ describe(`EngineFactoryV0 Integration`, async function () {
 
     it("reverts if not called by deployer", async function () {
       const config = await loadFixture(_beforeEach);
-      await expectRevert(
+      await expect(
         config.engineFactory.connect(config.accounts.user).createEngineContract(
           0,
           config.validEngineConfigurationExistingAdminACL,
           config?.adminACL?.address,
           ethers.utils.formatBytes32String("Unique salt Engine4") // random salt
-        ),
-        revertMessages.onlyOwner
-      );
+        )
+      )
+        .to.be.revertedWithCustomError(
+          config.engineFactory,
+          "OwnableUnauthorizedAccount"
+        )
+        .withArgs(config.accounts.user.address);
     });
 
     it("reverts if invalid configuration, only non-zero render provider address", async function () {
