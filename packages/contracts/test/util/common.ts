@@ -7,10 +7,6 @@ import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract, BigNumber } from "ethers";
 import { ONE_MINUTE } from "./constants";
 import { SplitProviderV0 } from "../../scripts/contracts/split/split-provider/SplitProviderV0";
-import {
-  GenArt721CoreV3_Engine_Flex__factory,
-  GenArt721CoreV3_Engine__factory,
-} from "../../scripts/contracts";
 
 export type TestAccountsArtBlocks = {
   deployer: SignerWithAddress;
@@ -333,6 +329,20 @@ export async function deployWithStorageLibraryAndGet(
     coreContractName.endsWith("Engine") ||
     coreContractName.endsWith("Flex")
   ) {
+    // map deploy args to engine configuration params
+    const [
+      tokenName,
+      tokenSymbol,
+      renderProviderAddress,
+      platformProviderAddress,
+      randomizerAddress,
+      adminACLAddress,
+      startingProjectId,
+      autoApproveArtistSplitProposals,
+      splitProviderAddress,
+      nullPlatformProvider,
+      allowArtistProjectActivation,
+    ] = deployArgs || [];
     // Deploy the Engine Factory and Engine and Engine Flex implementation contracts
     const engineContractCoreFactory = await ethers.getContractFactory(
       "GenArt721CoreV3_Engine",
@@ -373,34 +383,22 @@ export async function deployWithStorageLibraryAndGet(
       ?.connect(config.accounts.deployer)
       .transferOwnership(engineFactory?.address);
     // deploy randomizer
-    const randomizerAddress =
-      deployArgs?.[4] ??
+    const randomizerContract =
+      randomizerAddress ??
       (await deployAndGet(config, "BasicRandomizerV2", [])).address;
 
-    // split provider
-    const mockSplitterFactory = await deployAndGet(
-      config,
-      "Mock0xSplitsV2PullFactory",
-      []
-    );
-    const splitProvider = (await deployAndGet(config, "SplitProviderV0", [
-      mockSplitterFactory.address, // _splitterFactory
-    ])) as SplitProviderV0;
-    // define valid and invalid splits
     const validEngineConfigurationExistingAdminACL = {
-      tokenName: deployArgs?.[0] ?? config.name,
-      tokenSymbol: deployArgs?.[1] ?? config.symbol,
-      renderProviderAddress:
-        deployArgs?.[2] ?? config.accounts.deployer.address,
-      platformProviderAddress:
-        deployArgs?.[3] ?? config.accounts.additional.address,
+      tokenName,
+      tokenSymbol,
+      renderProviderAddress,
+      platformProviderAddress,
       newSuperAdminAddress: "0x0000000000000000000000000000000000000000",
-      randomizerContract: randomizerAddress,
-      splitProviderAddress: deployArgs?.[8] ?? splitProvider.address,
-      startingProjectId: deployArgs?.[6] ?? 0,
-      autoApproveArtistSplitProposals: deployArgs?.[7] ?? true,
-      nullPlatformProvider: deployArgs?.[9],
-      allowArtistProjectActivation: deployArgs?.[10],
+      randomizerContract,
+      splitProviderAddress,
+      startingProjectId,
+      autoApproveArtistSplitProposals,
+      nullPlatformProvider,
+      allowArtistProjectActivation,
     };
 
     const engineCoreType = coreContractName.endsWith("Engine_Flex") ? 1 : 0;
