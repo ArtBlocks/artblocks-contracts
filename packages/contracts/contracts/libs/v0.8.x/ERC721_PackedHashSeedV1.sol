@@ -48,16 +48,17 @@ abstract contract ERC721_PackedHashSeedV1 is
 
     /// mapping of token ID to OwnerAndHashSeed
     /// @dev visibility internal so inheriting contracts can access
-    mapping(uint256 => OwnerAndHashSeed) internal _ownersAndHashSeeds;
+    mapping(uint256 tokenId => OwnerAndHashSeed) internal _ownersAndHashSeeds;
 
     // Mapping owner address to token count
-    mapping(address => uint256) private _balances;
+    mapping(address owner => uint256) private _balances;
 
     // Mapping from token ID to approved address
-    mapping(uint256 => address) private _tokenApprovals;
+    mapping(uint256 tokenId => address) private _tokenApprovals;
 
     // Mapping from owner to operator approvals
-    mapping(address => mapping(address => bool)) private _operatorApprovals;
+    mapping(address owner => mapping(address => bool))
+        private _operatorApprovals;
 
     /**
      * @dev See {IERC165-supportsInterface}.
