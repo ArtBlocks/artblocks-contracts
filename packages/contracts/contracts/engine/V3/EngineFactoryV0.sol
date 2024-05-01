@@ -257,7 +257,12 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     /**
      * @notice Execute a batch of calls.
      * @dev The calls are executed in order, reverting if any of them fails. Can
-     * only be called by the owner. This is particularly useful to safely interact
+     * only be called by the owner. It is safe to check ownership only once here
+     * because the owner status is only used to gate access to the function, not
+     * to validate each individual call. Even if ownership is transferred during
+     * the sequence of calls, it does not affect the execution logic or security,
+     * as ownership is solely used to prevent unauthorized use of this batch
+     * execution capability. This is particularly useful to safely interact
      * with contracts or addresses that might deem this contract eligible for
      * airdrops, thereby avoiding loss of funds.
      * @param _calls The calls to execute
