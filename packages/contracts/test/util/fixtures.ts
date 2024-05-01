@@ -12,11 +12,7 @@ import { ethers } from "hardhat";
 
 import { Contract } from "ethers";
 
-import {
-  SplitAtomicV0__factory,
-  GenArt721CoreV3_Engine__factory,
-  GenArt721CoreV3_Engine_Flex__factory,
-} from "../../scripts/contracts";
+import { SplitAtomicV0__factory } from "../../scripts/contracts";
 
 /**
  * Fixture that sets up initial, default config.
@@ -125,7 +121,7 @@ export async function setupEngineFactory() {
     .connect(config.accounts.deployer)
     .transferOwnership(config.engineFactory.address);
 
-  const randomizer = await deployAndGet(config, "BasicRandomizerV2", []);
+  config.randomizer = await deployAndGet(config, "BasicRandomizerV2", []);
 
   // split provider
   const mockSplitterFactory = await deployAndGet(
@@ -136,62 +132,6 @@ export async function setupEngineFactory() {
   config.splitProvider = (await deployAndGet(config, "SplitProviderV0", [
     mockSplitterFactory.address, // _splitterFactory
   ])) as SplitProviderV0;
-
-  // define valid and invalid splits
-  config.validEngineConfigurationExistingAdminACL = {
-    tokenName: config.name,
-    tokenSymbol: config.symbol,
-    renderProviderAddress: config.accounts.deployer.address,
-    platformProviderAddress: config.accounts.additional.address,
-    newSuperAdminAddress: "0x0000000000000000000000000000000000000000",
-    randomizerContract: randomizer.address,
-    splitProviderAddress: config.splitProvider.address,
-    startingProjectId: 0,
-    autoApproveArtistSplitProposals: true,
-    nullPlatformProvider: false,
-    allowArtistProjectActivation: true,
-  };
-
-  // deploy valid Engine contract via factory
-  const tx1 = await config.engineFactory.createEngineContract(
-    0,
-    config.validEngineConfigurationExistingAdminACL,
-    config.adminACL.address,
-    ethers.utils.formatBytes32String("Unique salt Engine") // random salt
-  );
-
-  const receipt1 = await ethers.provider.getTransactionReceipt(tx1.hash);
-  // get engine address from logs
-  const engineCreationLog = receipt1.logs[receipt1.logs.length - 1];
-  const engineAddress = ethers.utils.defaultAbiCoder.decode(
-    ["address"],
-    engineCreationLog.topics[1]
-  )[0];
-
-  config.engine = GenArt721CoreV3_Engine__factory.connect(
-    engineAddress,
-    ethers.provider
-  );
-
-  // deploy valid Engine Flex contract via factory
-  const tx2 = await config.engineFactory.createEngineContract(
-    1,
-    config.validEngineConfigurationExistingAdminACL,
-    config.adminACL.address,
-    ethers.utils.formatBytes32String("Unique salt Engine Flex") // random salt
-  );
-
-  const receipt2 = await ethers.provider.getTransactionReceipt(tx2.hash);
-  // get engine address from logs
-  const engineFlexCreationLog = receipt2.logs[receipt2.logs.length - 1];
-  const engineFlexAddress = ethers.utils.defaultAbiCoder.decode(
-    ["address"],
-    engineFlexCreationLog.topics[1]
-  )[0];
-  config.engineFlex = GenArt721CoreV3_Engine_Flex__factory.connect(
-    engineFlexAddress,
-    ethers.provider
-  );
 
   return config;
 }

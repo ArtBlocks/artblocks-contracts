@@ -14,12 +14,27 @@ describe(`EngineFactoryV0 Integration`, async function () {
   async function _beforeEach() {
     // deploy new Engine factory
     const config = await loadFixture(setupEngineFactory);
+    // add valid engine configuration to config
+    config.validEngineConfigurationExistingAdminACL = {
+      tokenName: config.name,
+      tokenSymbol: config.symbol,
+      renderProviderAddress: config.accounts.deployer.address,
+      platformProviderAddress: config.accounts.additional.address,
+      newSuperAdminAddress: "0x0000000000000000000000000000000000000000",
+      randomizerContract: config?.randomizer?.address,
+      splitProviderAddress: config.splitProvider.address,
+      startingProjectId: 0,
+      autoApproveArtistSplitProposals: true,
+      nullPlatformProvider: false,
+      allowArtistProjectActivation: true,
+    };
     return config;
   }
 
   describe("createEngineContract", async function () {
     it("reverts if abandoned", async function () {
       const config = await loadFixture(_beforeEach);
+
       // abandon the factory
       await config?.engineFactory?.connect(config.accounts.deployer).abandon();
       // expect revert on createEngineContract

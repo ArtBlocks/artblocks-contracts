@@ -58,9 +58,22 @@ describe(`EngineFactoryV0 Events`, async function () {
       // @dev do not use helper functions, because need to parse logs for new Engine address
 
       // deploy valid Engine contract via factory
+      const validEngineConfigurationExistingAdminACL = {
+        tokenName: config.name,
+        tokenSymbol: config.symbol,
+        renderProviderAddress: config.accounts.deployer.address,
+        platformProviderAddress: config.accounts.additional.address,
+        newSuperAdminAddress: "0x0000000000000000000000000000000000000000",
+        randomizerContract: config?.randomizer?.address,
+        splitProviderAddress: config.splitProvider.address,
+        startingProjectId: 0,
+        autoApproveArtistSplitProposals: true,
+        nullPlatformProvider: false,
+        allowArtistProjectActivation: true,
+      };
       const tx = await config.engineFactory.createEngineContract(
         0,
-        config.validEngineConfigurationExistingAdminACL,
+        validEngineConfigurationExistingAdminACL,
         config.adminACL.address,
         ethers.utils.formatBytes32String("Unique salt Engine2") // random salt
       );
@@ -83,7 +96,7 @@ describe(`EngineFactoryV0 Events`, async function () {
       // deploy valid Engine Flex contract via factory
       const tx2 = await config.engineFactory.createEngineContract(
         1,
-        config.validEngineConfigurationExistingAdminACL,
+        validEngineConfigurationExistingAdminACL,
         config.adminACL.address,
         ethers.utils.formatBytes32String("Unique salt Engine3") // random salt
       );
