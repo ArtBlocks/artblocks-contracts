@@ -3,7 +3,7 @@
 
 // @dev fixed to specific solidity version for clarity and for more clear
 // source code verification purposes.
-pragma solidity 0.8.19;
+pragma solidity 0.8.22;
 
 import {AdminACLV0} from "../../AdminACLV0.sol";
 import {IGenArt721CoreContractV3_Engine, EngineConfiguration} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine.sol";
@@ -11,11 +11,11 @@ import {ICoreRegistryV1} from "../../interfaces/v0.8.x/ICoreRegistryV1.sol";
 import {IEngineFactoryV0} from "../../interfaces/v0.8.x/IEngineFactoryV0.sol";
 import {IAdminACLV0} from "../../interfaces/v0.8.x/IAdminACLV0.sol";
 
-import "@openzeppelin-4.7/contracts/access/Ownable.sol";
-import {Clones} from "@openzeppelin-4.7/contracts/proxy/Clones.sol";
-import {IERC20} from "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin-4.7/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Create2} from "@openzeppelin-4.7/contracts/utils/Create2.sol";
+import "@openzeppelin-5.0/contracts/access/Ownable.sol";
+import {Clones} from "@openzeppelin-5.0/contracts/proxy/Clones.sol";
+import {IERC20} from "@openzeppelin-5.0/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin-5.0/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Create2} from "@openzeppelin-5.0/contracts/utils/Create2.sol";
 
 /**
  * @title EngineFactoryV0
@@ -84,7 +84,7 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         address engineFlexImplementation_,
         address coreRegistry_,
         address owner_
-    ) Ownable() {
+    ) Ownable(owner_) {
         _onlyNonZeroAddress(engineImplementation_);
         _onlyNonZeroAddress(engineFlexImplementation_);
         _onlyNonZeroAddress(coreRegistry_);
@@ -104,8 +104,6 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
             engineFlexImplementation
         ).coreVersion();
 
-        // transfer ownership to the initial owner
-        _transferOwnership(owner_);
         // emit event
         emit Deployed({
             engineImplementation: engineImplementation_,
