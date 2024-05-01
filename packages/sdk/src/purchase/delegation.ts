@@ -1,11 +1,6 @@
 import { PublicClient, getContract, Hex } from "viem";
 import { IDelegationRegistry } from "../../abis/IDelegationRegistry";
-
-/**
- * Define the registry for delegating a hot wallet to mint/claim airdrops on behalf of a vault wallet
- * @see https://delegate.cash/
- */
-export const DELEGATION_REGISTRY = "0x00000000000076a84fef008cdabe6409d2fe638b";
+import { DELEGATION_REGISTRY_ADDRESS } from "../utils/addresses";
 
 /**
  * @summary Get the vaults for which the user is a delegate.
@@ -22,8 +17,10 @@ export async function getDelegateVaults(
 ): Promise<string[]> {
   const contract = getContract({
     abi: IDelegationRegistry,
-    address: DELEGATION_REGISTRY,
-    publicClient,
+    address: DELEGATION_REGISTRY_ADDRESS,
+    client: {
+      public: publicClient,
+    },
   });
   const userDelegatedVault = await contract.read.getDelegationsByDelegate([
     account,

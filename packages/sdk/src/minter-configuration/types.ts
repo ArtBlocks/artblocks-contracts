@@ -1,3 +1,4 @@
+import { PublicClient } from "viem";
 import { ArtBlocksClientContext } from "..";
 import {
   GetProjectMinterConfigurationQuery,
@@ -12,7 +13,9 @@ export type GenerateProjectMinterConfigurationFormsArgs = {
     data: ProjectMinterConfigurationData;
     forms: FormBlueprint[];
   }) => void;
-  clientContext: ArtBlocksClientContext;
+  clientContext: ArtBlocksClientContext & {
+    publicClient: PublicClient;
+  };
 };
 
 export type GenerateProjectMinterConfigurationFormsContext =

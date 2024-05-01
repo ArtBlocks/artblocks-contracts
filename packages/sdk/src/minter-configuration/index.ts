@@ -1,5 +1,5 @@
 // Third-party dependencies
-import { Abi, Hex, WalletClient } from "viem";
+import { Abi, Hex } from "viem";
 import get from "lodash/get";
 
 // Type imports
@@ -185,9 +185,14 @@ async function generateSelectMinterForm({
     zodSchema: formFieldSchemaToZod(minterSelectionFormSchemaWithMinters),
     handleSubmit: async (
       formValues: Record<string, any>,
-      walletClient: WalletClient,
       onProgress?: (status: SubmissionStatus) => void
     ) => {
+      const walletClient = clientContext.walletClient;
+      if (!walletClient) {
+        throw new Error(
+          "A walletClient is required to submit the set minter form"
+        );
+      }
       // We need basic information about the project and the
       // minter to submit the transaction
       if (
@@ -300,9 +305,15 @@ async function generateMinterForm(
     zodSchema: formFieldSchemaToZod(processedFormSchema),
     handleSubmit: async (
       formValues: Record<string, any>,
-      walletClient: WalletClient,
       onProgress?: (status: SubmissionStatus) => void
     ) => {
+      const walletClient = clientContext.walletClient;
+      if (!walletClient) {
+        throw new Error(
+          "A walletClient is required to submit the minter configuration form"
+        );
+      }
+
       if (
         !minterConfiguration.minter ||
         !isOnChainFormFieldSchema(processedFormSchema) ||

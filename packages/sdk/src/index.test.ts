@@ -60,6 +60,17 @@ describe("ArtBlocksClient", () => {
       expect(config.data).toBe(mockData);
       expect(config.forms).toBe(mockForms);
     });
+
+    it("throws an error if getProjectMinterConfigurationContext is called without a publicClient in context", async () => {
+      abClient.setPublicClient(undefined);
+      const projectId = "test-project-id";
+
+      await expect(
+        abClient.getProjectMinterConfigurationContext(projectId)
+      ).rejects.toThrow(
+        "A publicClient is required to get project minter configuration context"
+      );
+    });
   });
 
   describe("Subscriber Functionality", () => {

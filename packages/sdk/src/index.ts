@@ -1,18 +1,20 @@
-import { PublicClient } from "viem";
+import { PublicClient, WalletClient } from "viem";
 import { FormBlueprint, SubmissionStatusEnum, SubmissionStatus } from "./types";
 import { generateProjectMinterConfigurationForms } from "./minter-configuration";
 import { ProjectMinterConfigurationData } from "./minter-configuration/types";
 import { GraphQLClient } from "graphql-request";
 
 export type ArtBlocksClientOptions = {
-  publicClient: PublicClient;
   graphqlEndpoint: string;
+  publicClient?: PublicClient;
   authToken?: string;
+  walletClient?: WalletClient;
 };
 
 export type ArtBlocksClientContext = {
   graphqlClient: GraphQLClient;
-  publicClient: PublicClient;
+  publicClient?: PublicClient;
+  walletClient?: WalletClient;
   userIsStaff: boolean;
 };
 
@@ -21,6 +23,7 @@ export default class ArtBlocksClient {
 
   constructor({
     publicClient,
+    walletClient,
     authToken,
     graphqlEndpoint,
   }: ArtBlocksClientOptions) {
@@ -48,17 +51,37 @@ export default class ArtBlocksClient {
     this.context = {
       graphqlClient,
       publicClient,
+      walletClient,
       userIsStaff,
     };
   }
 
-  setAuthToken(authToken: string) {
+  setAuthToken(authToken?: string) {
+    if (!authToken) {
+      this.context.graphqlClient.setHeaders({});
+      return;
+    }
+
     this.context.graphqlClient.setHeaders({
       Authorization: `Bearer ${authToken}`,
     });
   }
 
+  setPublicClient(publicClient: PublicClient | undefined) {
+    this.context.publicClient = publicClient;
+  }
+
+  setWalletClient(walletClient: WalletClient | undefined) {
+    this.context.walletClient = walletClient;
+  }
+
   async getProjectMinterConfigurationContext(projectId: string) {
+    if (!this.context.publicClient) {
+      throw new Error(
+        "A publicClient is required to get project minter configuration context"
+      );
+    }
+
     // Create a list of subscribers
     let subscribers: Array<
       (config: {
