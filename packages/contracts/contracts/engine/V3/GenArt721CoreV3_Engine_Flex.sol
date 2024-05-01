@@ -287,6 +287,13 @@ contract GenArt721CoreV3_Engine_Flex is
     bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a;
     uint8 private constant _DEFAULT_ARTIST_SECONDARY_ROYALTY_PERCENTAGE = 5;
 
+    /// strings library from OpenZeppelin, modified for no constants
+    /// set upon initialization to conform to the ERC-1167 minimal
+    /// minimal proxy pattern, which necessitates setting these
+    /// values post-deployment.
+    bytes16 private _HEX_SYMBOLS;
+    uint8 private _ADDRESS_LENGTH;
+
     // royalty split provider
     ISplitProviderV0 public splitProvider;
 
@@ -405,6 +412,9 @@ contract GenArt721CoreV3_Engine_Flex is
         if (initialized) {
             revert GenArt721Error(ErrorCodes.ContractInitialized);
         }
+        // initialize string library constants
+        _HEX_SYMBOLS = "0123456789abcdef";
+        _ADDRESS_LENGTH = 20;
         // @dev assume renderProviderAddress, randomizer, and AdminACL non-zero
         // checks on platform provider addresses performed in _updateProviderSalesAddresses
         // initialize default sales revenue percentages and basis points
@@ -2657,11 +2667,6 @@ contract GenArt721CoreV3_Engine_Flex is
     ) internal view returns (string memory) {
         return BytecodeStorageReader.readFromBytecode(_address);
     }
-
-    // strings library from OpenZeppelin, modified for no constants
-
-    bytes16 private _HEX_SYMBOLS = "0123456789abcdef";
-    uint8 private _ADDRESS_LENGTH = 20;
 
     /**
      * @dev Converts a `uint256` to its ASCII `string` decimal representation.

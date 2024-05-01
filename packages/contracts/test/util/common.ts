@@ -86,6 +86,9 @@ export type T_Config = {
   coreRegistry?: Contract;
   minterSetPrice?: Contract;
   deadReceiver?: Contract;
+  engineImplementation?: Contract;
+  engineFlexImplementation?: Contract;
+  engineFactory?: Contract;
   splitterImplementation?: Contract;
   splitterFactory?: Contract;
   splitter?: Contract;
@@ -321,7 +324,35 @@ export async function deployWithStorageLibraryAndGet(
       BytecodeStorageReader: library.address,
     },
   };
-  if (coreContractName.endsWith("Flex")) {
+
+  if (
+    coreContractName.endsWith("Engine") ||
+    coreContractName.endsWith("Flex")
+  ) {
+    // map deploy args to engine configuration params
+    const [
+      tokenName,
+      tokenSymbol,
+      renderProviderAddress,
+      platformProviderAddress,
+      randomizerAddress,
+      adminACLAddress,
+      startingProjectId,
+      autoApproveArtistSplitProposals,
+      splitProviderAddress,
+      nullPlatformProvider,
+      allowArtistProjectActivation,
+    ] = deployArgs || [];
+    // Deploy the Engine Factory and Engine and Engine Flex implementation contracts
+    const engineContractCoreFactory = await ethers.getContractFactory(
+      "GenArt721CoreV3_Engine",
+      {
+        ...libraries,
+      }
+    );
+    const engineImplementation = await engineContractCoreFactory
+      .connect(config.accounts.deployer)
+      .deploy();
     const flexLibraryFactory = await ethers.getContractFactory("V3FlexLib", {
       libraries: { BytecodeStorageReader: library.address },
     });
@@ -329,18 +360,79 @@ export async function deployWithStorageLibraryAndGet(
       .connect(config.accounts.deployer)
       .deploy(/* no args for library ever */);
     libraries.libraries.V3FlexLib = flexLibrary.address;
-  }
 
-  // Deploy actual contract (with library linked)
-  const coreContractFactory = await ethers.getContractFactory(
-    coreContractName,
-    {
-      ...libraries,
-    }
-  );
-  return await coreContractFactory
-    .connect(config.accounts.deployer)
-    .deploy(...deployArgs);
+    const coreRegistry = await deployAndGet(config, "CoreRegistryV1", []);
+
+    const engineFlexCoreContractFactory = await ethers.getContractFactory(
+      "GenArt721CoreV3_Engine_Flex",
+      {
+        ...libraries,
+      }
+    );
+    const engineFlexImplementation = await engineFlexCoreContractFactory
+      .connect(config.accounts.deployer)
+      .deploy();
+    const engineFactory = await deployAndGet(config, "EngineFactoryV0", [
+      engineImplementation.address,
+      engineFlexImplementation.address,
+      coreRegistry?.address,
+      config.accounts.deployer.address,
+    ]);
+    // transfer ownership of core registry to engine factory
+    await coreRegistry
+      ?.connect(config.accounts.deployer)
+      .transferOwnership(engineFactory?.address);
+    // deploy randomizer
+    const randomizerContract =
+      randomizerAddress ??
+      (await deployAndGet(config, "BasicRandomizerV2", [])).address;
+
+    const validEngineConfigurationExistingAdminACL = {
+      tokenName,
+      tokenSymbol,
+      renderProviderAddress,
+      platformProviderAddress,
+      newSuperAdminAddress: "0x0000000000000000000000000000000000000000",
+      randomizerContract,
+      splitProviderAddress,
+      startingProjectId,
+      autoApproveArtistSplitProposals,
+      nullPlatformProvider,
+      allowArtistProjectActivation,
+    };
+
+    const engineCoreType = coreContractName.endsWith("Engine_Flex") ? 1 : 0;
+    const engineContractType = coreContractName.endsWith("Engine_Flex")
+      ? "GenArt721CoreV3_Engine_Flex"
+      : "GenArt721CoreV3_Engine";
+    const engineSalt = coreContractName.endsWith("Engine_Flex")
+      ? ethers.utils.formatBytes32String("Unique salt Engine1")
+      : ethers.utils.formatBytes32String("Unique salt Engine2");
+    const tx = await engineFactory.createEngineContract(
+      engineCoreType,
+      validEngineConfigurationExistingAdminACL,
+      deployArgs?.[5] ? deployArgs?.[5] : config?.adminACL?.address,
+      engineSalt // random salt
+    );
+    const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+    const engineContractCreationLog = receipt.logs[receipt.logs.length - 1];
+    const engineAddress = ethers.utils.defaultAbiCoder.decode(
+      ["address"],
+      engineContractCreationLog.topics[1]
+    )[0];
+    return await ethers.getContractAt(engineContractType, engineAddress);
+  } else {
+    // Deploy actual contract (with library linked)
+    const coreContractFactory = await ethers.getContractFactory(
+      coreContractName,
+      {
+        ...libraries,
+      }
+    );
+    return await coreContractFactory
+      .connect(config.accounts.deployer)
+      .deploy(...deployArgs);
+  }
 }
 
 // utility function to deploy basic randomizer, core, and MinterFilter
@@ -499,16 +591,22 @@ export async function deployCoreWithMinterFilter(
       coreContractName,
       constructorArgs
     );
-    // register core on engine registry
-    const coreVersion = await genArt721Core.coreVersion();
-    const coreType = await genArt721Core.coreType();
-    await engineRegistry
-      .connect(config.accounts.deployer)
-      .registerContract(
-        genArt721Core.address,
-        ethers.utils.formatBytes32String(coreVersion),
-        ethers.utils.formatBytes32String(coreType)
-      );
+    // Engine and Engine_Flex Factory contract handles registry
+    if (
+      !coreContractName.endsWith("V3_Engine") &&
+      !coreContractName.endsWith("V3_Engine_Flex")
+    ) {
+      // register core on engine registry
+      const coreVersion = await genArt721Core.coreVersion();
+      const coreType = await genArt721Core.coreType();
+      await engineRegistry
+        .connect(config.accounts.deployer)
+        .registerContract(
+          genArt721Core.address,
+          ethers.utils.formatBytes32String(coreVersion),
+          ethers.utils.formatBytes32String(coreType)
+        );
+    }
     // assign core contract for randomizer to use
     randomizer
       .connect(config.accounts.deployer)
@@ -572,6 +670,42 @@ export async function deployCore(
     // we don't need any constructor args for BasicRandomizers
     randomizer = await deployAndGet(config, _randomizerName, []);
   }
+
+  const bytecodeStorageLibFactory = await ethers.getContractFactory(
+    "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+  );
+
+  const library = await bytecodeStorageLibFactory
+    .connect(config.accounts.deployer)
+    .deploy(/* no args for library ever */);
+  let libraries = {
+    libraries: {
+      BytecodeStorageReader: library.address,
+    },
+  };
+
+  // deploy Engine and Engine Flex implementations with libraries
+  const engineCoreContractFactory = await ethers.getContractFactory(
+    "GenArt721CoreV3_Engine",
+    {
+      ...libraries,
+    }
+  );
+
+  const flexLibraryFactory = await ethers.getContractFactory("V3FlexLib", {
+    libraries: { BytecodeStorageReader: library.address },
+  });
+  const flexLibrary = await flexLibraryFactory
+    .connect(config.accounts.deployer)
+    .deploy(/* no args for library ever */);
+  libraries.libraries.V3FlexLib = flexLibrary.address;
+
+  const engineFlexCoreContractFactory = await ethers.getContractFactory(
+    "GenArt721CoreV3_Engine_Flex",
+    {
+      ...libraries,
+    }
+  );
 
   // deploy core contract + associated contracts
   if (

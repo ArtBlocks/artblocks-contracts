@@ -113,51 +113,78 @@ for (const coreContractName of coreContractsToTest) {
             BytecodeStorageReader: library.address,
           },
         };
-        if (coreContractName.endsWith("Flex")) {
-          const flexLibraryFactory = await ethers.getContractFactory(
-            "V3FlexLib",
-            {
-              libraries: { BytecodeStorageReader: library.address },
-            }
-          );
-          const flexLibrary = await flexLibraryFactory
-            .connect(config.accounts.deployer)
-            .deploy(/* no args for library ever */);
-          libraries.libraries.V3FlexLib = flexLibrary.address;
-        }
-
-        // Deploy actual contract (with library linked)
-        const coreContractFactory = await ethers.getContractFactory(
-          coreContractName,
+        // deploy Engine implementations
+        const engineCoreContractFactory = await ethers.getContractFactory(
+          "GenArt721CoreV3_Engine",
           {
             ...libraries,
           }
         );
-        // it is OK that config construction addresses aren't particularly valid
-        // addresses for the purposes of config test
-        let tx;
-        const engineRegistryFactory =
-          await ethers.getContractFactory("EngineRegistryV0");
-        const engineRegistry = await engineRegistryFactory
+        const engineImplementation = await engineCoreContractFactory
           .connect(config.accounts.deployer)
           .deploy();
-        tx = await coreContractFactory.connect(config.accounts.deployer).deploy(
-          "name",
-          "symbol",
-          config.accounts.additional.address,
-          config.accounts.additional.address,
-          config.accounts.additional.address,
-          config.accounts.additional.address,
-          365,
-          false,
-          config.splitProvider.address, // split provider
-          false, // null platform provider
-          false // allow artist project activation
+
+        const flexLibraryFactory = await ethers.getContractFactory(
+          "V3FlexLib",
+          {
+            libraries: { BytecodeStorageReader: library.address },
+          }
         );
-        const receipt = await tx.deployTransaction.wait();
-        // target event is in the last log
-        const targetLog = receipt.logs[receipt.logs.length - 1];
-        // expect "PlatformUpdated" event as log 0
+        const flexLibrary = await flexLibraryFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        libraries.libraries.V3FlexLib = flexLibrary.address;
+        const engineFlexCoreContractFactory = await ethers.getContractFactory(
+          "GenArt721CoreV3_Engine_Flex",
+          {
+            ...libraries,
+          }
+        );
+        const engineFlexImplementation = await engineFlexCoreContractFactory
+          .connect(config.accounts.deployer)
+          .deploy();
+
+        const coreRegistry = await deployAndGet(config, "CoreRegistryV1", []);
+
+        const engineFactory = await deployAndGet(config, "EngineFactoryV0", [
+          engineImplementation.address,
+          engineFlexImplementation.address,
+          coreRegistry?.address,
+          config.accounts.deployer.address, // owner
+        ]);
+        // transfer ownership of core registry to engine factory
+        await coreRegistry
+          ?.connect(config.accounts.deployer)
+          .transferOwnership(engineFactory.address);
+
+        const contractType =
+          coreContractName === "GenArt721CoreV3_Engine" ? 0 : 1;
+        const validEngineConfigurationExistingAdminACL = {
+          tokenName: "name",
+          tokenSymbol: "symbol",
+          renderProviderAddress: config.accounts.additional.address,
+          platformProviderAddress: config.accounts.additional.address,
+          newSuperAdminAddress: config.accounts.additional.address,
+          randomizerContract: config?.randomizer?.address,
+          splitProviderAddress: config.splitProvider.address,
+          startingProjectId: 365,
+          autoApproveArtistSplitProposals: false,
+          nullPlatformProvider: false,
+          allowArtistProjectActivation: false,
+        };
+
+        let tx = await engineFactory
+          .connect(config.accounts.deployer)
+          .createEngineContract(
+            contractType,
+            validEngineConfigurationExistingAdminACL,
+            "0x0000000000000000000000000000000000000000",
+            ethers.utils.formatBytes32String("Unique salt Engine7") // random salt
+          );
+        const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+        // target event is the third to last log
+        const targetLog = receipt.logs[receipt.logs.length - 3];
+        // expect "PlatformUpdated" event as log index 6
         await expect(targetLog.topics[0]).to.be.equal(
           ethers.utils.keccak256(
             ethers.utils.toUtf8Bytes("PlatformUpdated(bytes32)")

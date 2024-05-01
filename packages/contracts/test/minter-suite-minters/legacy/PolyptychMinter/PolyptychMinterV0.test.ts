@@ -926,7 +926,7 @@ for (const coreContractName of coreContractsToTest) {
           ethers.utils.formatUnits(txCost.toString(), "ether").toString(),
           "ETH"
         );
-        requireBigNumberIsClose(txCost, ethers.utils.parseEther("0.0187214"));
+        requireBigNumberIsClose(txCost, ethers.utils.parseEther("0.0195204"));
       });
     });
   });

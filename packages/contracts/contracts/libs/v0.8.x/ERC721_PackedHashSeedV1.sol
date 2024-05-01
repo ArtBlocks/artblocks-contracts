@@ -3,14 +3,13 @@
 
 pragma solidity ^0.8.20;
 
-import "@openzeppelin-5.0/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin-5.0/contracts/token/ERC721/IERC721Receiver.sol";
-import "@openzeppelin-5.0/contracts/token/ERC721/extensions/IERC721Metadata.sol";
-import "@openzeppelin-5.0/contracts/utils/Address.sol";
-import "@openzeppelin-5.0/contracts/utils/Context.sol";
-import "@openzeppelin-5.0/contracts/utils/Strings.sol";
-import "@openzeppelin-5.0/contracts/utils/introspection/ERC165.sol";
-import "@openzeppelin-5.0/contracts/interfaces/draft-IERC6093.sol";
+import {IERC721} from "@openzeppelin-5.0/contracts/token/ERC721/IERC721.sol";
+import {IERC721Receiver} from "@openzeppelin-5.0/contracts/token/ERC721/IERC721Receiver.sol";
+import {IERC721Metadata} from "@openzeppelin-5.0/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+import {Context} from "@openzeppelin-5.0/contracts/utils/Context.sol";
+import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
+import {IERC165, ERC165} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165.sol";
+import {IERC721Errors} from "@openzeppelin-5.0/contracts/interfaces/draft-IERC6093.sol";
 
 /**
  * @dev Forked version of the OpenZeppelin v5.0.0 ERC721 contract. Updated
@@ -21,14 +20,13 @@ import "@openzeppelin-5.0/contracts/interfaces/draft-IERC6093.sol";
  * the Metadata extension, but not including the Enumerable extension, which is available separately as
  * {ERC721Enumerable}.
  */
-contract ERC721_PackedHashSeedV1 is
+abstract contract ERC721_PackedHashSeedV1 is
     Context,
     ERC165,
     IERC721,
     IERC721Metadata,
     IERC721Errors
 {
-    using Address for address;
     using Strings for uint256;
 
     // Token name
@@ -50,16 +48,17 @@ contract ERC721_PackedHashSeedV1 is
 
     /// mapping of token ID to OwnerAndHashSeed
     /// @dev visibility internal so inheriting contracts can access
-    mapping(uint256 => OwnerAndHashSeed) internal _ownersAndHashSeeds;
+    mapping(uint256 tokenId => OwnerAndHashSeed) internal _ownersAndHashSeeds;
 
     // Mapping owner address to token count
-    mapping(address => uint256) private _balances;
+    mapping(address owner => uint256) private _balances;
 
     // Mapping from token ID to approved address
-    mapping(uint256 => address) private _tokenApprovals;
+    mapping(uint256 tokenId => address) private _tokenApprovals;
 
     // Mapping from owner to operator approvals
-    mapping(address => mapping(address => bool)) private _operatorApprovals;
+    mapping(address owner => mapping(address => bool))
+        private _operatorApprovals;
 
     /**
      * @dev See {IERC165-supportsInterface}.

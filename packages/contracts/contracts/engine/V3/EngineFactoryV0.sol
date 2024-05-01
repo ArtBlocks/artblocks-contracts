@@ -3,7 +3,7 @@
 
 // @dev fixed to specific solidity version for clarity and for more clear
 // source code verification purposes.
-pragma solidity 0.8.19;
+pragma solidity 0.8.22;
 
 import {AdminACLV0} from "../../AdminACLV0.sol";
 import {IGenArt721CoreContractV3_Engine, EngineConfiguration} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine.sol";
@@ -11,11 +11,11 @@ import {ICoreRegistryV1} from "../../interfaces/v0.8.x/ICoreRegistryV1.sol";
 import {IEngineFactoryV0} from "../../interfaces/v0.8.x/IEngineFactoryV0.sol";
 import {IAdminACLV0} from "../../interfaces/v0.8.x/IAdminACLV0.sol";
 
-import "@openzeppelin-4.7/contracts/access/Ownable.sol";
-import {Clones} from "@openzeppelin-4.7/contracts/proxy/Clones.sol";
-import {IERC20} from "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin-4.7/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Create2} from "@openzeppelin-4.7/contracts/utils/Create2.sol";
+import "@openzeppelin-5.0/contracts/access/Ownable.sol";
+import {Clones} from "@openzeppelin-5.0/contracts/proxy/Clones.sol";
+import {IERC20} from "@openzeppelin-5.0/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin-5.0/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Create2} from "@openzeppelin-5.0/contracts/utils/Create2.sol";
 
 /**
  * @title EngineFactoryV0
@@ -47,6 +47,14 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     // Address of core registry contract.
     address public immutable coreRegistry;
 
+    /// version and type of Engine implementation contract
+    string public coreType;
+    string public coreVersion;
+
+    /// version and type of Engine Flex implementation contract
+    string public flexCoreType;
+    string public flexCoreVersion;
+
     /**
      * Indicates whether the contract is abandoned.
      * Once abandoned, the contract can no longer be used to create new Engine
@@ -62,7 +70,8 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     }
 
     /**
-     * @notice validates and assigns immutable configuration variables
+     * @notice validates and assigns immutable configuration variables and
+     * sets state variables
      * @param engineImplementation_ address of the Engine
      * implementation contract
      * @param engineFlexImplementation_ address of the Engine Flex
@@ -75,14 +84,26 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         address engineFlexImplementation_,
         address coreRegistry_,
         address owner_
-    ) Ownable() {
+    ) Ownable(owner_) {
+        _onlyNonZeroAddress(engineImplementation_);
+        _onlyNonZeroAddress(engineFlexImplementation_);
+        _onlyNonZeroAddress(coreRegistry_);
         _onlyNonZeroAddress(owner_);
+
         engineImplementation = engineImplementation_;
         engineFlexImplementation = engineFlexImplementation_;
         coreRegistry = coreRegistry_;
 
-        // transfer ownership to the initial owner
-        _transferOwnership(owner_);
+        coreType = IGenArt721CoreContractV3_Engine(engineImplementation)
+            .coreType();
+        coreVersion = IGenArt721CoreContractV3_Engine(engineImplementation)
+            .coreVersion();
+        flexCoreType = IGenArt721CoreContractV3_Engine(engineFlexImplementation)
+            .coreType();
+        flexCoreVersion = IGenArt721CoreContractV3_Engine(
+            engineFlexImplementation
+        ).coreVersion();
+
         // emit event
         emit Deployed({
             engineImplementation: engineImplementation_,
@@ -114,6 +135,11 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         // validate engine contract configuration
         _onlyNonZeroAddress(engineConfiguration.renderProviderAddress);
         _onlyNonZeroAddress(engineConfiguration.randomizerContract);
+
+        // check if salt is empty and generate a pseudorandom one if so
+        if (salt == bytes32(0)) {
+            salt = generatePseudorandomSalt();
+        }
 
         if (adminACLContract == address(0)) {
             _onlyNonZeroAddress(engineConfiguration.newSuperAdminAddress);
@@ -152,16 +178,18 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
             adminACLContract
         );
 
-        string memory coreType = IGenArt721CoreContractV3_Engine(engineContract)
-            .coreType();
-        string memory coreVersion = IGenArt721CoreContractV3_Engine(
-            engineContract
-        ).coreVersion();
+        (
+            string memory coreContractType,
+            string memory coreContractVersion
+        ) = engineCoreType == IEngineFactoryV0.EngineCoreType.Engine
+                ? (coreType, coreVersion)
+                : (flexCoreType, flexCoreVersion);
+
         // register the new Engine contract
         ICoreRegistryV1(coreRegistry).registerContract(
             engineContract,
-            stringToBytes32(coreVersion),
-            stringToBytes32(coreType)
+            stringToBytes32(coreContractVersion),
+            stringToBytes32(coreContractType)
         );
         // emit event
         emit EngineContractCreated(engineContract);
@@ -252,7 +280,14 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     /**
      * @notice Execute a batch of calls.
      * @dev The calls are executed in order, reverting if any of them fails. Can
-     * only be called by the owner.
+     * only be called by the owner. It is safe to check ownership only once here
+     * because the owner status is only used to gate access to the function, not
+     * to validate each individual call. Even if ownership is transferred during
+     * the sequence of calls, it does not affect the execution logic or security,
+     * as ownership is solely used to prevent unauthorized use of this batch
+     * execution capability. This is particularly useful to safely interact
+     * with contracts or addresses that might deem this contract eligible for
+     * airdrops, thereby avoiding loss of funds.
      * @param _calls The calls to execute
      */
     function execCalls(
@@ -279,6 +314,13 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
             require(success, string(data));
             returnData[i] = data;
         }
+    }
+
+    function generatePseudorandomSalt() internal view returns (bytes32 result) {
+        return
+            keccak256(
+                abi.encodePacked(block.timestamp, block.number, address(this))
+            );
     }
 
     function stringToBytes32(

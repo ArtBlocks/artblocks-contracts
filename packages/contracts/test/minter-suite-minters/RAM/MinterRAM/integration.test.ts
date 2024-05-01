@@ -1938,10 +1938,24 @@ runForEach.forEach((params) => {
             [15]
           );
         // ensure token ID 0 was not yet minted (i.e. minting was skipped)
-        await expectRevert(
-          config.genArt721Core.ownerOf(0),
-          "ERC721: invalid token ID"
-        );
+        // @dev Engine and Engine Flex use a fork of v5.0 of ERC721
+        // that uses custom error codes.
+        if (
+          params.core === "GenArt721CoreV3_Engine" ||
+          params.core === "GenArt721CoreV3_Engine_Flex"
+        ) {
+          await expect(config.genArt721Core.ownerOf(0))
+            .to.be.revertedWithCustomError(
+              config.genArt721Core,
+              "ERC721NonexistentToken"
+            )
+            .withArgs(0);
+        } else {
+          await expectRevert(
+            config.genArt721Core.ownerOf(0),
+            "ERC721: invalid token ID"
+          );
+        }
       });
 
       it("does not settle previously settled bid", async function () {
