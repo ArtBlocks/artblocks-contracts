@@ -12,10 +12,10 @@ import {IEngineFactoryV0} from "../../interfaces/v0.8.x/IEngineFactoryV0.sol";
 import {IAdminACLV0} from "../../interfaces/v0.8.x/IAdminACLV0.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
-import {Clones} from "@openzeppelin-4.7/contracts/proxy/Clones.sol";
-import {IERC20} from "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin-4.7/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Create2} from "@openzeppelin-4.7/contracts/utils/Create2.sol";
+import {Clones} from "@openzeppelin-5.0/contracts/proxy/Clones.sol";
+import {IERC20} from "@openzeppelin-5.0/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin-5.0/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Create2} from "@openzeppelin-5.0/contracts/utils/Create2.sol";
 
 /**
  * @title EngineFactoryV0
@@ -252,7 +252,9 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     /**
      * @notice Execute a batch of calls.
      * @dev The calls are executed in order, reverting if any of them fails. Can
-     * only be called by the owner.
+     * only be called by the owner. This is particularly useful to safely interact
+     * with contracts or addresses that might deem this contract eligible for
+     * airdrops, thereby avoiding loss of funds.
      * @param _calls The calls to execute
      */
     function execCalls(
