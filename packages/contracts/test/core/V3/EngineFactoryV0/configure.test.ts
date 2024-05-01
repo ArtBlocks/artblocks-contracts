@@ -43,10 +43,12 @@ describe(`EngineFactoryV0 Configure`, async function () {
 
     it("does not allow non-deployer to abandon factory", async function () {
       const config = await loadFixture(_beforeEach);
-      await expectRevert(
-        config?.engineFactory?.connect(config.accounts.artist).abandon(),
-        revertMessages.onlyOwner
-      );
+      await expect(config.engineFactory.connect(config.accounts.user).abandon())
+        .to.be.revertedWithCustomError(
+          config.engineFactory,
+          "OwnableUnauthorizedAccount"
+        )
+        .withArgs(config.accounts.user.address);
     });
 
     it("does not allow deployer to abandon factory more than once", async function () {
