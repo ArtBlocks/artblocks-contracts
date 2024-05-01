@@ -25,6 +25,20 @@ describe(`EngineFactoryV0 Views`, async function () {
         config?.engineImplementation?.address
       );
     });
+    it("returns expected coreType", async function () {
+      const config = await loadFixture(_beforeEach);
+      const expectedEngineCoreType =
+        await config?.engineImplementation?.coreType();
+      const engineCoreType = await config?.engineFactory?.coreType();
+      expect(engineCoreType).to.be.equal(expectedEngineCoreType);
+    });
+    it("returns expected coreVersion", async function () {
+      const config = await loadFixture(_beforeEach);
+      const expectedEngineCoreVersion =
+        await config?.engineImplementation?.coreVersion();
+      const engineCoreVersion = await config?.engineFactory?.coreVersion();
+      expect(engineCoreVersion).to.be.equal(expectedEngineCoreVersion);
+    });
   });
 
   describe("engineFlexImplementation", async function () {
@@ -35,6 +49,21 @@ describe(`EngineFactoryV0 Views`, async function () {
       expect(engineFlexImplementation).to.be.equal(
         config?.engineFlexImplementation?.address
       );
+    });
+    it("returns expected flexCoreType", async function () {
+      const config = await loadFixture(_beforeEach);
+      const expectedEngineFlexCoreType =
+        await config?.engineFlexImplementation?.coreType();
+      const engineFlexCoreType = await config?.engineFactory?.flexCoreType();
+      expect(engineFlexCoreType).to.be.equal(expectedEngineFlexCoreType);
+    });
+    it("returns expected flexCoreVersion", async function () {
+      const config = await loadFixture(_beforeEach);
+      const expectedEngineFlexCoreVersion =
+        await config?.engineFlexImplementation?.coreVersion();
+      const engineFlexCoreVersion =
+        await config?.engineFactory?.flexCoreVersion();
+      expect(engineFlexCoreVersion).to.be.equal(expectedEngineFlexCoreVersion);
     });
   });
 

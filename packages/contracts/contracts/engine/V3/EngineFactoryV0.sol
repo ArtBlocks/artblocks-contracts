@@ -47,6 +47,14 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     // Address of core registry contract.
     address public immutable coreRegistry;
 
+    /// version and type of Engine implementation contract
+    string public coreType;
+    string public coreVersion;
+
+    /// version and type of Engine Flex implementation contract
+    string public flexCoreType;
+    string public flexCoreVersion;
+
     /**
      * Indicates whether the contract is abandoned.
      * Once abandoned, the contract can no longer be used to create new Engine
@@ -62,7 +70,8 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     }
 
     /**
-     * @notice validates and assigns immutable configuration variables
+     * @notice validates and assigns immutable configuration variables and
+     * sets state variables
      * @param engineImplementation_ address of the Engine
      * implementation contract
      * @param engineFlexImplementation_ address of the Engine Flex
@@ -76,10 +85,24 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         address coreRegistry_,
         address owner_
     ) Ownable() {
+        _onlyNonZeroAddress(engineImplementation_);
+        _onlyNonZeroAddress(engineFlexImplementation_);
+        _onlyNonZeroAddress(coreRegistry_);
         _onlyNonZeroAddress(owner_);
+
         engineImplementation = engineImplementation_;
         engineFlexImplementation = engineFlexImplementation_;
         coreRegistry = coreRegistry_;
+
+        coreType = IGenArt721CoreContractV3_Engine(engineImplementation)
+            .coreType();
+        coreVersion = IGenArt721CoreContractV3_Engine(engineImplementation)
+            .coreVersion();
+        flexCoreType = IGenArt721CoreContractV3_Engine(engineFlexImplementation)
+            .coreType();
+        flexCoreVersion = IGenArt721CoreContractV3_Engine(
+            engineFlexImplementation
+        ).coreVersion();
 
         // transfer ownership to the initial owner
         _transferOwnership(owner_);
@@ -157,16 +180,18 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
             adminACLContract
         );
 
-        string memory coreType = IGenArt721CoreContractV3_Engine(engineContract)
-            .coreType();
-        string memory coreVersion = IGenArt721CoreContractV3_Engine(
-            engineContract
-        ).coreVersion();
+        (
+            string memory coreContractType,
+            string memory coreContractVersion
+        ) = engineCoreType == IEngineFactoryV0.EngineCoreType.Engine
+                ? (coreType, coreVersion)
+                : (flexCoreType, flexCoreVersion);
+
         // register the new Engine contract
         ICoreRegistryV1(coreRegistry).registerContract(
             engineContract,
-            stringToBytes32(coreVersion),
-            stringToBytes32(coreType)
+            stringToBytes32(coreContractVersion),
+            stringToBytes32(coreContractType)
         );
         // emit event
         emit EngineContractCreated(engineContract);
