@@ -243,6 +243,13 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     }
 
     /**
+     * @dev This contract is not intended to hold funds. This function,
+     * `drainETH`, and `drainERC20` are implemented to prevent the loss
+     * of funds that might be sent to this contract inadvertently.
+     */
+    receive() external payable {}
+
+    /**
      * @notice Drains the contract's balance to the `recipient`.
      * @param recipient The address to send funds to.
      * Only callable by the owner.
