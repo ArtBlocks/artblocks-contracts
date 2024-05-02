@@ -105,8 +105,44 @@ describe(`EngineFactoryV0 Integration`, async function () {
         revertMessages.onlyNonZeroAddress
       );
     });
+    it("reverts if invalid configuration, only non-zero super admin address if new admin ACL", async function () {
+      const config = await loadFixture(_beforeEach);
+      // invalid due to passing null address as Admin ACL below
+      const invalidConfig = {
+        ...config.validEngineConfigurationExistingAdminACL,
+      };
+      await expectRevert(
+        config.engineFactory
+          .connect(config.accounts.deployer)
+          .createEngineContract(
+            0,
+            invalidConfig,
+            "0x0000000000000000000000000000000000000000",
+            ethers.utils.formatBytes32String("Unique salt Engine4") // random salt
+          ),
+        revertMessages.onlyNonZeroAddress
+      );
+    });
+    it("reverts if invalid configuration, non-zero super admin address if existing admin ACL", async function () {
+      const config = await loadFixture(_beforeEach);
+      const invalidConfig = {
+        ...config.validEngineConfigurationExistingAdminACL,
+        newSuperAdminAddress: config.accounts.artist.address,
+      };
+      await expectRevert(
+        config.engineFactory
+          .connect(config.accounts.deployer)
+          .createEngineContract(
+            0,
+            invalidConfig,
+            config?.adminACL?.address,
+            ethers.utils.formatBytes32String("Unique salt Engine4") // random salt
+          ),
+        revertMessages.adminACLExists
+      );
+    });
 
-    it("creates a new Engine contract", async function () {
+    it("creates a new Engine contract with an existing Admin ACL Contract", async function () {
       const config = await loadFixture(_beforeEach);
       // get tx receipt
       const tx = await config.engineFactory
@@ -128,13 +164,194 @@ describe(`EngineFactoryV0 Integration`, async function () {
         "GenArt721CoreV3_Engine",
         engineAddress
       );
+      const engineContractCoreType = await engine.coreType();
+      const engineContractCoreVersion = await engine.coreVersion();
+      expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine");
+      expect(engineContractCoreVersion).to.be.equal("v3.2.0");
+      // validate initialization
       // get render provider primary sales percentage via view function
       const renderProviderPrimarySalesPercentage =
         await engine.renderProviderPrimarySalesPercentage();
-      // expect renderProviderPrimarySalesPercentage to match
       expect(renderProviderPrimarySalesPercentage).to.equal(10);
+      const defaultRenderProviderSecondarySalesBPS =
+        await engine.defaultRenderProviderSecondarySalesBPS();
+      expect(defaultRenderProviderSecondarySalesBPS).to.equal(250);
+      const platformProviderPrimarySalesPercentage =
+        await engine.platformProviderPrimarySalesPercentage();
+      expect(platformProviderPrimarySalesPercentage).to.equal(10);
+      const defaultPlatformProviderSecondarySalesBPS =
+        await engine.defaultPlatformProviderSecondarySalesBPS();
+      expect(defaultPlatformProviderSecondarySalesBPS).to.equal(250);
+      const splitProviderAddress = await engine.splitProvider();
+      expect(splitProviderAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.splitProviderAddress
+      );
+      const autoApproveArtistSplitProposals =
+        await engine.autoApproveArtistSplitProposals();
+      expect(autoApproveArtistSplitProposals).to.equal(
+        config?.validEngineConfigurationExistingAdminACL
+          ?.autoApproveArtistSplitProposals
+      );
+      const nullPlatformProvider = await engine.nullPlatformProvider();
+      expect(nullPlatformProvider).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.nullPlatformProvider
+      );
+      const allowArtistProjectActivation =
+        await engine.allowArtistProjectActivation();
+      expect(allowArtistProjectActivation).to.equal(
+        config?.validEngineConfigurationExistingAdminACL
+          ?.allowArtistProjectActivation
+      );
+      const startingProjectId = await engine.startingProjectId();
+      expect(startingProjectId).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.startingProjectId
+      );
+      const renderProviderPrimarySalesAddress =
+        await engine.renderProviderPrimarySalesAddress();
+      expect(renderProviderPrimarySalesAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.renderProviderAddress
+      );
+      const defaultRenderProviderSecondarySalesAddress =
+        await engine.defaultRenderProviderSecondarySalesAddress();
+      expect(defaultRenderProviderSecondarySalesAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.renderProviderAddress
+      );
+      const platformProviderPrimarySalesAddress =
+        await engine.platformProviderPrimarySalesAddress();
+      expect(platformProviderPrimarySalesAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL
+          ?.platformProviderAddress
+      );
+      const defaultPlatformProviderSecondarySalesAddress =
+        await engine.defaultPlatformProviderSecondarySalesAddress();
+      expect(defaultPlatformProviderSecondarySalesAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL
+          ?.platformProviderAddress
+      );
+      const randomizerContract = await engine.randomizerContract();
+      expect(randomizerContract).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.randomizerContract
+      );
+      // check ownership belongs to admin acl contract
+      const ownerAddress = await engine.owner();
+      expect(ownerAddress).to.equal(config?.adminACL?.address);
+      const defaultBaseUri = await engine.defaultBaseURI();
+      expect(defaultBaseUri).to.equal(
+        `https://token.artblocks.io/${engineAddress?.toLowerCase()}/`
+      );
+      const nextProjectId = await engine.nextProjectId();
+      expect(nextProjectId).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.startingProjectId
+      );
     });
-    it("creates a new Engine Flex contract", async function () {
+    it("creates a new Engine contract with a new Admin ACL Contract", async function () {
+      const config = await loadFixture(_beforeEach);
+      // get tx receipt
+      const validEngineConfigurationNewAdminACL = {
+        ...config.validEngineConfigurationExistingAdminACL,
+        newSuperAdminAddress: config.accounts.artist.address,
+      };
+      const tx = await config.engineFactory
+        .connect(config.accounts.deployer)
+        .createEngineContract(
+          0,
+          validEngineConfigurationNewAdminACL,
+          "0x0000000000000000000000000000000000000000",
+          ethers.utils.formatBytes32String("Unique salt Engine4") // random salt
+        );
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      // get Engine contract address from logs
+      const engineCreationLog = receipt.logs[receipt.logs.length - 1];
+      const engineAddress = ethers.utils.getAddress(
+        "0x" + engineCreationLog.topics[1].slice(-40)
+      );
+      // get Engine contract
+      const engine = await ethers.getContractAt(
+        "GenArt721CoreV3_Engine",
+        engineAddress
+      );
+      const engineContractCoreType = await engine.coreType();
+      const engineContractCoreVersion = await engine.coreVersion();
+      expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine");
+      expect(engineContractCoreVersion).to.be.equal("v3.2.0");
+      // validate initialization
+      // get render provider primary sales percentage via view function
+      const renderProviderPrimarySalesPercentage =
+        await engine.renderProviderPrimarySalesPercentage();
+      expect(renderProviderPrimarySalesPercentage).to.equal(10);
+      const defaultRenderProviderSecondarySalesBPS =
+        await engine.defaultRenderProviderSecondarySalesBPS();
+      expect(defaultRenderProviderSecondarySalesBPS).to.equal(250);
+      const platformProviderPrimarySalesPercentage =
+        await engine.platformProviderPrimarySalesPercentage();
+      expect(platformProviderPrimarySalesPercentage).to.equal(10);
+      const defaultPlatformProviderSecondarySalesBPS =
+        await engine.defaultPlatformProviderSecondarySalesBPS();
+      expect(defaultPlatformProviderSecondarySalesBPS).to.equal(250);
+      const splitProviderAddress = await engine.splitProvider();
+      expect(splitProviderAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.splitProviderAddress
+      );
+      const autoApproveArtistSplitProposals =
+        await engine.autoApproveArtistSplitProposals();
+      expect(autoApproveArtistSplitProposals).to.equal(
+        config?.validEngineConfigurationExistingAdminACL
+          ?.autoApproveArtistSplitProposals
+      );
+      const nullPlatformProvider = await engine.nullPlatformProvider();
+      expect(nullPlatformProvider).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.nullPlatformProvider
+      );
+      const allowArtistProjectActivation =
+        await engine.allowArtistProjectActivation();
+      expect(allowArtistProjectActivation).to.equal(
+        config?.validEngineConfigurationExistingAdminACL
+          ?.allowArtistProjectActivation
+      );
+      const startingProjectId = await engine.startingProjectId();
+      expect(startingProjectId).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.startingProjectId
+      );
+      const renderProviderPrimarySalesAddress =
+        await engine.renderProviderPrimarySalesAddress();
+      expect(renderProviderPrimarySalesAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.renderProviderAddress
+      );
+      const defaultRenderProviderSecondarySalesAddress =
+        await engine.defaultRenderProviderSecondarySalesAddress();
+      expect(defaultRenderProviderSecondarySalesAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.renderProviderAddress
+      );
+      const platformProviderPrimarySalesAddress =
+        await engine.platformProviderPrimarySalesAddress();
+      expect(platformProviderPrimarySalesAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL
+          ?.platformProviderAddress
+      );
+      const defaultPlatformProviderSecondarySalesAddress =
+        await engine.defaultPlatformProviderSecondarySalesAddress();
+      expect(defaultPlatformProviderSecondarySalesAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL
+          ?.platformProviderAddress
+      );
+      const randomizerContract = await engine.randomizerContract();
+      expect(randomizerContract).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.randomizerContract
+      );
+      // check ownership belongs to new admin acl contract
+      const adminACLContract = await engine.adminACLContract();
+      const ownerAddress = await engine.owner();
+      expect(ownerAddress).to.equal(adminACLContract);
+      const defaultBaseUri = await engine.defaultBaseURI();
+      expect(defaultBaseUri).to.equal(
+        `https://token.artblocks.io/${engineAddress?.toLowerCase()}/`
+      );
+      const nextProjectId = await engine.nextProjectId();
+      expect(nextProjectId).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.startingProjectId
+      );
+    });
+    it("creates a new Engine Flex contract with an existing Admin ACL Contract", async function () {
       const config = await loadFixture(_beforeEach);
       // get tx receipt
       const tx = await config.engineFactory
@@ -156,11 +373,192 @@ describe(`EngineFactoryV0 Integration`, async function () {
         "GenArt721CoreV3_Engine_Flex",
         engineAddress
       );
+      const engineContractCoreType = await engine.coreType();
+      const engineContractCoreVersion = await engine.coreVersion();
+      expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
+      expect(engineContractCoreVersion).to.be.equal("v3.2.1");
+      // validate initialization
       // get render provider primary sales percentage via view function
       const renderProviderPrimarySalesPercentage =
         await engine.renderProviderPrimarySalesPercentage();
-      // expect renderProviderPrimarySalesPercentage to match
       expect(renderProviderPrimarySalesPercentage).to.equal(10);
+      const defaultRenderProviderSecondarySalesBPS =
+        await engine.defaultRenderProviderSecondarySalesBPS();
+      expect(defaultRenderProviderSecondarySalesBPS).to.equal(250);
+      const platformProviderPrimarySalesPercentage =
+        await engine.platformProviderPrimarySalesPercentage();
+      expect(platformProviderPrimarySalesPercentage).to.equal(10);
+      const defaultPlatformProviderSecondarySalesBPS =
+        await engine.defaultPlatformProviderSecondarySalesBPS();
+      expect(defaultPlatformProviderSecondarySalesBPS).to.equal(250);
+      const splitProviderAddress = await engine.splitProvider();
+      expect(splitProviderAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.splitProviderAddress
+      );
+      const autoApproveArtistSplitProposals =
+        await engine.autoApproveArtistSplitProposals();
+      expect(autoApproveArtistSplitProposals).to.equal(
+        config?.validEngineConfigurationExistingAdminACL
+          ?.autoApproveArtistSplitProposals
+      );
+      const nullPlatformProvider = await engine.nullPlatformProvider();
+      expect(nullPlatformProvider).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.nullPlatformProvider
+      );
+      const allowArtistProjectActivation =
+        await engine.allowArtistProjectActivation();
+      expect(allowArtistProjectActivation).to.equal(
+        config?.validEngineConfigurationExistingAdminACL
+          ?.allowArtistProjectActivation
+      );
+      const startingProjectId = await engine.startingProjectId();
+      expect(startingProjectId).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.startingProjectId
+      );
+      const renderProviderPrimarySalesAddress =
+        await engine.renderProviderPrimarySalesAddress();
+      expect(renderProviderPrimarySalesAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.renderProviderAddress
+      );
+      const defaultRenderProviderSecondarySalesAddress =
+        await engine.defaultRenderProviderSecondarySalesAddress();
+      expect(defaultRenderProviderSecondarySalesAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.renderProviderAddress
+      );
+      const platformProviderPrimarySalesAddress =
+        await engine.platformProviderPrimarySalesAddress();
+      expect(platformProviderPrimarySalesAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL
+          ?.platformProviderAddress
+      );
+      const defaultPlatformProviderSecondarySalesAddress =
+        await engine.defaultPlatformProviderSecondarySalesAddress();
+      expect(defaultPlatformProviderSecondarySalesAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL
+          ?.platformProviderAddress
+      );
+      const randomizerContract = await engine.randomizerContract();
+      expect(randomizerContract).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.randomizerContract
+      );
+      // check ownership belongs to admin acl contract
+      const ownerAddress = await engine.owner();
+      expect(ownerAddress).to.equal(config?.adminACL?.address);
+      const defaultBaseUri = await engine.defaultBaseURI();
+      expect(defaultBaseUri).to.equal(
+        `https://token.artblocks.io/${engineAddress?.toLowerCase()}/`
+      );
+      const nextProjectId = await engine.nextProjectId();
+      expect(nextProjectId).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.startingProjectId
+      );
+    });
+    it("creates a new Engine Flex contract with a new Admin ACL Contract", async function () {
+      const config = await loadFixture(_beforeEach);
+      // get tx receipt
+      const validEngineConfigurationNewAdminACL = {
+        ...config.validEngineConfigurationExistingAdminACL,
+        newSuperAdminAddress: config.accounts.artist.address,
+      };
+      const tx = await config.engineFactory
+        .connect(config.accounts.deployer)
+        .createEngineContract(
+          1,
+          validEngineConfigurationNewAdminACL,
+          "0x0000000000000000000000000000000000000000",
+          ethers.utils.formatBytes32String("Unique salt Engine5") // random salt
+        );
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      // get Engine contract address from logs
+      const engineCreationLog = receipt.logs[receipt.logs.length - 1];
+      const engineAddress = ethers.utils.getAddress(
+        "0x" + engineCreationLog.topics[1].slice(-40)
+      );
+      // get Engine contract
+      const engine = await ethers.getContractAt(
+        "GenArt721CoreV3_Engine_Flex",
+        engineAddress
+      );
+      const engineContractCoreType = await engine.coreType();
+      const engineContractCoreVersion = await engine.coreVersion();
+      expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
+      expect(engineContractCoreVersion).to.be.equal("v3.2.1");
+      // validate initialization
+      // get render provider primary sales percentage via view function
+      const renderProviderPrimarySalesPercentage =
+        await engine.renderProviderPrimarySalesPercentage();
+      expect(renderProviderPrimarySalesPercentage).to.equal(10);
+      const defaultRenderProviderSecondarySalesBPS =
+        await engine.defaultRenderProviderSecondarySalesBPS();
+      expect(defaultRenderProviderSecondarySalesBPS).to.equal(250);
+      const platformProviderPrimarySalesPercentage =
+        await engine.platformProviderPrimarySalesPercentage();
+      expect(platformProviderPrimarySalesPercentage).to.equal(10);
+      const defaultPlatformProviderSecondarySalesBPS =
+        await engine.defaultPlatformProviderSecondarySalesBPS();
+      expect(defaultPlatformProviderSecondarySalesBPS).to.equal(250);
+      const splitProviderAddress = await engine.splitProvider();
+      expect(splitProviderAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.splitProviderAddress
+      );
+      const autoApproveArtistSplitProposals =
+        await engine.autoApproveArtistSplitProposals();
+      expect(autoApproveArtistSplitProposals).to.equal(
+        config?.validEngineConfigurationExistingAdminACL
+          ?.autoApproveArtistSplitProposals
+      );
+      const nullPlatformProvider = await engine.nullPlatformProvider();
+      expect(nullPlatformProvider).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.nullPlatformProvider
+      );
+      const allowArtistProjectActivation =
+        await engine.allowArtistProjectActivation();
+      expect(allowArtistProjectActivation).to.equal(
+        config?.validEngineConfigurationExistingAdminACL
+          ?.allowArtistProjectActivation
+      );
+      const startingProjectId = await engine.startingProjectId();
+      expect(startingProjectId).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.startingProjectId
+      );
+      const renderProviderPrimarySalesAddress =
+        await engine.renderProviderPrimarySalesAddress();
+      expect(renderProviderPrimarySalesAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.renderProviderAddress
+      );
+      const defaultRenderProviderSecondarySalesAddress =
+        await engine.defaultRenderProviderSecondarySalesAddress();
+      expect(defaultRenderProviderSecondarySalesAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.renderProviderAddress
+      );
+      const platformProviderPrimarySalesAddress =
+        await engine.platformProviderPrimarySalesAddress();
+      expect(platformProviderPrimarySalesAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL
+          ?.platformProviderAddress
+      );
+      const defaultPlatformProviderSecondarySalesAddress =
+        await engine.defaultPlatformProviderSecondarySalesAddress();
+      expect(defaultPlatformProviderSecondarySalesAddress).to.equal(
+        config?.validEngineConfigurationExistingAdminACL
+          ?.platformProviderAddress
+      );
+      const randomizerContract = await engine.randomizerContract();
+      expect(randomizerContract).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.randomizerContract
+      );
+      // check ownership belongs to new admin acl contract
+      const adminACLContract = await engine.adminACLContract();
+      const ownerAddress = await engine.owner();
+      expect(ownerAddress).to.equal(adminACLContract);
+      const defaultBaseUri = await engine.defaultBaseURI();
+      expect(defaultBaseUri).to.equal(
+        `https://token.artblocks.io/${engineAddress?.toLowerCase()}/`
+      );
+      const nextProjectId = await engine.nextProjectId();
+      expect(nextProjectId).to.equal(
+        config?.validEngineConfigurationExistingAdminACL?.startingProjectId
+      );
     });
   });
 });

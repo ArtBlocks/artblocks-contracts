@@ -22,14 +22,51 @@ describe(`EngineFactoryV0 Configure`, async function () {
     const config = await loadFixture(_beforeEach);
     // deploy new Engine factory
     const engineFactory = await ethers.getContractFactory(TARGET_TYPE);
+    // reverts if owner address is null
     await expectRevert(
       engineFactory
         .connect(config.accounts.deployer)
         .deploy(
-          config.engineImplementation,
-          config.engineFlexImplementation,
-          config.coreRegistry,
+          config?.engineImplementation?.address,
+          config?.engineFlexImplementation?.address,
+          config?.coreRegistry?.address,
           "0x0000000000000000000000000000000000000000"
+        ),
+      revertMessages.onlyNonZeroAddress
+    );
+    // reverts if engine implementation address is null
+    await expectRevert(
+      engineFactory
+        .connect(config.accounts.deployer)
+        .deploy(
+          "0x0000000000000000000000000000000000000000",
+          config?.engineFlexImplementation?.address,
+          config?.coreRegistry?.address,
+          config.accounts.deployer.address
+        ),
+      revertMessages.onlyNonZeroAddress
+    );
+    // reverts if engine flex implementation address is null
+    await expectRevert(
+      engineFactory
+        .connect(config.accounts.deployer)
+        .deploy(
+          config?.engineImplementation?.address,
+          "0x0000000000000000000000000000000000000000",
+          config?.coreRegistry?.address,
+          config.accounts.deployer.address
+        ),
+      revertMessages.onlyNonZeroAddress
+    );
+    // reverts if core registry address is null
+    await expectRevert(
+      engineFactory
+        .connect(config.accounts.deployer)
+        .deploy(
+          config?.engineImplementation?.address,
+          config?.engineFlexImplementation?.address,
+          "0x0000000000000000000000000000000000000000",
+          config.accounts.deployer.address
         ),
       revertMessages.onlyNonZeroAddress
     );

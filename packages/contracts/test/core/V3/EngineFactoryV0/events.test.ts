@@ -92,32 +92,46 @@ describe(`EngineFactoryV0 Events`, async function () {
       );
       const engineContractCoreType = await engineContract.coreType();
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine");
+    });
+    it("is emitted during new Engine Flex contract creation", async function () {
+      const config = await loadFixture(_beforeEach);
+      // @dev do not use helper functions, because need to parse logs for new Engine address
 
       // deploy valid Engine Flex contract via factory
-      const tx2 = await config.engineFactory.createEngineContract(
+      const validEngineConfigurationExistingAdminACL = {
+        tokenName: config.name,
+        tokenSymbol: config.symbol,
+        renderProviderAddress: config.accounts.deployer.address,
+        platformProviderAddress: config.accounts.additional.address,
+        newSuperAdminAddress: "0x0000000000000000000000000000000000000000",
+        randomizerContract: config?.randomizer?.address,
+        splitProviderAddress: config.splitProvider.address,
+        startingProjectId: 0,
+        autoApproveArtistSplitProposals: true,
+        nullPlatformProvider: false,
+        allowArtistProjectActivation: true,
+      };
+      const tx = await config.engineFactory.createEngineContract(
         1,
         validEngineConfigurationExistingAdminACL,
         config.adminACL.address,
-        ethers.utils.formatBytes32String("Unique salt Engine3") // random salt
+        ethers.utils.formatBytes32String("Unique salt Engine2") // random salt
       );
-      const receipt2 = await ethers.provider.getTransactionReceipt(tx2.hash);
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
       // get Engine Flex contract address from logs
-      const engineFlexContractCreationLog =
-        receipt2.logs[receipt2.logs.length - 1];
-      const engineFlexContractAddress = ethers.utils.defaultAbiCoder.decode(
+      const engineContractCreationLog = receipt.logs[receipt.logs.length - 1];
+      const engineContractAddress = ethers.utils.defaultAbiCoder.decode(
         ["address"],
-        engineFlexContractCreationLog.topics[1]
+        engineContractCreationLog.topics[1]
       )[0];
 
-      // check that the Engine Flex address is a valid Engine Flex contract
-      const engineFlexContract = await ethers.getContractAt(
+      // check that the Engine address is a valid Engine contract
+      const engineContract = await ethers.getContractAt(
         "GenArt721CoreV3_Engine_Flex",
-        engineFlexContractAddress
+        engineContractAddress
       );
-      const engineFlexContractCoreType = await engineFlexContract.coreType();
-      expect(engineFlexContractCoreType).to.be.equal(
-        "GenArt721CoreV3_Engine_Flex"
-      );
+      const engineContractCoreType = await engineContract.coreType();
+      expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
     });
   });
 
