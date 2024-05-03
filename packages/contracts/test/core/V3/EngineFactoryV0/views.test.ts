@@ -25,18 +25,19 @@ describe(`EngineFactoryV0 Views`, async function () {
         config?.engineImplementation?.address
       );
     });
-    it("returns expected coreType", async function () {
+    it("returns expected engineCoreType", async function () {
       const config = await loadFixture(_beforeEach);
       const expectedEngineCoreType =
         await config?.engineImplementation?.coreType();
-      const engineCoreType = await config?.engineFactory?.coreType();
+      const engineCoreType = await config?.engineFactory?.engineCoreType();
       expect(engineCoreType).to.be.equal(expectedEngineCoreType);
     });
-    it("returns expected coreVersion", async function () {
+    it("returns expected engineCoreVersion", async function () {
       const config = await loadFixture(_beforeEach);
       const expectedEngineCoreVersion =
         await config?.engineImplementation?.coreVersion();
-      const engineCoreVersion = await config?.engineFactory?.coreVersion();
+      const engineCoreVersion =
+        await config?.engineFactory?.engineCoreVersion();
       expect(engineCoreVersion).to.be.equal(expectedEngineCoreVersion);
     });
   });

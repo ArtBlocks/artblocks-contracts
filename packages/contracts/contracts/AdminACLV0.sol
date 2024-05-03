@@ -3,6 +3,7 @@
 pragma solidity 0.8.22;
 
 import "./interfaces/v0.8.x/IAdminACLV0.sol";
+import {IAdminACLV0_Extended} from "./interfaces/v0.8.x/IAdminACLV0_Extended.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "@openzeppelin-4.7/contracts/utils/introspection/ERC165.sol";
 
@@ -98,6 +99,7 @@ contract AdminACLV0 is IAdminACLV0, ERC165 {
     ) public view virtual override(ERC165) returns (bool) {
         return
             interfaceId == type(IAdminACLV0).interfaceId ||
+            interfaceId == type(IAdminACLV0_Extended).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 }

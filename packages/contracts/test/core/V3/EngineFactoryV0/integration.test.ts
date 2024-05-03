@@ -790,6 +790,29 @@ describe(`EngineFactoryV0 Integration`, async function () {
       );
     });
   });
+  describe("transferCoreRegistryOwnership", async function () {
+    it("reverts if not called by owner", async function () {
+      const config = await loadFixture(_beforeEach);
+      await expect(
+        config.engineFactory
+          .connect(config.accounts.user)
+          .transferCoreRegistryOwnership(config.accounts.user.address)
+      )
+        .to.be.revertedWithCustomError(
+          config.engineFactory,
+          "OwnableUnauthorizedAccount"
+        )
+        .withArgs(config.accounts.user.address);
+    });
+    it("transfers ownership", async function () {
+      const config = await loadFixture(_beforeEach);
+      await config.engineFactory
+        .connect(config.accounts.deployer)
+        .transferCoreRegistryOwnership(config.accounts.user.address);
+      const ownerOfCoreRegistry = await config.coreRegistry.owner();
+      expect(ownerOfCoreRegistry).to.be.equal(config.accounts.user.address);
+    });
+  });
   describe("registerMultipleContracts", async function () {
     it("reverts if not called by owner", async function () {
       const config = await loadFixture(_beforeEach);

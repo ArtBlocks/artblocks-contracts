@@ -35,8 +35,8 @@ interface IEngineFactoryV0 {
 
     /**
      * @notice Creates a new Engine or Engine Flex contract with the provided
-     * `engineConfiguration`, depending on the `engineCoreType`.
-     * @param engineCoreType Type of Engine Core contract.
+     * `engineConfiguration`, depending on the `engineCoreContractType`.
+     * @param engineCoreContractType Type of Engine Core contract.
      * @param engineConfiguration EngineConfiguration data to configure the
      * contract with.
      * @param adminACLContract Address of admin access control contract, to be
@@ -47,7 +47,7 @@ interface IEngineFactoryV0 {
      * `EngineFlexCreated` events.
      */
     function createEngineContract(
-        EngineCoreType engineCoreType,
+        EngineCoreType engineCoreContractType,
         EngineConfiguration calldata engineConfiguration,
         address adminACLContract,
         bytes32 salt
@@ -68,6 +68,13 @@ interface IEngineFactoryV0 {
      * Only callable by the owner.
      */
     function drainERC20(address ERC20TokenAddress, address recipient) external;
+
+    /**
+     * @notice Calls transferOwnership on the core registry.
+     * Useful for updating the owner of the core registry contract.
+     * @param _owner address of the new owner
+     */
+    function transferCoreRegistryOwnership(address _owner) external;
 
     /**
      * @notice Registers multiple contracts with the core registry.

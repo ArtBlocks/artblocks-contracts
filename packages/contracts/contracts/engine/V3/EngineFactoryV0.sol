@@ -9,7 +9,7 @@ import {AdminACLV0} from "../../AdminACLV0.sol";
 import {IGenArt721CoreContractV3_Engine, EngineConfiguration} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import {ICoreRegistryV1} from "../../interfaces/v0.8.x/ICoreRegistryV1.sol";
 import {IEngineFactoryV0} from "../../interfaces/v0.8.x/IEngineFactoryV0.sol";
-import {IAdminACLV0} from "../../interfaces/v0.8.x/IAdminACLV0.sol";
+import {IAdminACLV0_Extended} from "../../interfaces/v0.8.x/IAdminACLV0_Extended.sol";
 
 import "@openzeppelin-5.0/contracts/access/Ownable.sol";
 import {Clones} from "@openzeppelin-5.0/contracts/proxy/Clones.sol";
@@ -48,8 +48,8 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     address public immutable coreRegistry;
 
     /// version and type of Engine implementation contract
-    string public coreType;
-    string public coreVersion;
+    string public engineCoreType;
+    string public engineCoreVersion;
 
     /// version and type of Engine Flex implementation contract
     string public flexCoreType;
@@ -94,10 +94,11 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         engineFlexImplementation = engineFlexImplementation_;
         coreRegistry = coreRegistry_;
 
-        coreType = IGenArt721CoreContractV3_Engine(engineImplementation)
+        engineCoreType = IGenArt721CoreContractV3_Engine(engineImplementation)
             .coreType();
-        coreVersion = IGenArt721CoreContractV3_Engine(engineImplementation)
-            .coreVersion();
+        engineCoreVersion = IGenArt721CoreContractV3_Engine(
+            engineImplementation
+        ).coreVersion();
         flexCoreType = IGenArt721CoreContractV3_Engine(engineFlexImplementation)
             .coreType();
         flexCoreVersion = IGenArt721CoreContractV3_Engine(
@@ -114,8 +115,8 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
 
     /**
      * @notice Creates a new Engine or Engine Flex contract with the provided
-     * `engineConfiguration`, depending on the `engineCoreType`.
-     * @param engineCoreType Type of Engine Core contract.
+     * `engineConfiguration`, depending on the `engineCoreContractType`.
+     * @param engineCoreContractType Type of Engine Core contract.
      * @param engineConfiguration EngineConfiguration data to configure the
      * contract with.
      * @param adminACLContract Address of admin access control contract, to be
@@ -126,7 +127,7 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
      * `EngineFlexCreated` events.
      */
     function createEngineContract(
-        IEngineFactoryV0.EngineCoreType engineCoreType,
+        IEngineFactoryV0.EngineCoreType engineCoreContractType,
         EngineConfiguration calldata engineConfiguration,
         address adminACLContract,
         bytes32 salt
@@ -151,7 +152,7 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
             });
             address[] memory tmpEmptyArray = new address[](0);
 
-            IAdminACLV0(adminACLContract).changeSuperAdmin(
+            IAdminACLV0_Extended(adminACLContract).changeSuperAdmin(
                 engineConfiguration.newSuperAdminAddress,
                 tmpEmptyArray
             );
@@ -163,7 +164,7 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
             );
         }
 
-        address implementation = engineCoreType ==
+        address implementation = engineCoreContractType ==
             IEngineFactoryV0.EngineCoreType.Engine
             ? engineImplementation
             : engineFlexImplementation;
@@ -181,8 +182,8 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         (
             string memory coreContractType,
             string memory coreContractVersion
-        ) = engineCoreType == IEngineFactoryV0.EngineCoreType.Engine
-                ? (coreType, coreVersion)
+        ) = engineCoreContractType == IEngineFactoryV0.EngineCoreType.Engine
+                ? (engineCoreType, engineCoreVersion)
                 : (flexCoreType, flexCoreVersion);
 
         // register the new Engine contract
@@ -193,6 +194,15 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         );
         // emit event
         emit EngineContractCreated(engineContract);
+    }
+
+    /**
+     * @notice Calls transferOwnership on the core registry.
+     * Useful for updating the owner of the core registry contract.
+     * @param _owner address of the new owner
+     */
+    function transferCoreRegistryOwnership(address _owner) external onlyOwner {
+        Ownable(coreRegistry).transferOwnership(_owner);
     }
 
     /**

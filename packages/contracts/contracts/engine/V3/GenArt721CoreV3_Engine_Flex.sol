@@ -4,13 +4,14 @@ pragma solidity 0.8.22;
 // Created By: Art Blocks Inc.
 
 import "../../interfaces/v0.8.x/IRandomizer_V3CoreBase.sol";
-import "../../interfaces/v0.8.x/IAdminACLV0.sol";
+import "../../interfaces/v0.8.x/IAdminACLV0_Extended.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
 import {IGenArt721CoreContractV3_ProjectFinance} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_ProjectFinance.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
 import {ISplitProviderV0} from "../../interfaces/v0.8.x/ISplitProviderV0.sol";
 
+import "@openzeppelin-5.0/contracts/utils/Strings.sol";
 import "@openzeppelin-5.0/contracts/access/Ownable.sol";
 import {IERC2981} from "@openzeppelin-5.0/contracts/interfaces/IERC2981.sol";
 import "../../libs/v0.8.x/ERC721_PackedHashSeedV1.sol";
@@ -115,6 +116,8 @@ contract GenArt721CoreV3_Engine_Flex is
     using BytecodeStorageWriter for string;
     using BytecodeStorageWriter for bytes;
     using Bytes32Strings for bytes32;
+    using Strings for uint256;
+    using Strings for address;
     uint256 constant ONE_HUNDRED = 100;
     uint256 constant ONE_MILLION = 1_000_000;
     uint24 constant ONE_MILLION_UINT24 = 1_000_000;
@@ -287,13 +290,6 @@ contract GenArt721CoreV3_Engine_Flex is
     bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a;
     uint8 private constant _DEFAULT_ARTIST_SECONDARY_ROYALTY_PERCENTAGE = 5;
 
-    /// strings library from OpenZeppelin, modified for no constants
-    /// set upon initialization to conform to the ERC-1167 minimal
-    /// minimal proxy pattern, which necessitates setting these
-    /// values post-deployment.
-    bytes16 private _HEX_SYMBOLS;
-    uint8 private _ADDRESS_LENGTH;
-
     // royalty split provider
     ISplitProviderV0 public splitProvider;
 
@@ -412,9 +408,6 @@ contract GenArt721CoreV3_Engine_Flex is
         if (initialized) {
             revert GenArt721Error(ErrorCodes.ContractInitialized);
         }
-        // initialize string library constants
-        _HEX_SYMBOLS = "0123456789abcdef";
-        _ADDRESS_LENGTH = 20;
         // @dev assume renderProviderAddress, randomizer, and AdminACL non-zero
         // checks on platform provider addresses performed in _updateProviderSalesAddresses
         // initialize default sales revenue percentages and basis points
@@ -461,7 +454,7 @@ contract GenArt721CoreV3_Engine_Flex is
         _updateDefaultBaseURI(
             string.concat(
                 "https://token.artblocks.io/",
-                toHexString(address(this)),
+                address(this).toHexString(),
                 "/"
             )
         );
@@ -2691,30 +2684,5 @@ contract GenArt721CoreV3_Engine_Flex is
             value /= 10;
         }
         return string(buffer);
-    }
-
-    /**
-     * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation with fixed length.
-     */
-    function toHexString(
-        uint256 value,
-        uint256 length
-    ) internal view returns (string memory) {
-        bytes memory buffer = new bytes(2 * length + 2);
-        buffer[0] = "0";
-        buffer[1] = "x";
-        for (uint256 i = 2 * length + 1; i > 1; --i) {
-            buffer[i] = _HEX_SYMBOLS[value & 0xf];
-            value >>= 4;
-        }
-        require(value == 0, "hex length insufficient");
-        return string(buffer);
-    }
-
-    /**
-     * @dev Converts an `address` with fixed length of 20 bytes to its not checksummed ASCII `string` hexadecimal representation.
-     */
-    function toHexString(address addr) internal view returns (string memory) {
-        return toHexString(uint256(uint160(addr)), _ADDRESS_LENGTH);
     }
 }
