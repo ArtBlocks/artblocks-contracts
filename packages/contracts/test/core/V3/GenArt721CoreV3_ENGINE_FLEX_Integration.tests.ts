@@ -170,6 +170,32 @@ for (const coreContractName of coreContractsToTest) {
         );
       });
 
+      it("can not remove external asset dependency beyond last index", async function () {
+        const config = await loadFixture(_beforeEach);
+        // add external asset dependency to project 0
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectExternalAssetDependency(
+            config.projectZero,
+            GENERIC_CID,
+            IPFS
+          );
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectExternalAssetDependency(
+            config.projectZero,
+            GENERIC_CID2,
+            ARWEAVE
+          );
+
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .removeProjectExternalAssetDependency(config.projectZero, 2),
+          "Asset index out of range"
+        );
+      });
+
       it("can remove an external asset dependency (off-chain)", async function () {
         const config = await loadFixture(_beforeEach);
         // add assets for project 0 at index 0, 1, 2
@@ -677,16 +703,358 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe("updateProjectExternalAssetDependencyOnChainCompressed", function () {
-      // TODO
+    describe("updateProjectAssetDependencyOnChainAtAddress", function () {
+      it("reverts when called by non-admin, non-artist", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.user)
+            .updateProjectAssetDependencyOnChainAtAddress(
+              config.projectZero,
+              0,
+              constants.ZERO_ADDRESS
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtistOrAdminACL);
+      });
+
+      it("allows artist to call", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectExternalAssetDependency(
+            config.projectZero,
+            GENERIC_CID,
+            ONCHAIN
+          );
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectAssetDependencyOnChainAtAddress(
+            config.projectZero,
+            0,
+            constants.ZERO_ADDRESS
+          );
+      });
+
+      it("allows admin to call", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectExternalAssetDependency(
+            config.projectZero,
+            GENERIC_CID,
+            ONCHAIN
+          );
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateProjectAssetDependencyOnChainAtAddress(
+            config.projectZero,
+            0,
+            constants.ZERO_ADDRESS
+          );
+      });
+
+      it("reverts when asset index is out of range", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .updateProjectAssetDependencyOnChainAtAddress(
+              config.projectZero,
+              0,
+              constants.ZERO_ADDRESS
+            ),
+          "Asset index out of range"
+        );
+      });
+
+      it("reverts when assets are locked", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectExternalAssetDependency(
+            config.projectZero,
+            GENERIC_CID,
+            ONCHAIN
+          );
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .lockProjectExternalAssetDependencies(config.projectZero);
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .updateProjectAssetDependencyOnChainAtAddress(
+              config.projectZero,
+              0,
+              constants.ZERO_ADDRESS
+            ),
+          "External dependencies locked"
+        );
+      });
+
+      it("emits event when called", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectExternalAssetDependency(
+            config.projectZero,
+            GENERIC_CID,
+            ONCHAIN
+          );
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .updateProjectAssetDependencyOnChainAtAddress(
+              config.projectZero,
+              0,
+              constants.ZERO_ADDRESS
+            )
+        )
+          .to.emit(config.genArt721Core, "ExternalAssetDependencyUpdated")
+          .withArgs(config.projectZero, 0, "", ONCHAIN, 1);
+      });
+
+      it("updates state", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectExternalAssetDependency(
+            config.projectZero,
+            GENERIC_CID,
+            ONCHAIN
+          );
+        // deploy a bytecodestorage asset (use contract itself to deploy)
+        const preDeployedAssetText = "pre-deployed onchain asset";
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScript(config.projectZero, preDeployedAssetText);
+        const preDeployedAssetAddress = await config.genArt721Core
+          .connect(config.accounts.artist)
+          .projectScriptBytecodeAddressByIndex(config.projectZero, 0);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectAssetDependencyOnChainAtAddress(
+            config.projectZero,
+            0,
+            preDeployedAssetAddress
+          );
+        const externalAssetDependency = await config.genArt721Core
+          .connect(config.accounts.artist)
+          .projectExternalAssetDependencyByIndex(config.projectZero, 0);
+        expect(externalAssetDependency.cid).to.equal("");
+        expect(externalAssetDependency.dependencyType).to.equal(ONCHAIN);
+        expect(externalAssetDependency.bytecodeAddress).to.equal(
+          preDeployedAssetAddress
+        );
+        expect(externalAssetDependency.data).to.equal(preDeployedAssetText);
+      });
     });
 
     describe("addProjectExternalAssetDependencyOnChainCompressed", function () {
-      // TODO
+      it("reverts when called by non-admin, non-artist", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.user)
+            .addProjectExternalAssetDependencyOnChainCompressed(
+              config.projectZero,
+              "0x"
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtistOrAdminACL);
+      });
+
+      it("allows artist to call", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectExternalAssetDependencyOnChainCompressed(
+            config.projectZero,
+            "0x"
+          );
+      });
+
+      it("allows admin to call", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .addProjectExternalAssetDependencyOnChainCompressed(
+            config.projectZero,
+            "0x"
+          );
+      });
+
+      it("emits event when called", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .addProjectExternalAssetDependencyOnChainCompressed(
+              config.projectZero,
+              "0x"
+            )
+        )
+          .to.emit(config.genArt721Core, "ExternalAssetDependencyUpdated")
+          .withArgs(config.projectZero, 0, "", ONCHAIN, 1);
+      });
+
+      it("updates state", async function () {
+        const config = await loadFixture(_beforeEach);
+        const compressedGenericAsset =
+          await config.genArt721Core.getCompressed(GENERIC_ASSET_STRING);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectExternalAssetDependencyOnChainCompressed(
+            config.projectZero,
+            compressedGenericAsset
+          );
+        const externalAssetDependency = await config.genArt721Core
+          .connect(config.accounts.artist)
+          .projectExternalAssetDependencyByIndex(config.projectZero, 0);
+        expect(externalAssetDependency.cid).to.equal("");
+        expect(externalAssetDependency.dependencyType).to.equal(ONCHAIN);
+        expect(externalAssetDependency.bytecodeAddress).to.not.equal(
+          constants.ZERO_ADDRESS
+        );
+        expect(externalAssetDependency.data).to.equal(GENERIC_ASSET_STRING);
+      });
     });
 
     describe("addProjectAssetDependencyOnChainAtAddress", function () {
-      // TODO
+      it("reverts when called by non-admin, non-artist", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.user)
+            .addProjectAssetDependencyOnChainAtAddress(
+              config.projectZero,
+              constants.ZERO_ADDRESS
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtistOrAdminACL);
+      });
+
+      it("allows artist to call", async function () {
+        const config = await loadFixture(_beforeEach);
+        // deploy a bytecodestorage asset (use contract itself to deploy)
+        const preDeployedAssetText = "pre-deployed onchain asset";
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScript(config.projectZero, preDeployedAssetText);
+        const preDeployedAssetAddress = await config.genArt721Core
+          .connect(config.accounts.artist)
+          .projectScriptBytecodeAddressByIndex(config.projectZero, 0);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectAssetDependencyOnChainAtAddress(
+            config.projectZero,
+            preDeployedAssetAddress
+          );
+      });
+
+      it("allows admin to call", async function () {
+        const config = await loadFixture(_beforeEach);
+        // deploy a bytecodestorage asset (use contract itself to deploy)
+        const preDeployedAssetText = "pre-deployed onchain asset";
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScript(config.projectZero, preDeployedAssetText);
+        const preDeployedAssetAddress = await config.genArt721Core
+          .connect(config.accounts.artist)
+          .projectScriptBytecodeAddressByIndex(config.projectZero, 0);
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .addProjectAssetDependencyOnChainAtAddress(
+            config.projectZero,
+            preDeployedAssetAddress
+          );
+      });
+
+      it("emits event when called", async function () {
+        const config = await loadFixture(_beforeEach);
+        // deploy a bytecodestorage asset (use contract itself to deploy)
+        const preDeployedAssetText = "pre-deployed onchain asset";
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScript(config.projectZero, preDeployedAssetText);
+        const preDeployedAssetAddress = await config.genArt721Core
+          .connect(config.accounts.artist)
+          .projectScriptBytecodeAddressByIndex(config.projectZero, 0);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .addProjectAssetDependencyOnChainAtAddress(
+              config.projectZero,
+              preDeployedAssetAddress
+            )
+        )
+          .to.emit(config.genArt721Core, "ExternalAssetDependencyUpdated")
+          .withArgs(config.projectZero, 0, "", ONCHAIN, 1);
+      });
+
+      it("updates state", async function () {
+        const config = await loadFixture(_beforeEach);
+        // deploy a bytecodestorage asset (use contract itself to deploy)
+        const preDeployedAssetText = "pre-deployed onchain asset";
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScript(config.projectZero, preDeployedAssetText);
+        const preDeployedAssetAddress = await config.genArt721Core
+          .connect(config.accounts.artist)
+          .projectScriptBytecodeAddressByIndex(config.projectZero, 0);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectAssetDependencyOnChainAtAddress(
+            config.projectZero,
+            preDeployedAssetAddress
+          );
+        const externalAssetDependency = await config.genArt721Core
+          .connect(config.accounts.artist)
+          .projectExternalAssetDependencyByIndex(config.projectZero, 0);
+        expect(externalAssetDependency.cid).to.equal("");
+        expect(externalAssetDependency.dependencyType).to.equal(ONCHAIN);
+        expect(externalAssetDependency.bytecodeAddress).to.equal(
+          preDeployedAssetAddress
+        );
+        expect(externalAssetDependency.data).to.equal(preDeployedAssetText);
+      });
+    });
+
+    describe("dependency type ART_BLOCKS_DEPENDENCY_REGISTRY, updates state as intended", function () {
+      it("can add dependency of type ART_BLOCKS_DEPENDENCY_REGISTRY", async function () {
+        const config = await loadFixture(_beforeEach);
+        const dependencyRegistryKey = "p5js@1.0.0";
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectExternalAssetDependency(
+            config.projectZero,
+            dependencyRegistryKey,
+            ART_BLOCKS_DEPENDENCY_REGISTRY
+          );
+        const externalAssetDependency = await config.genArt721Core
+          .connect(config.accounts.artist)
+          .projectExternalAssetDependencyByIndex(config.projectZero, 0);
+        expect(externalAssetDependency.cid).to.equal(dependencyRegistryKey);
+        expect(externalAssetDependency.dependencyType).to.equal(
+          ART_BLOCKS_DEPENDENCY_REGISTRY
+        );
+        expect(externalAssetDependency.bytecodeAddress).to.equal(
+          constants.ZERO_ADDRESS
+        );
+        expect(externalAssetDependency.data).to.equal("");
+      });
     });
   });
 }
