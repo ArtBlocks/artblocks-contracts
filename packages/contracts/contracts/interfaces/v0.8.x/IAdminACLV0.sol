@@ -24,18 +24,6 @@ interface IAdminACLV0 {
     function superAdmin() external view returns (address);
 
     /**
-     * @notice Allows superAdmin change the superAdmin address.
-     * @param _newSuperAdmin The new superAdmin address.
-     * @param _genArt721CoreAddressesToUpdate Array of genArt721Core
-     * addresses to update to the new superAdmin, for indexing purposes only.
-     * @dev this function is gated to only superAdmin address.
-     */
-    function changeSuperAdmin(
-        address _newSuperAdmin,
-        address[] calldata _genArt721CoreAddressesToUpdate
-    ) external;
-
-    /**
      * @notice Calls transferOwnership on other contract from this contract.
      * This is useful for updating to a new AdminACL contract.
      * @dev this function should be gated to only superAdmin-like addresses.

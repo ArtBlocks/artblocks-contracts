@@ -4,7 +4,7 @@ pragma solidity 0.8.22;
 // Created By: Art Blocks Inc.
 
 import "../../interfaces/v0.8.x/IRandomizer_V3CoreBase.sol";
-import "../../interfaces/v0.8.x/IAdminACLV0.sol";
+import "../../interfaces/v0.8.x/IAdminACLV0_Engine.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
 import {IGenArt721CoreContractV3_ProjectFinance} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_ProjectFinance.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";

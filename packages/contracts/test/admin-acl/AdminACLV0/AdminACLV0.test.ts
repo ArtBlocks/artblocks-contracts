@@ -57,4 +57,26 @@ describe(`AdminACLV0`, async function () {
   describe(`common tests`, async function () {
     await AdminACLV0V1_Common(_beforeEach, "AdminACLV0");
   });
+  describe("IAdminACLV0 Interface ID", function () {
+    it("supports IAdminACLV0 and IAdminACLV0_Engine Interface IDs", async function () {
+      const config = await loadFixture(_beforeEach);
+      // @dev these interface IDs are hardcoded here to ensure
+      // any future changes do not break deployed contracts
+      // IAdminACLV0 interface ID
+      const iadminACLV0InterfaceId = 0xc00707bc;
+      // IAdminACLV0_Engine interface ID
+      const iadminACLV0_EngineInterfaceId = 0x377a7d1a;
+
+      expect(
+        await config.adminACL_InterfaceBroadcast.supportsInterface(
+          iadminACLV0InterfaceId
+        )
+      ).to.be.true;
+      expect(
+        await config.adminACL_InterfaceBroadcast.supportsInterface(
+          iadminACLV0_EngineInterfaceId
+        )
+      ).to.be.true;
+    });
+  });
 });
