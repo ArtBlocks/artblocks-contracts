@@ -137,6 +137,32 @@ for (const coreContractName of coreContractsToTest) {
         expect(externalAssetDependency[3]).to.equal(dataString);
       });
 
+      it("can not remove external asset dependency not at last index", async function () {
+        const config = await loadFixture(_beforeEach);
+        // add external asset dependency to project 0
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectExternalAssetDependency(
+            config.projectZero,
+            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
+            0
+          );
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectExternalAssetDependency(
+            config.projectZero,
+            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo2",
+            1
+          );
+
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .removeProjectExternalAssetDependency(config.projectZero, 0),
+          "Only removal of last asset"
+        );
+      });
+
       it("can remove an external asset dependency (off-chain)", async function () {
         const config = await loadFixture(_beforeEach);
         // add assets for project 0 at index 0, 1, 2
@@ -159,12 +185,12 @@ for (const coreContractName of coreContractsToTest) {
           .addProjectExternalAssetDependency(
             config.projectZero,
             "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo3",
-            0
+            1
           );
-        // remove external asset at index 1
+        // remove external asset at index 2, which is type 1 (off-chain)
         await config.genArt721Core
           .connect(config.accounts.artist)
-          .removeProjectExternalAssetDependency(0, 1);
+          .removeProjectExternalAssetDependency(0, 2);
 
         // project external asset info at index 2 should be set back to default values as a result of being deleted
         const externalAssetDependency = await config.genArt721Core
@@ -173,16 +199,16 @@ for (const coreContractName of coreContractsToTest) {
         expect(externalAssetDependency[0]).to.equal("");
         expect(externalAssetDependency[1]).to.equal(0);
 
-        // project external asset info at index 1 should be set be set to the same values as index 2, prior to removal
-        // config test also validates the deepy copy of the shifted external asset dependency
+        // project external asset info at index 1 should remain unchanged relative to prior to removal
         const externalAssetDependencyAtIndex1 = await config.genArt721Core
           .connect(config.accounts.artist)
           .projectExternalAssetDependencyByIndex(0, 1);
         expect(externalAssetDependencyAtIndex1[0]).to.equal(
-          "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo3"
+          "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo2"
         );
-        expect(externalAssetDependencyAtIndex1[1]).to.equal(0);
+        expect(externalAssetDependencyAtIndex1[1]).to.equal(1);
 
+        // count should now be only 2
         const externalAssetDependencyCount = await config.genArt721Core
           .connect(config.accounts.artist)
           .projectExternalAssetDependencyCount(0);
@@ -191,8 +217,8 @@ for (const coreContractName of coreContractsToTest) {
 
       it("can remove an external asset dependency (on-chain)", async function () {
         const config = await loadFixture(_beforeEach);
-        const dataString = "here is some data";
-        const dataString2 = "here is some data2";
+        const dataString = "here are some data";
+        const dataString2 = "here are some data2";
         // add assets for project 0 at index 0, 1, 2
         await config.genArt721Core
           .connect(config.accounts.artist)
@@ -212,37 +238,34 @@ for (const coreContractName of coreContractsToTest) {
             2
           );
 
-        const externalAssetDependencyAtIndex2BeforeDeletion =
-          await config.genArt721Core
-            .connect(config.accounts.artist)
-            .projectExternalAssetDependencyByIndex(0, 2);
-
-        // remove external asset at index 1
+        // remove ONCHAIN external asset at index 2
         await config.genArt721Core
           .connect(config.accounts.artist)
-          .removeProjectExternalAssetDependency(0, 1);
+          .removeProjectExternalAssetDependency(config.projectZero, 2);
 
         // project external asset info at index 2 should be set back to default values as a result of being deleted
         const externalAssetDependency = await config.genArt721Core
           .connect(config.accounts.artist)
-          .projectExternalAssetDependencyByIndex(0, 2);
-        expect(externalAssetDependency[0]).to.equal("");
-        expect(externalAssetDependency[1]).to.equal(0);
-        expect(externalAssetDependency[2]).to.equal(constants.ZERO_ADDRESS);
-        expect(externalAssetDependency[3]).to.equal("");
+          .projectExternalAssetDependencyByIndex(config.projectZero, 2);
+        expect(externalAssetDependency.cid).to.equal("");
+        expect(externalAssetDependency.dependencyType).to.equal(0);
+        expect(externalAssetDependency.bytecodeAddress).to.equal(
+          constants.ZERO_ADDRESS
+        );
+        expect(externalAssetDependency.data).to.equal("");
 
-        // project external asset info at index 1 should be set be set to the same values as index 2, prior to removal
-        // config test also validates the deepy copy of the shifted external asset dependency
+        // project external asset info at index 1 should be unchanged relative to prior to removal
         const externalAssetDependencyAtIndex1 = await config.genArt721Core
           .connect(config.accounts.artist)
           .projectExternalAssetDependencyByIndex(0, 1);
-        expect(externalAssetDependencyAtIndex1[0]).to.equal("");
-        expect(externalAssetDependencyAtIndex1[1]).to.equal(2);
-        expect(externalAssetDependencyAtIndex1[2]).to.equal(
-          externalAssetDependencyAtIndex2BeforeDeletion[2]
+        expect(externalAssetDependencyAtIndex1.cid).to.equal(dataString);
+        expect(externalAssetDependencyAtIndex1.dependencyType).to.equal(1);
+        expect(externalAssetDependencyAtIndex1.bytecodeAddress).to.equal(
+          constants.ZERO_ADDRESS
         );
-        expect(externalAssetDependencyAtIndex1[3]).to.equal(dataString2);
+        expect(externalAssetDependencyAtIndex1.data).to.equal("");
 
+        // count should now be only 2
         const externalAssetDependencyCount = await config.genArt721Core
           .connect(config.accounts.artist)
           .projectExternalAssetDependencyCount(0);
