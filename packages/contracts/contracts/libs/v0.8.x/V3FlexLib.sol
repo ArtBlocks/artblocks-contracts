@@ -191,9 +191,10 @@ library V3FlexLib {
             // the incoming cid or string representation of the dependencyNameAndVersion
             flexProjectData.externalAssetDependencies[_index].cid = _cidOrData;
             // clear any previously populated bytecode address
-            flexProjectData
-                .externalAssetDependencies[_index]
-                .bytecodeAddress = address(0);
+            // @dev temporarily commented out to confirm that this new test exposes previous bug
+            // flexProjectData
+            //     .externalAssetDependencies[_index]
+            //     .bytecodeAddress = address(0);
         }
         emit ExternalAssetDependencyUpdated(
             _projectId,

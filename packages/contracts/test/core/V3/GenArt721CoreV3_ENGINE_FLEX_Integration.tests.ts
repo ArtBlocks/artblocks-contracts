@@ -309,6 +309,35 @@ for (const coreContractName of coreContractsToTest) {
         expect(externalAssetDependency2[1]).to.equal(1);
       });
 
+      it("clears stale fields when updating extenal asset dependency from on-chain to off-chain", async function () {
+        const config = await loadFixture(_beforeEach);
+        // add assets for project 0 at index 0
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectExternalAssetDependency(config.projectZero, "", 2);
+        // replace asset at index 0 with off-chain asset
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectExternalAssetDependency(
+            config.projectZero,
+            0,
+            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
+            0
+          );
+        // asset at index 0 should remove any on-chain data
+        const externalAssetDependency = await config.genArt721Core
+          .connect(config.accounts.artist)
+          .projectExternalAssetDependencyByIndex(config.projectZero, 0);
+        expect(externalAssetDependency.cid).to.equal(
+          "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo"
+        );
+        expect(externalAssetDependency.dependencyType).to.equal(0);
+        expect(externalAssetDependency.bytecodeAddress).to.equal(
+          constants.ZERO_ADDRESS
+        );
+        expect(externalAssetDependency.data).to.equal("");
+      });
+
       it("can update an external asset dependency (on-chain)", async function () {
         const config = await loadFixture(_beforeEach);
         // validating that an off-chain asset dependency can be updated to an on-chain asset dependency
