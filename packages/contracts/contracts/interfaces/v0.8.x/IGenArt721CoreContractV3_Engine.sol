@@ -6,7 +6,52 @@ pragma solidity ^0.8.0;
 import "./IAdminACLV0.sol";
 import "./IGenArt721CoreContractV3_Base.sol";
 
+/**
+ * @notice Struct representing Engine contract configuration.
+ * @param tokenName Name of token.
+ * @param tokenSymbol Token symbol.
+ * @param renderProviderAddress address to send render provider revenue to
+ * @param randomizerContract Randomizer contract.
+ * @param splitProviderAddress Address to use as royalty splitter provider for the contract.
+ * @param startingProjectId The initial next project ID.
+ * @param autoApproveArtistSplitProposals Whether or not to always
+ * auto-approve proposed artist split updates.
+ * @param nullPlatformProvider Enforce always setting zero platform provider fees and addresses.
+ * @param allowArtistProjectActivation Allow artist to activate their own projects.
+ * @dev _startingProjectId should be set to a value much, much less than
+ * max(uint248), but an explicit input type of `uint248` is used as it is
+ * safer to cast up to `uint256` than it is to cast down for the purposes
+ * of setting `_nextProjectId`.
+ */
+struct EngineConfiguration {
+    string tokenName;
+    string tokenSymbol;
+    address renderProviderAddress;
+    address platformProviderAddress;
+    address newSuperAdminAddress;
+    address randomizerContract;
+    address splitProviderAddress;
+    uint248 startingProjectId;
+    bool autoApproveArtistSplitProposals;
+    bool nullPlatformProvider;
+    bool allowArtistProjectActivation;
+}
+
 interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
+    // @dev new function in V3.2
+    /**
+     * @notice Initializes the contract with the provided `engineConfiguration`.
+     * This function should be called atomically, immediately after deployment.
+     * Only callable once. Validation on `engineConfiguration` is performed by caller.
+     * @param engineConfiguration EngineConfiguration to configure the contract with.
+     * @param adminACLContract_ Address of admin access control contract, to be
+     * set as contract owner.
+     */
+    function initialize(
+        EngineConfiguration calldata engineConfiguration,
+        address adminACLContract_
+    ) external;
+
     // @dev new function in V3
     function getPrimaryRevenueSplits(
         uint256 _projectId,

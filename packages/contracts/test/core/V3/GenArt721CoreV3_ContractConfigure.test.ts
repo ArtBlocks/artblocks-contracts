@@ -42,7 +42,6 @@ for (const coreContractName of coreContractsToTest) {
         coreContractName,
         "MinterFilterV1"
       ));
-
       config.minter = await deployAndGet(config, "MinterSetPriceV2", [
         config.genArt721Core.address,
         config.minterFilter.address,
@@ -76,6 +75,61 @@ for (const coreContractName of coreContractsToTest) {
         .updatePricePerTokenInWei(config.projectZero, 0);
       return config;
     }
+
+    describe("initialize", function () {
+      beforeEach(async function () {
+        const config = await loadFixture(_beforeEach);
+        if (coreContractName === "GenArt721CoreV3") {
+          throw new Error("Untested core contract version");
+        } else if (coreContractName === "GenArt721CoreV3_Explorations") {
+          throw new Error("Untested core contract version");
+        } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
+          config.maxProviderPrimarySalesPercentage = 100; // 100% maxmimum percentage on V3 core engine
+        } else {
+          throw new Error("Invalid core contract name");
+        }
+        // pass config to tests in this describe block
+        this.config = config;
+      });
+
+      it("contract is initialized", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const engineContractCoreType = await config.genArt721Core.coreType();
+
+        expect(engineContractCoreType).to.be.equal(coreContractName);
+      });
+      it("contract is not re-initializable", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const validEngineConfigurationExistingAdminACL = {
+          tokenName: config.name,
+          tokenSymbol: config.symbol,
+          renderProviderAddress: config.accounts.deployer.address,
+          platformProviderAddress: config.accounts.additional.address,
+          newSuperAdminAddress: "0x0000000000000000000000000000000000000000",
+          randomizerContract: config?.randomizer?.address,
+          splitProviderAddress: config.splitProvider.address,
+          startingProjectId: 0,
+          autoApproveArtistSplitProposals: true,
+          nullPlatformProvider: false,
+          allowArtistProjectActivation: true,
+        };
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .initialize(
+              validEngineConfigurationExistingAdminACL,
+              config.adminACL.address
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.ContractInitialized);
+      });
+    });
 
     describe("update{Artblocks,Provider}PrimarySalesPercentage", function () {
       beforeEach(async function () {
@@ -452,7 +506,12 @@ for (const coreContractName of coreContractsToTest) {
           config.genArt721Core
             .connect(config.accounts.deployer)
             .renounceOwnership()
-        ).to.be.revertedWith("Ownable: caller is not the owner");
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            "OwnableUnauthorizedAccount"
+          )
+          .withArgs(config.accounts.deployer.address);
       });
     });
 
