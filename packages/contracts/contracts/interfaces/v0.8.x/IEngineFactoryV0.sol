@@ -35,8 +35,8 @@ interface IEngineFactoryV0 {
 
     /**
      * @notice Creates a new Engine or Engine Flex contract with the provided
-     * `engineConfiguration`, depending on the `engineCoreType`.
-     * @param engineCoreType Type of Engine Core contract.
+     * `engineConfiguration`, depending on the `engineCoreContractType`.
+     * @param engineCoreContractType Type of Engine Core contract.
      * @param engineConfiguration EngineConfiguration data to configure the
      * contract with.
      * @param adminACLContract Address of admin access control contract, to be
@@ -47,7 +47,7 @@ interface IEngineFactoryV0 {
      * `EngineFlexCreated` events.
      */
     function createEngineContract(
-        EngineCoreType engineCoreType,
+        EngineCoreType engineCoreContractType,
         EngineConfiguration calldata engineConfiguration,
         address adminACLContract,
         bytes32 salt

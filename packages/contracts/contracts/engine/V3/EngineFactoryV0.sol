@@ -48,8 +48,8 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     address public immutable coreRegistry;
 
     /// version and type of Engine implementation contract
-    string public coreType;
-    string public coreVersion;
+    string public engineCoreType;
+    string public engineCoreVersion;
 
     /// version and type of Engine Flex implementation contract
     string public flexCoreType;
@@ -94,10 +94,11 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         engineFlexImplementation = engineFlexImplementation_;
         coreRegistry = coreRegistry_;
 
-        coreType = IGenArt721CoreContractV3_Engine(engineImplementation)
+        engineCoreType = IGenArt721CoreContractV3_Engine(engineImplementation)
             .coreType();
-        coreVersion = IGenArt721CoreContractV3_Engine(engineImplementation)
-            .coreVersion();
+        engineCoreVersion = IGenArt721CoreContractV3_Engine(
+            engineImplementation
+        ).coreVersion();
         flexCoreType = IGenArt721CoreContractV3_Engine(engineFlexImplementation)
             .coreType();
         flexCoreVersion = IGenArt721CoreContractV3_Engine(
@@ -114,8 +115,8 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
 
     /**
      * @notice Creates a new Engine or Engine Flex contract with the provided
-     * `engineConfiguration`, depending on the `engineCoreType`.
-     * @param engineCoreType Type of Engine Core contract.
+     * `engineConfiguration`, depending on the `engineCoreContractType`.
+     * @param engineCoreContractType Type of Engine Core contract.
      * @param engineConfiguration EngineConfiguration data to configure the
      * contract with.
      * @param adminACLContract Address of admin access control contract, to be
@@ -126,7 +127,7 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
      * `EngineFlexCreated` events.
      */
     function createEngineContract(
-        IEngineFactoryV0.EngineCoreType engineCoreType,
+        IEngineFactoryV0.EngineCoreType engineCoreContractType,
         EngineConfiguration calldata engineConfiguration,
         address adminACLContract,
         bytes32 salt
@@ -163,7 +164,7 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
             );
         }
 
-        address implementation = engineCoreType ==
+        address implementation = engineCoreContractType ==
             IEngineFactoryV0.EngineCoreType.Engine
             ? engineImplementation
             : engineFlexImplementation;
@@ -181,8 +182,8 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         (
             string memory coreContractType,
             string memory coreContractVersion
-        ) = engineCoreType == IEngineFactoryV0.EngineCoreType.Engine
-                ? (coreType, coreVersion)
+        ) = engineCoreContractType == IEngineFactoryV0.EngineCoreType.Engine
+                ? (engineCoreType, engineCoreVersion)
                 : (flexCoreType, flexCoreVersion);
 
         // register the new Engine contract
