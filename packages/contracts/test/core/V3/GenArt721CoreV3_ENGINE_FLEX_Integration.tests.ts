@@ -1,14 +1,5 @@
-import {
-  BN,
-  constants,
-  expectEvent,
-  expectRevert,
-  balance,
-  ether,
-} from "@openzeppelin/test-helpers";
+import { constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
-import { ethers } from "hardhat";
-import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import {
@@ -17,10 +8,27 @@ import {
   assignDefaultConstants,
   deployAndGet,
   deployCoreWithMinterFilter,
-  mintProjectUntilRemaining,
-  advanceEVMByTime,
 } from "../../util/common";
-import { FOUR_WEEKS } from "../../util/constants";
+
+import { GenArt721CoreV3_Engine_Flex } from "../../../scripts/contracts";
+
+// extend T_Config to the configured settings for this test file
+interface GenArt721CoreV3_Engine_Flex_Integration_TestConfig extends T_Config {
+  genArt721Core: GenArt721CoreV3_Engine_Flex;
+  projectZero: number;
+  projectTwo: number;
+}
+
+// enum for external asset dependency types
+const IPFS = 0;
+const ARWEAVE = 1;
+const ONCHAIN = 2;
+const ART_BLOCKS_DEPENDENCY_REGISTRY = 3;
+
+// constants used for testing
+const GENERIC_CID = "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo";
+const GENERIC_CID2 = "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo2";
+const GENERIC_CID3 = "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo3";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -76,7 +84,7 @@ for (const coreContractName of coreContractsToTest) {
       await config.minter
         .connect(config.accounts.artist)
         .updatePricePerTokenInWei(config.projectZero, 0);
-      return config;
+      return config as GenArt721CoreV3_Engine_Flex_Integration_TestConfig;
     }
 
     describe("external asset dependencies", async function () {
@@ -88,28 +96,22 @@ for (const coreContractName of coreContractsToTest) {
             .connect(config.accounts.artist)
             .addProjectExternalAssetDependency(
               config.projectZero,
-              "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
-              0
+              GENERIC_CID,
+              IPFS
             )
         )
           .to.emit(config.genArt721Core, "ExternalAssetDependencyUpdated")
-          .withArgs(
-            0,
-            0,
-            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
-            0,
-            1
-          );
+          .withArgs(0, 0, GENERIC_CID, 0, 1);
         const externalAssetDependency = await config.genArt721Core
           .connect(config.accounts.artist)
-          .projectExternalAssetDependencyByIndex(0, 0);
+          .projectExternalAssetDependencyByIndex(config.projectZero, 0);
 
-        expect(externalAssetDependency[0]).to.equal(
-          "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo"
+        expect(externalAssetDependency.cid).to.equal(GENERIC_CID);
+        expect(externalAssetDependency.dependencyType).to.equal(IPFS);
+        expect(externalAssetDependency.bytecodeAddress).to.equal(
+          constants.ZERO_ADDRESS
         );
-        expect(externalAssetDependency[1]).to.equal(0);
-        expect(externalAssetDependency[2]).to.equal(constants.ZERO_ADDRESS);
-        expect(externalAssetDependency[3]).to.equal("");
+        expect(externalAssetDependency.data).to.equal("");
       });
 
       it("can add an external asset dependency (on-chain)", async function () {
@@ -122,19 +124,21 @@ for (const coreContractName of coreContractsToTest) {
             .addProjectExternalAssetDependency(
               config.projectZero,
               dataString,
-              2
+              ONCHAIN
             )
         )
           .to.emit(config.genArt721Core, "ExternalAssetDependencyUpdated")
           .withArgs(0, 0, "", 2, 1);
         const externalAssetDependency = await config.genArt721Core
           .connect(config.accounts.artist)
-          .projectExternalAssetDependencyByIndex(0, 0);
+          .projectExternalAssetDependencyByIndex(config.projectZero, 0);
 
-        expect(externalAssetDependency[0]).to.equal("");
-        expect(externalAssetDependency[1]).to.equal(2);
-        expect(externalAssetDependency[2]).to.not.equal(constants.ZERO_ADDRESS);
-        expect(externalAssetDependency[3]).to.equal(dataString);
+        expect(externalAssetDependency.cid).to.equal("");
+        expect(externalAssetDependency.dependencyType).to.equal(ONCHAIN);
+        expect(externalAssetDependency.bytecodeAddress).to.not.equal(
+          constants.ZERO_ADDRESS
+        );
+        expect(externalAssetDependency.data).to.equal(dataString);
       });
 
       it("can not remove external asset dependency not at last index", async function () {
@@ -144,15 +148,15 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist)
           .addProjectExternalAssetDependency(
             config.projectZero,
-            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
-            0
+            GENERIC_CID,
+            IPFS
           );
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectExternalAssetDependency(
             config.projectZero,
-            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo2",
-            1
+            GENERIC_CID2,
+            ARWEAVE
           );
 
         await expectRevert(
@@ -170,22 +174,22 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist)
           .addProjectExternalAssetDependency(
             config.projectZero,
-            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
-            0
+            GENERIC_CID,
+            IPFS
           );
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectExternalAssetDependency(
             config.projectZero,
-            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo2",
-            1
+            GENERIC_CID2,
+            ARWEAVE
           );
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectExternalAssetDependency(
             config.projectZero,
-            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo3",
-            1
+            GENERIC_CID3,
+            ARWEAVE
           );
         // remove external asset at index 2, which is type 1 (off-chain)
         await config.genArt721Core
@@ -195,18 +199,18 @@ for (const coreContractName of coreContractsToTest) {
         // project external asset info at index 2 should be set back to default values as a result of being deleted
         const externalAssetDependency = await config.genArt721Core
           .connect(config.accounts.artist)
-          .projectExternalAssetDependencyByIndex(0, 2);
-        expect(externalAssetDependency[0]).to.equal("");
-        expect(externalAssetDependency[1]).to.equal(0);
+          .projectExternalAssetDependencyByIndex(config.projectZero, 2);
+        expect(externalAssetDependency.cid).to.equal("");
+        expect(externalAssetDependency.dependencyType).to.equal(IPFS);
 
         // project external asset info at index 1 should remain unchanged relative to prior to removal
         const externalAssetDependencyAtIndex1 = await config.genArt721Core
           .connect(config.accounts.artist)
-          .projectExternalAssetDependencyByIndex(0, 1);
-        expect(externalAssetDependencyAtIndex1[0]).to.equal(
-          "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo2"
+          .projectExternalAssetDependencyByIndex(config.projectZero, 1);
+        expect(externalAssetDependencyAtIndex1.cid).to.equal(GENERIC_CID2);
+        expect(externalAssetDependencyAtIndex1.dependencyType).to.equal(
+          ARWEAVE
         );
-        expect(externalAssetDependencyAtIndex1[1]).to.equal(1);
 
         // count should now be only 2
         const externalAssetDependencyCount = await config.genArt721Core
@@ -224,18 +228,22 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist)
           .addProjectExternalAssetDependency(
             config.projectZero,
-            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
-            0
+            GENERIC_CID,
+            IPFS
           );
         await config.genArt721Core
           .connect(config.accounts.artist)
-          .addProjectExternalAssetDependency(config.projectZero, dataString, 1);
+          .addProjectExternalAssetDependency(
+            config.projectZero,
+            dataString,
+            ARWEAVE
+          );
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectExternalAssetDependency(
             config.projectZero,
             dataString2,
-            2
+            ONCHAIN
           );
 
         // remove ONCHAIN external asset at index 2
@@ -248,7 +256,7 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist)
           .projectExternalAssetDependencyByIndex(config.projectZero, 2);
         expect(externalAssetDependency.cid).to.equal("");
-        expect(externalAssetDependency.dependencyType).to.equal(0);
+        expect(externalAssetDependency.dependencyType).to.equal(IPFS);
         expect(externalAssetDependency.bytecodeAddress).to.equal(
           constants.ZERO_ADDRESS
         );
@@ -257,9 +265,11 @@ for (const coreContractName of coreContractsToTest) {
         // project external asset info at index 1 should be unchanged relative to prior to removal
         const externalAssetDependencyAtIndex1 = await config.genArt721Core
           .connect(config.accounts.artist)
-          .projectExternalAssetDependencyByIndex(0, 1);
+          .projectExternalAssetDependencyByIndex(config.projectZero, 1);
         expect(externalAssetDependencyAtIndex1.cid).to.equal(dataString);
-        expect(externalAssetDependencyAtIndex1.dependencyType).to.equal(1);
+        expect(externalAssetDependencyAtIndex1.dependencyType).to.equal(
+          ARWEAVE
+        );
         expect(externalAssetDependencyAtIndex1.bytecodeAddress).to.equal(
           constants.ZERO_ADDRESS
         );
@@ -279,34 +289,30 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist)
           .addProjectExternalAssetDependency(
             config.projectZero,
-            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
-            0
+            GENERIC_CID,
+            IPFS
           );
         // get asset info at index 0 for project 0
         const externalAssetDependency = await config.genArt721Core
           .connect(config.accounts.artist)
-          .projectExternalAssetDependencyByIndex(0, 0);
-        expect(externalAssetDependency[0]).to.equal(
-          "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo"
-        );
-        expect(externalAssetDependency[1]).to.equal(0);
+          .projectExternalAssetDependencyByIndex(config.projectZero, 0);
+        expect(externalAssetDependency.cid).to.equal(GENERIC_CID);
+        expect(externalAssetDependency.dependencyType).to.equal(IPFS);
         // update asset info at index 0 for project 0
         await config.genArt721Core
           .connect(config.accounts.artist)
           .updateProjectExternalAssetDependency(
+            config.projectZero,
             0,
-            0,
-            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo2",
-            1
+            GENERIC_CID2,
+            ARWEAVE
           );
 
         const externalAssetDependency2 = await config.genArt721Core
           .connect(config.accounts.artist)
-          .projectExternalAssetDependencyByIndex(0, 0);
-        expect(externalAssetDependency2[0]).to.equal(
-          "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo2"
-        );
-        expect(externalAssetDependency2[1]).to.equal(1);
+          .projectExternalAssetDependencyByIndex(config.projectZero, 0);
+        expect(externalAssetDependency2.cid).to.equal(GENERIC_CID2);
+        expect(externalAssetDependency2.dependencyType).to.equal(ARWEAVE);
       });
 
       it("clears stale fields when updating extenal asset dependency from on-chain to off-chain", async function () {
@@ -314,24 +320,22 @@ for (const coreContractName of coreContractsToTest) {
         // add assets for project 0 at index 0
         await config.genArt721Core
           .connect(config.accounts.artist)
-          .addProjectExternalAssetDependency(config.projectZero, "", 2);
+          .addProjectExternalAssetDependency(config.projectZero, "", ONCHAIN);
         // replace asset at index 0 with off-chain asset
         await config.genArt721Core
           .connect(config.accounts.artist)
           .updateProjectExternalAssetDependency(
             config.projectZero,
             0,
-            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
-            0
+            GENERIC_CID,
+            IPFS
           );
         // asset at index 0 should remove any on-chain data
         const externalAssetDependency = await config.genArt721Core
           .connect(config.accounts.artist)
           .projectExternalAssetDependencyByIndex(config.projectZero, 0);
-        expect(externalAssetDependency.cid).to.equal(
-          "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo"
-        );
-        expect(externalAssetDependency.dependencyType).to.equal(0);
+        expect(externalAssetDependency.cid).to.equal(GENERIC_CID);
+        expect(externalAssetDependency.dependencyType).to.equal(IPFS);
         expect(externalAssetDependency.bytecodeAddress).to.equal(
           constants.ZERO_ADDRESS
         );
@@ -341,33 +345,42 @@ for (const coreContractName of coreContractsToTest) {
       it("can update an external asset dependency (on-chain)", async function () {
         const config = await loadFixture(_beforeEach);
         // validating that an off-chain asset dependency can be updated to an on-chain asset dependency
-        const exampleCID = "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo";
+        const exampleCID = GENERIC_CID;
         const dataString = "here is some data";
         // add assets for project 0 at index 0
         await config.genArt721Core
           .connect(config.accounts.artist)
-          .addProjectExternalAssetDependency(config.projectZero, exampleCID, 0);
+          .addProjectExternalAssetDependency(
+            config.projectZero,
+            exampleCID,
+            IPFS
+          );
         // get asset info at index 0 for project 0
         const externalAssetDependency = await config.genArt721Core
           .connect(config.accounts.artist)
-          .projectExternalAssetDependencyByIndex(0, 0);
-        expect(externalAssetDependency[0]).to.equal(exampleCID);
-        expect(externalAssetDependency[1]).to.equal(0);
+          .projectExternalAssetDependencyByIndex(config.projectZero, 0);
+        expect(externalAssetDependency.cid).to.equal(exampleCID);
+        expect(externalAssetDependency.dependencyType).to.equal(IPFS);
 
         // update asset info at index 0 for project 0
         await config.genArt721Core
           .connect(config.accounts.artist)
-          .updateProjectExternalAssetDependency(0, 0, dataString, 2);
+          .updateProjectExternalAssetDependency(
+            config.projectZero,
+            0,
+            dataString,
+            ONCHAIN
+          );
 
         const externalAssetDependency2 = await config.genArt721Core
           .connect(config.accounts.artist)
-          .projectExternalAssetDependencyByIndex(0, 0);
-        expect(externalAssetDependency2[0]).to.equal("");
-        expect(externalAssetDependency2[1]).to.equal(2);
-        expect(externalAssetDependency2[2]).to.not.equal(
+          .projectExternalAssetDependencyByIndex(config.projectZero, 0);
+        expect(externalAssetDependency2.cid).to.equal("");
+        expect(externalAssetDependency2.dependencyType).to.equal(ONCHAIN);
+        expect(externalAssetDependency2.bytecodeAddress).to.not.equal(
           constants.ZERO_ADDRESS
         );
-        expect(externalAssetDependency2[3]).to.equal(dataString);
+        expect(externalAssetDependency2.data).to.equal(dataString);
 
         // validate updating an on-chain asset with another on-chain asset
         const externalAssetDependency2ByteCodeAddress =
@@ -376,31 +389,41 @@ for (const coreContractName of coreContractsToTest) {
         // update asset info at index 0 for project 0
         await config.genArt721Core
           .connect(config.accounts.artist)
-          .updateProjectExternalAssetDependency(0, 0, dataString2, 2);
+          .updateProjectExternalAssetDependency(
+            config.projectZero,
+            0,
+            dataString2,
+            ONCHAIN
+          );
 
         const externalAssetDependency3 = await config.genArt721Core
           .connect(config.accounts.artist)
-          .projectExternalAssetDependencyByIndex(0, 0);
-        expect(externalAssetDependency3[0]).to.equal("");
-        expect(externalAssetDependency3[1]).to.equal(2);
-        expect(externalAssetDependency3[2]).to.not.equal(
+          .projectExternalAssetDependencyByIndex(config.projectZero, 0);
+        expect(externalAssetDependency3.cid).to.equal("");
+        expect(externalAssetDependency3.dependencyType).to.equal(ONCHAIN);
+        expect(externalAssetDependency3.bytecodeAddress).to.not.equal(
           constants.ZERO_ADDRESS
         );
-        expect(externalAssetDependency3[2]).to.not.equal(
+        expect(externalAssetDependency3.bytecodeAddress).to.not.equal(
           externalAssetDependency2ByteCodeAddress
         );
-        expect(externalAssetDependency3[3]).to.equal(dataString2);
+        expect(externalAssetDependency3.data).to.equal(dataString2);
 
         // update asset info at index 0 for project 0
         await config.genArt721Core
           .connect(config.accounts.artist)
-          .updateProjectExternalAssetDependency(0, 0, exampleCID, 0);
+          .updateProjectExternalAssetDependency(
+            config.projectZero,
+            0,
+            exampleCID,
+            IPFS
+          );
         // get asset info at index 0 for project 0
         const externalAssetDependency4 = await config.genArt721Core
           .connect(config.accounts.artist)
-          .projectExternalAssetDependencyByIndex(0, 0);
-        expect(externalAssetDependency4[0]).to.equal(exampleCID);
-        expect(externalAssetDependency4[1]).to.equal(0);
+          .projectExternalAssetDependencyByIndex(config.projectZero, 0);
+        expect(externalAssetDependency4.cid).to.equal(exampleCID);
+        expect(externalAssetDependency4.dependencyType).to.equal(IPFS);
       });
 
       it("can lock a projects external asset dependencies", async function () {
@@ -410,32 +433,30 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist)
           .addProjectExternalAssetDependency(
             config.projectZero,
-            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
-            0
+            GENERIC_CID,
+            IPFS
           );
         // lock external asset dependencies for project 0
         await config.genArt721Core
           .connect(config.accounts.artist)
-          .lockProjectExternalAssetDependencies(0);
+          .lockProjectExternalAssetDependencies(config.projectZero);
 
         // get asset info at index 0 for project 0
         const externalAssetDependency = await config.genArt721Core
           .connect(config.accounts.artist)
-          .projectExternalAssetDependencyByIndex(0, 0);
+          .projectExternalAssetDependencyByIndex(config.projectZero, 0);
 
-        expect(externalAssetDependency[0]).to.equal(
-          "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo"
-        );
-        expect(externalAssetDependency[1]).to.equal(0);
+        expect(externalAssetDependency.cid).to.equal(GENERIC_CID);
+        expect(externalAssetDependency.dependencyType).to.equal(IPFS);
 
         await expectRevert(
           config.genArt721Core
             .connect(config.accounts.artist)
             .updateProjectExternalAssetDependency(
+              config.projectZero,
               0,
-              0,
-              "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo2",
-              1
+              GENERIC_CID2,
+              ARWEAVE
             ),
           "External dependencies locked"
         );
@@ -452,8 +473,8 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist)
           .addProjectExternalAssetDependency(
             config.projectZero,
-            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
-            0
+            GENERIC_CID,
+            IPFS
           );
 
         const externalAssetDependencyCountB = await config.genArt721Core
