@@ -3,7 +3,7 @@
 pragma solidity 0.8.22;
 
 import "./interfaces/v0.8.x/IAdminACLV0.sol";
-import {IAdminACLV0_Engine} from "./interfaces/v0.8.x/IAdminACLV0_Engine.sol";
+import {IAdminACLV0_Extended} from "./interfaces/v0.8.x/IAdminACLV0_Extended.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "@openzeppelin-4.7/contracts/utils/introspection/ERC165.sol";
 
@@ -53,23 +53,19 @@ contract AdminACLV0 is IAdminACLV0, ERC165 {
      * This is useful for updating to a new AdminACL contract.
      * @dev this function is gated to only superAdmin address.
      * @dev This implementation requires that the new AdminACL contract
-     * broadcasts support of IAdminACLV0 or IAdminACLV0_Engine via ERC165
-     * interface detection.
+     * broadcasts support of IAdminACLV0 via ERC165 interface detection.
      */
     function transferOwnershipOn(
         address _contract,
         address _newAdminACL
     ) external {
         require(msg.sender == superAdmin, "Only superAdmin");
-        // ensure new AdminACL contract supports IAdminACLV0 or IAdminACLV0_Engine
+        // ensure new AdminACL contract supports IAdminACLV0
         require(
             ERC165(_newAdminACL).supportsInterface(
                 type(IAdminACLV0).interfaceId
-            ) ||
-                ERC165(_newAdminACL).supportsInterface(
-                    type(IAdminACLV0_Engine).interfaceId
-                ),
-            "AdminACLV0: new admin ACL does not support IAdminACLV0 or IAdminACLV0_Engine"
+            ),
+            "AdminACLV0: new admin ACL does not support IAdminACLV0"
         );
         Ownable(_contract).transferOwnership(_newAdminACL);
     }
@@ -103,7 +99,7 @@ contract AdminACLV0 is IAdminACLV0, ERC165 {
     ) public view virtual override(ERC165) returns (bool) {
         return
             interfaceId == type(IAdminACLV0).interfaceId ||
-            interfaceId == type(IAdminACLV0_Engine).interfaceId ||
+            interfaceId == type(IAdminACLV0_Extended).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 }

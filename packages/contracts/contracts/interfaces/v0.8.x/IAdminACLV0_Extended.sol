@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 
 import "./IAdminACLV0.sol";
 
-interface IAdminACLV0_Engine is IAdminACLV0 {
+interface IAdminACLV0_Extended is IAdminACLV0 {
     /**
      * @notice Allows superAdmin change the superAdmin address.
      * @param _newSuperAdmin The new superAdmin address.

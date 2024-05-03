@@ -70,6 +70,13 @@ interface IEngineFactoryV0 {
     function drainERC20(address ERC20TokenAddress, address recipient) external;
 
     /**
+     * @notice Calls transferOwnership on the core registry.
+     * Useful for updating the owner of the core registry contract.
+     * @param _owner address of the new owner
+     */
+    function transferCoreRegistryOwnership(address _owner) external;
+
+    /**
      * @notice Registers multiple contracts with the core registry.
      * @param contractAddresses An array of contract addresses to register.
      * @param coreVersions An array of versions corresponding to the contract addresses.
