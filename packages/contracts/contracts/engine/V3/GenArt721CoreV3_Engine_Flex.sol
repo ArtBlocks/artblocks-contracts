@@ -4,16 +4,17 @@ pragma solidity 0.8.22;
 // Created By: Art Blocks Inc.
 
 import "../../interfaces/v0.8.x/IRandomizer_V3CoreBase.sol";
-import "../../interfaces/v0.8.x/IAdminACLV0.sol";
+import "../../interfaces/v0.8.x/IAdminACLV0_Extended.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
 import {IGenArt721CoreContractV3_ProjectFinance} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_ProjectFinance.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
 import {ISplitProviderV0} from "../../interfaces/v0.8.x/ISplitProviderV0.sol";
 
-import "@openzeppelin-4.7/contracts/access/Ownable.sol";
-import {IERC2981} from "@openzeppelin-4.7/contracts/interfaces/IERC2981.sol";
-import "../../libs/v0.8.x/ERC721_PackedHashSeed.sol";
+import "@openzeppelin-5.0/contracts/utils/Strings.sol";
+import "@openzeppelin-5.0/contracts/access/Ownable.sol";
+import {IERC2981} from "@openzeppelin-5.0/contracts/interfaces/IERC2981.sol";
+import "../../libs/v0.8.x/ERC721_PackedHashSeedV1.sol";
 import "../../libs/v0.8.x/BytecodeStorageV2.sol";
 import {V3FlexLib} from "../../libs/v0.8.x/V3FlexLib.sol";
 import "../../libs/v0.8.x/Bytes32Strings.sol";
@@ -104,7 +105,7 @@ import "../../libs/v0.8.x/Bytes32Strings.sol";
  * registries, and other contracts that may interact with this core contract.
  */
 contract GenArt721CoreV3_Engine_Flex is
-    ERC721_PackedHashSeed,
+    ERC721_PackedHashSeedV1,
     Ownable,
     IERC2981,
     IDependencyRegistryCompatibleV0,
@@ -115,6 +116,8 @@ contract GenArt721CoreV3_Engine_Flex is
     using BytecodeStorageWriter for string;
     using BytecodeStorageWriter for bytes;
     using Bytes32Strings for bytes32;
+    using Strings for uint256;
+    using Strings for address;
     uint256 constant ONE_HUNDRED = 100;
     uint256 constant ONE_MILLION = 1_000_000;
     uint24 constant ONE_MILLION_UINT24 = 1_000_000;
@@ -132,6 +135,9 @@ contract GenArt721CoreV3_Engine_Flex is
     address public artblocksDependencyRegistryAddress;
     /// On chain generator managed by Art Blocks
     address public artblocksOnChainGeneratorAddress;
+
+    /// ensure initialization can only be performed once
+    bool private initialized;
 
     /// current randomizer contract
     IRandomizer_V3CoreBase public randomizerContract;
@@ -179,14 +185,14 @@ contract GenArt721CoreV3_Engine_Flex is
     /// Percentage of primary sales revenue allocated to the render provider
     /// (packed)
     // packed uint: max of 100, max uint8 = 255
-    uint8 private _renderProviderPrimarySalesPercentage = 10;
+    uint8 private _renderProviderPrimarySalesPercentage;
     /// The platform provider payment address for all primary sales revenues
     /// (packed)
     address payable public platformProviderPrimarySalesAddress;
     /// Percentage of primary sales revenue allocated to the platform provider
     /// (packed)
     // packed uint: max of 100, max uint8 = 255
-    uint8 private _platformProviderPrimarySalesPercentage = 10;
+    uint8 private _platformProviderPrimarySalesPercentage;
 
     /// @dev Note on "default" provider secondary values - the only way these can
     /// be different on a per project basis is if admin updates these and then
@@ -203,7 +209,7 @@ contract GenArt721CoreV3_Engine_Flex is
     /// payment info is defined in each project's ProjectFinance struct.
     /// Projects can be updated to this value by calling the
     /// `syncProviderSecondaryForProjectToDefaults` function for each project.
-    uint256 public defaultRenderProviderSecondarySalesBPS = 250;
+    uint256 public defaultRenderProviderSecondarySalesBPS;
     /// The default platform provider payment address for all secondary sales royalty
     /// revenues, for all new projects. Individual project payment info is defined
     /// in each project's ProjectFinance struct.
@@ -215,14 +221,18 @@ contract GenArt721CoreV3_Engine_Flex is
     /// payment info is defined in each project's ProjectFinance struct.
     /// Projects can be updated to this value by calling the
     /// `syncProviderSecondaryForProjectToDefaults` function for each project.
-    uint256 public defaultPlatformProviderSecondarySalesBPS = 250;
+    uint256 public defaultPlatformProviderSecondarySalesBPS;
     /// -----------------------------------------------------------------------
 
     /// single minter allowed for this core contract
     address public minterContract;
 
-    /// starting (initial) project ID on this contract
-    uint256 public immutable startingProjectId;
+    /// starting (initial) project ID on this contract configured
+    /// at time of deployment and intended to be immutable after initialization.
+    /// Not marked as immutable due to initialization requirements
+    /// under the ERC-1167 minimal proxy pattern, which necessitates
+    /// setting this value post-deployment.
+    uint256 public startingProjectId;
 
     /// next project ID to be created
     uint248 private _nextProjectId;
@@ -231,22 +241,34 @@ contract GenArt721CoreV3_Engine_Flex is
     /// default behavior is to allow new projects
     bool public newProjectsForbidden;
 
-    /// configuration variable (determined at time of deployment)
-    /// that determines whether or not admin approval^ should be required
-    /// to accept artist address change proposals, or if these proposals
-    /// should always auto-approve, as determined by the business process
-    /// requirements of the Engine partner using this contract.
+    /// configuration variable set at time of deployment, intended to be
+    /// immutable after initialization, that determines whether or not
+    /// admin approval^ should be required to accept artist address change
+    /// proposals, or if these proposals should always auto-approve, as
+    /// determined by the business process requirements of the Engine
+    /// partner using this contract.
     ///
     /// ^does not apply in the case where contract-ownership itself is revoked
-    bool public immutable autoApproveArtistSplitProposals;
+    /// Not marked as immutable due to initialization requirements
+    /// under the ERC-1167 minimal proxy pattern, which necessitates
+    /// setting this value post-deployment.
+    bool public autoApproveArtistSplitProposals;
 
-    // configuration variable (determined at time of deployment) that determines
-    // if platform provider fees and addresses are always required to be set to zero
-    bool public immutable nullPlatformProvider;
+    /// configuration variable set at time of deployment, intended to be
+    /// immutable after initialization, that determines if platform provider
+    /// fees and addresses are always required to be set to zero.
+    /// Not marked as immutable due to initialization requirements
+    /// under the ERC-1167 minimal proxy pattern, which necessitates
+    /// setting this value post-deployment.
+    bool public nullPlatformProvider;
 
-    // configuration variable (determined at time of deployment) that determines
-    // if artists are allowed to activate their own projects
-    bool public immutable allowArtistProjectActivation;
+    /// configuration variable set at time of deployment, intended to be
+    /// immutable after initialization, that determines if artists are allowed
+    /// to activate their own projects.
+    /// Not marked as immutable due to initialization requirements
+    /// under the ERC-1167 minimal proxy pattern, which necessitates
+    /// setting this value post-deployment.
+    bool public allowArtistProjectActivation;
 
     /// version & type of this core contract
     bytes32 constant CORE_VERSION = "v3.2.1";
@@ -271,6 +293,17 @@ contract GenArt721CoreV3_Engine_Flex is
     // royalty split provider
     ISplitProviderV0 public splitProvider;
 
+    /**
+     * @dev This constructor sets the owner to a non-functional address as a formality.
+     * It is only ever ran on the implementation contract. The `Ownable` constructor is
+     * called to satisfy the contract's inheritance requirements. This owner has no
+     * operational significance and should not be considered secure or meaningful.
+     * The true ownership will be set in the `initialize` function post-deployment to
+     * ensure correct owner management in the proxy architecture.
+     * Explicitly setting the owner to '0xdead' to indicate non-operational use.
+     */
+    constructor() Ownable(0x000000000000000000000000000000000000dEaD) {}
+
     function _onlyNonZeroAddress(address _address) internal pure {
         if (_address == address(0)) {
             revert GenArt721Error(ErrorCodes.OnlyNonZeroAddress);
@@ -290,7 +323,7 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     function _onlyValidTokenId(uint256 _tokenId) internal view {
-        if (!_exists(_tokenId)) {
+        if (_ownerOf(_tokenId) == address(0)) {
             revert GenArt721Error(ErrorCodes.TokenDoesNotExist);
         }
     }
@@ -360,78 +393,77 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
-     * @notice Initializes contract.
-     * @param _tokenName Name of token.
-     * @param _tokenSymbol Token symbol.
-     * @param _randomizerContract Randomizer contract.
+     * @notice Initializes the contract with the provided `engineConfiguration`.
+     * This function should be called atomically, immediately after deployment.
+     * Only callable once. Validation on `engineConfiguration` is performed by caller.
+     * @param engineConfiguration EngineConfiguration to configure the contract with.
      * @param _adminACLContract Address of admin access control contract, to be
      * set as contract owner.
-     * @param _startingProjectId The initial next project ID.
-     * @param _autoApproveArtistSplitProposals Whether or not to always
-     * auto-approve proposed artist split updates.
-     * @param _splitProviderAddress Address to use as royalty splitter provider for the contract.
-     * @param _nullPlatformProvider Enforce always setting zero platform provider fees and addresses.
-     * @param _allowArtistProjectActivation Allow artist to activate their own projects.
-     * @dev _startingProjectId should be set to a value much, much less than
-     * max(uint248), but an explicit input type of `uint248` is used as it is
-     * safer to cast up to `uint256` than it is to cast down for the purposes
-     * of setting `_nextProjectId`.
      */
-    constructor(
-        string memory _tokenName,
-        string memory _tokenSymbol,
-        address _renderProviderAddress,
-        address _platformProviderAddress,
-        address _randomizerContract,
-        address _adminACLContract,
-        uint248 _startingProjectId,
-        bool _autoApproveArtistSplitProposals,
-        address _splitProviderAddress,
-        bool _nullPlatformProvider,
-        bool _allowArtistProjectActivation
-    ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
-        _onlyNonZeroAddress(_renderProviderAddress);
-        // @dev checks on platform provider addresses performed in _updateProviderSalesAddresses
-        if (_nullPlatformProvider) {
-            // set platform to zero revenue splits
-            _platformProviderPrimarySalesPercentage = 0;
-            defaultPlatformProviderSecondarySalesBPS = 0;
+    function initialize(
+        EngineConfiguration calldata engineConfiguration,
+        address _adminACLContract
+    ) external {
+        // can only be initialized once
+        if (initialized) {
+            revert GenArt721Error(ErrorCodes.ContractInitialized);
         }
-        _onlyNonZeroAddress(_randomizerContract);
-        _updateSplitProvider(_splitProviderAddress);
-        _onlyNonZeroAddress(_adminACLContract);
+        // @dev assume renderProviderAddress, randomizer, and AdminACL non-zero
+        // checks on platform provider addresses performed in _updateProviderSalesAddresses
+        // initialize default sales revenue percentages and basis points
+        _renderProviderPrimarySalesPercentage = 10;
+        defaultRenderProviderSecondarySalesBPS = 250;
+        _platformProviderPrimarySalesPercentage = engineConfiguration
+            .nullPlatformProvider
+            ? 0
+            : 10;
+        defaultPlatformProviderSecondarySalesBPS = engineConfiguration
+            .nullPlatformProvider
+            ? 0
+            : 250;
+
+        // set token name and token symbol
+        ERC721_PackedHashSeedV1.initialize(
+            engineConfiguration.tokenName,
+            engineConfiguration.tokenSymbol
+        );
+
+        _updateSplitProvider(engineConfiguration.splitProviderAddress);
         // setup immutable `autoApproveArtistSplitProposals` config
-        autoApproveArtistSplitProposals = _autoApproveArtistSplitProposals;
+        autoApproveArtistSplitProposals = engineConfiguration
+            .autoApproveArtistSplitProposals;
         // setup immutable `nullPlatformProvider` config
-        nullPlatformProvider = _nullPlatformProvider;
+        nullPlatformProvider = engineConfiguration.nullPlatformProvider;
         // setup immutable `allowArtistProjectActivation` config
-        allowArtistProjectActivation = _allowArtistProjectActivation;
+        allowArtistProjectActivation = engineConfiguration
+            .allowArtistProjectActivation;
         // record contracts starting project ID
         // casting-up is safe
-        startingProjectId = uint256(_startingProjectId);
+        startingProjectId = uint256(engineConfiguration.startingProjectId);
         // @dev nullPlatformProvider must be set before calling _updateProviderSalesAddresses
         _updateProviderSalesAddresses(
-            _renderProviderAddress,
-            _renderProviderAddress,
-            _platformProviderAddress,
-            _platformProviderAddress
+            engineConfiguration.renderProviderAddress,
+            engineConfiguration.renderProviderAddress,
+            engineConfiguration.platformProviderAddress,
+            engineConfiguration.platformProviderAddress
         );
-        _updateRandomizerAddress(_randomizerContract);
+        _updateRandomizerAddress(engineConfiguration.randomizerContract);
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
         // initialize default base URI
         _updateDefaultBaseURI(
             string.concat(
                 "https://token.artblocks.io/",
-                toHexString(address(this)),
+                address(this).toHexString(),
                 "/"
             )
         );
         // initialize next project ID
-        _nextProjectId = _startingProjectId;
+        _nextProjectId = engineConfiguration.startingProjectId;
         emit PlatformUpdated(
             bytes32(uint256(PlatformUpdatedFields.FIELD_NEXT_PROJECT_ID))
         );
+        initialized = true;
         // @dev follow-on action: This contract does not self-register. A core
         // registry owner must register contract in a subsequent call.
     }
@@ -469,11 +501,14 @@ contract GenArt721CoreV3_Engine_Flex is
      * @notice Updates external asset dependency for project `_projectId`.
      * @param _projectId Project to be updated.
      * @param _index Asset index.
-     * @param _cidOrData Asset cid (Content identifier) or data string to be translated into bytecode.
+     * @param _cidOrData Field that contains the CID of the dependency if IPFS or ARWEAVE,
+     * empty string of ONCHAIN, or a string representation of the Art Blocks Dependency
+     * Registry's `dependencyNameAndVersion` if ART_BLOCKS_DEPENDENCY_REGISTRY.
      * @param _dependencyType Asset dependency type.
      *  0 - IPFS
      *  1 - ARWEAVE
      *  2 - ONCHAIN
+     *  3 - ART_BLOCKS_DEPENDENCY_REGISTRY
      */
     function updateProjectExternalAssetDependency(
         uint256 _projectId,
@@ -494,9 +529,60 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
+     * @notice Updates external asset dependency for project `_projectId` of type
+     * ONCHAIN using on-chain compression. The string should be compressed using
+     * `getCompressed`.
+     * This function stores the string in a compressed format on-chain.
+     * For reads, the compressed script is decompressed on-chain, ensuring the
+     * original text is reconstructed without external dependencies.
+     * @dev _compressedString in memory to minimize bytecode size.
+     * @param _projectId Project to be updated.
+     * @param _index Asset index.
+     * @param _compressedString Pre-compressed string asset to be added.
+     */
+    function updateProjectExternalAssetDependencyOnChainCompressed(
+        uint256 _projectId,
+        uint256 _index,
+        bytes memory _compressedString
+    ) external {
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.updateProjectExternalAssetDependencyOnChainCompressed.selector
+        );
+        V3FlexLib.updateProjectExternalAssetDependencyOnChainCompressed({
+            _projectId: _projectId,
+            _index: _index,
+            _compressedString: _compressedString
+        });
+    }
+
+    /**
+     * @notice Updates external asset dependency for project `_projectId` at
+     * index `_index`, with data at BytecodeStorage-compatible address
+     * `_assetAddress`.
+     * @param _projectId Project to be updated.
+     * @param _index Asset index.
+     * @param _assetAddress Address of the on-chain asset.
+     */
+    function updateProjectAssetDependencyOnChainAtAddress(
+        uint256 _projectId,
+        uint256 _index,
+        address _assetAddress
+    ) external {
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.updateProjectAssetDependencyOnChainAtAddress.selector
+        );
+        V3FlexLib.updateProjectAssetDependencyOnChainAtAddress({
+            _projectId: _projectId,
+            _index: _index,
+            _assetAddress: _assetAddress
+        });
+    }
+
+    /**
      * @notice Removes external asset dependency for project `_projectId` at index `_index`.
-     * Removal is done by swapping the element to be removed with the last element in the array, then deleting this last element.
-     * Assets with indices higher than `_index` can have their indices adjusted as a result of this operation.
+     * As of v3.2, only allow removal of dependency at last index, for UX purposes.
      * @param _projectId Project to be updated.
      * @param _index Asset index
      */
@@ -517,11 +603,14 @@ contract GenArt721CoreV3_Engine_Flex is
     /**
      * @notice Adds external asset dependency for project `_projectId`.
      * @param _projectId Project to be updated.
-     * @param _cidOrData Asset cid (Content identifier) or data string to be translated into bytecode.
+     * @param _cidOrData Field that contains the CID of the dependency if IPFS or ARWEAVE,
+     * empty string of ONCHAIN, or a string representation of the Art Blocks Dependency
+     * Registry's `dependencyNameAndVersion` if ART_BLOCKS_DEPENDENCY_REGISTRY.
      * @param _dependencyType Asset dependency type.
      *  0 - IPFS
      *  1 - ARWEAVE
      *  2 - ONCHAIN
+     *  3 - ART_BLOCKS_DEPENDENCY_REGISTRY
      */
     function addProjectExternalAssetDependency(
         uint256 _projectId,
@@ -536,6 +625,52 @@ contract GenArt721CoreV3_Engine_Flex is
             _projectId: _projectId,
             _cidOrData: _cidOrData,
             _dependencyType: _dependencyType
+        });
+    }
+
+    /**
+     * @notice Adds external asset dependency for project `_projectId` of type
+     * ONCHAIN using on-chain compression. The string should be compressed using
+     * `getCompressed`.
+     * This function stores the string in a compressed format on-chain.
+     * For reads, the compressed script is decompressed on-chain, ensuring the
+     * original text is reconstructed without external dependencies.
+     * @dev _compressedString in memory to minimize bytecode size.
+     * @param _projectId Project to be updated.
+     * @param _compressedString Pre-compressed string asset to be added.
+     */
+    function addProjectExternalAssetDependencyOnChainCompressed(
+        uint256 _projectId,
+        bytes memory _compressedString
+    ) external {
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.addProjectExternalAssetDependencyOnChainCompressed.selector
+        );
+        V3FlexLib.addProjectExternalAssetDependencyOnChainCompressed({
+            _projectId: _projectId,
+            _compressedString: _compressedString
+        });
+    }
+
+    /**
+     * @notice Adds an on-chain external asset dependency for project
+     * `_projectId`, with data at BytecodeStorage-compatible address
+     * `_assetAddress`.
+     * @param _projectId Project to be updated.
+     * @param _assetAddress Address of the BytecodeStorageReader-compatible on-chain asset.
+     */
+    function addProjectAssetDependencyOnChainAtAddress(
+        uint256 _projectId,
+        address _assetAddress
+    ) external {
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.addProjectAssetDependencyOnChainAtAddress.selector
+        );
+        V3FlexLib.addProjectAssetDependencyOnChainAtAddress({
+            _projectId: _projectId,
+            _assetAddress: _assetAddress
         });
     }
 
@@ -2173,6 +2308,9 @@ contract GenArt721CoreV3_Engine_Flex is
      * If the dependencyType is ONCHAIN, the `data` field will contain the extrated bytecode data and `cid`
      * will be an empty string. Conversly, for any other dependencyType, the `data` field will be an empty string
      * and the `bytecodeAddress` will point to the zero address.
+     * If the dependencyType is ART_BLOCKS_DEPENDENCY_REGISTRY, the `cid` field will contain the string
+     * representation of the dependencyNameAndVersion bytes32 value stored in the dependency registry (
+     * at public address `artblocksDependencyRegistryAddress`)
      */
     function projectExternalAssetDependencyByIndex(
         uint256 _projectId,
@@ -2300,7 +2438,7 @@ contract GenArt721CoreV3_Engine_Flex is
         public
         view
         virtual
-        override(ERC721_PackedHashSeed, IERC165)
+        override(ERC721_PackedHashSeedV1, IERC165)
         returns (bool)
     {
         return
@@ -2523,11 +2661,6 @@ contract GenArt721CoreV3_Engine_Flex is
         return BytecodeStorageReader.readFromBytecode(_address);
     }
 
-    // strings library from OpenZeppelin, modified for no constants
-
-    bytes16 private _HEX_SYMBOLS = "0123456789abcdef";
-    uint8 private _ADDRESS_LENGTH = 20;
-
     /**
      * @dev Converts a `uint256` to its ASCII `string` decimal representation.
      */
@@ -2551,30 +2684,5 @@ contract GenArt721CoreV3_Engine_Flex is
             value /= 10;
         }
         return string(buffer);
-    }
-
-    /**
-     * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation with fixed length.
-     */
-    function toHexString(
-        uint256 value,
-        uint256 length
-    ) internal view returns (string memory) {
-        bytes memory buffer = new bytes(2 * length + 2);
-        buffer[0] = "0";
-        buffer[1] = "x";
-        for (uint256 i = 2 * length + 1; i > 1; --i) {
-            buffer[i] = _HEX_SYMBOLS[value & 0xf];
-            value >>= 4;
-        }
-        require(value == 0, "hex length insufficient");
-        return string(buffer);
-    }
-
-    /**
-     * @dev Converts an `address` with fixed length of 20 bytes to its not checksummed ASCII `string` hexadecimal representation.
-     */
-    function toHexString(address addr) internal view returns (string memory) {
-        return toHexString(uint256(uint160(addr)), _ADDRESS_LENGTH);
     }
 }

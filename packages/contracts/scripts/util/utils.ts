@@ -67,6 +67,9 @@ export type DeployConfigDetails = {
   factoryName?: string;
   requiredSplitAddress?: string;
   requiredSplitBPS?: number;
+  // engine factory fields
+  engineImplementationName?: string;
+  engineFlexImplementationName?: string;
 };
 
 export async function getConfigInputs(

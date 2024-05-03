@@ -4,7 +4,8 @@
 pragma solidity ^0.8.0;
 
 import {IGenArt721CoreContractV3_Engine_Flex} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
-import {BytecodeStorageWriter, BytecodeStorageReader} from "./BytecodeStorageV1.sol";
+
+import {BytecodeStorageWriter, BytecodeStorageReader} from "./BytecodeStorageV2.sol";
 
 /**
  * @title Art Blocks V3 Engine Flex - External Helper Library
@@ -16,6 +17,7 @@ import {BytecodeStorageWriter, BytecodeStorageReader} from "./BytecodeStorageV1.
 
 library V3FlexLib {
     using BytecodeStorageWriter for string;
+    using BytecodeStorageWriter for bytes;
     // For the purposes of this implementation, due to the limited scope and
     // existing legacy infrastructure, the library emits the events
     // defined in IGenArt721CoreContractV3_Engine_Flex.sol. The events are
@@ -24,8 +26,9 @@ library V3FlexLib {
      * @notice When an external asset dependency is updated or added, this event is emitted.
      * @param _projectId The project ID of the project that was updated.
      * @param _index The index of the external asset dependency that was updated.
-     * @param _cid The content ID of the external asset dependency. This is an empty string
-     * if the dependency type is ONCHAIN.
+     * @param _cid Field that contains the CID of the dependency if IPFS or ARWEAVE,
+     * empty string of ONCHAIN, or a string representation of the Art Blocks Dependency
+     * Registry's `dependencyNameAndVersion` if ART_BLOCKS_DEPENDENCY_REGISTRY.
      * @param _dependencyType The type of the external asset dependency.
      * @param _externalAssetDependencyCount The number of external asset dependencies.
      */
@@ -126,11 +129,14 @@ library V3FlexLib {
      * significantly reduces the bytecode of contracts using this library.
      * @param _projectId Project to be updated.
      * @param _index Asset index.
-     * @param _cidOrData Asset cid (Content identifier) or data string to be translated into bytecode.
+     * @param _cidOrData Field that contains the CID of the dependency if IPFS or ARWEAVE,
+     * empty string of ONCHAIN, or a string representation of the Art Blocks Dependency
+     * Registry's `dependencyNameAndVersion` if ART_BLOCKS_DEPENDENCY_REGISTRY.
      * @param _dependencyType Asset dependency type.
      *  0 - IPFS
      *  1 - ARWEAVE
      *  2 - ONCHAIN
+     *  3 - ART_BLOCKS_DEPENDENCY_REGISTRY
      */
     function updateProjectExternalAssetDependency(
         uint256 _projectId,
@@ -144,12 +150,16 @@ library V3FlexLib {
         _onlyUnlockedProjectExternalAssetDependencies(flexProjectData);
         uint24 assetCount = flexProjectData.externalAssetDependencyCount;
         require(_index < assetCount, "Asset index out of range");
+        // @dev dependencyNameAndVersion are not validated against the dependency registry
+        // due to limitations of L1 reads on L2 networks at this time
+
         IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependency
             storage _oldDependency = flexProjectData.externalAssetDependencies[
                 _index
             ];
         IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyType _oldDependencyType = _oldDependency
                 .dependencyType;
+        // update the asset's dependency type to new value in storage
         flexProjectData
             .externalAssetDependencies[_index]
             .dependencyType = _dependencyType;
@@ -177,7 +187,13 @@ library V3FlexLib {
             // we don't want to emit data, so we emit the cid as an empty string
             _cidOrData = "";
         } else {
+            // incoming dependency type is not ONCHAIN, so we set the cid directly with either
+            // the incoming cid or string representation of the dependencyNameAndVersion
             flexProjectData.externalAssetDependencies[_index].cid = _cidOrData;
+            // clear any previously populated bytecode address
+            flexProjectData
+                .externalAssetDependencies[_index]
+                .bytecodeAddress = address(0);
         }
         emit ExternalAssetDependencyUpdated(
             _projectId,
@@ -186,6 +202,98 @@ library V3FlexLib {
             _dependencyType,
             assetCount
         );
+    }
+
+    /**
+     * @notice Updates external asset dependency for project `_projectId` of type
+     * ONCHAIN using on-chain compression. This function stores the string
+     * in a compressed format on-chain. For reads, the compressed script is
+     * decompressed on-chain, ensuring the original text is reconstructed without
+     * external dependencies.
+     * @param _projectId Project to be updated.
+     * @param _index Asset index.
+     * @param _compressedString Pre-compressed string asset to be added.
+     */
+    function updateProjectExternalAssetDependencyOnChainCompressed(
+        uint256 _projectId,
+        uint256 _index,
+        bytes memory _compressedString
+    ) external {
+        FlexProjectData storage flexProjectData = getFlexProjectData(
+            _projectId
+        );
+        _onlyUnlockedProjectExternalAssetDependencies(flexProjectData);
+
+        // check that the index is within the range of the asset count
+        uint24 assetCount = flexProjectData.externalAssetDependencyCount;
+        require(_index < assetCount, "Asset index out of range");
+
+        // EFFECTS
+        // overwrite the relevant fields of the previous asset, assigning bytecodeAddress directly
+        IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependency
+            storage currentDependency = flexProjectData
+                .externalAssetDependencies[_index];
+        currentDependency.cid = "";
+        currentDependency.dependencyType = IGenArt721CoreContractV3_Engine_Flex
+            .ExternalAssetDependencyType
+            .ONCHAIN;
+        currentDependency.bytecodeAddress = _compressedString
+            .writeToBytecodeCompressed();
+
+        // emit the event
+        emit ExternalAssetDependencyUpdated({
+            _projectId: _projectId,
+            _index: _index,
+            _cid: "",
+            _dependencyType: IGenArt721CoreContractV3_Engine_Flex
+                .ExternalAssetDependencyType
+                .ONCHAIN,
+            _externalAssetDependencyCount: assetCount
+        });
+    }
+
+    /**
+     * @notice Updates external asset dependency for project `_projectId` at
+     * index `_index`, with data at BytecodeStorage-compatible address
+     * `_assetAddress`.
+     * @param _projectId Project to be updated.
+     * @param _index Asset index.
+     * @param _assetAddress Address of the on-chain asset.
+     */
+    function updateProjectAssetDependencyOnChainAtAddress(
+        uint256 _projectId,
+        uint256 _index,
+        address _assetAddress
+    ) external {
+        // CHECKS
+        FlexProjectData storage flexProjectData = getFlexProjectData(
+            _projectId
+        );
+        _onlyUnlockedProjectExternalAssetDependencies(flexProjectData);
+        uint24 assetCount = flexProjectData.externalAssetDependencyCount;
+        require(_index < assetCount, "Asset index out of range");
+
+        // EFFECTS
+        // overwrite the relevant fields of the previous asset
+        IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependency
+            storage currentDependency = flexProjectData
+                .externalAssetDependencies[_index];
+        currentDependency.cid = "";
+        currentDependency.dependencyType = IGenArt721CoreContractV3_Engine_Flex
+            .ExternalAssetDependencyType
+            .ONCHAIN;
+        currentDependency.bytecodeAddress = _assetAddress;
+
+        // emit the event
+        emit ExternalAssetDependencyUpdated({
+            _projectId: _projectId,
+            _index: _index,
+            _cid: "",
+            _dependencyType: IGenArt721CoreContractV3_Engine_Flex
+                .ExternalAssetDependencyType
+                .ONCHAIN,
+            _externalAssetDependencyCount: assetCount
+        });
     }
 
     /**
@@ -203,14 +311,15 @@ library V3FlexLib {
             _projectId
         );
         _onlyUnlockedProjectExternalAssetDependencies(flexProjectData);
+        // ensure the index is within the range of the asset count
         uint24 assetCount = flexProjectData.externalAssetDependencyCount;
         require(_index < assetCount, "Asset index out of range");
-
+        // @dev solidity underflow will revert on the following statement if assetCount is 0
         uint24 lastElementIndex = assetCount - 1;
+        // for UX purposes, only allow removal of the last lastElementIndex
+        require(_index == lastElementIndex, "Only removal of last asset");
 
-        // copy last element to index of element to be removed
-        flexProjectData.externalAssetDependencies[_index] = flexProjectData
-            .externalAssetDependencies[lastElementIndex];
+        // @dev simply delete last element; no need to copy last to deleted index due to require statement above
 
         delete flexProjectData.externalAssetDependencies[lastElementIndex];
 
@@ -224,11 +333,14 @@ library V3FlexLib {
      * @dev Making this an external function adds roughly 1% to the gas cost of adding an asset, but
      * significantly reduces the bytecode of contracts using this library.
      * @param _projectId Project to be updated.
-     * @param _cidOrData Asset cid (Content identifier) or data string to be translated into bytecode.
+     * @param _cidOrData Field that contains the CID of the dependency if IPFS or ARWEAVE,
+     * empty string of ONCHAIN, or a string representation of the Art Blocks Dependency
+     * Registry's `dependencyNameAndVersion` if ART_BLOCKS_DEPENDENCY_REGISTRY.
      * @param _dependencyType Asset dependency type.
      *  0 - IPFS
      *  1 - ARWEAVE
      *  2 - ONCHAIN
+     *  3 - ART_BLOCKS_DEPENDENCY_REGISTRY
      */
     function addProjectExternalAssetDependency(
         uint256 _projectId,
@@ -239,6 +351,9 @@ library V3FlexLib {
             _projectId
         );
         _onlyUnlockedProjectExternalAssetDependencies(flexProjectData);
+        // @dev dependencyNameAndVersion are not validated against the dependency registry
+        // due to limitations of L1 reads on L2 networks at this time
+
         uint24 assetCount = flexProjectData.externalAssetDependencyCount;
         address _bytecodeAddress = address(0);
         // if the incoming dependency type is onchain, we need to write the data to bytecode
@@ -269,6 +384,92 @@ library V3FlexLib {
             _dependencyType,
             assetCount + 1
         );
+    }
+
+    /**
+     * @notice Adds external asset dependency for project `_projectId` of type
+     * ONCHAIN using on-chain compression. This function stores the string
+     * in a compressed format on-chain. For reads, the compressed script is
+     * decompressed on-chain, ensuring the original text is reconstructed without
+     * external dependencies.
+     * @param _projectId Project to be updated.
+     * @param _compressedString Pre-compressed string asset to be added.
+     */
+    function addProjectExternalAssetDependencyOnChainCompressed(
+        uint256 _projectId,
+        bytes memory _compressedString
+    ) external {
+        FlexProjectData storage flexProjectData = getFlexProjectData(
+            _projectId
+        );
+        _onlyUnlockedProjectExternalAssetDependencies(flexProjectData);
+
+        // assign the asset address to the bytecodeAddress directly
+        uint24 assetCount = flexProjectData.externalAssetDependencyCount;
+        flexProjectData.externalAssetDependencies[
+            assetCount
+        ] = IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependency({
+            cid: "",
+            dependencyType: IGenArt721CoreContractV3_Engine_Flex
+                .ExternalAssetDependencyType
+                .ONCHAIN,
+            bytecodeAddress: _compressedString.writeToBytecodeCompressed()
+        });
+
+        // increment the asset count
+        flexProjectData.externalAssetDependencyCount = assetCount + 1;
+
+        // emit event indicating the asset has been added
+        emit ExternalAssetDependencyUpdated({
+            _projectId: _projectId,
+            _index: assetCount,
+            _cid: "",
+            _dependencyType: IGenArt721CoreContractV3_Engine_Flex
+                .ExternalAssetDependencyType
+                .ONCHAIN,
+            _externalAssetDependencyCount: assetCount + 1
+        });
+    }
+
+    /**
+     * @notice Adds an on-chain external asset dependency for project
+     * `_projectId`, with data at BytecodeStorage-compatible address
+     * `_assetAddress`.
+     * @param _projectId Project to be updated.
+     * @param _assetAddress  Address of the BytecodeStorageReader-compatible on-chain asset.
+     */
+    function addProjectAssetDependencyOnChainAtAddress(
+        uint256 _projectId,
+        address _assetAddress
+    ) external {
+        FlexProjectData storage flexProjectData = getFlexProjectData(
+            _projectId
+        );
+        _onlyUnlockedProjectExternalAssetDependencies(flexProjectData);
+
+        // assign the asset address to the bytecodeAddress directly
+        uint24 assetCount = flexProjectData.externalAssetDependencyCount;
+        flexProjectData.externalAssetDependencies[
+            assetCount
+        ] = IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependency({
+            cid: "",
+            dependencyType: IGenArt721CoreContractV3_Engine_Flex
+                .ExternalAssetDependencyType
+                .ONCHAIN,
+            bytecodeAddress: _assetAddress
+        });
+        // increment the asset count
+        flexProjectData.externalAssetDependencyCount = assetCount + 1;
+        // emit event indicating the asset has been added
+        emit ExternalAssetDependencyUpdated({
+            _projectId: _projectId,
+            _index: assetCount,
+            _cid: "",
+            _dependencyType: IGenArt721CoreContractV3_Engine_Flex
+                .ExternalAssetDependencyType
+                .ONCHAIN,
+            _externalAssetDependencyCount: assetCount + 1
+        });
     }
 
     /**
