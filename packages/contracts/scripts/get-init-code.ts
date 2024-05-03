@@ -39,8 +39,6 @@ async function main() {
   console.log(initcode);
   const initcodeHash = hre.ethers.utils.keccak256(initcode);
   console.log(`init code hash: ${initcodeHash}`);
-  // TODO also save to a file??
-
   // show verification
   console.log("verify via `verify.ts` script after deployment");
 }
