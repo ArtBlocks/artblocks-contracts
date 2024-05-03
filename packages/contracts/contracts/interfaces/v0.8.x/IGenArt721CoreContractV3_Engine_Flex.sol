@@ -18,8 +18,8 @@ interface IGenArt721CoreContractV3_Engine_Flex is
      * @notice When an external asset dependency is updated or added, this event is emitted.
      * @param _projectId The project ID of the project that was updated.
      * @param _index The index of the external asset dependency that was updated.
-     * @param _cid The content ID of the external asset dependency. This is an empty string
-     * if the dependency type is ONCHAIN.
+     * @param _cid Field that contains the CID of the dependency if IPFS or ARWEAVE, empty string of ONCHAIN, or a string representation
+     * of the Art Blocks Dependency Registry's `dependencyNameAndVersion` if ART_BLOCKS_DEPENDENCY_REGISTRY.
      * @param _dependencyType The type of the external asset dependency.
      * @param _externalAssetDependencyCount The number of external asset dependencies.
      */
@@ -54,12 +54,13 @@ interface IGenArt721CoreContractV3_Engine_Flex is
     event ProjectExternalAssetDependenciesLocked(uint256 indexed _projectId);
 
     /**
-     * @notice An external asset dependency type. Can be one of IPFS, ARWEAVE, or ONCHAIN.
+     * @notice An external asset dependency type. Can be one of IPFS, ARWEAVE, ONCHAIN, or ART_BLOCKS_DEPENDENCY_REGISTRY.
      */
     enum ExternalAssetDependencyType {
         IPFS,
         ARWEAVE,
-        ONCHAIN
+        ONCHAIN,
+        ART_BLOCKS_DEPENDENCY_REGISTRY
     }
 
     /**
@@ -72,8 +73,12 @@ interface IGenArt721CoreContractV3_Engine_Flex is
     }
 
     /**
-     * @notice An external asset dependency. This is a struct that contains the CID of the dependency,
-     * the type of the dependency, and the address of the bytecode for this dependency.
+     * @notice An external asset dependency, without the retrieved data of any ONCHAIN assets. This reflects what is
+     * stored in this contract's storage.
+     * @param CID field that contains the CID of the dependency if IPFS or ARWEAVE, empty string of ONCHAIN, or a string representation
+     * of the Art Blocks Dependency Registry's `dependencyNameAndVersion` if ART_BLOCKS_DEPENDENCY_REGISTRY.
+     * @param dependencyType field that contains the type of the dependency.
+     * @param bytecodeAddress field that contains the address of the bytecode for this dependency if ONCHAIN, null address otherwise.
      */
     struct ExternalAssetDependency {
         string cid;
@@ -82,8 +87,12 @@ interface IGenArt721CoreContractV3_Engine_Flex is
     }
 
     /**
-     * @notice An external asset dependency with data. This is a convenience struct that contains the CID of the dependency,
-     * the type of the dependency, the address of the bytecode for this dependency, and the data retrieved from this bytecode address.
+     * @notice An external asset dependency with data. This is a convenience struct.
+     * @param CID field that contains the CID of the dependency if IPFS or ARWEAVE, empty string of ONCHAIN, or a string representation
+     * of the Art Blocks Dependency Registry's `dependencyNameAndVersion` if ART_BLOCKS_DEPENDENCY_REGISTRY.
+     * @param dependencyType field that contains the type of the dependency.
+     * @param bytecodeAddress field that contains the address of the bytecode for this dependency if ONCHAIN, null address otherwise.
+     * @param data field that contains the data retrieved from this bytecode address if ONCHAIN, empty string otherwise.
      */
     struct ExternalAssetDependencyWithData {
         string cid;

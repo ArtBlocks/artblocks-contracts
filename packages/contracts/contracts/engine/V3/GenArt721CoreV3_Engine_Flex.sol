@@ -501,11 +501,14 @@ contract GenArt721CoreV3_Engine_Flex is
      * @notice Updates external asset dependency for project `_projectId`.
      * @param _projectId Project to be updated.
      * @param _index Asset index.
-     * @param _cidOrData Asset cid (Content identifier) or data string to be translated into bytecode.
+     * @param _cidOrData Field that contains the CID of the dependency if IPFS or ARWEAVE,
+     * empty string of ONCHAIN, or a string representation of the Art Blocks Dependency
+     * Registry's `dependencyNameAndVersion` if ART_BLOCKS_DEPENDENCY_REGISTRY.
      * @param _dependencyType Asset dependency type.
      *  0 - IPFS
      *  1 - ARWEAVE
      *  2 - ONCHAIN
+     *  3 - ART_BLOCKS_DEPENDENCY_REGISTRY
      */
     function updateProjectExternalAssetDependency(
         uint256 _projectId,
@@ -526,9 +529,60 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
+     * @notice Updates external asset dependency for project `_projectId` of type
+     * ONCHAIN using on-chain compression. The string should be compressed using
+     * `getCompressed`.
+     * This function stores the string in a compressed format on-chain.
+     * For reads, the compressed script is decompressed on-chain, ensuring the
+     * original text is reconstructed without external dependencies.
+     * @dev _compressedString in memory to minimize bytecode size.
+     * @param _projectId Project to be updated.
+     * @param _index Asset index.
+     * @param _compressedString Pre-compressed string asset to be added.
+     */
+    function updateProjectExternalAssetDependencyOnChainCompressed(
+        uint256 _projectId,
+        uint256 _index,
+        bytes memory _compressedString
+    ) external {
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.updateProjectExternalAssetDependencyOnChainCompressed.selector
+        );
+        V3FlexLib.updateProjectExternalAssetDependencyOnChainCompressed({
+            _projectId: _projectId,
+            _index: _index,
+            _compressedString: _compressedString
+        });
+    }
+
+    /**
+     * @notice Updates external asset dependency for project `_projectId` at
+     * index `_index`, with data at BytecodeStorage-compatible address
+     * `_assetAddress`.
+     * @param _projectId Project to be updated.
+     * @param _index Asset index.
+     * @param _assetAddress Address of the on-chain asset.
+     */
+    function updateProjectAssetDependencyOnChainAtAddress(
+        uint256 _projectId,
+        uint256 _index,
+        address _assetAddress
+    ) external {
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.updateProjectAssetDependencyOnChainAtAddress.selector
+        );
+        V3FlexLib.updateProjectAssetDependencyOnChainAtAddress({
+            _projectId: _projectId,
+            _index: _index,
+            _assetAddress: _assetAddress
+        });
+    }
+
+    /**
      * @notice Removes external asset dependency for project `_projectId` at index `_index`.
-     * Removal is done by swapping the element to be removed with the last element in the array, then deleting this last element.
-     * Assets with indices higher than `_index` can have their indices adjusted as a result of this operation.
+     * As of v3.2, only allow removal of dependency at last index, for UX purposes.
      * @param _projectId Project to be updated.
      * @param _index Asset index
      */
@@ -549,11 +603,14 @@ contract GenArt721CoreV3_Engine_Flex is
     /**
      * @notice Adds external asset dependency for project `_projectId`.
      * @param _projectId Project to be updated.
-     * @param _cidOrData Asset cid (Content identifier) or data string to be translated into bytecode.
+     * @param _cidOrData Field that contains the CID of the dependency if IPFS or ARWEAVE,
+     * empty string of ONCHAIN, or a string representation of the Art Blocks Dependency
+     * Registry's `dependencyNameAndVersion` if ART_BLOCKS_DEPENDENCY_REGISTRY.
      * @param _dependencyType Asset dependency type.
      *  0 - IPFS
      *  1 - ARWEAVE
      *  2 - ONCHAIN
+     *  3 - ART_BLOCKS_DEPENDENCY_REGISTRY
      */
     function addProjectExternalAssetDependency(
         uint256 _projectId,
@@ -568,6 +625,52 @@ contract GenArt721CoreV3_Engine_Flex is
             _projectId: _projectId,
             _cidOrData: _cidOrData,
             _dependencyType: _dependencyType
+        });
+    }
+
+    /**
+     * @notice Adds external asset dependency for project `_projectId` of type
+     * ONCHAIN using on-chain compression. The string should be compressed using
+     * `getCompressed`.
+     * This function stores the string in a compressed format on-chain.
+     * For reads, the compressed script is decompressed on-chain, ensuring the
+     * original text is reconstructed without external dependencies.
+     * @dev _compressedString in memory to minimize bytecode size.
+     * @param _projectId Project to be updated.
+     * @param _compressedString Pre-compressed string asset to be added.
+     */
+    function addProjectExternalAssetDependencyOnChainCompressed(
+        uint256 _projectId,
+        bytes memory _compressedString
+    ) external {
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.addProjectExternalAssetDependencyOnChainCompressed.selector
+        );
+        V3FlexLib.addProjectExternalAssetDependencyOnChainCompressed({
+            _projectId: _projectId,
+            _compressedString: _compressedString
+        });
+    }
+
+    /**
+     * @notice Adds an on-chain external asset dependency for project
+     * `_projectId`, with data at BytecodeStorage-compatible address
+     * `_assetAddress`.
+     * @param _projectId Project to be updated.
+     * @param _assetAddress Address of the BytecodeStorageReader-compatible on-chain asset.
+     */
+    function addProjectAssetDependencyOnChainAtAddress(
+        uint256 _projectId,
+        address _assetAddress
+    ) external {
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.addProjectAssetDependencyOnChainAtAddress.selector
+        );
+        V3FlexLib.addProjectAssetDependencyOnChainAtAddress({
+            _projectId: _projectId,
+            _assetAddress: _assetAddress
         });
     }
 
@@ -2205,6 +2308,9 @@ contract GenArt721CoreV3_Engine_Flex is
      * If the dependencyType is ONCHAIN, the `data` field will contain the extrated bytecode data and `cid`
      * will be an empty string. Conversly, for any other dependencyType, the `data` field will be an empty string
      * and the `bytecodeAddress` will point to the zero address.
+     * If the dependencyType is ART_BLOCKS_DEPENDENCY_REGISTRY, the `cid` field will contain the string
+     * representation of the dependencyNameAndVersion bytes32 value stored in the dependency registry (
+     * at public address `artblocksDependencyRegistryAddress`)
      */
     function projectExternalAssetDependencyByIndex(
         uint256 _projectId,
