@@ -16,9 +16,6 @@ import {
   EngineFactoryV0,
   CoreRegistryV1,
 } from "../../scripts/contracts";
-// import { GenArt721CoreV3_Engine_Flex } from "../../scripts/contracts";
-// import { EngineFactoryV0 } from "../../scripts/contracts";
-// import { CoreRegistryV1 } from "../../scripts/contracts";
 
 import { SplitAtomicV0__factory } from "../../scripts/contracts";
 
