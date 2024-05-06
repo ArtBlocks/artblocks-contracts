@@ -6,11 +6,19 @@ import {
   deploySharedMinterFilter,
   deployAndGet,
 } from "./common";
-import { SplitProviderV0 } from "../../scripts/contracts/split/split-provider/SplitProviderV0";
-
 import { ethers } from "hardhat";
 
-import { Contract } from "ethers";
+import { SplitProviderV0 } from "../../scripts/contracts/split/split-provider/SplitProviderV0";
+import {
+  AdminACLV0,
+  GenArt721CoreV3_Engine,
+  GenArt721CoreV3_Engine_Flex,
+  EngineFactoryV0,
+  CoreRegistryV1,
+} from "../../scripts/contracts";
+// import { GenArt721CoreV3_Engine_Flex } from "../../scripts/contracts";
+// import { EngineFactoryV0 } from "../../scripts/contracts";
+// import { CoreRegistryV1 } from "../../scripts/contracts";
 
 import { SplitAtomicV0__factory } from "../../scripts/contracts";
 
@@ -55,6 +63,19 @@ export async function setupConfigWitMinterFilterV2Suite() {
   // allowlist dummy shared minter on minter filter
   await config.minterFilter.approveMinterGlobally(config.minter.address);
   return config;
+}
+
+// extend T_Config to the configured settings for the setupEngineFactory fixture
+interface GenArt721CoreV3_EngineFactoryConfig extends T_Config {
+  genArt721Core: undefined;
+  engineFactory: EngineFactoryV0;
+  engineImplementation: GenArt721CoreV3_Engine;
+  engineFlexImplementation: GenArt721CoreV3_Engine_Flex;
+  adminACL: AdminACLV0;
+  coreRegistry: CoreRegistryV1;
+  splitProvider: SplitProviderV0;
+  projectZero: number;
+  projectTwo: number;
 }
 
 export async function setupEngineFactory() {
@@ -133,7 +154,7 @@ export async function setupEngineFactory() {
     mockSplitterFactory.address, // _splitterFactory
   ])) as SplitProviderV0;
 
-  return config;
+  return config as GenArt721CoreV3_EngineFactoryConfig;
 }
 
 export async function setupSplits() {

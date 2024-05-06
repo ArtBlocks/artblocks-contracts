@@ -332,6 +332,33 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     }
 
     /**
+     * @dev Predict the deterministic address for a new core contract of type
+     * `engineCoreContractType` and salt `salt`, deployed using the function
+     * `createEngineContract`.
+     * Reverts if `salt` is null, because the factory generates a pseudorandom
+     * salt in that case.
+     * @param engineCoreContractType Type of Engine Core contract.
+     * @param salt Salt used to deterministically deploy the clone.
+     */
+    function predictDeterministicAddress(
+        IEngineFactoryV0.EngineCoreType engineCoreContractType,
+        bytes32 salt
+    ) external view returns (address predicted) {
+        // cannot predict if salt is null, because factory generates pseudorandom salt
+        if (salt == bytes32(0)) {
+            revert("null salt = pseudorandom addr");
+        }
+        return
+            Clones.predictDeterministicAddress({
+                implementation: engineCoreContractType ==
+                    IEngineFactoryV0.EngineCoreType.Engine
+                    ? engineImplementation
+                    : engineFlexImplementation,
+                salt: salt
+            });
+    }
+
+    /**
      * @notice helper function to generate a pseudorandom salt
      * @return result pseudorandom salt
      */
