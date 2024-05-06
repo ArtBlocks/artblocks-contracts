@@ -116,15 +116,17 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     /**
      * @notice Creates a new Engine or Engine Flex contract with the provided
      * `engineConfiguration`, depending on the `engineCoreContractType`.
+     * Reverts if invalid configuration is provided, or if in an invalid deployment
+     * state (e.g. if the contract is abandoned or does not own the core registry).
      * @param engineCoreContractType Type of Engine Core contract.
      * @param engineConfiguration EngineConfiguration data to configure the
      * contract with.
      * @param adminACLContract Address of admin access control contract, to be
      * set as contract owner. A new contract will be deployed if address is null.
-     * @param salt Salt used to deterministically deploy the clone.
+     * @param salt Salt used to deterministically deploy the clone. If null, a
+     * pseudorandom salt is generated.
      * @return engineContract The address of the newly created Engine or Engine Flex
-     * contract. The address is also emitted in both the `EngineCreated` and
-     * `EngineFlexCreated` events.
+     * contract. The address is also emitted in the `EngineContractCreated` event.
      */
     function createEngineContract(
         IEngineFactoryV0.EngineCoreType engineCoreContractType,
@@ -216,17 +218,12 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         bytes32[] calldata coreVersions,
         bytes32[] calldata coreTypes
     ) external onlyOwner {
-        require(
-            contractAddresses.length == coreVersions.length &&
-                contractAddresses.length == coreTypes.length,
-            "Mismatched input lengths"
-        );
-
-        ICoreRegistryV1(coreRegistry).registerContracts(
-            contractAddresses,
-            coreVersions,
-            coreTypes
-        );
+        // @dev pure forwarding - input validation is done in the core registry
+        ICoreRegistryV1(coreRegistry).registerContracts({
+            contractAddresses: contractAddresses,
+            coreVersions: coreVersions,
+            coreTypes: coreTypes
+        });
     }
 
     /**
@@ -236,6 +233,7 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     function unregisterMultipleContracts(
         address[] calldata contractAddresses
     ) external onlyOwner {
+        // @dev pure forwarding - input validation is done in the core registry
         ICoreRegistryV1(coreRegistry).unregisterContracts(contractAddresses);
     }
 
@@ -333,6 +331,10 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         }
     }
 
+    /**
+     * @notice helper function to generate a pseudorandom salt
+     * @return result pseudorandom salt
+     */
     function generatePseudorandomSalt() internal view returns (bytes32 result) {
         return
             keccak256(
@@ -340,6 +342,12 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
             );
     }
 
+    /**
+     * @notice helper function to convert a string to a bytes32.
+     * Caution: This function only works properly for short strings.
+     * @param source string to convert
+     * @return result bytes32 representation of the string
+     */
     function stringToBytes32(
         string memory source
     ) internal pure returns (bytes32 result) {
@@ -353,6 +361,11 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         }
     }
 
+    /**
+     * @notice helper function to validate that an address is non-zero.
+     * Reverts if the address is zero.
+     * @param address_ address to validate
+     */
     function _onlyNonZeroAddress(address address_) internal pure {
         require(address_ != address(0), "Must input non-zero address");
     }
