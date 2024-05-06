@@ -45,3 +45,99 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0x7d42611012FDbE366Bf4A0481FC0E1aBf15E245A, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2024-04-18T20:31:43.515Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/jeff-davis-flex/deployment-config.sepolia-staging.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x4c201F6750BC592BA696F9C0B39B2463b4be0048
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x2eBCd14e4A65e9F1FB4aF06d904A8861891db8B1
+[INFO] Registered core contract 0x2eBCd14e4A65e9F1FB4aF06d904A8861891db8B1 on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x1D627Fe53e605f37ec5F6a58EBcE1f3A39882D68.
+[INFO] Verifying core contract contract deployment...
+The contract 0x2eBCd14e4A65e9F1FB4aF06d904A8861891db8B1 has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x2eBCd14e4A65e9F1FB4aF06d904A8861891db8B1#code
+[INFO] Core contract verified on Etherscan at 0x2eBCd14e4A65e9F1FB4aF06d904A8861891db8B1}
+[INFO] Verifying AdminACL contract deployment...
+Successfully submitted source code for contract
+contracts/AdminACLV1.sol:AdminACLV1 at 0x4c201F6750BC592BA696F9C0B39B2463b4be0048
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV1 on the block explorer.
+https://sepolia.etherscan.io/address/0x4c201F6750BC592BA696F9C0B39B2463b4be0048#code
+
+[INFO] AdminACL contract verified on Etherscan at 0x4c201F6750BC592BA696F9C0B39B2463b4be0048
+Created s3 bucket for https://davis-editions-sepolia.s3.amazonaws.com
+[INFO] Created image bucket davis-editions-sepolia
+[INFO] Deployment details written to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/jeff-davis-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x2ebcd14e4a65e9f1fb4af06d904a8861891db8b1",
+  "name": "Davis Editions",
+  "bucket_name": "davis-editions-sepolia",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x1D627Fe53e605f37ec5F6a58EBcE1f3A39882D68, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2024-04-18T20:46:51.925Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/jeff-davis-flex/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x732C060EbF93cfF0314CABCCc1BF04904B53E9fB
+[INFO] Using shared Randomizer at 0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x5306e34B7437200E0189CbC5F80B0990E49DCBE7
+[INFO] Registered core contract 0x5306e34B7437200E0189CbC5F80B0990E49DCBE7 on core registry 0x2eE7B9bB2E038bE7323A119701A191c030A61ec6
+[INFO] Updated the Minter Filter on the Core contract to 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x1D627Fe53e605f37ec5F6a58EBcE1f3A39882D68.
+[INFO] Verifying core contract contract deployment...
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine_Flex.sol:GenArt721CoreV3_Engine_Flex at 0x5306e34B7437200E0189CbC5F80B0990E49DCBE7
+for verification on the block explorer. Waiting for verification result...
+
+[ACTION] Save the following constructor args config file to a constructor-args.js file, then verify core contract deployment with:
+module.exports = [
+        "Davis Editions", // name
+        "DE", // ticker
+        "0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd", // render provider
+        "0x1D627Fe53e605f37ec5F6a58EBcE1f3A39882D68", // platform provider
+        "0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91", // randomizer
+        "0x732C060EbF93cfF0314CABCCc1BF04904B53E9fB", // admin acl
+        0, // starting project id
+        false, // auto approve artist split proposals
+      ];
+yarn hardhat verify --network mainnet --constructor-args constructor-args.js 0x5306e34B7437200E0189CbC5F80B0990E49DCBE7
+[INFO] Verifying AdminACL contract deployment...
+[WARN] Etherscan verification of AdminACL failed: UnexpectedError: An unexpected error occurred during the verification process.
+Please report this issue to the Hardhat team.
+Error Details: Failed to send contract verification request.
+Endpoint URL: https://api.etherscan.io/api
+Reason: The Etherscan API responded that the address 0x732C060EbF93cfF0314CABCCc1BF04904B53E9fB does not have bytecode.
+This can happen if the contract was recently deployed and this fact hasn't propagated to the backend yet.
+Try waiting for a minute before verifying your contract. If you are invoking this from a script,
+try to wait for five confirmations of your contract deployment transaction before running the verification subtask.
+[ACTION] Verify AdminACL contract deployment with:
+yarn hardhat verify --network mainnet 0x732C060EbF93cfF0314CABCCc1BF04904B53E9fB 
+Created s3 bucket for https://davis-editions-mainnet.s3.amazonaws.com
+[INFO] Created image bucket davis-editions-mainnet
+[INFO] Deployment details written to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/jeff-davis-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x5306e34b7437200e0189cbc5f80b0990e49dcbe7",
+  "name": "Davis Editions",
+  "bucket_name": "davis-editions-mainnet",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] AdminACL's superAdmin address is 0x1D627Fe53e605f37ec5F6a58EBcE1f3A39882D68, don't forget to update if requred.
