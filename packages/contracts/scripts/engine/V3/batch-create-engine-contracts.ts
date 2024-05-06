@@ -3,7 +3,10 @@
 
 import hre, { ethers } from "hardhat";
 import { EngineFactoryV0__factory } from "../../../../scripts/contracts/engine/V3/EngineFactoryV0__factory";
-import { getNetworkName } from "../../../../scripts/util/utils";
+import {
+  getConfigInputs,
+  getNetworkName,
+} from "../../../../scripts/util/utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { getDeployerWallet } from "../../../../scripts/util/get-deployer-wallet";
 import { Wallet } from "ethers";
@@ -11,45 +14,7 @@ import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 import SafeApiKit from "@safe-global/api-kit";
 import { MetaTransactionData } from "@gnosis.pm/safe-core-sdk-types";
 import { getActiveSharedRandomizer } from "../../../../scripts/util/constants";
-
-type EngineConfiguration = {
-  tokenName: string;
-  tokenSymbol: string;
-  renderProviderAddress: string;
-  platformProviderAddress: string;
-  newSuperAdminAddress: string; // Address 0 to use existing, "0x..." for new
-  randomizerContractAddress: string | null;
-  splitProviderAddress: string;
-  startingProjectId: number;
-  autoApproveArtistSplitProposals: boolean;
-  nullPlatformProvider: boolean;
-  allowArtistProjectActivation: boolean;
-};
-const ENGINE_CONTRACT_CONFIGURATION: {
-  engineCoreContractType: number; // 0 for engine, 1 for engine flex
-  engineConfiguration: EngineConfiguration;
-  adminACLContract: string; // Address 0 for new or existing "0x..."
-  salt: string; // empty or pre-defined for vanity addresses
-}[] = [
-  {
-    engineCoreContractType: 0,
-    engineConfiguration: {
-      tokenName: "NFT",
-      tokenSymbol: "NFT",
-      renderProviderAddress: "0x...",
-      platformProviderAddress: "0x...",
-      newSuperAdminAddress: "0x...",
-      randomizerContractAddress: null,
-      splitProviderAddress: "0x...",
-      startingProjectId: 0,
-      autoApproveArtistSplitProposals: true,
-      nullPlatformProvider: false,
-      allowArtistProjectActivation: true,
-    },
-    adminACLContract: "0x...",
-    salt: "0x0",
-  },
-];
+import { EngineContractConfig } from "./deployment-config.template";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
@@ -170,13 +135,18 @@ async function main() {
   );
 
   const txData: MetaTransactionData[] = [];
-  for (const engineContractConfiguration of ENGINE_CONTRACT_CONFIGURATION) {
+  // get deployment configuration details
+  const { deployConfigDetailsArray } = await getConfigInputs(
+    "deployments/engine/V3/deployment-config.template.ts",
+    "Batch Engine deployment config file"
+  );
+  for (const engineContractConfiguration of deployConfigDetailsArray) {
     const {
       engineCoreContractType,
       engineConfiguration,
       adminACLContract,
       salt,
-    } = engineContractConfiguration;
+    } = engineContractConfiguration as EngineContractConfig;
 
     // set randomizer address
     engineConfiguration.randomizerContractAddress = randomizerAddress;
