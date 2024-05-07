@@ -1185,6 +1185,7 @@ contract GenArt721CoreV3_Engine is
         string memory _projectArtistName
     ) external {
         // if unlocked, only artist may update, if locked, only admin may update
+        // @dev valid project checked in _projectUnlocked function
         if (_projectUnlocked(_projectId)) {
             if (
                 msg.sender != _projectIdToFinancials[_projectId].artistAddress
