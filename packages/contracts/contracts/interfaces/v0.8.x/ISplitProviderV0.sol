@@ -42,7 +42,7 @@ interface ISplitProviderV0 {
     ) external returns (address);
 
     /**
-     * @notice Indicates the type of the contract, e.g. `ISplitProviderV0`.
+     * @notice Indicates the type of the contract, e.g. `SplitProviderV0`.
      * @return type_ The type of the contract.
      */
     function type_() external pure returns (bytes32);

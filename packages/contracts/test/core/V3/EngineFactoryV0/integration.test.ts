@@ -841,6 +841,7 @@ describe(`EngineFactoryV0 Integration`, async function () {
         .withArgs(config.accounts.user.address);
     });
     it("reverts if input lengths don't match", async function () {
+      // @dev this test double checks that coreRegistry correctly reverts, as that is where the input length check is
       const config = await loadFixture(_beforeEach);
       await expectRevert(
         config.engineFactory
@@ -856,7 +857,7 @@ describe(`EngineFactoryV0 Integration`, async function () {
               ethers.utils.formatBytes32String("DUMMY_TYPE2"),
             ]
           ),
-        "Mismatched input lengths"
+        "Mismatched array lengths"
       );
     });
     it("registers contracts", async function () {
