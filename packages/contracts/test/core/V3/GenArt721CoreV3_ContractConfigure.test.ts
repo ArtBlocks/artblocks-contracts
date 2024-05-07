@@ -108,6 +108,7 @@ for (const coreContractName of coreContractsToTest) {
           renderProviderAddress: config.accounts.deployer.address,
           platformProviderAddress: config.accounts.additional.address,
           newSuperAdminAddress: "0x0000000000000000000000000000000000000000",
+          minterFilterAddress: config?.minterFilter?.address,
           randomizerContract: config?.randomizer?.address,
           splitProviderAddress: config.splitProvider.address,
           startingProjectId: 0,

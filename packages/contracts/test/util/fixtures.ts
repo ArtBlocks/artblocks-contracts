@@ -125,8 +125,14 @@ export async function setupEngineFactory() {
   config.adminACL = await deployAndGet(config, "AdminACLV0", []);
   // deploy core registry
   config.coreRegistry = await deployAndGet(config, "CoreRegistryV1", []);
-  // deploy Engine factory
+  // deploy minter filter
+  const minterFilterAdminACL = await deployAndGet(config, "AdminACLV0", []);
+  config.minterFilter = await deployAndGet(config, "MinterFilterV2", [
+    minterFilterAdminACL.address,
+    config.coreRegistry.address,
+  ]);
 
+  // deploy Engine factory
   config.engineFactory = await deployAndGet(config, "EngineFactoryV0", [
     config.engineImplementation.address,
     config.engineFlexImplementation.address,

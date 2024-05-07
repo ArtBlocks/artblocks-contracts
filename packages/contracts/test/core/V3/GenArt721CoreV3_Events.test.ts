@@ -165,6 +165,7 @@ for (const coreContractName of coreContractsToTest) {
           renderProviderAddress: config.accounts.additional.address,
           platformProviderAddress: config.accounts.additional.address,
           newSuperAdminAddress: config.accounts.additional.address,
+          minterFilterAddress: config?.minterFilter?.address,
           randomizerContract: config?.randomizer?.address,
           splitProviderAddress: config.splitProvider.address,
           startingProjectId: 365,

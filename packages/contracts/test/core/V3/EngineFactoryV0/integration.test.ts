@@ -24,6 +24,7 @@ describe(`EngineFactoryV0 Integration`, async function () {
       newSuperAdminAddress: "0x0000000000000000000000000000000000000000",
       randomizerContract: config?.randomizer?.address,
       splitProviderAddress: config.splitProvider.address,
+      minterFilterAddress: config?.minterFilter?.address,
       startingProjectId: 0,
       autoApproveArtistSplitProposals: true,
       nullPlatformProvider: false,
@@ -174,6 +175,10 @@ describe(`EngineFactoryV0 Integration`, async function () {
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine");
       expect(engineContractCoreVersion).to.be.equal("v3.2.0");
       // validate initialization
+      const engineContractMinter = await engine.minterContract();
+      expect(engineContractMinter).to.equal(
+        config.validEngineConfigurationExistingAdminACL.minterFilterAddress
+      );
       // get render provider primary sales percentage via view function
       const renderProviderPrimarySalesPercentage =
         await engine.renderProviderPrimarySalesPercentage();
@@ -280,6 +285,10 @@ describe(`EngineFactoryV0 Integration`, async function () {
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine");
       expect(engineContractCoreVersion).to.be.equal("v3.2.0");
       // validate initialization
+      const engineContractMinter = await engine.minterContract();
+      expect(engineContractMinter).to.equal(
+        config.validEngineConfigurationExistingAdminACL.minterFilterAddress
+      );
       // get render provider primary sales percentage via view function
       const renderProviderPrimarySalesPercentage =
         await engine.renderProviderPrimarySalesPercentage();
@@ -361,6 +370,8 @@ describe(`EngineFactoryV0 Integration`, async function () {
       const validEngineConfigurationNewAdminACL = {
         ...config.validEngineConfigurationExistingAdminACL,
         newSuperAdminAddress: config.accounts.artist.address,
+        // validate null minter filter address
+        minterFilterAddress: "0x0000000000000000000000000000000000000000",
       };
       const tx = await config.engineFactory
         .connect(config.accounts.deployer)
@@ -390,6 +401,10 @@ describe(`EngineFactoryV0 Integration`, async function () {
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine");
       expect(engineContractCoreVersion).to.be.equal("v3.2.0");
       // validate initialization
+      const engineContractMinter = await engine.minterContract();
+      expect(engineContractMinter).to.equal(
+        "0x0000000000000000000000000000000000000000"
+      );
       // get render provider primary sales percentage via view function
       const renderProviderPrimarySalesPercentage =
         await engine.renderProviderPrimarySalesPercentage();
@@ -497,6 +512,10 @@ describe(`EngineFactoryV0 Integration`, async function () {
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
       expect(engineContractCoreVersion).to.be.equal("v3.2.1");
       // validate initialization
+      const engineContractMinter = await engine.minterContract();
+      expect(engineContractMinter).to.equal(
+        config.validEngineConfigurationExistingAdminACL.minterFilterAddress
+      );
       // get render provider primary sales percentage via view function
       const renderProviderPrimarySalesPercentage =
         await engine.renderProviderPrimarySalesPercentage();
@@ -603,6 +622,10 @@ describe(`EngineFactoryV0 Integration`, async function () {
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
       expect(engineContractCoreVersion).to.be.equal("v3.2.1");
       // validate initialization
+      const engineContractMinter = await engine.minterContract();
+      expect(engineContractMinter).to.equal(
+        config.validEngineConfigurationExistingAdminACL.minterFilterAddress
+      );
       // get render provider primary sales percentage via view function
       const renderProviderPrimarySalesPercentage =
         await engine.renderProviderPrimarySalesPercentage();
@@ -684,6 +707,8 @@ describe(`EngineFactoryV0 Integration`, async function () {
       const validEngineConfigurationNewAdminACL = {
         ...config.validEngineConfigurationExistingAdminACL,
         newSuperAdminAddress: config.accounts.artist.address,
+        // validate null minter filter address
+        minterFilterAddress: "0x0000000000000000000000000000000000000000",
       };
       const tx = await config.engineFactory
         .connect(config.accounts.deployer)
@@ -713,6 +738,10 @@ describe(`EngineFactoryV0 Integration`, async function () {
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
       expect(engineContractCoreVersion).to.be.equal("v3.2.1");
       // validate initialization
+      const engineContractMinter = await engine.minterContract();
+      expect(engineContractMinter).to.equal(
+        "0x0000000000000000000000000000000000000000"
+      );
       // get render provider primary sales percentage via view function
       const renderProviderPrimarySalesPercentage =
         await engine.renderProviderPrimarySalesPercentage();

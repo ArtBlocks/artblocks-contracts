@@ -435,7 +435,10 @@ contract GenArt721CoreV3_Engine_Flex is
             engineConfiguration.tokenName,
             engineConfiguration.tokenSymbol
         );
-
+        // update minter if populated
+        if (engineConfiguration.minterFilterAddress != address(0)) {
+            minterContract = engineConfiguration.minterFilterAddress;
+        }
         _updateSplitProvider(engineConfiguration.splitProviderAddress);
         // setup immutable `autoApproveArtistSplitProposals` config
         autoApproveArtistSplitProposals = engineConfiguration
