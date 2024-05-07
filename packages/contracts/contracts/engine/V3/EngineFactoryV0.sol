@@ -141,7 +141,7 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
 
         // check if salt is empty and generate a pseudorandom one if so
         if (salt == bytes32(0)) {
-            salt = generatePseudorandomSalt();
+            salt = _generatePseudorandomSalt();
         }
 
         if (adminACLContract == address(0)) {
@@ -191,8 +191,8 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         // register the new Engine contract
         ICoreRegistryV1(coreRegistry).registerContract(
             engineContract,
-            stringToBytes32(coreContractVersion),
-            stringToBytes32(coreContractType)
+            _stringToBytes32(coreContractVersion),
+            _stringToBytes32(coreContractType)
         );
         // emit event
         emit EngineContractCreated(engineContract);
@@ -362,7 +362,11 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
      * @notice helper function to generate a pseudorandom salt
      * @return result pseudorandom salt
      */
-    function generatePseudorandomSalt() internal view returns (bytes32 result) {
+    function _generatePseudorandomSalt()
+        internal
+        view
+        returns (bytes32 result)
+    {
         return
             keccak256(
                 abi.encodePacked(block.timestamp, block.number, address(this))
@@ -375,7 +379,7 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
      * @param source string to convert
      * @return result bytes32 representation of the string
      */
-    function stringToBytes32(
+    function _stringToBytes32(
         string memory source
     ) internal pure returns (bytes32 result) {
         bytes memory tempString = bytes(source);
