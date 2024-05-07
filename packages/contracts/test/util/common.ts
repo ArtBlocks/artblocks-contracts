@@ -388,12 +388,20 @@ export async function deployWithStorageLibraryAndGet(
       randomizerAddress ??
       (await deployAndGet(config, "BasicRandomizerV2", [])).address;
 
+    // deploy minter filter
+    const minterFilterAdminACL = await deployAndGet(config, "AdminACLV0", []);
+    const minterFilter = await deployAndGet(config, "MinterFilterV2", [
+      minterFilterAdminACL.address,
+      coreRegistry.address,
+    ]);
+
     const validEngineConfigurationExistingAdminACL = {
       tokenName,
       tokenSymbol,
       renderProviderAddress,
       platformProviderAddress,
       newSuperAdminAddress: "0x0000000000000000000000000000000000000000",
+      minterFilterAddress: minterFilter.address,
       randomizerContract,
       splitProviderAddress,
       startingProjectId,

@@ -427,7 +427,10 @@ contract GenArt721CoreV3_Engine is
             engineConfiguration.tokenName,
             engineConfiguration.tokenSymbol
         );
-
+        // update minter if populated
+        if (engineConfiguration.minterFilterAddress != address(0)) {
+            _updateMinterContract(engineConfiguration.minterFilterAddress);
+        }
         _updateSplitProvider(engineConfiguration.splitProviderAddress);
         // setup immutable `autoApproveArtistSplitProposals` config
         autoApproveArtistSplitProposals = engineConfiguration
@@ -790,8 +793,7 @@ contract GenArt721CoreV3_Engine is
     function updateMinterContract(address _address) external {
         _onlyAdminACL(this.updateMinterContract.selector);
         _onlyNonZeroAddress(_address);
-        minterContract = _address;
-        emit MinterUpdated(_address);
+        _updateMinterContract(_address);
     }
 
     /**
@@ -2273,6 +2275,18 @@ contract GenArt721CoreV3_Engine is
                 uint256(PlatformUpdatedFields.FIELD_PROVIDER_SALES_ADDRESSES)
             )
         );
+    }
+
+    /**
+     * @notice Updates minter address to `_minterAddress`.
+     * @param _minterAddress New minter address.
+     * @dev Note that this method does not check that the input address is
+     * not `address(0)`, as it is expected that callers of this method should
+     * perform input validation where applicable.
+     */
+    function _updateMinterContract(address _minterAddress) internal {
+        minterContract = _minterAddress;
+        emit MinterUpdated(_minterAddress);
     }
 
     /**

@@ -93,6 +93,108 @@ for (const coreContractName of coreContractsToTest) {
           .to.emit(config.genArt721Core, "MinterUpdated")
           .withArgs(config.accounts.deployer.address);
       });
+      it("deployment events (nextProjectId, etc.)", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        // Note that for testing purposes, we deploy a new version of the library,
+        // but in production we would use the same library deployment for all contracts
+        const libraryFactory = await ethers.getContractFactory(
+          "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+        );
+        const library = await libraryFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+
+        let libraries = {
+          libraries: {
+            BytecodeStorageReader: library.address,
+          },
+        };
+        // deploy Engine implementations
+        const engineCoreContractFactory = await ethers.getContractFactory(
+          "GenArt721CoreV3_Engine",
+          {
+            ...libraries,
+          }
+        );
+        const engineImplementation = await engineCoreContractFactory
+          .connect(config.accounts.deployer)
+          .deploy();
+
+        const flexLibraryFactory = await ethers.getContractFactory(
+          "V3FlexLib",
+          {
+            libraries: { BytecodeStorageReader: library.address },
+          }
+        );
+        const flexLibrary = await flexLibraryFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        libraries.libraries.V3FlexLib = flexLibrary.address;
+        const engineFlexCoreContractFactory = await ethers.getContractFactory(
+          "GenArt721CoreV3_Engine_Flex",
+          {
+            ...libraries,
+          }
+        );
+        const engineFlexImplementation = await engineFlexCoreContractFactory
+          .connect(config.accounts.deployer)
+          .deploy();
+
+        const coreRegistry = await deployAndGet(config, "CoreRegistryV1", []);
+
+        const engineFactory = await deployAndGet(config, "EngineFactoryV0", [
+          engineImplementation.address,
+          engineFlexImplementation.address,
+          coreRegistry?.address,
+          config.accounts.deployer.address, // owner
+        ]);
+        // transfer ownership of core registry to engine factory
+        await coreRegistry
+          ?.connect(config.accounts.deployer)
+          .transferOwnership(engineFactory.address);
+
+        const contractType =
+          coreContractName === "GenArt721CoreV3_Engine" ? 0 : 1;
+        const validEngineConfigurationExistingAdminACL = {
+          tokenName: "name",
+          tokenSymbol: "symbol",
+          renderProviderAddress: config.accounts.additional.address,
+          platformProviderAddress: config.accounts.additional.address,
+          newSuperAdminAddress: config.accounts.additional.address,
+          minterFilterAddress: config?.minterFilter?.address,
+          randomizerContract: config?.randomizer?.address,
+          splitProviderAddress: config.splitProvider.address,
+          startingProjectId: 365,
+          autoApproveArtistSplitProposals: false,
+          nullPlatformProvider: false,
+          allowArtistProjectActivation: false,
+        };
+
+        let tx = await engineFactory
+          .connect(config.accounts.deployer)
+          .createEngineContract(
+            contractType,
+            validEngineConfigurationExistingAdminACL,
+            "0x0000000000000000000000000000000000000000",
+            ethers.utils.formatBytes32String("Unique salt Engine7") // random salt
+          );
+        const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+        // target event is the log in the first index
+        const targetLog = receipt.logs[1];
+        // expect "MinterUpdated" event as log index 5
+        await expect(targetLog.topics[0]).to.be.equal(
+          ethers.utils.keccak256(
+            ethers.utils.toUtf8Bytes("MinterUpdated(address)")
+          )
+        );
+        const currentMinterAddressFromTopic =
+          "0x" + targetLog.topics[1].slice(26).toLowerCase();
+        // expect field to be address of minter filter
+        await expect(currentMinterAddressFromTopic).to.be.equal(
+          config?.minterFilter?.address?.toLowerCase()
+        );
+      });
     });
 
     describe("PlatformUpdated", function () {
@@ -165,6 +267,7 @@ for (const coreContractName of coreContractsToTest) {
           renderProviderAddress: config.accounts.additional.address,
           platformProviderAddress: config.accounts.additional.address,
           newSuperAdminAddress: config.accounts.additional.address,
+          minterFilterAddress: config?.minterFilter?.address,
           randomizerContract: config?.randomizer?.address,
           splitProviderAddress: config.splitProvider.address,
           startingProjectId: 365,

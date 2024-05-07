@@ -13,6 +13,8 @@ import "./IGenArt721CoreContractV3_Base.sol";
  * @param renderProviderAddress address to send render provider revenue to
  * @param randomizerContract Randomizer contract.
  * @param splitProviderAddress Address to use as royalty splitter provider for the contract.
+ * @param minterFilterAddress Address of the Minter Filter to set as the Minter
+ * on the contract.
  * @param startingProjectId The initial next project ID.
  * @param autoApproveArtistSplitProposals Whether or not to always
  * auto-approve proposed artist split updates.
@@ -31,6 +33,7 @@ struct EngineConfiguration {
     address newSuperAdminAddress;
     address randomizerContract;
     address splitProviderAddress;
+    address minterFilterAddress;
     uint248 startingProjectId;
     bool autoApproveArtistSplitProposals;
     bool nullPlatformProvider;
