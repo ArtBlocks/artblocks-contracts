@@ -99,6 +99,25 @@ async function main() {
       const engineContractAddress = event?.args?.engineContract;
 
       if (engineContractAddress) {
+        // verify the default vertical is not fullyonchain if using Engine Flex
+        if (
+          defaultVerticalName == "fullyonchain" &&
+          engineCoreContractType == 1 // Engine Flex
+        ) {
+          throw new Error(
+            `[ERROR] The default vertical cannot be fullyonchain if using the flex engine`
+          );
+        }
+
+        // verify the default vertical is not flex if using Engine
+        if (
+          defaultVerticalName == "flex" &&
+          engineCoreContractType == 0 // Engine
+        ) {
+          throw new Error(
+            `[ERROR] The default vertical cannot be flex if not using the flex engine`
+          );
+        }
         // create image bucket
         let imageBucketCreated = false;
         // @dev initial bucket name of TBD to handle case of failure to generate bucket.

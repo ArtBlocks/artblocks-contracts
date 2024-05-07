@@ -5,23 +5,26 @@ import { ethers } from "hardhat";
 import fs from "fs";
 import path from "path";
 import EngineFactory from "../../../../artifacts/contracts/engine/V3/EngineFactoryV0.sol/EngineFactoryV0.json";
+import MinterFilterFactory from "../../../../artifacts/contracts/minter-suite/MinterFilter/MinterFilterV2.sol/MinterFilterV2.json";
 
 // hide nuisance logs about event overloading
 import { Logger } from "@ethersproject/logger";
 Logger.setLogLevel(Logger.levels.ERROR);
 
 // delay to avoid issues with reorgs and tx failures
+import { delay, getAppPath, getNetworkName } from "../../../util/utils";
 import {
-  delay,
-  getAppPath,
-  getNetworkName,
-} from "../../../../scripts/util/utils";
-import { EXTRA_DELAY_BETWEEN_TX } from "../../../../scripts/util/constants";
+  EXTRA_DELAY_BETWEEN_TX,
+  getActiveSharedMinterFilter,
+} from "../../../util/constants";
 
 /**
  * This script was created to run post-deployment steps for the EngineFactoryV0.
  * The Engine implementation, Engine Flex implementation, Core Registry, and Engine Factory
- * should already be deployed following the steps in `EngineFactoryV0.md`
+ * should already be deployed following the steps in `EngineFactoryV0.md`.
+ * This script: transfers ownership of the Core Registry to the Engine Factory contract,
+ * updates the core registry on the shared minter filter, and initiates the DEPLOYMENT
+ * log in the deployments directory.
  */
 async function main() {
   // manually fill out script details
@@ -41,6 +44,15 @@ async function main() {
   // UPDATE BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
 
+  // VALIDATE
+  if (!config.coreRegistryAddress.length) {
+    throw new Error(`[ERROR] Valid Core Registry address is required`);
+  }
+
+  if (!config.engineFactoryAddress.length) {
+    throw new Error(`[ERROR] Valid Engine Factory address is required`);
+  }
+
   // Transfer ownership of Core Registry to EngineFactoryV0
   const engineFactory = new ethers.Contract(
     config.engineFactoryAddress,
@@ -54,12 +66,33 @@ async function main() {
 
   await tx.wait();
 
+  // Update shared minter filter core registry to the new Core Registry
+  const activeMinterFilterAddress = getActiveSharedMinterFilter(
+    networkName,
+    config.environment
+  );
+
+  const minterFilterFactory = new ethers.Contract(
+    activeMinterFilterAddress,
+    MinterFilterFactory.abi,
+    deployer
+  );
+
+  const tx2 = await minterFilterFactory.updateCoreRegistry(
+    config.coreRegistryAddress
+  );
+
+  await tx2.wait();
+
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENTS.md BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
 
   const appPath = await getAppPath();
-  const outputPath = path.join(appPath, "deployments/engine/V3/factory/");
+  const outputPath = path.join(
+    appPath,
+    `deployments/engine/V3/studio/${config.environment}`
+  );
   const outputSummaryFile = path.join(outputPath, "DEPLOYMENTS.md");
   const etherscanSubdomain = networkName === "mainnet" ? "" : `${networkName}.`;
   const outputMd = `

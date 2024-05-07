@@ -1,5 +1,7 @@
 import { ethers } from "hardhat";
 
+export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
 // empirically have found adding 10 seconds between txs in scripts is enough to
 // avoid chain reorgs and tx failures
 export const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
