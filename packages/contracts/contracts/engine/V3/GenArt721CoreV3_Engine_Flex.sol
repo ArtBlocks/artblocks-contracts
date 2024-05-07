@@ -472,8 +472,8 @@ contract GenArt721CoreV3_Engine_Flex is
             bytes32(uint256(PlatformUpdatedFields.FIELD_NEXT_PROJECT_ID))
         );
         initialized = true;
-        // @dev follow-on action: This contract does not self-register. A core
-        // registry owner must register contract in a subsequent call.
+        // @dev This contract is registered on the core registry in a
+        // subsequent call by the factory.
     }
 
     /**
