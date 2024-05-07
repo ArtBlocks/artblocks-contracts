@@ -396,10 +396,12 @@ library BytecodeStorageReader {
         address _address,
         bytes32 _version
     ) private view returns (bool isCompressed) {
+        // @dev if branch no coverage - unreachable as used, remains for redundant safety
         if (_version == V0_VERSION_STRING || _version == V1_VERSION_STRING) {
             // V0 and V1 and unknown contracts do not support compression
             return false;
         }
+        // @dev if branch no coverage - unreachable as used, remains for redundant safety
         if (_version != V2_VERSION_STRING) {
             // unsupported version, throw error
             revert("ContractAsStorage: Unsupported Version");

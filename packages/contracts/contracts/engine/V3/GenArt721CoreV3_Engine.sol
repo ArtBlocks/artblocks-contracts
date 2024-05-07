@@ -131,7 +131,7 @@ contract GenArt721CoreV3_Engine is
     address public artblocksOnChainGeneratorAddress;
 
     /// ensure initialization can only be performed once
-    bool private initialized;
+    bool private _initialized;
 
     /// current randomizer contract
     IRandomizer_V3CoreBase public randomizerContract;
@@ -390,6 +390,10 @@ contract GenArt721CoreV3_Engine is
      * @notice Initializes the contract with the provided `engineConfiguration`.
      * This function should be called atomically, immediately after deployment.
      * Only callable once. Validation on `engineConfiguration` is performed by caller.
+     * @dev This function is intentionally unpermissioned to allow for the
+     * initialization of the contract post-deployment. It is expected that this
+     * function will be called atomically by the factory contract that deploys this
+     * contract, after which it will be initialized and uncallable.
      * @param engineConfiguration EngineConfiguration to configure the contract with.
      * @param _adminACLContract Address of admin access control contract, to be
      * set as contract owner.
@@ -399,9 +403,11 @@ contract GenArt721CoreV3_Engine is
         address _adminACLContract
     ) external {
         // can only be initialized once
-        if (initialized) {
+        if (_initialized) {
             revert GenArt721Error(ErrorCodes.ContractInitialized);
         }
+        // immediately mark as initialized
+        _initialized = true;
         // @dev assume renderProviderAddress, randomizer, and AdminACL non-zero
         // checks on platform provider addresses performed in _updateProviderSalesAddresses
         // initialize default sales revenue percentages and basis points
@@ -460,7 +466,6 @@ contract GenArt721CoreV3_Engine is
         emit PlatformUpdated(
             bytes32(uint256(PlatformUpdatedFields.FIELD_NEXT_PROJECT_ID))
         );
-        initialized = true;
         // @dev This contract is registered on the core registry in a
         // subsequent call by the factory.
     }
@@ -1187,6 +1192,7 @@ contract GenArt721CoreV3_Engine is
         string memory _projectArtistName
     ) external {
         // if unlocked, only artist may update, if locked, only admin may update
+        // @dev valid project checked in _projectUnlocked function
         if (_projectUnlocked(_projectId)) {
             if (
                 msg.sender != _projectIdToFinancials[_projectId].artistAddress

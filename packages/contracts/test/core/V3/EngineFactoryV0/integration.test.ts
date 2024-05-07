@@ -997,6 +997,35 @@ describe(`EngineFactoryV0 Integration`, async function () {
         await ethers.provider.getBalance(config.engineFactory.address)
       ).to.equal(0);
     });
+
+    it("handles balance of zero", async function () {
+      const config = await loadFixture(_beforeEach);
+      const initialDeployerBalance = await ethers.provider.getBalance(
+        config.accounts.deployer.address
+      );
+      // check initial balance
+      expect(
+        await ethers.provider.getBalance(config.engineFactory.address)
+      ).to.equal(0);
+      // deployer drains balance
+      const drainTx = await config.engineFactory
+        .connect(config.accounts.deployer)
+        .drainETH(config.accounts.deployer.address);
+      const txReceipt = await drainTx.wait();
+      const gasUsed = txReceipt.gasUsed;
+      const effectiveGasPrice = txReceipt.effectiveGasPrice;
+      const gasCost = gasUsed.mul(effectiveGasPrice);
+      // check deployers balance
+      const finalDeployerBalance = await ethers.provider.getBalance(
+        config.accounts.deployer.address
+      );
+      const expectedBalance = initialDeployerBalance.sub(gasCost);
+      expect(finalDeployerBalance).to.equal(expectedBalance);
+      // validate contract balance is 0
+      expect(
+        await ethers.provider.getBalance(config.engineFactory.address)
+      ).to.equal(0);
+    });
   });
   describe("drainETH", async function () {
     it("reverts if not called by owner", async function () {

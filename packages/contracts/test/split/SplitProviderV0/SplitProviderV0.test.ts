@@ -14,6 +14,16 @@ import {
 } from "../../util/common";
 
 import { Mock0xSplitsV2Splitter } from "../../../scripts/contracts";
+import { SplitProviderV0 } from "../../../scripts/contracts";
+import { GenArt721CoreV3_Engine } from "../../../scripts/contracts";
+import { GenArt721CoreV3_Engine_Flex } from "../../../scripts/contracts";
+
+interface T_SplitProviderTest_Config extends T_Config {
+  splitProvider: SplitProviderV0;
+  genArt721Core: GenArt721CoreV3_Engine | GenArt721CoreV3_Engine_Flex;
+  projectZero: number;
+  projectOne: number;
+}
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -77,7 +87,7 @@ for (const coreContractName of coreContractsToTest) {
       await config.minter
         .connect(config.accounts.artist)
         .updatePricePerTokenInWei(config.projectZero, 0);
-      return config;
+      return config as T_SplitProviderTest_Config;
     }
 
     // @dev note tha most functionality is tested in the core contract tests,
@@ -119,6 +129,25 @@ for (const coreContractName of coreContractsToTest) {
         const config = await _beforeEach();
         const splitFactory = await config.splitProvider.getSplitFactoryV2();
         expect(splitFactory).to.not.equal(constants.ZERO_ADDRESS);
+      });
+    });
+
+    describe("supportsInterface", function () {
+      it("should return true for IGenArt721SplitProviderV0", async function () {
+        const config = await _beforeEach();
+        // @dev manually calculated interface for getOrCreateSplitter(SplitInputs) to be 0x5c60914c
+        const supportedInterfaceId = "0x5c60914c";
+        const supportsInterface =
+          await config.splitProvider.supportsInterface(supportedInterfaceId);
+        expect(supportsInterface).to.be.true;
+      });
+
+      it("should return false for IGenArt721SplitProviderV1", async function () {
+        const config = await _beforeEach();
+        const invalidInterfaceId = "0xffffffff";
+        const supportsInterface =
+          await config.splitProvider.supportsInterface(invalidInterfaceId);
+        expect(supportsInterface).to.be.false;
       });
     });
 
