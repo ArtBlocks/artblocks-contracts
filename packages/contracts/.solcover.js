@@ -4,6 +4,7 @@ module.exports = {
     "legacy/",
     "libs/v0.5.x/",
     "libs/v0.8.x/ERC721_PackedHashSeed.sol",
+    "libs/v0.8.x/ERC721_PackedHashSeedV1.sol",
     "libs/abi/",
     "libs/integration-refs/",
     "archive/",
