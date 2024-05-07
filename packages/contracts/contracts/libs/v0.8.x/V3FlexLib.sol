@@ -87,32 +87,37 @@ library V3FlexLib {
 
     /**
      * @notice Updates preferredIPFSGateway to `_gateway`.
+     * @param _gateway The new preferred IPFS gateway.
      */
     function updateIPFSGateway(string calldata _gateway) external {
         s().preferredIPFSGateway = _gateway;
-        emit GatewayUpdated(
-            IGenArt721CoreContractV3_Engine_Flex
+        emit GatewayUpdated({
+            _dependencyType: IGenArt721CoreContractV3_Engine_Flex
                 .ExternalAssetDependencyType
                 .IPFS,
-            _gateway
-        );
+            _gatewayAddress: _gateway
+        });
     }
 
     /**
      * @notice Updates preferredArweaveGateway to `_gateway`.
+     * @param _gateway The new preferred Arweave gateway.
      */
     function updateArweaveGateway(string calldata _gateway) external {
         s().preferredArweaveGateway = _gateway;
-        emit GatewayUpdated(
-            IGenArt721CoreContractV3_Engine_Flex
+        emit GatewayUpdated({
+            _dependencyType: IGenArt721CoreContractV3_Engine_Flex
                 .ExternalAssetDependencyType
                 .ARWEAVE,
-            _gateway
-        );
+            _gatewayAddress: _gateway
+        });
     }
 
     /**
      * @notice Locks external asset dependencies for project `_projectId`.
+     * Reverts if the external asset dependencies are already locked.
+     * @dev This is a one-way operation. Once locked, the external asset dependencies cannot be updated.
+     * @param _projectId Project to be locked.
      */
     function lockProjectExternalAssetDependencies(uint256 _projectId) external {
         FlexProjectData storage flexProjectData = getFlexProjectData(
@@ -195,13 +200,13 @@ library V3FlexLib {
                 .externalAssetDependencies[_index]
                 .bytecodeAddress = address(0);
         }
-        emit ExternalAssetDependencyUpdated(
-            _projectId,
-            _index,
-            _cidOrData,
-            _dependencyType,
-            assetCount
-        );
+        emit ExternalAssetDependencyUpdated({
+            _projectId: _projectId,
+            _index: _index,
+            _cid: _cidOrData,
+            _dependencyType: _dependencyType,
+            _externalAssetDependencyCount: assetCount
+        });
     }
 
     /**
@@ -325,7 +330,10 @@ library V3FlexLib {
 
         flexProjectData.externalAssetDependencyCount = lastElementIndex;
 
-        emit ExternalAssetDependencyRemoved(_projectId, _index);
+        emit ExternalAssetDependencyRemoved({
+            _projectId: _projectId,
+            _index: _index
+        });
     }
 
     /**
@@ -364,26 +372,29 @@ library V3FlexLib {
                 .ONCHAIN
         ) {
             _bytecodeAddress = _cidOrData.writeToBytecode();
-            // we don't want to emit data, so we emit the cid as an empty string
+            // we don't want to assign or emit data, so we emit the cid as an empty string
             _cidOrData = "";
         }
-        IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependency
-            memory asset = IGenArt721CoreContractV3_Engine_Flex
-                .ExternalAssetDependency({
-                    cid: _cidOrData,
-                    dependencyType: _dependencyType,
-                    bytecodeAddress: _bytecodeAddress
-                });
-        flexProjectData.externalAssetDependencies[assetCount] = asset;
+
+        // append the new asset to the end of the project's asset storage array
+        flexProjectData.externalAssetDependencies[
+            assetCount
+        ] = IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependency({
+            cid: _cidOrData,
+            dependencyType: _dependencyType,
+            bytecodeAddress: _bytecodeAddress
+        });
+        // increment the project's asset count
         flexProjectData.externalAssetDependencyCount = assetCount + 1;
 
-        emit ExternalAssetDependencyUpdated(
-            _projectId,
-            assetCount,
-            _cidOrData,
-            _dependencyType,
-            assetCount + 1
-        );
+        // emit event indicating the asset has been added
+        emit ExternalAssetDependencyUpdated({
+            _projectId: _projectId,
+            _index: assetCount,
+            _cid: _cidOrData,
+            _dependencyType: _dependencyType,
+            _externalAssetDependencyCount: assetCount + 1
+        });
     }
 
     /**
@@ -404,7 +415,7 @@ library V3FlexLib {
         );
         _onlyUnlockedProjectExternalAssetDependencies(flexProjectData);
 
-        // assign the asset address to the bytecodeAddress directly
+        // append the new asset to the end of the project's asset storage array
         uint24 assetCount = flexProjectData.externalAssetDependencyCount;
         flexProjectData.externalAssetDependencies[
             assetCount
@@ -447,7 +458,7 @@ library V3FlexLib {
         );
         _onlyUnlockedProjectExternalAssetDependencies(flexProjectData);
 
-        // assign the asset address to the bytecodeAddress directly
+        // append the new asset to the end of the project's asset storage array
         uint24 assetCount = flexProjectData.externalAssetDependencyCount;
         flexProjectData.externalAssetDependencies[
             assetCount
@@ -458,8 +469,10 @@ library V3FlexLib {
                 .ONCHAIN,
             bytecodeAddress: _assetAddress
         });
+
         // increment the asset count
         flexProjectData.externalAssetDependencyCount = assetCount + 1;
+
         // emit event indicating the asset has been added
         emit ExternalAssetDependencyUpdated({
             _projectId: _projectId,
