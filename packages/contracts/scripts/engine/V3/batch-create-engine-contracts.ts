@@ -260,7 +260,7 @@ async function main() {
       );
     }
 
-    // set randomizer address
+    // set randomizer address to shared randomizer
     engineConfiguration.randomizerContractAddress = randomizerAddress;
 
     // If we're using a gnosis safe, create a transaction to propose adding the dependency

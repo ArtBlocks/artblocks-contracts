@@ -4,7 +4,7 @@
 import { ethers } from "hardhat";
 import fs from "fs";
 import path from "path";
-import EngineFactory from "../../../../artifacts/contracts/engine/V3/EngineFactoryV0.sol/EngineFactoryV0.json";
+import EngineFactory from "../../../artifacts/contracts/engine/V3/EngineFactoryV0.sol/EngineFactoryV0.json";
 import { EngineContractConfig } from "../../../deployments/engine/V3/studio/deployment-config.template";
 // hide nuisance logs about event overloading
 import { Logger } from "@ethersproject/logger";
