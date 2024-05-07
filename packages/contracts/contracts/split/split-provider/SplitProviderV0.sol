@@ -14,6 +14,12 @@ import {ERC165} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165.sol
  * @notice Split Provider to get or create immutable split contracts.
  * This version of SplitProvider integrates with 0xSplits v2 to provide
  * immutable split contracts.
+ * This contract is permissionless and does not have an owner. It is intended
+ * to be used by other contracts to create immutable split contracts, while
+ * adding a layer of abstraction to reduce the complexity of interacting with
+ * 0xSplits v2 directly, as well as to enable future migration paths to new
+ * upgrades.
+ * ----------------------------------------------------------------------------
  * All split contracts will be created with the following properties:
  * - The split contract will be immutable.
  * - The split contract will be created with the provided split parameters.
@@ -25,6 +31,7 @@ import {ERC165} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165.sol
 contract SplitProviderV0 is ISplitProviderV0, ERC165 {
     bytes32 private constant TYPE = "SplitProviderV0";
 
+    // 0xSplits SplitFactoryV2 address immutably configured on this contract
     ISplitFactoryV2 private immutable _splitFactoryV2;
 
     /**
@@ -73,7 +80,7 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
         });
         if (!exists) {
             // create new splitter contract
-            // @dev no need to re-assign returned address; isDeployed already populated
+            // @dev no need to re-assign returned address; isDeployed already populated it
             _splitFactoryV2.createSplitDeterministic({
                 _splitParams: splitParams,
                 _owner: address(0), // no owner, immutable
@@ -120,7 +127,8 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
 
     /**
      * Converts the split inputs to the split parameters used by 0xSplits V2.
-     * This function assumes there is at least one party with a non-zero allocation.
+     * This function assumes there is at least one party with a non-zero allocation,
+     * and should not be called if there are no royalties due.
      * @param splitInputs The split input parameters.
      * @return splitParams The split parameters in the form used by 0xSplits V2.
      */

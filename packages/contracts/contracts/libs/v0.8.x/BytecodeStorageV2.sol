@@ -417,8 +417,9 @@ library BytecodeStorageReader {
             let compressedByte := mload(0x40)
             // shift free memory pointer by one slot
             mstore(0x40, add(mload(0x40), 0x20))
+            // zero out word at compressedByte (solidity does not guarantee zeroed memory beyond free memory pointer)
+            mstore(compressedByte, 0x00)
             // copy the 1-byte compressed flag of the bytecode library to memory
-            // copy the 32-byte version string of the bytecode library to memory
             // note: this relies on the assumption noted at the top-level of
             //       this file that the storage layout for the deployed
             //       contracts-as-storage contract looks like:

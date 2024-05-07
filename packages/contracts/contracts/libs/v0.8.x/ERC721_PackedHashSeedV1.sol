@@ -12,7 +12,7 @@ import {IERC165, ERC165} from "@openzeppelin-5.0/contracts/utils/introspection/E
 import {IERC721Errors} from "@openzeppelin-5.0/contracts/interfaces/draft-IERC6093.sol";
 
 /**
- * @dev Forked version of the OpenZeppelin v5.0.0 ERC721 contract. Updated
+ * @dev Forked version of the OpenZeppelin v5.0.1 ERC721 contract. Updated
  * with an initialize function to ensure EIP 1167 compatibility. Utilizes
  * a struct to pack owner and hash seed into a single storage slot.
  * ---------------------
@@ -36,7 +36,7 @@ abstract contract ERC721_PackedHashSeedV1 is
     string private _symbol;
 
     /// ensure initialization can only be performed once
-    bool private initialized;
+    bool private _initialized;
 
     /// struct to pack a token owner and hash seed into same storage slot
     struct OwnerAndHashSeed {
@@ -50,15 +50,15 @@ abstract contract ERC721_PackedHashSeedV1 is
     /// @dev visibility internal so inheriting contracts can access
     mapping(uint256 tokenId => OwnerAndHashSeed) internal _ownersAndHashSeeds;
 
-    // Mapping owner address to token count
     mapping(address owner => uint256) private _balances;
 
-    // Mapping from token ID to approved address
     mapping(uint256 tokenId => address) private _tokenApprovals;
 
-    // Mapping from owner to operator approvals
-    mapping(address owner => mapping(address => bool))
+    mapping(address owner => mapping(address operator => bool))
         private _operatorApprovals;
+
+    // @dev constructor intentionally removed to allow for EIP 1167 compatibility,
+    // see `initialize` function for contract initialization
 
     /**
      * @dev See {IERC165-supportsInterface}.
@@ -213,10 +213,10 @@ abstract contract ERC721_PackedHashSeedV1 is
      * @param symbol_ Symbol for the token collection.
      */
     function initialize(string memory name_, string memory symbol_) internal {
-        require(!initialized, "Already initialized");
+        require(!_initialized, "Already initialized");
         _name = name_;
         _symbol = symbol_;
-        initialized = true;
+        _initialized = true;
     }
 
     /**

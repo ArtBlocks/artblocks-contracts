@@ -1,6 +1,7 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { expectRevert } from "@openzeppelin/test-helpers";
 import { setupEngineFactory } from "../../../util/fixtures";
 
 import { Logger } from "@ethersproject/logger";
@@ -95,6 +96,54 @@ describe(`EngineFactoryV0 Views`, async function () {
         await config?.engineFactory?.type_()
       );
       expect(contractType).to.be.equal(TARGET_TYPE);
+    });
+  });
+
+  describe("predictDeterministicAddress", async function () {
+    const ENGINE_ENUM = 0;
+    const ENGINE_FLEX_ENUM = 1;
+    it("reverts if salt is null", async function () {
+      const config = await loadFixture(_beforeEach);
+      const salt = ethers.utils.hexZeroPad("0x0", 32);
+      await expectRevert(
+        config?.engineFactory?.predictDeterministicAddress(ENGINE_ENUM, salt),
+        "null salt = pseudorandom addr"
+      );
+    });
+
+    it("returns expected value", async function () {
+      const config = await loadFixture(_beforeEach);
+      // predict address manually
+      const salt = ethers.utils.solidityKeccak256(
+        ["string"],
+        ["non-zero-salt"]
+      );
+      const initcodehash = ethers.utils.solidityKeccak256(
+        ["bytes"],
+        [
+          // per ERC-1167 spec: keccak256(
+          // 3d602d80600a3d3981f3 (init code) +
+          // 363d3d373d3d3d363d73 + address + 5af43d82803e903d91602b57fd5bf3
+          // )
+          [
+            "0x3d602d80600a3d3981f3",
+            "363d3d373d3d3d363d73",
+            config.engineImplementation.address.slice(2),
+            "5af43d82803e903d91602b57fd5bf3",
+          ].join(""),
+        ]
+      );
+      const deterministicAddress = await ethers.utils.getCreate2Address(
+        config.engineFactory.address,
+        salt,
+        initcodehash
+      );
+      const predictedAddress =
+        await config.engineFactory.predictDeterministicAddress(
+          ENGINE_ENUM,
+          salt
+        );
+      expect(predictedAddress).to.be.equal(deterministicAddress);
     });
   });
 });

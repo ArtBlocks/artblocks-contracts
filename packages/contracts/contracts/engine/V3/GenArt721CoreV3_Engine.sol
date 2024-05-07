@@ -35,15 +35,19 @@ import "../../libs/v0.8.x/Bytes32Strings.sol";
  * ----------------------------------------------------------------------------
  * The following functions are restricted to the Admin ACL contract:
  * - updateArtblocksDependencyRegistryAddress
+ * - updateArtblocksOnChainGeneratorAddress
+ * - updateNextCoreContract
  * - updateProviderSalesAddresses
  * - updateProviderPrimarySalesPercentages (up to 100%)
  * - updateProviderDefaultSecondarySalesBPS (up to 100%)
+ * - syncProviderSecondaryForProjectToDefaults
  * - updateMinterContract
  * - updateRandomizerAddress
- * - toggleProjectIsActive
+ * - toggleProjectIsActive (note: artist may be configured to activate projects)
  * - addProject
  * - forbidNewProjects (forever forbidding new projects)
  * - updateDefaultBaseURI (used to initialize new project base URIs)
+ * - updateSplitProvider
  * ----------------------------------------------------------------------------
  * The following functions are restricted to either the Artist address or
  * the Admin ACL contract, only when the project is not locked:
@@ -2307,7 +2311,7 @@ contract GenArt721CoreV3_Engine is
      * not reenter this contract.
      * @param projectId Project ID to be updated.
      */
-    function _assignSplitter(uint256 projectId) private {
+    function _assignSplitter(uint256 projectId) internal {
         ProjectFinance storage projectFinance = _projectIdToFinancials[
             projectId
         ];

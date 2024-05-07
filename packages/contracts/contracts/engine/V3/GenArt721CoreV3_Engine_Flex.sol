@@ -36,15 +36,19 @@ import "../../libs/v0.8.x/Bytes32Strings.sol";
  * ----------------------------------------------------------------------------
  * The following functions are restricted to the Admin ACL contract:
  * - updateArtblocksDependencyRegistryAddress
+ * - updateArtblocksOnChainGeneratorAddress
+ * - updateNextCoreContract
  * - updateProviderSalesAddresses
  * - updateProviderPrimarySalesPercentages (up to 100%)
  * - updateProviderDefaultSecondarySalesBPS (up to 100%)
+ * - syncProviderSecondaryForProjectToDefaults
  * - updateMinterContract
  * - updateRandomizerAddress
- * - toggleProjectIsActive
+ * - toggleProjectIsActive (note: artist may be configured to activate projects)
  * - addProject
  * - forbidNewProjects (forever forbidding new projects)
  * - updateDefaultBaseURI (used to initialize new project base URIs)
+ * - updateSplitProvider
  * - updateIPFSGateway
  * - updateArweaveGateway
  * ----------------------------------------------------------------------------
@@ -90,8 +94,12 @@ import "../../libs/v0.8.x/Bytes32Strings.sol";
  * to projects with external asset dependencies that are unlocked:
  * - lockProjectExternalAssetDependencies 
  * - updateProjectExternalAssetDependency
+ * - updateProjectExternalAssetDependencyOnChainCompressed
+ * - updateProjectAssetDependencyOnChainAtAddress
  * - removeProjectExternalAssetDependency
  * - addProjectExternalAssetDependency
+ * - addProjectExternalAssetDependencyOnChainCompressed
+ * - addProjectAssetDependencyOnChainAtAddress
  * ----------------------------------------------------------------------------
  * The following function is restricted to owner calling directly:
  * - transferOwnership
@@ -2311,6 +2319,9 @@ contract GenArt721CoreV3_Engine_Flex is
      * If the dependencyType is ART_BLOCKS_DEPENDENCY_REGISTRY, the `cid` field will contain the string
      * representation of the dependencyNameAndVersion bytes32 value stored in the dependency registry (
      * at public address `artblocksDependencyRegistryAddress`)
+     * @param _projectId Project to be queried.
+     * @param _index Index of external asset dependency to be queried.
+     * @return ExternalAssetDependencyWithData External asset dependency for project `_projectId` at index `_index`.
      */
     function projectExternalAssetDependencyByIndex(
         uint256 _projectId,
@@ -2325,6 +2336,8 @@ contract GenArt721CoreV3_Engine_Flex is
 
     /**
      * @notice Returns external asset dependency count for project `_projectId` at index `_index`.
+     * @param _projectId Project to be queried.
+     * @return uint256 Count of external asset dependencies for project `_projectId`.
      */
     function projectExternalAssetDependencyCount(
         uint256 _projectId
@@ -2337,6 +2350,7 @@ contract GenArt721CoreV3_Engine_Flex is
 
     /**
      * @notice Returns the preferred IPFS gateway for the platform.
+     * @return string Preferred IPFS gateway for the platform.
      */
     function preferredIPFSGateway() external view returns (string memory) {
         return V3FlexLib.preferredIPFSGateway();
@@ -2344,6 +2358,7 @@ contract GenArt721CoreV3_Engine_Flex is
 
     /**
      * @notice Returns the preferred Arweave gateway for the platform.
+     * @return string Preferred Arweave gateway for the platform.
      */
     function preferredArweaveGateway() external view returns (string memory) {
         return V3FlexLib.preferredArweaveGateway();
@@ -2426,7 +2441,7 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyValidTokenId(_tokenId);
         string memory _projectBaseURI = projects[tokenIdToProjectId(_tokenId)]
             .projectBaseURI;
-        return string.concat(_projectBaseURI, toString(_tokenId));
+        return string.concat(_projectBaseURI, _tokenId.toString());
     }
 
     /**
@@ -2569,7 +2584,7 @@ contract GenArt721CoreV3_Engine_Flex is
      * not reenter this contract.
      * @param projectId Project ID to be updated.
      */
-    function _assignSplitter(uint256 projectId) private {
+    function _assignSplitter(uint256 projectId) internal {
         ProjectFinance storage projectFinance = _projectIdToFinancials[
             projectId
         ];
@@ -2659,30 +2674,5 @@ contract GenArt721CoreV3_Engine_Flex is
         address _address
     ) internal view returns (string memory) {
         return BytecodeStorageReader.readFromBytecode(_address);
-    }
-
-    /**
-     * @dev Converts a `uint256` to its ASCII `string` decimal representation.
-     */
-    function toString(uint256 value) internal pure returns (string memory) {
-        // Inspired by OraclizeAPI's implementation - MIT licence
-        // https://github.com/oraclize/ethereum-api/blob/b42146b063c7d6ee1358846c198246239e9360e8/oraclizeAPI_0.4.25.sol
-
-        if (value == 0) {
-            return "0";
-        }
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
-        }
-        return string(buffer);
     }
 }
