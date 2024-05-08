@@ -47,10 +47,6 @@ async function main() {
       "Batch Engine deployment config file"
     );
 
-  console.log("AFTER import: ");
-  console.log("deployNetworkConfiguration: ", deployNetworkConfiguration);
-  console.log("deployConfigDetailsArray: ", deployConfigDetailsArray);
-
   if (networkName !== deployNetworkConfiguration.network) {
     throw new Error(
       `network name ${networkName} does not match expected network name ${deployNetworkConfiguration.network}`
