@@ -257,7 +257,7 @@ async function main() {
 
     const inputEngineConfiguration = {
       tokenName: engineConfiguration.tokenName,
-      tokenSymbol: engineConfiguration.tokenName,
+      tokenSymbol: engineConfiguration.tokenSymbol,
       renderProviderAddress: engineConfiguration.renderProviderAddress,
       platformProviderAddress: engineConfiguration.platformProviderAddress,
       newSuperAdminAddress: engineConfiguration.newSuperAdminAddress,

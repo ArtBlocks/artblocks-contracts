@@ -14,8 +14,8 @@ export const deployConfigDetailsArray = [
   {
     engineCoreContractType: 0, // 0 for Engine, 1 for Engine Flex
     engineConfiguration: {
-      tokenName: "DEV_TEST",
-      tokenSymbol: "DEV_TEST",
+      tokenName: "dev-test2",
+      tokenSymbol: "DEV_TEST2",
       renderProviderAddress: "0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4",
       platformProviderAddress: "0x0000000000000000000000000000000000000000",
       newSuperAdminAddress: "0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4",
@@ -25,7 +25,7 @@ export const deployConfigDetailsArray = [
       allowArtistProjectActivation: true,
     },
     adminACLContract: "0x0000000000000000000000000000000000000000",
-    salt: "0x000000000000000000000000000000000000000035626da367bff2bd4c000080",
+    salt: "0x0",
     transactionHash: null,
     // optionally define this to set default vertical name for the contract after deployment.
     // if not defined, the default vertical name will be "unassigned".
@@ -37,7 +37,7 @@ export const deployConfigDetailsArray = [
   {
     engineCoreContractType: 1, // 0 for Engine, 1 for Engine Flex
     engineConfiguration: {
-      tokenName: "DEV_TEST_FLEX",
+      tokenName: "dev-test-flex",
       tokenSymbol: "DEV_TEST_FLEX",
       renderProviderAddress: "0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4",
       platformProviderAddress: "0x0000000000000000000000000000000000000000",
