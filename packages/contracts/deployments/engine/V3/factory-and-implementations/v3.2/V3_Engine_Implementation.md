@@ -19,8 +19,8 @@ const inputs: T_Inputs = {
 
 ## Results:
 
-Deploys to address: `0x00000000BB846ED9fb50fF001C6cD03012fC4485`
+Deploys to address: `0x00000000AEf91971cc6251936Ec6568B23b55342`
 
 ### Deployment transactions:
 
-- sepolia: https://sepolia.etherscan.io/tx/0x89dcc5fabc2b20d7def22e1c9662745f967ff59c8016cb5f02d7b5c00699b2b8
+- sepolia: https://sepolia.etherscan.io/tx/0x86e568cb79df0290040fd7b0f0a104c9a113891de4e5dda418d2d7e6927b1188

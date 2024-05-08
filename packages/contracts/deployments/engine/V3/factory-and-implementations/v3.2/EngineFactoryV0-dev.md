@@ -12,9 +12,9 @@ The following were the inputs used to get initcode for deployment, via `scripts/
 const inputs: T_Inputs = {
   contractName: "EngineFactoryV0",
   args: [
-    "0x00000000BB846ED9fb50fF001C6cD03012fC4485", // engine
-    "0x00000000B33F6D5cA8222c87EAc99D206A99E17E", // flex
-    "0x985C11541ff1fe763822Dc8f71B581C688B979EE", // core registry
+    "0x00000000AEf91971cc6251936Ec6568B23b55342", // engine
+    "0x00000000af817dFBc2b3006E365D2eFef1953334", // flex
+    "0xfeA4f2f4E45c255ceE626a1A994BB214039c2B9A", // core registry
     "0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4", // dev deployer wallet
   ],
   libraries: {},
@@ -23,8 +23,8 @@ const inputs: T_Inputs = {
 
 ## Results:
 
-Deploys to address: `0x0000000f84351b503eB3Df72C7E1f169b2D32728`
+Deploys to address: `0x000000B16F6b401470669D0A70b80b769a436CA1`
 
 ### Deployment transactions:
 
-- sepolia: https://sepolia.etherscan.io/tx/0x50e0ca75d0fbb2e5bcea5f40245741fb3e7035dc15a28379ad430ab3ead1b237
+- sepolia: https://sepolia.etherscan.io/tx/0x514415657c1352bd215fb35cd923115523b7f4e5a98a26d938d37eed783f87fe
