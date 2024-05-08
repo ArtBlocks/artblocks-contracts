@@ -113,6 +113,31 @@ const ACTIVE_SHARED_RANDOMIZERS = {
   },
 };
 
+export function getActiveSharedSplitProvider(): string {
+  return "0x0000000004B100B47f061968a387c82702AFe946";
+}
+
+export function getActiveEngineFactoryAddress(
+  networkName: string,
+  environment: string
+): string {
+  const activeEngineFactory = ACTIVE_ENGINE_FACTORY[networkName]?.[environment];
+  if (!activeEngineFactory) {
+    throw new Error(
+      `No active engine factory found for network ${networkName} and environment ${environment}`
+    );
+  }
+  return activeEngineFactory;
+}
+// Active shared randomizer contracts being used for the shared minter
+// suite, on each network and environment.
+// format is [network]: { [environment]: [randomizer address] }
+const ACTIVE_ENGINE_FACTORY = {
+  sepolia: {
+    dev: "0x0000000f84351b503eB3Df72C7E1f169b2D32728",
+  },
+};
+
 /**
  * Gets active core registry contract address for the given network and
  * environment.

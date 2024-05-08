@@ -28,6 +28,28 @@ export async function getAppPath() {
   }
 }
 
+type BaseConfig = {
+  network: string;
+  environment: string;
+  engineFactoryAddress: string;
+  useLedgerSigner: boolean;
+};
+
+// Add a discriminant property, like "type"
+type GnosisSafeConfig = BaseConfig & {
+  useGnosisSafe: true;
+  safeAddress: string;
+  transactionServiceUrl: string;
+};
+
+type NoGnosisSafeConfig = BaseConfig & {
+  useGnosisSafe: false;
+  safeAddress?: never;
+  transactionServiceUrl?: never;
+};
+
+type Config = GnosisSafeConfig | NoGnosisSafeConfig;
+
 export type DeployConfigDetails = {
   network?: string;
   environment?: string;
@@ -77,6 +99,7 @@ export async function getConfigInputs(
   promptMessage: string
 ): Promise<{
   deployConfigDetailsArray: DeployConfigDetails[];
+  deployNetworkConfiguration: Config;
   deploymentConfigFile: string;
   inputFileDirectory: string;
 }> {
@@ -97,29 +120,42 @@ export async function getConfigInputs(
   const fullImportPath = path.join(fullDeploymentConfigPath);
   const inputFileDirectory = path.dirname(fullImportPath);
   let deployConfigDetailsArray: DeployConfigDetails[];
-  try {
-    ({ deployConfigDetailsArray } = await import(fullImportPath));
-  } catch (error) {
-    throw new Error(
-      `[ERROR] Unable to import deployment configuration file at: ${fullDeploymentConfigPath}
-      Please ensure the file exists (e.g. deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-01.dev.ts)`
-    );
-  }
+  let deployNetworkConfiguration;
+  // try {
+  ({ deployConfigDetailsArray, deployNetworkConfiguration } = await import(
+    fullImportPath
+  ));
+
+  console.log("deploy config details array: ", deployConfigDetailsArray);
+  console.log("deploy network config: ", deployNetworkConfiguration);
+  // } catch (error) {
+  //   throw new Error(
+  //     `[ERROR] Unable to import deployment configuration file at: ${fullDeploymentConfigPath}
+  //     Please ensure the file exists (e.g. deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-01.dev.ts)`
+  //   );
+  // }
   // record all deployment logs to a file, monkey-patching stdout
-  const pathToMyLogFile = path.join(inputFileDirectory, "DEPLOYMENT_LOGS.log");
-  var myLogFileStream = fs.createWriteStream(pathToMyLogFile, { flags: "a+" });
-  var log_stdout = process.stdout;
-  console.log = function (d) {
-    myLogFileStream.write(util.format(d) + "\n");
-    log_stdout.write(util.format(d) + "\n");
+  // // const pathToMyLogFile = path.join(inputFileDirectory, "DEPLOYMENT_LOGS.log");
+  // // var myLogFileStream = fs.createWriteStream(pathToMyLogFile, { flags: "a+" });
+  // // var log_stdout = process.stdout;
+  // // console.log = function (d) {
+  // //   myLogFileStream.write(util.format(d) + "\n");
+  // //   log_stdout.write(util.format(d) + "\n");
+  // // };
+  // // record relevant deployment information in logs
+  // console.log(`----------------------------------------`);
+  // console.log(`[INFO] Datetime of deployment: ${new Date().toISOString()}`);
+  // console.log(
+  //   `[INFO] Deployment configuration file: ${fullDeploymentConfigPath}`
+  // );
+  // console.log("deploy config details array: ", deployConfigDetailsArray);
+  // console.log("deploy network config: ", deployNetworkConfiguration);
+  return {
+    deployConfigDetailsArray,
+    deployNetworkConfiguration,
+    deploymentConfigFile,
+    inputFileDirectory,
   };
-  // record relevant deployment information in logs
-  console.log(`----------------------------------------`);
-  console.log(`[INFO] Datetime of deployment: ${new Date().toISOString()}`);
-  console.log(
-    `[INFO] Deployment configuration file: ${fullDeploymentConfigPath}`
-  );
-  return { deployConfigDetailsArray, deploymentConfigFile, inputFileDirectory };
 }
 
 export async function getNetworkName() {

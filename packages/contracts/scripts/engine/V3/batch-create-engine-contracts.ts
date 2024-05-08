@@ -2,7 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import hre, { ethers } from "hardhat";
-import { EngineFactoryV0__factory } from "../../../../scripts/contracts/engine/V3/EngineFactoryV0__factory";
+import { EngineFactoryV0__factory } from "../../contracts";
 import { getConfigInputs, getNetworkName } from "../../util/utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { getDeployerWallet } from "../../util/get-deployer-wallet";
@@ -13,6 +13,8 @@ import { MetaTransactionData } from "@gnosis.pm/safe-core-sdk-types";
 import {
   getActiveSharedRandomizer,
   getActiveSharedMinterFilter,
+  getActiveSharedSplitProvider,
+  getActiveEngineFactoryAddress,
   ZERO_ADDRESS,
   getActiveCoreRegistry,
   BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES,
@@ -30,36 +32,6 @@ import { EngineContractConfig } from "../../../deployments/engine/V3/studio/depl
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
 //////////////////////////////////////////////////////////////////////////////
-type BaseConfig = {
-  network: string;
-  environment: string;
-  engineFactoryAddress: string;
-  useLedgerSigner: boolean;
-};
-
-// Add a discriminant property, like "type"
-type GnosisSafeConfig = BaseConfig & {
-  useGnosisSafe: true;
-  safeAddress: string;
-  transactionServiceUrl: string;
-};
-
-type NoGnosisSafeConfig = BaseConfig & {
-  useGnosisSafe: false;
-  safeAddress?: never;
-  transactionServiceUrl?: never;
-};
-
-type Config = GnosisSafeConfig | NoGnosisSafeConfig;
-
-// Fill this out before running the script
-const config: Config = {
-  network: "",
-  environment: "",
-  engineFactoryAddress: "",
-  useLedgerSigner: false,
-  useGnosisSafe: false,
-};
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
@@ -68,26 +40,40 @@ const config: Config = {
 async function main() {
   const networkName = await getNetworkName();
 
-  if (networkName !== config.network) {
+  // Get network and safe configuration
+  const { deployConfigDetailsArray, deployNetworkConfiguration } =
+    await getConfigInputs(
+      "deployments/engine/V3/studio/deployment-config.template.ts",
+      "Batch Engine deployment config file"
+    );
+
+  console.log("AFTER import: ");
+  console.log("deployNetworkConfiguration: ", deployNetworkConfiguration);
+  console.log("deployConfigDetailsArray: ", deployConfigDetailsArray);
+
+  if (networkName !== deployNetworkConfiguration.network) {
     throw new Error(
-      `network name ${networkName} does not match expected network name ${config.network}`
+      `network name ${networkName} does not match expected network name ${deployNetworkConfiguration.network}`
     );
   }
 
   console.log(`[INFO] Deploying to network: ${networkName}`);
 
   // verify intended environment
-  if (process.env.NODE_ENV === config.environment) {
-    console.log(`[INFO] Deploying to environment: ${config.environment}`);
+  if (process.env.NODE_ENV === deployNetworkConfiguration.environment) {
+    console.log(
+      `[INFO] Deploying to environment: ${deployNetworkConfiguration.environment}`
+    );
   } else {
     throw new Error(
-      `[ERROR] The deployment config indicates environment ${config.environment}, but script is being run in environment ${process.env.NODE_ENV}`
+      `[ERROR] The deployment config indicates environment ${deployNetworkConfiguration.environment}, but script is being run in environment ${process.env.NODE_ENV}`
     );
   }
 
   if (
-    config.useGnosisSafe &&
-    (!config.safeAddress || !config.transactionServiceUrl)
+    deployNetworkConfiguration.useGnosisSafe &&
+    (!deployNetworkConfiguration.safeAddress ||
+      !deployNetworkConfiguration.transactionServiceUrl)
   ) {
     throw new Error(
       `Must provide both safeAddress and transactionServiceUrl when using gnosis safe`
@@ -95,7 +81,7 @@ async function main() {
   }
 
   let signer: SignerWithAddress | Wallet;
-  if (config.useLedgerSigner) {
+  if (deployNetworkConfiguration.useLedgerSigner) {
     // Ethers adapter reuires a signer with a provider so create one here
     const ledgerAddress = hre.network.config.ledgerAccounts[0];
     signer = await ethers.getSigner(ledgerAddress);
@@ -117,20 +103,20 @@ async function main() {
   } | null = null;
 
   // Gnosis sdk setup
-  if (config.useGnosisSafe) {
+  if (deployNetworkConfiguration.useGnosisSafe) {
     const ethAdapter = new EthersAdapter({
       ethers,
       signerOrProvider: signer,
     });
 
     const safeApiKit = new SafeApiKit({
-      txServiceUrl: config.transactionServiceUrl,
+      txServiceUrl: deployNetworkConfiguration.transactionServiceUrl,
       ethAdapter,
     });
 
     const protocolKit = await Safe.create({
       ethAdapter,
-      safeAddress: config.safeAddress,
+      safeAddress: deployNetworkConfiguration.safeAddress,
     });
 
     gnosisSetup = {
@@ -143,25 +129,35 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
   // ACTION BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
-
+  // Get engine factory address
+  const engineFactoryAddress = getActiveEngineFactoryAddress(
+    networkName,
+    deployNetworkConfiguration.environment
+  );
   // Connect to engine factory contract
   const engineFactory = EngineFactoryV0__factory.connect(
-    config.engineFactoryAddress,
+    engineFactoryAddress,
     signer
   );
 
   // verify a shared minter filter address is defined for network and environment
   // @dev throws if not found
-  getActiveSharedMinterFilter(networkName, config.environment);
+  getActiveSharedMinterFilter(
+    networkName,
+    deployNetworkConfiguration.environment
+  );
 
   // verify a shared randomizer address is defined for network and environment
   // @dev throws if not found
-  getActiveSharedRandomizer(networkName, config.environment);
+  getActiveSharedRandomizer(
+    networkName,
+    deployNetworkConfiguration.environment
+  );
 
   // verify the Engine Factory contract owns and can register contracts on the Core Registry
   const activeCoreRegistryAddress = await getActiveCoreRegistry(
     networkName,
-    config.environment
+    deployNetworkConfiguration.environment
   );
 
   const coreRegistryContract = await ethers.getContractAt(
@@ -170,9 +166,9 @@ async function main() {
   );
 
   const coreRegistryOwner = await coreRegistryContract.owner();
-  if (coreRegistryOwner !== config.engineFactoryAddress) {
+  if (coreRegistryOwner !== engineFactoryAddress) {
     throw new Error(
-      `[ERROR] Active core registry address ${activeCoreRegistryAddress} is not owned by Engine Factory ${config.engineFactoryAddress}. Please update the owner.`
+      `[ERROR] Active core registry address ${activeCoreRegistryAddress} is not owned by Engine Factory ${engineFactoryAddress}. Please update the owner.`
     );
   }
 
@@ -188,21 +184,20 @@ async function main() {
   // Get shared minter filter
   const minterFilterAddress = getActiveSharedMinterFilter(
     networkName,
-    config.environment
+    deployNetworkConfiguration.environment
   );
 
   // Get shared randomizer contract
   const randomizerAddress = getActiveSharedRandomizer(
     networkName,
-    config.environment
+    deployNetworkConfiguration.environment
   );
 
+  // Get shared split provider
+  const splitProviderAddress = getActiveSharedSplitProvider();
+
   const txData: MetaTransactionData[] = [];
-  // get deployment configuration details
-  const { deployConfigDetailsArray } = await getConfigInputs(
-    "deployments/engine/V3/studio/deployment-config.template.ts",
-    "Batch Engine deployment config file"
-  );
+
   for (const engineContractConfiguration of deployConfigDetailsArray) {
     const {
       engineCoreContractType,
@@ -229,30 +224,25 @@ async function main() {
 
     // verify that token name and symbol are populated
     if (
-      engineConfiguration.tokenName.length > 0 &&
-      engineConfiguration.tokenSymbol.length > 0
+      !engineConfiguration.tokenName.length ||
+      !engineConfiguration.tokenSymbol.length
     ) {
       throw new Error(`[ERROR] The token name and symbol should be populated`);
     }
 
     // validate that the render provider addresses is not null
     if (
-      engineConfiguration.renderProviderAddress.length > 0 &&
-      engineConfiguration.renderProviderAddress !== ZERO_ADDRESS
+      !engineConfiguration.renderProviderAddress.length ||
+      (engineConfiguration.renderProviderAddress.length > 0 &&
+        engineConfiguration.renderProviderAddress === ZERO_ADDRESS)
     ) {
       throw new Error(`[ERROR] The render provider address should not be null`);
     }
 
     // validate that the Admin ACL and super admin address are as expected
     if (
-      !(
-        adminACLContract === ZERO_ADDRESS &&
-        engineConfiguration.newSuperAdminAddress !== ZERO_ADDRESS
-      ) ||
-      !(
-        adminACLContract !== ZERO_ADDRESS &&
-        engineConfiguration.newSuperAdminAddress === ZERO_ADDRESS
-      )
+      adminACLContract === ZERO_ADDRESS &&
+      engineConfiguration.newSuperAdminAddress === ZERO_ADDRESS
     ) {
       throw new Error(
         `[ERROR] If using an existing Admin ACL Contract, the super admin address must be null.
@@ -261,31 +251,56 @@ async function main() {
     }
 
     // set randomizer address to shared randomizer
-    engineConfiguration.randomizerContractAddress = randomizerAddress;
+    engineConfiguration.randomizerContract = randomizerAddress;
+    // set minter filter address to shared minter filter
+    // @dev if not using the shared minter filter, update this
+    engineConfiguration.minterFilterAddress = minterFilterAddress;
+
+    // set split provider to shared split provider
+    engineConfiguration.splitProviderAddress = splitProviderAddress;
+
+    const inputEngineConfiguration = {
+      tokenName: engineConfiguration.tokenName,
+      tokenSymbol: engineConfiguration.tokenName,
+      renderProviderAddress: engineConfiguration.renderProviderAddress,
+      platformProviderAddress: engineConfiguration.platformProviderAddress,
+      newSuperAdminAddress: engineConfiguration.newSuperAdminAddress,
+      randomizerContract: randomizerAddress,
+      splitProviderAddress: splitProviderAddress,
+      minterFilterAddress: minterFilterAddress,
+      startingProjectId: engineConfiguration.startingProjectId,
+      autoApproveArtistSplitProposals:
+        engineConfiguration.autoApproveArtistSplitProposals,
+      nullPlatformProvider: engineConfiguration.nullPlatformProvider,
+      allowArtistProjectActivation:
+        engineConfiguration.allowArtistProjectActivation,
+    };
+
+    const inputSalt = salt === "0x0" ? ethers.constants.HashZero : salt;
 
     // If we're using a gnosis safe, create a transaction to propose adding the dependency
     // to the dependency registry. Otherwise, add it directly.
-    if (config.useGnosisSafe) {
+    if (deployNetworkConfiguration.useGnosisSafe) {
       const data = engineFactory.interface.encodeFunctionData(
         "createEngineContract",
         [
           engineCoreContractType,
-          engineConfiguration,
+          inputEngineConfiguration,
           adminACLContract,
-          ethers.utils.formatBytes32String(salt),
+          inputSalt,
         ]
       );
       txData.push({
-        to: config.engineFactoryAddress,
+        to: engineFactoryAddress,
         value: "0x00",
         data,
       });
     } else {
       const tx = await engineFactory.createEngineContract(
         engineCoreContractType,
-        engineConfiguration,
+        inputEngineConfiguration,
         adminACLContract,
-        ethers.utils.formatBytes32String(salt)
+        inputSalt
       );
       await tx.wait();
       console.log(

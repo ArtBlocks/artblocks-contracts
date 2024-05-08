@@ -5,18 +5,14 @@ import { ethers } from "hardhat";
 import fs from "fs";
 import path from "path";
 import EngineFactory from "../../../../artifacts/contracts/engine/V3/EngineFactoryV0.sol/EngineFactoryV0.json";
-import MinterFilterFactory from "../../../../artifacts/contracts/minter-suite/MinterFilter/MinterFilterV2.sol/MinterFilterV2.json";
-
+import CoreRegistryFactory from "../../../../artifacts/contracts/engine-registry/CoreRegistryV1.sol/CoreRegistryV1.json";
 // hide nuisance logs about event overloading
 import { Logger } from "@ethersproject/logger";
 Logger.setLogLevel(Logger.levels.ERROR);
 
 // delay to avoid issues with reorgs and tx failures
 import { delay, getAppPath, getNetworkName } from "../../../util/utils";
-import {
-  EXTRA_DELAY_BETWEEN_TX,
-  getActiveSharedMinterFilter,
-} from "../../../util/constants";
+import { EXTRA_DELAY_BETWEEN_TX } from "../../../util/constants";
 
 /**
  * This script was created to run post-deployment steps for the EngineFactoryV0.
@@ -29,11 +25,12 @@ import {
 async function main() {
   // manually fill out script details
   const config = {
-    engineImplementationAddress: "",
-    engineFlexImplementationAddress: "",
-    coreRegistryAddress: "",
-    engineFactoryAddress: "",
-    environment: "",
+    engineImplementationAddress: "0x00000000BB846ED9fb50fF001C6cD03012fC4485",
+    engineFlexImplementationAddress:
+      "0x00000000B33F6D5cA8222c87EAc99D206A99E17E",
+    coreRegistryAddress: "0x985C11541ff1fe763822Dc8f71B581C688B979EE",
+    engineFactoryAddress: "0x0000000f84351b503eB3Df72C7E1f169b2D32728",
+    environment: "dev",
   };
 
   // get accounts and network
@@ -54,35 +51,15 @@ async function main() {
   }
 
   // Transfer ownership of Core Registry to EngineFactoryV0
-  const engineFactory = new ethers.Contract(
-    config.engineFactoryAddress,
-    EngineFactory.abi,
+  const coreRegistry = new ethers.Contract(
+    config.coreRegistryAddress,
+    CoreRegistryFactory.abi,
     deployer
   );
 
-  const tx = await engineFactory.transferCoreRegistryOwnership(
-    config.engineFactoryAddress
-  );
+  const tx = await coreRegistry.transferOwnership(config.engineFactoryAddress);
 
   await tx.wait();
-
-  // Update shared minter filter core registry to the new Core Registry
-  const activeMinterFilterAddress = getActiveSharedMinterFilter(
-    networkName,
-    config.environment
-  );
-
-  const minterFilterFactory = new ethers.Contract(
-    activeMinterFilterAddress,
-    MinterFilterFactory.abi,
-    deployer
-  );
-
-  const tx2 = await minterFilterFactory.updateCoreRegistry(
-    config.coreRegistryAddress
-  );
-
-  await tx2.wait();
 
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENTS.md BEGINS HERE
