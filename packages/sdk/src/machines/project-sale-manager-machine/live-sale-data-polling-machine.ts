@@ -1,16 +1,17 @@
 import { setup, assign, fromPromise, enqueueActions, sendParent } from "xstate";
-import { Hex, getContract, PublicClient } from "viem";
+import { Hex, getContract } from "viem";
 
-import { iSharedMinterV0Abi } from "../abis/iSharedMinterV0Abi";
-import { iGenArt721CoreContractV3BaseAbi } from "../abis/iGenArt721CoreContractV3BaseAbi";
-import { LiveSaleData, ProjectDetails } from "./helpers";
-import { getMessageFromError } from "../helpers";
+import { iSharedMinterV0Abi } from "../../../abis/iSharedMinterV0Abi";
+import { iGenArt721CoreContractV3BaseAbi } from "../../../abis/iGenArt721CoreContractV3BaseAbi";
+import { LiveSaleData, ProjectDetails } from "./utils";
+import { getMessageFromError } from "../utils";
+import { ArtBlocksClient } from "../..";
 
 const POLLING_DELAY = 10000;
 
 type LiveSaleDataPollingMachineContext = {
   project: NonNullable<ProjectDetails>;
-  publicClient: PublicClient;
+  artblocksClient: ArtBlocksClient;
   errorMessage?: string;
   liveSaleData?: LiveSaleData;
 };
@@ -51,20 +52,26 @@ export const liveSaleDataPollingMachine = setup({
   types: {
     input: {} as Pick<
       LiveSaleDataPollingMachineContext,
-      "project" | "publicClient"
+      "project" | "artblocksClient"
     >,
     context: {} as LiveSaleDataPollingMachineContext,
   },
   actors: {
     fetchLiveSaleData: fromPromise(
       async ({
-        input: { project, publicClient },
+        input: { project, artblocksClient },
       }: {
         input: Pick<
           LiveSaleDataPollingMachineContext,
-          "project" | "publicClient"
+          "project" | "artblocksClient"
         >;
       }) => {
+        const publicClient = artblocksClient.getPublicClient();
+
+        if (!publicClient) {
+          throw new Error("Public client is unavailable");
+        }
+
         if (!project.minter_configuration?.minter) {
           throw new Error("Project has no minter configured");
         }
@@ -143,7 +150,7 @@ export const liveSaleDataPollingMachine = setup({
   /** @xstate-layout N4IgpgJg5mDOIC5QBsCWA3MBlAhssAIjgC44AKA9smgHZQCyOAxgBao1gB0AZmMa+ygAZDNjyESOAMQQKHTu3QUA1lzSZc+IqUrVBjAfN782dERvHacCRRSYlUcgNoAGALqu3iUAAcKsVGJHGm8QAA9EABYADgBOTgB2AGYARhcU2LjYgCYUgDYEgBoQAE9EAFZszhdo6KSEhPK88qTsluzIgF9O4vUxLUldWgZmUy5jQ2FRTQlSKTAAJwWKBc4fZBJuFYBbTj6ZqyH9UfZxvknzftnrW3sg53dPUL8A+5CkcMQAWhTs6M4UuVIs0Uq0EnUXJlimUEJVqrUksCXOU0i4CrFur1ppZBlRhgYxpwAO44QKCKRhWCkYhcHDcGkLAAUqJcLgAlFJ9jidHjjoYuCSyXQnh8XmS5KEIghstkEpxYuVMnlctlIa0XEloYgZSlOJFIklWuUEhqUgk2uVuj0QDQKBA4KEuQMeXo6ATTs9-OL3qApT8EnkAUCQWCIVDSt8UjEAalYhqmpE0pEWpiQE7rkc3ScjOdTFMLM6cJ7XsFJYgUtFddE8q1VbkYgbwVqEF88i5ODWK7EEjka0lkXk8qn04deVn+cTSUE6MXvWXYQ1qrLatEZbFIglItlm7l4uvDUlq9FEy42sPsYXMyMJ4tlgtZ295z9WZxsmC8pXk9EXDEUs2MuUAKxIaMSnjWAYYlaQA */
   context: ({ input }) => ({
     project: input.project,
-    publicClient: input.publicClient,
+    artblocksClient: input.artblocksClient,
   }),
   id: "liveSaleDataPollingMachine",
   initial: "fetchingLiveSaleData",
@@ -153,7 +160,7 @@ export const liveSaleDataPollingMachine = setup({
         src: "fetchLiveSaleData",
         input: ({ context }) => ({
           project: context.project,
-          publicClient: context.publicClient,
+          artblocksClient: context.artblocksClient,
         }),
         onDone: [
           {

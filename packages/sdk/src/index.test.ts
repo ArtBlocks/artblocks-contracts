@@ -1,4 +1,4 @@
-import ArtBlocksClient from "./index";
+import { ArtBlocksClient } from "./index";
 import { PublicClient } from "viem";
 import { generateProjectMinterConfigurationForms } from "./minter-configuration";
 import { FormBlueprint } from "./types";

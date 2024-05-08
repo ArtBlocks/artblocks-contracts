@@ -1,8 +1,7 @@
 import { setup, assign, fromPromise, not } from "xstate";
 import { graphql } from "../../generated/index";
-import { abGraphQLClient } from "../helpers";
-import { readAsset } from "@/client/lib/api";
-import { TokenDetails } from "./purchaseTrackingMachine";
+import { TokenDetails } from "../purchase-tracking-machine";
+import { ArtBlocksClient } from "../..";
 
 /**
  * TODO
@@ -30,11 +29,13 @@ const getTokenDetailsDocument = graphql(/* GraphQL */ `
 const POLLING_INTERVAL = 5000;
 
 type TokenPollingMachineContext = {
+  artblocksClient: ArtBlocksClient;
   tokenId?: string;
   token?: TokenDetails;
   maxRetries: number;
   retries: number;
   errorMessage?: string;
+  marketplaceUrl?: string;
 };
 
 /**
@@ -49,7 +50,7 @@ type TokenPollingMachineContext = {
  *
  * ## Actors:
  * - `getTokenDetails`: A promise-based actor that fetches the token details
- *   given a `tokenId`. It interacts with the `abGraphQLClient` to query the
+ *   given a `tokenId`. It uses the artblocksClient to query the for the
  *   token's metadata.
  *
  * ## Guards:
@@ -91,33 +92,43 @@ export const tokenPollingMachine = setup({
   types: {
     input: {} as {
       tokenId?: string;
+      artblocksClient: ArtBlocksClient;
+      marketplaceUrl?: string;
     },
     context: {} as TokenPollingMachineContext,
     output: {} as { token?: TokenDetails; errorMessage?: string },
   },
   actors: {
     getTokenDetails: fromPromise(
-      async ({ input }: { input: { tokenId?: string } }) => {
+      async ({
+        input,
+      }: {
+        input: {
+          tokenId?: string;
+          artblocksClient: ArtBlocksClient;
+          marketplaceUrl?: string;
+        };
+      }) => {
         if (!input.tokenId) {
           throw new Error("Token ID not found");
         }
+        const { tokenId, artblocksClient } = input;
 
-        const tokenId = input.tokenId;
-
-        const res = await abGraphQLClient.request(getTokenDetailsDocument, {
-          tokenId,
-        });
+        const res = await artblocksClient.graphqlRequest(
+          getTokenDetailsDocument,
+          {
+            tokenId,
+          }
+        );
 
         // Check to see if the token has been indexed by Sansa
         // before returning the token details and moving to the
-        // `complete` state. TODO: This shouldn't really be part
-        // of the machine since it's Sansa specific. We should
-        // instead either hook into this machine with a Sansa
-        // specific machine or extend the machine config where we
-        // consume the machine to include this logic.
-        if (res.tokens_metadata_by_pk) {
+        // `complete` state. If we have a marketplace URL, make
+        // sure the asset exists there as well.
+        if (res.tokens_metadata_by_pk && input.marketplaceUrl) {
           try {
-            const asset = await readAsset(
+            const asset = await getMarketplaceAsset(
+              input.marketplaceUrl,
               res.tokens_metadata_by_pk.contract_address,
               res.tokens_metadata_by_pk.token_id
             );
@@ -171,6 +182,8 @@ export const tokenPollingMachine = setup({
     tokenId: input.tokenId,
     maxRetries: 100,
     retries: 0,
+    marketplaceUrl: input.marketplaceUrl,
+    artblocksClient: input.artblocksClient,
   }),
   id: "tokenPollingMachine",
   initial: "fetchingTokenDetails",
@@ -178,7 +191,11 @@ export const tokenPollingMachine = setup({
     fetchingTokenDetails: {
       invoke: {
         src: "getTokenDetails",
-        input: ({ context }) => ({ tokenId: context.tokenId }),
+        input: ({ context }) => ({
+          tokenId: context.tokenId,
+          artblocksClient: context.artblocksClient,
+          marketplaceUrl: context.marketplaceUrl,
+        }),
         onDone: [
           {
             target: "complete",
@@ -242,3 +259,24 @@ export const tokenPollingMachine = setup({
     errorMessage: context.errorMessage,
   }),
 });
+
+async function getMarketplaceAsset(
+  marketplaceUrl: string,
+  contractAddress: string,
+  tokenId: string
+) {
+  const url = `${marketplaceUrl}/api/assets`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contractAddress,
+      tokenId,
+    }),
+  });
+  const data = await res.json();
+
+  return data?.data?.[0] || null;
+}

@@ -1,4 +1,3 @@
-import { PublicClient, WalletClient } from "viem";
 import {
   ActorRefFrom,
   assign,
@@ -6,8 +5,8 @@ import {
   fromPromise,
   setup,
 } from "xstate";
-import { abGraphQLClient, getMessageFromError } from "../helpers";
-import { purchaseTrackingManagerMachine } from "../purchaseTrackingManagerMachine";
+import { getMessageFromError } from "../utils";
+import { purchaseTrackingManagerMachine } from "../purchase-tracking-manager-machine";
 import {
   LiveSaleData,
   ProjectDetails,
@@ -16,24 +15,15 @@ import {
   isProjectComplete,
   isProjectIneligibleForPrimarySale,
   isProjectPurchasable,
-} from "./helpers";
-import { liveSaleDataPollingMachine } from "./liveSaleDataPollingMachine";
-import { purchaseInitiationMachine } from "./purchaseInitiationMachine";
+} from "./utils";
+import { liveSaleDataPollingMachine } from "./live-sale-data-polling-machine";
+import { purchaseInitiationMachine } from "../purchase-initiation-machine";
+import { ArtBlocksClient } from "../..";
 
 type ProjectSaleManagerMachineEvents =
   | {
-      type: "PUBLIC_CLIENT_AVAILABLE";
-      data: PublicClient;
-    }
-  | {
-      type: "PUBLIC_CLIENT_UNAVAILABLE";
-    }
-  | {
-      type: "WALLET_CLIENT_AVAILABLE";
-      data: WalletClient;
-    }
-  | {
-      type: "WALLET_CLIENT_UNAVAILABLE";
+      type: "ART_BLOCKS_CLIENT_UPDATED";
+      artblocksClient: ArtBlocksClient;
     }
   | {
       type: "PURCHASE_TRACKING_MANAGER_MACHINE_AVAILABLE";
@@ -56,8 +46,7 @@ type ProjectSaleManagerMachineEvents =
 
 export type ProjectSaleManagerMachineContext = {
   projectId?: string;
-  publicClient?: PublicClient;
-  walletClient?: WalletClient;
+  artblocksClient: ArtBlocksClient;
   project?: ProjectDetails;
   liveSaleData?: LiveSaleData;
   errorMessage?: string;
@@ -130,13 +119,13 @@ export type ProjectSaleManagerMachineContext = {
  * to itself (and by proxy, its context) to the PurchaseInitiationMachine, which can
  * then send initiated purchase transaction hashes to the PurchaseTrackingManagerMachine.
  */
+
 export const projectSaleManagerMachine = setup({
   types: {
     input: {} as {
       projectId?: string;
-      publicClient?: PublicClient;
-      walletClient?: WalletClient;
       project?: ProjectDetails;
+      artblocksClient: ArtBlocksClient;
     },
     context: {} as ProjectSaleManagerMachineContext,
     events: {} as ProjectSaleManagerMachineEvents,
@@ -146,9 +135,9 @@ export const projectSaleManagerMachine = setup({
       async ({
         input,
       }: {
-        input: { projectId?: string };
+        input: { projectId?: string; artblocksClient: ArtBlocksClient };
       }): Promise<NonNullable<ProjectDetails>> => {
-        const { projectId } = input;
+        const { projectId, artblocksClient } = input;
 
         // This is an expected case for non-AB projects so we throw a custom error
         // and transition to a non-error state.
@@ -158,9 +147,12 @@ export const projectSaleManagerMachine = setup({
           );
         }
 
-        const res = await abGraphQLClient.request(getProjectDetailsDocument, {
-          projectId,
-        });
+        const res = await artblocksClient.graphqlRequest(
+          getProjectDetailsDocument,
+          {
+            projectId,
+          }
+        );
 
         // We don't expect this to happen, so throw a normal error
         // instead of a custom one to trigger a transition to the
@@ -177,13 +169,9 @@ export const projectSaleManagerMachine = setup({
     purchaseInitiationMachine,
   },
   actions: {
-    assignWalletClient: assign({
-      walletClient: (_, params: { walletClient: WalletClient | undefined }) =>
-        params.walletClient,
-    }),
-    assignPublicClient: assign({
-      publicClient: (_, params: { publicClient?: PublicClient }) =>
-        params.publicClient,
+    assignArtBlocksClient: assign({
+      artblocksClient: (_, params: { artblocksClient: ArtBlocksClient }) =>
+        params.artblocksClient,
     }),
     assignProject: assign({
       project: (_, params: { project: ProjectDetails }) => params.project,
@@ -222,15 +210,9 @@ export const projectSaleManagerMachine = setup({
     spawnLiveSaleDataPollingMachine: enqueueActions(
       ({ enqueue, context, system }) => {
         const project = context.project;
-        const publicClient = context.publicClient;
 
         if (!project) {
           console.warn("No project found in context");
-          return;
-        }
-
-        if (!publicClient) {
-          console.warn("No public client found in context");
           return;
         }
 
@@ -243,7 +225,7 @@ export const projectSaleManagerMachine = setup({
           systemId: "liveSaleDataPollingMachine",
           id: "liveSaleDataPollingMachine",
           input: {
-            publicClient,
+            artblocksClient: context.artblocksClient,
             project,
           },
         });
@@ -282,11 +264,7 @@ export const projectSaleManagerMachine = setup({
     ),
     spawnAndAssignPurchaseInitiationMachine: assign({
       purchaseInitiationMachine: ({ spawn, context, self }) => {
-        if (
-          !context.publicClient ||
-          !context.walletClient ||
-          !context.project
-        ) {
+        if (!context.project) {
           return;
         }
 
@@ -294,8 +272,7 @@ export const projectSaleManagerMachine = setup({
           systemId: "purchaseInitiationMachine",
           id: "purchaseInitiationMachine",
           input: {
-            publicClient: context.publicClient,
-            walletClient: context.walletClient,
+            artblocksClient: context.artblocksClient,
             project: context.project,
             projectSaleManagerMachine: self,
           },
@@ -326,59 +303,29 @@ export const projectSaleManagerMachine = setup({
       return Boolean(context.errorMessage);
     },
     isPublicClientUnavailable: ({ context }) => {
-      return !Boolean(context.publicClient);
+      return !context.artblocksClient.getPublicClient();
     },
   },
 }).createMachine({
-  /** @xstate-layout N4IgpgJg5mDOIC5QAcBOB7AVmAxgFwGUBDAGzAFkiA7ImVSnACwEsqwBiABQFUAhAGQCSAYQD6woQFEAcgBVRAQQBqCwfwUDJAbQAMAXUQp0sZnmboqhkAA9EARh0B2HQDoAbHbsfHbxwE4ADgAWACYAVgAaEABPez8AZhd4sMCguxCAzICnIIBfXKi0LFxCUgpqWjB6IiZWDh4BEXEpOVFuaWVVdU1dAyQQZGNTc0t+2wQ7eP8XTx0QkIc3N3jQyJi4xOTUxwC-EPj4-fzCjGx8YjJKGjoGFjZ2AHUFfn5JeQlBGXlOtQ1X3qsgxMZgsVnGUz8Ln8OjCOgCSzsfiCcyCUViEwSSRSwXSWWyjjyBQGpxKF3K1yqtzqj2er3eLXk7R+3X++kBQxBo1A42cARcfg8bjCYTcIT8PiCATRGyxqVxWScjmOxOK5zKV0q1Vq9x4ACVhAAJBQESSiWS6hTCADSgmkAHFROQFB07ZJdY7LQbbabmX9tGz+kDhqCxogALR2AluGZ+MKShJeeZhOzShDCvnwyYhHRzXbpPzKopnUqXCo3Gp3ercfVGk1mi3W20Op0ut0ew3etodFS-HoBozAkZg8ORkX8sKOeb7MUBfwhVOOYVYoKORfiic6BKFklq0sUrWV9hu3UAeV1AMDHKHoYQYcXIRcQTc2SFYQyQWTKfWGKC-NnE7sYVAICeJt1VEtyU1Kl7iEJRTQIZ5TQAEQUWQFFEAAxN5DUkJCLwHYMuRsEcdBWFwAmTZ8QlCAI7FRb9EV-QJF0cQDkzCECwOLMkNXLbUwBcAAzMA8G1KBOB3PAkKIPAiHYCALAE1gADd0AAawEotSXVMtKQrOohJEsSJPA6TZIQFT0BwGSRl6fCBivENuXDVjEg4kUHA3Wi-FTJY+TCeJvIhZZ4k8LjtL3KD9LYQzRLucTJLMuSqgwVAXGQEgZME9BUAAW3SySeN0g8DOEuLWAS0yZKICyqFU6zOTs-sHMHJziNvVdXDYvxALcAVkVCVMHDSJI3B0LMepCScjiJLTd0gvjKxcZgIDIdh7KDTlhwQFZEifALaIcdIPHo9E31-UKdA-ScYQOXZwvm3i9P45bVo4LQ7D6AitpvULEmySb3x0ZYEl8lcXHCYUcz6jJZyVWbCp0-doKUt71pCL6WsI7bdsfIVAtmY66IXXYklCNwPyWcIAgyB6IKekqYpWtatHiTHNuvZydr6lwYXzXxAkOHxUwFPkeoCqnxuRJw6aK5HotRlmgnZxyiPBeJo3iQJxW8UIVyGpw7CSGExQ-HM-HFWWkail7mfesIVdatXEAORwkmoxdk3Gqn5wYuwQJcN8QjG9I6KcQKrcixaDNQMAiAgaIMJysl1uajm2vGSZI0DvYppXeIYTSRwhuD38aPN8Unxp+GiSodAIDgQFEaj57K3ZJ3tojbNEgyCm+vFHrJylb8gg18jhqcGEPHxQkTnAuWbaWsrjMS6r2+xm8IzYiH4SfC3-EjDJUxxKFYw8PZ0h2SOFtbgy7fXn6ubDA4jbokUrqCa7IzcBcCVPkVky0QWIiAsCN57W2jjFWO8dE7JzKA-Tm7V0ihEDk+Q44pdhOHFCLLw-IC6ZBzJODiMJr4MxRgVcBZBhDoFyhlESYAEEZ3sFMI2E4poTlXBrKYx8HC8z6oiWEqwVygLntxCBt8YopRyow52ExR6uGnOLfYFF0hrDOh+XmUxobuQLmkUhxVyFzTwIINgJBmBQGYAAIzIEnVAElmC5SIKgaIZIZHbUmGRTc8xMH9wcPEXyvg-zZlhE4DIb4Aj5HyEAA */
+  /** @xstate-layout N4IgpgJg5mDOIC5QAcBOB7AVmAxgFwGUBDAGzAFkiA7ImVSnACwEsqwBiAQQCUAVAfQBCAGQDyAYQDSBfuOEBJAKIA5AQFUACgBFOvRVoDaABgC6iFOljM8zdFXMgAHogCMAVhcBOAHQB2AMwALP5u-v4AHAGevm4ANCAAnogATABsbt5GvuGpLl6+nv5Z-r4AvqXxaFi4hKQU1LRg9ERMrBwaatziABKcBIr8vNycUvLKAOL85JzKnOOK3FMj3WMDnABqnPLCnCKKxmZIIMiW1rb2R84IALQuvoGp3l5ugeGFLqnJyR7xSQhubnC3hyLn8ySMRmSbxcyU85UqGGw+GIZEoNDoDBYbHYHS6vX6g2GowmS1m80W0x6q34almm22u2E+1MDhOVhsdgcV1uMUenjcvi+yTBnkinmSv0QMQyIUCvhi0QFRkK8OOiJqKPq6KamLa7AW3FE3AOrNOHIuoG5MWS3ge4SM6TcUMCHhckoQXkC3lFMV87g8gP8qqqSNqqIaGJaWI4CnWAwInCZ-B0vE4-AAYopeD19CajmyzpzLohbkYgsCPKlwslAlCXIF3Z7vZEBf73OEgxU1dVkXU0Y1mq02N4AGZgPBDqAadX4LREPBEdgQOxgbysABu6AA1quQxq+xGdVG2qPx5Ppz28HOFwgN+gcPPzgc8xZ2ecuSW-f5vIC3LkjEq4ReO6qRVj+EReCUnipGEeTBjOYZagOurDmOE5YlOCHXouTQYKg3jICQ84jugqAALYEQhmr9pGQ6rmh55YfORC3lQm4Puaz4svmZrvsWNzykYTwAp47ipNBgRGLWjZSS43j+KkRigrCMKCsK8GXtRh6DtGa4QGQ7AvscvFFpaiBBN+DyhEBLhKWk9buk6Xr+LZLqCgBYRvBpoZadqOknsw+kcAYLiHK+hYWk45mgsCyows6Dr+IUIFyt43wAhC4lQpEZRdnuvbhn5KGroFBkGMkYXGW+plRQgFm2ukEG2TCuQNokUpvPJtapC6oHfNW4TefuhXIcew6lcF-iVQW5ofnV4mZB4sKpAUHbJL4qTutBQKiaEfVKZJWRDQVSG0bpE2GYE00mZFVxhI8SVvBtdy1nKMl+vJAGwi6EKeNEx2ITRR50XpZVuNd1W3eZJTyTW0rNX1ErtR6Lgdj+XyKTC9bFINeVUQeRVjauqBgEQEAJOmpGaoZ3HhbN-GgncP7iutcpFC8dyNmkXq1vayrRHa63lF2VDoBAcCsvjI1nW0pqQ3Ntzgt+UI9eJ0SiYK4TusEjxAQBSnRBEeupADvmjSDDEYReobYXLEUK3kAJpTkDx-QUdxQu64SBHJBR-l4ySqbjCKaQT5vnUFdv02ZNywU8vVSYEbl3JtyPyl6fvpKjWNeHCeOh9LwO6STZMU1TdRR3xMcwrWP4PCK2SeFk0RbR83pFOEfOCoCAGm2HMvDvliHiOgZGEeOYCVzVVygh9ArrQK8oKSUXu2Zk4nPFJ3xynnIc+f3RcnrhpFT1DHrBEJwoqU6ERLXEyMvBkZa+Jlv5FD7feF-5g8IfIbAkMwKAzAABGZBKaoGnMwMiRBUAJE1KfOaoJyzKi+G8B0f1bL+BAitZs4I3AQk1k6XG5QgA */
   id: "projectSaleManagerMachine",
   context: ({ input }) => ({
     projectId: input.projectId,
-    publicClient: input.publicClient,
-    walletClient: input.walletClient,
+    artblocksClient: input.artblocksClient,
     project: input.project,
   }),
   initial: "fetchingProjectData",
   on: {
-    PUBLIC_CLIENT_AVAILABLE: [
+    ART_BLOCKS_CLIENT_UPDATED: [
       {
         actions: [
           {
-            type: "assignPublicClient",
+            type: "assignArtBlocksClient",
             params: ({ event }) => ({
-              publicClient: event.data,
+              artblocksClient: event.artblocksClient,
             }),
           },
         ],
-      },
-    ],
-
-    PUBLIC_CLIENT_UNAVAILABLE: [
-      {
-        actions: [
-          {
-            type: "assignPublicClient",
-            params: { publicClient: undefined },
-          },
-        ],
-      },
-    ],
-
-    WALLET_CLIENT_AVAILABLE: {
-      actions: {
-        type: "assignWalletClient",
-        params: ({ event }) => ({
-          walletClient: event.data,
-        }),
-      },
-    },
-
-    WALLET_CLIENT_UNAVAILABLE: [
-      {
-        actions: {
-          type: "assignWalletClient",
-          params: { walletClient: undefined },
-        },
       },
     ],
 
@@ -420,7 +367,10 @@ export const projectSaleManagerMachine = setup({
     fetchingProjectData: {
       invoke: {
         src: "fetchProjectDetails",
-        input: ({ context }) => ({ projectId: context.projectId }),
+        input: ({ context }) => ({
+          projectId: context.projectId,
+          artblocksClient: context.artblocksClient,
+        }),
         onDone: [
           {
             target: "idle",
@@ -498,3 +448,9 @@ export const projectSaleManagerMachine = setup({
     projectIneligibleForPrimarySale: {},
   },
 });
+
+export {
+  deserializeSnapshot,
+  getSerializedSnapshotWithProjectData,
+  generateMinterDescription, // TODO: This should be moved to a more appropriate location, general utils
+} from "./utils";

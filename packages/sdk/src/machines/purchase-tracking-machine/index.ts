@@ -1,9 +1,10 @@
 import { setup, assign, fromPromise, enqueueActions, emit } from "xstate";
 import { GetTokenDetailsQuery } from "../../generated/graphql";
-import { Hex, WalletClient, PublicClient, parseEventLogs } from "viem";
-import { iGenArt721CoreContractV3BaseAbi } from "../abis/iGenArt721CoreContractV3BaseAbi";
-import { tokenPollingMachine } from "./tokenPollingMachine";
-import { getMessageFromError } from "../helpers";
+import { Hex, parseEventLogs } from "viem";
+import { iGenArt721CoreContractV3BaseAbi } from "../../../abis/iGenArt721CoreContractV3BaseAbi";
+import { tokenPollingMachine } from "../purchase-tracking-manager-machine/token-polling-machine";
+import { getMessageFromError } from "../utils";
+import { ArtBlocksClient } from "../..";
 
 /**
  * TODO
@@ -18,7 +19,7 @@ import { getMessageFromError } from "../helpers";
 export type TokenDetails = GetTokenDetailsQuery["tokens_metadata_by_pk"];
 
 export type PurchaseTrackingMachineContext = {
-  publicClient: PublicClient;
+  artblocksClient: ArtBlocksClient;
   purchaseTransactionHash: Hex;
   mintedTokenId?: string;
   mintedToken?: TokenDetails;
@@ -29,8 +30,8 @@ export const purchaseTrackingMachine = setup({
   types: {
     input: {} as {
       purchaseTransactionHash: Hex;
-      publicClient: PublicClient;
-      walletClient?: WalletClient;
+      artblocksClient: ArtBlocksClient;
+      marketplaceUrl?: string;
     },
     context: {} as PurchaseTrackingMachineContext,
     emitted: {} as
@@ -45,11 +46,12 @@ export const purchaseTrackingMachine = setup({
         input,
       }: {
         input: {
-          publicClient: PublicClient;
+          artblocksClient: ArtBlocksClient;
           purchaseTransactionHash: Hex;
         };
       }) => {
-        const { publicClient, purchaseTransactionHash } = input;
+        const { purchaseTransactionHash, artblocksClient } = input;
+        const publicClient = artblocksClient.getPublicClient();
 
         if (!publicClient) {
           throw new Error("Public client not found");
@@ -83,7 +85,7 @@ export const purchaseTrackingMachine = setup({
         } catch (e) {
           if (e instanceof Error) {
             throw new Error(
-              "Purchase transaction reverted with error: " + e.message
+              `Purchase transaction reverted with error: ${e.message}`
             );
           }
 
@@ -123,7 +125,7 @@ export const purchaseTrackingMachine = setup({
   /** @xstate-layout N4IgpgJg5mDOIC5QAcCuAnAxgCwIazABV1dMBrASwDsoBZU7asAOlwHdcKAXaqABQw58YAMIB7KgDMK6ALa4eEgMQQJLagDcxZFmix4CxUpRr0cTVh268B+4eKkz5iqgk1jMCihIDaABgBdfwDEFDFYawlQkAAPRABaAE4AFmTmAHYADgAmAEZMzIA2IoBmXL90gBoQAE9EZLLmROzM5NyS1MLEivT0gF8+6r0hQxJyXjNGKhZ2Th4aWxHRCWk5L2UwdHQxdGZkABsFSR3ZPcEDIjGTOgYLWesF8-sVp3XXd08XYODo5HDIqjROIIJKpZi5XJtRLddIAVhy8OqdQQeVyzGyFRKsPSLRKJT8zWyAyGT1Gxgmt2mljmvEI2jAVAAyjUqJgVGpmO4dGc7GTxqZKTMrPMoHSdEyWZg3FQtJ9vFRvoFfv8XECEtlmB1YX5IVkCSUEVVavVGs1Wu1OjDEsSQMMLkZ+TdzFT7iKxQzmaz2VSubpSZdyQLnUKaTR3RLWdLZW9vrkQkhbSr5WqUZr8XDetluok4e0kYhUejMdjcfjCQNBiAqGIIHBfv6HddJkxlRFVQngfF2plYcxCskc+lkj2-LDYcl8whcnk+5kSs1ugae-jcja7cJGxTg9SHvx-Q5Vs5kwm-m3j6BO+0Suk+wPesPtWOJ8aEG1Ck0-APCrkx4VP-2SjXBsri3KYQ13cNPUwVsARTeJYWyDUf3abJhxKPIMMnN8PwHZptUydJ8lQoDeQDR1mypLh6SoAAlMBcAgZEwjPKIO0QbU-CaApYQtVIs2SWEsKzHDoT8Ippx-XoSKWTcgzA5hNm2dAYPbC8EmHDVMhSVIUi6McSkKQSXwxRJwTnRIOi6dJvxxWEKz6IA */
   id: "purchaseTrackingMachine",
   context: ({ input }) => ({
-    publicClient: input.publicClient,
+    artblocksClient: input.artblocksClient,
     purchaseTransactionHash: input.purchaseTransactionHash,
   }),
   initial: "awaitingPurchaseConfirmation",
@@ -133,7 +135,7 @@ export const purchaseTrackingMachine = setup({
       invoke: {
         src: "awaitPurchaseConfirmations",
         input: ({ context }) => ({
-          publicClient: context.publicClient,
+          artblocksClient: context.artblocksClient,
           purchaseTransactionHash: context.purchaseTransactionHash,
         }),
         onDone: {
@@ -164,6 +166,7 @@ export const purchaseTrackingMachine = setup({
         src: "tokenPollingMachine",
         input: ({ context }) => ({
           tokenId: context.mintedTokenId,
+          artblocksClient: context.artblocksClient,
         }),
         onDone: [
           {

@@ -2,7 +2,9 @@ import { PublicClient, WalletClient } from "viem";
 import { FormBlueprint, SubmissionStatusEnum, SubmissionStatus } from "./types";
 import { generateProjectMinterConfigurationForms } from "./minter-configuration";
 import { ProjectMinterConfigurationData } from "./minter-configuration/types";
-import { GraphQLClient } from "graphql-request";
+import { GraphQLClient, RequestDocument, Variables } from "graphql-request";
+import { TypedDocumentNode } from "@graphql-typed-document-node/core";
+import { VariablesAndRequestHeadersArgs } from "graphql-request/build/esm/types";
 
 export type ArtBlocksClientOptions = {
   graphqlEndpoint: string;
@@ -18,7 +20,11 @@ export type ArtBlocksClientContext = {
   userIsStaff: boolean;
 };
 
-export default class ArtBlocksClient {
+type ArtBlocksClientContextWithPublicClient = ArtBlocksClientContext & {
+  publicClient: PublicClient;
+};
+
+export class ArtBlocksClient {
   context: ArtBlocksClientContext;
 
   constructor({
@@ -67,12 +73,30 @@ export default class ArtBlocksClient {
     });
   }
 
+  getPublicClient(): PublicClient | undefined {
+    return this.context.publicClient;
+  }
+
   setPublicClient(publicClient: PublicClient | undefined) {
     this.context.publicClient = publicClient;
   }
 
   setWalletClient(walletClient: WalletClient | undefined) {
     this.context.walletClient = walletClient;
+  }
+
+  getWalletClient() {
+    return this.context.walletClient;
+  }
+
+  async graphqlRequest<T, V extends Variables = Variables>(
+    document: RequestDocument | TypedDocumentNode<T, V>,
+    ...variablesAndRequestHeaders: VariablesAndRequestHeadersArgs<V>
+  ): Promise<T> {
+    return this.context.graphqlClient.request(
+      document,
+      ...variablesAndRequestHeaders
+    );
   }
 
   async getProjectMinterConfigurationContext(projectId: string) {
@@ -103,7 +127,7 @@ export default class ArtBlocksClient {
     const { forms, data } = await generateProjectMinterConfigurationForms({
       projectId,
       onConfigurationChange: notifySubscribers,
-      clientContext: this.context,
+      clientContext: this.context as ArtBlocksClientContextWithPublicClient,
     });
 
     return {
@@ -113,10 +137,16 @@ export default class ArtBlocksClient {
 
       // Provide a method to refresh the configuration
       refresh: async () => {
+        if (!this.context.publicClient) {
+          throw new Error(
+            "A publicClient is required to get project minter configuration context"
+          );
+        }
+
         await generateProjectMinterConfigurationForms({
           projectId,
           onConfigurationChange: notifySubscribers,
-          clientContext: this.context,
+          clientContext: this.context as ArtBlocksClientContextWithPublicClient,
         });
       },
 

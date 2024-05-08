@@ -1,6 +1,7 @@
-import { Hex, WalletClient, PublicClient } from "viem";
+import { Hex } from "viem";
 import { setup, assign, ActorRefFrom } from "xstate";
-import { purchaseTrackingMachine } from "./purchaseTrackingMachine";
+import { purchaseTrackingMachine } from "../purchase-tracking-machine";
+import { ArtBlocksClient } from "../..";
 
 /**
  * TODO
@@ -8,9 +9,8 @@ import { purchaseTrackingMachine } from "./purchaseTrackingMachine";
  */
 
 type PurchaseTrackingManagerManagerMachineContext = {
-  walletClient?: WalletClient;
-  publicClient?: PublicClient;
-  txHash?: string;
+  artblocksClient: ArtBlocksClient;
+  marketplaceUrl?: string;
   purchaseTrackingMachines: Record<
     string,
     ActorRefFrom<typeof purchaseTrackingMachine>
@@ -19,18 +19,8 @@ type PurchaseTrackingManagerManagerMachineContext = {
 
 type PurchaseTrackingManagerMachineEvents =
   | {
-      type: "PUBLIC_CLIENT_AVAILABLE";
-      data: PublicClient;
-    }
-  | {
-      type: "PUBLIC_CLIENT_UNAVAILABLE";
-    }
-  | {
-      type: "WALLET_CLIENT_AVAILABLE";
-      data: WalletClient;
-    }
-  | {
-      type: "WALLET_CLIENT_UNAVAILABLE";
+      type: "ART_BLOCKS_CLIENT_UPDATED";
+      artblocksClient: ArtBlocksClient;
     }
   | {
       type: "PURCHASE_INITIATED";
@@ -45,22 +35,29 @@ export const purchaseTrackingManagerMachine = setup({
   types: {
     context: {} as PurchaseTrackingManagerManagerMachineContext,
     events: {} as PurchaseTrackingManagerMachineEvents,
+    input: {} as {
+      artblocksClient: ArtBlocksClient;
+      marketplaceUrl?: string;
+    },
   },
   actors: {
     purchaseTrackingMachine,
   },
   actions: {
-    assignPublicClient: assign({
-      publicClient: (_, params: { publicClient?: PublicClient }) => {
-        return params.publicClient;
-      },
+    assignArtblocksClient: assign({
+      artblocksClient: (
+        _,
+        { artblocksClient }: { artblocksClient: ArtBlocksClient }
+      ) => artblocksClient,
     }),
     spawnPurchaseTrackingMachine: assign({
       purchaseTrackingMachines: (
         { spawn, context },
         params: { txHash: Hex }
       ) => {
-        if (!context.publicClient) {
+        const publicClient = context.artblocksClient.getPublicClient();
+
+        if (!publicClient) {
           return context.purchaseTrackingMachines;
         }
 
@@ -70,8 +67,9 @@ export const purchaseTrackingManagerMachine = setup({
             id: params.txHash,
             systemId: params.txHash,
             input: {
-              publicClient: context.publicClient,
+              artblocksClient: context.artblocksClient,
               purchaseTransactionHash: params.txHash,
+              marketplaceUrl: context.marketplaceUrl,
             },
           }),
         };
@@ -79,25 +77,23 @@ export const purchaseTrackingManagerMachine = setup({
     }),
   },
 }).createMachine({
-  /** @xstate-layout N4IgpgJg5mDOIC5QAcCuAnAxgCwIazABV1dMBrASwDsoBZXK3GdenasAYgAUBVAIQAyASQDCAfRHCAogDlCYgIIA1BUIELBUgNoAGALqIUAe1gUALhSNVDIAB6IA7ADYAdAFYAzE4cAWB258ATicnDwAOJwAaEABPRB8dFwAmD1SwgEZAjwCQ8IBfPOi0LDwCYlJKGnpGZlZsdm5+YXFJIVl5HhllVXVNXQMkEGQTc0trQfsEAFoPdKSXH3CfMMD0sJ0dHz9ouIQE5NTwzOyfXOcCoowcfCIScmo6BiYwFlJ6qk5eACURAAkFADKUjEQhkQkIQgUhCkABF+jZhqYLFYbJMpp4XB4kk4dOsAg4kqcdF4dogkoE3AdMkkHIEkuk5ukHAVCiAqEYIHAEVdSrcKg9qs9XmwPgiRsjxqA0XMfC4HL4Mm55RTAnSwqSEOknOkXJsHJtCcSnDkWXkgA */
+  /** @xstate-layout N4IgpgJg5mDOIC5QAcCuAnAxgCwIazABV1dMBrASwDsoBZXK3GdenasAYgEEAlQgIQAyAeQDCAaQDKAfVGCAkgFEAcoWkBVAAoARLoUXaA2gAYAuohQB7WBQAuFS1QsgAHogBMAdgCsAOgCMnv4AHABsoQAsAMz+3u5x3gA0IACeiP7uwb7BUZnGxgCcQe5RURERAL4VyWhYeATEpJQ09IzMrNjsHJrqPKIAElySitLyyvKE8noGJuZIIMjWdg5O824IALTeUb65ocbBxt4Rnu4R+1GhyWkI7gV+Jf4FXs-+GYFV1SBUlhBwzrUcPgiCRyNQ6AwmGAWKROlQwAClvZHM51hsMhFfJ5PBFgrFsfcCs9gtd0qF-L5jCcqWdjJdjqFPhUgA */
   id: "purchaseTrackingManagerMachine",
-  context: {
+  context: ({ input }) => ({
+    artblocksClient: input.artblocksClient,
+    marketplaceUrl: input.marketplaceUrl,
     purchaseTrackingMachines: {},
-  },
+  }),
   on: {
-    PUBLIC_CLIENT_AVAILABLE: {
-      actions: {
-        type: "assignPublicClient",
-        params({ event }) {
-          return { publicClient: event.data };
+    ART_BLOCKS_CLIENT_UPDATED: {
+      actions: [
+        {
+          type: "assignArtblocksClient",
+          params: ({ event }) => ({
+            artblocksClient: event.artblocksClient,
+          }),
         },
-      },
-    },
-    PUBLIC_CLIENT_UNAVAILABLE: {
-      actions: {
-        type: "assignPublicClient",
-        params: { publicClient: undefined },
-      },
+      ],
     },
     PURCHASE_INITIATED: {
       actions: [

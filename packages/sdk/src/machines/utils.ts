@@ -1,17 +1,9 @@
-import { Minter_Type_Names_Enum } from "@/gql/graphql";
-import { GraphQLClient } from "graphql-request";
+import { Minter_Type_Names_Enum } from "../generated/graphql";
 import {
   BaseError,
   TransactionExecutionError,
   UserRejectedRequestError,
 } from "viem";
-
-/**
- * GraphQL client for interacting with the Art Blocks API.
- */
-export const abGraphQLClient = new GraphQLClient(
-  process.env.NEXT_PUBLIC_HASURA_GRAPHQL_ENDPOINT as string
-);
 
 /**
  * List of supported minter types for the purchase machine. This is expected
@@ -88,11 +80,20 @@ export function isHolderMinterType(
  * @returns A boolean indicating whether the error is due to a user-rejected transaction.
  */
 export function isUserRejectedError(error: unknown) {
+  console.log("error", error);
   if (error instanceof TransactionExecutionError) {
     return Boolean(
       error.cause.walk((e) => e instanceof UserRejectedRequestError)
     );
   }
+
+  if (
+    error instanceof Error &&
+    error.message.includes("User denied transaction")
+  ) {
+    return true;
+  }
+
   return false;
 }
 
@@ -110,8 +111,18 @@ export function isUserRejectedError(error: unknown) {
  * @returns A string containing the error message or a fallback message if the error is unrecognized.
  */
 export function getMessageFromError(error: unknown, fallbackMessage?: string) {
+  console.log("error", error);
   // For viem errors, use the short message
   if (error instanceof BaseError) {
+    return error.shortMessage;
+  }
+
+  if (
+    typeof error === "object" &&
+    error &&
+    "shortMessage" in error &&
+    typeof error.shortMessage === "string"
+  ) {
     return error.shortMessage;
   }
 

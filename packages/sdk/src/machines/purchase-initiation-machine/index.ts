@@ -1,21 +1,22 @@
-import { Hex, PublicClient, WalletClient } from "viem";
+import { Hex } from "viem";
 import { ActorRefFrom, AnyActorRef, assign, fromPromise, setup } from "xstate";
-import { projectSaleManagerMachine } from "..";
+import { projectSaleManagerMachine } from "../project-sale-manager-machine";
 import {
   getMessageFromError,
   isHolderMinterType,
   isMerkleMinterType,
   isUserRejectedError,
-} from "../../helpers";
-import { ProjectDetails } from "../helpers";
-import { liveSaleDataPollingMachine } from "../liveSaleDataPollingMachine";
+} from "../utils";
+import { ProjectDetails } from "../project-sale-manager-machine/utils";
+import { liveSaleDataPollingMachine } from "../project-sale-manager-machine/live-sale-data-polling-machine";
 import {
   getHolderMinterUserPurchaseContext,
   getMerkleMinterUserPurchaseContext,
   initiateBasePurchase,
   initiateHolderMinterPurchase,
   initiateMerkleMinterPurchase,
-} from "./helpers";
+} from "./utils";
+import { ArtBlocksClient } from "../..";
 
 export type PurchaseInitiationMachineEvents =
   | {
@@ -36,8 +37,7 @@ type AdditionalPurchaseData = {
 };
 
 export type PurchaseInitiationMachineContext = {
-  publicClient: PublicClient;
-  walletClient: WalletClient;
+  artblocksClient: ArtBlocksClient;
   project: NonNullable<ProjectDetails>;
   projectSaleManagerMachine: AnyActorRef; // This is necessary to avoid circular dependencies
   purchaseToAddress?: Hex;
@@ -54,7 +54,7 @@ export type PurchaseInitiationMachineContextWithFullTypes =
 
 export type PurchaseInitiationMachineInput = Pick<
   PurchaseInitiationMachineContext,
-  "publicClient" | "walletClient" | "project" | "projectSaleManagerMachine"
+  "artblocksClient" | "project" | "projectSaleManagerMachine"
 >;
 
 export type UserPurchaseContext =
@@ -113,7 +113,7 @@ export const purchaseInitiationMachine = setup({
   types: {
     input: {} as Pick<
       PurchaseInitiationMachineContext,
-      "project" | "publicClient" | "walletClient" | "projectSaleManagerMachine"
+      "project" | "artblocksClient" | "projectSaleManagerMachine"
     >,
     context: {} as PurchaseInitiationMachineContext,
     events: {} as PurchaseInitiationMachineEvents,
@@ -125,16 +125,19 @@ export const purchaseInitiationMachine = setup({
       }: {
         input: Pick<
           PurchaseInitiationMachineContext,
-          | "walletClient"
-          | "publicClient"
-          | "project"
-          | "projectSaleManagerMachine"
+          "artblocksClient" | "project" | "projectSaleManagerMachine"
         >;
       }): Promise<UserPurchaseContext> => {
-        const { walletClient, project } = input;
+        const { artblocksClient, project } = input;
+        const publicClient = artblocksClient.getPublicClient();
+        const walletClient = artblocksClient.getWalletClient();
+
+        if (!publicClient) {
+          throw new Error("Public client unavailable");
+        }
 
         // This shouldn't happen but is necessary for type checking
-        if (!walletClient.account) {
+        if (!walletClient?.account) {
           throw new Error("Wallet client not connected");
         }
 
@@ -161,8 +164,7 @@ export const purchaseInitiationMachine = setup({
       }: {
         input: Pick<
           PurchaseInitiationMachineContext,
-          | "publicClient"
-          | "walletClient"
+          | "artblocksClient"
           | "project"
           | "projectSaleManagerMachine"
           | "purchaseToAddress"
@@ -257,8 +259,7 @@ export const purchaseInitiationMachine = setup({
   /** @xstate-layout N4IgpgJg5mDOIC5QAcCuAnAxgCwIazAEkA7ASwBdTdKB7YgWVx1OLAGIAlAUQGUuAVANoAGALqIUNWBVJ0JIAB6IAtAGZhATgB0AdlUAOfRoCMAFgBsO4auPnTAGhABPRMYBMAVi3HNxo3f03a1UdAF9QxzQsPAISGWpZBiZsFjAtGHJKYigAVQJ0AAUMHHwwLgAbUihSACNSSvInAEFiCABhOnIwBXI2CDo0lgA3GgBrNKiS2LJKBLpGZlZ0sEyWXPyi6NKKqtr6imbWjuIunoRhmkw54hFRW-lkKRk5JEVXYy8-DWFjVVVTfQecz6czmRwuBAWLwaPQ6HQaQKeDRuDThSLFGJEGZUWhJRZpDJZdZgQoY7aVap1BqHdqdbq9fpLC7jLSTTFxWa4hYpJaEtZ5EmbKZlCl7aktWknennYgjK6426CYziV6PaS4+RKBC2YxaUyqb5mRHCPQOZyuNzmLTmXzCNwfIE6TyqNEgNmlDk4xLc1LLVbZAWkrYEHaU-aNCXHU69EnoGjoVnlagAM3jAFtWWTpvEuclfXyAxssyLdlSDpG6WcLvLEoqxA8nhrXlr7do7aYNOYDeY3H8PADwYh9DYtCYjH5+3aQWEIm7i57rj6lugwLgIE4AGLxoWYtiEAByhH4hCa-C4AH0CjkOG0ABJNPj3VWNxKa96dvUGNxWVTf1QeYxBwQS1VC0H4bB0UxTDhO07Fdd1s05b08yZbEEmyHdSj6AYtGZCZ5zQ3N8Vwwi1kwggZTla46xVSR1VfZt3ncbwbRhDxkV-ExVCA-UdD1Dt9Q8FEdF+YdTHggic2Q4iWCkjDizYWN40TFN00zYMsSk+YUMGUj5I0yjLmosQnzo55iDfbV3FAkEfmRDx9A+E0gPMIEwJBHVhECOxXIkjSFyInldLkqByPYJSE2QJNyFTdAMwQzSkO0mS9NC4tDJrOhFWVBt6JeUAtWMdw3E-Nxv0tfRTCEnQwXNBBINMPUEXtGxQUcnQPHCWdiBoCA4AeSSkrxILcvMyy1Eg3Rf1MTwqrhUx3CAoqtH+djQVc8xkVscTZwSgLpKCv0iUDMLQzFcsjkrchRqbAqVF-K09DcGb+w8ebFrqixQI0DxrH0axLE2hy-OFfbksOlc103bdixuhi7oQRzQKBX9LV+1bjB0Hj9D4qrrChUEyv+cwQfZUjwd9WSkP04U4fyt5tRtUC8aglEXuMZEeK7Ud0ZsX8HJMN7SY9cnht9CK6YsxjGb0a0-AWu12KBDQzQhSq+MtYQAUBYQ3pxzrdsGr0KaWVB8hIMBRRqcowC3INaefPKpYRj4cZWowOtUVy3u-DQgIRLRKrW9wtasYcSa6oA */
   id: "purchaseInitiationMachine",
   context: ({ input }) => ({
-    publicClient: input.publicClient,
-    walletClient: input.walletClient,
+    artblocksClient: input.artblocksClient,
     project: input.project,
     projectSaleManagerMachine: input.projectSaleManagerMachine,
   }),
@@ -276,8 +277,7 @@ export const purchaseInitiationMachine = setup({
       invoke: {
         src: "getUserPurchaseEligibilityAndContext",
         input: ({ context }) => ({
-          walletClient: context.walletClient,
-          publicClient: context.publicClient,
+          artblocksClient: context.artblocksClient,
           project: context.project,
           projectSaleManagerMachine: context.projectSaleManagerMachine,
         }),
@@ -341,8 +341,7 @@ export const purchaseInitiationMachine = setup({
       invoke: {
         src: "initiatePurchase",
         input: ({ context }) => ({
-          publicClient: context.publicClient,
-          walletClient: context.walletClient,
+          artblocksClient: context.artblocksClient,
           project: context.project,
           purchaseToAddress: context.purchaseToAddress,
           projectSaleManagerMachine: context.projectSaleManagerMachine,
@@ -377,6 +376,7 @@ export const purchaseInitiationMachine = setup({
             actions: {
               type: "assignErrorMessageFromError",
               params: ({ event }) => {
+                console.log("event", event);
                 return {
                   error: event.error,
                 };

@@ -1,12 +1,8 @@
 import { ReceiptSettlementDataFragment } from "../../generated/graphql";
 import { graphql } from "../../generated/index";
-import { WalletClient } from "viem";
-import { assign, enqueueActions, fromPromise, sendParent, setup } from "xstate";
-import {
-  abGraphQLClient,
-  getMessageFromError,
-  SUPPORTED_MINTER_TYPES,
-} from "../helpers";
+import { assign, fromPromise, sendParent, setup } from "xstate";
+import { getMessageFromError, SUPPORTED_MINTER_TYPES } from "../utils";
+import { ArtBlocksClient } from "../..";
 
 /**
  * TODO
@@ -47,7 +43,7 @@ export const getReceiptsWithExcessSettlementFundsForUserDocument = graphql(
       receipt_metadata(
         where: {
           user_address: { _eq: $userAddress }
-          excess_settlement_funds: { _neq: "0" }
+          # excess_settlement_funds: { _neq: "0" }
           minter: { type: { type: { _in: $supportedMinterTypes } } }
           project_minter_configuration: {
             _or: [
@@ -75,9 +71,9 @@ const MAX_ERROR_COUNT = 5;
 
 export const receiptPollingMachine = setup({
   types: {
-    input: {} as { walletClient: WalletClient },
+    input: {} as { artblocksClient: ArtBlocksClient },
     context: {} as {
-      walletClient: WalletClient;
+      artblocksClient: ArtBlocksClient;
       receipts?: ReceiptSettlementDataFragment[];
       errorMessageCounts: Record<string, number>;
     },
@@ -87,14 +83,17 @@ export const receiptPollingMachine = setup({
       async ({
         input,
       }: {
-        input: { walletClient: WalletClient };
+        input: { artblocksClient: ArtBlocksClient };
       }): Promise<ReceiptSettlementDataFragment[]> => {
-        const userAddress = input.walletClient.account?.address;
+        const { artblocksClient } = input;
+        const walletClient = artblocksClient.getWalletClient();
+
+        const userAddress = walletClient?.account?.address;
         if (!userAddress) {
           throw new WalletClientUnavailableError();
         }
 
-        const res = await abGraphQLClient.request(
+        const res = await artblocksClient.graphqlRequest(
           getReceiptsWithExcessSettlementFundsForUserDocument,
           {
             userAddress: userAddress.toLowerCase(),
@@ -107,10 +106,6 @@ export const receiptPollingMachine = setup({
     ),
   },
   actions: {
-    assignWalletClient: assign({
-      walletClient: (_, params: { walletClient: WalletClient }) =>
-        params.walletClient,
-    }),
     assignReceipts: assign({
       receipts: (_, params: { receipts?: ReceiptSettlementDataFragment[] }) =>
         params.receipts,
@@ -149,7 +144,7 @@ export const receiptPollingMachine = setup({
   id: "receiptPollingMachine",
   initial: "fetchingReceipts",
   context: ({ input }) => ({
-    walletClient: input.walletClient,
+    artblocksClient: input.artblocksClient,
     errorMessageCounts: {},
   }),
   input: {},
@@ -160,7 +155,7 @@ export const receiptPollingMachine = setup({
       invoke: {
         src: "fetchReceiptsForUser",
         input: ({ context }) => ({
-          walletClient: context.walletClient,
+          artblocksClient: context.artblocksClient,
         }),
         onDone: {
           description:

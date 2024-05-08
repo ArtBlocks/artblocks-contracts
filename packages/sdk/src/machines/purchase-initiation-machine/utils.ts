@@ -13,23 +13,19 @@ import {
   PurchaseInitiationMachineContextWithFullTypes,
   UserPurchaseContext,
 } from ".";
-import { minterSetPriceMerkleV5Abi } from "../../abis/minterSetPriceMerkleV5Abi";
-import { iSharedMinterSimplePurchaseV0Abi } from "../../abis/iSharedMinterSimplePurchaseV0Abi";
-import {
-  abGraphQLClient,
-  isHolderMinterType,
-  isMerkleMinterType,
-} from "../../helpers";
-import { graphql } from "../../../generated/index";
-import { iSharedMinterHolderV0Abi } from "../../abis/iSharedMinterHolderV0Abi";
+import { minterSetPriceMerkleV5Abi } from "../../../abis/minterSetPriceMerkleV5Abi";
+import { iSharedMinterSimplePurchaseV0Abi } from "../../../abis/iSharedMinterSimplePurchaseV0Abi";
+import { isHolderMinterType, isMerkleMinterType } from "../utils";
+import { graphql } from "../../generated/index";
+import { iSharedMinterHolderV0Abi } from "../../../abis/iSharedMinterHolderV0Abi";
 import {
   MinterConfigurationDetailsFragment,
   MinterDetailsFragment,
   ProjectDetailsFragment,
-} from "../../../generated/graphql";
-import { LiveSaleData } from "../helpers";
-import { iDelegationRegistryAbi } from "../../abis/iDelegationRegistryAbi";
-import { DELEGATION_REGISTRY_ADDRESS } from "../../../utils/addresses";
+} from "../../generated/graphql";
+import { LiveSaleData } from "../project-sale-manager-machine/utils";
+import { iDelegationRegistryAbi } from "../../../abis/iDelegationRegistryAbi";
+import { DELEGATION_REGISTRY_ADDRESS } from "../../utils/addresses";
 
 /** Shared Helpers **/
 type WalletClientWithAccount = WalletClient & {
@@ -42,10 +38,18 @@ type ProjectWithValidMinterConfiguration = ProjectDetailsFragment & {
   };
 };
 
+function assertPublicClientAvailable(
+  publicClient?: PublicClient
+): asserts publicClient is PublicClient {
+  if (!publicClient) {
+    throw new Error("Public client unavailable");
+  }
+}
+
 function assertWalletClientWithAccount(
-  walletClient: WalletClient
+  walletClient?: WalletClient
 ): asserts walletClient is WalletClientWithAccount {
-  if (!walletClient.account) {
+  if (!walletClient?.account) {
     throw new Error("Wallet client not connected");
   }
 }
@@ -98,13 +102,13 @@ const getUserTokensInAllowlistDocument = graphql(/* GraphQL */ `
 `);
 
 export async function getHolderMinterUserPurchaseContext(
-  input: Pick<
-    PurchaseInitiationMachineContext,
-    "walletClient" | "project" | "publicClient"
-  >
+  input: Pick<PurchaseInitiationMachineContext, "project" | "artblocksClient">
 ): Promise<UserPurchaseContext> {
-  const { walletClient, project, publicClient } = input;
+  const { project, artblocksClient } = input;
+  const walletClient = artblocksClient.getWalletClient();
+  const publicClient = artblocksClient.getPublicClient();
 
+  assertPublicClientAvailable(publicClient);
   assertWalletClientWithAccount(walletClient);
   assertProjectWithValidMinterConfiguration(project);
 
@@ -131,7 +135,7 @@ export async function getHolderMinterUserPurchaseContext(
     ...userVaults,
   ];
 
-  const userTokensRes = await abGraphQLClient.request(
+  const userTokensRes = await artblocksClient.graphqlRequest(
     getUserTokensInAllowlistDocument,
     {
       allowedProjectIds,
@@ -194,8 +198,7 @@ async function getDelegateVaultsForAccount(
 export async function initiateHolderMinterPurchase(
   input: Pick<
     PurchaseInitiationMachineContextWithFullTypes,
-    | "publicClient"
-    | "walletClient"
+    | "artblocksClient"
     | "project"
     | "projectSaleManagerMachine"
     | "purchaseToAddress"
@@ -203,16 +206,18 @@ export async function initiateHolderMinterPurchase(
   >
 ) {
   const {
-    walletClient,
-    publicClient,
+    artblocksClient,
     project,
     projectSaleManagerMachine,
     additionalPurchaseData,
   } = input;
 
+  const walletClient = artblocksClient.getWalletClient();
+  const publicClient = artblocksClient.getPublicClient();
   const liveSaleData =
     projectSaleManagerMachine.getSnapshot().context.liveSaleData;
 
+  assertPublicClientAvailable(publicClient);
   assertWalletClientWithAccount(walletClient);
   assertProjectWithValidMinterConfiguration(project);
   assertLiveSaleData(liveSaleData);
@@ -297,13 +302,13 @@ function generateUserMerkleProof(addresses: Hex[], userAddress: Hex): Hex[] {
 }
 
 export async function getMerkleMinterUserPurchaseContext(
-  input: Pick<
-    PurchaseInitiationMachineContext,
-    "walletClient" | "project" | "publicClient"
-  >
+  input: Pick<PurchaseInitiationMachineContext, "project" | "artblocksClient">
 ): Promise<UserPurchaseContext> {
-  const { walletClient, project, publicClient } = input;
+  const { project, artblocksClient } = input;
+  const walletClient = artblocksClient.getWalletClient();
+  const publicClient = artblocksClient.getPublicClient();
 
+  assertPublicClientAvailable(publicClient);
   assertWalletClientWithAccount(walletClient);
   assertProjectWithValidMinterConfiguration(project);
 
@@ -438,8 +443,7 @@ export async function getMerkleMinterUserPurchaseContext(
 export async function initiateMerkleMinterPurchase(
   input: Pick<
     PurchaseInitiationMachineContextWithFullTypes,
-    | "publicClient"
-    | "walletClient"
+    | "artblocksClient"
     | "project"
     | "projectSaleManagerMachine"
     | "purchaseToAddress"
@@ -447,16 +451,18 @@ export async function initiateMerkleMinterPurchase(
   >
 ) {
   const {
-    walletClient,
-    publicClient,
+    artblocksClient,
     project,
     projectSaleManagerMachine,
     additionalPurchaseData,
   } = input;
 
+  const walletClient = artblocksClient.getWalletClient();
+  const publicClient = artblocksClient.getPublicClient();
   const liveSaleData =
     projectSaleManagerMachine.getSnapshot().context.liveSaleData;
 
+  assertPublicClientAvailable(publicClient);
   assertWalletClientWithAccount(walletClient);
   assertProjectWithValidMinterConfiguration(project);
   assertLiveSaleData(liveSaleData);
@@ -528,19 +534,20 @@ export async function initiateMerkleMinterPurchase(
 export async function initiateBasePurchase(
   input: Pick<
     PurchaseInitiationMachineContextWithFullTypes,
-    | "publicClient"
-    | "walletClient"
+    | "artblocksClient"
     | "project"
     | "projectSaleManagerMachine"
     | "purchaseToAddress"
   >
 ): Promise<Hex> {
-  const { walletClient, publicClient, project, projectSaleManagerMachine } =
-    input;
+  const { artblocksClient, project, projectSaleManagerMachine } = input;
 
+  const walletClient = artblocksClient.getWalletClient();
+  const publicClient = artblocksClient.getPublicClient();
   const liveSaleData =
     projectSaleManagerMachine.getSnapshot().context.liveSaleData;
 
+  assertPublicClientAvailable(publicClient);
   assertWalletClientWithAccount(walletClient);
   assertProjectWithValidMinterConfiguration(project);
   assertLiveSaleData(liveSaleData);

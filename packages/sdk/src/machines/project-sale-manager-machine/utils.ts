@@ -1,9 +1,10 @@
-import { WalletClient, PublicClient } from "viem";
 import { Snapshot, createActor } from "xstate";
 import { projectSaleManagerMachine, ProjectSaleManagerMachineContext } from ".";
 import { graphql } from "../../generated/index";
 import { GetProjectDetailsQuery } from "../../generated/graphql";
-import { isSupportedMinterType } from "../helpers";
+import { isSupportedMinterType } from "../utils";
+import { ArtBlocksClient } from "../..";
+import { formatEther } from "viem";
 
 export class ProjectIneligibleForPrimarySaleError extends Error {
   constructor(message: string) {
@@ -12,6 +13,7 @@ export class ProjectIneligibleForPrimarySaleError extends Error {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getProjectDetailsFragmentsDocument = graphql(/* GraphQL */ `
   fragment ProjectDetails on projects_metadata {
     id
@@ -120,20 +122,22 @@ export function isProjectIneligibleForPrimarySale(
 export function isProjectPurchasable(
   context: ProjectSaleManagerMachineContext
 ) {
-  if (!context.liveSaleData) {
+  const { artblocksClient, project, liveSaleData } = context;
+  const walletClient = artblocksClient.getWalletClient();
+
+  if (!liveSaleData) {
     return false;
   }
 
-  if (!context.walletClient || !context.walletClient.account) {
+  if (!walletClient || !walletClient.account) {
     return false;
   }
 
-  const { project } = context;
   if (!project) {
     return false;
   }
 
-  if (isProjectComplete(project, context.liveSaleData)) {
+  if (isProjectComplete(project, liveSaleData)) {
     return false;
   }
 
@@ -143,9 +147,8 @@ export function isProjectPurchasable(
 
   // If the project is paused, only allow the artist to purchase
   if (
-    context.liveSaleData.paused &&
-    project.artist_address !==
-      context.walletClient.account.address.toLowerCase()
+    liveSaleData.paused &&
+    project.artist_address !== walletClient.account.address.toLowerCase()
   ) {
     return false;
   }
@@ -192,8 +195,7 @@ export function serializeSnapshot(snapshot?: Record<string, any>): any {
       if (key === "context" || key === "input") {
         result[key] = {
           ...value,
-          publicClient: null,
-          walletClient: null,
+          artblocksClient: null,
         };
       } else {
         result[key] = serializeSnapshot(value);
@@ -227,12 +229,10 @@ export function serializeSnapshot(snapshot?: Record<string, any>): any {
  */
 export function deserializeSnapshot({
   snapshot,
-  publicClient,
-  walletClient,
+  artblocksClient,
 }: {
   snapshot?: Record<string, any>;
-  publicClient?: PublicClient;
-  walletClient?: WalletClient;
+  artblocksClient?: ArtBlocksClient;
 }): any {
   if (typeof snapshot !== "object" || snapshot === null) {
     return snapshot;
@@ -248,20 +248,15 @@ export function deserializeSnapshot({
           ...value,
         };
 
-        if ("publicClient" in value) {
-          deserializedValue.publicClient = publicClient;
-        }
-
-        if ("walletClient" in value && walletClient) {
-          deserializedValue.walletClient = walletClient;
+        if ("artblocksClient" in value) {
+          deserializedValue.artblocksClient = artblocksClient;
         }
 
         result[key] = deserializedValue;
       } else {
         result[key] = deserializeSnapshot({
           snapshot: value,
-          publicClient,
-          walletClient,
+          artblocksClient,
         });
       }
     } else {
@@ -286,19 +281,23 @@ export function deserializeSnapshot({
  * @returns A promise that resolves to a stringified version of the purchase machine
  * snapshot if successful, or null if an error occurs during initialization.
  */
-export async function getSerializedSnapshotWithProjectData(projectId: string) {
+export async function getSerializedSnapshotWithProjectData(
+  projectId: string,
+  artblocksClient: ArtBlocksClient
+) {
   const projectSaleManagerMachineActor = createActor(
     projectSaleManagerMachine,
     {
       input: {
-        projectId: projectId,
+        projectId,
+        artblocksClient,
       },
     }
   );
 
   try {
     const serializedProjectSaleManagerMachineActor = JSON.stringify(
-      await new Promise<Snapshot<unknown>>((resolve, reject) => {
+      await new Promise<Snapshot<unknown>>((resolve) => {
         const subscription = projectSaleManagerMachineActor.subscribe(
           (snapshot) => {
             if (!snapshot.matches("fetchingProjectData")) {
@@ -320,4 +319,74 @@ export async function getSerializedSnapshotWithProjectData(projectId: string) {
     console.error("Failed to initialize purchase machine", e);
     return null;
   }
+}
+
+function formatProjectDate(date?: Date | null): string | null {
+  if (!date) return null;
+
+  const formattedStartDateParts = Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    timeZoneName: "short",
+    weekday: "short",
+  }).formatToParts(date);
+  const weekday = formattedStartDateParts?.find(
+    (part) => part.type === "weekday"
+  )?.value;
+  const month = formattedStartDateParts?.find(
+    (part) => part.type === "month"
+  )?.value;
+  const day = formattedStartDateParts?.find(
+    (part) => part.type === "day"
+  )?.value;
+  const hour = formattedStartDateParts?.find(
+    (part) => part.type === "hour"
+  )?.value;
+  const minute = formattedStartDateParts?.find(
+    (part) => part.type === "minute"
+  )?.value;
+  const dayPeriod = formattedStartDateParts?.find(
+    (part) => part.type === "dayPeriod"
+  )?.value;
+
+  return `${weekday}, ${month} ${day}, ${hour}:${minute} ${dayPeriod}`;
+}
+
+export function generateMinterDescription(
+  project: ProjectDetails,
+  dateFormatter: (date: Date | null) => string | null = formatProjectDate
+): string | null {
+  const minterConfiguration = project?.minter_configuration;
+  if (!minterConfiguration) return null;
+
+  const replacements: Record<string, string | null | undefined> = {
+    base_price: minterConfiguration.base_price
+      ? formatEther(BigInt(minterConfiguration.base_price))
+      : undefined,
+    currency_symbol: minterConfiguration.currency_symbol,
+    start_time: project.auction_start_time
+      ? dateFormatter(new Date(project.auction_start_time))
+      : undefined,
+    start_price: minterConfiguration.extra_minter_details.startPrice
+      ? formatEther(BigInt(minterConfiguration.extra_minter_details.startPrice))
+      : undefined,
+    end_time: project.auction_end_time
+      ? dateFormatter(new Date(project.auction_end_time))
+      : undefined,
+  };
+
+  const descriptionTemplate =
+    project?.minter_configuration?.minter?.type?.description_template;
+
+  if (!descriptionTemplate) return null;
+
+  return descriptionTemplate.replace(
+    /\{([^}]+)\}/g,
+    (match: string, variableName: string) => {
+      return replacements[variableName] ?? match;
+    }
+  );
 }

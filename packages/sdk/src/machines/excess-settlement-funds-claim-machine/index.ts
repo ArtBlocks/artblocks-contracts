@@ -1,13 +1,13 @@
-import { Hex, WalletClient, PublicClient, getContract } from "viem";
+import { Hex, getContract } from "viem";
 import { fromPromise, setup, assign, sendParent } from "xstate";
-import { isUserRejectedError } from "../helpers";
+import { isUserRejectedError } from "../utils";
 import {
   GetReceiptQuery,
   ReceiptSettlementDataFragment,
 } from "../../generated/graphql";
-import { iSharedMinterDAExpSettlementV0Abi } from "../abis/iSharedMinterDAExpSettlementV0Abi";
+import { iSharedMinterDAExpSettlementV0Abi } from "../../../abis/iSharedMinterDAExpSettlementV0Abi";
 import { graphql } from "../../generated/index";
-import { abGraphQLClient } from "../helpers";
+import { ArtBlocksClient } from "../..";
 
 /**
  * TODO
@@ -28,8 +28,7 @@ const getReceiptDocument = graphql(/* GraphQL */ `
 const SYNC_POLLING_INTERVAL = 5000;
 
 type ExcessSettlementFundsClaimMachineContext = {
-  walletClient: WalletClient;
-  publicClient: PublicClient;
+  artblocksClient: ArtBlocksClient;
   receipt: ReceiptSettlementDataFragment;
   txHash?: Hex;
 };
@@ -39,7 +38,7 @@ export const excessSettlementFundsClaimMachine = setup({
   types: {
     input: {} as Pick<
       ExcessSettlementFundsClaimMachineContext,
-      "publicClient" | "walletClient" | "receipt"
+      "receipt" | "artblocksClient"
     >,
     context: {} as ExcessSettlementFundsClaimMachineContext,
     events: { type: "INITIATE_CLAIM" },
@@ -47,15 +46,21 @@ export const excessSettlementFundsClaimMachine = setup({
   actors: {
     initiateExcessSettlementFundsClaim: fromPromise(
       async ({
-        input: { receipt, walletClient, publicClient },
+        input: { receipt, artblocksClient },
       }: {
         input: {
           receipt: ReceiptSettlementDataFragment;
-          walletClient: WalletClient;
-          publicClient: PublicClient;
+          artblocksClient: ArtBlocksClient;
         };
       }): Promise<Hex> => {
-        if (!walletClient.account) {
+        const walletClient = artblocksClient.getWalletClient();
+        const publicClient = artblocksClient.getPublicClient();
+
+        if (!publicClient) {
+          throw new Error("Public client is not available");
+        }
+
+        if (!walletClient?.account) {
           throw new Error("Wallet client is not connected to an account");
         }
 
@@ -85,10 +90,16 @@ export const excessSettlementFundsClaimMachine = setup({
     ),
     awaitClaimConfirmations: fromPromise(
       async ({
-        input: { txHash, publicClient },
+        input: { txHash, artblocksClient },
       }: {
-        input: { txHash?: Hex; publicClient: PublicClient };
+        input: { txHash?: Hex; artblocksClient: ArtBlocksClient };
       }) => {
+        const publicClient = artblocksClient.getPublicClient();
+
+        if (!publicClient) {
+          throw new Error("Public client is not available");
+        }
+
         if (!txHash) {
           throw new Error("Transaction hash is unavailable");
         }
@@ -100,11 +111,14 @@ export const excessSettlementFundsClaimMachine = setup({
     ),
     fetchReceipt: fromPromise(
       async ({
-        input: { receipt },
+        input: { receipt, artblocksClient },
       }: {
-        input: { receipt: ReceiptSettlementDataFragment };
+        input: {
+          receipt: ReceiptSettlementDataFragment;
+          artblocksClient: ArtBlocksClient;
+        };
       }) => {
-        const res = await abGraphQLClient.request(getReceiptDocument, {
+        const res = await artblocksClient.graphqlRequest(getReceiptDocument, {
           id: receipt.id,
         });
 
@@ -136,8 +150,7 @@ export const excessSettlementFundsClaimMachine = setup({
   /** @xstate-layout N4IgpgJg5mDOIC5QAoC2BDAxgCwJYDswBKAOlwgBswBiASQDlaAVWgQSYFEB9AYQBlWtALIBtAAwBdRKAAOAe1i4ALrjn5pIAB6IAtAFYAHADYSBgCxmjATgMAmAOxijZpwBoQAT0R6zJMWdsARls9Iz0xA0MQgF9o9zQsPEJSAmVcdBV8KFgeCnRcVGoINTAyfAA3OQBrUoScAmIytIyCbNz81AQCSswWtXEJAY15RRU1DW0EAGYxKxJbA0CrWynbKyWjAys9dy8EHXtbPztIq3sAwPCxPVj4jHrkppUWrJy8guowACcvuS+SGR5JQAMz+qBIdSSjVSz0ybXenW6cl6Y3wAyGSBAIzS40xkzMU1M9kCWym5gcQQM9h2nkQDgMJBsZkCEQMBhmYimXNuIEhDRS+GacLeHU+Pz+AKBoK+4L5jxh6WF7QKXQqyL6aMkIkCUkx2NRE0QhxIemCegc2ymgSmPlsu0QAV85pcC3CekcZnsPLljXQAHd8nDlageGpgbgZRrYEUSmVKjUIfcoaR-YHWsHQ-hw5HUbBVT0NejJMMFDj1HjEIFAkZ7CanLZrvZVpFrPb9lW5s7-EY1norDaAt6k-ySKm0lkM2GIxhc2Lfv9ARlpbLh48x0GEZnszPVPg80iUbui7rZKWDRWEPZjQTPetrJcjGJAm2pnNrUYNlMLttbEYh4kR2BMAlAeKAACUwEwMBcBkJQY0IONqlqVdGiAkCknAyDoNg-N1VRY8S1GXdDQQJYrxIAkG0cMRiUCT0jDbFk9EZSIXBvM4q2cf8HlQ4DQIgqCYLg4oEKRBMfVIND+KwoTcMPfotR1QiyxIlYG3mbYxGuYJ7GMKY2x0a1CTWLkuTMU06L0KYvTiXkUMkviMIE7C4O+edJSXMFEwAx4pKcmScIPQstWLPUz2Ii93zmKkVksBsLC-Gk9kWeYZh7KsLOtWwzG45MSADccoGoTRYCUDJSnQYElG+ZArjEIhqAk-K0yyDFTyI3FQEmEkvxIK9-G2KtrIWO1aXbbK+vCOwrx8RYzCsP9bKaty-mK0rytHKqapZLSGuW8UvjarFws6rRdCMZwSFfV8wi-GYZmfMa+0CEgqxJFZq1mc0DFykdYAAV0wKDYGjEqyuqzbqq+ZAG12xr7JIAGgbgWAjv1CKurpLZOxcPR3XmmwbQMqxfGu5lqx8AIths2z8DkCA4A0CTlPPTH9gWo4rLsVYfwWIx9LGnQ1L6iJZk5DlstCX75UoMAWYxs72bok0yTU3m9LbHw-AuKZnHWFYScWu4fOhQVYVaEUCnl07JkMpZTDJFkrAWnn1jbAl5i0gx-BWYlDDEGIloR9d003Kcc13eAwo68s2epBkQmCfxdbMcxFgMuinWyrSvyrcyvyNuyTYc9DWmcoTrdjxXLnCEgwgW0J7H7X37AziwTWzzlyfzyxpcaAq4Ur1S6MJEmLGz4k7AYwXrV8JueasoIe0fKY+9IFaviHi8FmV-wlnmtPDgcTXVlezOwifR9Ih+oPi8RwHgaj9qVO372Xt0gPnDx4IuTb5iG0WAHa4PZZjcliNEIAA */
   initial: "idle",
   context: ({ input }) => ({
-    walletClient: input.walletClient,
-    publicClient: input.publicClient,
+    artblocksClient: input.artblocksClient,
     receipt: input.receipt,
   }),
   states: {
@@ -149,10 +162,9 @@ export const excessSettlementFundsClaimMachine = setup({
     initiatingsClaim: {
       invoke: {
         src: "initiateExcessSettlementFundsClaim",
-        input: ({ context: { receipt, walletClient, publicClient } }) => ({
+        input: ({ context: { receipt, artblocksClient } }) => ({
           receipt,
-          walletClient,
-          publicClient,
+          artblocksClient,
         }),
         onDone: {
           target: "awaitingClaimConfirmations",
@@ -184,9 +196,9 @@ export const excessSettlementFundsClaimMachine = setup({
     awaitingClaimConfirmations: {
       invoke: {
         src: "awaitClaimConfirmations",
-        input: ({ context: { txHash, publicClient } }) => ({
+        input: ({ context: { txHash, artblocksClient } }) => ({
           txHash,
-          publicClient,
+          artblocksClient,
         }),
         onDone: "fetchingReceipt",
         onError: "error",
@@ -195,8 +207,9 @@ export const excessSettlementFundsClaimMachine = setup({
     fetchingReceipt: {
       invoke: {
         src: "fetchReceipt",
-        input: ({ context: { receipt } }) => ({
+        input: ({ context: { receipt, artblocksClient } }) => ({
           receipt,
+          artblocksClient,
         }),
         onDone: [
           {

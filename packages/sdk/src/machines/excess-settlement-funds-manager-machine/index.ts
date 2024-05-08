@@ -1,8 +1,8 @@
-import { WalletClient, PublicClient } from "viem";
 import { setup, assign, enqueueActions, ActorRefFrom } from "xstate";
 import { ReceiptSettlementDataFragment } from "../../generated/graphql";
-import { receiptPollingMachine } from "./receiptPollingMachine";
-import { excessSettlementFundsClaimMachine } from "./excessSettlementFundsClaimMachine";
+import { receiptPollingMachine } from "./receipt-polling-machine";
+import { excessSettlementFundsClaimMachine } from "../excess-settlement-funds-claim-machine";
+import { ArtBlocksClient } from "../..";
 
 /**
  * TODO
@@ -13,18 +13,8 @@ import { excessSettlementFundsClaimMachine } from "./excessSettlementFundsClaimM
 
 export type ExcessSettlementFundsManagerMachineEvent =
   | {
-      type: "WALLET_CLIENT_AVAILABLE";
-      data: WalletClient;
-    }
-  | {
-      type: "WALLET_CLIENT_UNAVAILABLE";
-    }
-  | {
-      type: "PUBLIC_CLIENT_AVAILABLE";
-      data: PublicClient;
-    }
-  | {
-      type: "PUBLIC_CLIENT_UNAVAILABLE";
+      type: "ART_BLOCKS_CLIENT_UPDATED";
+      artblocksClient: ArtBlocksClient;
     }
   | {
       type: "RECEIPTS_FETCHED";
@@ -36,8 +26,7 @@ export type ExcessSettlementFundsManagerMachineEvent =
     };
 
 export type ExcessSettlementFundsManagerMachineContext = {
-  publicClient?: PublicClient;
-  walletClient?: WalletClient;
+  artblocksClient: ArtBlocksClient;
   claimMachines?: Map<
     string,
     ActorRefFrom<typeof excessSettlementFundsClaimMachine>
@@ -48,7 +37,7 @@ export const excessSettlementFundsManagerMachine = setup({
   types: {
     input: {} as Pick<
       ExcessSettlementFundsManagerMachineContext,
-      "publicClient" | "walletClient"
+      "artblocksClient"
     >,
     context: {} as ExcessSettlementFundsManagerMachineContext,
     events: {} as ExcessSettlementFundsManagerMachineEvent,
@@ -58,13 +47,9 @@ export const excessSettlementFundsManagerMachine = setup({
     excessSettlementFundsClaimMachine,
   },
   actions: {
-    assignWalletClient: assign({
-      walletClient: (_, params: { walletClient?: WalletClient }) =>
-        params.walletClient,
-    }),
-    assignPublicClient: assign({
-      publicClient: (_, params: { publicClient?: PublicClient }) =>
-        params.publicClient,
+    assignArtblocksClient: assign({
+      artblocksClient: (_, params: { artblocksClient: ArtBlocksClient }) =>
+        params.artblocksClient,
     }),
   },
   guards: {
@@ -74,14 +59,25 @@ export const excessSettlementFundsManagerMachine = setup({
     ) => {
       return receipts.length > 0;
     },
+    walletClientAvailable: (
+      _,
+      { artblocksClient }: { artblocksClient: ArtBlocksClient }
+    ) => {
+      return Boolean(artblocksClient.getWalletClient());
+    },
+    walletClientUnavailable: (
+      _,
+      { artblocksClient }: { artblocksClient: ArtBlocksClient }
+    ) => {
+      return !artblocksClient.getWalletClient();
+    },
   },
 }).createMachine({
   /** @xstate-layout N4IgpgJg5mDOIC5RgB4GM6wMpgC64BswBbMAO1wDEBXMiWAWQEMymYAnZtACwEsywAYgCiADQDCwrFgD6WYQBUFAGWENhAOQUzKAVQ0ARWeOUBBAJLqDAbQAMAXUSgADgHtYvXL1dknIFIgAbABMABwAdLYAjLahACyhAMxRYYGhADQgAJ6IALRRoQCc4YmJwXHlZQDsAKyhYYkAvo2ZqBiw2HiEJORUtPTMrBxcfAKCAAq6AELK5uIyJuaa2qYAahZmM8J2jkggbh5ePn4BCKVV4cGBsaXXoaE1hVWZOQj5RSVlFXHVdQ3NrXQmBw+CIpAoNDojBYbDAnCYPH4QkmMzmC1myxk+jWG1MWx2fgOnm8vj2p0C4QqdVsNWCKRqUUKZWCLzyBWKpXKlWCtXqSQB4CBHRB3XBfShg1h8MRAnCCLQrlouF0rAAbkxeAQmAAjIiCADqpmUqm0i0xOPMm1UBL2RKOpNAp3KcUuVxqVVCtkCT3icVZCGCthdhS9PKq13daXdArawK6YN6kIGMOGCNGYHCBF4sFw5H4UEornYACUwBheM5cLADUaTeillosRoLVbtg5Ce5iccyYgorVKYVgoUonUqiHEjUaoF-T9wuHh4lQn3yn2CjGhZ1QT0If1oUM4SMkZns7myPnCyWy2AK1XBMXhJJzOMFLJKIpxAAJYQ2du2zv2k5ECqWxgnCQIqgSQpAhie5HmebJEHdS44ndGkoKnMJgiaAUyFcCA4D8WNhXjbdxWTfdpXTDtDhJQC3kSF0R3A65okHKpEkCBj-VyWd2NiKdriuYJ3Tidd2k3UVE13SVUxlDN5UVCgVSYdVNR1IhqK7B1-F7RJwniMpEkKQpPSqK4OOnBCA0SWx9L5GoUIYsJwzEuMtzFJM9ylQ9ZSzHM8zIAsi1LctK3gP8aO7R1EI4ucYieQoHNKJl-UDC5FzCWk4gSIzAinZpmiAA */
   id: "excessSettlementFundsManagerMachine",
   initial: "accountUnavailable",
   context: ({ input }) => ({
-    publicClient: input.publicClient,
-    walletClient: input.walletClient,
+    artblocksClient: input.artblocksClient,
   }),
   on: {
     EXCESS_SETTLEMENT_FUNDS_CLAIMED: {
@@ -97,42 +93,44 @@ export const excessSettlementFundsManagerMachine = setup({
         enqueue.assign({ claimMachines: updatedClaimMachines });
       }),
     },
-    PUBLIC_CLIENT_AVAILABLE: {
-      actions: [
-        {
-          type: "assignPublicClient",
-          params: ({ event }) => {
-            return { publicClient: event.data };
-          },
-        },
-      ],
-    },
-    PUBLIC_CLIENT_UNAVAILABLE: {
-      actions: [
-        {
-          type: "assignPublicClient",
-          params: { publicClient: undefined },
-        },
-      ],
-    },
   },
   states: {
     accountUnavailable: {
       on: {
-        WALLET_CLIENT_AVAILABLE: {
-          target: "listeningForReceipts",
-          actions: {
-            type: "assignWalletClient",
-            params: ({ event }) => {
-              return { walletClient: event.data };
+        ART_BLOCKS_CLIENT_UPDATED: [
+          {
+            target: "listeningForReceipts",
+            guard: {
+              type: "walletClientAvailable",
+              params: ({ event }) => ({
+                artblocksClient: event.artblocksClient,
+              }),
+            },
+            actions: {
+              type: "assignArtblocksClient",
+              params: ({ event }) => ({
+                artblocksClient: event.artblocksClient,
+              }),
             },
           },
-        },
+          {
+            actions: {
+              type: "assignArtblocksClient",
+              params: ({ event }) => ({
+                artblocksClient: event.artblocksClient,
+              }),
+            },
+          },
+        ],
       },
     },
     listeningForReceipts: {
       entry: enqueueActions(({ context, enqueue }) => {
-        const { walletClient, publicClient } = context;
+        const { artblocksClient } = context;
+
+        const walletClient = artblocksClient.getWalletClient();
+        const publicClient = artblocksClient.getPublicClient();
+
         if (!walletClient || !publicClient) {
           return;
         }
@@ -141,17 +139,25 @@ export const excessSettlementFundsManagerMachine = setup({
           id: "receiptPollingMachine",
           systemId: "receiptPollingMachine",
           input: {
-            walletClient,
+            artblocksClient,
           },
         });
       }),
       on: {
-        WALLET_CLIENT_UNAVAILABLE: {
+        ART_BLOCKS_CLIENT_UPDATED: {
           target: "accountUnavailable",
+          guard: {
+            type: "walletClientUnavailable",
+            params: ({ event }) => ({
+              artblocksClient: event.artblocksClient,
+            }),
+          },
           actions: [
             {
-              type: "assignWalletClient",
-              params: { walletClient: undefined },
+              type: "assignArtblocksClient",
+              params: ({ event }) => ({
+                artblocksClient: event.artblocksClient,
+              }),
             },
             enqueueActions(({ context, enqueue }) => {
               enqueue.stopChild("receiptPollingMachine");
@@ -178,9 +184,11 @@ export const excessSettlementFundsManagerMachine = setup({
                   string,
                   ActorRefFrom<typeof excessSettlementFundsClaimMachine>
                 >(),
-                publicClient,
-                walletClient,
+                artblocksClient,
               } = context;
+              const walletClient = artblocksClient.getWalletClient();
+              const publicClient = artblocksClient.getPublicClient();
+
               const updatedClaimMachines = new Map(claimMachines);
 
               if (!publicClient || !walletClient) {
@@ -217,8 +225,7 @@ export const excessSettlementFundsManagerMachine = setup({
                           systemId: receipt.id,
                           input: {
                             receipt,
-                            walletClient,
-                            publicClient,
+                            artblocksClient,
                           },
                         }
                       );
