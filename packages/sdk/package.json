@@ -8,6 +8,10 @@
   "license": "MIT",
   "exports": {
     ".": "./dist/index.js",
+    "./dist/machines/*": {
+      "types": "./dist/machines/*/index.d.ts",
+      "default": "./dist/machines/*/index.js"
+    },
     "./machines/*": {
       "types": "./dist/machines/*/index.d.ts",
       "default": "./dist/machines/*/index.js"
