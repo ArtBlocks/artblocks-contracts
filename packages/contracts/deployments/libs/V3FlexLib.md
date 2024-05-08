@@ -1,4 +1,4 @@
-# Deployments: V3FlexLib [TEMPORARY PRE-RELEASE - DO NOT USE]
+# Deployments: V3FlexLib
 
 ## Description
 
@@ -11,18 +11,16 @@ const inputs: T_Inputs = {
   contractName: "V3FlexLib",
   args: [],
   libraries: {
-    "contracts/libs/v0.8.x/BytecodeStorageV1.sol:BytecodeStorageReader":
-      "0x7497909537cE00fDda93c12d5083D8647C593c67",
+    "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+      "0x000000000016A5A5ff2FA7799C4BEe89bA59B74e",
   },
 };
 ```
 
-salt: `0x0000000000000000000000000000000000000000a24117da9a039388b1030080`
-
 ## Results:
 
-Deploys to address: `0x0000000F6F896C1dA9164621a29C3d941E020efa`
+Deploys to address: `0x0000000006FD94B22fb33164322019750E854f96`
 
 ### Deployment transactions:
 
-- sepolia: https://sepolia.etherscan.io/tx/0x58d0d719f0f362d26ad906fd6baaaefd132d7ca3f9bc9762a70c6218a1bd8441
+- sepolia: https://sepolia.etherscan.io/tx/0x4eafa9747094284e595084ee7f8d128b4960db2d2880ef66b3576f584e3da0cc

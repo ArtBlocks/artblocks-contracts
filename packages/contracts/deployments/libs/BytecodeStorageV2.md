@@ -1,4 +1,4 @@
-# Deployments: BytecodeStorageV2 [TEMPORARY PRE-RELEASE - DO NOT USE]
+# Deployments: BytecodeStorageV2
 
 ## Description
 
@@ -15,12 +15,10 @@ const inputs: T_Inputs = {
 };
 ```
 
-salt: `0x000000000000000000000000000000000000000014b73856439f10a45d0d00a0`
-
 ## Results:
 
-Deploys to address: `0x00000000C3690146FbC2f880560a083Fad95e834`
+Deploys to address: `0x000000000016A5A5ff2FA7799C4BEe89bA59B74e`
 
 ### Deployment transactions:
 
-- sepolia: https://sepolia.etherscan.io/tx/0x0e991b125e350022c63d5b1fc5fb53f394f8bb755a2b1701e89ca279be4fec25
+- sepolia: https://sepolia.etherscan.io/tx/0x5a337f7308e08c6ddb60eb9dae13526e09dcf69a777db228ea235bae8f63a75a
