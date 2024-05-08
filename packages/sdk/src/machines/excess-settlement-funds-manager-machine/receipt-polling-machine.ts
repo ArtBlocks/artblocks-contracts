@@ -43,7 +43,7 @@ export const getReceiptsWithExcessSettlementFundsForUserDocument = graphql(
       receipt_metadata(
         where: {
           user_address: { _eq: $userAddress }
-          # excess_settlement_funds: { _neq: "0" }
+          excess_settlement_funds: { _neq: "0" }
           minter: { type: { type: { _in: $supportedMinterTypes } } }
           project_minter_configuration: {
             _or: [
