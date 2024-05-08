@@ -29,7 +29,7 @@ import {ERC165} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165.sol
  *   third party 0xSplits SplitFactoryV2 address).
  */
 contract SplitProviderV0 is ISplitProviderV0, ERC165 {
-    bytes32 private constant TYPE = "SplitProviderV0";
+    bytes32 private constant _TYPE = "SplitProviderV0";
 
     // 0xSplits SplitFactoryV2 address immutably configured on this contract
     ISplitFactoryV2 private immutable _splitFactoryV2;
@@ -111,7 +111,7 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
     ) public view override returns (bool) {
         // broadcast support of the getOrCreateSplitter function
         // @dev intentionally only including getOrCreateSplitter, as that is the only function
-        // that is intended to be used for on-chain integration (_type is for indexing and introspection only)
+        // that is intended to be used for on-chain integration (type_ is for indexing and introspection only)
         return
             interfaceId == this.getOrCreateSplitter.selector ||
             super.supportsInterface(interfaceId);
@@ -122,7 +122,7 @@ contract SplitProviderV0 is ISplitProviderV0, ERC165 {
      * @return type_ The type of the contract.
      */
     function type_() external pure returns (bytes32) {
-        return TYPE;
+        return _TYPE;
     }
 
     /**

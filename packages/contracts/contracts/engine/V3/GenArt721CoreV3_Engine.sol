@@ -131,7 +131,7 @@ contract GenArt721CoreV3_Engine is
     address public artblocksOnChainGeneratorAddress;
 
     /// ensure initialization can only be performed once
-    bool private initialized;
+    bool private _initialized;
 
     /// current randomizer contract
     IRandomizer_V3CoreBase public randomizerContract;
@@ -390,6 +390,10 @@ contract GenArt721CoreV3_Engine is
      * @notice Initializes the contract with the provided `engineConfiguration`.
      * This function should be called atomically, immediately after deployment.
      * Only callable once. Validation on `engineConfiguration` is performed by caller.
+     * @dev This function is intentionally unpermissioned to allow for the
+     * initialization of the contract post-deployment. It is expected that this
+     * function will be called atomically by the factory contract that deploys this
+     * contract, after which it will be initialized and uncallable.
      * @param engineConfiguration EngineConfiguration to configure the contract with.
      * @param _adminACLContract Address of admin access control contract, to be
      * set as contract owner.
@@ -399,9 +403,11 @@ contract GenArt721CoreV3_Engine is
         address _adminACLContract
     ) external {
         // can only be initialized once
-        if (initialized) {
+        if (_initialized) {
             revert GenArt721Error(ErrorCodes.ContractInitialized);
         }
+        // immediately mark as initialized
+        _initialized = true;
         // @dev assume renderProviderAddress, randomizer, and AdminACL non-zero
         // checks on platform provider addresses performed in _updateProviderSalesAddresses
         // initialize default sales revenue percentages and basis points
@@ -421,7 +427,10 @@ contract GenArt721CoreV3_Engine is
             engineConfiguration.tokenName,
             engineConfiguration.tokenSymbol
         );
-
+        // update minter if populated
+        if (engineConfiguration.minterFilterAddress != address(0)) {
+            _updateMinterContract(engineConfiguration.minterFilterAddress);
+        }
         _updateSplitProvider(engineConfiguration.splitProviderAddress);
         // setup immutable `autoApproveArtistSplitProposals` config
         autoApproveArtistSplitProposals = engineConfiguration
@@ -457,7 +466,6 @@ contract GenArt721CoreV3_Engine is
         emit PlatformUpdated(
             bytes32(uint256(PlatformUpdatedFields.FIELD_NEXT_PROJECT_ID))
         );
-        initialized = true;
         // @dev This contract is registered on the core registry in a
         // subsequent call by the factory.
     }
@@ -785,8 +793,7 @@ contract GenArt721CoreV3_Engine is
     function updateMinterContract(address _address) external {
         _onlyAdminACL(this.updateMinterContract.selector);
         _onlyNonZeroAddress(_address);
-        minterContract = _address;
-        emit MinterUpdated(_address);
+        _updateMinterContract(_address);
     }
 
     /**
@@ -1185,6 +1192,7 @@ contract GenArt721CoreV3_Engine is
         string memory _projectArtistName
     ) external {
         // if unlocked, only artist may update, if locked, only admin may update
+        // @dev valid project checked in _projectUnlocked function
         if (_projectUnlocked(_projectId)) {
             if (
                 msg.sender != _projectIdToFinancials[_projectId].artistAddress
@@ -2267,6 +2275,18 @@ contract GenArt721CoreV3_Engine is
                 uint256(PlatformUpdatedFields.FIELD_PROVIDER_SALES_ADDRESSES)
             )
         );
+    }
+
+    /**
+     * @notice Updates minter address to `_minterAddress`.
+     * @param _minterAddress New minter address.
+     * @dev Note that this method does not check that the input address is
+     * not `address(0)`, as it is expected that callers of this method should
+     * perform input validation where applicable.
+     */
+    function _updateMinterContract(address _minterAddress) internal {
+        minterContract = _minterAddress;
+        emit MinterUpdated(_minterAddress);
     }
 
     /**
