@@ -200,7 +200,7 @@ async function main() {
   const txData: MetaTransactionData[] = [];
   // get deployment configuration details
   const { deployConfigDetailsArray } = await getConfigInputs(
-    "deployments/engine/V3/deployment-config.template.ts",
+    "deployments/engine/V3/studio/deployment-config.template.ts",
     "Batch Engine deployment config file"
   );
   for (const engineContractConfiguration of deployConfigDetailsArray) {
