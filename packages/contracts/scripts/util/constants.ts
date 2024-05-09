@@ -1,5 +1,7 @@
 import { ethers } from "hardhat";
 
+export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
 // empirically have found adding 10 seconds between txs in scripts is enough to
 // avoid chain reorgs and tx failures
 export const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
@@ -108,6 +110,64 @@ const ACTIVE_SHARED_RANDOMIZERS = {
   sepolia: {
     dev: "0xA6F7e62F3B52552f79b2Baa2858a1DB18016c09B",
     staging: "0x28f2D3805652FB5d359486dFfb7D08320D403240",
+  },
+};
+
+export function getActiveSharedSplitProvider(): string {
+  return "0x0000000004B100B47f061968a387c82702AFe946";
+}
+
+export async function getActiveEngineImplementations(
+  networkName: string,
+  environment: string
+): Promise<{
+  activeEngineImplementationAddress: string;
+  activeEngineFlexImplementationAddress: string;
+}> {
+  // get the engine factory
+  const engineFactoryAddress = getActiveEngineFactoryAddress(
+    networkName,
+    environment
+  );
+  const engineContractFactory =
+    await ethers.getContractFactory("EngineFactoryV0");
+  const engineFactory = engineContractFactory.attach(engineFactoryAddress);
+
+  const activeEngineImplementationAddress =
+    await engineFactory.engineImplementation();
+  const activeEngineFlexImplementationAddress =
+    await engineFactory.engineFlexImplementation();
+  if (
+    !activeEngineImplementationAddress ||
+    !activeEngineFlexImplementationAddress
+  ) {
+    throw new Error(
+      `No active engine or engine flex implementation found for network ${networkName} and environment ${environment}`
+    );
+  }
+  return {
+    activeEngineImplementationAddress,
+    activeEngineFlexImplementationAddress,
+  };
+}
+
+export function getActiveEngineFactoryAddress(
+  networkName: string,
+  environment: string
+): string {
+  const activeEngineFactory = ACTIVE_ENGINE_FACTORY[networkName]?.[environment];
+  if (!activeEngineFactory) {
+    throw new Error(
+      `No active engine factory found for network ${networkName} and environment ${environment}`
+    );
+  }
+  return activeEngineFactory;
+}
+// Active shared Engine Factory, on each network and environment.
+// format is [network]: { [environment]: [Engine Factory address] }
+const ACTIVE_ENGINE_FACTORY = {
+  sepolia: {
+    dev: "0x0000B005007298838aCF6589d4342920A9cB002a",
   },
 };
 

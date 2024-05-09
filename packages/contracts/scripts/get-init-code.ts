@@ -13,8 +13,8 @@ type T_Inputs = {
 //   contractName: "V3FlexLib",
 //   args: [],
 //   libraries: {
-//     "contracts/libs/v0.8.x/BytecodeStorageV1.sol:BytecodeStorageReader":
-//       "0x7497909537cE00fDda93c12d5083D8647C593c67",
+//     "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+//     "0x000000000016A5A5ff2FA7799C4BEe89bA59B74e",
 //   },
 // };
 
