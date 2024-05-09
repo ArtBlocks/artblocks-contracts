@@ -26,7 +26,8 @@ export const deployConfigDetailsArray = [
     },
     adminACLContract: "0x0000000000000000000000000000000000000000",
     salt: "0x0",
-    transactionHash: null,
+    transactionHash:
+      "0x05ed898cf5eb9ae12443c031e097633f6fc263d794972c448d70ae3842c2dde2",
     // optionally define this to set default vertical name for the contract after deployment.
     // if not defined, the default vertical name will be "unassigned".
     // common values include `studio`, `fullyonchain`, `flex`, or partnerships like `artblocksxpace`.
@@ -49,7 +50,8 @@ export const deployConfigDetailsArray = [
     },
     adminACLContract: "0x0000000000000000000000000000000000000000",
     salt: "0x0",
-    transactionHash: null,
+    transactionHash:
+      "0x05ed898cf5eb9ae12443c031e097633f6fc263d794972c448d70ae3842c2dde2",
     // optionally define this to set default vertical name for the contract after deployment.
     // if not defined, the default vertical name will be "unassigned".
     // common values include `studio`, `fullyonchain`, `flex`, or partnerships like `artblocksxpace`.
