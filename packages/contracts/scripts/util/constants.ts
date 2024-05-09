@@ -134,7 +134,7 @@ export function getActiveEngineFactoryAddress(
 // format is [network]: { [environment]: [randomizer address] }
 const ACTIVE_ENGINE_FACTORY = {
   sepolia: {
-    dev: "0x0000000f84351b503eB3Df72C7E1f169b2D32728",
+    dev: "0x0000B005007298838aCF6589d4342920A9cB002a",
   },
 };
 
