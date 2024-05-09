@@ -19,7 +19,6 @@ import {
   getActiveCoreRegistry,
   BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES,
 } from "../../util/constants";
-import { EngineContractConfig } from "../../../deployments/engine/V3/studio/deployment-config.template";
 
 /**
  * This script was created to batch deploy new Engine and Engine Flex contracts
@@ -47,9 +46,9 @@ async function main() {
       "Batch Engine deployment config file"
     );
 
-  if (networkName !== deployNetworkConfiguration.network) {
+  if (networkName !== deployNetworkConfiguration?.network) {
     throw new Error(
-      `network name ${networkName} does not match expected network name ${deployNetworkConfiguration.network}`
+      `network name ${networkName} does not match expected network name ${deployNetworkConfiguration?.network}`
     );
   }
 
@@ -197,10 +196,23 @@ async function main() {
   for (const engineContractConfiguration of deployConfigDetailsArray) {
     const {
       engineCoreContractType,
-      engineConfiguration,
+      tokenName,
+      tokenTicker,
+      renderProviderAddress,
+      platformProviderAddress,
+      newSuperAdminAddress,
+      startingProjectId,
+      autoApproveArtistSplitProposals,
+      nullPlatformProvider,
+      allowArtistProjectActivation,
       adminACLContract,
       salt,
-    } = engineContractConfiguration as EngineContractConfig;
+    } = engineContractConfiguration;
+
+    // validate adminACLContract is defined
+    if (adminACLContract === undefined) {
+      throw new Error(`[ERROR] Admin ACL Contract must be defined`);
+    }
 
     // verify a sensible AdminACL input config
     // ensure that the adminACL contract name is valid (i.e. the following doesn't throw)
@@ -219,18 +231,15 @@ async function main() {
     }
 
     // verify that token name and symbol are populated
-    if (
-      !engineConfiguration.tokenName.length ||
-      !engineConfiguration.tokenSymbol.length
-    ) {
+    if (!tokenName?.length || !tokenTicker?.length) {
       throw new Error(`[ERROR] The token name and symbol should be populated`);
     }
 
     // validate that the render provider addresses is not null
     if (
-      !engineConfiguration.renderProviderAddress.length ||
-      (engineConfiguration.renderProviderAddress.length > 0 &&
-        engineConfiguration.renderProviderAddress === ZERO_ADDRESS)
+      !renderProviderAddress?.length ||
+      (renderProviderAddress.length > 0 &&
+        renderProviderAddress === ZERO_ADDRESS)
     ) {
       throw new Error(`[ERROR] The render provider address should not be null`);
     }
@@ -238,7 +247,7 @@ async function main() {
     // validate that the Admin ACL and super admin address are as expected
     if (
       adminACLContract === ZERO_ADDRESS &&
-      engineConfiguration.newSuperAdminAddress === ZERO_ADDRESS
+      newSuperAdminAddress === ZERO_ADDRESS
     ) {
       throw new Error(
         `[ERROR] If using an existing Admin ACL Contract, the super admin address must be null.
@@ -246,37 +255,69 @@ async function main() {
       );
     }
 
-    // set randomizer address to shared randomizer
-    engineConfiguration.randomizerContract = randomizerAddress;
-    // set minter filter address to shared minter filter
-    // @dev if not using the shared minter filter, update this
-    engineConfiguration.minterFilterAddress = minterFilterAddress;
+    // validate platform provider address is null if nullPlatformProvider is true
+    if (!nullPlatformProvider && platformProviderAddress !== ZERO_ADDRESS) {
+      throw new Error(
+        `[ERROR] If nullPlatformProvider is set to true, the platform provider
+            address must be the zero address.`
+      );
+    }
 
-    // set split provider to shared split provider
-    engineConfiguration.splitProviderAddress = splitProviderAddress;
+    // validate super admin address is defined
+    if (!newSuperAdminAddress) {
+      throw new Error(`[ERROR] newSuperAdminAddress must be defined`);
+    }
+
+    // validate starting project id is defined
+    if (startingProjectId === undefined) {
+      throw new Error(`[ERROR] starting project ID must be defined`);
+    }
+
+    // validate autoApproveArtistSplitProposals is defined
+    if (autoApproveArtistSplitProposals === undefined) {
+      throw new Error(
+        `[ERROR] auto approve artist split proposals must be defined`
+      );
+    }
+
+    // validate nullPlatformProvider is defined
+    if (nullPlatformProvider === undefined) {
+      throw new Error(`[ERROR] null platform provider must be defined`);
+    }
+
+    // validate allowArtistProjectActivation is defined
+    if (allowArtistProjectActivation === undefined) {
+      throw new Error(
+        `[ERROR] allow artist project activation must be defined`
+      );
+    }
+
+    // validate platform provider address is defined
+    if (!platformProviderAddress) {
+      throw new Error(`[ERROR] platformProviderAddress must be defined`);
+    }
 
     const inputEngineConfiguration = {
-      tokenName: engineConfiguration.tokenName,
-      tokenSymbol: engineConfiguration.tokenSymbol,
-      renderProviderAddress: engineConfiguration.renderProviderAddress,
-      platformProviderAddress: engineConfiguration.platformProviderAddress,
-      newSuperAdminAddress: engineConfiguration.newSuperAdminAddress,
+      tokenName,
+      tokenSymbol: tokenTicker,
+      renderProviderAddress,
+      platformProviderAddress,
+      newSuperAdminAddress,
       randomizerContract: randomizerAddress,
-      splitProviderAddress: splitProviderAddress,
-      minterFilterAddress: minterFilterAddress,
-      startingProjectId: engineConfiguration.startingProjectId,
-      autoApproveArtistSplitProposals:
-        engineConfiguration.autoApproveArtistSplitProposals,
-      nullPlatformProvider: engineConfiguration.nullPlatformProvider,
-      allowArtistProjectActivation:
-        engineConfiguration.allowArtistProjectActivation,
+      splitProviderAddress,
+      minterFilterAddress,
+      startingProjectId,
+      autoApproveArtistSplitProposals,
+      nullPlatformProvider,
+      allowArtistProjectActivation,
     };
 
-    const inputSalt = salt === "0x0" ? ethers.constants.HashZero : salt;
+    const inputSalt =
+      !salt || salt === "0x0" ? ethers.constants.HashZero : salt;
 
     // If we're using a gnosis safe, create a transaction to propose adding the dependency
     // to the dependency registry. Otherwise, add it directly.
-    if (deployNetworkConfiguration.useGnosisSafe) {
+    if (deployNetworkConfiguration?.useGnosisSafe) {
       const data = engineFactory.interface.encodeFunctionData(
         "createEngineContract",
         [
@@ -300,7 +341,19 @@ async function main() {
       );
       await tx.wait();
       console.log(
-        `Create engine contract called with configuration ${engineConfiguration}`
+        `Create engine contract called with configuration
+        -- Token Name: ${tokenName}
+        -- Token Symbol: ${tokenTicker}
+        -- Render Provider Address: ${renderProviderAddress}
+        -- Platform Provider Address: ${platformProviderAddress}
+        -- New Super Admin Address: ${newSuperAdminAddress}
+        -- Starting Project ID: ${startingProjectId}
+        -- Auto Approve Artist Split Proposals: ${autoApproveArtistSplitProposals}
+        -- Null Platform Provider: ${nullPlatformProvider}
+        -- Allow Artist Project Activation: ${allowArtistProjectActivation}
+        -- Admin ACL Contract: ${adminACLContract}
+        -- Salt: ${inputSalt}
+        `
       );
     }
   }

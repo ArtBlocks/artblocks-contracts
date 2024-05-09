@@ -31,8 +31,8 @@ export async function getAppPath() {
 type BaseConfig = {
   network: string;
   environment: string;
-  engineFactoryAddress: string;
   useLedgerSigner: boolean;
+  transactionHash?: string;
 };
 
 // Add a discriminant property, like "type"
@@ -48,7 +48,7 @@ type NoGnosisSafeConfig = BaseConfig & {
   transactionServiceUrl?: never;
 };
 
-type Config = GnosisSafeConfig | NoGnosisSafeConfig;
+export type DeployNetworkConfiguration = GnosisSafeConfig | NoGnosisSafeConfig;
 
 export type DeployConfigDetails = {
   network?: string;
@@ -59,6 +59,7 @@ export type DeployConfigDetails = {
   pseudorandomAtomicContractName?: string;
   // shared minter filter fields
   existingAdminACL?: string;
+  adminACLContract?: string;
   adminACLContractName?: string;
   minterFilterName?: string;
   existingCoreRegistry?: string;
@@ -68,12 +69,15 @@ export type DeployConfigDetails = {
   minterFilterAddress?: string;
   approveMinterGlobally?: boolean;
   // engine core fields (shared minter suite)
+  engineCoreContractType?: number; // 0 for Engine, 1 for Engine Flex
   genArt721CoreContractName?: string;
   tokenName?: string;
   tokenTicker?: string;
   startingProjectId?: number;
+  allowArtistProjectActivation?: boolean;
   autoApproveArtistSplitProposals?: boolean;
   renderProviderAddress?: string;
+  nullPlatformProvider?: boolean;
   platformProviderAddress?: string;
   addInitialProject?: boolean;
   doTransferSuperAdmin?: boolean;
@@ -81,6 +85,7 @@ export type DeployConfigDetails = {
   renderProviderSplitPercentagePrimary?: number;
   renderProviderSplitBPSSecondary?: number;
   defaultVerticalName?: string;
+  salt?: string;
   // flagship core fields
   artblocksPrimarySalesAddress?: string;
   artblocksSecondarySalesAddress?: string;
@@ -89,9 +94,6 @@ export type DeployConfigDetails = {
   factoryName?: string;
   requiredSplitAddress?: string;
   requiredSplitBPS?: number;
-  // engine factory fields
-  engineImplementationName?: string;
-  engineFlexImplementationName?: string;
 };
 
 export async function getConfigInputs(
@@ -99,7 +101,7 @@ export async function getConfigInputs(
   promptMessage: string
 ): Promise<{
   deployConfigDetailsArray: DeployConfigDetails[];
-  deployNetworkConfiguration: Config;
+  deployNetworkConfiguration?: DeployNetworkConfiguration;
   deploymentConfigFile: string;
   inputFileDirectory: string;
 }> {
