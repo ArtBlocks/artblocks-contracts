@@ -61,6 +61,10 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
      * and Engine Flex contracts.
      */
     bool public isAbandoned; // default false
+
+    // pseudorandom salt nonce to prevent collisions for multiple contract deployments in single block
+    uint256 private _pseudorandomSaltNonce;
+
     /**
      * Represents a generic call operation.
      */
@@ -149,7 +153,7 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
             // deploy new AdminACLV0 contract and update super admin
             adminACLContract = Create2.deploy({
                 amount: 0,
-                salt: keccak256(abi.encodePacked(msg.sender, block.timestamp)),
+                salt: _generatePseudorandomSalt(),
                 bytecode: type(AdminACLV0).creationCode
             });
             address[] memory tmpEmptyArray = new address[](0);
@@ -362,14 +366,17 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
      * @notice helper function to generate a pseudorandom salt
      * @return result pseudorandom salt
      */
-    function _generatePseudorandomSalt()
-        internal
-        view
-        returns (bytes32 result)
-    {
+    function _generatePseudorandomSalt() internal returns (bytes32 result) {
+        // get and increment nonce to prevent same-block collisions
+        uint256 nonce = _pseudorandomSaltNonce++;
         return
             keccak256(
-                abi.encodePacked(block.timestamp, block.number, address(this))
+                abi.encodePacked(
+                    nonce,
+                    block.timestamp,
+                    block.number,
+                    address(this)
+                )
             );
     }
 
