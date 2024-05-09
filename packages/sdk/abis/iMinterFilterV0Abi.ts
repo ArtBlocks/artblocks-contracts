@@ -1,4 +1,4 @@
-export const IMinterFilterV0 = [
+export const iMinterFilterV0Abi = [
   {
     anonymous: false,
     inputs: [],

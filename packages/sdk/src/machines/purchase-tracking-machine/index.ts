@@ -24,6 +24,7 @@ export type PurchaseTrackingMachineContext = {
   mintedTokenId?: string;
   mintedToken?: TokenDetails;
   errorMessage?: string;
+  marketplaceUrl?: string;
 };
 
 export const purchaseTrackingMachine = setup({
@@ -127,6 +128,7 @@ export const purchaseTrackingMachine = setup({
   context: ({ input }) => ({
     artblocksClient: input.artblocksClient,
     purchaseTransactionHash: input.purchaseTransactionHash,
+    marketplaceUrl: input.marketplaceUrl,
   }),
   initial: "awaitingPurchaseConfirmation",
   states: {
@@ -167,6 +169,7 @@ export const purchaseTrackingMachine = setup({
         input: ({ context }) => ({
           tokenId: context.mintedTokenId,
           artblocksClient: context.artblocksClient,
+          marketplaceUrl: context.marketplaceUrl,
         }),
         onDone: [
           {

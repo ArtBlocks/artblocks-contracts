@@ -1,5 +1,5 @@
 import { PublicClient, getContract, Hex } from "viem";
-import { IDelegationRegistry } from "../../abis/IDelegationRegistry";
+import { iDelegationRegistryAbi } from "../../abis/iDelegationRegistryAbi";
 import { DELEGATION_REGISTRY_ADDRESS } from "../utils/addresses";
 
 /**
@@ -16,7 +16,7 @@ export async function getDelegateVaults(
   account: Hex
 ): Promise<string[]> {
   const contract = getContract({
-    abi: IDelegationRegistry,
+    abi: iDelegationRegistryAbi,
     address: DELEGATION_REGISTRY_ADDRESS,
     client: {
       public: publicClient,
