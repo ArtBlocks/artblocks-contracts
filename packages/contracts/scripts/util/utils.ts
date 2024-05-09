@@ -123,35 +123,29 @@ export async function getConfigInputs(
   const inputFileDirectory = path.dirname(fullImportPath);
   let deployConfigDetailsArray: DeployConfigDetails[];
   let deployNetworkConfiguration;
-  // try {
-  ({ deployConfigDetailsArray, deployNetworkConfiguration } = await import(
-    fullImportPath
-  ));
+  try {
+    ({ deployConfigDetailsArray, deployNetworkConfiguration } = await import(
+      fullImportPath
+    ));
+  } catch (error) {
+    throw new Error(
+      `[ERROR] Unable to import deployment configuration file at: ${fullDeploymentConfigPath}
+      Please ensure the file exists (e.g. deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-01.dev.ts)`
+    );
+  }
+  // record all deployment logs to a markdown file
+  try {
+    const pathToMyLogFile = path.join(inputFileDirectory, "DEPLOYMENT_LOGS.md");
+    const outputMD = `
+      ----------------------------------------
+      [INFO] Datetime of deployment: ${new Date().toISOString()}
+      [INFO] Deployment configuration file: ${fullDeploymentConfigPath}
 
-  console.log("deploy config details array: ", deployConfigDetailsArray);
-  console.log("deploy network config: ", deployNetworkConfiguration);
-  // } catch (error) {
-  //   throw new Error(
-  //     `[ERROR] Unable to import deployment configuration file at: ${fullDeploymentConfigPath}
-  //     Please ensure the file exists (e.g. deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-01.dev.ts)`
-  //   );
-  // }
-  // record all deployment logs to a file, monkey-patching stdout
-  // // const pathToMyLogFile = path.join(inputFileDirectory, "DEPLOYMENT_LOGS.log");
-  // // var myLogFileStream = fs.createWriteStream(pathToMyLogFile, { flags: "a+" });
-  // // var log_stdout = process.stdout;
-  // // console.log = function (d) {
-  // //   myLogFileStream.write(util.format(d) + "\n");
-  // //   log_stdout.write(util.format(d) + "\n");
-  // // };
-  // // record relevant deployment information in logs
-  // console.log(`----------------------------------------`);
-  // console.log(`[INFO] Datetime of deployment: ${new Date().toISOString()}`);
-  // console.log(
-  //   `[INFO] Deployment configuration file: ${fullDeploymentConfigPath}`
-  // );
-  // console.log("deploy config details array: ", deployConfigDetailsArray);
-  // console.log("deploy network config: ", deployNetworkConfiguration);
+    `;
+    fs.writeFileSync(pathToMyLogFile, outputMD, { flag: "as+" });
+  } catch (error) {
+    console.error("[ERROR] Updating deployment file failed:", error);
+  }
   return {
     deployConfigDetailsArray,
     deployNetworkConfiguration,
