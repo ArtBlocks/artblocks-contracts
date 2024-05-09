@@ -35,7 +35,6 @@ type BaseConfig = {
   transactionHash?: string;
 };
 
-// Add a discriminant property, like "type"
 type GnosisSafeConfig = BaseConfig & {
   useGnosisSafe: true;
   safeAddress: string;

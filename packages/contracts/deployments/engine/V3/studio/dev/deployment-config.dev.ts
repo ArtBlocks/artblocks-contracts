@@ -13,7 +13,7 @@ export const deployNetworkConfiguration = {
 
 export const deployConfigDetailsArray = [
   {
-    engineCoreContractType: 0, // 0 for Engine, 1 for Engine Flex
+    engineCoreContractType: 0,
     tokenName: "dev-test2",
     tokenTicker: "DEV_TEST2",
     renderProviderAddress: "0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4",
@@ -25,15 +25,10 @@ export const deployConfigDetailsArray = [
     allowArtistProjectActivation: true,
     adminACLContract: "0x0000000000000000000000000000000000000000",
     salt: "0x0",
-    // optionally define this to set default vertical name for the contract after deployment.
-    // if not defined, the default vertical name will be "unassigned".
-    // common values include `studio`, `fullyonchain`, `flex`, or partnerships like `artblocksxpace`.
-    // also note that if you desire to create a new vertical, you will need to add the vertical name to the
-    // `project_verticals` table in the database before running this deploy script.
     defaultVerticalName: "studio",
   },
   {
-    engineCoreContractType: 1, // 0 for Engine, 1 for Engine Flex
+    engineCoreContractType: 1,
     tokenName: "dev-test-flex",
     tokenTicker: "DEV_TEST_FLEX",
     renderProviderAddress: "0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4",
@@ -45,11 +40,6 @@ export const deployConfigDetailsArray = [
     allowArtistProjectActivation: true,
     adminACLContract: "0x0000000000000000000000000000000000000000",
     salt: "0x0",
-    // optionally define this to set default vertical name for the contract after deployment.
-    // if not defined, the default vertical name will be "unassigned".
-    // common values include `studio`, `fullyonchain`, `flex`, or partnerships like `artblocksxpace`.
-    // also note that if you desire to create a new vertical, you will need to add the vertical name to the
-    // `project_verticals` table in the database before running this deploy script.
     defaultVerticalName: "studio",
   },
 ];
