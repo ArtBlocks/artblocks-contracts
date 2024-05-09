@@ -32,11 +32,9 @@ Date: 2024-05-09T17:01:48.023Z
 
 **Engine Factory:** https://sepolia.etherscan.io/address/0x0000B005007298838aCF6589d4342920A9cB002a#code
 
-**Core Registry:** https://sepolia.etherscan.io/address/[object Promise]#code
+**Core Registry:** https://sepolia.etherscan.io/address/0xfeA4f2f4E45c255ceE626a1A994BB214039c2B9A#code
 
 ---
-
-**AdminACL:** https://sepolia.etherscan.io/address/0x37935f04d040F564337AE9BD76f2668664Fc9604#code
 
         **Engine Contract Type:** Engine
 
@@ -57,8 +55,6 @@ Date: 2024-05-09T17:01:48.023Z
       **Other**
 
       - **Starting project ID:** 0
-      - **Add initial project?:** false
-      - **Add initial token?:** false
       - **Image Bucket:** dev-test2-sepolia
 
         ---
@@ -84,8 +80,6 @@ Date: 2024-05-09T17:01:48.023Z
       **Other**
 
       - **Starting project ID:** 0
-      - **Add initial project?:** false
-      - **Add initial token?:** false
       - **Image Bucket:** dev-test-flex-sepolia
 
         ---

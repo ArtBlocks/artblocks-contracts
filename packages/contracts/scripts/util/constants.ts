@@ -117,17 +117,26 @@ export function getActiveSharedSplitProvider(): string {
   return "0x0000000004B100B47f061968a387c82702AFe946";
 }
 
-export function getActiveEngineImplementations(
+export async function getActiveEngineImplementations(
   networkName: string,
   environment: string
-): {
+): Promise<{
   activeEngineImplementationAddress: string;
   activeEngineFlexImplementationAddress: string;
-} {
+}> {
+  // get the engine factory
+  const engineFactoryAddress = getActiveEngineFactoryAddress(
+    networkName,
+    environment
+  );
+  const engineContractFactory =
+    await ethers.getContractFactory("EngineFactoryV0");
+  const engineFactory = engineContractFactory.attach(engineFactoryAddress);
+
   const activeEngineImplementationAddress =
-    ACTIVE_ENGINE_IMPLEMENTATION[networkName]?.[environment];
+    await engineFactory.engineImplementation();
   const activeEngineFlexImplementationAddress =
-    ACTIVE_ENGINE_FLEX_IMPLEMENTATION[networkName]?.[environment];
+    await engineFactory.engineFlexImplementation();
   if (
     !activeEngineImplementationAddress ||
     !activeEngineFlexImplementationAddress
@@ -141,20 +150,6 @@ export function getActiveEngineImplementations(
     activeEngineFlexImplementationAddress,
   };
 }
-// Active shared Engine and Engine Flex implementation contracts being used
-// to deploy 1167 clones, on each network and environment.
-// format is [network]: { [environment]: [Engine implementation address] }
-const ACTIVE_ENGINE_IMPLEMENTATION = {
-  sepolia: {
-    dev: "0x00000000BB846ED9fb50fF001C6cD03012fC4485",
-  },
-};
-
-const ACTIVE_ENGINE_FLEX_IMPLEMENTATION = {
-  sepolia: {
-    dev: "0x00000000B33F6D5cA8222c87EAc99D206A99E17E",
-  },
-};
 
 export function getActiveEngineFactoryAddress(
   networkName: string,

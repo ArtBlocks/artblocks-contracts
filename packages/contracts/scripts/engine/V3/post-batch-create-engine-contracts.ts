@@ -58,7 +58,7 @@ async function main() {
   const {
     activeEngineImplementationAddress,
     activeEngineFlexImplementationAddress,
-  } = getActiveEngineImplementations(
+  } = await getActiveEngineImplementations(
     networkName,
     deployNetworkConfiguration.environment
   );
@@ -210,10 +210,9 @@ async function main() {
         defaultVerticalName
       );
       // log deployment info
-      outputMd += `**AdminACL:** https://${etherscanSubdomain}etherscan.io/address/${adminACLContractAddress}#code
+      outputMd += `
+        ## Deployment: ${engineCoreContractType === 0 ? "Engine" : "Engine Flex"} | ${engineContractAddress}
   
-        **Engine Contract Type:** ${engineCoreContractType === 0 ? "Engine" : "Engine Flex"}
-        
         **Engine Contract:** https://${etherscanSubdomain}etherscan.io/address/${engineContractAddress}#code
         
         **Metadata**
@@ -231,8 +230,6 @@ async function main() {
       **Other**
 
       - **Starting project ID:** ${startingProjectId}
-      - **Add initial project?:** false
-      - **Add initial token?:** false
       - **Image Bucket:** ${bucketName}
         
         ---

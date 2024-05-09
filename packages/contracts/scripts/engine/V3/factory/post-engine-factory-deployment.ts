@@ -52,7 +52,7 @@ async function main() {
   const {
     activeEngineFlexImplementationAddress,
     activeEngineImplementationAddress,
-  } = getActiveEngineImplementations(networkName, config.environment);
+  } = await getActiveEngineImplementations(networkName, config.environment);
 
   // VALIDATE
   if (!coreRegistryAddress.length) {
