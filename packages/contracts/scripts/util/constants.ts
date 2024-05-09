@@ -117,6 +117,45 @@ export function getActiveSharedSplitProvider(): string {
   return "0x0000000004B100B47f061968a387c82702AFe946";
 }
 
+export function getActiveEngineImplementations(
+  networkName: string,
+  environment: string
+): {
+  activeEngineImplementationAddress: string;
+  activeEngineFlexImplementationAddress: string;
+} {
+  const activeEngineImplementationAddress =
+    ACTIVE_ENGINE_IMPLEMENTATION[networkName]?.[environment];
+  const activeEngineFlexImplementationAddress =
+    ACTIVE_ENGINE_FLEX_IMPLEMENTATION[networkName]?.[environment];
+  if (
+    !activeEngineImplementationAddress ||
+    !activeEngineFlexImplementationAddress
+  ) {
+    throw new Error(
+      `No active engine or engine flex implementation found for network ${networkName} and environment ${environment}`
+    );
+  }
+  return {
+    activeEngineImplementationAddress,
+    activeEngineFlexImplementationAddress,
+  };
+}
+// Active shared Engine and Engine Flex implementation contracts being used
+// to deploy 1167 clones, on each network and environment.
+// format is [network]: { [environment]: [Engine implementation address] }
+const ACTIVE_ENGINE_IMPLEMENTATION = {
+  sepolia: {
+    dev: "0x00000000BB846ED9fb50fF001C6cD03012fC4485",
+  },
+};
+
+const ACTIVE_ENGINE_FLEX_IMPLEMENTATION = {
+  sepolia: {
+    dev: "0x00000000B33F6D5cA8222c87EAc99D206A99E17E",
+  },
+};
+
 export function getActiveEngineFactoryAddress(
   networkName: string,
   environment: string
@@ -129,9 +168,8 @@ export function getActiveEngineFactoryAddress(
   }
   return activeEngineFactory;
 }
-// Active shared randomizer contracts being used for the shared minter
-// suite, on each network and environment.
-// format is [network]: { [environment]: [randomizer address] }
+// Active shared Engine Factory, on each network and environment.
+// format is [network]: { [environment]: [Engine Factory address] }
 const ACTIVE_ENGINE_FACTORY = {
   sepolia: {
     dev: "0x0000B005007298838aCF6589d4342920A9cB002a",
