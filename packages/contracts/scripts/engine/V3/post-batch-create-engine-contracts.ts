@@ -109,7 +109,6 @@ async function main() {
       autoApproveArtistSplitProposals,
       nullPlatformProvider,
       allowArtistProjectActivation,
-      adminACLContract,
       defaultVerticalName,
     } = deployConfigDetailsArray[i];
 
