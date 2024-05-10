@@ -260,6 +260,7 @@ export const tokenPollingMachine = setup({
   }),
 });
 
+// TODO: Add return type
 async function getMarketplaceAsset(
   marketplaceUrl: string,
   contractAddress: string,
@@ -272,8 +273,10 @@ async function getMarketplaceAsset(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      contractAddress,
-      tokenId,
+      filters: {
+        contractAddress,
+        tokenId,
+      },
     }),
   });
   const data = await res.json();
