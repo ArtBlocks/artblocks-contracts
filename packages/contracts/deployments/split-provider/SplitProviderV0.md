@@ -23,3 +23,4 @@ Deploys to address: `0x0000000004B100B47f061968a387c82702AFe946`
 
 - sepolia: https://sepolia.etherscan.io/tx/0x9e665e84a550acf3f4b5810995a3216f2d3fcffb97c609e499008b7a6593b28a
 - Arbitrum sepolia: https://sepolia.arbiscan.io/tx/0xf5d6b26aaeb74c5c6fde9d3ce7377e5e38c200c3162a8415066799b9acdf93f2
+- Arbitrum: https://arbiscan.io/tx/0x09c64ce280e159ae04a583b9232a4eca5e15f3b2adf471748df3d18bed3008db
