@@ -25,3 +25,4 @@ Deploys to address: `0x00000000af817dFBc2b3006E365D2eFef1953334`
 ### Deployment transactions:
 
 - sepolia: https://sepolia.etherscan.io/tx/0xc37a5127dabb042f425268abf444b5594f8ec4b5d5f2f802f88747a015782da0
+- Arbitrum sepolia: https://sepolia.arbiscan.io/tx/0x37cbaaf10a2fccee5871b2b757270ed9d0a710bedc207ceb72397adb1a9955a5
