@@ -166,8 +166,18 @@ export function getActiveEngineFactoryAddress(
 // Active shared Engine Factory, on each network and environment.
 // format is [network]: { [environment]: [Engine Factory address] }
 const ACTIVE_ENGINE_FACTORY = {
+  mainnet: {
+    mainnet: "0x00000000F82E4e6D5AB22D63050FCb2bF15eE95d",
+  },
+  arbitrum: {
+    arbitrum: "0x000000bbAA3E36b60C06A92430D8956459c2Fd51",
+  },
+  "arbitrum-sepolia": {
+    "arbitrum-staging": "0x000000FF72D2bf6A83a21452aD5f80906472AF55",
+  },
   sepolia: {
     dev: "0x0000B005007298838aCF6589d4342920A9cB002a",
+    staging: "0x000088739C60a490FeE1E20007b61DC500265626",
   },
 };
 
