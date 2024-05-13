@@ -77,7 +77,7 @@ erDiagram
         addr _0x62DC3F6C7Bf5FA8A834E6B97dee3daB082873600
     }
     EngineFactory {
-        addr _0x000088739C60a490FeE1E20007b61DC500265626
+        addr _0x000000021e59FE2bc9390d5f5bfe9Ae1DE0cEf98
     }
     CoreRegistry {
         addr _0xdAe755c2944Ec125a0D8D5CB082c22837593441a
