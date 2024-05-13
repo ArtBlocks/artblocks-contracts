@@ -99,7 +99,7 @@ for (const coreContractName of coreContractsToTest) {
         // Note that for testing purposes, we deploy a new version of the library,
         // but in production we would use the same library deployment for all contracts
         const libraryFactory = await ethers.getContractFactory(
-          "BytecodeStorageReader"
+          "contracts/libs/v0.8.x/BytecodeStorageV1.sol:BytecodeStorageReader"
         );
         const library = await libraryFactory
           .connect(config.accounts.deployer)
@@ -235,18 +235,7 @@ for (const coreContractName of coreContractsToTest) {
             "Action not supported"
           );
         } else if (coreContractName === "GenArt721CoreV3") {
-          // emits expected event arg(s)
-          await expect(
-            config.genArt721Core
-              .connect(config.accounts.deployer)
-              .updateArtblocksCurationRegistryAddress(
-                config.accounts.artist.address
-              )
-          )
-            .to.emit(config.genArt721Core, "PlatformUpdated")
-            .withArgs(
-              ethers.utils.formatBytes32String("curationRegistryAddress")
-            );
+          throw new Error("Untested core contract version");
         } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
           // Do nothing.
           // This core contract variant doesn't support config interface component.

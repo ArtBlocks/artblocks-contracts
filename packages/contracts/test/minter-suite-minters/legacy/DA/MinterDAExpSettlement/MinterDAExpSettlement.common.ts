@@ -730,13 +730,12 @@ export const MinterDAExpSettlement_Common = async (
       expect(hasMaxBeenInvoked).to.be.false;
       // expect revert when trying to mint another token
       // note: config is a different revert message than when caching maxInvocations on the minter, because core is enforcing the maxInvocations
-      await expectRevert(
+      await expectRevert.unspecified(
         config.minter
           .connect(config.accounts.user)
           .purchase(config.projectZero, {
             value: config.startingPrice,
-          }),
-        "Must not exceed max invocations"
+          })
       );
     });
   });

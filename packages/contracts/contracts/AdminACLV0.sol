@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.19;
+pragma solidity 0.8.22;
 
 import "./interfaces/v0.8.x/IAdminACLV0.sol";
+import {IAdminACLV0_Extended} from "./interfaces/v0.8.x/IAdminACLV0_Extended.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "@openzeppelin-4.7/contracts/utils/introspection/ERC165.sol";
 
@@ -16,7 +17,7 @@ import "@openzeppelin-4.7/contracts/utils/introspection/ERC165.sol";
  * Care must be taken to ensure that the admin ACL contract is secure behind a
  * multi-sig or other secure access control mechanism.
  */
-contract AdminACLV0 is IAdminACLV0, ERC165 {
+contract AdminACLV0 is IAdminACLV0, IAdminACLV0_Extended, ERC165 {
     string public AdminACLType = "AdminACLV0";
 
     /// superAdmin is the only address that passes any and all ACL checks
@@ -98,6 +99,9 @@ contract AdminACLV0 is IAdminACLV0, ERC165 {
     ) public view virtual override(ERC165) returns (bool) {
         return
             interfaceId == type(IAdminACLV0).interfaceId ||
+            // @dev IAdminACLV0_Extended added after original deployments, so do not rely on it
+            // being present in all AdminACLV0 contracts.
+            interfaceId == type(IAdminACLV0_Extended).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 }

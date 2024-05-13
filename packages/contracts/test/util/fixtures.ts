@@ -6,10 +6,16 @@ import {
   deploySharedMinterFilter,
   deployAndGet,
 } from "./common";
-
 import { ethers } from "hardhat";
 
-import { Contract } from "ethers";
+import { SplitProviderV0 } from "../../scripts/contracts/split/split-provider/SplitProviderV0";
+import {
+  AdminACLV0,
+  GenArt721CoreV3_Engine,
+  GenArt721CoreV3_Engine_Flex,
+  EngineFactoryV0,
+  CoreRegistryV1,
+} from "../../scripts/contracts";
 
 import { SplitAtomicV0__factory } from "../../scripts/contracts";
 
@@ -54,6 +60,104 @@ export async function setupConfigWitMinterFilterV2Suite() {
   // allowlist dummy shared minter on minter filter
   await config.minterFilter.approveMinterGlobally(config.minter.address);
   return config;
+}
+
+// extend T_Config to the configured settings for the setupEngineFactory fixture
+interface GenArt721CoreV3_EngineFactoryConfig extends T_Config {
+  genArt721Core: undefined;
+  engineFactory: EngineFactoryV0;
+  engineImplementation: GenArt721CoreV3_Engine;
+  engineFlexImplementation: GenArt721CoreV3_Engine_Flex;
+  adminACL: AdminACLV0;
+  coreRegistry: CoreRegistryV1;
+  splitProvider: SplitProviderV0;
+  projectZero: number;
+  projectTwo: number;
+}
+
+export async function setupEngineFactory() {
+  const config = await loadFixture(setupConfig);
+  // Note that for testing purposes, we deploy a new version of the library,
+  // but in production we would use the same library deployment for all contracts
+  const libraryFactory = await ethers.getContractFactory(
+    "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+  );
+  const library = await libraryFactory
+    .connect(config.accounts.deployer)
+    .deploy(/* no args for library ever */);
+  let libraries = {
+    libraries: {
+      BytecodeStorageReader: library.address,
+    },
+  };
+  // deploy Engine implementations
+  const engineCoreContractFactory = await ethers.getContractFactory(
+    "GenArt721CoreV3_Engine",
+    {
+      ...libraries,
+    }
+  );
+  config.engineImplementation = await engineCoreContractFactory
+    .connect(config.accounts.deployer)
+    .deploy();
+
+  // deploy Engine Flex implementation with Flex libraries
+  const flexLibraryFactory = await ethers.getContractFactory("V3FlexLib", {
+    libraries: { BytecodeStorageReader: library.address },
+  });
+  const flexLibrary = await flexLibraryFactory
+    .connect(config.accounts.deployer)
+    .deploy(/* no args for library ever */);
+  libraries.libraries.V3FlexLib = flexLibrary.address;
+
+  const engineFlexCoreContractFactory = await ethers.getContractFactory(
+    "GenArt721CoreV3_Engine_Flex",
+    {
+      ...libraries,
+    }
+  );
+
+  config.engineFlexImplementation = await engineFlexCoreContractFactory
+    .connect(config.accounts.deployer)
+    .deploy();
+
+  // deploy admin ACL
+  config.adminACL = await deployAndGet(config, "AdminACLV0", []);
+  // deploy core registry
+  config.coreRegistry = await deployAndGet(config, "CoreRegistryV1", []);
+  // deploy minter filter
+  const minterFilterAdminACL = await deployAndGet(config, "AdminACLV0", []);
+  config.minterFilter = await deployAndGet(config, "MinterFilterV2", [
+    minterFilterAdminACL.address,
+    config.coreRegistry.address,
+  ]);
+
+  // deploy Engine factory
+  config.engineFactory = await deployAndGet(config, "EngineFactoryV0", [
+    config.engineImplementation.address,
+    config.engineFlexImplementation.address,
+    config.coreRegistry.address,
+    config.accounts.deployer.address, // owner
+  ]);
+
+  // transfer ownership of core registry to engine factory
+  await config.coreRegistry
+    .connect(config.accounts.deployer)
+    .transferOwnership(config.engineFactory.address);
+
+  config.randomizer = await deployAndGet(config, "BasicRandomizerV2", []);
+
+  // split provider
+  const mockSplitterFactory = await deployAndGet(
+    config,
+    "Mock0xSplitsV2PullFactory",
+    []
+  );
+  config.splitProvider = (await deployAndGet(config, "SplitProviderV0", [
+    mockSplitterFactory.address, // _splitterFactory
+  ])) as SplitProviderV0;
+
+  return config as GenArt721CoreV3_EngineFactoryConfig;
 }
 
 export async function setupSplits() {

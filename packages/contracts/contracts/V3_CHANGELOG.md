@@ -92,3 +92,16 @@ V3 performance metrics are available in [V3_Performance.md](V3_PERFORMANCE.md)
 ## The following changes were made in the Core V3 (3.1.0) contract:
 
 - Expose a `tokenIdToHashSeed` method in addition to `tokenIdToHash` on the CoreContract.
+
+## The following changes were made in the Core V3 (3.2.0) contract:
+
+- Allow artists to optionally add and update pre-compressed scripts via the ByteCodeStorageV2 Lib.
+- Contracts are updated to support the [ERC-2981](https://eips.ethereum.org/EIPS/eip-2981) royalty standard, and deploy splitter contracts automatically for handling secondary sales. Note that marketplace support of Manifold's [Royalty Registry](https://royaltyregistry.xyz/) continues to be encouraged and will continue to be used for all legacy contracts.
+- Add new Flex capability to reference existing on-chain assets compatible with BytecodeStorageV2.
+- Add new Flex capability to upload pre-compressed on-chain assets via the BytecodeStorageV2 Lib.
+- Add new Flex capability to reference assets defined on the Art Blocks Dependency Registry.
+- Add new metadata pointers to the on-chain generator address, as well as "next" core contract address for a given core contract.
+- Add new initialize-time configurable settings, including requring a null platform provider, as well as allowing artists to activate their projects.
+- Add ability for admin to update artist's name after project is locked. (based on previous requests we have received)
+- General refactoring of events, errors, and use of a Flex external library to reduce contract bytecode size.
+- Contracts updated to be compatible with [ERC-1167](https://eips.ethereum.org/EIPS/eip-1167) minimal proxies to reduce deployment costs and improve assurance of contract integrity.

@@ -1,14 +1,6 @@
-import {
-  BN,
-  constants,
-  expectEvent,
-  expectRevert,
-  balance,
-  ether,
-} from "@openzeppelin/test-helpers";
+import { constants } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import {
@@ -20,13 +12,13 @@ import {
   deployCoreWithMinterFilter,
   mintProjectUntilRemaining,
   advanceEVMByTime,
+  GENART721_ERROR_NAME,
+  GENART721_ERROR_CODES,
 } from "../../util/common";
 import { FOUR_WEEKS } from "../../util/constants";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
-  "GenArt721CoreV3", // flagship V3 core
-  "GenArt721CoreV3_Explorations", // V3 core explorations contract
   "GenArt721CoreV3_Engine", // V3 core Engine contract
   "GenArt721CoreV3_Engine_Flex", // V3 core Engine_Flex contract
 ];
@@ -84,104 +76,60 @@ for (const coreContractName of coreContractsToTest) {
     }
 
     describe("{artblocks,provider}PrimarySalesAddress", function () {
-      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-        it("returns expected renderProviderPrimarySalesAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.renderProviderPrimarySalesAddress()
-          ).to.be.equal(config.accounts.deployer.address);
-        });
-        it("returns expected renderProviderPrimarySalesAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.platformProviderPrimarySalesAddress()
-          ).to.be.equal(config.accounts.additional.address);
-        });
-      } else {
-        it("returns expected artblocksPrimarySalesAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.artblocksPrimarySalesAddress()
-          ).to.be.equal(config.accounts.deployer.address);
-        });
-      }
-    });
-
-    describe("artblocksAddress", function () {
-      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-        it("always passes, non-relevant", async function () {
-          const config = await loadFixture(_beforeEach);
-          // This test is non-relevant for Engine variant V3 contracts.
-          expect(true);
-        });
-      } else {
-        it("returns expected artblocksAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(await config.genArt721Core.artblocksAddress()).to.be.equal(
-            config.accounts.deployer.address
-          );
-        });
-      }
+      it("returns expected renderProviderPrimarySalesAddress", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(
+          await config.genArt721Core.renderProviderPrimarySalesAddress()
+        ).to.be.equal(config.accounts.deployer.address);
+      });
+      it("returns expected renderProviderPrimarySalesAddress", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(
+          await config.genArt721Core.platformProviderPrimarySalesAddress()
+        ).to.be.equal(config.accounts.additional.address);
+      });
     });
 
     describe("{artblocks,provider}SecondarySalesAddress", function () {
-      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-        it("returns expected renderProviderSecondarySalesAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.renderProviderSecondarySalesAddress()
-          ).to.be.equal(config.accounts.deployer.address);
-        });
-        it("returns expected renderProviderSecondarySalesAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.platformProviderSecondarySalesAddress()
-          ).to.be.equal(config.accounts.additional.address);
-        });
-      } else {
-        it("returns expected artblocksSecondarySalesAddress", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.artblocksSecondarySalesAddress()
-          ).to.be.equal(config.accounts.deployer.address);
-        });
-      }
+      it("returns expected defaultRenderProviderSecondarySalesAddress", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(
+          await config.genArt721Core.defaultRenderProviderSecondarySalesAddress()
+        ).to.be.equal(config.accounts.deployer.address);
+      });
+      it("returns expected defaultPlatformProviderSecondarySalesAddress", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(
+          await config.genArt721Core.defaultPlatformProviderSecondarySalesAddress()
+        ).to.be.equal(config.accounts.additional.address);
+      });
     });
 
     describe("{artblocks,provider}Percentage", function () {
-      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-        it("returns expected renderProviderPrimarySalesPercentage", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.renderProviderPrimarySalesPercentage()
-          ).to.be.equal(10);
-        });
-        it("returns expected platformProviderPrimarySalesPercentage", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.platformProviderPrimarySalesPercentage()
-          ).to.be.equal(10);
-        });
-        it("returns expected renderProviderSecondarySalesBPS", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.renderProviderSecondarySalesBPS()
-          ).to.be.equal(250);
-        });
-        it("returns expected platformProviderSecondarySalesBPS", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(
-            await config.genArt721Core.platformProviderSecondarySalesBPS()
-          ).to.be.equal(250);
-        });
-      } else {
-        it("returns expected artblocksPercentage", async function () {
-          const config = await loadFixture(_beforeEach);
-          expect(await config.genArt721Core.artblocksPercentage()).to.be.equal(
-            10
-          );
-        });
-      }
+      it("returns expected renderProviderPrimarySalesPercentage", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(
+          await config.genArt721Core.renderProviderPrimarySalesPercentage()
+        ).to.be.equal(10);
+      });
+      it("returns expected platformProviderPrimarySalesPercentage", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(
+          await config.genArt721Core.platformProviderPrimarySalesPercentage()
+        ).to.be.equal(10);
+      });
+      it("returns expected defaultRenderProviderSecondarySalesBPS", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(
+          await config.genArt721Core.defaultRenderProviderSecondarySalesBPS()
+        ).to.be.equal(250);
+      });
+      it("returns expected defaultPlatformProviderSecondarySalesBPS", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(
+          await config.genArt721Core.defaultPlatformProviderSecondarySalesBPS()
+        ).to.be.equal(250);
+      });
     });
 
     describe("owner", function () {
@@ -260,12 +208,16 @@ for (const coreContractName of coreContractsToTest) {
           constants.ZERO_ADDRESS
         );
         // ensure prior adminACL may not perform an admin function
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .addProject("new project", config.accounts.artist2.address),
-          "Only Admin ACL allowed"
-        );
+            .addProject("new project", config.accounts.artist2.address)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyAdminACL);
       });
     });
 
@@ -282,12 +234,41 @@ for (const coreContractName of coreContractsToTest) {
         // wait until project is locked
         await advanceEVMByTime(FOUR_WEEKS + 1);
         // expect revert
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .addProjectScript(config.projectZero, "lorem ipsum"),
-          "Only if unlocked"
+            .addProjectScript(config.projectZero, "lorem ipsum")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyUnlockedProjects);
+      });
+      it("reverts if try to add compressed script", async function () {
+        const config = await loadFixture(_beforeEach);
+        await mintProjectUntilRemaining(
+          config,
+          config.projectZero,
+          config.accounts.artist,
+          0
         );
+        // wait until project is locked
+        await advanceEVMByTime(FOUR_WEEKS + 1);
+        const compressedScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getCompressed("lorem ipsum");
+        // expect revert
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .addProjectScriptCompressed(config.projectZero, compressedScript)
+        )
+          .to.be.reverseWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyUnlockedProjects);
       });
     });
 
@@ -296,11 +277,13 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         let targetCoreVersion;
         if (coreContractName === "GenArt721CoreV3") {
-          targetCoreVersion = "v3.2.2";
+          throw new Error("Untested core contract version");
         } else if (coreContractName === "GenArt721CoreV3_Explorations") {
-          targetCoreVersion = "v3.2.3";
+          throw new Error("Untested core contract version");
+        } else if (coreContractName.includes("GenArt721CoreV3_Engine_Flex")) {
+          targetCoreVersion = "v3.2.1";
         } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          targetCoreVersion = "v3.1.4";
+          targetCoreVersion = "v3.2.0";
         } else {
           throw new Error("Unexpected core contract name");
         }
@@ -325,20 +308,30 @@ for (const coreContractName of coreContractsToTest) {
           expect(coreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
         } else {
           // coreType is same for GenArt721CoreV3 & GenArt721CoreV3_Explorations
-          expect(coreType).to.be.equal("GenArt721CoreV3");
+          throw new Error("Untested core contract version");
         }
       });
     });
 
     describe("supportsInterface", function () {
-      it("supports IManifold", async function () {
+      it("supports ERC-2981", async function () {
         const config = await loadFixture(_beforeEach);
-        // expected true for supporting: bytes4(keccak256('getRoyalties(uint256)')) == 0xbb3bafd6
+        // expected true for supporting: bytes4(keccak256("royaltyInfo(uint256,uint256)")) == 0x2a55205a
+        expect(
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
+            .supportsInterface(0x2a55205a)
+        ).to.be.true;
+      });
+
+      it("doesn't support IManifold", async function () {
+        const config = await loadFixture(_beforeEach);
+        // expected false for supporting: bytes4(keccak256('getRoyalties(uint256)')) == 0xbb3bafd6
         expect(
           await config.genArt721Core
             .connect(config.accounts.deployer)
             .supportsInterface(0xbb3bafd6)
-        ).to.be.true;
+        ).to.be.false;
       });
 
       it("supports IERC721", async function () {
@@ -382,39 +375,28 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         const nextProjectId = 365;
         let differentGenArt721Core;
-        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          const engineRegistryFactory =
-            await ethers.getContractFactory("EngineRegistryV0");
-          const engineRegistry = await engineRegistryFactory
-            .connect(config.accounts.deployer)
-            .deploy();
-          differentGenArt721Core = await deployWithStorageLibraryAndGet(
-            config,
-            coreContractName,
-            [
-              config.name,
-              config.symbol,
-              config.accounts.deployer.address,
-              config.accounts.additional.address,
-              config.randomizer.address,
-              config.adminACL.address,
-              nextProjectId,
-              false,
-            ]
-          );
-        } else {
-          differentGenArt721Core = await deployWithStorageLibraryAndGet(
-            config,
-            coreContractName,
-            [
-              config.name,
-              config.symbol,
-              config.randomizer.address,
-              config.adminACL.address,
-              nextProjectId,
-            ]
-          );
-        }
+        const engineRegistryFactory =
+          await ethers.getContractFactory("EngineRegistryV0");
+        const engineRegistry = await engineRegistryFactory
+          .connect(config.accounts.deployer)
+          .deploy();
+        differentGenArt721Core = await deployWithStorageLibraryAndGet(
+          config,
+          coreContractName,
+          [
+            config.name,
+            config.symbol,
+            config.accounts.deployer.address,
+            config.accounts.additional.address,
+            config.randomizer.address,
+            config.adminACL.address,
+            nextProjectId,
+            false,
+            config.splitProvider.address,
+            false, // null platform provider
+            false, // allow artist project activation
+          ]
+        );
         expect(await differentGenArt721Core.nextProjectId()).to.be.equal(365);
       });
     });
@@ -430,39 +412,28 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         const nextProjectId = 365;
         let differentGenArt721Core;
-        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          const engineRegistryFactory =
-            await ethers.getContractFactory("EngineRegistryV0");
-          const engineRegistry = await engineRegistryFactory
-            .connect(config.accounts.deployer)
-            .deploy();
-          differentGenArt721Core = await deployWithStorageLibraryAndGet(
-            config,
-            coreContractName,
-            [
-              config.name,
-              config.symbol,
-              config.accounts.deployer.address,
-              config.accounts.additional.address,
-              config.randomizer.address,
-              config.adminACL.address,
-              nextProjectId,
-              false,
-            ]
-          );
-        } else {
-          differentGenArt721Core = await deployWithStorageLibraryAndGet(
-            config,
-            coreContractName,
-            [
-              config.name,
-              config.symbol,
-              config.randomizer.address,
-              config.adminACL.address,
-              nextProjectId,
-            ]
-          );
-        }
+        const engineRegistryFactory =
+          await ethers.getContractFactory("EngineRegistryV0");
+        const engineRegistry = await engineRegistryFactory
+          .connect(config.accounts.deployer)
+          .deploy();
+        differentGenArt721Core = await deployWithStorageLibraryAndGet(
+          config,
+          coreContractName,
+          [
+            config.name,
+            config.symbol,
+            config.accounts.deployer.address,
+            config.accounts.additional.address,
+            config.randomizer.address,
+            config.adminACL.address,
+            nextProjectId,
+            false,
+            config.splitProvider.address,
+            false, // null platform provider
+            false, // allow artist project activation
+          ]
+        );
         expect(await differentGenArt721Core.startingProjectId()).to.be.equal(
           nextProjectId
         );
@@ -472,16 +443,20 @@ for (const coreContractName of coreContractsToTest) {
     describe("mint_ECF", function () {
       it("reverts if not called by the minter contract", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
             .mint_Ecf(
               config.accounts.artist.address,
               config.projectZero,
               config.accounts.artist.address
-            ),
-          "Must mint from minter contract"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyMinterContract);
       });
 
       it("reverts if try to mint non-active project", async function () {
@@ -489,22 +464,30 @@ for (const coreContractName of coreContractsToTest) {
         await config.genArt721Core
           .connect(config.accounts.deployer)
           .toggleProjectIsActive(config.projectZero);
-        await expectRevert(
+        await expect(
           config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero),
-          "Project must exist and be active"
-        );
+            .purchase(config.projectZero)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.ProjectMustExistAndBeActive);
       });
 
       it("reverts if try to mint paused from non-artist account", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero),
-          "Purchases are paused."
-        );
+            .purchase(config.projectZero)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.PurchasesPaused);
       });
     });
 
@@ -517,15 +500,19 @@ for (const coreContractName of coreContractsToTest) {
           .purchase(config.projectZero);
 
         // call directly from non-randomizer account and expect revert
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
             .setTokenHash_8PT(
               config.projectZeroTokenZero.toNumber(),
               ethers.constants.MaxInt256
-            ),
-          "Only randomizer may set"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyRandomizer);
       });
 
       it("does allow randomizer to call, and updates token hash", async function () {
@@ -578,12 +565,16 @@ for (const coreContractName of coreContractsToTest) {
           config.projectZeroTokenZero.toNumber()
         );
         // expect revert when attempting to overwrite the token hash
-        await expectRevert(
+        await expect(
           mockRandomizer.actuallyAssignTokenHash(
             config.projectZeroTokenZero.toNumber()
-          ),
-          "Token hash already set"
-        );
+          )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TokenHashAlreadySet);
       });
 
       it("does not allow randomizer to set token hash seed to zero", async function () {
@@ -607,12 +598,16 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist)
           .purchase(config.projectZero);
         // expect revert when attempting to set token hash to zero
-        await expectRevert(
+        await expect(
           mockRandomizer.actuallyAssignZeroTokenHash(
             config.projectZeroTokenZero.toNumber()
-          ),
-          "No zero hash seed"
-        );
+          )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.NoZeroHashSeed);
       });
 
       it("does not allow randomizer to assign hash if token does not yet exist", async function () {
@@ -632,12 +627,16 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.deployer)
           .updateRandomizerAddress(mockRandomizer.address);
         // expect revert when attempting to set token hash of non-existing token
-        await expectRevert(
+        await expect(
           mockRandomizer.actuallyAssignTokenHash(
             config.projectZeroTokenZero.toNumber()
-          ),
-          "Token ID does not exist"
-        );
+          )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TokenDoesNotExist);
       });
     });
 
@@ -666,12 +665,16 @@ for (const coreContractName of coreContractsToTest) {
       it("does not allow invalid project when using onlyValidProjectId modifier", async function () {
         const config = await loadFixture(_beforeEach);
         // mint token zero so it is a valid token
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .toggleProjectIsActive(999),
-          "Project ID does not exist"
-        );
+            .toggleProjectIsActive(999)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.ProjectDoesNotExist);
       });
     });
   });

@@ -149,7 +149,7 @@ runForEach.forEach((params) => {
             .setMinimumAuctionLengthSeconds(1)
         )
           .to.emit(
-            await ethers.getContractFactory("DALinLib"),
+            await ethers.getContractAt("DALinLib", config.minter.address),
             "AuctionMinimumLengthSecondsUpdated"
           )
           .withArgs(1);
@@ -172,7 +172,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("DALinLib"),
+            await ethers.getContractAt("DALinLib", config.minter.address),
             "SetAuctionDetailsLin"
           )
           .withArgs(
@@ -199,7 +199,7 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractFactory("DALib"),
+            await ethers.getContractAt("DALib", config.minter.address),
             "ResetAuctionDetails"
           )
           .withArgs(config.projectZero, config.genArt721Core.address);
