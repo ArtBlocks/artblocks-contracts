@@ -19,9 +19,11 @@ export const deployConfigDetailsArray = [
   {
     // 0 for Engine, 1 for Engine Flex
     engineCoreContractType: 0,
-    tokenName: "",
-    tokenTicker: "",
+    // INCREMENT THESE NUMBERS FOR EACH NEW STUDIO DEPLOYMENT
+    tokenName: "Art Blocks Studio | #",
+    tokenTicker: "ABSTUDIO_#",
     renderProviderAddress: "0x...",
+    // platform provider address should be set to the zero address for Studio deployments
     platformProviderAddress: "0x...",
     // set to the address you want to transfer the superAdmin role to
     // (can be the zero address if you have an existing Admin ACL Contract and are not transferring)
