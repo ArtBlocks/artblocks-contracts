@@ -113,8 +113,8 @@ async function main() {
     } = deployConfigDetailsArray[i];
 
     // verify token name is defined for image bucket creation
-    if (!tokenName) {
-      throw new Error(`[ERROR] Token name not defined.`);
+    if (!tokenName || !tokenTicker) {
+      throw new Error(`[ERROR] Token name or ticker not defined.`);
     }
 
     const engineFactory = new ethers.Contract(
@@ -183,12 +183,16 @@ async function main() {
 
       // create image bucket
       let imageBucketCreated = false;
+      // For studio contracts use token ticker as bucket name, otherwise use token
+      // name for Engine partners
+      const bucketNameBase =
+        defaultVerticalName === "studio" ? tokenTicker : tokenName;
       // @dev initial bucket name of TBD to handle case of failure to generate bucket.
       // if bucket generation fails, TBD still enables output of DEPLOYMENTS file,
       // while making it clear that the bucket was not created
       let bucketName = "TBD";
       try {
-        const result = await createEngineBucket(tokenName, networkName);
+        const result = await createEngineBucket(bucketNameBase, networkName);
         bucketName = result.bucketName;
         console.log(`[INFO] Created image bucket ${bucketName}`);
         imageBucketCreated = true;
