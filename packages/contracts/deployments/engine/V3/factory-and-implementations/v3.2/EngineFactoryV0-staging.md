@@ -14,7 +14,7 @@ const inputs: T_Inputs = {
   args: [
     "0x00000000AEf91971cc6251936Ec6568B23b55342", // engine
     "0x00000000af817dFBc2b3006E365D2eFef1953334", // flex
-    "0xa07f47c30C262adcC263A4D44595972c50e04db7", // core registry
+    "0xdAe755c2944Ec125a0D8D5CB082c22837593441a", // core registry
     "0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef", // deployer wallet
   ],
   libraries: {},
@@ -23,8 +23,8 @@ const inputs: T_Inputs = {
 
 ## Results:
 
-Deploys to address: `0x000088739C60a490FeE1E20007b61DC500265626`
+Deploys to address: `0x000000021e59FE2bc9390d5f5bfe9Ae1DE0cEf98`
 
 ### Deployment transactions:
 
-- sepolia: https://sepolia.etherscan.io/tx/0x3d79c36f67c91ae60e3f30edaa2498fc17900b38cfb7f305544915735c1cac51
+- sepolia: https://sepolia.etherscan.io/tx/0x3333df65a5dca42629c8f84c16a6491bbccfc88a92c56eb45fcd3cd04e79ca9a
