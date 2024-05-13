@@ -84,26 +84,6 @@ erDiagram
     }
 ```
 
-### Arbitrum-Sepolia
-
-```mermaid
----
-title: arbitrum-sepolia setup
----
-erDiagram
-    DeployerEOA ||--|| EngineFactory : owns
-    EngineFactory ||--|| CoreRegistry : owns
-    DeployerEOA {
-        addr _0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef
-    }
-    EngineFactory {
-        addr _0x000000FF72D2bf6A83a21452aD5f80906472AF55
-    }
-    CoreRegistry {
-        addr _0xdAe755c2944Ec125a0D8D5CB082c22837593441a
-    }
-```
-
 ### Sepolia (dev)
 
 ```mermaid
@@ -121,5 +101,27 @@ erDiagram
     }
     CoreRegistry {
         addr _0xfeA4f2f4E45c255ceE626a1A994BB214039c2B9A
+    }
+```
+
+---
+
+### Arbitrum-Sepolia (DEPRECATED)
+
+```mermaid
+---
+title: arbitrum-sepolia setup
+---
+erDiagram
+    DeployerEOA ||--|| EngineFactory : owns
+    EngineFactory ||--|| CoreRegistry : owns
+    DeployerEOA {
+        addr _0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef
+    }
+    EngineFactory {
+        addr _0x000000FF72D2bf6A83a21452aD5f80906472AF55
+    }
+    CoreRegistry {
+        addr _0xdAe755c2944Ec125a0D8D5CB082c22837593441a
     }
 ```

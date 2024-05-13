@@ -83,7 +83,7 @@ module.exports = {
       accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 4.0,
-      maxNominalGasPriceGwei: 200,
+      maxNominalGasPriceGwei: 400,
     },
     goerli: {
       url: GOERLI_JSON_RPC_PROVIDER_URL,
