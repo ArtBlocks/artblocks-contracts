@@ -7,9 +7,10 @@ export const deployNetworkConfiguration = {
   // Please set to "dev", "staging", or "mainnet", as appropriate
   environment: "dev",
   useLedgerSigner: false,
+  // ONLY Gnosis Safe is supported for Studio deployments at this time
   useGnosisSafe: true,
   safeAddress: "",
-  transactionServiceUrl: "",
+  transactionServiceUrl: "https://safe-transaction-sepolia.safe.global",
   // set the transaction hash after successful execution of the batch creation
   transactionHash: "",
 };
@@ -26,11 +27,15 @@ export const deployConfigDetailsArray = [
     // (can be the zero address if you have an existing Admin ACL Contract and are not transferring)
     newSuperAdminAddress: "0x...",
     startingProjectId: 0,
+    // autoApproveArtistSplitProposals should be true for Studio deployments
     autoApproveArtistSplitProposals: false,
+    // nullPlatformProvider must be true for Studio deployments
     nullPlatformProvider: false,
+    // allowArtistProjectActivation must be true for Studio deployments
     allowArtistProjectActivation: true,
     // if you want to use an existing admin ACL, set the address here (otherwise set as the zero address to deploy a new one)
     adminACLContract: "0x...",
+    // prod-only: see efficient_addresses...txt in network directories for a list of efficient salts
     salt: "0x0",
     // optionally define this to set default vertical name for the contract after deployment.
     // if not defined, the default vertical name will be "unassigned".

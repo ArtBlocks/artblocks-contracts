@@ -2,14 +2,14 @@
 // It is intended to be imported by the batch engine factory deployer by running `deploy:v3-engine:mainnet`, `deploy:v3-engine:staging` or `deploy:v3-engine:dev`.
 
 export const deployNetworkConfiguration = {
-  network: "sepolia",
+  network: "mainnet",
   // environment is only used for metadata purposes, and is not used in the deployment process	    tokenName: "",
   // Please set to "dev", "staging", or "mainnet", as appropriate
-  environment: "staging",
-  useLedgerSigner: false,
+  environment: "mainnet",
+  useLedgerSigner: true,
   useGnosisSafe: true,
-  safeAddress: "0x62DC3F6C7Bf5FA8A834E6B97dee3daB082873600",
-  transactionServiceUrl: "https://safe-transaction-sepolia.safe.global",
+  safeAddress: "0x52119BB73Ac8bdbE59aF0EEdFd4E4Ee6887Ed2EA",
+  transactionServiceUrl: "https://safe-transaction-mainnet.safe.global",
   // set the transaction hash after successful execution of the batch creation
   transactionHash: "",
 };
@@ -17,14 +17,15 @@ export const deployNetworkConfiguration = {
 export const deployConfigDetailsArray = [
   {
     // 0 for Engine, 1 for Engine Flex
-    engineCoreContractType: 0,
-    tokenName: "Art Blocks Studio | STAGING",
-    tokenTicker: "STUDIO_STAGING",
-    renderProviderAddress: "0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef",
+    engineCoreContractType: 1,
+    tokenName: "Art Blocks Studio | 0",
+    tokenTicker: "ABSTUDIO_0",
+    renderProviderAddress: "0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd",
     platformProviderAddress: "0x0000000000000000000000000000000000000000",
     // set to the address you want to transfer the superAdmin role to
     // (can be the zero address if you have an existing Admin ACL Contract and are not transferring)
-    newSuperAdminAddress: "0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef",
+    // Melissa's address
+    newSuperAdminAddress: "0x4bED1D532b7c7bd148eB43C8473DcA3685Fd271d",
     startingProjectId: 0,
     // autoApproveArtistSplitProposals should be true for Studio deployments
     autoApproveArtistSplitProposals: true,
@@ -34,7 +35,7 @@ export const deployConfigDetailsArray = [
     allowArtistProjectActivation: true,
     // if you want to use an existing admin ACL, set the address here (otherwise set as the zero address to deploy a new one)
     adminACLContract: "0x0000000000000000000000000000000000000000",
-    salt: "0x0",
+    salt: "0x0000000000000000000000000000000000000000ca83c9379372f100580200a0",
     // optionally define this to set default vertical name for the contract after deployment.
     // if not defined, the default vertical name will be "unassigned".
     // common values include `studio`, `fullyonchain`, `flex`, or partnerships like `artblocksxpace`.
@@ -45,13 +46,14 @@ export const deployConfigDetailsArray = [
   {
     // 0 for Engine, 1 for Engine Flex
     engineCoreContractType: 1,
-    tokenName: "Art Blocks Studio | STAGING_FLEX",
-    tokenTicker: "STUDIO_STAGING_FLEX",
-    renderProviderAddress: "0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef",
+    tokenName: "Art Blocks Studio | 1",
+    tokenTicker: "ABSTUDIO_1",
+    renderProviderAddress: "0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd",
     platformProviderAddress: "0x0000000000000000000000000000000000000000",
     // set to the address you want to transfer the superAdmin role to
     // (can be the zero address if you have an existing Admin ACL Contract and are not transferring)
-    newSuperAdminAddress: "0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef",
+    // aaron's address
+    newSuperAdminAddress: "0x92fb249865ae0d26120031868ba07434674a1600",
     startingProjectId: 0,
     // autoApproveArtistSplitProposals should be true for Studio deployments
     autoApproveArtistSplitProposals: true,
@@ -61,7 +63,7 @@ export const deployConfigDetailsArray = [
     allowArtistProjectActivation: true,
     // if you want to use an existing admin ACL, set the address here (otherwise set as the zero address to deploy a new one)
     adminACLContract: "0x0000000000000000000000000000000000000000",
-    salt: "0x0",
+    salt: "0x0000000000000000000000000000000000000000ca83c937937258a2020b0000",
     // optionally define this to set default vertical name for the contract after deployment.
     // if not defined, the default vertical name will be "unassigned".
     // common values include `studio`, `fullyonchain`, `flex`, or partnerships like `artblocksxpace`.
