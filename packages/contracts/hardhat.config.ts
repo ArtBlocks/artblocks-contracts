@@ -1,5 +1,4 @@
 require("dotenv").config();
-import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-truffle5";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
@@ -11,6 +10,7 @@ import "@openzeppelin/hardhat-upgrades";
 import "@nomicfoundation/hardhat-ledger";
 import { solidityConfig } from "./hardhat.solidity-config";
 import { getDeployerWallet } from "./scripts/util/get-deployer-wallet";
+require("@nomicfoundation/hardhat-chai-matchers");
 
 // ----- WALLET CONFIGURATION -----
 // initialize with dummy fallback private key
@@ -83,7 +83,7 @@ module.exports = {
       accounts: [`${PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 4.0,
-      maxNominalGasPriceGwei: 200,
+      maxNominalGasPriceGwei: 400,
     },
     goerli: {
       url: GOERLI_JSON_RPC_PROVIDER_URL,
@@ -109,6 +109,7 @@ module.exports = {
     arbitrum: {
       url: ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL,
       accounts: [`${PRIVATE_KEY}`],
+      // ledgerAccounts: ["0x"],
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 50,
@@ -174,9 +175,9 @@ module.exports = {
     ],
   },
   gasReporter: {
+    enabled: false,
     currency: "USD",
     gasPrice: 100,
-    enabled: true,
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
   },
   mocha: {

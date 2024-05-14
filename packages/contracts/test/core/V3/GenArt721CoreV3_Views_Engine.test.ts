@@ -1,12 +1,5 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import {
-  BN,
-  constants,
-  expectEvent,
-  expectRevert,
-  balance,
-  ether,
-} from "@openzeppelin/test-helpers";
+import { constants } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
@@ -17,6 +10,9 @@ import {
   assignDefaultConstants,
   deployAndGet,
   deployCoreWithMinterFilter,
+  GENART721_ERROR_NAME,
+  GENART721_ERROR_CODES,
+  deployWithStorageLibraryAndGet,
 } from "../../util/common";
 
 export type ArtistFinanceProposal = {
@@ -115,7 +111,10 @@ for (const coreContractName of coreContractsToTest) {
     describe("coreVersion", function () {
       it("returns expected value", async function () {
         const config = await loadFixture(_beforeEach);
-        let targetCoreVersion = "v3.1.4";
+        let targetCoreVersion = "v3.2.0"; // Engine (not flex)
+        if (coreContractName === "GenArt721CoreV3_Engine_Flex") {
+          targetCoreVersion = "v3.2.1";
+        }
         const coreVersion = await config.genArt721Core
           .connect(config.accounts.deployer)
           .coreVersion();
@@ -130,6 +129,59 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.deployer)
           .coreType();
         expect(coreType).to.be.equal(coreContractName);
+      });
+    });
+
+    describe("artblocksOnChainGeneratorAddress", function () {
+      it("returns expected default value", async function () {
+        const config = await loadFixture(_beforeEach);
+        const reference = await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .artblocksOnChainGeneratorAddress();
+        expect(reference).to.be.equal(constants.ZERO_ADDRESS);
+      });
+
+      it("returns expected populated value", async function () {
+        const config = await loadFixture(_beforeEach);
+        // admin set to dummy address
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateArtblocksOnChainGeneratorAddress(
+            config.accounts.additional.address
+          );
+        // expect value to be updated
+        const reference = await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .artblocksOnChainGeneratorAddress();
+        expect(reference).to.be.equal(config.accounts.additional.address);
+      });
+
+      it("only allows admin to update value", async function () {
+        const config = await loadFixture(_beforeEach);
+        // expect revert when non-admin attempts to update
+        for (const account of [
+          config.accounts.artist,
+          config.accounts.additional,
+        ]) {
+          await expect(
+            config.genArt721Core
+              .connect(account)
+              .updateArtblocksOnChainGeneratorAddress(
+                config.accounts.additional.address
+              )
+          )
+            .to.be.revertedWithCustomError(
+              config.genArt721Core,
+              GENART721_ERROR_NAME
+            )
+            .withArgs(GENART721_ERROR_CODES.OnlyAdminACL);
+        }
+        // admin allowed to update
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateArtblocksOnChainGeneratorAddress(
+            config.accounts.additional.address
+          );
       });
     });
 
@@ -164,14 +216,18 @@ for (const coreContractName of coreContractsToTest) {
           config.accounts.artist,
           config.accounts.additional,
         ]) {
-          await expectRevert(
+          await expect(
             config.genArt721Core
               .connect(account)
               .updateArtblocksDependencyRegistryAddress(
                 config.accounts.additional.address
-              ),
-            "Only Admin ACL allowed"
-          );
+              )
+          )
+            .to.be.revertedWithCustomError(
+              config.genArt721Core,
+              GENART721_ERROR_NAME
+            )
+            .withArgs(GENART721_ERROR_CODES.OnlyAdminACL);
         }
         // admin allowed to update
         await config.genArt721Core
@@ -179,6 +235,53 @@ for (const coreContractName of coreContractsToTest) {
           .updateArtblocksDependencyRegistryAddress(
             config.accounts.additional.address
           );
+      });
+    });
+
+    describe("nextCoreContract", function () {
+      it("returns expected default value", async function () {
+        const config = await loadFixture(_beforeEach);
+        const reference = await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .nextCoreContract();
+        expect(reference).to.be.equal(constants.ZERO_ADDRESS);
+      });
+
+      it("returns expected populated value", async function () {
+        const config = await loadFixture(_beforeEach);
+        // admin set to dummy address
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateNextCoreContract(config.accounts.additional.address);
+        // expect value to be updated
+        const reference = await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .nextCoreContract();
+        expect(reference).to.be.equal(config.accounts.additional.address);
+      });
+
+      it("only allows admin to update value", async function () {
+        const config = await loadFixture(_beforeEach);
+        // expect revert when non-admin attempts to update
+        for (const account of [
+          config.accounts.artist,
+          config.accounts.additional,
+        ]) {
+          await expect(
+            config.genArt721Core
+              .connect(account)
+              .updateNextCoreContract(config.accounts.additional.address)
+          )
+            .to.be.revertedWithCustomError(
+              config.genArt721Core,
+              GENART721_ERROR_NAME
+            )
+            .withArgs(GENART721_ERROR_CODES.OnlyAdminACL);
+        }
+        // admin allowed to update
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateNextCoreContract(config.accounts.additional.address);
       });
     });
 
@@ -216,34 +319,61 @@ for (const coreContractName of coreContractsToTest) {
         );
         expect(projectScriptDetails.aspectRatio).to.be.equal("1.777777778");
         expect(projectScriptDetails.scriptCount).to.be.equal(1);
+        // add pre-compressed script
+        const compressedScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getCompressed("if(false){}");
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(config.projectZero, compressedScript);
+        const projectScriptDetailsAfter = await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .projectScriptDetails(config.projectZero);
+        expect(projectScriptDetailsAfter.scriptCount).to.be.equal(2);
       });
 
       it("validates aspect ratio format details", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .updateProjectAspectRatio(config.projectZero, "1.7777777778"),
-          "Aspect ratio format too long"
-        );
-        await expectRevert(
+            .updateProjectAspectRatio(config.projectZero, "1.7777777778")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.AspectRatioTooLong);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .updateProjectAspectRatio(config.projectZero, "2/3"),
-          "Improperly formatted aspect ratio"
-        );
-        await expectRevert(
+            .updateProjectAspectRatio(config.projectZero, "2/3")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.AspectRatioImproperFormat);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .updateProjectAspectRatio(config.projectZero, "1.2.3.4"),
-          "Improperly formatted aspect ratio"
-        );
-        await expectRevert(
+            .updateProjectAspectRatio(config.projectZero, "1.2.3.4")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.AspectRatioImproperFormat);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .updateProjectAspectRatio(config.projectZero, "."),
-          "Aspect ratio has no numbers"
-        );
+            .updateProjectAspectRatio(config.projectZero, ".")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.AspectRatioNoNumbers);
       });
     });
 
@@ -322,27 +452,25 @@ for (const coreContractName of coreContractsToTest) {
     describe("projectArtistPaymentInfo", function () {
       it("returns expected default values", async function () {
         const config = await loadFixture(_beforeEach);
-        const projectArtistPaymentInfo = await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .projectArtistPaymentInfo(config.projectZero);
-        expect(projectArtistPaymentInfo.artistAddress).to.be.equal(
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectZero
+        );
+        expect(projectFinance.artistAddress).to.be.equal(
           config.accounts.artist.address
         );
+        expect(projectFinance.additionalPayeePrimarySales).to.be.equal(
+          constants.ZERO_ADDRESS
+        );
         expect(
-          projectArtistPaymentInfo.additionalPayeePrimarySales
-        ).to.be.equal(constants.ZERO_ADDRESS);
-        expect(
-          projectArtistPaymentInfo.additionalPayeePrimarySalesPercentage
+          projectFinance.additionalPayeePrimarySalesPercentage
         ).to.be.equal(0);
+        expect(projectFinance.additionalPayeeSecondarySales).to.be.equal(
+          constants.ZERO_ADDRESS
+        );
         expect(
-          projectArtistPaymentInfo.additionalPayeeSecondarySales
-        ).to.be.equal(constants.ZERO_ADDRESS);
-        expect(
-          projectArtistPaymentInfo.additionalPayeeSecondarySalesPercentage
+          projectFinance.additionalPayeeSecondarySalesPercentage
         ).to.be.equal(0);
-        expect(
-          projectArtistPaymentInfo.secondaryMarketRoyaltyPercentage
-        ).to.be.equal(0);
+        expect(projectFinance.secondaryMarketRoyaltyPercentage).to.be.equal(5);
       });
 
       it("returns expected values after updating artist payment addresses and splits, and secondary royalty percentage", async function () {
@@ -367,27 +495,23 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist2)
           .updateProjectSecondaryMarketRoyaltyPercentage(config.projectZero, 5);
         // check for expected values
-        const projectArtistPaymentInfo = await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .projectArtistPaymentInfo(config.projectZero);
-        expect(projectArtistPaymentInfo.artistAddress).to.be.equal(
-          valuesToUpdateTo[1]
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectZero
+        );
+        expect(projectFinance.artistAddress).to.be.equal(valuesToUpdateTo[1]);
+        expect(projectFinance.additionalPayeePrimarySales).to.be.equal(
+          valuesToUpdateTo[2]
         );
         expect(
-          projectArtistPaymentInfo.additionalPayeePrimarySales
-        ).to.be.equal(valuesToUpdateTo[2]);
-        expect(
-          projectArtistPaymentInfo.additionalPayeePrimarySalesPercentage
+          projectFinance.additionalPayeePrimarySalesPercentage
         ).to.be.equal(valuesToUpdateTo[3]);
+        expect(projectFinance.additionalPayeeSecondarySales).to.be.equal(
+          valuesToUpdateTo[4]
+        );
         expect(
-          projectArtistPaymentInfo.additionalPayeeSecondarySales
-        ).to.be.equal(valuesToUpdateTo[4]);
-        expect(
-          projectArtistPaymentInfo.additionalPayeeSecondarySalesPercentage
+          projectFinance.additionalPayeeSecondarySalesPercentage
         ).to.be.equal(valuesToUpdateTo[5]);
-        expect(
-          projectArtistPaymentInfo.secondaryMarketRoyaltyPercentage
-        ).to.be.equal(5);
+        expect(projectFinance.secondaryMarketRoyaltyPercentage).to.be.equal(5);
       });
     });
 
@@ -523,21 +647,29 @@ for (const coreContractName of coreContractsToTest) {
       it("reverts on improper address inputs", async function () {
         const config = await loadFixture(_beforeEach);
         // addProject
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .addProject("name", constants.ZERO_ADDRESS),
-          "Must input non-zero address"
-        );
+            .addProject("name", constants.ZERO_ADDRESS)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
         // updateArtblocksDependencyRegistryAddress
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateArtblocksDependencyRegistryAddress(constants.ZERO_ADDRESS),
-          "Must input non-zero address"
-        );
+            .updateArtblocksDependencyRegistryAddress(constants.ZERO_ADDRESS)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
         // updateProviderSalesAddresses
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .updateProviderSalesAddresses(
@@ -545,10 +677,14 @@ for (const coreContractName of coreContractsToTest) {
               config.accounts.additional.address,
               config.accounts.additional.address,
               config.accounts.additional.address
-            ),
-          "Must input non-zero address"
-        );
-        expectRevert(
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .updateProviderSalesAddresses(
@@ -556,10 +692,14 @@ for (const coreContractName of coreContractsToTest) {
               constants.ZERO_ADDRESS,
               config.accounts.additional.address,
               config.accounts.additional.address
-            ),
-          "Must input non-zero address"
-        );
-        expectRevert(
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .updateProviderSalesAddresses(
@@ -567,10 +707,14 @@ for (const coreContractName of coreContractsToTest) {
               config.accounts.additional.address,
               constants.ZERO_ADDRESS,
               config.accounts.additional.address
-            ),
-          "Must input non-zero address"
-        );
-        expectRevert(
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .updateProviderSalesAddresses(
@@ -578,33 +722,49 @@ for (const coreContractName of coreContractsToTest) {
               config.accounts.additional.address,
               config.accounts.additional.address,
               constants.ZERO_ADDRESS
-            ),
-          "Must input non-zero address"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
         // updateMinterContract
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateMinterContract(constants.ZERO_ADDRESS),
-          "Must input non-zero address"
-        );
+            .updateMinterContract(constants.ZERO_ADDRESS)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
         // updateRandomizerAddress
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateRandomizerAddress(constants.ZERO_ADDRESS),
-          "Must input non-zero address"
-        );
+            .updateRandomizerAddress(constants.ZERO_ADDRESS)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
         // updateProjectArtistAddress
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .updateProjectArtistAddress(
               config.projectZero,
               constants.ZERO_ADDRESS
-            ),
-          "Must input non-zero address"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
 
         const proposeArtistPaymentAddressesAndSplitsArgs = [
           config.projectZero,
@@ -615,90 +775,156 @@ for (const coreContractName of coreContractsToTest) {
           0,
         ];
         // proposeArtistPaymentAddressesAndSplits
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
             .proposeArtistPaymentAddressesAndSplits(
               ...proposeArtistPaymentAddressesAndSplitsArgs
-            ),
-          "Must input non-zero address"
-        );
+            )
+        )
+          .to.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
         // adminAcceptArtistAddressesAndSplits
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
             .adminAcceptArtistAddressesAndSplits(
               ...proposeArtistPaymentAddressesAndSplitsArgs
-            ),
-          "Must input non-zero address"
-        );
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
       });
 
       it("reverts on improper string inputs", async function () {
         const config = await loadFixture(_beforeEach);
         // addProject
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .addProject("", config.accounts.artist.address),
-          "Must input non-empty string"
-        );
+            .addProject("", config.accounts.artist.address)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
         // updateProjectName
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateProjectName(config.projectZero, ""),
-          "Must input non-empty string"
-        );
+            .updateProjectName(config.projectZero, "")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
         // updateProjectArtistName
-        expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.deployer)
-            .updateProjectArtistName(config.projectZero, ""),
-          "Must input non-empty string"
-        );
-        // updateProjectLicense
-        expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.deployer)
-            .updateProjectLicense(config.projectZero, ""),
-          "Must input non-empty string"
-        );
-        // addProjectScript
-        expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.deployer)
-            .addProjectScript(config.projectZero, ""),
-          "Must input non-empty string"
-        );
-        // updateProjectScript
-        expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.deployer)
-            .updateProjectScript(config.projectZero, 0, ""),
-          "Must input non-empty string"
-        );
-        // updateProjectAspectRatio
-        expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.deployer)
-            .updateProjectAspectRatio(config.projectZero, ""),
-          "Must input non-empty string"
-        );
-        // updateProjectBaseURI
-        expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.artist)
-            .updateProjectBaseURI(config.projectZero, ""),
-          "Must input non-empty string"
-        );
-        // updateDefaultBaseURI
-        expectRevert(
+            .updateProjectArtistName(config.projectZero, "")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
+        // updateProjectLicense
+        await expect(
           config.genArt721Core
             .connect(config.accounts.deployer)
-            .updateDefaultBaseURI(""),
-          "Must input non-empty string"
-        );
+            .updateProjectLicense(config.projectZero, "")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
+        // addProjectScript
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .addProjectScript(config.projectZero, "")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
+        // addProjectScriptCompressed
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .addProjectScriptCompressed(config.projectZero, "0x")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyBytes);
+        // getCompressed
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .getCompressed("")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
+        // updateProjectScript
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateProjectScript(config.projectZero, 0, "")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
+        // updateProjectAspectRatio
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateProjectAspectRatio(config.projectZero, "")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
+        // updateProjectBaseURI
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .updateProjectBaseURI(config.projectZero, "")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
+        // updateDefaultBaseURI
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateDefaultBaseURI("")
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonEmptyString);
       });
 
       it("returns expected values for projectOne, with updated payment addresses and percentages only to Additional Payee Primary", async function () {
@@ -783,525 +1009,97 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("getRoyalties", function () {
+      // @dev this function was supported until v3.2
+      it("reverts and no longer supports this function", async function () {
+        const config = await loadFixture(_beforeEach);
+        try {
+          config.genArt721Core
+            .connect(config.accounts.user)
+            .getRoyalties(config.projectZeroTokenZero.toNumber());
+          // should have thrown error
+          throw new Error("expected error to be thrown");
+        } catch (error) {
+          // expect specific error message
+          expect(error.message).to.include(
+            "config.genArt721Core.connect(...).getRoyalties is not a function"
+          );
+        }
+      });
+    });
+
+    // eip-2981 royaltyInfo
+    describe("royaltyInfo", function () {
+      const SALE_AMOUNT = 10_000;
+
       it("returns expected default values for valid projectZero token", async function () {
         const config = await loadFixture(_beforeEach);
         // mint token for projectZero
         await config.minter
           .connect(config.accounts.artist)
           .purchase(config.projectZero);
-        // check for expected values
-        const royaltiesData = await config.genArt721Core
+        // get royalty info
+        const royaltyInfo = await config.genArt721Core
           .connect(config.accounts.user)
-          .getRoyalties(config.projectZeroTokenZero.toNumber());
-        // generalized check on response size
-        expect(royaltiesData.recipients.length).to.be.equal(2);
-        expect(royaltiesData.bps.length).to.be.equal(2);
-        // Artist
-        // This is a special case where expected revenue is 0, so not included in the array
-        // Additional Payee
-        // This is a special case where expected revenue is 0, so not included in the array
-        // Render provider
-        const renderProviderSecondarySalesAddress =
-          await config.genArt721Core.renderProviderSecondarySalesAddress();
-        expect(royaltiesData.recipients[0]).to.be.equal(
-          renderProviderSecondarySalesAddress
+          .royaltyInfo(config.projectZeroTokenZero.toNumber(), SALE_AMOUNT);
+        // check for expected values
+        // recipient should be active splitter contract
+        const projectFinancials =
+          await config.genArt721Core.projectIdToFinancials(config.projectZero);
+        expect(royaltyInfo.receiver).to.be.equal(
+          projectFinancials.royaltySplitter
         );
-        expect(royaltiesData.bps[0]).to.be.equal(250);
-        // Platform provider
-        const platformProviderSecondarySalesAddress =
-          await config.genArt721Core.platformProviderSecondarySalesAddress();
-        expect(royaltiesData.recipients[1]).to.be.equal(
-          platformProviderSecondarySalesAddress
+        expect(royaltyInfo.receiver).to.not.be.equal(constants.ZERO_ADDRESS);
+        // royalty amount should be 10% of sale amount
+        expect(royaltyInfo.royaltyAmount).to.be.equal(
+          (SALE_AMOUNT * 1_000) / 10_000
         );
-        expect(royaltiesData.bps[1]).to.be.equal(250);
       });
 
-      it("returns expected configured values for valid projectOne token, three non-zero royalties", async function () {
+      it("reverts when royalty total is > 100%", async function () {
         const config = await loadFixture(_beforeEach);
-        // add project
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .addProject("name", config.accounts.artist2.address);
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .toggleProjectIsActive(config.projectOne);
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectMaxInvocations(
-            config.projectOne,
-            config.maxInvocations
-          );
-
-        // configure minter for project one
-        await config.minterFilter
-          .connect(config.accounts.deployer)
-          .setMinterForProject(config.projectOne, config.minter.address);
+        // mint token for projectZero
         await config.minter
-          .connect(config.accounts.artist2)
-          .updatePricePerTokenInWei(config.projectOne, 0);
-
-        // mint token for projectOne
-        await config.minter
-          .connect(config.accounts.artist2)
-          .purchase(config.projectOne);
-
-        // configure royalties for projectOne
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero);
+        // update project royalty percentage to 95%
         await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectSecondaryMarketRoyaltyPercentage(config.projectOne, 10);
-        // artist2 populates an addditional payee
-        await updateArtistFinance(
-          config,
-          config.projectOne,
-          config.accounts.artist2,
-          {
-            artistAddress: config.accounts.artist2.address,
-            additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
-            additionalPayeePrimarySalesPercentage: 0,
-            additionalPayeeSecondarySalesAddress:
-              config.accounts.additional2.address,
-            additionalPayeeSecondarySalesPercentage: 51,
-          }
-        );
-        // update provider secondary BPS to 2.25% and 2.75%
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
-            // intentionally use different render and platform provider values
-            // for purposes of testing
-            225, // _renderProviderSecondarySalesBPS
-            275 // _platformProviderSecondarySalesBPS
+          .connect(config.accounts.artist)
+          .updateProjectSecondaryMarketRoyaltyPercentage(
+            config.projectZero,
+            95
           );
-        // change provider payment addresses to random address
+        // update provider secondary BPS to >5%
         await config.genArt721Core
           .connect(config.accounts.deployer)
-          .updateProviderSalesAddresses(
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional.address, // _renderProviderPrimarySalesAddress
-            config.accounts.user.address, // _renderProviderSecondarySalesAddress
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional2.address, // _platformProviderPrimarySalesAddress
-            config.accounts.user2.address // _platformProviderSecondarySalesAddress
-          );
-
-        // check for expected values
-        const royaltiesData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .getRoyalties(config.projectOneTokenZero.toNumber());
-        // validate data size
-        expect(royaltiesData.recipients.length).to.be.equal(4);
-        expect(royaltiesData.bps.length).to.be.equal(4);
-        // Artist
-        const artistAddress = config.accounts.artist2.address;
-        expect(royaltiesData.recipients[0]).to.be.equal(artistAddress);
-        // artist BPS = 10% * 100 (BPS/%) * 0.49 to artist = 490 BPS
-        expect(royaltiesData.bps[0]).to.be.equal(490);
-        // Additional Payee
-        const projectIdToAdditionalPayeeSecondarySales =
-          config.accounts.additional2.address;
-        expect(royaltiesData.recipients[1]).to.be.equal(
-          projectIdToAdditionalPayeeSecondarySales
-        );
-        // artist BPS = 10% * 100 (BPS/%) * 0.51 to additional = 510 BPS
-        expect(royaltiesData.bps[1]).to.be.equal(510);
-        // Render provider
-        const renderProviderSecondarySalesAddress =
-          config.accounts.user.address;
-        expect(royaltiesData.recipients[2]).to.be.equal(
-          renderProviderSecondarySalesAddress
-        );
-        expect(royaltiesData.bps[2]).to.be.equal(225);
-        // Platform provider
-        const platformProviderSecondarySalesAddress =
-          config.accounts.user2.address;
-        expect(royaltiesData.recipients[3]).to.be.equal(
-          platformProviderSecondarySalesAddress
-        );
-        expect(royaltiesData.bps[3]).to.be.equal(275);
-      });
-
-      it("returns expected configured values for valid projectOne token, only artist royalties are zero", async function () {
-        const config = await loadFixture(_beforeEach);
-        // add project
+          .updateProviderDefaultSecondarySalesBPS(300, 300);
         await config.genArt721Core
           .connect(config.accounts.deployer)
-          .addProject("name", config.accounts.artist2.address);
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .toggleProjectIsActive(config.projectOne);
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectMaxInvocations(
-            config.projectOne,
-            config.maxInvocations
-          );
-
-        // configure minter for project one
-        await config.minterFilter
-          .connect(config.accounts.deployer)
-          .setMinterForProject(config.projectOne, config.minter.address);
-        await config.minter
-          .connect(config.accounts.artist2)
-          .updatePricePerTokenInWei(config.projectOne, 0);
-
-        // mint token for projectOne
-        await config.minter
-          .connect(config.accounts.artist2)
-          .purchase(config.projectOne);
-
-        // configure royalties for projectOne
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectSecondaryMarketRoyaltyPercentage(config.projectOne, 10);
-        // artist2 populates an addditional payee
-        const proposeArtistPaymentAddressesAndSplitsArgs = [
-          config.projectOne,
-          config.accounts.artist2.address,
-          constants.ZERO_ADDRESS,
-          0,
-          config.accounts.additional2.address, // additional secondary address
-          100, // additonal secondary percentage
-        ];
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .proposeArtistPaymentAddressesAndSplits(
-            ...proposeArtistPaymentAddressesAndSplitsArgs
-          );
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .adminAcceptArtistAddressesAndSplits(
-            ...proposeArtistPaymentAddressesAndSplitsArgs
-          );
-        // update provider secondary BPS to 2.25% and 2.75%
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
-            // intentionally use different render and platform provider values
-            // for purposes of testing
-            225, // _renderProviderSecondarySalesBPS
-            275 // _platformProviderSecondarySalesBPS
-          );
-        // change Render and Platform payment addresses to random address
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSalesAddresses(
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional.address, // _renderProviderPrimarySalesAddress
-            config.accounts.user.address, // _renderProviderSecondarySalesAddress
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional2.address, // _platformProviderPrimarySalesAddress
-            config.accounts.user2.address // _platformProviderSecondarySalesAddress
-          );
-
-        // check for expected values
-        const royaltiesData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .getRoyalties(config.projectOneTokenZero.toNumber());
-        // validate data size
-        expect(royaltiesData.recipients.length).to.be.equal(3);
-        expect(royaltiesData.bps.length).to.be.equal(3);
-        // Artist
-        // This is a special case where expected revenue is 0, so not included in the array
-        // Additional Payee
-        const projectIdToAdditionalPayeeSecondarySales =
-          config.accounts.additional2.address;
-        expect(royaltiesData.recipients[0]).to.be.equal(
-          projectIdToAdditionalPayeeSecondarySales
-        );
-        // artist BPS = 10% * 100 (BPS/%) * 1.00 to additional = 1000 BPS
-        expect(royaltiesData.bps[0]).to.be.equal(1000);
-        // Render provider
-        const renderProviderSecondarySalesAddress =
-          config.accounts.user.address;
-        expect(royaltiesData.recipients[1]).to.be.equal(
-          renderProviderSecondarySalesAddress
-        );
-        expect(royaltiesData.bps[1]).to.be.equal(225);
-        // Platform provider
-        const platformProviderSecondarySalesAddress =
-          config.accounts.user2.address;
-        expect(royaltiesData.recipients[2]).to.be.equal(
-          platformProviderSecondarySalesAddress
-        );
-        expect(royaltiesData.bps[2]).to.be.equal(275);
-      });
-
-      it("returns expected configured values for valid projectOne token, only additional payee royalties are zero", async function () {
-        const config = await loadFixture(_beforeEach);
-        // add project
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .addProject("name", config.accounts.artist2.address);
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .toggleProjectIsActive(config.projectOne);
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectMaxInvocations(
-            config.projectOne,
-            config.maxInvocations
-          );
-
-        // configure minter for project one
-        await config.minterFilter
-          .connect(config.accounts.deployer)
-          .setMinterForProject(config.projectOne, config.minter.address);
-        await config.minter
-          .connect(config.accounts.artist2)
-          .updatePricePerTokenInWei(config.projectOne, 0);
-
-        // mint token for projectOne
-        await config.minter
-          .connect(config.accounts.artist2)
-          .purchase(config.projectOne);
-
-        // configure royalties for projectOne
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectSecondaryMarketRoyaltyPercentage(config.projectOne, 10);
-        // artist2 populates an addditional payee
-        await updateArtistFinance(
-          config,
-          config.projectOne,
-          config.accounts.artist2,
-          {
-            artistAddress: config.accounts.artist2.address,
-            additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
-            additionalPayeePrimarySalesPercentage: 0,
-            additionalPayeeSecondarySalesAddress:
-              config.accounts.additional2.address,
-            additionalPayeeSecondarySalesPercentage: 0,
-          }
-        );
-        // update provider secondary BPS to 2.25% and 2.75%
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
-            // intentionally use different render and platform provider values
-            // for purposes of testing
-            225, // _renderProviderSecondarySalesBPS
-            275 // _platformProviderSecondarySalesBPS
-          );
-        // change Render and Platform payment addresses to random address
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSalesAddresses(
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional.address, // _renderProviderPrimarySalesAddress
-            config.accounts.user.address, // _renderProviderSecondarySalesAddress
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional2.address, // _platformProviderPrimarySalesAddress
-            config.accounts.user2.address // _platformProviderSecondarySalesAddress
-          );
-
-        // check for expected values
-        const royaltiesData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .getRoyalties(config.projectOneTokenZero.toNumber());
-        // validate data size
-        expect(royaltiesData.recipients.length).to.be.equal(3);
-        expect(royaltiesData.bps.length).to.be.equal(3);
-        // Artist
-        const artistAddress = config.accounts.artist2.address;
-        expect(royaltiesData.recipients[0]).to.be.equal(artistAddress);
-        // artist BPS = 10% * 100 (BPS/%) * 1.00 to artist = 1000 BPS
-        expect(royaltiesData.bps[0]).to.be.equal(1000);
-        // Additional Payee
-        // This is a special case where expected revenue is 0, so not included in the array
-        // Render provider
-        const renderProviderSecondarySalesAddress =
-          config.accounts.user.address;
-        expect(royaltiesData.recipients[1]).to.be.equal(
-          renderProviderSecondarySalesAddress
-        );
-        expect(royaltiesData.bps[1]).to.be.equal(225);
-        // Platform provider
-        const platformProviderSecondarySalesAddress =
-          config.accounts.user2.address;
-        expect(royaltiesData.recipients[2]).to.be.equal(
-          platformProviderSecondarySalesAddress
-        );
-        expect(royaltiesData.bps[2]).to.be.equal(275);
-      });
-
-      it("returns expected configured values for valid projectOne token, only Art Blocks royalties are zero", async function () {
-        const config = await loadFixture(_beforeEach);
-        // add project
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .addProject("name", config.accounts.artist2.address);
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .toggleProjectIsActive(config.projectOne);
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectMaxInvocations(
-            config.projectOne,
-            config.maxInvocations
-          );
-
-        // configure minter for project one
-        await config.minterFilter
-          .connect(config.accounts.deployer)
-          .setMinterForProject(config.projectOne, config.minter.address);
-        await config.minter
-          .connect(config.accounts.artist2)
-          .updatePricePerTokenInWei(config.projectOne, 0);
-
-        // mint token for projectOne
-        await config.minter
-          .connect(config.accounts.artist2)
-          .purchase(config.projectOne);
-
-        // configure royalties for projectOne
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectSecondaryMarketRoyaltyPercentage(config.projectOne, 10);
-        // artist2 populates an addditional payee
-        await updateArtistFinance(
-          config,
-          config.projectOne,
-          config.accounts.artist2,
-          {
-            artistAddress: config.accounts.artist2.address,
-            additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
-            additionalPayeePrimarySalesPercentage: 0,
-            additionalPayeeSecondarySalesAddress:
-              config.accounts.additional2.address,
-            additionalPayeeSecondarySalesPercentage: 51,
-          }
-        );
-        // update provider secondary BPS to 0%
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
-            0, // _renderProviderSecondarySalesBPS
-            0 // _platformProviderSecondarySalesBPS
-          );
-        // change Render and Platform payment addresses to random address
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSalesAddresses(
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional.address, // _renderProviderPrimarySalesAddress
-            config.accounts.user.address, // _renderProviderSecondarySalesAddress
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional2.address, // _platformProviderPrimarySalesAddress
-            config.accounts.user2.address // _platformProviderSecondarySalesAddress
-          );
-
-        // check for expected values
-        const royaltiesData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .getRoyalties(config.projectOneTokenZero.toNumber());
-        // validate data size
-        expect(royaltiesData.recipients.length).to.be.equal(2);
-        expect(royaltiesData.bps.length).to.be.equal(2);
-        // Artist
-        const artistAddress = config.accounts.artist2.address;
-        expect(royaltiesData.recipients[0]).to.be.equal(artistAddress);
-        // artist BPS = 10% * 100 (BPS/%) * 0.49 to artist = 490 BPS
-        expect(royaltiesData.bps[0]).to.be.equal(490);
-        // Additional Payee
-        const projectIdToAdditionalPayeeSecondarySales =
-          config.accounts.additional2.address;
-        expect(royaltiesData.recipients[1]).to.be.equal(
-          projectIdToAdditionalPayeeSecondarySales
-        );
-        // artist BPS = 10% * 100 (BPS/%) * 0.51 to additional = 510 BPS
-        expect(royaltiesData.bps[1]).to.be.equal(510);
-        // Art Blocks
-        // This is a special case where expected revenue is 0, so not included in the array
-      });
-
-      it("returns expected configured values for valid projectOne token, all royalties are zero", async function () {
-        const config = await loadFixture(_beforeEach);
-        // add project
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .addProject("name", config.accounts.artist2.address);
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .toggleProjectIsActive(config.projectOne);
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectMaxInvocations(
-            config.projectOne,
-            config.maxInvocations
-          );
-
-        // configure minter for project one
-        await config.minterFilter
-          .connect(config.accounts.deployer)
-          .setMinterForProject(config.projectOne, config.minter.address);
-        await config.minter
-          .connect(config.accounts.artist2)
-          .updatePricePerTokenInWei(config.projectOne, 0);
-
-        // mint token for projectOne
-        await config.minter
-          .connect(config.accounts.artist2)
-          .purchase(config.projectOne);
-
-        // configure royalties for projectOne
-        await config.genArt721Core
-          .connect(config.accounts.artist2)
-          .updateProjectSecondaryMarketRoyaltyPercentage(config.projectOne, 0);
-        // artist2 populates an addditional payee
-        await updateArtistFinance(
-          config,
-          config.projectOne,
-          config.accounts.artist2,
-          {
-            artistAddress: config.accounts.artist2.address,
-            additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
-            additionalPayeePrimarySalesPercentage: 0,
-            additionalPayeeSecondarySalesAddress:
-              config.accounts.additional2.address,
-            additionalPayeeSecondarySalesPercentage: 51,
-          }
-        );
-        // update provider secondary BPS to 0%
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSecondarySalesBPS(
-            0, // _renderProviderSecondarySalesBPS
-            0 // _platformProviderSecondarySalesBPS
-          );
-        // change Render and Platform payment addresses to random address
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .updateProviderSalesAddresses(
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional.address, // _renderProviderPrimarySalesAddress
-            config.accounts.user.address, // _renderProviderSecondarySalesAddress
-            // primary address is intentionally different than primary for testing here
-            config.accounts.additional2.address, // _platformProviderPrimarySalesAddress
-            config.accounts.user2.address // _platformProviderSecondarySalesAddress
-          );
-
-        // check for expected values
-        const royaltiesData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .getRoyalties(config.projectOneTokenZero.toNumber());
-        // Artist
-        // This is a special case where expected revenue is 0, so not included in the array
-        // Additional Payee
-        // This is a special case where expected revenue is 0, so not included in the array
-        // Art Blocks
-        // This is a special case where expected revenue is 0, so not included in the array
-        expect(royaltiesData.recipients.length).to.be.equal(0);
-        expect(royaltiesData.bps.length).to.be.equal(0);
+          .syncProviderSecondaryForProjectToDefaults(config.projectZero);
+        // get royalty info
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.user)
+            .royaltyInfo(config.projectZeroTokenZero.toNumber(), SALE_AMOUNT)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OverMaxSumOfBPS);
       });
 
       it("reverts when asking for invalid token", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.user)
-            .getRoyalties(config.projectZeroTokenZero.toNumber()),
-          "Token ID does not exist"
-        );
+            .royaltyInfo(config.projectZeroTokenZero.toNumber(), SALE_AMOUNT)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TokenDoesNotExist);
       });
     });
 
@@ -1345,10 +1143,11 @@ for (const coreContractName of coreContractsToTest) {
       it("returns expected default value", async function () {
         const config = await loadFixture(_beforeEach);
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToSecondaryMarketRoyaltyPercentage(config.projectZero);
-        expect(viewData).to.be.equal(0);
+        const secondaryMarketRoyaltyPercentage =
+          await config.genArt721Core.projectIdToSecondaryMarketRoyaltyPercentage(
+            config.projectZero
+          );
+        expect(secondaryMarketRoyaltyPercentage).to.be.equal(5);
       });
 
       it("returns expected configured values for projectZero", async function () {
@@ -1362,10 +1161,11 @@ for (const coreContractName of coreContractsToTest) {
           );
 
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToSecondaryMarketRoyaltyPercentage(config.projectZero);
-        expect(viewData).to.be.equal(10);
+        const secondaryMarketRoyaltyPercentage =
+          await config.genArt721Core.projectIdToSecondaryMarketRoyaltyPercentage(
+            config.projectZero
+          );
+        expect(secondaryMarketRoyaltyPercentage).to.be.equal(10);
       });
     });
 
@@ -1373,10 +1173,12 @@ for (const coreContractName of coreContractsToTest) {
       it("returns expected default value", async function () {
         const config = await loadFixture(_beforeEach);
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToAdditionalPayeePrimarySales(config.projectZero);
-        expect(viewData).to.be.equal(constants.ZERO_ADDRESS);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectZero
+        );
+        expect(projectFinance.additionalPayeePrimarySales).to.be.equal(
+          constants.ZERO_ADDRESS
+        );
       });
 
       it("returns expected configured values for projectOne", async function () {
@@ -1401,10 +1203,12 @@ for (const coreContractName of coreContractsToTest) {
           }
         );
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToAdditionalPayeePrimarySales(config.projectOne);
-        expect(viewData).to.be.equal(config.accounts.additional.address);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectOne
+        );
+        expect(projectFinance.additionalPayeePrimarySales).to.be.equal(
+          config.accounts.additional.address
+        );
       });
     });
 
@@ -1412,10 +1216,12 @@ for (const coreContractName of coreContractsToTest) {
       it("returns expected default value", async function () {
         const config = await loadFixture(_beforeEach);
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToAdditionalPayeePrimarySalesPercentage(config.projectZero);
-        expect(viewData).to.be.equal(0);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectZero
+        );
+        expect(
+          projectFinance.additionalPayeePrimarySalesPercentage
+        ).to.be.equal(0);
       });
 
       it("returns expected configured values for projectOne", async function () {
@@ -1440,21 +1246,24 @@ for (const coreContractName of coreContractsToTest) {
           }
         );
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToAdditionalPayeePrimarySalesPercentage(config.projectOne);
-        expect(viewData).to.be.equal(49);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectOne
+        );
+        expect(
+          projectFinance.additionalPayeePrimarySalesPercentage
+        ).to.be.equal(49);
       });
     });
 
     describe("projectIdToAdditionalPayeeSecondarySales", function () {
       it("returns expected default value", async function () {
         const config = await loadFixture(_beforeEach);
-        // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToAdditionalPayeeSecondarySales(config.projectZero);
-        expect(viewData).to.be.equal(constants.ZERO_ADDRESS);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectZero
+        );
+        expect(projectFinance.additionalPayeeSecondarySales).to.be.equal(
+          constants.ZERO_ADDRESS
+        );
       });
 
       it("returns expected configured values for projectOne", async function () {
@@ -1479,10 +1288,12 @@ for (const coreContractName of coreContractsToTest) {
           }
         );
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToAdditionalPayeeSecondarySales(config.projectOne);
-        expect(viewData).to.be.equal(config.accounts.additional2.address);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectOne
+        );
+        expect(projectFinance.additionalPayeeSecondarySales).to.be.equal(
+          config.accounts.additional2.address
+        );
       });
     });
 
@@ -1490,12 +1301,12 @@ for (const coreContractName of coreContractsToTest) {
       it("returns expected default value", async function () {
         const config = await loadFixture(_beforeEach);
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToAdditionalPayeeSecondarySalesPercentage(
-            config.projectZero
-          );
-        expect(viewData).to.be.equal(0);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectZero
+        );
+        expect(
+          projectFinance.additionalPayeeSecondarySalesPercentage
+        ).to.be.equal(0);
       });
 
       it("returns expected configured values for projectOne", async function () {
@@ -1520,12 +1331,12 @@ for (const coreContractName of coreContractsToTest) {
           }
         );
         // check for expected values
-        const viewData = await config.genArt721Core
-          .connect(config.accounts.user)
-          .projectIdToAdditionalPayeeSecondarySalesPercentage(
-            config.projectOne
-          );
-        expect(viewData).to.be.equal(51);
+        const projectFinance = await config.genArt721Core.projectIdToFinancials(
+          config.projectOne
+        );
+        expect(
+          projectFinance.additionalPayeeSecondarySalesPercentage
+        ).to.be.equal(51);
       });
     });
 
@@ -1582,12 +1393,16 @@ for (const coreContractName of coreContractsToTest) {
       it("reverts when invalid index is queried", async function () {
         const config = await loadFixture(_beforeEach);
         // expect revert when query out of bounds index
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.user)
-            .getHistoricalRandomizerAt(2),
-          "Index out of bounds"
-        );
+            .getHistoricalRandomizerAt(2)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.IndexOutOfBounds);
       });
     });
 
@@ -1609,10 +1424,21 @@ for (const coreContractName of coreContractsToTest) {
         await config.genArt721Core
           .connect(config.accounts.artist)
           .addProjectScript(config.projectZero, "console.log('world')");
+        // add a pre-compressed project script
+        const compressedScript = await config.genArt721Core
+          ?.connect(config.accounts.artist)
+          .getCompressed("console.log(hello world)");
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(config.projectZero, compressedScript);
         const projectScript = await config.genArt721Core
           .connect(config.accounts.user)
           .projectScriptByIndex(config.projectZero, 1);
+        const projectScript2 = await config.genArt721Core
+          .connect(config.accounts.user)
+          .projectScriptByIndex(config.projectZero, 2);
         expect(projectScript).to.be.equal("console.log('world')");
+        expect(projectScript2).to.be.equal("console.log(hello world)");
       });
     });
 
@@ -1758,12 +1584,16 @@ for (const coreContractName of coreContractsToTest) {
       it("reverts when token does not exist", async function () {
         const config = await loadFixture(_beforeEach);
         // expect revert when token does not exist
-        await expectRevert(
+        await expect(
           config.genArt721Core
             .connect(config.accounts.user)
-            .tokenURI(config.projectZeroTokenZero.toNumber()),
-          "Token ID does not exist"
-        );
+            .tokenURI(config.projectZeroTokenZero.toNumber())
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TokenDoesNotExist);
       });
     });
 
@@ -1816,6 +1646,86 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.user)
           .tokenIdToProjectId(config.projectTwoTokenOne.toNumber());
         expect(projectId).to.be.equal(config.projectTwo);
+      });
+    });
+
+    describe("nullPlatformProvider", function () {
+      it("returns false when false", async function () {
+        const config = await loadFixture(_beforeEach);
+        // expect false
+        expect(
+          await config.genArt721Core
+            .connect(config.accounts.user)
+            .nullPlatformProvider()
+        ).to.be.false;
+      });
+
+      it("returns true when true", async function () {
+        const config = await loadFixture(_beforeEach);
+        // deploy new core with null platform provider as true
+        const differentGenArt721Core = await deployWithStorageLibraryAndGet(
+          config,
+          coreContractName,
+          [
+            config.name,
+            config.symbol,
+            config.accounts.deployer.address,
+            constants.ZERO_ADDRESS, // platform provider
+            config.randomizer.address,
+            config.adminACL.address,
+            0, // next project ID
+            true, // auto-approve
+            config.splitProvider.address,
+            true, // _nullPlatformProvider,
+            false, //  _allowArtistProjectActivation
+          ]
+        );
+        // expect true
+        expect(
+          await differentGenArt721Core
+            .connect(config.accounts.user)
+            .nullPlatformProvider()
+        ).to.be.true;
+      });
+    });
+
+    describe("allowArtistProjectActivation", function () {
+      it("returns false when false", async function () {
+        const config = await loadFixture(_beforeEach);
+        // expect false
+        expect(
+          await config.genArt721Core
+            .connect(config.accounts.user)
+            .allowArtistProjectActivation()
+        ).to.be.false;
+      });
+
+      it("returns true when true", async function () {
+        const config = await loadFixture(_beforeEach);
+        // deploy new core with null platform provider as true
+        const differentGenArt721Core = await deployWithStorageLibraryAndGet(
+          config,
+          coreContractName,
+          [
+            config.name,
+            config.symbol,
+            config.accounts.deployer.address,
+            config.accounts.additional2.address, // platform provider
+            config.randomizer.address,
+            config.adminACL.address,
+            0, // next project ID
+            true, // auto-approve
+            config.splitProvider.address,
+            false, // _nullPlatformProvider,
+            true, //  _allowArtistProjectActivation
+          ]
+        );
+        // expect true
+        expect(
+          await differentGenArt721Core
+            .connect(config.accounts.user)
+            .allowArtistProjectActivation()
+        ).to.be.true;
       });
     });
   });

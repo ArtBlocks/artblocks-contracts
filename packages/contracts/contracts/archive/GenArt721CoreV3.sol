@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.19;
+pragma solidity 0.8.22;
 
 // Created By: Art Blocks Inc.
 
-import "../interfaces/v0.8.x/IRandomizerV2.sol";
+import "../interfaces/v0.8.x/IRandomizer_V3CoreBase.sol";
 import "../interfaces/v0.8.x/IAdminACLV0.sol";
 import "../interfaces/v0.8.x/IGenArt721CoreContractV3.sol";
 import "../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
@@ -16,7 +16,7 @@ import "../libs/v0.8.x/BytecodeStorageV1.sol";
 import "../libs/v0.8.x/Bytes32Strings.sol";
 
 /**
- * @title Art Blocks ERC-721 core contract, V3_Explorations.
+ * @title Art Blocks ERC-721 core contract, V3.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
  * This contract is designed to be managed, with progressively limited powers
@@ -31,10 +31,11 @@ import "../libs/v0.8.x/Bytes32Strings.sol";
  * addresses are secure behind a multi-sig or other access control mechanism.
  * ----------------------------------------------------------------------------
  * The following functions are restricted to the Admin ACL contract:
+ * - updateArtblocksCurationRegistryAddress
  * - updateArtblocksDependencyRegistryAddress
  * - updateArtblocksPrimarySalesAddress
  * - updateArtblocksSecondarySalesAddress
- * - updateArtblocksPrimarySalesPercentage (up to 100%)
+ * - updateArtblocksPrimarySalesPercentage (up to 25%)
  * - updateArtblocksSecondarySalesBPS (up to 100%)
  * - updateMinterContract
  * - updateRandomizerAddress
@@ -86,7 +87,7 @@ import "../libs/v0.8.x/Bytes32Strings.sol";
  * Additional admin and artist privileged roles may be described on minters,
  * registries, and other contracts that may interact with this core contract.
  */
-contract GenArt721CoreV3_Explorations is
+contract GenArt721CoreV3 is
     ERC721_PackedHashSeed,
     Ownable,
     IGenArt721CoreContractV3,
@@ -95,7 +96,6 @@ contract GenArt721CoreV3_Explorations is
     using BytecodeStorageWriter for string;
     using Bytes32Strings for bytes32;
     using Strings for uint256;
-    using Strings for address;
     uint256 constant ONE_HUNDRED = 100;
     uint256 constant ONE_MILLION = 1_000_000;
     uint24 constant ONE_MILLION_UINT24 = 1_000_000;
@@ -125,11 +125,13 @@ contract GenArt721CoreV3_Explorations is
     bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_ADDRESS =
         "artblocksSecondarySalesAddress";
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
-    // note: Curation registry address will never be updated on V3 Explorations
+    bytes32 constant FIELD_NEXT_CORE_CONTRACT = "nextCoreContract";
     bytes32 constant FIELD_ARTBLOCKS_CURATION_REGISTRY_ADDRESS =
         "curationRegistryAddress";
     bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
         "dependencyRegistryAddress";
+    bytes32 constant FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS =
+        "onChainGeneratorAddress";
     bytes32 constant FIELD_ARTBLOCKS_PRIMARY_SALES_PERCENTAGE =
         "artblocksPrimaryPercentage";
     bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_BPS =
@@ -154,15 +156,25 @@ contract GenArt721CoreV3_Explorations is
     bytes32 constant FIELD_PROJECT_ASPECT_RATIO = "aspectRatio";
     bytes32 constant FIELD_PROJECT_BASE_URI = "baseURI";
 
-    /// Curation registry is not relevant for Art Blocks Explorations, and will
-    /// remain null for interface-conformance purposes only, specifically for
-    /// indexing layers.
+    // Art Blocks previous flagship ERC721 token addresses (for reference)
+    /// Art Blocks Project ID range: [0-2]
+    address public constant ART_BLOCKS_ERC721TOKEN_ADDRESS_V0 =
+        0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a;
+    /// Art Blocks Project ID range: [3-373]
+    address public constant ART_BLOCKS_ERC721TOKEN_ADDRESS_V1 =
+        0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270;
+    /// pointer to next core contract associated with this contract
+    address public nextCoreContract;
+
+    /// Curation registry managed by Art Blocks
     address public artblocksCurationRegistryAddress;
     /// Dependency registry managed by Art Blocks
     address public artblocksDependencyRegistryAddress;
+    /// On chain generator managed by Art Blocks
+    address public artblocksOnChainGeneratorAddress;
 
     /// current randomizer contract
-    IRandomizerV2 public randomizerContract;
+    IRandomizer_V3CoreBase public randomizerContract;
 
     /// append-only array of all randomizer contract addresses ever used by
     /// this contract
@@ -236,11 +248,7 @@ contract GenArt721CoreV3_Explorations is
     bool public newProjectsForbidden;
 
     /// version & type of this core contract
-    /// coreVersion is updated from Flagship V3 core due to minor changes
-    /// implemented in the Explorations version of the contract.
-    string public constant coreVersion = "v3.2.3";
-    /// coreType remains consistent with flagship V3 core because external &
-    /// public functions used for indexing are unchanged.
+    string public constant coreVersion = "v3.2.2";
     string public constant coreType = "GenArt721CoreV3";
 
     /// default base URI to initialize all new project projectBaseURI values to
@@ -297,7 +305,7 @@ contract GenArt721CoreV3_Explorations is
     }
 
     /**
-     * This function allows the artist of a project to call a function if the
+     * This modifier allows the artist of a project to call a function if the
      * owner of the contract has renounced ownership. This is to allow the
      * contract to continue to function if the owner decides to renounce
      * ownership.
@@ -345,13 +353,7 @@ contract GenArt721CoreV3_Explorations is
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
         // initialize default base URI
-        _updateDefaultBaseURI(
-            string.concat(
-                "https://token.artblocks.io/",
-                address(this).toHexString(),
-                "/"
-            )
-        );
+        _updateDefaultBaseURI("https://token.artblocks.io/");
         // initialize next project ID
         _nextProjectId = _startingProjectId;
         emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
@@ -408,7 +410,7 @@ contract GenArt721CoreV3_Explorations is
         unchecked {
             // invocationsBefore is uint24 << max uint256. In production use,
             // _projectId * ONE_MILLION must be << max uint256, otherwise
-            // tokenIdToProjectId function becomes invalid.
+            // tokenIdToProjectId function become invalid.
             // Therefore, no risk of overflow
             thisTokenId = (_projectId * ONE_MILLION) + invocationsBefore;
         }
@@ -472,8 +474,8 @@ contract GenArt721CoreV3_Explorations is
      * that also integrate with the owner/AdminACL contract (e.g. potentially
      * minter suite contracts, registry contracts, etc.).
      * After renouncing ownership, artists will be in control of updates to
-     * their payment addresses and splits (see function
-     * _onlyAdminACLOrRenouncedArtist`).
+     * their payment addresses and splits (see modifier
+     * onlyAdminACLOrRenouncedArtist`).
      * While there is no currently intended reason to call this method based on
      * defined Art Blocks business practices, this method exists to allow
      * artists to continue to maintain the limited set of contract
@@ -490,18 +492,27 @@ contract GenArt721CoreV3_Explorations is
     }
 
     /**
-     * @notice Warning: Configuring Curation Registry contract is not supported
-     * on V3 Explorations version of this contract.
-     * This method exists only to maintain this portion of the contract
-     * interface with other V3 cores.
-     * @param _artblocksCurationRegistryAddress)
+     * @notice Updates reference to next core contract, associated with this contract.
+     * @param _nextCoreContract Address of the next core contract
+     */
+    function updateNextCoreContract(address _nextCoreContract) external {
+        _onlyAdminACL(this.updateNextCoreContract.selector);
+        nextCoreContract = _nextCoreContract;
+        emit PlatformUpdated(FIELD_NEXT_CORE_CONTRACT);
+    }
+
+    /**
+     * @notice Updates reference to Art Blocks Curation Registry contract.
+     * @param _artblocksCurationRegistryAddress Address of new Curation
+     * Registry.
      */
     function updateArtblocksCurationRegistryAddress(
         address _artblocksCurationRegistryAddress
     ) external {
         _onlyAdminACL(this.updateArtblocksCurationRegistryAddress.selector);
         _onlyNonZeroAddress(_artblocksCurationRegistryAddress);
-        revert("Action not supported");
+        artblocksCurationRegistryAddress = _artblocksCurationRegistryAddress;
+        emit PlatformUpdated(FIELD_ARTBLOCKS_CURATION_REGISTRY_ADDRESS);
     }
 
     /**
@@ -516,6 +527,19 @@ contract GenArt721CoreV3_Explorations is
         _onlyNonZeroAddress(_artblocksDependencyRegistryAddress);
         artblocksDependencyRegistryAddress = _artblocksDependencyRegistryAddress;
         emit PlatformUpdated(FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS);
+    }
+
+    /**
+     * @notice Updates reference to Art Blocks On Chain Generator contract.
+     * @param _artblocksOnChainGeneratorAddress Address of new on chain generator.
+     */
+    function updateArtblocksOnChainGeneratorAddress(
+        address _artblocksOnChainGeneratorAddress
+    ) external {
+        _onlyAdminACL(this.updateArtblocksOnChainGeneratorAddress.selector);
+        _onlyNonZeroAddress(_artblocksOnChainGeneratorAddress);
+        artblocksOnChainGeneratorAddress = _artblocksOnChainGeneratorAddress;
+        emit PlatformUpdated(FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS);
     }
 
     /**
@@ -899,6 +923,8 @@ contract GenArt721CoreV3_Explorations is
     /**
      * @notice Updates artist name for project `_projectId` to be
      * `_projectArtistName`.
+     * @dev allows admin to update after project is locked, due to our
+     * experiences of artist name changes being requested post-lock.
      * @param _projectId Project ID.
      * @param _projectArtistName New artist name.
      */
@@ -906,10 +932,17 @@ contract GenArt721CoreV3_Explorations is
         uint256 _projectId,
         string memory _projectArtistName
     ) external {
-        _onlyUnlocked(_projectId);
-        _onlyArtistOrAdminACL(
-            _projectId,
-            this.updateProjectArtistName.selector
+        // checks
+        // if unlocked, only artist may update, if locked, only admin may update
+        require(
+            _projectUnlocked(_projectId)
+                ? msg.sender == projectIdToFinancials[_projectId].artistAddress
+                : adminACLAllowed(
+                    msg.sender,
+                    address(this),
+                    this.updateProjectArtistName.selector
+                ),
+            "Only artist, owner when locked"
         );
         _onlyNonEmptyString(_projectArtistName);
         projects[_projectId].artist = _projectArtistName;
@@ -970,7 +1003,7 @@ contract GenArt721CoreV3_Explorations is
                     address(this),
                     this.updateProjectDescription.selector
                 ),
-            "Only artist when unlocked, owner when locked"
+            "Only artist, owner when locked"
         );
         // effects
         // store description in contract bytecode, replacing reference address from
@@ -1914,7 +1947,7 @@ contract GenArt721CoreV3_Explorations is
      * perform input validation where applicable.
      */
     function _updateRandomizerAddress(address _randomizerAddress) internal {
-        randomizerContract = IRandomizerV2(_randomizerAddress);
+        randomizerContract = IRandomizer_V3CoreBase(_randomizerAddress);
         // populate historical randomizer array
         _historicalRandomizerAddresses.push(_randomizerAddress);
         emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
