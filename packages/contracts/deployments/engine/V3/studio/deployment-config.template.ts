@@ -3,8 +3,8 @@
 
 export const deployNetworkConfiguration = {
   network: "sepolia",
-  // environment is only used for metadata purposes, and is not used in the deployment process	    tokenName: "",
-  // Please set to "dev", "staging", or "mainnet", as appropriate
+  // environment is only used for metadata purposes, and is not used in the deployment process
+  // Please set to "dev", "staging", or "mainnet", arbitrum as appropriate
   environment: "dev",
   useLedgerSigner: false,
   // ONLY Gnosis Safe is supported for Studio deployments at this time
@@ -22,6 +22,7 @@ export const deployConfigDetailsArray = [
     // INCREMENT THESE NUMBERS FOR EACH NEW STUDIO DEPLOYMENT
     tokenName: "Art Blocks Studio | #",
     tokenTicker: "ABSTUDIO_#",
+    // see /scripts/util/constants.ts::MAIN_CONFIG for the correct address if prod deployment
     renderProviderAddress: "0x...",
     // platform provider address should be set to the zero address for Studio deployments
     platformProviderAddress: "0x...",
