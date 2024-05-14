@@ -109,6 +109,7 @@ module.exports = {
     arbitrum: {
       url: ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL,
       accounts: [`${PRIVATE_KEY}`],
+      // ledgerAccounts: ["0x"],
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 50,
