@@ -137,14 +137,31 @@ export async function getActiveCoreRegistry(
   return activeCoreRegistryAddress;
 }
 
-type T_NETWORK_CONFIG = {
+/**
+ * Helper function to get the prod render provider payment address for the given
+ * network and environment, if there is a requirement.
+ * Returns undefined if there is no requirement for a specific render provider (e.g. testnet)
+ * @param networkName network name, e.g. "mainnet", "arbitrum", etc.
+ * @param environment environment, e.g. "mainnet", "staging", "dev"
+ * @returns address if require a specific render provider payment address for the given network and environment, otherwise undefined
+ */
+export function getProdRenderProviderPaymentAddress(
+  networkName: string,
+  environment: string
+): string | undefined {
+  return MAIN_CONFIG[networkName]?.[environment]
+    ?.prodRenderProviderPaymentAddress;
+}
+
+type T_NETWORK_ENV_CONFIG = {
   engineFactory: string;
   sharedMinterFilter: string;
   sharedRandomizer: string;
+  prodRenderProviderPaymentAddress?: string;
 };
 type T_MAIN_CONFIG = {
   [network: string]: {
-    [environment: string]: T_NETWORK_CONFIG;
+    [environment: string]: T_NETWORK_ENV_CONFIG;
   };
 };
 const MAIN_CONFIG: T_MAIN_CONFIG = {
@@ -153,6 +170,8 @@ const MAIN_CONFIG: T_MAIN_CONFIG = {
       engineFactory: "0x00000000F82E4e6D5AB22D63050FCb2bF15eE95d",
       sharedMinterFilter: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
       sharedRandomizer: "0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91",
+      prodRenderProviderPaymentAddress:
+        "0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd",
     },
   },
   arbitrum: {
@@ -160,6 +179,8 @@ const MAIN_CONFIG: T_MAIN_CONFIG = {
       engineFactory: "0x000000bbAA3E36b60C06A92430D8956459c2Fd51",
       sharedMinterFilter: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
       sharedRandomizer: "0x6a5976391E708fBf918c3786cd1FcbB88732fbc1",
+      prodRenderProviderPaymentAddress:
+        "0x23636eAa2605B9c4a988E56d2093b488793f1C42",
     },
   },
   "arbitrum-sepolia": {

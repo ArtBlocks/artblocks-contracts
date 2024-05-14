@@ -17,7 +17,7 @@ import {
   getActiveEngineFactoryAddress,
   ZERO_ADDRESS,
   getActiveCoreRegistry,
-  BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES,
+  getProdRenderProviderPaymentAddress,
 } from "../../util/constants";
 
 /**
@@ -167,14 +167,7 @@ async function main() {
     );
   }
 
-  // verify that there is a valid bytecode storage reader library address for the network
-  const bytecodeStorageLibraryAddress =
-    BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES[networkName];
-  if (!bytecodeStorageLibraryAddress) {
-    throw new Error(
-      `[ERROR] No bytecode storage reader library address configured for network ${networkName}`
-    );
-  }
+  // @dev no need to verify bytecode storage reader library addresses as they are not used in this script (they are only referenced in implementation contracts)
 
   // Get shared minter filter
   const minterFilterAddress = getActiveSharedMinterFilter(
@@ -190,6 +183,12 @@ async function main() {
 
   // Get shared split provider
   const splitProviderAddress = getActiveSharedSplitProvider();
+
+  // get the required render provider payment address, if required (e.g. required on prod networks)
+  const requiredRenderProviderAddress = getProdRenderProviderPaymentAddress(
+    networkName,
+    deployNetworkConfiguration.environment
+  );
 
   const txData: MetaTransactionData[] = [];
 
@@ -295,6 +294,16 @@ async function main() {
     // validate platform provider address is defined
     if (!platformProviderAddress) {
       throw new Error(`[ERROR] platformProviderAddress must be defined`);
+    }
+
+    // validate render provider address meets requirements
+    if (
+      requiredRenderProviderAddress &&
+      renderProviderAddress !== requiredRenderProviderAddress
+    ) {
+      throw new Error(
+        `[ERROR] Render provider address ${renderProviderAddress} does not match required address for (network,env) ${requiredRenderProviderAddress}`
+      );
     }
 
     const inputEngineConfiguration = {
