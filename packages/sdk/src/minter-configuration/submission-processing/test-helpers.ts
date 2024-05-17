@@ -2,18 +2,22 @@ import {
   ProjectWithMinterFilter,
   TransformProjectMinterConfigurationFormValuesArgs,
 } from "../types";
-import ArtBlocksSDK from "../..";
 import { ProjectMinterConfigurationDetailsFragment } from "../../generated/graphql";
 import { FormFieldSchema } from "../../json-schema";
+import { GraphQLClient } from "graphql-request";
+import { PublicClient } from "viem";
 
 export function generateTransformProjectMinterConfigurationFormValuesArgs(
   overrides?: Partial<TransformProjectMinterConfigurationFormValuesArgs>
 ) {
   const args: TransformProjectMinterConfigurationFormValuesArgs = {
-    sdk: {
-      jwt: "fake-jwt",
-      graphqlEndpoint: "fake-endpoint",
-    } as unknown as ArtBlocksSDK,
+    clientContext: {
+      graphqlClient: {
+        request: jest.fn(),
+      } as unknown as GraphQLClient,
+      userIsStaff: false,
+      publicClient: {} as unknown as PublicClient,
+    },
     projectId: "fake-project-id",
     minterConfiguration: {
       id: "fake-config-id",

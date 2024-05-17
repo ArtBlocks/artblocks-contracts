@@ -1,35 +1,111 @@
-import { PublicClient } from "viem";
+import { PublicClient, WalletClient } from "viem";
 import { FormBlueprint, SubmissionStatusEnum, SubmissionStatus } from "./types";
 import { generateProjectMinterConfigurationForms } from "./minter-configuration";
 import { ProjectMinterConfigurationData } from "./minter-configuration/types";
+import { GraphQLClient, RequestDocument, Variables } from "graphql-request";
+import { TypedDocumentNode } from "@graphql-typed-document-node/core";
+import { VariablesAndRequestHeadersArgs } from "graphql-request/build/esm/types";
 
-export type ArtBlocksSDKOptions = {
-  publicClient: PublicClient;
+export type ArtBlocksClientOptions = {
   graphqlEndpoint: string;
-  jwt?: string;
+  publicClient?: PublicClient;
+  authToken?: string;
+  walletClient?: WalletClient;
 };
 
-export default class ArtBlocksSDK {
-  publicClient: PublicClient;
-  graphqlEndpoint: string;
-  jwt?: string;
+export type ArtBlocksClientContext = {
+  graphqlClient: GraphQLClient;
+  publicClient?: PublicClient;
+  walletClient?: WalletClient;
   userIsStaff: boolean;
+};
 
-  constructor({ publicClient, jwt, graphqlEndpoint }: ArtBlocksSDKOptions) {
-    this.publicClient = publicClient;
-    this.jwt = jwt;
-    this.graphqlEndpoint = graphqlEndpoint;
+type ArtBlocksClientContextWithPublicClient = ArtBlocksClientContext & {
+  publicClient: PublicClient;
+};
 
+export class ArtBlocksClient {
+  context: ArtBlocksClientContext;
+
+  constructor({
+    publicClient,
+    walletClient,
+    authToken,
+    graphqlEndpoint,
+  }: ArtBlocksClientOptions) {
+    // Create a GraphQL client with the provided endpoint and auth token
+    const graphqlClient = new GraphQLClient(graphqlEndpoint, {
+      headers: (): { Authorization?: string } => {
+        if (!authToken) {
+          return {};
+        }
+
+        return {
+          Authorization: `Bearer ${authToken}`,
+        };
+      },
+    });
+
+    // Parse the JWT to determine if the user is staff
     const jwtString = Buffer.from(
-      this.jwt?.split(".")[1] ?? "",
+      authToken?.split(".")[1] ?? "",
       "base64"
     ).toString();
     const jwtData = jwtString ? JSON.parse(jwtString) : null;
+    const userIsStaff = Boolean(jwtData?.isStaff);
 
-    this.userIsStaff = jwtData?.isStaff ?? false;
+    this.context = {
+      graphqlClient,
+      publicClient,
+      walletClient,
+      userIsStaff,
+    };
   }
 
-  async getProjectMinterConfiguration(projectId: string) {
+  setAuthToken(authToken?: string) {
+    if (!authToken) {
+      this.context.graphqlClient.setHeaders({});
+      return;
+    }
+
+    this.context.graphqlClient.setHeaders({
+      Authorization: `Bearer ${authToken}`,
+    });
+  }
+
+  getPublicClient(): PublicClient | undefined {
+    return this.context.publicClient;
+  }
+
+  setPublicClient(publicClient: PublicClient | undefined) {
+    this.context.publicClient = publicClient;
+  }
+
+  setWalletClient(walletClient: WalletClient | undefined) {
+    this.context.walletClient = walletClient;
+  }
+
+  getWalletClient() {
+    return this.context.walletClient;
+  }
+
+  async graphqlRequest<T, V extends Variables = Variables>(
+    document: RequestDocument | TypedDocumentNode<T, V>,
+    ...variablesAndRequestHeaders: VariablesAndRequestHeadersArgs<V>
+  ): Promise<T> {
+    return this.context.graphqlClient.request(
+      document,
+      ...variablesAndRequestHeaders
+    );
+  }
+
+  async getProjectMinterConfigurationContext(projectId: string) {
+    if (!this.context.publicClient) {
+      throw new Error(
+        "A publicClient is required to get project minter configuration context"
+      );
+    }
+
     // Create a list of subscribers
     let subscribers: Array<
       (config: {
@@ -51,7 +127,7 @@ export default class ArtBlocksSDK {
     const { forms, data } = await generateProjectMinterConfigurationForms({
       projectId,
       onConfigurationChange: notifySubscribers,
-      sdk: this,
+      clientContext: this.context as ArtBlocksClientContextWithPublicClient,
     });
 
     return {
@@ -61,10 +137,16 @@ export default class ArtBlocksSDK {
 
       // Provide a method to refresh the configuration
       refresh: async () => {
+        if (!this.context.publicClient) {
+          throw new Error(
+            "A publicClient is required to get project minter configuration context"
+          );
+        }
+
         await generateProjectMinterConfigurationForms({
           projectId,
           onConfigurationChange: notifySubscribers,
-          sdk: this,
+          clientContext: this.context as ArtBlocksClientContextWithPublicClient,
         });
       },
 

@@ -5,9 +5,9 @@ export async function processEthToWei(
   value: unknown,
   args: TransformProjectMinterConfigurationFormValuesArgs
 ): Promise<bigint> {
-  const { minterConfiguration, sdk } = args;
+  const { minterConfiguration, clientContext } = args;
 
-  const { publicClient } = sdk;
+  const { publicClient } = clientContext;
 
   if (
     typeof value !== "string" &&

@@ -1,4 +1,4 @@
-export const IDelegationRegistry = [
+export const iDelegationRegistryAbi = [
   {
     anonymous: false,
     inputs: [
