@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 
 import "./IAdminACLV0.sol";
 import "./IGenArt721CoreContractV3_Base.sol";
+import "./ISplitProviderV0.sol";
 
 /**
  * @notice Struct representing Engine contract configuration.
@@ -136,4 +137,10 @@ interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
         external
         view
         returns (uint256);
+
+    /**
+     * @notice The address of the current split provider being used by the contract.
+     * @return The address of the current split provider.
+     */
+    function splitProvider() external view returns (ISplitProviderV0);
 }

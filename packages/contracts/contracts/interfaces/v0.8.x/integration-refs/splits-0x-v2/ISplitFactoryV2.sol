@@ -4,7 +4,7 @@
 //  - https://github.com/0xSplits/splits-contracts-monorepo/blob/main/packages/splits-v2/src/libraries/SplitV2.sol
 //  - https://github.com/0xSplits/splits-contracts-monorepo/blob/main/packages/splits-v2/src/splitters/SplitFactoryV2.sol
 
-pragma solidity 0.8.22;
+pragma solidity ^0.8.0;
 
 interface ISplitFactoryV2 {
     /* -------------------------------------------------------------------------- */
