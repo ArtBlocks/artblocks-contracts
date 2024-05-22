@@ -33,8 +33,8 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     // public type
     bytes32 public constant type_ = "EngineFactoryV0";
 
-    // base URI prefix for all Engine contracts on this network/chainID
-    string public defaultBaseURIPrefix;
+    // base URI host for all Engine contracts on this network/chainID
+    string public defaultBaseURIHost;
 
     /**
      * The implementation contract that is cloned when creating new Engine
@@ -85,7 +85,7 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
      * implementation contract
      * @param coreRegistry_ address of the core registry contract
      * @param owner_ address of the initial owner
-     * @param defaultBaseURIPrefix_ default base URI prefix for all Engine contracts,
+     * @param defaultBaseURIHost_ default base URI prefix for all Engine contracts,
      * e.g. "https://token.artblocks.io/" for mainnet, "https://token.arbitrum.artblocks.io/" for arbitrum, etc.
      */
     constructor(
@@ -93,14 +93,14 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         address engineFlexImplementation_,
         address coreRegistry_,
         address owner_,
-        string memory defaultBaseURIPrefix_
+        string memory defaultBaseURIHost_
     ) Ownable(owner_) {
         _onlyNonZeroAddress(engineImplementation_);
         _onlyNonZeroAddress(engineFlexImplementation_);
         _onlyNonZeroAddress(coreRegistry_);
         _onlyNonZeroAddress(owner_);
 
-        defaultBaseURIPrefix = defaultBaseURIPrefix_;
+        defaultBaseURIHost = defaultBaseURIHost_;
 
         engineImplementation = engineImplementation_;
         engineFlexImplementation = engineFlexImplementation_;
@@ -191,7 +191,7 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         IGenArt721CoreContractV3_Engine(engineContract).initialize({
             engineConfiguration: engineConfiguration,
             adminACLContract_: adminACLContract,
-            defaultBaseURIPrefix: defaultBaseURIPrefix
+            defaultBaseURIHost: defaultBaseURIHost
         });
 
         (

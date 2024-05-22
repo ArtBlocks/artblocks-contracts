@@ -397,12 +397,12 @@ contract GenArt721CoreV3_Engine is
      * @param engineConfiguration EngineConfiguration to configure the contract with.
      * @param adminACLContract_ Address of admin access control contract, to be
      * set as contract owner.
-     * @param defaultBaseURIPrefix Base URI prefix to initialize default base URI with.
+     * @param defaultBaseURIHost Base URI prefix to initialize default base URI with.
      */
     function initialize(
         EngineConfiguration calldata engineConfiguration,
         address adminACLContract_,
-        string memory defaultBaseURIPrefix
+        string memory defaultBaseURIHost
     ) external {
         // can only be initialized once
         if (_initialized) {
@@ -457,11 +457,7 @@ contract GenArt721CoreV3_Engine is
         _transferOwnership(adminACLContract_);
         // initialize default base URI
         _updateDefaultBaseURI(
-            string.concat(
-                defaultBaseURIPrefix,
-                address(this).toHexString(),
-                "/"
-            )
+            string.concat(defaultBaseURIHost, address(this).toHexString(), "/")
         );
         // initialize next project ID
         _nextProjectId = engineConfiguration.startingProjectId;
