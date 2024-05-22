@@ -265,7 +265,7 @@ contract GenArt721CoreV3_Engine is
     bool public allowArtistProjectActivation;
 
     /// version & type of this core contract
-    bytes32 constant CORE_VERSION = "v3.2.0";
+    bytes32 constant CORE_VERSION = "v3.2.2";
 
     function coreVersion() external pure returns (string memory) {
         return CORE_VERSION.toString();
@@ -395,12 +395,14 @@ contract GenArt721CoreV3_Engine is
      * function will be called atomically by the factory contract that deploys this
      * contract, after which it will be initialized and uncallable.
      * @param engineConfiguration EngineConfiguration to configure the contract with.
-     * @param _adminACLContract Address of admin access control contract, to be
+     * @param adminACLContract_ Address of admin access control contract, to be
      * set as contract owner.
+     * @param defaultBaseURIPrefix Base URI prefix to initialize default base URI with.
      */
     function initialize(
         EngineConfiguration calldata engineConfiguration,
-        address _adminACLContract
+        address adminACLContract_,
+        string memory defaultBaseURIPrefix
     ) external {
         // can only be initialized once
         if (_initialized) {
@@ -452,11 +454,11 @@ contract GenArt721CoreV3_Engine is
         );
         _updateRandomizerAddress(engineConfiguration.randomizerContract);
         // set AdminACL management contract as owner
-        _transferOwnership(_adminACLContract);
+        _transferOwnership(adminACLContract_);
         // initialize default base URI
         _updateDefaultBaseURI(
             string.concat(
-                "https://token.artblocks.io/",
+                defaultBaseURIPrefix,
                 address(this).toHexString(),
                 "/"
             )

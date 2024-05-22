@@ -33,6 +33,9 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
     // public type
     bytes32 public constant type_ = "EngineFactoryV0";
 
+    // base URI prefix for all Engine contracts on this network/chainID
+    string public defaultBaseURIPrefix;
+
     /**
      * The implementation contract that is cloned when creating new Engine
      * contracts.
@@ -82,17 +85,22 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
      * implementation contract
      * @param coreRegistry_ address of the core registry contract
      * @param owner_ address of the initial owner
+     * @param defaultBaseURIPrefix_ default base URI prefix for all Engine contracts,
+     * e.g. "https://token.artblocks.io/" for mainnet, "https://token.arbitrum.artblocks.io/" for arbitrum, etc.
      */
     constructor(
         address engineImplementation_,
         address engineFlexImplementation_,
         address coreRegistry_,
-        address owner_
+        address owner_,
+        string memory defaultBaseURIPrefix_
     ) Ownable(owner_) {
         _onlyNonZeroAddress(engineImplementation_);
         _onlyNonZeroAddress(engineFlexImplementation_);
         _onlyNonZeroAddress(coreRegistry_);
         _onlyNonZeroAddress(owner_);
+
+        defaultBaseURIPrefix = defaultBaseURIPrefix_;
 
         engineImplementation = engineImplementation_;
         engineFlexImplementation = engineFlexImplementation_;
@@ -180,10 +188,11 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
             salt: salt
         });
 
-        IGenArt721CoreContractV3_Engine(engineContract).initialize(
-            engineConfiguration,
-            adminACLContract
-        );
+        IGenArt721CoreContractV3_Engine(engineContract).initialize({
+            engineConfiguration: engineConfiguration,
+            adminACLContract_: adminACLContract,
+            defaultBaseURIPrefix: defaultBaseURIPrefix
+        });
 
         (
             string memory coreContractType,

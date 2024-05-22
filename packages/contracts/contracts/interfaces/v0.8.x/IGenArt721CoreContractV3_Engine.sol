@@ -50,10 +50,12 @@ interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
      * @param engineConfiguration EngineConfiguration to configure the contract with.
      * @param adminACLContract_ Address of admin access control contract, to be
      * set as contract owner.
+     * @param defaultBaseURIPrefix Base URI prefix to initialize default base URI with.
      */
     function initialize(
         EngineConfiguration calldata engineConfiguration,
-        address adminACLContract_
+        address adminACLContract_,
+        string memory defaultBaseURIPrefix
     ) external;
 
     // @dev new function in V3
