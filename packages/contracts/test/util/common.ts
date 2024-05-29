@@ -5,7 +5,7 @@ import { BN } from "@openzeppelin/test-helpers";
 import { ethers } from "hardhat";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract, BigNumber } from "ethers";
-import { ONE_MINUTE } from "./constants";
+import { DEFAULT_BASE_URI, ONE_MINUTE } from "./constants";
 import { SplitProviderV0 } from "../../scripts/contracts/split/split-provider/SplitProviderV0";
 
 export type TestAccountsArtBlocks = {
@@ -378,6 +378,7 @@ export async function deployWithStorageLibraryAndGet(
       engineFlexImplementation.address,
       coreRegistry?.address,
       config.accounts.deployer.address,
+      DEFAULT_BASE_URI,
     ]);
     // transfer ownership of core registry to engine factory
     await coreRegistry

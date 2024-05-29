@@ -1,14 +1,6 @@
-import {
-  BN,
-  constants,
-  expectEvent,
-  expectRevert,
-  balance,
-  ether,
-} from "@openzeppelin/test-helpers";
+import { DEFAULT_BASE_URI } from "../../util/constants";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { hexDataSlice } from "@ethersproject/bytes";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import {
@@ -18,7 +10,6 @@ import {
   deployAndGet,
   deployCoreWithMinterFilter,
   mintProjectUntilRemaining,
-  advanceEVMByTime,
   PLATFORM_UPDATED_FIELDS,
   PROJECT_UPDATED_FIELDS,
 } from "../../util/common";
@@ -148,6 +139,7 @@ for (const coreContractName of coreContractsToTest) {
           engineFlexImplementation.address,
           coreRegistry?.address,
           config.accounts.deployer.address, // owner
+          DEFAULT_BASE_URI,
         ]);
         // transfer ownership of core registry to engine factory
         await coreRegistry
@@ -253,6 +245,7 @@ for (const coreContractName of coreContractsToTest) {
           engineFlexImplementation.address,
           coreRegistry?.address,
           config.accounts.deployer.address, // owner
+          DEFAULT_BASE_URI,
         ]);
         // transfer ownership of core registry to engine factory
         await coreRegistry

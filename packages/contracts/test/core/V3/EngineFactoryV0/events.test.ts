@@ -4,6 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setupEngineFactory } from "../../../util/fixtures";
 
 import { Logger } from "@ethersproject/logger";
+import { DEFAULT_BASE_URI } from "../../../util/constants";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
 
@@ -26,7 +27,8 @@ describe(`EngineFactoryV0 Events`, async function () {
         config?.engineImplementation?.address,
         config?.engineFlexImplementation?.address,
         config?.coreRegistry?.address,
-        config.accounts.deployer.address // required owner address
+        config.accounts.deployer.address, // required owner address
+        DEFAULT_BASE_URI
       );
 
       const receipt = await await tx.deployTransaction.wait();

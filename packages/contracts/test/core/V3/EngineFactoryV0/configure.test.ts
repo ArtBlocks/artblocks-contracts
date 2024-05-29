@@ -8,6 +8,7 @@ import { Logger } from "@ethersproject/logger";
 Logger.setLogLevel(Logger.levels.ERROR);
 
 import { revertMessages } from "./constants";
+import { DEFAULT_BASE_URI } from "../../../util/constants";
 
 const TARGET_TYPE = "EngineFactoryV0";
 
@@ -30,7 +31,8 @@ describe(`EngineFactoryV0 Configure`, async function () {
           config?.engineImplementation?.address,
           config?.engineFlexImplementation?.address,
           config?.coreRegistry?.address,
-          "0x0000000000000000000000000000000000000000"
+          "0x0000000000000000000000000000000000000000",
+          DEFAULT_BASE_URI
         ),
       revertMessages.onlyNonZeroAddress
     );
