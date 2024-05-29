@@ -18,6 +18,7 @@ import {
 } from "../../scripts/contracts";
 
 import { SplitAtomicV0__factory } from "../../scripts/contracts";
+import { DEFAULT_BASE_URI } from "./constants";
 
 /**
  * Fixture that sets up initial, default config.
@@ -138,6 +139,7 @@ export async function setupEngineFactory() {
     config.engineFlexImplementation.address,
     config.coreRegistry.address,
     config.accounts.deployer.address, // owner
+    DEFAULT_BASE_URI,
   ]);
 
   // transfer ownership of core registry to engine factory
