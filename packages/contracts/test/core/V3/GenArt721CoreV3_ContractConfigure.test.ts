@@ -13,6 +13,7 @@ import {
   GENART721_ERROR_CODES,
   deployWithStorageLibraryAndGet,
 } from "../../util/common";
+import { DEFAULT_BASE_URI } from "../../util/constants";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -121,7 +122,8 @@ for (const coreContractName of coreContractsToTest) {
             .connect(config.accounts.deployer)
             .initialize(
               validEngineConfigurationExistingAdminACL,
-              config.adminACL.address
+              config.adminACL.address,
+              DEFAULT_BASE_URI
             )
         )
           .to.be.revertedWithCustomError(
