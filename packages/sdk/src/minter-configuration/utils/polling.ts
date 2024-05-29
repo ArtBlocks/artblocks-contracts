@@ -1,5 +1,4 @@
-import request from "graphql-request";
-import ArtBlocksSDK from "../..";
+import { ArtBlocksClientContext } from "../..";
 import { GetProjectMinterConfigurationUpdatesQuery } from "../../generated/graphql";
 import { AsyncData, asyncPoll } from "../../utils/async-poll";
 import {
@@ -24,7 +23,7 @@ import {
  * const isSynced = await pollForSyncedMinterConfigUpdates(sdk, '0x000000-0', new Date(), ['extra_minter_details.auctionStartTime']);
  */
 export async function pollForSyncedMinterConfigUpdates(
-  sdk: ArtBlocksSDK,
+  clientContext: ArtBlocksClientContext,
   projectId: string,
   transactionConfirmedAt: Date,
   updateProperties: string[]
@@ -36,14 +35,10 @@ export async function pollForSyncedMinterConfigUpdates(
       >
     > => {
       try {
-        const result = await request(
-          sdk.graphqlEndpoint,
+        const result = await clientContext.graphqlClient.request(
           getProjectMinterConfigurationUpdatesQueryDocument,
           {
             projectId,
-          },
-          {
-            Authorization: `Bearer ${sdk.jwt}`,
           }
         );
         const project = result.projects_metadata_by_pk;
@@ -87,7 +82,7 @@ export async function pollForSyncedMinterConfigUpdates(
 }
 
 export async function pollForProjectUpdates(
-  sdk: ArtBlocksSDK,
+  clientContext: ArtBlocksClientContext,
   projectId: string,
   transactionConfirmedAt: Date,
   updateProperties: string[]
@@ -99,14 +94,10 @@ export async function pollForProjectUpdates(
       >
     > => {
       try {
-        const result = await request(
-          sdk.graphqlEndpoint,
+        const result = await clientContext.graphqlClient.request(
           getProjectsMetadataUpdatesQueryDocument,
           {
             projectId,
-          },
-          {
-            Authorization: `Bearer ${sdk.jwt}`,
           }
         );
         const project = result.projects_metadata_by_pk;

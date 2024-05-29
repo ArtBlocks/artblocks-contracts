@@ -5,7 +5,8 @@ import { BN } from "@openzeppelin/test-helpers";
 import { ethers } from "hardhat";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract, BigNumber } from "ethers";
-import { ONE_MINUTE } from "./constants";
+import { DEFAULT_BASE_URI, ONE_MINUTE } from "./constants";
+import { SplitProviderV0 } from "../../scripts/contracts/split/split-provider/SplitProviderV0";
 
 export type TestAccountsArtBlocks = {
   deployer: SignerWithAddress;
@@ -85,9 +86,13 @@ export type T_Config = {
   coreRegistry?: Contract;
   minterSetPrice?: Contract;
   deadReceiver?: Contract;
+  engineImplementation?: Contract;
+  engineFlexImplementation?: Contract;
+  engineFactory?: Contract;
   splitterImplementation?: Contract;
   splitterFactory?: Contract;
   splitter?: Contract;
+  splitProvider?: SplitProviderV0;
   // split configs
   validSplit?: T_Split;
   invalidSplit?: T_Split;
@@ -97,6 +102,140 @@ export type T_Config = {
   // ref / mocks
   ERC20?: Contract;
   weth?: Contract;
+};
+
+// type of arguments for V3PaymentProposal, V3 Engine
+export type T_V3PaymentProposalArgs = [
+  number,
+  string,
+  string,
+  number,
+  string,
+  number,
+];
+
+export const PLATFORM_UPDATED_FIELDS = {
+  FIELD_NEXT_PROJECT_ID: ethers.utils.hexZeroPad(ethers.utils.hexlify(0), 32),
+  FIELD_NEW_PROJECTS_FORBIDDEN: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(1),
+    32
+  ),
+  FIELD_DEFAULT_BASE_URI: ethers.utils.hexZeroPad(ethers.utils.hexlify(2), 32),
+  FIELD_RANDOMIZER_ADDRESS: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(3),
+    32
+  ),
+  FIELD_NEXT_CORE_CONTRACT: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(4),
+    32
+  ),
+  FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(5),
+    32
+  ),
+  FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(6),
+    32
+  ),
+  FIELD_PROVIDER_SALES_ADDRESSES: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(7),
+    32
+  ),
+  FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(8),
+    32
+  ),
+  FIELD_PROVIDER_SECONDARY_SALES_BPS: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(9),
+    32
+  ),
+  FIELD_SPLIT_PROVIDER: ethers.utils.hexZeroPad(ethers.utils.hexlify(10), 32),
+};
+
+export const PROJECT_UPDATED_FIELDS = {
+  FIELD_PROJECT_COMPLETED: ethers.utils.hexZeroPad(ethers.utils.hexlify(0), 32),
+  FIELD_PROJECT_ACTIVE: ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32),
+  FIELD_PROJECT_ARTIST_ADDRESS: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(2),
+    32
+  ),
+  FIELD_PROJECT_PAUSED: ethers.utils.hexZeroPad(ethers.utils.hexlify(3), 32),
+  FIELD_PROJECT_CREATED: ethers.utils.hexZeroPad(ethers.utils.hexlify(4), 32),
+  FIELD_PROJECT_NAME: ethers.utils.hexZeroPad(ethers.utils.hexlify(5), 32),
+  FIELD_PROJECT_ARTIST_NAME: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(6),
+    32
+  ),
+  FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(7),
+    32
+  ),
+  FIELD_PROJECT_DESCRIPTION: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(8),
+    32
+  ),
+  FIELD_PROJECT_WEBSITE: ethers.utils.hexZeroPad(ethers.utils.hexlify(9), 32),
+  FIELD_PROJECT_LICENSE: ethers.utils.hexZeroPad(ethers.utils.hexlify(10), 32),
+  FIELD_PROJECT_MAX_INVOCATIONS: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(11),
+    32
+  ),
+  FIELD_PROJECT_SCRIPT: ethers.utils.hexZeroPad(ethers.utils.hexlify(12), 32),
+  FIELD_PROJECT_SCRIPT_TYPE: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(13),
+    32
+  ),
+  FIELD_PROJECT_ASPECT_RATIO: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(14),
+    32
+  ),
+  FIELD_PROJECT_BASE_URI: ethers.utils.hexZeroPad(ethers.utils.hexlify(15), 32),
+  FIELD_PROVIDER_SECONDARY_FINANCIALS: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(16),
+    32
+  ),
+};
+
+export const GENART721_ERROR_NAME = "GenArt721Error";
+export const GENART721_ERROR_CODES = {
+  OnlyNonZeroAddress: 0,
+  OnlyNonEmptyString: 1,
+  OnlyNonEmptyBytes: 2,
+  TokenDoesNotExist: 3,
+  ProjectDoesNotExist: 4,
+  OnlyUnlockedProjects: 5,
+  OnlyAdminACL: 6,
+  OnlyArtist: 7,
+  OnlyArtistOrAdminACL: 8,
+  OnlyAdminACLOrRenouncedArtist: 9,
+  OnlyMinterContract: 10,
+  MaxInvocationsReached: 11,
+  ProjectMustExistAndBeActive: 12,
+  PurchasesPaused: 13,
+  OnlyRandomizer: 14,
+  TokenHashAlreadySet: 15,
+  NoZeroHashSeed: 16,
+  OverMaxSumOfPercentages: 17,
+  IndexOutOfBounds: 18,
+  OverMaxSumOfBPS: 19,
+  MaxOf100Percent: 20,
+  PrimaryPayeeIsZeroAddress: 21,
+  SecondaryPayeeIsZeroAddress: 22,
+  MustMatchArtistProposal: 23,
+  NewProjectsForbidden: 24,
+  NewProjectsAlreadyForbidden: 25,
+  OnlyArtistOrAdminIfLocked: 26,
+  OverMaxSecondaryRoyaltyPercentage: 27,
+  OnlyMaxInvocationsDecrease: 28,
+  OnlyGteInvocations: 29,
+  ScriptIdOutOfRange: 30,
+  NoScriptsToRemove: 31,
+  ScriptTypeAndVersionFormat: 32,
+  AspectRatioTooLong: 33,
+  AspectRatioNoNumbers: 34,
+  AspectRatioImproperFormat: 35,
+  NullPlatformProvider: 36,
+  ContractInitialized: 37,
 };
 
 export async function getAccounts(): Promise<TestAccountsArtBlocks> {
@@ -175,24 +314,135 @@ export async function deployWithStorageLibraryAndGet(
   // Note that for testing purposes, we deploy a new version of the library,
   // but in production we would use the same library deployment for all contracts
   const libraryFactory = await ethers.getContractFactory(
-    "BytecodeStorageReader"
+    "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
   );
   const library = await libraryFactory
     .connect(config.accounts.deployer)
     .deploy(/* no args for library ever */);
 
-  // Deploy actual contract (with library linked)
-  const coreContractFactory = await ethers.getContractFactory(
-    coreContractName,
-    {
-      libraries: {
-        BytecodeStorageReader: library.address,
-      },
-    }
-  );
-  return await coreContractFactory
-    .connect(config.accounts.deployer)
-    .deploy(...deployArgs);
+  let libraries = {
+    libraries: {
+      BytecodeStorageReader: library.address,
+    },
+  };
+
+  if (
+    coreContractName.endsWith("Engine") ||
+    coreContractName.endsWith("Flex")
+  ) {
+    // map deploy args to engine configuration params
+    const [
+      tokenName,
+      tokenSymbol,
+      renderProviderAddress,
+      platformProviderAddress,
+      randomizerAddress,
+      adminACLAddress,
+      startingProjectId,
+      autoApproveArtistSplitProposals,
+      splitProviderAddress,
+      nullPlatformProvider,
+      allowArtistProjectActivation,
+    ] = deployArgs || [];
+    // Deploy the Engine Factory and Engine and Engine Flex implementation contracts
+    const engineContractCoreFactory = await ethers.getContractFactory(
+      "GenArt721CoreV3_Engine",
+      {
+        ...libraries,
+      }
+    );
+    const engineImplementation = await engineContractCoreFactory
+      .connect(config.accounts.deployer)
+      .deploy();
+    const flexLibraryFactory = await ethers.getContractFactory("V3FlexLib", {
+      libraries: { BytecodeStorageReader: library.address },
+    });
+    const flexLibrary = await flexLibraryFactory
+      .connect(config.accounts.deployer)
+      .deploy(/* no args for library ever */);
+    libraries.libraries.V3FlexLib = flexLibrary.address;
+
+    const coreRegistry = await deployAndGet(config, "CoreRegistryV1", []);
+
+    const engineFlexCoreContractFactory = await ethers.getContractFactory(
+      "GenArt721CoreV3_Engine_Flex",
+      {
+        ...libraries,
+      }
+    );
+    const engineFlexImplementation = await engineFlexCoreContractFactory
+      .connect(config.accounts.deployer)
+      .deploy();
+    const engineFactory = await deployAndGet(config, "EngineFactoryV0", [
+      engineImplementation.address,
+      engineFlexImplementation.address,
+      coreRegistry?.address,
+      config.accounts.deployer.address,
+      DEFAULT_BASE_URI,
+    ]);
+    // transfer ownership of core registry to engine factory
+    await coreRegistry
+      ?.connect(config.accounts.deployer)
+      .transferOwnership(engineFactory?.address);
+    // deploy randomizer
+    const randomizerContract =
+      randomizerAddress ??
+      (await deployAndGet(config, "BasicRandomizerV2", [])).address;
+
+    // deploy minter filter
+    const minterFilterAdminACL = await deployAndGet(config, "AdminACLV0", []);
+    const minterFilter = await deployAndGet(config, "MinterFilterV2", [
+      minterFilterAdminACL.address,
+      coreRegistry.address,
+    ]);
+
+    const validEngineConfigurationExistingAdminACL = {
+      tokenName,
+      tokenSymbol,
+      renderProviderAddress,
+      platformProviderAddress,
+      newSuperAdminAddress: "0x0000000000000000000000000000000000000000",
+      minterFilterAddress: minterFilter.address,
+      randomizerContract,
+      splitProviderAddress,
+      startingProjectId,
+      autoApproveArtistSplitProposals,
+      nullPlatformProvider,
+      allowArtistProjectActivation,
+    };
+
+    const engineCoreType = coreContractName.endsWith("Engine_Flex") ? 1 : 0;
+    const engineContractType = coreContractName.endsWith("Engine_Flex")
+      ? "GenArt721CoreV3_Engine_Flex"
+      : "GenArt721CoreV3_Engine";
+    const engineSalt = coreContractName.endsWith("Engine_Flex")
+      ? ethers.utils.formatBytes32String("Unique salt Engine1")
+      : ethers.utils.formatBytes32String("Unique salt Engine2");
+    const tx = await engineFactory.createEngineContract(
+      engineCoreType,
+      validEngineConfigurationExistingAdminACL,
+      deployArgs?.[5] ? deployArgs?.[5] : config?.adminACL?.address,
+      engineSalt // random salt
+    );
+    const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+    const engineContractCreationLog = receipt.logs[receipt.logs.length - 1];
+    const engineAddress = ethers.utils.defaultAbiCoder.decode(
+      ["address"],
+      engineContractCreationLog.topics[1]
+    )[0];
+    return await ethers.getContractAt(engineContractType, engineAddress);
+  } else {
+    // Deploy actual contract (with library linked)
+    const coreContractFactory = await ethers.getContractFactory(
+      coreContractName,
+      {
+        ...libraries,
+      }
+    );
+    return await coreContractFactory
+      .connect(config.accounts.deployer)
+      .deploy(...deployArgs);
+  }
 }
 
 // utility function to deploy basic randomizer, core, and MinterFilter
@@ -261,6 +511,15 @@ export async function deployCoreWithMinterFilter(
       ? _adminACLContractName
       : adminACLContractName;
     adminACL = await deployAndGet(config, adminACLContractName, []);
+    // split provider
+    const mockSplitterFactory = await deployAndGet(
+      config,
+      "Mock0xSplitsV2PullFactory",
+      []
+    );
+    config.splitProvider = (await deployAndGet(config, "SplitProviderV0", [
+      mockSplitterFactory.address, // _splitterFactory
+    ])) as SplitProviderV0;
     genArt721Core = await deployWithStorageLibraryAndGet(
       config,
       coreContractName,
@@ -307,32 +566,57 @@ export async function deployCoreWithMinterFilter(
 
     adminACL = await deployAndGet(config, adminACLContractName, []);
     engineRegistry = await deployAndGet(config, "EngineRegistryV0", []);
+    // split provider
+    const mockSplitterFactory = await deployAndGet(
+      config,
+      "Mock0xSplitsV2PullFactory",
+      []
+    );
+    config.splitProvider = (await deployAndGet(config, "SplitProviderV0", [
+      mockSplitterFactory.address, // _splitterFactory
+    ])) as SplitProviderV0;
     // Note: in the common tests, set `autoApproveArtistSplitProposals` to false, which
     //       mirrors the approval-flow behavior of the other (non-Engine) V3 contracts
+    const constructorArgs = [
+      config.name, // _tokenName
+      config.symbol, // _tokenSymbol
+      config.accounts.deployer.address, // _renderProviderAddress
+      config.accounts.additional.address, // _platformProviderAddress
+      randomizer.address, // _randomizerContract
+      adminACL.address, // _adminACLContract
+      0, // _startingProjectId
+      false, // _autoApproveArtistSplitProposals
+    ];
+    // add additional v3.2 args if not a PROHIBITION contract
+    if (
+      !coreContractName.includes("PROHIBITION") &&
+      !coreContractName.includes("IncorrectCoreType")
+    ) {
+      constructorArgs.push(config.splitProvider.address); // _splitProviderAddress
+      constructorArgs.push(false); // _nullPlatformProvider
+      constructorArgs.push(false); // _allowArtistProjectActivation
+    }
     genArt721Core = await deployWithStorageLibraryAndGet(
       config,
       coreContractName,
-      [
-        config.name, // _tokenName
-        config.symbol, // _tokenSymbol
-        config.accounts.deployer.address, // _renderProviderAddress
-        config.accounts.additional.address, // _platformProviderAddress
-        randomizer.address, // _randomizerContract
-        adminACL.address, // _adminACLContract
-        0, // _startingProjectId
-        false, // _autoApproveArtistSplitProposals
-      ]
+      constructorArgs
     );
-    // register core on engine registry
-    const coreVersion = await genArt721Core.coreVersion();
-    const coreType = await genArt721Core.coreType();
-    await engineRegistry
-      .connect(config.accounts.deployer)
-      .registerContract(
-        genArt721Core.address,
-        ethers.utils.formatBytes32String(coreVersion),
-        ethers.utils.formatBytes32String(coreType)
-      );
+    // Engine and Engine_Flex Factory contract handles registry
+    if (
+      !coreContractName.endsWith("V3_Engine") &&
+      !coreContractName.endsWith("V3_Engine_Flex")
+    ) {
+      // register core on engine registry
+      const coreVersion = await genArt721Core.coreVersion();
+      const coreType = await genArt721Core.coreType();
+      await engineRegistry
+        .connect(config.accounts.deployer)
+        .registerContract(
+          genArt721Core.address,
+          ethers.utils.formatBytes32String(coreVersion),
+          ethers.utils.formatBytes32String(coreType)
+        );
+    }
     // assign core contract for randomizer to use
     randomizer
       .connect(config.accounts.deployer)
@@ -397,6 +681,42 @@ export async function deployCore(
     randomizer = await deployAndGet(config, _randomizerName, []);
   }
 
+  const bytecodeStorageLibFactory = await ethers.getContractFactory(
+    "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+  );
+
+  const library = await bytecodeStorageLibFactory
+    .connect(config.accounts.deployer)
+    .deploy(/* no args for library ever */);
+  let libraries = {
+    libraries: {
+      BytecodeStorageReader: library.address,
+    },
+  };
+
+  // deploy Engine and Engine Flex implementations with libraries
+  const engineCoreContractFactory = await ethers.getContractFactory(
+    "GenArt721CoreV3_Engine",
+    {
+      ...libraries,
+    }
+  );
+
+  const flexLibraryFactory = await ethers.getContractFactory("V3FlexLib", {
+    libraries: { BytecodeStorageReader: library.address },
+  });
+  const flexLibrary = await flexLibraryFactory
+    .connect(config.accounts.deployer)
+    .deploy(/* no args for library ever */);
+  libraries.libraries.V3FlexLib = flexLibrary.address;
+
+  const engineFlexCoreContractFactory = await ethers.getContractFactory(
+    "GenArt721CoreV3_Engine_Flex",
+    {
+      ...libraries,
+    }
+  );
+
   // deploy core contract + associated contracts
   if (
     coreContractName.endsWith("V3") ||
@@ -407,6 +727,15 @@ export async function deployCore(
         ? "MockAdminACLV0Events"
         : "AdminACLV0";
     adminACL = await deployAndGet(config, adminACLContractName, []);
+    // split provider
+    const mockSplitterFactory = await deployAndGet(
+      config,
+      "Mock0xSplitsV2PullFactory",
+      []
+    );
+    config.splitProvider = (await deployAndGet(config, "SplitProviderV0", [
+      mockSplitterFactory.address, // _splitterFactory
+    ])) as SplitProviderV0;
     genArt721Core = await deployWithStorageLibraryAndGet(
       config,
       coreContractName,
@@ -447,21 +776,36 @@ export async function deployCore(
       : adminACLContractName;
 
     adminACL = await deployAndGet(config, adminACLContractName, []);
+    // split provider
+    const mockSplitterFactory = await deployAndGet(
+      config,
+      "Mock0xSplitsV2PullFactory",
+      []
+    );
+    config.splitProvider = (await deployAndGet(config, "SplitProviderV0", [
+      mockSplitterFactory.address, // _splitterFactory
+    ])) as SplitProviderV0;
+    const deployArgs = [
+      config.name, // _tokenName
+      config.symbol, // _tokenSymbol
+      config.accounts.deployer.address, // _renderProviderAddress
+      config.accounts.additional.address, // _platformProviderAddress
+      randomizer.address, // _randomizerContract
+      adminACL.address, // _adminACLContract
+      config.projectZero, // starting project ID
+      false, // _autoApproveArtistSplitProposals
+    ];
+    if (!coreContractName.endsWith("_PROHIBITION")) {
+      deployArgs.push(config.splitProvider.address); // _splitProviderAddress
+      deployArgs.push(false); // _nullPlatformProvider
+      deployArgs.push(false); // _allowArtistProjectActivation
+    }
     // Note: in the common tests, set `autoApproveArtistSplitProposals` to false, which
     //       mirrors the approval-flow behavior of the other (non-Engine) V3 contracts
     genArt721Core = await deployWithStorageLibraryAndGet(
       config,
       coreContractName,
-      [
-        config.name, // _tokenName
-        config.symbol, // _tokenSymbol
-        config.accounts.deployer.address, // _renderProviderAddress
-        config.accounts.additional.address, // _platformProviderAddress
-        randomizer.address, // _randomizerContract
-        adminACL.address, // _adminACLContract
-        config.projectZero, // starting project ID
-        false, // _autoApproveArtistSplitProposals
-      ]
+      [...deployArgs]
     );
     // register core on core registry
     const coreVersion = await genArt721Core.coreVersion();

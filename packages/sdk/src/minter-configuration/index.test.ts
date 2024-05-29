@@ -1,5 +1,5 @@
 import { generateProjectMinterConfigurationForms } from "./index";
-import ArtBlocksSDK, { SubmissionStatusEnum } from "..";
+import { ArtBlocksClientContext, SubmissionStatusEnum } from "..";
 import request from "graphql-request";
 import { Block, PublicClient, TransactionReceipt, WalletClient } from "viem";
 import * as submitTransactionHelpers from "../utils/submit-transaction";
@@ -14,20 +14,35 @@ jest.mock("./utils/polling", () => ({
   pollForSyncedMinterConfigUpdates: jest.fn(),
 }));
 
-describe("generateProjectMinterConfigurationForms", () => {
-  beforeEach(() => {
-    jest.restoreAllMocks();
-  });
-
-  const sdk = new ArtBlocksSDK({
+function createMockArtBlocksClientContext(): ArtBlocksClientContext & {
+  publicClient: PublicClient;
+} {
+  return {
     publicClient: {
       simulateContract: jest.fn(),
       waitForTransactionReceipt: jest.fn(),
       writeContract: jest.fn(),
       getBlock: jest.fn(),
     } as unknown as PublicClient,
-    graphqlEndpoint: "https://test.com/graphql",
-    jwt: "your-jwt",
+    graphqlClient: {
+      request: request as jest.MockedFunction<any>,
+    },
+    userIsStaff: false,
+    walletClient: {
+      account: { address: "0x1234" },
+      writeContract: jest.fn(),
+    } as unknown as WalletClient,
+  } as unknown as ArtBlocksClientContext & {
+    publicClient: PublicClient;
+  };
+}
+
+describe("generateProjectMinterConfigurationForms", () => {
+  let artblocksClientContext = createMockArtBlocksClientContext();
+
+  beforeEach(() => {
+    jest.restoreAllMocks();
+    artblocksClientContext = createMockArtBlocksClientContext();
   });
 
   const projectId = "0x00-0";
@@ -35,20 +50,24 @@ describe("generateProjectMinterConfigurationForms", () => {
 
   describe("generateProjectMinterConfigurationForms", () => {
     it("should throw an error if the project does not exist", async () => {
-      (request as jest.Mock).mockResolvedValueOnce({
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce({
         projects_metadata_by_pk: null,
       });
       await expect(
         generateProjectMinterConfigurationForms({
           projectId,
           onConfigurationChange: jest.fn(),
-          sdk: sdk,
+          clientContext: artblocksClientContext,
         })
       ).rejects.toThrow(`Could not find project with id ${projectId}`);
     });
 
     it("should throw an error if the project does not have a minter filter", async () => {
-      (request as jest.Mock).mockResolvedValueOnce({
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce({
         projects_metadata_by_pk: {
           project_id: projectIndex,
           contract: {
@@ -60,7 +79,7 @@ describe("generateProjectMinterConfigurationForms", () => {
         generateProjectMinterConfigurationForms({
           projectId,
           onConfigurationChange: jest.fn(),
-          sdk: sdk,
+          clientContext: artblocksClientContext,
         })
       ).rejects.toThrow(
         `Project with id ${projectId} is not on a contract with an associated minter filter`
@@ -71,13 +90,15 @@ describe("generateProjectMinterConfigurationForms", () => {
       const testResponse = getTestResponse();
       const { minter_configuration, ...mockProjectData } =
         testResponse.projects_metadata_by_pk;
-      (request as jest.Mock).mockResolvedValueOnce({
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce({
         projects_metadata_by_pk: mockProjectData,
       });
       const { forms } = await generateProjectMinterConfigurationForms({
         projectId,
         onConfigurationChange: jest.fn(),
-        sdk: sdk,
+        clientContext: artblocksClientContext,
       });
 
       expect(forms.length).toEqual(1);
@@ -87,22 +108,26 @@ describe("generateProjectMinterConfigurationForms", () => {
       const mockProjectData = getTestResponse();
       mockProjectData.projects_metadata_by_pk.minter_configuration.minter.type.project_configuration_schema =
         {} as any;
-      (request as jest.Mock).mockResolvedValueOnce(mockProjectData);
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce(mockProjectData);
       const { forms } = await generateProjectMinterConfigurationForms({
         projectId,
         onConfigurationChange: jest.fn(),
-        sdk: sdk,
+        clientContext: artblocksClientContext,
       });
 
       expect(forms.length).toEqual(1);
       expect(forms[0].key).toEqual("setMinterForProject");
     });
     it("returns the minter selection form and the minter configuration form if the project minter has a configuration schema", async () => {
-      (request as jest.Mock).mockResolvedValueOnce(getTestResponse());
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce(getTestResponse());
       const { forms } = await generateProjectMinterConfigurationForms({
         projectId,
         onConfigurationChange: jest.fn(),
-        sdk: sdk,
+        clientContext: artblocksClientContext,
       });
 
       expect(forms.length).toEqual(4);
@@ -112,12 +137,14 @@ describe("generateProjectMinterConfigurationForms", () => {
       expect(forms[3].key).toEqual("manuallyLimitProjectMaxInvocations");
     });
     it("successfully submits the setMinterForProject form", async () => {
-      (request as jest.Mock).mockResolvedValueOnce(getTestResponse());
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce(getTestResponse());
       const handleConfigurationChange = jest.fn();
       const { forms } = await generateProjectMinterConfigurationForms({
         projectId,
         onConfigurationChange: handleConfigurationChange,
-        sdk: sdk,
+        clientContext: artblocksClientContext,
       });
 
       // submitTransaction mocks
@@ -125,7 +152,8 @@ describe("generateProjectMinterConfigurationForms", () => {
 
       // Mock simulateContract return value
       (
-        sdk.publicClient.simulateContract as jest.MockedFunction<
+        artblocksClientContext.publicClient
+          .simulateContract as jest.MockedFunction<
           PublicClient["simulateContract"]
         >
       ).mockResolvedValueOnce({
@@ -133,23 +161,22 @@ describe("generateProjectMinterConfigurationForms", () => {
         result: undefined,
       });
 
-      // Mock wallet client passed to the form submit function
-      const walletClient = {
-        account: { address: "0x1234" },
-        writeContract: jest.fn(),
-      } as unknown as WalletClient;
+      // Should never happen but need to narrow the type
+      if (!artblocksClientContext.walletClient) {
+        throw new Error("walletClient is not defined");
+      }
 
       // Mock the writeContract return value
       const purchaseTxHash = "0x1234";
       (
-        walletClient.writeContract as jest.MockedFunction<
-          WalletClient["writeContract"]
-        >
+        artblocksClientContext.walletClient
+          .writeContract as jest.MockedFunction<WalletClient["writeContract"]>
       ).mockResolvedValueOnce(purchaseTxHash);
 
       // Mock waitForTransactionReceipt return value
       (
-        sdk.publicClient.waitForTransactionReceipt as jest.MockedFunction<
+        artblocksClientContext.publicClient
+          .waitForTransactionReceipt as jest.MockedFunction<
           PublicClient["waitForTransactionReceipt"]
         >
       ).mockResolvedValueOnce({
@@ -161,7 +188,7 @@ describe("generateProjectMinterConfigurationForms", () => {
       const currentDate = new Date(timestamp * 1000);
       // Mock getBlock return value
       (
-        sdk.publicClient.getBlock as jest.MockedFunction<
+        artblocksClientContext.publicClient.getBlock as jest.MockedFunction<
           PublicClient["getBlock"]
         >
       ).mockResolvedValueOnce({
@@ -175,9 +202,9 @@ describe("generateProjectMinterConfigurationForms", () => {
       ).mockResolvedValueOnce();
 
       // Mock final call to refresh minter configuration
-      (request as jest.MockedFunction<any>).mockResolvedValueOnce(
-        getTestResponse()
-      );
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce(getTestResponse());
 
       // Mock onProgress callback
       const onProgress = jest.fn();
@@ -189,7 +216,6 @@ describe("generateProjectMinterConfigurationForms", () => {
             address: "0xb7ab729ea2e3e2884d3ff0bcbebcfeb0359144e2",
           },
         },
-        walletClient,
         onProgress
       );
 
@@ -204,8 +230,8 @@ describe("generateProjectMinterConfigurationForms", () => {
       expect(onProgress).toHaveBeenCalledWith(SubmissionStatusEnum.SYNCING);
 
       expect(submitTransactionHelpers.submitTransaction).toHaveBeenCalledWith({
-        publicClient: sdk.publicClient,
-        walletClient,
+        publicClient: artblocksClientContext.publicClient,
+        walletClient: artblocksClientContext.walletClient,
         address: "0x29e9f09244497503f304fa549d50efc751d818d2",
         abi: [
           {
@@ -243,19 +269,51 @@ describe("generateProjectMinterConfigurationForms", () => {
       });
 
       expect(pollForProjectUpdates).toHaveBeenCalledWith(
-        sdk,
+        artblocksClientContext,
         projectId,
         currentDate,
         ["minter_configuration_id"]
       );
     });
-    it("successfully submits the setAuctionDetails form", async () => {
-      (request as jest.Mock).mockResolvedValueOnce(getTestResponse());
+    it("throws an error if setMinterForProject form is submitted without a walletClient in context", async () => {
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce(getTestResponse());
       const handleConfigurationChange = jest.fn();
       const { forms } = await generateProjectMinterConfigurationForms({
         projectId,
         onConfigurationChange: handleConfigurationChange,
-        sdk: sdk,
+        clientContext: artblocksClientContext,
+      });
+
+      artblocksClientContext.walletClient = undefined;
+
+      // Mock onProgress callback
+      const onProgress = jest.fn();
+
+      const setMinterForProjectForm = forms[0];
+      await expect(
+        setMinterForProjectForm.handleSubmit(
+          {
+            minter: {
+              address: "0xb7ab729ea2e3e2884d3ff0bcbebcfeb0359144e2",
+            },
+          },
+          onProgress
+        )
+      ).rejects.toThrow(
+        "A walletClient is required to submit the set minter form"
+      );
+    });
+    it("successfully submits the setAuctionDetails form", async () => {
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce(getTestResponse());
+      const handleConfigurationChange = jest.fn();
+      const { forms } = await generateProjectMinterConfigurationForms({
+        projectId,
+        onConfigurationChange: handleConfigurationChange,
+        clientContext: artblocksClientContext,
       });
 
       // submitTransaction mocks
@@ -263,7 +321,8 @@ describe("generateProjectMinterConfigurationForms", () => {
 
       // Mock simulateContract return value
       (
-        sdk.publicClient.simulateContract as jest.MockedFunction<
+        artblocksClientContext.publicClient
+          .simulateContract as jest.MockedFunction<
           PublicClient["simulateContract"]
         >
       ).mockResolvedValueOnce({
@@ -271,23 +330,22 @@ describe("generateProjectMinterConfigurationForms", () => {
         result: undefined,
       });
 
-      // Mock wallet client passed to the form submit function
-      const walletClient = {
-        account: { address: "0x1234" },
-        writeContract: jest.fn(),
-      } as unknown as WalletClient;
+      // Should never happen but need to narrow the type
+      if (!artblocksClientContext.walletClient) {
+        throw new Error("walletClient is not defined");
+      }
 
       // Mock the writeContract return value
       const setAuctionDetailsTxHash = "0x5678";
       (
-        walletClient.writeContract as jest.MockedFunction<
-          WalletClient["writeContract"]
-        >
+        artblocksClientContext.walletClient
+          .writeContract as jest.MockedFunction<WalletClient["writeContract"]>
       ).mockResolvedValueOnce(setAuctionDetailsTxHash);
 
       // Mock waitForTransactionReceipt return value
       (
-        sdk.publicClient.waitForTransactionReceipt as jest.MockedFunction<
+        artblocksClientContext.publicClient
+          .waitForTransactionReceipt as jest.MockedFunction<
           PublicClient["waitForTransactionReceipt"]
         >
       ).mockResolvedValueOnce({
@@ -299,7 +357,7 @@ describe("generateProjectMinterConfigurationForms", () => {
       const currentDate = new Date(timestamp * 1000);
       // Mock getBlock return value
       (
-        sdk.publicClient.getBlock as jest.MockedFunction<
+        artblocksClientContext.publicClient.getBlock as jest.MockedFunction<
           PublicClient["getBlock"]
         >
       ).mockResolvedValueOnce({
@@ -313,9 +371,9 @@ describe("generateProjectMinterConfigurationForms", () => {
       ).mockResolvedValueOnce();
 
       // Mock final call to refresh minter configuration
-      (request as jest.MockedFunction<any>).mockResolvedValueOnce(
-        getTestResponse()
-      );
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce(getTestResponse());
 
       // Mock onProgress callback
       const onProgress = jest.fn();
@@ -332,7 +390,6 @@ describe("generateProjectMinterConfigurationForms", () => {
           "extra_minter_details.startPrice": "4",
           base_price: "1",
         },
-        walletClient,
         onProgress
       );
 
@@ -347,8 +404,8 @@ describe("generateProjectMinterConfigurationForms", () => {
       expect(onProgress).toHaveBeenCalledWith(SubmissionStatusEnum.SYNCING);
 
       expect(submitTransactionHelpers.submitTransaction).toHaveBeenCalledWith({
-        publicClient: sdk.publicClient,
-        walletClient,
+        publicClient: artblocksClientContext.publicClient,
+        walletClient: artblocksClientContext.walletClient,
         address: "0x7856a8aef94c7d73d764e3fd71f76a44ba79f78e",
         abi: [
           {
@@ -404,7 +461,7 @@ describe("generateProjectMinterConfigurationForms", () => {
       });
 
       expect(pollForSyncedMinterConfigUpdates).toHaveBeenCalledWith(
-        sdk,
+        artblocksClientContext,
         projectId,
         currentDate,
         [
@@ -415,6 +472,41 @@ describe("generateProjectMinterConfigurationForms", () => {
           "extra_minter_details.startPrice",
           "base_price",
         ]
+      );
+    });
+    it("throws an error if setAuctionDetails form is submitted without a walletClient in context", async () => {
+      (
+        artblocksClientContext.graphqlClient.request as jest.Mock
+      ).mockResolvedValueOnce(getTestResponse());
+      const handleConfigurationChange = jest.fn();
+      const { forms } = await generateProjectMinterConfigurationForms({
+        projectId,
+        onConfigurationChange: handleConfigurationChange,
+        clientContext: artblocksClientContext,
+      });
+
+      artblocksClientContext.walletClient = undefined;
+
+      // Mock onProgress callback
+      const onProgress = jest.fn();
+
+      const setAuctionDetailsForm = forms[1];
+      await expect(
+        setAuctionDetailsForm.handleSubmit(
+          {
+            projectIndex: Number(projectIndex),
+            coreContractAddress,
+            "extra_minter_details.startTime": new Date(1704921654 * 1000),
+            "extra_minter_details.approximateDAExpEndTime": new Date(
+              1704922255 * 1000
+            ),
+            "extra_minter_details.startPrice": "4",
+            base_price: "1",
+          },
+          onProgress
+        )
+      ).rejects.toThrow(
+        "A walletClient is required to submit the minter configuration form"
       );
     });
   });

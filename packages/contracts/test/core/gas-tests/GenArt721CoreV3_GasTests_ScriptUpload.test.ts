@@ -54,7 +54,7 @@ describe("GenArt721CoreV3 Gas Tests - Script Upload", async function () {
       randomizer: config.randomizer,
     } = await deployCoreWithMinterFilter(
       config,
-      "GenArt721CoreV3",
+      "GenArt721CoreV3_Engine",
       "MinterFilterV1"
     ));
 
@@ -150,6 +150,108 @@ describe("GenArt721CoreV3 Gas Tests - Script Upload", async function () {
       const tx = await config.genArt721Core
         .connect(config.accounts.artist)
         .addProjectScript(config.projectThree, CONTRACT_SIZE_LIMIT_SCRIPT, {
+          gasLimit: 30000000, // hard-code gas limit because ethers sometimes estimates too high
+        });
+      const receipt = await tx.wait();
+      const gasUsed = receipt.gasUsed.toNumber();
+      console.log("gas used for script upload: ", gasUsed);
+      // also report in USD at specific conditions
+      const gasCostAt100gwei = receipt.effectiveGasPrice
+        .mul(gasUsed)
+        .toString();
+      const gasCostAt100gweiInETH = parseFloat(
+        ethers.utils.formatUnits(gasCostAt100gwei, "ether")
+      );
+      const gasCostAt100gweiAt2kUSDPerETH = gasCostAt100gweiInETH * 2e3;
+      console.log(
+        `=USD at 100gwei, $2k USD/ETH: \$${gasCostAt100gweiAt2kUSDPerETH}`
+      );
+      // ensure value was updated
+      const script0 = await config.genArt721Core.projectScriptByIndex(
+        config.projectThree,
+        0
+      );
+      // console.info(script0);
+      expect(script0).to.equal(CONTRACT_SIZE_LIMIT_SCRIPT);
+    });
+  });
+  describe("compressed script upload gas optimization", function () {
+    it("test gas cost of uploading pre-compressed Chromie Squiggle script [ @skip-on-coverage ]", async function () {
+      const config = await loadFixture(_beforeEach);
+      const compressedSquiggleScript = await config.genArt721Core
+        ?.connect(config.accounts.artist)
+        .getCompressed(SQUIGGLE_SCRIPT);
+      const tx = await config.genArt721Core
+        .connect(config.accounts.artist)
+        .addProjectScriptCompressed(
+          config.projectThree,
+          compressedSquiggleScript
+        );
+      const receipt = await tx.wait();
+      const gasUsed = receipt.gasUsed.toNumber();
+      console.log("gas used for pre-compressed script upload: ", gasUsed);
+      // also report in USD at specific conditions
+      const gasCostAt100gwei = receipt.effectiveGasPrice
+        .mul(gasUsed)
+        .toString();
+      const gasCostAt100gweiInETH = parseFloat(
+        ethers.utils.formatUnits(gasCostAt100gwei, "ether")
+      );
+      const gasCostAt100gweiAt2kUSDPerETH = gasCostAt100gweiInETH * 2e3;
+      console.log(
+        `=USD at 100gwei, $2k USD/ETH: \$${gasCostAt100gweiAt2kUSDPerETH}`
+      );
+      // ensure value was updated
+      const script0 = await config.genArt721Core.projectScriptByIndex(
+        config.projectThree,
+        0
+      );
+      // console.info(script0);
+      expect(script0).to.equal(SQUIGGLE_SCRIPT);
+    });
+
+    it("test gas cost of uploading pre-compressed Skulptuur script [ @skip-on-coverage ]", async function () {
+      const config = await loadFixture(_beforeEach);
+      const compressedSkulptuurScript = await config.genArt721Core
+        ?.connect(config.accounts.artist)
+        .getCompressed(SKULPTUUR_SCRIPT_APPROX);
+      const tx = await config.genArt721Core
+        .connect(config.accounts.artist)
+        .addProjectScriptCompressed(
+          config.projectThree,
+          compressedSkulptuurScript
+        );
+      const receipt = await tx.wait();
+      const gasUsed = receipt.gasUsed.toNumber();
+      console.log("gas used for pre-compressed script upload: ", gasUsed);
+      // also report in USD at specific conditions
+      const gasCostAt100gwei = receipt.effectiveGasPrice
+        .mul(gasUsed)
+        .toString();
+      const gasCostAt100gweiInETH = parseFloat(
+        ethers.utils.formatUnits(gasCostAt100gwei, "ether")
+      );
+      const gasCostAt100gweiAt2kUSDPerETH = gasCostAt100gweiInETH * 2e3;
+      console.log(
+        `=USD at 100gwei, $2k USD/ETH: \$${gasCostAt100gweiAt2kUSDPerETH}`
+      );
+      // ensure value was updated
+      const script0 = await config.genArt721Core.projectScriptByIndex(
+        config.projectThree,
+        0
+      );
+      // console.info(script0);
+      expect(script0).to.equal(SKULPTUUR_SCRIPT_APPROX);
+    });
+
+    it("test gas cost of uploading 23.95 KB (before compression) script [ @skip-on-coverage ]", async function () {
+      const config = await loadFixture(_beforeEach);
+      const compressedScript = await config.genArt721Core
+        ?.connect(config.accounts.artist)
+        .getCompressed(CONTRACT_SIZE_LIMIT_SCRIPT);
+      const tx = await config.genArt721Core
+        .connect(config.accounts.artist)
+        .addProjectScriptCompressed(config.projectThree, compressedScript, {
           gasLimit: 30000000, // hard-code gas limit because ethers sometimes estimates too high
         });
       const receipt = await tx.wait();

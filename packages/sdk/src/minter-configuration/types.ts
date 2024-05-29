@@ -1,4 +1,5 @@
-import ArtBlocksSDK from "..";
+import { PublicClient } from "viem";
+import { ArtBlocksClientContext } from "..";
 import {
   GetProjectMinterConfigurationQuery,
   ProjectMinterConfigurationDetailsFragment,
@@ -12,7 +13,9 @@ export type GenerateProjectMinterConfigurationFormsArgs = {
     data: ProjectMinterConfigurationData;
     forms: FormBlueprint[];
   }) => void;
-  sdk: ArtBlocksSDK;
+  clientContext: ArtBlocksClientContext & {
+    publicClient: PublicClient;
+  };
 };
 
 export type GenerateProjectMinterConfigurationFormsContext =

@@ -1,4 +1,3 @@
-import { WalletClient } from "viem";
 import { FormFieldSchema } from "./json-schema";
 import { ZodType } from "zod";
 
@@ -11,7 +10,6 @@ export type FormBlueprint = {
   zodSchema: ZodType<any, any, any>;
   handleSubmit: (
     formValues: Record<string, any>,
-    signer: WalletClient,
     onProgress?: (status: SubmissionStatus) => void
   ) => Promise<void>;
 };

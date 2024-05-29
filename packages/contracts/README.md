@@ -95,6 +95,43 @@ For details on the Art Blocks Minter Suite, see the [minter suite documentation]
 
 ## Deploying New Contracts
 
+Art Blocks deploys contracts a variety of ways, depending on the contract or library and its intended use. In general, we use Hardhat for deployments and verification, and have a variety of deployment scripts that can be used to deploy contracts to various networks. Additionally, at times we may use a keyless create2 factory to deploy standard infrastructure contracts to enable permissionless deployments of infrastructure on any network that supports pre-EIP-155 transactions.
+
+A summary of our deployed infrastructure is available on our [Infrastructure Documentation](./INFRASTRUCTURE.md).
+
+### Keyless Create2 Factory
+
+We use the following keyless create2 factory to deploy standard infrastructure contracts to enable permissionless deployments of infrastructure on any network that supports pre-EIP-155 transactions.
+
+Contracts that are deployed using the keyless create2 factory include the `BytecodeStorageReader` and `V3FlexLib` external library contracts.
+
+<table>
+    <tr>
+        <td>Name</td>
+        <td>Address</td>
+    </tr>
+    <tr>
+        <td>KEYLESS_CREATE2_DEPLOYER_ADDRESS</td>
+        <td>0x4c8D290a1B368ac4728d83a9e8321fC3af2b39b1</td>
+    </tr>
+    <tr>
+        <td>KEYLESS_CREATE2_ADDRESS</td>
+        <td>0x7A0D94F55792C434d74a40883C6ed8545E406D12</td>
+    </tr>
+    <tr>
+        <td>INEFFICIENT_IMMUTABLE_CREATE2_FACTORY_ADDRESS</td>
+        <td>0xcfA3A7637547094fF06246817a35B8333C315196</td>
+    </tr>
+    <tr>
+        <td>IMMUTABLE_CREATE2_FACTORY_ADDRESS</td>
+        <td>0x0000000000ffe8b47b3e2130213b802212439497</td>
+    </tr>
+</table>
+
+If you are interested in deploying the create2 factory contracts on a new network, please reference the documentation here: https://github.com/ProjectOpenSea/seaport/blob/main/docs/Deployment.md#setting-up-factory-on-a-new-chain
+
+### Hardhat Scripts
+
 > IMPORTANT - many scripts rely on typechain-generated factories, so ensure you have run `yarn generate:typechain` before running any deployment scripts.
 
 We have two types of deployment scripts: Generic and Specific. In general, most new deployments now use generic scripts.
