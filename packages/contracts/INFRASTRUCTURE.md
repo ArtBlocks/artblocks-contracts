@@ -4,19 +4,17 @@
 
 Art Blocks has deployed infrastructure on different networks that support our smart contracts
 
-## Unpermissioned deployments (all networks)
+## Unpermissioned deployments (all networks, latest)
 
 The following contracts are deployed to all Art Blocks supported networks and are not permissioned. They also may be safely deployed by any wallet on any network, thanks to the use of the [keyless create2 factory system of contracts](./README.md#keyless-create2-factory).
-
-Below is a table of the shared minter filter contracts that are deployed on mainnet and testnets. Note that each of these contracts has a function available to enumerate all globally approved minter contracts, `getAllGloballyApprovedMinters()`
 
 | Contract/Library                                     | Address                                      |
 | ---------------------------------------------------- | -------------------------------------------- |
 | BytecodeStorageV2:BytecodeStorageReader              | `0x000000000016A5A5ff2FA7799C4BEe89bA59B74e` |
 | V3FlexLib                                            | `0x0000000006FD94B22fb33164322019750E854f96` |
 | SplitProviderV0                                      | `0x0000000004B100B47f061968a387c82702AFe946` |
-| Implementation: GenArt721CoreV3_Engine (v3.2.0)      | `0x00000000AEf91971cc6251936Ec6568B23b55342` |
-| Implementation: GenArt721CoreV3_Engine_Flex (v3.2.1) | `0x00000000af817dFBc2b3006E365D2eFef1953334` |
+| Implementation: GenArt721CoreV3_Engine (v3.2.2)      | `0x000000F74f006CE6480042f001c45c928D1Ae6E7` |
+| Implementation: GenArt721CoreV3_Engine_Flex (v3.2.3) | `0x0066009B13b8DfDabbE07800ee00004b008257D9` |
 
 ## Permissioned deployments
 
@@ -37,7 +35,7 @@ erDiagram
         addr _0x52119BB73Ac8bdbE59aF0EEdFd4E4Ee6887Ed2EA
     }
     EngineFactory {
-        addr _0x00000000F82E4e6D5AB22D63050FCb2bF15eE95d
+        addr _0x000000AB1a0786eE8c71516d9AbB8a36fbdDb7CB
     }
     CoreRegistry {
         addr _0x2eE7B9bB2E038bE7323A119701A191c030A61ec6
@@ -57,7 +55,7 @@ erDiagram
         addr _0xD3bE6e30D901fa2e2Fd7f3Ebd23189f5376a4f9D
     }
     EngineFactory {
-        addr _0x000000bbAA3E36b60C06A92430D8956459c2Fd51
+        addr _0x000000da9D51CC51a50Dc296246075859b13ab0B
     }
     CoreRegistry {
         addr _0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2
@@ -77,7 +75,7 @@ erDiagram
         addr _0x62DC3F6C7Bf5FA8A834E6B97dee3daB082873600
     }
     EngineFactory {
-        addr _0x000000021e59FE2bc9390d5f5bfe9Ae1DE0cEf98
+        addr _0x000000E238ebffe826c960aB0b53B299CB4eBbE0
     }
     CoreRegistry {
         addr _0xdAe755c2944Ec125a0D8D5CB082c22837593441a
@@ -97,31 +95,31 @@ erDiagram
         addr _0xbaD99DdBa319639e0e9FB2E42935BfE5b2a1B6a8
     }
     EngineFactory {
-        addr _0x0000B005007298838aCF6589d4342920A9cB002a
+        addr _0x000000A8398893f1A9B4a0d234a2eC4F8AFc5838
     }
     CoreRegistry {
         addr _0xfeA4f2f4E45c255ceE626a1A994BB214039c2B9A
     }
 ```
 
----
+## Unpermissioned deployments, deprecated (all networks)
 
-### Arbitrum-Sepolia (DEPRECATED)
+The following contracts were deployed to all Art Blocks supported networks and are not permissioned, but have been deprecated in favor of more recent versions.
 
-```mermaid
----
-title: arbitrum-sepolia setup
----
-erDiagram
-    DeployerEOA ||--|| EngineFactory : owns
-    EngineFactory ||--|| CoreRegistry : owns
-    DeployerEOA {
-        addr _0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef
-    }
-    EngineFactory {
-        addr _0x000000FF72D2bf6A83a21452aD5f80906472AF55
-    }
-    CoreRegistry {
-        addr _0xdAe755c2944Ec125a0D8D5CB082c22837593441a
-    }
-```
+They are included here for reference purposes.
+
+| Contract/Library                                     | Address                                      |
+| ---------------------------------------------------- | -------------------------------------------- |
+| Implementation: GenArt721CoreV3_Engine (v3.2.0)      | `0x00000000AEf91971cc6251936Ec6568B23b55342` |
+| Implementation: GenArt721CoreV3_Engine_Flex (v3.2.1) | `0x00000000af817dFBc2b3006E365D2eFef1953334` |
+
+## Permissioned deployments, deprecated (all networks)
+
+The following contracts were deployed by Art Blocks on various production networks and were permissioned, but have been deprecated in favor of more recent updates.
+
+They are included here for reference purposes.
+
+| Contract/Library (network:Contract) | Address                                      |
+| ----------------------------------- | -------------------------------------------- |
+| mainnet:EngineFactory               | `0x00000000F82E4e6D5AB22D63050FCb2bF15eE95d` |
+| arbitrum:EngineFactory              | `0x000000bbAA3E36b60C06A92430D8956459c2Fd51` |

@@ -167,7 +167,7 @@ type T_MAIN_CONFIG = {
 const MAIN_CONFIG: T_MAIN_CONFIG = {
   mainnet: {
     mainnet: {
-      engineFactory: "0x00000000F82E4e6D5AB22D63050FCb2bF15eE95d",
+      engineFactory: "0x000000AB1a0786eE8c71516d9AbB8a36fbdDb7CB",
       sharedMinterFilter: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
       sharedRandomizer: "0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91",
       prodRenderProviderPaymentAddress:
@@ -176,28 +176,21 @@ const MAIN_CONFIG: T_MAIN_CONFIG = {
   },
   arbitrum: {
     arbitrum: {
-      engineFactory: "0x000000bbAA3E36b60C06A92430D8956459c2Fd51",
+      engineFactory: "0x000000da9D51CC51a50Dc296246075859b13ab0B",
       sharedMinterFilter: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
       sharedRandomizer: "0x6a5976391E708fBf918c3786cd1FcbB88732fbc1",
       prodRenderProviderPaymentAddress:
         "0x23636eAa2605B9c4a988E56d2093b488793f1C42",
     },
   },
-  "arbitrum-sepolia": {
-    "arbitrum-staging": {
-      engineFactory: "0x000000FF72D2bf6A83a21452aD5f80906472AF55",
-      sharedMinterFilter: "0xa07f47c30C262adcC263A4D44595972c50e04db7",
-      sharedRandomizer: "0x28f2D3805652FB5d359486dFfb7D08320D403240",
-    },
-  },
   sepolia: {
     staging: {
-      engineFactory: "0x000000021e59FE2bc9390d5f5bfe9Ae1DE0cEf98",
+      engineFactory: "0x000000E238ebffe826c960aB0b53B299CB4eBbE0",
       sharedMinterFilter: "0xa07f47c30C262adcC263A4D44595972c50e04db7",
       sharedRandomizer: "0x28f2D3805652FB5d359486dFfb7D08320D403240",
     },
     dev: {
-      engineFactory: "0x0000B005007298838aCF6589d4342920A9cB002a",
+      engineFactory: "0x000000A8398893f1A9B4a0d234a2eC4F8AFc5838",
       sharedMinterFilter: "0x29e9f09244497503f304FA549d50eFC751D818d2",
       sharedRandomizer: "0xA6F7e62F3B52552f79b2Baa2858a1DB18016c09B",
     },

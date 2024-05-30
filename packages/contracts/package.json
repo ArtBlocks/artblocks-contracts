@@ -21,7 +21,7 @@
     "remix": "remixd -s ./ --remix-ide https://remix.ethereum.org",
     "codegen": "yarn --cwd=\"../..\" codegen:project contracts",
     "get-init-code": "yarn hardhat run --network sepolia scripts/get-init-code.ts",
-    "verify": "yarn hardhat run --network sepolia scripts/verify.ts",
+    "verify": "yarn hardhat run scripts/verify.ts --network",
     "deploy:v3-engine:dev": "yarn codegen && yarn require-low-gas sepolia && NODE_ENV=dev yarn hardhat run --network sepolia scripts/engine/V3/batch-create-engine-contracts.ts",
     "deploy:v3-engine:dev-arbitrum": "yarn codegen && yarn require-low-gas arbitrum-sepolia && NODE_ENV=arbitrum-dev yarn hardhat run --network arbitrum-sepolia scripts/engine/V3/batch-create-engine-contracts.ts",
     "deploy:v3-engine:staging-arbitrum": "yarn codegen && yarn require-low-gas arbitrum-sepolia && NODE_ENV=arbitrum-staging yarn hardhat run --network arbitrum-sepolia scripts/engine/V3/batch-create-engine-contracts.ts",
