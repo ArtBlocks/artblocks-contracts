@@ -173,7 +173,7 @@ describe(`EngineFactoryV0 Integration`, async function () {
       const engineContractCoreType = await engine.coreType();
       const engineContractCoreVersion = await engine.coreVersion();
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine");
-      expect(engineContractCoreVersion).to.be.equal("v3.2.0");
+      expect(engineContractCoreVersion).to.be.equal("v3.2.2");
       // validate initialization
       const engineContractMinter = await engine.minterContract();
       expect(engineContractMinter).to.equal(
@@ -283,7 +283,7 @@ describe(`EngineFactoryV0 Integration`, async function () {
       const engineContractCoreType = await engine.coreType();
       const engineContractCoreVersion = await engine.coreVersion();
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine");
-      expect(engineContractCoreVersion).to.be.equal("v3.2.0");
+      expect(engineContractCoreVersion).to.be.equal("v3.2.2");
       // validate initialization
       const engineContractMinter = await engine.minterContract();
       expect(engineContractMinter).to.equal(
@@ -399,7 +399,7 @@ describe(`EngineFactoryV0 Integration`, async function () {
       const engineContractCoreType = await engine.coreType();
       const engineContractCoreVersion = await engine.coreVersion();
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine");
-      expect(engineContractCoreVersion).to.be.equal("v3.2.0");
+      expect(engineContractCoreVersion).to.be.equal("v3.2.2");
       // validate initialization
       const engineContractMinter = await engine.minterContract();
       expect(engineContractMinter).to.equal(
@@ -510,7 +510,7 @@ describe(`EngineFactoryV0 Integration`, async function () {
       const engineContractCoreType = await engine.coreType();
       const engineContractCoreVersion = await engine.coreVersion();
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
-      expect(engineContractCoreVersion).to.be.equal("v3.2.1");
+      expect(engineContractCoreVersion).to.be.equal("v3.2.3");
       // validate initialization
       const engineContractMinter = await engine.minterContract();
       expect(engineContractMinter).to.equal(
@@ -620,7 +620,7 @@ describe(`EngineFactoryV0 Integration`, async function () {
       const engineContractCoreType = await engine.coreType();
       const engineContractCoreVersion = await engine.coreVersion();
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
-      expect(engineContractCoreVersion).to.be.equal("v3.2.1");
+      expect(engineContractCoreVersion).to.be.equal("v3.2.3");
       // validate initialization
       const engineContractMinter = await engine.minterContract();
       expect(engineContractMinter).to.equal(
@@ -736,7 +736,7 @@ describe(`EngineFactoryV0 Integration`, async function () {
       const engineContractCoreType = await engine.coreType();
       const engineContractCoreVersion = await engine.coreVersion();
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
-      expect(engineContractCoreVersion).to.be.equal("v3.2.1");
+      expect(engineContractCoreVersion).to.be.equal("v3.2.3");
       // validate initialization
       const engineContractMinter = await engine.minterContract();
       expect(engineContractMinter).to.equal(
