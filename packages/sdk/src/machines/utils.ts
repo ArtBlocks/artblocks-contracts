@@ -80,7 +80,6 @@ export function isHolderMinterType(
  * @returns A boolean indicating whether the error is due to a user-rejected transaction.
  */
 export function isUserRejectedError(error: unknown) {
-  console.log("error", error);
   if (error instanceof TransactionExecutionError) {
     return Boolean(
       error.cause.walk((e) => e instanceof UserRejectedRequestError)
@@ -111,7 +110,6 @@ export function isUserRejectedError(error: unknown) {
  * @returns A string containing the error message or a fallback message if the error is unrecognized.
  */
 export function getMessageFromError(error: unknown, fallbackMessage?: string) {
-  console.log("error", error);
   // For viem errors, use the short message
   if (error instanceof BaseError) {
     return error.shortMessage;

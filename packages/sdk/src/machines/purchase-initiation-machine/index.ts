@@ -1,5 +1,12 @@
 import { Hex } from "viem";
-import { ActorRefFrom, AnyActorRef, assign, fromPromise, setup } from "xstate";
+import {
+  ActorRefFrom,
+  AnyActorRef,
+  assign,
+  emit,
+  fromPromise,
+  setup,
+} from "xstate";
 import { projectSaleManagerMachine } from "../project-sale-manager-machine";
 import {
   getMessageFromError,
@@ -44,6 +51,7 @@ export type PurchaseInitiationMachineContext = {
   errorMessage?: string;
   additionalPurchaseData?: AdditionalPurchaseData;
   userIneligibilityReason?: string;
+  initiatedTxHash?: Hex;
 };
 
 // Use this type to ensure that the `projectSaleManagerMachine` is correctly typed
@@ -117,6 +125,10 @@ export const purchaseInitiationMachine = setup({
     >,
     context: {} as PurchaseInitiationMachineContext,
     events: {} as PurchaseInitiationMachineEvents,
+    emitted: {} as {
+      type: "purchaseInitiated";
+      txHash: Hex;
+    },
   },
   actors: {
     getUserPurchaseEligibilityAndContext: fromPromise(
@@ -211,6 +223,7 @@ export const purchaseInitiationMachine = setup({
       additionalPurchaseData: undefined,
       purchaseToAddress: undefined,
       errorMessage: undefined,
+      initiatedTxHash: undefined,
     }),
     sendTransactionHashToPurchaseTrackingManagerMachine: (
       { context },
@@ -243,6 +256,13 @@ export const purchaseInitiationMachine = setup({
         params: { userIneligibilityReason?: string }
       ) => params.userIneligibilityReason,
     }),
+    assignInitiatedTxHash: assign({
+      initiatedTxHash: (_, params: { txHash: Hex }) => params.txHash,
+    }),
+    emitPurchaseInitiatedEvent: emit((_, params: { txHash: Hex }) => ({
+      type: "purchaseInitiated" as const,
+      txHash: params.txHash,
+    })),
   },
   guards: {
     isUserRejectedError: (_, { error }: { error: unknown }) => {
@@ -264,14 +284,6 @@ export const purchaseInitiationMachine = setup({
     projectSaleManagerMachine: input.projectSaleManagerMachine,
   }),
   initial: "gettingUserPurchaseEligibilityAndContext",
-  on: {
-    RESET: {
-      actions: {
-        type: "resetPurchaseContext",
-      },
-      target: ".gettingUserPurchaseEligibilityAndContext",
-    },
-  },
   states: {
     gettingUserPurchaseEligibilityAndContext: {
       invoke: {
@@ -348,8 +360,14 @@ export const purchaseInitiationMachine = setup({
           additionalPurchaseData: context.additionalPurchaseData,
         }),
         onDone: {
-          target: "readyForPurchase",
+          target: "purchaseInitiated",
           actions: [
+            {
+              type: "assignInitiatedTxHash",
+              params: ({ event }) => ({
+                txHash: event.output,
+              }),
+            },
             {
               type: "sendTransactionHashToPurchaseTrackingManagerMachine",
               params: ({ event }) => ({
@@ -357,7 +375,10 @@ export const purchaseInitiationMachine = setup({
               }),
             },
             {
-              type: "resetPurchaseContext",
+              type: "emitPurchaseInitiatedEvent",
+              params: ({ event }) => ({
+                txHash: event.output,
+              }),
             },
           ],
         },
@@ -376,7 +397,6 @@ export const purchaseInitiationMachine = setup({
             actions: {
               type: "assignErrorMessageFromError",
               params: ({ event }) => {
-                console.log("event", event);
                 return {
                   error: event.error,
                 };
@@ -386,7 +406,35 @@ export const purchaseInitiationMachine = setup({
         ],
       },
     },
-    error: {},
-    userIneligibleForPurchase: {},
+    purchaseInitiated: {
+      on: {
+        RESET: {
+          actions: {
+            type: "resetPurchaseContext",
+          },
+          target: "gettingUserPurchaseEligibilityAndContext",
+        },
+      },
+    },
+    error: {
+      on: {
+        RESET: {
+          actions: {
+            type: "resetPurchaseContext",
+          },
+          target: "gettingUserPurchaseEligibilityAndContext",
+        },
+      },
+    },
+    userIneligibleForPurchase: {
+      on: {
+        RESET: {
+          actions: {
+            type: "resetPurchaseContext",
+          },
+          target: "gettingUserPurchaseEligibilityAndContext",
+        },
+      },
+    },
   },
 });
