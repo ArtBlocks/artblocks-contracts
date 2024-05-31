@@ -18,6 +18,7 @@ const getProjectDetailsFragmentsDocument = graphql(/* GraphQL */ `
   fragment ProjectDetails on projects_metadata {
     id
     artist_address
+    artist_name
     complete
     start_datetime
     auction_start_time

@@ -225,17 +225,24 @@ export const tokenPollingMachine = setup({
             }),
           },
         ],
-
-        onError: {
-          target: "error",
-          actions: {
-            type: "assignErrorMessageFromError",
-            params: ({ event }) => ({
-              error: event.error,
-              fallbackMessage: "An error occurred while fetching token details",
-            }),
+        onError: [
+          {
+            target: "waiting",
+            actions: "incrementRetries",
+            guard: not("maxRetriesReached"),
           },
-        },
+          {
+            target: "error",
+            actions: {
+              type: "assignErrorMessageFromError",
+              params: ({ event }) => ({
+                error: event.error,
+                fallbackMessage:
+                  "An error occurred while fetching token details",
+              }),
+            },
+          },
+        ],
       },
     },
 

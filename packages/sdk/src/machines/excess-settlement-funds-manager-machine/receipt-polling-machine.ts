@@ -141,6 +141,7 @@ export const receiptPollingMachine = setup({
     },
   },
 }).createMachine({
+  /** @xstate-layout N4IgpgJg5mDOIC5QCcwGMwEsAOAXACgPYA2xmAdlALICGaAFhWAHQBmYuDFUASulnlgBiCIXIsKAN0IBrFqgw4CJMpVpdxbDht78lsBFMJoauTGIDaABgC61m4lDZCsTGbGOQAD0QAWAOy+zABMwQBsAKz+AIz+cQDM8QAcEQA0IACeiPEAnPHMEQG+YcG+0Vahgf4AvtXpCgLKpNzqjJrsnG26ioJCYMjIhMjM2MSmrEMAtswNSkTNanRtLB06fD24BkYm7uT29p7OrruePghFIeFRsQnJaZmISdHMvjlvb-HRKfH+OWG19T0eHmqmoSyYWk63HWjWE-UGw1G4ymMyBTVBrQhqy6MP0hnI0h25j2tgs0QcSBARzcxNOfkCl0iMTi-kSKXSWQQwSsVmYSTC0V8SSS8SscWiwQBIFmwJULXBmgA7jQaZQhF5YLhTCwaKxcP0ABTlHlWACUQhl6PlGhYytVUAOlOpJ0pZxyEV5vmC0S+VjCb2iESeHMQJTCzDeVkFwTe4Wi-yl5EIEDgnktIOty0OLhpHldiAAtNFEsx-VZkv4RULvb4QwgC+GTTzRfEAmF-UKpem5YsbZC1mj4E6cy7QGcCylSzly0lK62kjW658gu7csa-RFRTU6tK0Rne8tmHazJRs8dafmEO6cswrHkrBF20G7zl-HXSv4+ck-WFil9K2E26Ahs+5gn28JDGeubkHSV7RDeVgpH8OS+FG8QRG8dYLi87z+OWuSVjkpS1LUQA */
   id: "receiptPollingMachine",
   initial: "fetchingReceipts",
   context: ({ input }) => ({
