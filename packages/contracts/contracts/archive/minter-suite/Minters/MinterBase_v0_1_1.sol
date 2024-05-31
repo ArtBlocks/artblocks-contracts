@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../interfaces/v0.8.x/IMinterBaseV0.sol";
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3.sol";
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine.sol";
+import "../../../interfaces/v0.8.x/IMinterBaseV0.sol";
+import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3.sol";
+import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine.sol";
 
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
 
