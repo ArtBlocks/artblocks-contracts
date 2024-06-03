@@ -31,6 +31,7 @@ if (process.argv.length == 2) {
 
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "";
 const ARBISCAN_API_KEY = process.env.ARBISCAN_API_KEY || "";
+const BASESCAN_API_KEY = process.env.BASESCAN_API_KEY || "";
 
 // @dev load environment variables, falling back to defaults if not set to
 // enable running tests without a populated .env file
@@ -48,6 +49,9 @@ const ARBITRUM_SEPOLIA_JSON_RPC_PROVIDER_URL =
   process.env.ARBITRUM_SEPOLIA_JSON_RPC_PROVIDER_URL || "";
 const ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL =
   process.env.ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL || "";
+
+const BASE_MAINNET_JSON_RPC_PROVIDER_URL =
+  process.env.BASE_MAINNET_JSON_RPC_PROVIDER_URL || "";
 
 // Sidechain Configuration
 const PALM_MAINNET_JSON_RPC_PROVIDER_URL =
@@ -106,6 +110,14 @@ module.exports = {
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 200,
     },
+    base: {
+      url: BASE_MAINNET_JSON_RPC_PROVIDER_URL,
+      accounts: [`${PRIVATE_KEY}`],
+      // ledgerAccounts: ["0x"],
+      gasPrice: "auto",
+      gasMultiplier: 1.5,
+      maxNominalGasPriceGwei: 50,
+    },
     arbitrum: {
       url: ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL,
       accounts: [`${PRIVATE_KEY}`],
@@ -141,6 +153,7 @@ module.exports = {
       arbitrumOne: ARBISCAN_API_KEY,
       "arbitrum-sepolia": ARBISCAN_API_KEY,
       "arbitrum-goerli": ARBISCAN_API_KEY,
+      base: BASESCAN_API_KEY,
     },
     customChains: [
       {

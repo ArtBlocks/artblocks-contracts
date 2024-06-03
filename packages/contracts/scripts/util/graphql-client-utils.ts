@@ -32,6 +32,10 @@ const getEndpointAndAdminSecret = (): {
       graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_MAINNET;
       hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_MAINNET;
       break;
+    case "base":
+      graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_BASE_MAINNET;
+      hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_BASE_MAINNET;
+      break;
     default:
       throw new Error(`Invalid NODE_ENV: ${process.env.NODE_ENV}`);
   }
