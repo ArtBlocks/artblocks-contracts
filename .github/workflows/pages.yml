@@ -43,6 +43,7 @@ jobs:
           echo "KOVAN_JSON_RPC_PROVIDER_URL=https://kovan.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
           echo "PALM_MAINNET_JSON_RPC_PROVIDER_URL=https://palm-mainnet.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
           echo "PALM_TESTNET_JSON_RPC_PROVIDER_URL=https://palm-testnet.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
+          echo "BASE_MAINNET_JSON_RPC_PROVIDER_URL=https://base-mainnet.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
           echo "ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL=https://arbitrum-mainnet.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
           echo "ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL=https://arbitrum-goerli.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
       - name: build docs
