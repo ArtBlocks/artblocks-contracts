@@ -1,6 +1,7 @@
 module.exports = {
-  extends: ["custom"],
+  extends: ["custom", "plugin:@typescript-eslint/recommended"],
   env: { browser: true, es6: true },
+  plugins: ["@typescript-eslint"],
   overrides: [
     {
       files: [
@@ -16,4 +17,12 @@ module.exports = {
       env: { jest: true },
     },
   ],
+  rules: {
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      { ignoreRestSiblings: true },
+    ],
+    "@typescript-eslint/no-explicit-any": "warn",
+  },
+  ignorePatterns: [".eslintrc.js", "src/generated/**/*"],
 };

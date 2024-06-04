@@ -13,7 +13,7 @@ jobs:
       - checkout
       - node/install:
           install-yarn: true
-          node-version: "18.16"
+          node-version: "20.10"
       - node/install-packages:
           pkg-manager: yarn
       - run:
@@ -28,9 +28,10 @@ jobs:
       - checkout
       - node/install:
           install-yarn: true
-          node-version: "18.16"
+          node-version: "20.10"
       - node/install-packages:
           pkg-manager: yarn
+          cache-version: v2
       - run:
           name: debug list files
           command: |
@@ -58,9 +59,10 @@ jobs:
       - checkout
       - node/install:
           install-yarn: true
-          node-version: "18.16"
+          node-version: "20.10"
       - node/install-packages:
           pkg-manager: yarn
+          cache-version: v2
       - run:
           name: compile contracts
           command: |
@@ -101,7 +103,7 @@ jobs:
       - checkout
       - node/install:
           install-yarn: true
-          node-version: "18.16"
+          node-version: "20.10"
       - node/install-packages:
           pkg-manager: yarn
       - attach_workspace:

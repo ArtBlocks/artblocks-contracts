@@ -5,6 +5,7 @@ import { T_Config } from "../util/common";
 
 const minterTypesThatDoNotImplmentSyncMaxInvocationsToCore = [
   "MinterDAExpSettlementV3",
+  "MinterRAMV0",
 ];
 
 /**
@@ -28,7 +29,10 @@ export const Common_Events = async (_beforeEach: () => Promise<T_Config>) => {
       )
         .to.emit(
           // event is defined in MaxInvocationsLib
-          await ethers.getContractFactory("MaxInvocationsLib"),
+          await ethers.getContractAt(
+            "MaxInvocationsLib",
+            config.minter.address
+          ),
           "ProjectMaxInvocationsLimitUpdated"
         )
         .withArgs(
@@ -62,7 +66,10 @@ export const Common_Events = async (_beforeEach: () => Promise<T_Config>) => {
       )
         .to.emit(
           // event is defined in MaxInvocationsLib
-          await ethers.getContractFactory("MaxInvocationsLib"),
+          await ethers.getContractAt(
+            "MaxInvocationsLib",
+            config.minter.address
+          ),
           "ProjectMaxInvocationsLimitUpdated"
         )
         .withArgs(

@@ -45,3 +45,78 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2024-02-09T21:34:45.444Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/plottables/deployment-config.sepolia-staging.ts
+[INFO] Deploying to network: sepolia
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x7b16D671fdDFb17C471269935Bfe9caaeC446e07
+[INFO] Using shared Randomizer at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x9f22B52702E1C00B1318e1DACd543c17aD00774D
+[INFO] Registered core contract 0x9f22B52702E1C00B1318e1DACd543c17aD00774D on core registry 0xdAe755c2944Ec125a0D8D5CB082c22837593441a
+[INFO] Updated the Minter Filter on the Core contract to 0xa07f47c30C262adcC263A4D44595972c50e04db7.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x9f75C11383f5b93a72c61fb1Dd1a44f5Ec7e4187.
+[INFO] Verifying core contract contract deployment...
+The contract 0x9f22B52702E1C00B1318e1DACd543c17aD00774D has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x9f22B52702E1C00B1318e1DACd543c17aD00774D#code
+[INFO] Core contract verified on Etherscan at 0x9f22B52702E1C00B1318e1DACd543c17aD00774D}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x7b16D671fdDFb17C471269935Bfe9caaeC446e07 has already been verified on Etherscan.
+https://sepolia.etherscan.io/address/0x7b16D671fdDFb17C471269935Bfe9caaeC446e07#code
+[INFO] AdminACL contract verified on Etherscan at 0x7b16D671fdDFb17C471269935Bfe9caaeC446e07
+Created s3 bucket for https://plottables-sepolia.s3.amazonaws.com
+[INFO] Created image bucket plottables-sepolia
+[INFO] Deployment details written to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/plottables/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x9f22b52702e1c00b1318e1dacd543c17ad00774d",
+  "name": "Plottables",
+  "bucket_name": "plottables-sepolia",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x9f75C11383f5b93a72c61fb1Dd1a44f5Ec7e4187, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2024-02-09T21:46:57.700Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/plottables/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x1a820A0D3edC157ba76757b16750149d717cbC96
+[INFO] Using shared Randomizer at 0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91
+[INFO] Core GenArt721CoreV3_Engine deployed at 0xAc521EA7A83a3Bc3f9f1e09F8300a6301743fB1f
+[INFO] Registered core contract 0xAc521EA7A83a3Bc3f9f1e09F8300a6301743fB1f on core registry 0x2eE7B9bB2E038bE7323A119701A191c030A61ec6
+[INFO] Updated the Minter Filter on the Core contract to 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x9f75C11383f5b93a72c61fb1Dd1a44f5Ec7e4187.
+[INFO] Verifying core contract contract deployment...
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0xAc521EA7A83a3Bc3f9f1e09F8300a6301743fB1f
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine on the block explorer.
+https://etherscan.io/address/0xAc521EA7A83a3Bc3f9f1e09F8300a6301743fB1f#code
+
+[INFO] Core contract verified on Etherscan at 0xAc521EA7A83a3Bc3f9f1e09F8300a6301743fB1f}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x1a820A0D3edC157ba76757b16750149d717cbC96 has already been verified on Etherscan.
+https://etherscan.io/address/0x1a820A0D3edC157ba76757b16750149d717cbC96#code
+[INFO] AdminACL contract verified on Etherscan at 0x1a820A0D3edC157ba76757b16750149d717cbC96
+Created s3 bucket for https://plottables-mainnet.s3.amazonaws.com
+[INFO] Created image bucket plottables-mainnet
+[INFO] Deployment details written to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/plottables/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xac521ea7a83a3bc3f9f1e09f8300a6301743fb1f",
+  "name": "Plottables",
+  "bucket_name": "plottables-mainnet",
+  "default_vertical_name": "fullyonchain"
+}
+Error upserting contracts: [GraphQL] Uniqueness violation. duplicate key value violates unique constraint "contracts_metadata_name_key"

@@ -61,6 +61,7 @@ While tests are an important part of the development process, an even more impor
 
 - Open communication is encouraged. If you have questions, ask them! If you have ideas, share them! If you have concerns, raise them!
 - Respect is required. We are all here to work together to build something great. We are all here to learn from each other, help one another, and to have fun! A respectful and collaborative environment is required to achieve this.
+- Developers are empowered to schedule as much smart contract development and review time as they feel is needed to deliver a high quality and safe product. If you need more time to write or review a PR, take it! If you need more time to understand a PR, take it! If you feel that a third-party audit is needed, raise the concern. Timelines can be adjusted; building a safe product that the team feels confident in is paramount.
 - All code should be reviewed by at least one other developer before merging into `main`, preferably by multiple developers. This is to ensure that code is readable, understandable, and secure.
 - Detailed PR descriptions are encouraged. This is to ensure that reviewers can understand the context of the PR, and to ensure that the PR description can be used as a reference in the future.
 - Developers are encouraged to ask questions, and to share ideas. This is the best way to learn, and to improve the codebase.
