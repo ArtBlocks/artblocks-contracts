@@ -22,7 +22,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: yarn --frozen-lockfile
         working-directory: packages/sdk
-      - name: Build
+      - name: Build # requires access to secrets
         run: yarn run build
         working-directory: packages/sdk
         env:
