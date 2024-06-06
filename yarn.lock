@@ -3853,10 +3853,10 @@
     io-ts "1.10.4"
     ora "^5.4.1"
 
-"@nomicfoundation/hardhat-network-helpers@^1.0.10":
-  version "1.0.10"
-  resolved "https://registry.yarnpkg.com/@nomicfoundation/hardhat-network-helpers/-/hardhat-network-helpers-1.0.10.tgz#c61042ceb104fdd6c10017859fdef6529c1d6585"
-  integrity sha512-R35/BMBlx7tWN5V6d/8/19QCwEmIdbnA4ZrsuXgvs8i2qFx5i7h6mH5pBS4Pwi4WigLH+upl6faYusrNPuzMrQ==
+"@nomicfoundation/hardhat-network-helpers@^1.0.11":
+  version "1.0.11"
+  resolved "https://registry.yarnpkg.com/@nomicfoundation/hardhat-network-helpers/-/hardhat-network-helpers-1.0.11.tgz#64096829661b960b88679bd5c4fbcb50654672d1"
+  integrity sha512-uGPL7QSKvxrHRU69dx8jzoBvuztlLCtyFsbgfXIwIjnO3dqZRz2GNMHJoO3C3dIiUNM6jdNF4AUnoQKDscdYrA==
   dependencies:
     ethereumjs-util "^7.1.4"
 
