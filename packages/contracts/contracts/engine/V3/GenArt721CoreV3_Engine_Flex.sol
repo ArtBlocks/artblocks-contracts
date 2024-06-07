@@ -414,72 +414,16 @@ contract GenArt721CoreV3_Engine_Flex is
      * @param defaultBaseURIHost Base URI prefix to initialize default base URI with.
      */
     function initialize(
-        EngineConfiguration calldata engineConfiguration,
+        EngineConfiguration memory engineConfiguration,
         address adminACLContract_,
         string memory defaultBaseURIHost
-    ) external {
-        // can only be initialized once
-        if (_initialized) {
-            revert GenArt721Error(ErrorCodes.ContractInitialized);
-        }
-        // immediately mark as initialized
-        _initialized = true;
-        // @dev assume renderProviderAddress, randomizer, and AdminACL non-zero
-        // checks on platform provider addresses performed in _updateProviderSalesAddresses
-        // initialize default sales revenue percentages and basis points
-        _renderProviderPrimarySalesPercentage = 10;
-        defaultRenderProviderSecondarySalesBPS = 250;
-        _platformProviderPrimarySalesPercentage = engineConfiguration
-            .nullPlatformProvider
-            ? 0
-            : 10;
-        defaultPlatformProviderSecondarySalesBPS = engineConfiguration
-            .nullPlatformProvider
-            ? 0
-            : 250;
-
-        // set token name and token symbol
-        ERC721_PackedHashSeedV1.initialize(
-            engineConfiguration.tokenName,
-            engineConfiguration.tokenSymbol
-        );
-        // update minter if populated
-        if (engineConfiguration.minterFilterAddress != address(0)) {
-            _updateMinterContract(engineConfiguration.minterFilterAddress);
-        }
-        _updateSplitProvider(engineConfiguration.splitProviderAddress);
-        // setup immutable `autoApproveArtistSplitProposals` config
-        autoApproveArtistSplitProposals = engineConfiguration
-            .autoApproveArtistSplitProposals;
-        // setup immutable `nullPlatformProvider` config
-        nullPlatformProvider = engineConfiguration.nullPlatformProvider;
-        // setup immutable `allowArtistProjectActivation` config
-        allowArtistProjectActivation = engineConfiguration
-            .allowArtistProjectActivation;
-        // record contracts starting project ID
-        // casting-up is safe
-        startingProjectId = uint256(engineConfiguration.startingProjectId);
-        // @dev nullPlatformProvider must be set before calling _updateProviderSalesAddresses
-        _updateProviderSalesAddresses(
-            engineConfiguration.renderProviderAddress,
-            engineConfiguration.renderProviderAddress,
-            engineConfiguration.platformProviderAddress,
-            engineConfiguration.platformProviderAddress
-        );
-        _updateRandomizerAddress(engineConfiguration.randomizerContract);
-        // set AdminACL management contract as owner
-        _transferOwnership(adminACLContract_);
-        // initialize default base URI
-        _updateDefaultBaseURI(
-            string.concat(defaultBaseURIHost, address(this).toHexString(), "/")
-        );
-        // initialize next project ID
-        _nextProjectId = engineConfiguration.startingProjectId;
-        emit PlatformUpdated(
-            bytes32(uint256(PlatformUpdatedFields.FIELD_NEXT_PROJECT_ID))
-        );
-        // @dev This contract is registered on the core registry in a
-        // subsequent call by the factory.
+    ) external virtual {
+        // @dev internal function call so derived contracts have access to initialization logic
+        _initialize({
+            engineConfiguration: engineConfiguration,
+            adminACLContract_: adminACLContract_,
+            defaultBaseURIHost: defaultBaseURIHost
+        });
     }
 
     /**
@@ -2692,5 +2636,83 @@ contract GenArt721CoreV3_Engine_Flex is
         address _address
     ) internal view returns (string memory) {
         return BytecodeStorageReader.readFromBytecode(_address);
+    }
+
+    /**
+     * @notice Initializes the contract with the provided `engineConfiguration`.
+     * This function should be called atomically, immediately after deployment.
+     * Only callable once. Validation on `engineConfiguration` is performed by caller.
+     * @param engineConfiguration EngineConfiguration to configure the contract with.
+     * @param adminACLContract_ Address of admin access control contract, to be
+     * set as contract owner.
+     * @param defaultBaseURIHost Base URI prefix to initialize default base URI with.
+     */
+    function _initialize(
+        EngineConfiguration memory engineConfiguration,
+        address adminACLContract_,
+        string memory defaultBaseURIHost
+    ) internal {
+        // can only be initialized once
+        if (_initialized) {
+            revert GenArt721Error(ErrorCodes.ContractInitialized);
+        }
+        // immediately mark as initialized
+        _initialized = true;
+        // @dev assume renderProviderAddress, randomizer, and AdminACL non-zero
+        // checks on platform provider addresses performed in _updateProviderSalesAddresses
+        // initialize default sales revenue percentages and basis points
+        _renderProviderPrimarySalesPercentage = 10;
+        defaultRenderProviderSecondarySalesBPS = 250;
+        _platformProviderPrimarySalesPercentage = engineConfiguration
+            .nullPlatformProvider
+            ? 0
+            : 10;
+        defaultPlatformProviderSecondarySalesBPS = engineConfiguration
+            .nullPlatformProvider
+            ? 0
+            : 250;
+
+        // set token name and token symbol
+        ERC721_PackedHashSeedV1.initialize(
+            engineConfiguration.tokenName,
+            engineConfiguration.tokenSymbol
+        );
+        // update minter if populated
+        if (engineConfiguration.minterFilterAddress != address(0)) {
+            _updateMinterContract(engineConfiguration.minterFilterAddress);
+        }
+        _updateSplitProvider(engineConfiguration.splitProviderAddress);
+        // setup immutable `autoApproveArtistSplitProposals` config
+        autoApproveArtistSplitProposals = engineConfiguration
+            .autoApproveArtistSplitProposals;
+        // setup immutable `nullPlatformProvider` config
+        nullPlatformProvider = engineConfiguration.nullPlatformProvider;
+        // setup immutable `allowArtistProjectActivation` config
+        allowArtistProjectActivation = engineConfiguration
+            .allowArtistProjectActivation;
+        // record contracts starting project ID
+        // casting-up is safe
+        startingProjectId = uint256(engineConfiguration.startingProjectId);
+        // @dev nullPlatformProvider must be set before calling _updateProviderSalesAddresses
+        _updateProviderSalesAddresses(
+            engineConfiguration.renderProviderAddress,
+            engineConfiguration.renderProviderAddress,
+            engineConfiguration.platformProviderAddress,
+            engineConfiguration.platformProviderAddress
+        );
+        _updateRandomizerAddress(engineConfiguration.randomizerContract);
+        // set AdminACL management contract as owner
+        _transferOwnership(adminACLContract_);
+        // initialize default base URI
+        _updateDefaultBaseURI(
+            string.concat(defaultBaseURIHost, address(this).toHexString(), "/")
+        );
+        // initialize next project ID
+        _nextProjectId = engineConfiguration.startingProjectId;
+        emit PlatformUpdated(
+            bytes32(uint256(PlatformUpdatedFields.FIELD_NEXT_PROJECT_ID))
+        );
+        // @dev This contract is registered on the core registry in a
+        // subsequent call by the factory.
     }
 }
