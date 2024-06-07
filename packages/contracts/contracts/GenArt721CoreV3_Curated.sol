@@ -13,8 +13,7 @@ import {EngineConfiguration} from "./interfaces/v0.8.x/IGenArt721CoreContractV3_
  * some functionality to support curation of projects by Art Blocks.
  * It also performs initialization of the contract in the constructor, because
  * the contract is not intended to use a clone proxy pattern, and is intended
- * to be deployed from any generic factory or directly without a follow-on call
- * to initialize.
+ * to be deployed without any required follow-on calls to initialize.
  * ----------------------------------------------------------------------------
  * See the Art Blocks Engine contract for additional applicable documentation.
  */
@@ -40,7 +39,6 @@ contract GenArt721CoreV3_Curated is GenArt721CoreV3_Engine {
 
     bool public constant IS_FLAGSHIP = true;
 
-    // initialize in the constructor instead of initialize function, since curated is not a clone
     /**
      * @notice Construct a new curated Art Blocks ERC-721 core contract.
      * Performs all contract initialization in the constructor.

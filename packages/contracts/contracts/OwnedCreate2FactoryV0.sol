@@ -29,9 +29,6 @@ contract OwnedCreate2FactoryV0 is Ownable, IOwnedCreate2FactoryV0 {
     // public type
     bytes32 public constant type_ = "IOwnedCreate2FactoryV0";
 
-    // pseudorandom salt nonce to prevent collisions for multiple contract deployments in single block
-    uint256 private _pseudorandomSaltNonce;
-
     /**
      * Represents a generic call operation.
      */
@@ -57,6 +54,7 @@ contract OwnedCreate2FactoryV0 is Ownable, IOwnedCreate2FactoryV0 {
      * the `predictDeterministicAddress` function.
      * @param salt The salt to use for the deployment.
      * @param initcode The initcode of the contract to deploy.
+     * @return newContract The address of the newly deployed contract.
      */
     function deploy(
         bytes32 salt,
@@ -172,43 +170,6 @@ contract OwnedCreate2FactoryV0 is Ownable, IOwnedCreate2FactoryV0 {
                 salt: salt,
                 bytecodeHash: keccak256(initcode)
             });
-    }
-
-    /**
-     * @notice helper function to generate a pseudorandom salt
-     * @return result pseudorandom salt
-     */
-    function _generatePseudorandomSalt() internal returns (bytes32 result) {
-        // get and increment nonce to prevent same-block collisions
-        uint256 nonce = _pseudorandomSaltNonce++;
-        return
-            keccak256(
-                abi.encodePacked(
-                    nonce,
-                    block.timestamp,
-                    block.number,
-                    address(this)
-                )
-            );
-    }
-
-    /**
-     * @notice helper function to convert a string to a bytes32.
-     * Caution: This function only works properly for short strings.
-     * @param source string to convert
-     * @return result bytes32 representation of the string
-     */
-    function _stringToBytes32(
-        string memory source
-    ) internal pure returns (bytes32 result) {
-        bytes memory tempString = bytes(source);
-        if (tempString.length == 0) {
-            return 0x0;
-        }
-
-        assembly {
-            result := mload(add(source, 32))
-        }
     }
 
     /**
