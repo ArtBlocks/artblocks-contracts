@@ -7,6 +7,7 @@ import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract, BigNumber } from "ethers";
 import { DEFAULT_BASE_URI, ONE_MINUTE } from "./constants";
 import { SplitProviderV0 } from "../../scripts/contracts/split/split-provider/SplitProviderV0";
+import { OwnedCreate2FactoryV0 } from "../../scripts/contracts";
 
 export type TestAccountsArtBlocks = {
   deployer: SignerWithAddress;
@@ -93,6 +94,7 @@ export type T_Config = {
   splitterFactory?: Contract;
   splitter?: Contract;
   splitProvider?: SplitProviderV0;
+  ownedCreate2Factory?: OwnedCreate2FactoryV0;
   // split configs
   validSplit?: T_Split;
   invalidSplit?: T_Split;

@@ -44,6 +44,9 @@ contract OwnedCreate2FactoryV0 is Ownable, IOwnedCreate2FactoryV0 {
     constructor(address owner_) Ownable(owner_) {
         // input validation
         _onlyNonZeroAddress(owner_);
+
+        // emit Deployed event
+        emit Deployed();
     }
 
     /**
@@ -56,7 +59,7 @@ contract OwnedCreate2FactoryV0 is Ownable, IOwnedCreate2FactoryV0 {
      * @param initcode The initcode of the contract to deploy.
      * @return newContract The address of the newly deployed contract.
      */
-    function deploy(
+    function deployCreate2(
         bytes32 salt,
         bytes calldata initcode
     ) external payable onlyOwner returns (address newContract) {
