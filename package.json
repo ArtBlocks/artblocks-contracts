@@ -9,7 +9,7 @@
     "@graphql-codegen/cli": "^5.0.2",
     "@graphql-codegen/client-preset": "^4.2.5",
     "@graphql-codegen/typescript": "^4.0.1",
-    "@graphql-codegen/typescript-document-nodes": "^4.0.6",
+    "@graphql-codegen/typescript-document-nodes": "^4.0.7",
     "@graphql-codegen/typescript-operations": "^4.2.1",
     "@graphql-codegen/typescript-urql": "^4.0.0",
     "dotenv": "^16.4.5",
