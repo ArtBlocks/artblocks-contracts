@@ -4400,10 +4400,10 @@
     deep-eql "^4.0.1"
     ordinal "^1.0.3"
 
-"@nomicfoundation/hardhat-ledger@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@nomicfoundation/hardhat-ledger/-/hardhat-ledger-1.0.2.tgz#a045dc6e9dd3e6398c5fbaa81466474dd26ee7ff"
-  integrity sha512-A2sPoMcnyxQWWtk1zXeWcsV6w0Gr79+pmBImLCeL4uhAxw6bVnajFW7hh2pwH0N3hZ27X3SIxmJpbAv171ypZQ==
+"@nomicfoundation/hardhat-ledger@^1.0.3":
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/@nomicfoundation/hardhat-ledger/-/hardhat-ledger-1.0.3.tgz#7adf54f96e453ed0a649493c2e50b5db6d66ea7f"
+  integrity sha512-AwdfyZbF1p87xDTTzJJbnTlu3fyDSkyYjtkC5L5CZ9LYOXpsEp4cuUo26v0oGl6XutPN31HxUXbBbNPfhGcgFg==
   dependencies:
     "@ledgerhq/errors" "^6.12.6"
     "@ledgerhq/hw-app-eth" "6.33.6"
