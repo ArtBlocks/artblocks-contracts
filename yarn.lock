@@ -4511,10 +4511,10 @@
   resolved "https://registry.yarnpkg.com/@nomiclabs/hardhat-ethers/-/hardhat-ethers-2.2.3.tgz#b41053e360c31a32c2640c9a45ee981a7e603fe0"
   integrity sha512-YhzPdzb612X591FOe68q+qXVXGG2ANZRvDo0RRUtimev85rCrAlv/TLMEZw5c+kq9AbzocLTVX/h2jVIFPL9Xg==
 
-"@nomiclabs/hardhat-solhint@^3.0.0":
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/@nomiclabs/hardhat-solhint/-/hardhat-solhint-3.0.1.tgz#20e96c3dcd674b8d87ef90c2314db3b5fe551b9c"
-  integrity sha512-GqDoStxL1aA9hZul9HRdk+3eEZ/XLBwvIlz3/EJUusUsoadNYEnio9aYOsBeNeZWo+B/Fd3EgMXgbf9wWQLyRA==
+"@nomiclabs/hardhat-solhint@^3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@nomiclabs/hardhat-solhint/-/hardhat-solhint-3.1.0.tgz#75d7720932ca07b9fa87bb96328fc733ae0d12fc"
+  integrity sha512-5jNiYwLuiHZ2B11Ds4U5jH+DR565PqpsdbXml6iYfqMguyJb+ulU2rt58+hprNhoFKZds8cOlf9FaoWvA9KqkA==
   dependencies:
     solhint "^3.4.0"
 
