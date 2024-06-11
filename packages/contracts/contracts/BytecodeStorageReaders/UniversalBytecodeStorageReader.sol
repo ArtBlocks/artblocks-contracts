@@ -5,7 +5,7 @@ pragma solidity 0.8.22;
 
 import {IUniversalBytecodeStorageReader} from "../interfaces/v0.8.x/IUniversalBytecodeStorageReader.sol";
 
-import {IBytecodeStorageReaderV2} from "../interfaces/v0.8.x/IBytecodeStorageReaderV2.sol";
+import {IBytecodeStorageReader_Base} from "../interfaces/v0.8.x/IBytecodeStorageReader_Base.sol";
 
 import "@openzeppelin-5.0/contracts/access/Ownable.sol";
 
@@ -33,7 +33,7 @@ contract UniversalBytecodeStorageReader is
      * @dev To prevent a single point of failure, contracts may point directly to BytecodeStorageReader contracts
      * instead of this universal reader.
      */
-    IBytecodeStorageReaderV2 public activeBytecodeStorageReader;
+    IBytecodeStorageReader_Base public activeBytecodeStorageReader;
 
     /**
      * @notice Construct a new UniversalBytecodeStorageReader contract, owned by input owner address.
@@ -48,7 +48,7 @@ contract UniversalBytecodeStorageReader is
     function updateBytecodeStorageReader(
         address newBytecodeStorageReader
     ) external onlyOwner {
-        activeBytecodeStorageReader = IBytecodeStorageReaderV2(
+        activeBytecodeStorageReader = IBytecodeStorageReader_Base(
             newBytecodeStorageReader
         );
         emit ReaderUpdated({activeReader: newBytecodeStorageReader});
