@@ -22,7 +22,7 @@
     "@babel/preset-env": "^7.24.4",
     "@babel/preset-typescript": "^7.24.7",
     "@jest/globals": "^29.7.0",
-    "@types/lodash": "^4.14.196",
+    "@types/lodash": "^4.17.5",
     "abitype": "^0.8.7",
     "eslint-config-custom": "*",
     "jest": "^29.7.0",
