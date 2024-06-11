@@ -20,9 +20,9 @@ interface IUniversalBytecodeStorageReader is IBytecodeStorageReader_Base {
     /**
      * @notice Update the active bytecode storage reader contract being used by this universal reader.
      * @dev emits a ReaderUpdated event when successful.
-     * @param newBytecodeStorageReader The address of the new active bytecode storage reader contract.
+     * @param newBytecodeStorageReaderContract The address of the new active bytecode storage reader contract.
      */
-    function updateBytecodeStorageReader(
-        address newBytecodeStorageReader
+    function updateBytecodeStorageReaderContract(
+        IBytecodeStorageReader_Base newBytecodeStorageReaderContract
     ) external;
 }

@@ -33,7 +33,7 @@ contract UniversalBytecodeStorageReader is
      * @dev To prevent a single point of failure, contracts may point directly to BytecodeStorageReader contracts
      * instead of this universal reader.
      */
-    IBytecodeStorageReader_Base public activeBytecodeStorageReader;
+    IBytecodeStorageReader_Base public activeBytecodeStorageReaderContract;
 
     /**
      * @notice Construct a new UniversalBytecodeStorageReader contract, owned by input owner address.
@@ -43,15 +43,15 @@ contract UniversalBytecodeStorageReader is
 
     /**
      * @notice Update the active bytecode storage reader contract being used by this universal reader.
-     * @param newBytecodeStorageReader The address of the new active bytecode storage reader contract.
+     * @param newBytecodeStorageReaderContract The address of the new active bytecode storage reader contract.
      */
-    function updateBytecodeStorageReader(
-        address newBytecodeStorageReader
+    function updateBytecodeStorageReaderContract(
+        IBytecodeStorageReader_Base newBytecodeStorageReaderContract
     ) external onlyOwner {
-        activeBytecodeStorageReader = IBytecodeStorageReader_Base(
-            newBytecodeStorageReader
-        );
-        emit ReaderUpdated({activeReader: newBytecodeStorageReader});
+        activeBytecodeStorageReaderContract = newBytecodeStorageReaderContract;
+        emit ReaderUpdated({
+            activeReader: address(newBytecodeStorageReaderContract)
+        });
     }
 
     /**
@@ -64,6 +64,8 @@ contract UniversalBytecodeStorageReader is
         address address_
     ) external view returns (string memory) {
         return
-            activeBytecodeStorageReader.readFromBytecode({address_: address_});
+            activeBytecodeStorageReaderContract.readFromBytecode({
+                address_: address_
+            });
     }
 }
