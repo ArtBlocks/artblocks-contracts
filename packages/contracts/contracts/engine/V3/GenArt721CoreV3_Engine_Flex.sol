@@ -10,12 +10,13 @@ import {IGenArt721CoreContractV3_ProjectFinance} from "../../interfaces/v0.8.x/I
 import "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
 import {ISplitProviderV0} from "../../interfaces/v0.8.x/ISplitProviderV0.sol";
+import {IBytecodeStorageReader_Base} from "../../interfaces/v0.8.x/IBytecodeStorageReader_Base.sol";
 
 import "@openzeppelin-5.0/contracts/utils/Strings.sol";
 import "@openzeppelin-5.0/contracts/access/Ownable.sol";
 import {IERC2981} from "@openzeppelin-5.0/contracts/interfaces/IERC2981.sol";
 import "../../libs/v0.8.x/ERC721_PackedHashSeedV1.sol";
-import "../../libs/v0.8.x/BytecodeStorageV2.sol";
+import {BytecodeStorageWriter, BytecodeStorageReader} from "../../libs/v0.8.x/BytecodeStorageV2.sol";
 import {V3FlexLib} from "../../libs/v0.8.x/V3FlexLib.sol";
 import "../../libs/v0.8.x/Bytes32Strings.sol";
 
@@ -49,6 +50,7 @@ import "../../libs/v0.8.x/Bytes32Strings.sol";
  * - forbidNewProjects (forever forbidding new projects)
  * - updateDefaultBaseURI (used to initialize new project base URIs)
  * - updateSplitProvider
+ * - updateBytecodeStorageReaderContract
  * - updateIPFSGateway
  * - updateArweaveGateway
  * ----------------------------------------------------------------------------
@@ -279,7 +281,7 @@ contract GenArt721CoreV3_Engine_Flex is
     bool public allowArtistProjectActivation;
 
     /// version & type of this core contract
-    bytes32 constant CORE_VERSION = "v3.2.3";
+    bytes32 constant CORE_VERSION = "v3.2.5";
 
     function coreVersion() external pure returns (string memory) {
         return CORE_VERSION.toString();
@@ -300,6 +302,9 @@ contract GenArt721CoreV3_Engine_Flex is
 
     // royalty split provider
     ISplitProviderV0 public splitProvider;
+
+    // bytecode storage reader contract; may be universal or specific version reader contract
+    IBytecodeStorageReader_Base public bytecodeStorageReaderContract;
 
     /**
      * @dev This constructor sets the owner to a non-functional address as a formality.
@@ -412,17 +417,20 @@ contract GenArt721CoreV3_Engine_Flex is
      * @param adminACLContract_ Address of admin access control contract, to be
      * set as contract owner.
      * @param defaultBaseURIHost Base URI prefix to initialize default base URI with.
+     * @param bytecodeStorageReaderContract_ Address of the bytecode storage reader contract.
      */
     function initialize(
         EngineConfiguration memory engineConfiguration,
         address adminACLContract_,
-        string memory defaultBaseURIHost
+        string memory defaultBaseURIHost,
+        address bytecodeStorageReaderContract_
     ) external virtual {
         // @dev internal function call so derived contracts have access to initialization logic
         _initialize({
             engineConfiguration: engineConfiguration,
             adminACLContract_: adminACLContract_,
-            defaultBaseURIHost: defaultBaseURIHost
+            defaultBaseURIHost: defaultBaseURIHost,
+            bytecodeStorageReaderContract_: bytecodeStorageReaderContract_
         });
     }
 
@@ -976,6 +984,22 @@ contract GenArt721CoreV3_Engine_Flex is
     function updateSplitProvider(address _splitProviderAddress) external {
         _onlyAdminACL(this.updateSplitProvider.selector);
         _updateSplitProvider(_splitProviderAddress);
+    }
+
+    /**
+     * @notice Updates bytecode storage reader contract to `_bytecodeStorageReaderContract`.
+     * Reverts if `_bytecodeStorageReaderContract` is zero address.
+     * Updating the active Bytecode Storage Reader contract may affect the ability to read
+     * data related to existing projects. Care should be taken to ensure that the new
+     * contract is compatible with the existing project data.
+     * @param _bytecodeStorageReaderContract New bytecode storage reader contract address.
+     */
+    function updateBytecodeStorageReaderContract(
+        address _bytecodeStorageReaderContract
+    ) external {
+        _onlyAdminACL(this.updateBytecodeStorageReaderContract.selector);
+        _onlyNonZeroAddress(_bytecodeStorageReaderContract);
+        _updateBytecodeStorageReaderContract(_bytecodeStorageReaderContract);
     }
 
     /**
@@ -2066,6 +2090,7 @@ contract GenArt721CoreV3_Engine_Flex is
         string memory _script
     ) external pure returns (bytes memory) {
         _onlyNonEmptyString(_script);
+        // @dev want a potentially version-specific compression algorithm, so use version-specific library here
         return BytecodeStorageReader.getCompressed(_script);
     }
 
@@ -2538,6 +2563,23 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
+     * Update the bytecode storage reader contract address, and emit corresponding event.
+     * @param _bytecodeStorageReaderContract New bytecode storage reader contract address.
+     */
+    function _updateBytecodeStorageReaderContract(
+        address _bytecodeStorageReaderContract
+    ) internal {
+        bytecodeStorageReaderContract = IBytecodeStorageReader_Base(
+            _bytecodeStorageReaderContract
+        );
+        emit PlatformUpdated(
+            bytes32(
+                uint256(PlatformUpdatedFields.FIELD_BYTECODE_STORAGE_READER)
+            )
+        );
+    }
+
+    /**
      * @notice internal function to update a splitter contract for a project,
      * based on the project's financials in this contract's storage.
      * @dev Warning: this function uses storage reads to get the project's
@@ -2615,11 +2657,13 @@ contract GenArt721CoreV3_Engine_Flex is
      * @param adminACLContract_ Address of admin access control contract, to be
      * set as contract owner.
      * @param defaultBaseURIHost Base URI prefix to initialize default base URI with.
+     * @param bytecodeStorageReaderContract_ Address of bytecode storage reader contract.
      */
     function _initialize(
         EngineConfiguration memory engineConfiguration,
         address adminACLContract_,
-        string memory defaultBaseURIHost
+        string memory defaultBaseURIHost,
+        address bytecodeStorageReaderContract_
     ) internal {
         // can only be initialized once
         if (_initialized) {
@@ -2651,6 +2695,7 @@ contract GenArt721CoreV3_Engine_Flex is
             _updateMinterContract(engineConfiguration.minterFilterAddress);
         }
         _updateSplitProvider(engineConfiguration.splitProviderAddress);
+        _updateBytecodeStorageReaderContract(bytecodeStorageReaderContract_);
         // setup immutable `autoApproveArtistSplitProposals` config
         autoApproveArtistSplitProposals = engineConfiguration
             .autoApproveArtistSplitProposals;
@@ -2707,12 +2752,12 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
-     * Helper for calling `BytecodeStorageReader` external library reader method,
+     * Helper for calling bytecodeStorageReaderContract reader method;
      * added for bytecode size reduction purposes.
      */
     function _readFromBytecode(
         address _address
     ) internal view returns (string memory) {
-        return BytecodeStorageReader.readFromBytecode(_address);
+        return bytecodeStorageReaderContract.readFromBytecode(_address);
     }
 }

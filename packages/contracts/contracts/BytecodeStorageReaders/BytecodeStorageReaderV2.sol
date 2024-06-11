@@ -10,7 +10,7 @@ import {BytecodeStorageReader} from "../libs/v0.8.x/BytecodeStorageV2.sol";
 import "@openzeppelin-5.0/contracts/access/Ownable.sol";
 
 /**
- * @title Art Blocks Bytecode Storage Reader V2
+ * @title Art Blocks Bytecode Storage Reader Contract V2
  * @author Art Blocks Inc.
  * @notice This contract is used to read the bytecode of a contract deployed by Art Blocks' BytecodeStorage library,
  * for versions 0, 1, and 2 of the Art Blocks BytecodeStorage library.
@@ -25,7 +25,7 @@ import "@openzeppelin-5.0/contracts/access/Ownable.sol";
  * perform many operations. Future reader contract versions may choose to make the library internal to this contract to
  * improve read operation performance.
  */
-contract BytecodeStorageReaderV2 is IBytecodeStorageReaderV2 {
+contract BytecodeStorageReaderContractV2 is IBytecodeStorageReaderV2 {
     using BytecodeStorageReader for address;
 
     /**

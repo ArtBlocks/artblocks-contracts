@@ -65,6 +65,9 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
      */
     bool public isAbandoned; // default false
 
+    /// Universal Bytecode Storage Reader contract address, which all core contracts are initialized to use
+    address public immutable universalBytecodeStorageReader;
+
     // pseudorandom salt nonce to prevent collisions for multiple contract deployments in single block
     uint256 private _pseudorandomSaltNonce;
 
@@ -87,13 +90,15 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
      * @param owner_ address of the initial owner
      * @param defaultBaseURIHost_ default base URI prefix for all Engine contracts,
      * e.g. "https://token.artblocks.io/" for mainnet, "https://token.arbitrum.artblocks.io/" for arbitrum, etc.
+     * @param universalBytecodeStorageReader_ address of the UniversalBytecodeStorageReader contract
      */
     constructor(
         address engineImplementation_,
         address engineFlexImplementation_,
         address coreRegistry_,
         address owner_,
-        string memory defaultBaseURIHost_
+        string memory defaultBaseURIHost_,
+        address universalBytecodeStorageReader_
     ) Ownable(owner_) {
         _onlyNonZeroAddress(engineImplementation_);
         _onlyNonZeroAddress(engineFlexImplementation_);
@@ -116,6 +121,8 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         flexCoreVersion = IGenArt721CoreContractV3_Engine(
             engineFlexImplementation
         ).coreVersion();
+
+        universalBytecodeStorageReader = universalBytecodeStorageReader_;
 
         // emit event
         emit Deployed({
@@ -191,7 +198,8 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         IGenArt721CoreContractV3_Engine(engineContract).initialize({
             engineConfiguration: engineConfiguration,
             adminACLContract_: adminACLContract,
-            defaultBaseURIHost: defaultBaseURIHost
+            defaultBaseURIHost: defaultBaseURIHost,
+            bytecodeStorageReaderContract_: universalBytecodeStorageReader
         });
 
         (

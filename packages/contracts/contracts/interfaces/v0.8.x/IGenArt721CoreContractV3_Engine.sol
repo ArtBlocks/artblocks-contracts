@@ -51,11 +51,13 @@ interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
      * @param adminACLContract_ Address of admin access control contract, to be
      * set as contract owner.
      * @param defaultBaseURIHost Base URI prefix to initialize default base URI with.
+     * @param bytecodeStorageReaderContract_ Address of the bytecode storage reader contract.
      */
     function initialize(
         EngineConfiguration calldata engineConfiguration,
         address adminACLContract_,
-        string memory defaultBaseURIHost
+        string memory defaultBaseURIHost,
+        address bytecodeStorageReaderContract_
     ) external;
 
     // @dev new function in V3
