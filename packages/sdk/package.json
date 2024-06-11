@@ -30,7 +30,7 @@
     "jsdoc": "^4.0.3",
     "jsdoc-plugin-typescript": "^2.2.1",
     "lint-staged": "^15.2.2",
-    "prettier": "^3.3.1",
+    "prettier": "^3.3.2",
     "tsconfig": "*",
     "tsup": "^8.1.0",
     "typescript": "^5.4.5"
