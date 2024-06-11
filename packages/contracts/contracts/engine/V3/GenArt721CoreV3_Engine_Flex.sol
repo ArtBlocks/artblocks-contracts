@@ -2305,7 +2305,8 @@ contract GenArt721CoreV3_Engine_Flex is
         return
             V3FlexLib.projectExternalAssetDependencyByIndex({
                 _projectId: _projectId,
-                _index: _index
+                _index: _index,
+                _bytecodeStorageReaderContract: bytecodeStorageReaderContract
             });
     }
 
