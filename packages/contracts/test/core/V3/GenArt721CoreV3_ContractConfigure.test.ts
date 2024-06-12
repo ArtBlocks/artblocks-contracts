@@ -123,7 +123,8 @@ for (const coreContractName of coreContractsToTest) {
             .initialize(
               validEngineConfigurationExistingAdminACL,
               config.adminACL.address,
-              DEFAULT_BASE_URI
+              DEFAULT_BASE_URI,
+              config.universalReader.address
             )
         )
           .to.be.revertedWithCustomError(
