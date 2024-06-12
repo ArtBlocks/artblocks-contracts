@@ -108,7 +108,7 @@
     "eslint-config-custom": "*",
     "eslint-plugin-mocha": "^10.4.2",
     "ethers": "^5.7.2",
-    "hardhat": "^2.22.2",
+    "hardhat": "^2.22.5",
     "hardhat-contract-sizer": "^2.10.0",
     "hardhat-docgen": "^1.3.0",
     "hardhat-gas-reporter": "^2.1.1",
