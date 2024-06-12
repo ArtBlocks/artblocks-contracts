@@ -32,7 +32,8 @@ describe(`EngineFactoryV0 Configure`, async function () {
           config?.engineFlexImplementation?.address,
           config?.coreRegistry?.address,
           "0x0000000000000000000000000000000000000000",
-          DEFAULT_BASE_URI
+          DEFAULT_BASE_URI,
+          config?.universalReader?.address
         ),
       revertMessages.onlyNonZeroAddress
     );

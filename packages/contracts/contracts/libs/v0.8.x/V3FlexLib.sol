@@ -6,7 +6,7 @@ pragma solidity ^0.8.0;
 import {IGenArt721CoreContractV3_Engine_Flex} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
 import {IBytecodeStorageReader_Base} from "../../interfaces/v0.8.x/IBytecodeStorageReader_Base.sol";
 
-import {BytecodeStorageWriter, BytecodeStorageReader} from "./BytecodeStorageV2.sol";
+import {BytecodeStorageWriter} from "./BytecodeStorageV2.sol";
 
 /**
  * @title Art Blocks V3 Engine Flex - External Helper Library

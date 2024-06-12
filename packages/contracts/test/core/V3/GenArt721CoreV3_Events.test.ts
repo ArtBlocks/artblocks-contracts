@@ -112,12 +112,7 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.deployer)
           .deploy();
 
-        const flexLibraryFactory = await ethers.getContractFactory(
-          "V3FlexLib",
-          {
-            libraries: { BytecodeStorageReader: library.address },
-          }
-        );
+        const flexLibraryFactory = await ethers.getContractFactory("V3FlexLib");
         const flexLibrary = await flexLibraryFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
@@ -140,6 +135,7 @@ for (const coreContractName of coreContractsToTest) {
           coreRegistry?.address,
           config.accounts.deployer.address, // owner
           DEFAULT_BASE_URI,
+          config.universalReader.address,
         ]);
         // transfer ownership of core registry to engine factory
         await coreRegistry
@@ -218,12 +214,7 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.deployer)
           .deploy();
 
-        const flexLibraryFactory = await ethers.getContractFactory(
-          "V3FlexLib",
-          {
-            libraries: { BytecodeStorageReader: library.address },
-          }
-        );
+        const flexLibraryFactory = await ethers.getContractFactory("V3FlexLib");
         const flexLibrary = await flexLibraryFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
@@ -246,6 +237,7 @@ for (const coreContractName of coreContractsToTest) {
           coreRegistry?.address,
           config.accounts.deployer.address, // owner
           DEFAULT_BASE_URI,
+          config.universalReader.address,
         ]);
         // transfer ownership of core registry to engine factory
         await coreRegistry

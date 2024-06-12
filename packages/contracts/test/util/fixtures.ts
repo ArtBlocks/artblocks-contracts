@@ -15,6 +15,7 @@ import {
   GenArt721CoreV3_Engine_Flex,
   EngineFactoryV0,
   CoreRegistryV1,
+  UniversalBytecodeStorageReader,
 } from "../../scripts/contracts";
 
 import { SplitAtomicV0__factory } from "../../scripts/contracts";
@@ -103,9 +104,7 @@ export async function setupEngineFactory() {
     .deploy();
 
   // deploy Engine Flex implementation with Flex libraries
-  const flexLibraryFactory = await ethers.getContractFactory("V3FlexLib", {
-    libraries: { BytecodeStorageReader: library.address },
-  });
+  const flexLibraryFactory = await ethers.getContractFactory("V3FlexLib");
   const flexLibrary = await flexLibraryFactory
     .connect(config.accounts.deployer)
     .deploy(/* no args for library ever */);
@@ -133,6 +132,24 @@ export async function setupEngineFactory() {
     config.coreRegistry.address,
   ]);
 
+  // deploy UniversalReader
+  config.universalReader = (await deployAndGet(
+    config,
+    "UniversalBytecodeStorageReader",
+    [config.accounts.deployer.address]
+  )) as UniversalBytecodeStorageReader;
+  // deploy version-specific reader and configure universalReader
+  const versionedReaderFactory = await ethers.getContractFactory(
+    "BytecodeStorageReaderContractV2",
+    { libraries: { BytecodeStorageReader: library.address } }
+  );
+  const versionedReader = await versionedReaderFactory
+    .connect(config.accounts.deployer)
+    .deploy();
+  await config.universalReader
+    .connect(config.accounts.deployer)
+    .updateBytecodeStorageReaderContract(versionedReader.address);
+
   // deploy Engine factory
   config.engineFactory = await deployAndGet(config, "EngineFactoryV0", [
     config.engineImplementation.address,
@@ -140,6 +157,7 @@ export async function setupEngineFactory() {
     config.coreRegistry.address,
     config.accounts.deployer.address, // owner
     DEFAULT_BASE_URI,
+    config.universalReader.address,
   ]);
 
   // transfer ownership of core registry to engine factory
