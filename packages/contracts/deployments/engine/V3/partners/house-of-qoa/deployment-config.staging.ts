@@ -21,7 +21,7 @@ export const deployConfigDetailsArray = [
     tokenName: "QOA",
     tokenTicker: "QOA",
     renderProviderAddress: "0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef",
-    platformProviderAddress: "0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef",
+    platformProviderAddress: "0xb89746Ed3384E9ba2D9E6f2C41A17A29C63D21a3",
     // set to the address you want to transfer the superAdmin role to
     // (can be the zero address if you have an existing Admin ACL Contract and are not transferring)
     newSuperAdminAddress: "0xb89746Ed3384E9ba2D9E6f2C41A17A29C63D21a3",
