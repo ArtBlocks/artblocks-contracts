@@ -28,7 +28,7 @@ export const deployConfigDetailsArray = [
     startingProjectId: 2024001,
     autoApproveArtistSplitProposals: false,
     nullPlatformProvider: false,
-    allowArtistProjectActivation: false,
+    allowArtistProjectActivation: true,
     // if you want to use an existing admin ACL, set the address here (otherwise set as the zero address to deploy a new one)
     adminACLContract: "0x0000000000000000000000000000000000000000",
     salt: "0x0",
