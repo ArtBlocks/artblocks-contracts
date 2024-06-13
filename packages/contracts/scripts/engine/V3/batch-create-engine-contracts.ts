@@ -255,7 +255,7 @@ async function main() {
     }
 
     // validate platform provider address is null if nullPlatformProvider is true
-    if (!nullPlatformProvider && platformProviderAddress !== ZERO_ADDRESS) {
+    if (nullPlatformProvider && platformProviderAddress !== ZERO_ADDRESS) {
       throw new Error(
         `[ERROR] If nullPlatformProvider is set to true, the platform provider
             address must be the zero address.`
