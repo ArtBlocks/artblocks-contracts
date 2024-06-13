@@ -21,14 +21,14 @@ export const deployConfigDetailsArray = [
     tokenName: "QOA",
     tokenTicker: "QOA",
     renderProviderAddress: "0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd",
-    platformProviderAddress: "0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd",
+    platformProviderAddress: "0xb89746Ed3384E9ba2D9E6f2C41A17A29C63D21a3",
     // set to the address you want to transfer the superAdmin role to
     // (can be the zero address if you have an existing Admin ACL Contract and are not transferring)
     newSuperAdminAddress: "0xb89746Ed3384E9ba2D9E6f2C41A17A29C63D21a3",
     startingProjectId: 2024001,
     autoApproveArtistSplitProposals: false,
     nullPlatformProvider: false,
-    allowArtistProjectActivation: true,
+    allowArtistProjectActivation: false,
     // if you want to use an existing admin ACL, set the address here (otherwise set as the zero address to deploy a new one)
     adminACLContract: "0x0000000000000000000000000000000000000000",
     salt: "0x0000000000000000000000000000000000000000c31ea770fb89ea7bb21500a0",
