@@ -137,7 +137,7 @@
     "@openzeppelin-4.8/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@4.8.0",
     "@openzeppelin-5.0/contracts": "npm:@openzeppelin/contracts@5.0.1",
     "@urql/exchange-retry": "^1.2.1",
-    "graphql": "^16.8.1",
+    "graphql": "^16.8.2",
     "solady": "^0.0.181",
     "urql": "^4.0.7"
   }
