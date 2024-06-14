@@ -28,6 +28,8 @@ import "@openzeppelin-5.0/contracts/access/Ownable.sol";
 contract BytecodeStorageReaderContractV2 is IBytecodeStorageReaderV2 {
     using BytecodeStorageReader for address;
 
+    string public constant VERSION = "BytecodeStorageReaderContractV2";
+
     /**
      * @notice Read a string from a data contract deployed via BytecodeStorage V2 or earlier.
      * @param address_ address of contract deployed via BytecodeStorage to be read

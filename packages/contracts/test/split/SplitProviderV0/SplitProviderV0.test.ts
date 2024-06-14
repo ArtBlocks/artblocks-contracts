@@ -37,7 +37,7 @@ const coreContractsToTest = [
  * specifically tests a few important details of the SplitProviderV0 contract.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`${coreContractName} Project Configure`, async function () {
+  describe(`${coreContractName} SplitProviderV0`, async function () {
     async function _beforeEach() {
       let config: T_Config = {
         accounts: await getAccounts(),
