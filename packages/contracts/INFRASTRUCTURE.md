@@ -37,7 +37,7 @@ erDiagram
         addr _0x52119BB73Ac8bdbE59aF0EEdFd4E4Ee6887Ed2EA
     }
     EngineFactory {
-        addr _0x000000AB1a0786eE8c71516d9AbB8a36fbdDb7CB
+        addr OLD_0x000000AB1a0786eE8c71516d9AbB8a36fbdDb7CB
     }
     CoreRegistry {
         addr _0x2eE7B9bB2E038bE7323A119701A191c030A61ec6
@@ -61,7 +61,7 @@ erDiagram
         addr _0xD3bE6e30D901fa2e2Fd7f3Ebd23189f5376a4f9D
     }
     EngineFactory {
-        addr _0x000000da9D51CC51a50Dc296246075859b13ab0B
+        addr OLD_0x000000da9D51CC51a50Dc296246075859b13ab0B
     }
     CoreRegistry {
         addr _0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2
@@ -85,7 +85,7 @@ erDiagram
         addr _0x62DC3F6C7Bf5FA8A834E6B97dee3daB082873600
     }
     EngineFactory {
-        addr _0x000000E238ebffe826c960aB0b53B299CB4eBbE0
+        addr OLD_0x000000E238ebffe826c960aB0b53B299CB4eBbE0
     }
     CoreRegistry {
         addr _0xdAe755c2944Ec125a0D8D5CB082c22837593441a
@@ -109,7 +109,7 @@ erDiagram
         addr _0xbaD99DdBa319639e0e9FB2E42935BfE5b2a1B6a8
     }
     EngineFactory {
-        addr _0x000000A8398893f1A9B4a0d234a2eC4F8AFc5838
+        addr OLD_0x000000A8398893f1A9B4a0d234a2eC4F8AFc5838
     }
     CoreRegistry {
         addr _0xfeA4f2f4E45c255ceE626a1A994BB214039c2B9A
@@ -141,5 +141,7 @@ They are included here for reference purposes.
 
 | Contract/Library (network:Contract) | Address                                      |
 | ----------------------------------- | -------------------------------------------- |
-| mainnet:EngineFactory               | `0x00000000F82E4e6D5AB22D63050FCb2bF15eE95d` |
-| arbitrum:EngineFactory              | `0x000000bbAA3E36b60C06A92430D8956459c2Fd51` |
+| mainnet:EngineFactory (1)           | `0x000000AB1a0786eE8c71516d9AbB8a36fbdDb7CB` |
+| arbitrum:EngineFactory (1)          | `0x000000da9D51CC51a50Dc296246075859b13ab0B` |
+| mainnet:EngineFactory (0)           | `0x00000000F82E4e6D5AB22D63050FCb2bF15eE95d` |
+| arbitrum:EngineFactory (0)          | `0x000000bbAA3E36b60C06A92430D8956459c2Fd51` |
