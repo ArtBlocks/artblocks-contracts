@@ -17,10 +17,9 @@ import "@openzeppelin-5.0/contracts/access/Ownable.sol";
  * to read on-chain data stored by the Art Blocks BytecodeStorage libarary. This contract is intended to be updated
  * as new versions of the Art Blocks BytecodeStorage library are released, such that the Art Blocks community can
  * continue to read the bytecode of all existing and future Art Blocks contracts in a single location.
- * The exposed interface is simplified to only include the read string and read bytes functions, as well as support
- * for assets stored using SSTORE2 format.
- * Additional functionality, such as determining a contract's version, deployer, and other metadata, may be available
- * on the active BytecodeStorageReader contract.
+ * The exposed interface is simplified to only include the read string function.
+ * Additional functionality, such as alternate read methods or determining a contract's version, deployer, and other
+ * metadata, may be available on the active BytecodeStorageReader contract.
  */
 contract UniversalBytecodeStorageReader is
     Ownable,

@@ -2290,7 +2290,7 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
-     * Update the bytecode storage reader contract address, and emit corresponding event.
+     * @notice Update the bytecode storage reader contract address, and emit corresponding event.
      * @param _bytecodeStorageReaderContract New bytecode storage reader contract address.
      */
     function _updateBytecodeStorageReaderContract(
@@ -2479,7 +2479,7 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
-     * Helper for calling bytecodeStorageReaderContract reader method;
+     * @notice Helper for calling bytecodeStorageReaderContract reader method;
      * added for bytecode size reduction purposes.
      */
     function _readFromBytecode(

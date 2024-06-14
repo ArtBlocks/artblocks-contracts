@@ -7,8 +7,6 @@ import {IBytecodeStorageReaderV2} from "../interfaces/v0.8.x/IBytecodeStorageRea
 
 import {BytecodeStorageReader} from "../libs/v0.8.x/BytecodeStorageV2.sol";
 
-import "@openzeppelin-5.0/contracts/access/Ownable.sol";
-
 /**
  * @title Art Blocks Bytecode Storage Reader Contract V2
  * @author Art Blocks Inc.
