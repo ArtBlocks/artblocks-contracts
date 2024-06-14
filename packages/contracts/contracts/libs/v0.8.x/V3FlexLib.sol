@@ -4,8 +4,9 @@
 pragma solidity ^0.8.0;
 
 import {IGenArt721CoreContractV3_Engine_Flex} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
+import {IBytecodeStorageReader_Base} from "../../interfaces/v0.8.x/IBytecodeStorageReader_Base.sol";
 
-import {BytecodeStorageWriter, BytecodeStorageReader} from "./BytecodeStorageV2.sol";
+import {BytecodeStorageWriter} from "./BytecodeStorageV2.sol";
 
 /**
  * @title Art Blocks V3 Engine Flex - External Helper Library
@@ -502,10 +503,15 @@ library V3FlexLib {
      * If the dependencyType is ONCHAIN, the `data` field will contain the extrated bytecode data and `cid`
      * will be an empty string. Conversly, for any other dependencyType, the `data` field will be an empty string
      * and the `bytecodeAddress` will point to the zero address.
+     * @param _projectId Project to get external asset dependency for.
+     * @param _index Index of the external asset dependency.
+     * @param _bytecodeStorageReaderContract The bytecode storage reader contract to use for reading on-chain
+     * dependencies; only used if the dependency is of type ONCHAIN.
      */
     function projectExternalAssetDependencyByIndex(
         uint256 _projectId,
-        uint256 _index
+        uint256 _index,
+        IBytecodeStorageReader_Base _bytecodeStorageReaderContract
     )
         external
         view
@@ -533,7 +539,7 @@ library V3FlexLib {
                         IGenArt721CoreContractV3_Engine_Flex
                             .ExternalAssetDependencyType
                             .ONCHAIN)
-                        ? BytecodeStorageReader.readFromBytecode(
+                        ? _bytecodeStorageReaderContract.readFromBytecode(
                             _bytecodeAddress
                         )
                         : ""
