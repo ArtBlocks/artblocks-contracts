@@ -327,6 +327,19 @@ for (const coreContractName of coreContractsToTest) {
           .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_SPLIT_PROVIDER);
       });
 
+      it("emits 'bytecode storage reader'", async function () {
+        const config = await loadFixture(_beforeEach);
+        // emits expected event arg(s)
+        const newReaderAddress = config.accounts.additional.address; // arbitrary, non-zero address
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateBytecodeStorageReaderContract(newReaderAddress)
+        )
+          .to.emit(config.genArt721Core, "PlatformUpdated")
+          .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_BYTECODE_STORAGE_READER);
+      });
+
       it("emits 'onChainGeneratorAddress'", async function () {
         const config = await loadFixture(_beforeEach);
         // emits expected event arg(s)

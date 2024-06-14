@@ -152,6 +152,10 @@ export const PLATFORM_UPDATED_FIELDS = {
     32
   ),
   FIELD_SPLIT_PROVIDER: ethers.utils.hexZeroPad(ethers.utils.hexlify(10), 32),
+  FIELD_BYTECODE_STORAGE_READER: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(11),
+    32
+  ),
 };
 
 export const PROJECT_UPDATED_FIELDS = {

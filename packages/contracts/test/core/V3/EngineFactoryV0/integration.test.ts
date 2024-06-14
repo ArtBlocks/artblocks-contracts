@@ -352,6 +352,8 @@ describe(`EngineFactoryV0 Integration`, async function () {
       expect(randomizerContract).to.equal(
         config?.validEngineConfigurationExistingAdminACL?.randomizerContract
       );
+      const configuredReader = await engine.bytecodeStorageReaderContract();
+      expect(configuredReader).to.equal(config.universalReader.address);
       // check ownership belongs to admin acl contract
       const ownerAddress = await engine.owner();
       expect(ownerAddress).to.equal(config?.adminACL?.address);

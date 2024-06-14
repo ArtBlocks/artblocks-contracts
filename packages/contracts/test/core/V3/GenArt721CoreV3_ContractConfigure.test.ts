@@ -435,6 +435,54 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
+    describe("updateBytecodeStorageReaderContract", function () {
+      it("does not allow non-admin to call", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .updateBytecodeStorageReaderContract(config.accounts.artist.address)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyAdminACL);
+      });
+
+      it("does allow admin to call", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateBytecodeStorageReaderContract(config.splitProvider.address);
+      });
+
+      it("reverts when input is zero address", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateBytecodeStorageReaderContract(constants.ZERO_ADDRESS)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
+      });
+
+      it("updates state", async function () {
+        const config = await loadFixture(_beforeEach);
+        const newSplitProviderAddress = config.accounts.additional2.address; // arbitrary, non-zero address
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateBytecodeStorageReaderContract(newSplitProviderAddress);
+        const updatedReader =
+          await config.genArt721Core.bytecodeStorageReaderContract();
+        expect(updatedReader).to.equal(newSplitProviderAddress);
+      });
+    });
+
     describe("syncProviderSecondaryForProjectToDefaults", function () {
       it("does not allow non-admin to call", async function () {
         const config = await loadFixture(_beforeEach);
