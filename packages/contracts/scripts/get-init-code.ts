@@ -10,17 +10,19 @@ type T_Inputs = {
 
 // EXAMPLE
 // const inputs: T_Inputs = {
-//   contractName: "V3FlexLib",
+//   contractName: "GenArt721CoreV3_Engine",
 //   args: [],
 //   libraries: {
 //     "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
 //     "0x000000000016A5A5ff2FA7799C4BEe89bA59B74e",
-//   },
+// },
 // };
 
 const inputs: T_Inputs = {
-  contractName: "",
-  args: [],
+  contractName: "UniversalBytecodeStorageReader",
+  args: [
+    "0x52119BB73Ac8bdbE59aF0EEdFd4E4Ee6887Ed2EA", // owner of this factory
+  ],
   libraries: {},
 };
 

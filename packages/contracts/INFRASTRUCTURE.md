@@ -11,11 +11,11 @@ The following contracts are deployed to all Art Blocks supported networks and ar
 | Contract/Library                                     | Address                                      |
 | ---------------------------------------------------- | -------------------------------------------- |
 | Library: BytecodeStorageV2:BytecodeStorageReader     | `0x000000000016A5A5ff2FA7799C4BEe89bA59B74e` |
-| BytecodeStorageReaderContractV2                      | `0xTBD`                                      |
-| V3FlexLib (used v3.2.4 - current)                    | `0xNEW`                                      |
+| BytecodeStorageReaderContractV2                      | `0x00000000163FA16098800B2B2e4A5F96949F413b` |
+| V3FlexLib (used v3.2.5 - current)                    | `0x00000000Db6f2EBe627260e411E6c973B7c48A62` |
 | SplitProviderV0                                      | `0x0000000004B100B47f061968a387c82702AFe946` |
-| Implementation: GenArt721CoreV3_Engine (v3.2.4)      | `0xNEW`                                      |
-| Implementation: GenArt721CoreV3_Engine_Flex (v3.2.5) | `0xNEW`                                      |
+| Implementation: GenArt721CoreV3_Engine (v3.2.4)      | `0x00000000559cA3F3f1279C0ec121c302ed010457` |
+| Implementation: GenArt721CoreV3_Engine_Flex (v3.2.5) | `0x000000008DD9A7CD3f4A267A88082d4a1E2f6553` |
 
 ## Permissioned deployments
 
@@ -43,7 +43,7 @@ erDiagram
         addr _0x2eE7B9bB2E038bE7323A119701A191c030A61ec6
     }
     UniversalBytecodeStorageReader {
-        addr _0xTBD
+        addr _0x000000000000A791ABed33872C44a3D215a3743B
     }
 ```
 
@@ -115,7 +115,7 @@ erDiagram
         addr _0xfeA4f2f4E45c255ceE626a1A994BB214039c2B9A
     }
     UniversalBytecodeStorageReader {
-        addr _0xTBD
+        addr _0x00000084BB74DbD7A45fC08Dc5f7c986BbFD0a66
     }
 ```
 
@@ -127,7 +127,7 @@ They are included here for reference purposes.
 
 | Contract/Library                                     | Address                                      |
 | ---------------------------------------------------- | -------------------------------------------- |
-| V3FlexLib (used v3.2.0 - v3.2.2)                     | `0x0000000006FD94B22fb33164322019750E854f96` |
+| V3FlexLib (used v3.2.1 - v3.2.3)                     | `0x0000000006FD94B22fb33164322019750E854f96` |
 | Implementation: GenArt721CoreV3_Engine (v3.2.2)      | `0x000000F74f006CE6480042f001c45c928D1Ae6E7` |
 | Implementation: GenArt721CoreV3_Engine_Flex (v3.2.3) | `0x0066009B13b8DfDabbE07800ee00004b008257D9` |
 | Implementation: GenArt721CoreV3_Engine (v3.2.0)      | `0x00000000AEf91971cc6251936Ec6568B23b55342` |
@@ -139,9 +139,9 @@ The following contracts were deployed by Art Blocks on various production networ
 
 They are included here for reference purposes.
 
-| Contract/Library (network:Contract) | Address                                      |
-| ----------------------------------- | -------------------------------------------- |
-| mainnet:EngineFactory (1)           | `0x000000AB1a0786eE8c71516d9AbB8a36fbdDb7CB` |
-| arbitrum:EngineFactory (1)          | `0x000000da9D51CC51a50Dc296246075859b13ab0B` |
-| mainnet:EngineFactory (0)           | `0x00000000F82E4e6D5AB22D63050FCb2bF15eE95d` |
-| arbitrum:EngineFactory (0)          | `0x000000bbAA3E36b60C06A92430D8956459c2Fd51` |
+| Contract/Library (network:Contract)     | Address                                      |
+| --------------------------------------- | -------------------------------------------- |
+| mainnet:EngineFactory (v3.2.2, v3.2.3)  | `0x000000AB1a0786eE8c71516d9AbB8a36fbdDb7CB` |
+| arbitrum:EngineFactory (v3.2.2, v3.2.3) | `0x000000da9D51CC51a50Dc296246075859b13ab0B` |
+| mainnet:EngineFactory (v3.2.0, v3.2.1)  | `0x00000000F82E4e6D5AB22D63050FCb2bF15eE95d` |
+| arbitrum:EngineFactory (v3.2.0, v3.2.1) | `0x000000bbAA3E36b60C06A92430D8956459c2Fd51` |

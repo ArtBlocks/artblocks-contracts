@@ -1,4 +1,6 @@
-# Deployments: V3FlexLib
+# Deployments: V3FlexLib (DEPRECATED)
+
+## This deployment of V3FlexLib has been deprecated in favor of more recent versions. It is used on core contracts v3.2.0 to v3.2.3.
 
 ## Description
 
