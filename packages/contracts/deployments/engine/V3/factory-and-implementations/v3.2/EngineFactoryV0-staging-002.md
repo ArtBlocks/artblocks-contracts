@@ -30,4 +30,4 @@ Deployed to address: `0x0000A9AA9b00F46c009f15b3F68122e1878D7d18`
 
 ### Deployment transactions:
 
-- https://sepolia.etherscan.io/tx/
+- https://sepolia.etherscan.io/tx/0xe640fc0160e93da1ec8e3b1849394cffed213e428831f39b4cbdc4bf7362f164

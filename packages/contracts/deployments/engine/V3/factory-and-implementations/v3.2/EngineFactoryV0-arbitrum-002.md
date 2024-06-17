@@ -17,7 +17,7 @@ const inputs: T_Inputs = {
     "0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2", // core registry
     "0xD3bE6e30D901fa2e2Fd7f3Ebd23189f5376a4f9D", // owner of this factory
     "https://token.arbitrum.artblocks.io/", // token uri host
-    "0x00000000be7e0ff547F64F604E7c4200D868213c", // universal bytecode storage reader
+    "0x000000005795aA93c8E5De234Ff0DE0000C98946", // universal bytecode storage reader
   ],
   libraries: {},
 };
@@ -25,9 +25,9 @@ const inputs: T_Inputs = {
 
 ## Results:
 
-salt: `0x00df4e8d293d57718aac0b18cbfbe128c5d484ef27763d86df9b54c235000040`
-Deployed to address: `0x0000AAB494622288D964A3a577400c00cfe69700`
+salt: `0x00df4e8d293d57718aac0b18cbfbe128c5d484efc3b5cc7cfcd14d68ce0200e0`
+Deployed to address: `0x000000007566E6566771d28E91bD465bEE8426a5`
 
 ### Deployment transaction:
 
-- https://arbiscan.io/tx/
+- https://arbiscan.io/tx/0x0cb3ea534e6ab501f607e2260dad8c60009a0828f87a7b9e57963ae9753cd0ed

@@ -18,7 +18,7 @@ const inputs: T_Inputs = {
 };
 ```
 
-> note: follow-on action taken to set the active versioned reader contract, transition owner to main admin multisig.
+> note: follow-on action taken to set the active versioned reader contract to `0x00000000163FA16098800B2B2e4A5F96949F413b`
 
 ## Results:
 
@@ -27,4 +27,4 @@ Deployed to address: `0x000000000000A791ABed33872C44a3D215a3743B`
 
 ### Deployment transaction:
 
-- https://etherscan.io/tx/
+- https://etherscan.io/tx/0x3d57594ddfd7d5d5066df62207175e8cde0fe7e57d25858dc934e4c06f7a29a3

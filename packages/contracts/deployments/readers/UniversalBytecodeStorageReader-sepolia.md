@@ -18,7 +18,7 @@ const inputs: T_Inputs = {
 };
 ```
 
-> note: follow-on action taken to set the active versioned reader contract.
+> note: follow-on action taken to set the active versioned reader contract to `0x00000000163FA16098800B2B2e4A5F96949F413b`
 
 ## Results:
 
@@ -27,4 +27,4 @@ Deployed to address: `0x000000069EbaecF0d656897bA5527f2145560086`
 
 ### Deployment transaction:
 
-- https://sepolia.etherscan.io/tx/
+- https://sepolia.etherscan.io/tx/0x76588a492c2039d93090ffdd3089873393a638924c01823ba5d93bcff3fb8270

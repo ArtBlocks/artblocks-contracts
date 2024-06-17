@@ -12,19 +12,19 @@ The following were the inputs used to get initcode for deployment, via `scripts/
 const inputs: T_Inputs = {
   contractName: "UniversalBytecodeStorageReader",
   args: [
-    "0x7B42382faf5663FdE726E36976C4EDE5A546623a", // owner of this factory
+    "0xD3bE6e30D901fa2e2Fd7f3Ebd23189f5376a4f9D", // owner of this factory
   ],
   libraries: {},
 };
 ```
 
-> note: follow-on action taken to set the active versioned reader contract.
+> note: follow-on action taken to set the active versioned reader contract to `0x00000000163FA16098800B2B2e4A5F96949F413b`
 
 ## Results:
 
-salt: `0xd3be6e30d901fa2e2fd7f3ebd23189f5376a4f9dee54ba1422f144eb6b0700e0`
-Deployed to address: `0x00000000be7e0ff547F64F604E7c4200D868213c`
+salt: `0xd3be6e30d901fa2e2fd7f3ebd23189f5376a4f9d92e5f42991d7f0d4c76e00c0`
+Deployed to address: `0x000000005795aA93c8E5De234Ff0DE0000C98946`
 
 ### Deployment transaction:
 
-- https://
+- https://arbiscan.io/tx/0x40ea9564ec29a323870bc437277c4e35735910e908f093f1cf9cb0c4e36154b7

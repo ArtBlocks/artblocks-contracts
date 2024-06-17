@@ -30,4 +30,4 @@ Deployed to address: `0x000000004058B5159ABB5a3Dd8cf775A7519E75F`
 
 ### Deployment transactions:
 
-- https://etherscan.io/tx/
+- https://etherscan.io/tx/0xcdd57668a6dbdc96a23064a8c9d8235bfafddd48ba9aac06d38293a3fb18ab37
