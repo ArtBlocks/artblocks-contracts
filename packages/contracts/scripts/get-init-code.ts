@@ -19,10 +19,8 @@ type T_Inputs = {
 // };
 
 const inputs: T_Inputs = {
-  contractName: "UniversalBytecodeStorageReader",
-  args: [
-    "0x52119BB73Ac8bdbE59aF0EEdFd4E4Ee6887Ed2EA", // owner of this factory
-  ],
+  contractName: "",
+  args: [],
   libraries: {},
 };
 
