@@ -1,10 +1,8 @@
-# Deployments: V3FlexLib
-
-This deployment of V3FlexLib is used on core contracts v3.2.4 and on.
+# Deployments: BytecodeStorageReaderContractV2
 
 ## Description
 
-The keyless create2 factory was used to deterministically and permissionlessly deploy the V3FlexLib contract to any network.
+The keyless create2 factory was used to deterministically and permissionlessly deploy the BytecodeStorageReaderV2 contract to any network.
 
 The following were the inputs used to get initcode for deployment, via `scripts/get-init-code.ts`:
 
