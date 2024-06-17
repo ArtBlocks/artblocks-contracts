@@ -2,7 +2,7 @@
 
 ## Description
 
-The keyless create2 factory was used to deterministically deploy the UniversalBytecodeStorageReader, permissioned to Art Blocks owned multisignature wallet `0xbaD99DdBa319639e0e9FB2E42935BfE5b2a1B6a8`.
+The keyless create2 factory was used to deterministically deploy the UniversalBytecodeStorageReader, permissioned to Art Blocks owned multisignature wallet `0x62DC3F6C7Bf5FA8A834E6B97dee3daB082873600`.
 
 _Note: The contract is intentionally deployed to different addresses on different networks/environments, to securely deploy from multisig and minimize the chance of spoofing on future networks._
 
@@ -12,7 +12,7 @@ The following were the inputs used to get initcode for deployment, via `scripts/
 const inputs: T_Inputs = {
   contractName: "UniversalBytecodeStorageReader",
   args: [
-    "0xbaD99DdBa319639e0e9FB2E42935BfE5b2a1B6a8", // owner of this factory
+    "0x62DC3F6C7Bf5FA8A834E6B97dee3daB082873600", // owner
   ],
   libraries: {},
 };
@@ -22,8 +22,8 @@ const inputs: T_Inputs = {
 
 ## Results:
 
-salt: `0xbad99ddba319639e0e9fb2e42935bfe5b2a1b6a871970b8ac50cf9b938010010`
-Deployed to address: `0x00000084BB74DbD7A45fC08Dc5f7c986BbFD0a66`
+salt: `0x62dc3f6c7bf5fa8a834e6b97dee3dab082873600374a86fbfb8e7ed5f8010020`
+Deployed to address: `0x000000069EbaecF0d656897bA5527f2145560086`
 
 ### Deployment transaction:
 

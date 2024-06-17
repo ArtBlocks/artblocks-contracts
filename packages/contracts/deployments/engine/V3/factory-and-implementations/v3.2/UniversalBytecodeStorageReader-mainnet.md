@@ -12,13 +12,13 @@ The following were the inputs used to get initcode for deployment, via `scripts/
 const inputs: T_Inputs = {
   contractName: "UniversalBytecodeStorageReader",
   args: [
-    "0x52119BB73Ac8bdbE59aF0EEdFd4E4Ee6887Ed2EA", // owner of this factory
+    "0x52119BB73Ac8bdbE59aF0EEdFd4E4Ee6887Ed2EA", // owner
   ],
   libraries: {},
 };
 ```
 
-> note: follow-on action taken to set the active versioned reader contract.
+> note: follow-on action taken to set the active versioned reader contract, transition owner to main admin multisig.
 
 ## Results:
 

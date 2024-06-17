@@ -14,10 +14,10 @@ const inputs: T_Inputs = {
   args: [
     "0x00000000559cA3F3f1279C0ec121c302ed010457", // engine
     "0x000000008DD9A7CD3f4A267A88082d4a1E2f6553", // flex
-    "0xfeA4f2f4E45c255ceE626a1A994BB214039c2B9A", // core registry
-    "0xbaD99DdBa319639e0e9FB2E42935BfE5b2a1B6a8", // owner of this factory
+    "0xdAe755c2944Ec125a0D8D5CB082c22837593441a", // core registry
+    "0x62DC3F6C7Bf5FA8A834E6B97dee3daB082873600", // owner of this factory
     "https://token.sepolia.artblocks.io/", // token uri host
-    "0x000000069EbaecF0d656897bA5527f2145560086", // universal bytecode storage reader
+    "0x000000069EbaecF0d656897bA5527f2145560086", // universal bytecode
   ],
   libraries: {},
 };
@@ -25,9 +25,9 @@ const inputs: T_Inputs = {
 
 ## Results:
 
-salt: `0x00df4e8d293d57718aac0b18cbfbe128c5d484efef612dfa3d5c4c58000000c0`
-Deployed to address: `0x000000C969c34e95C9b9F24ea7bD597Af554a1c2`
+salt: `0x00df4e8d293d57718aac0b18cbfbe128c5d484ef46561b3672b68dad50000000`
+Deployed to address: `0x0000A9AA9b00F46c009f15b3F68122e1878D7d18`
 
-### Deployment transaction:
+### Deployment transactions:
 
 - https://sepolia.etherscan.io/tx/
