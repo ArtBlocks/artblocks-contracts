@@ -38,7 +38,6 @@ erDiagram
     }
     EngineFactory {
         addr _0x000000004058B5159ABB5a3Dd8cf775A7519E75F
-        addr OLD_0x000000AB1a0786eE8c71516d9AbB8a36fbdDb7CB
     }
     CoreRegistry {
         addr _0x2eE7B9bB2E038bE7323A119701A191c030A61ec6
@@ -62,14 +61,13 @@ erDiagram
         addr _0xD3bE6e30D901fa2e2Fd7f3Ebd23189f5376a4f9D
     }
     EngineFactory {
-        addr _0x0000AAB494622288D964A3a577400c00cfe69700
-        addr OLD_0x000000da9D51CC51a50Dc296246075859b13ab0B
+        addr _0x000000007566E6566771d28E91bD465bEE8426a5
     }
     CoreRegistry {
         addr _0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2
     }
     UniversalBytecodeStorageReader {
-        addr _0x00000000be7e0ff547F64F604E7c4200D868213c
+        addr _0x000000005795aA93c8E5De234Ff0DE0000C98946
     }
 ```
 
@@ -88,7 +86,6 @@ erDiagram
     }
     EngineFactory {
         addr _0x0000A9AA9b00F46c009f15b3F68122e1878D7d18
-        addr OLD_0x000000E238ebffe826c960aB0b53B299CB4eBbE0
     }
     CoreRegistry {
         addr _0xdAe755c2944Ec125a0D8D5CB082c22837593441a
@@ -113,7 +110,6 @@ erDiagram
     }
     EngineFactory {
         addr _0x000000C969c34e95C9b9F24ea7bD597Af554a1c2
-        addr OLD_0x000000A8398893f1A9B4a0d234a2eC4F8AFc5838
     }
     CoreRegistry {
         addr _0xfeA4f2f4E45c255ceE626a1A994BB214039c2B9A
