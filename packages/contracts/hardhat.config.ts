@@ -197,6 +197,6 @@ module.exports = {
     timeout: 100000,
   },
   sourcify: {
-    enabled: true,
+    enabled: false, // would like to enable this but it's not working
   },
 };
