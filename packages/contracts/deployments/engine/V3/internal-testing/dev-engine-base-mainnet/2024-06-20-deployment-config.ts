@@ -46,8 +46,8 @@ export const deployConfigDetailsArray = [
   {
     // 0 for Engine, 1 for Engine Flex
     engineCoreContractType: 1,
-    tokenName: "DEV TEST | 0",
-    tokenTicker: "DEV_TEST_0",
+    tokenName: "DEV TEST | FLEX",
+    tokenTicker: "DEV_TEST_FLEX",
     // see /scripts/util/constants.ts::MAIN_CONFIG for the correct address if prod deployment
     renderProviderAddress: "0xc8D1099702cB95baf954a4E3e2bEaF883314f464",
     platformProviderAddress: "0x0000000000000000000000000000000000000000",
