@@ -283,7 +283,7 @@ contract GenArt721CoreV3_Engine_Flex is
     /// version & type of this core contract
     bytes32 constant CORE_VERSION = "v3.2.5";
 
-    function coreVersion() external pure returns (string memory) {
+    function coreVersion() external pure virtual returns (string memory) {
         return CORE_VERSION.toString();
     }
 

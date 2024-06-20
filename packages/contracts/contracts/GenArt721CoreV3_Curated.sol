@@ -6,6 +6,8 @@ pragma solidity 0.8.22;
 import {GenArt721CoreV3_Engine} from "./engine/V3/GenArt721CoreV3_Engine.sol";
 import {EngineConfiguration} from "./interfaces/v0.8.x/IGenArt721CoreContractV3_Engine.sol";
 
+import "./libs/v0.8.x/Bytes32Strings.sol";
+
 /**
  * @title Art Blocks Curated ERC-721 core contract, V3.2
  * @author Art Blocks Inc.
@@ -18,6 +20,17 @@ import {EngineConfiguration} from "./interfaces/v0.8.x/IGenArt721CoreContractV3_
  * See the Art Blocks Engine contract for additional applicable documentation.
  */
 contract GenArt721CoreV3_Curated is GenArt721CoreV3_Engine {
+    using Bytes32Strings for bytes32;
+
+    /// override patch version of this core contract
+    // @dev this is a constant value that is used to override the inherited core version CORE_VERSION
+    bytes32 constant CORE_VERSION_OVERRIDE = "v3.2.6";
+
+    // @dev overridden core version is returned instead of the inherited core version
+    function coreVersion() external pure override returns (string memory) {
+        return CORE_VERSION_OVERRIDE.toString();
+    }
+
     /**
      * @notice Event emitted when the Art Blocks Curation Registry contract is updated.
      * @param artblocksCurationRegistryAddress Address of Art Blocks Curation Registry contract.
