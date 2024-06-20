@@ -186,7 +186,7 @@ const MAIN_CONFIG: T_MAIN_CONFIG = {
   },
   base: {
     base: {
-      engineFactory: "0xtbd",
+      engineFactory: "0x00000BA55cae9d000000b156875D91854124fd7e",
       sharedMinterFilter: "0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5",
       sharedRandomizer: "0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98",
       prodRenderProviderPaymentAddress:
