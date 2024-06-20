@@ -71,6 +71,30 @@ erDiagram
     }
 ```
 
+### Base
+
+```mermaid
+---
+title: Base setup
+---
+erDiagram
+    DeployerMultisig ||--|| EngineFactory : owns
+    EngineFactory ||--|| CoreRegistry : owns
+    EngineFactory ||--|| UniversalBytecodeStorageReader : initializes-cores-with
+    DeployerMultisig {
+        addr _base:0x62F8fa18C079C20743F45E74925F80658c68f7b3
+    }
+    EngineFactory {
+        addr _0x00000BA55cae9d000000b156875D91854124fd7e
+    }
+    CoreRegistry {
+        addr _0x0xe2bC24f74ed326CA4deB75753942731A566ebC83
+    }
+    UniversalBytecodeStorageReader {
+        addr _0x00000000000E85B0806ABB37B6C9d80A7100A0C5
+    }
+```
+
 ### Sepolia (artist staging)
 
 ```mermaid

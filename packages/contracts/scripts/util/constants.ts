@@ -12,6 +12,7 @@ export const DELEGATION_REGISTRY_ADDRESSES = {
   sepolia: "0x00000000000076A84feF008CDAbe6409d2FE638B",
   arbitrum: "0x00000000000076A84feF008CDAbe6409d2FE638B",
   "arbitrum-sepolia": "0x00000000000076A84feF008CDAbe6409d2FE638B",
+  base: "0x00000000000076A84feF008CDAbe6409d2FE638B",
 };
 
 /**
@@ -181,6 +182,15 @@ const MAIN_CONFIG: T_MAIN_CONFIG = {
       sharedRandomizer: "0x6a5976391E708fBf918c3786cd1FcbB88732fbc1",
       prodRenderProviderPaymentAddress:
         "0x23636eAa2605B9c4a988E56d2093b488793f1C42",
+    },
+  },
+  base: {
+    base: {
+      engineFactory: "0x00000BA55cae9d000000b156875D91854124fd7e",
+      sharedMinterFilter: "0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5",
+      sharedRandomizer: "0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98",
+      prodRenderProviderPaymentAddress:
+        "0xc8D1099702cB95baf954a4E3e2bEaF883314f464",
     },
   },
   sepolia: {

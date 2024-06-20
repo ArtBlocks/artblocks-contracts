@@ -25,4 +25,5 @@ Deploys to address: `0x00000000Db6f2EBe627260e411E6c973B7c48A62`
 
 - sepolia: https://sepolia.etherscan.io/tx/0xd92ad866254d2a79ce62f842367c73e2697ce58e82a6d8b1784634ff21bc65df
 - arbitrum: https://arbiscan.io/tx/0x530d1a0aa4a00a4defad3d7aaab0a143cb55ef7145c8db68dd7a0d2cecd1c39e
+- base: https://basescan.org/tx/0xf7e2ad0dc4cb064e334c99633cb74a07fac75c41c7a481ca73a06ad6955b3dd5
 - mainnet: https://etherscan.io/tx/0x64a64ce425e8d61bb627daffd791b60de275d46d0d9457716eb6f80e7244f135
