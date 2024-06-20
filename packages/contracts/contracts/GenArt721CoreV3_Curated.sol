@@ -45,16 +45,20 @@ contract GenArt721CoreV3_Curated is GenArt721CoreV3_Engine {
      * @param engineConfiguration Configuration for the engine contract.
      * @param adminACLContract_ Address of the admin ACL contract.
      * @param defaultBaseURIHost Default base URI host for token URIs.
+     * @param bytecodeStorageReaderContract_ Address of the bytecode storage reader contract to be used by this
+     * contract.
      */
     constructor(
         EngineConfiguration memory engineConfiguration,
         address adminACLContract_,
-        string memory defaultBaseURIHost
+        string memory defaultBaseURIHost,
+        address bytecodeStorageReaderContract_
     ) {
         // input validation generally performed by the engine factory
         _onlyNonZeroAddress(engineConfiguration.renderProviderAddress);
         _onlyNonZeroAddress(engineConfiguration.randomizerContract);
         _onlyNonZeroAddress(adminACLContract_);
+        _onlyNonZeroAddress(bytecodeStorageReaderContract_);
         require(
             bytes(defaultBaseURIHost).length > 0,
             "GenArt721CoreV3_Curated: defaultBaseURIHost must be non-empty"
@@ -84,7 +88,8 @@ contract GenArt721CoreV3_Curated is GenArt721CoreV3_Engine {
         _initialize({
             engineConfiguration: engineConfiguration,
             adminACLContract_: adminACLContract_,
-            defaultBaseURIHost: defaultBaseURIHost
+            defaultBaseURIHost: defaultBaseURIHost,
+            bytecodeStorageReaderContract_: bytecodeStorageReaderContract_
         });
 
         // override default base URI to be curated format instead of Engine (no address required for curated)
@@ -98,7 +103,8 @@ contract GenArt721CoreV3_Curated is GenArt721CoreV3_Engine {
     function initialize(
         EngineConfiguration memory /*engineConfiguration*/,
         address /*adminACLContract_*/,
-        string memory /*defaultBaseURIHost*/
+        string memory /*defaultBaseURIHost*/,
+        address /*bytecodeStorageReaderContract_*/
     ) external pure override {
         // revert - initialization for this contract is performed in the constructor
         // @dev note that the initialize function would revert without this override, but it is included for clarity
