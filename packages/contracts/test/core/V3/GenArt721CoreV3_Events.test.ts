@@ -112,12 +112,7 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.deployer)
           .deploy();
 
-        const flexLibraryFactory = await ethers.getContractFactory(
-          "V3FlexLib",
-          {
-            libraries: { BytecodeStorageReader: library.address },
-          }
-        );
+        const flexLibraryFactory = await ethers.getContractFactory("V3FlexLib");
         const flexLibrary = await flexLibraryFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
@@ -140,6 +135,7 @@ for (const coreContractName of coreContractsToTest) {
           coreRegistry?.address,
           config.accounts.deployer.address, // owner
           DEFAULT_BASE_URI,
+          config.universalReader.address,
         ]);
         // transfer ownership of core registry to engine factory
         await coreRegistry
@@ -218,12 +214,7 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.deployer)
           .deploy();
 
-        const flexLibraryFactory = await ethers.getContractFactory(
-          "V3FlexLib",
-          {
-            libraries: { BytecodeStorageReader: library.address },
-          }
-        );
+        const flexLibraryFactory = await ethers.getContractFactory("V3FlexLib");
         const flexLibrary = await flexLibraryFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
@@ -246,6 +237,7 @@ for (const coreContractName of coreContractsToTest) {
           coreRegistry?.address,
           config.accounts.deployer.address, // owner
           DEFAULT_BASE_URI,
+          config.universalReader.address,
         ]);
         // transfer ownership of core registry to engine factory
         await coreRegistry
@@ -333,6 +325,19 @@ for (const coreContractName of coreContractsToTest) {
         )
           .to.emit(config.genArt721Core, "PlatformUpdated")
           .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_SPLIT_PROVIDER);
+      });
+
+      it("emits 'bytecode storage reader'", async function () {
+        const config = await loadFixture(_beforeEach);
+        // emits expected event arg(s)
+        const newReaderAddress = config.accounts.additional.address; // arbitrary, non-zero address
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateBytecodeStorageReaderContract(newReaderAddress)
+        )
+          .to.emit(config.genArt721Core, "PlatformUpdated")
+          .withArgs(PLATFORM_UPDATED_FIELDS.FIELD_BYTECODE_STORAGE_READER);
       });
 
       it("emits 'onChainGeneratorAddress'", async function () {

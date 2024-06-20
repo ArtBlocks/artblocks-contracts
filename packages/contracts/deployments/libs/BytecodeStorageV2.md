@@ -28,3 +28,5 @@ Deploys to address: `0x000000000016A5A5ff2FA7799C4BEe89bA59B74e`
 - Arbitrum sepolia: https://sepolia.arbiscan.io/tx/0x123084d29987406106c0cedd5cc80db584322a577b152942882373816e8845de
 
 - Arbitrum mainnet: https://arbiscan.io/tx/0xd85f4fcae3143ba47296cf48986e150c3499747f9d1bbc24f85f02e20d11c36c
+
+- Base: https://basescan.org/tx/0xc54dbe3c38a6898303b9e90deac15a0c4e3bcaf14727025b350f8a696e84eaa7

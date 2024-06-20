@@ -196,4 +196,7 @@ module.exports = {
   mocha: {
     timeout: 100000,
   },
+  sourcify: {
+    enabled: false, // would like to enable this but it's not working
+  },
 };

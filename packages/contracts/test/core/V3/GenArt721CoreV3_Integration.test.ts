@@ -281,9 +281,9 @@ for (const coreContractName of coreContractsToTest) {
         } else if (coreContractName === "GenArt721CoreV3_Explorations") {
           throw new Error("Untested core contract version");
         } else if (coreContractName.includes("GenArt721CoreV3_Engine_Flex")) {
-          targetCoreVersion = "v3.2.3";
+          targetCoreVersion = "v3.2.5";
         } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          targetCoreVersion = "v3.2.2";
+          targetCoreVersion = "v3.2.4";
         } else {
           throw new Error("Unexpected core contract name");
         }

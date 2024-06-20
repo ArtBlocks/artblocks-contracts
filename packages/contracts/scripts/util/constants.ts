@@ -12,6 +12,7 @@ export const DELEGATION_REGISTRY_ADDRESSES = {
   sepolia: "0x00000000000076A84feF008CDAbe6409d2FE638B",
   arbitrum: "0x00000000000076A84feF008CDAbe6409d2FE638B",
   "arbitrum-sepolia": "0x00000000000076A84feF008CDAbe6409d2FE638B",
+  base: "0x00000000000076A84feF008CDAbe6409d2FE638B",
 };
 
 /**
@@ -167,7 +168,7 @@ type T_MAIN_CONFIG = {
 const MAIN_CONFIG: T_MAIN_CONFIG = {
   mainnet: {
     mainnet: {
-      engineFactory: "0x000000AB1a0786eE8c71516d9AbB8a36fbdDb7CB",
+      engineFactory: "0x000000004058B5159ABB5a3Dd8cf775A7519E75F",
       sharedMinterFilter: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
       sharedRandomizer: "0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91",
       prodRenderProviderPaymentAddress:
@@ -176,21 +177,30 @@ const MAIN_CONFIG: T_MAIN_CONFIG = {
   },
   arbitrum: {
     arbitrum: {
-      engineFactory: "0x000000da9D51CC51a50Dc296246075859b13ab0B",
+      engineFactory: "0x000000007566E6566771d28E91bD465bEE8426a5",
       sharedMinterFilter: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
       sharedRandomizer: "0x6a5976391E708fBf918c3786cd1FcbB88732fbc1",
       prodRenderProviderPaymentAddress:
         "0x23636eAa2605B9c4a988E56d2093b488793f1C42",
     },
   },
+  base: {
+    base: {
+      engineFactory: "0x00000BA55cae9d000000b156875D91854124fd7e",
+      sharedMinterFilter: "0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5",
+      sharedRandomizer: "0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98",
+      prodRenderProviderPaymentAddress:
+        "0xc8D1099702cB95baf954a4E3e2bEaF883314f464",
+    },
+  },
   sepolia: {
     staging: {
-      engineFactory: "0x000000E238ebffe826c960aB0b53B299CB4eBbE0",
+      engineFactory: "0x0000A9AA9b00F46c009f15b3F68122e1878D7d18",
       sharedMinterFilter: "0xa07f47c30C262adcC263A4D44595972c50e04db7",
       sharedRandomizer: "0x28f2D3805652FB5d359486dFfb7D08320D403240",
     },
     dev: {
-      engineFactory: "0x000000A8398893f1A9B4a0d234a2eC4F8AFc5838",
+      engineFactory: "0x000000C969c34e95C9b9F24ea7bD597Af554a1c2",
       sharedMinterFilter: "0x29e9f09244497503f304FA549d50eFC751D818d2",
       sharedRandomizer: "0xA6F7e62F3B52552f79b2Baa2858a1DB18016c09B",
     },

@@ -8,6 +8,7 @@ import { Contract, BigNumber } from "ethers";
 import { DEFAULT_BASE_URI, ONE_MINUTE } from "./constants";
 import { SplitProviderV0 } from "../../scripts/contracts/split/split-provider/SplitProviderV0";
 import { OwnedCreate2FactoryV0 } from "../../scripts/contracts";
+import { UniversalBytecodeStorageReader } from "../../scripts/contracts";
 
 export type TestAccountsArtBlocks = {
   deployer: SignerWithAddress;
@@ -95,6 +96,7 @@ export type T_Config = {
   splitter?: Contract;
   splitProvider?: SplitProviderV0;
   ownedCreate2Factory?: OwnedCreate2FactoryV0;
+  universalReader?: UniversalBytecodeStorageReader;
   // split configs
   validSplit?: T_Split;
   invalidSplit?: T_Split;
@@ -152,6 +154,10 @@ export const PLATFORM_UPDATED_FIELDS = {
     32
   ),
   FIELD_SPLIT_PROVIDER: ethers.utils.hexZeroPad(ethers.utils.hexlify(10), 32),
+  FIELD_BYTECODE_STORAGE_READER: ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(11),
+    32
+  ),
 };
 
 export const PROJECT_UPDATED_FIELDS = {
@@ -356,9 +362,7 @@ export async function deployWithStorageLibraryAndGet(
     const engineImplementation = await engineContractCoreFactory
       .connect(config.accounts.deployer)
       .deploy();
-    const flexLibraryFactory = await ethers.getContractFactory("V3FlexLib", {
-      libraries: { BytecodeStorageReader: library.address },
-    });
+    const flexLibraryFactory = await ethers.getContractFactory("V3FlexLib");
     const flexLibrary = await flexLibraryFactory
       .connect(config.accounts.deployer)
       .deploy(/* no args for library ever */);
@@ -375,12 +379,32 @@ export async function deployWithStorageLibraryAndGet(
     const engineFlexImplementation = await engineFlexCoreContractFactory
       .connect(config.accounts.deployer)
       .deploy();
+
+    // deploy UniversalReader
+    config.universalReader = (await deployAndGet(
+      config,
+      "UniversalBytecodeStorageReader",
+      [config.accounts.deployer.address]
+    )) as UniversalBytecodeStorageReader;
+    // deploy version-specific reader and configure universalReader
+    const versionedReaderFactory = await ethers.getContractFactory(
+      "BytecodeStorageReaderContractV2",
+      { libraries: { BytecodeStorageReader: library.address } }
+    );
+    const versionedReader = await versionedReaderFactory
+      .connect(config.accounts.deployer)
+      .deploy();
+    await config.universalReader
+      .connect(config.accounts.deployer)
+      .updateBytecodeStorageReaderContract(versionedReader.address);
+    // deploy engine factory
     const engineFactory = await deployAndGet(config, "EngineFactoryV0", [
       engineImplementation.address,
       engineFlexImplementation.address,
       coreRegistry?.address,
       config.accounts.deployer.address,
       DEFAULT_BASE_URI,
+      config.universalReader.address,
     ]);
     // transfer ownership of core registry to engine factory
     await coreRegistry
@@ -704,9 +728,7 @@ export async function deployCore(
     }
   );
 
-  const flexLibraryFactory = await ethers.getContractFactory("V3FlexLib", {
-    libraries: { BytecodeStorageReader: library.address },
-  });
+  const flexLibraryFactory = await ethers.getContractFactory("V3FlexLib");
   const flexLibrary = await flexLibraryFactory
     .connect(config.accounts.deployer)
     .deploy(/* no args for library ever */);

@@ -89,6 +89,18 @@ describe(`EngineFactoryV0 Views`, async function () {
     });
   });
 
+  describe("universalBytecodeStorageReader", async function () {
+    it("returns expected value", async function () {
+      const config = await loadFixture(_beforeEach);
+      const universalBytecodeStorageReader =
+        await config?.engineFactory?.universalBytecodeStorageReader();
+      expect(universalBytecodeStorageReader).to.be.equal(
+        config.universalReader?.address
+      );
+    });
+    // variable is immmutable, so no need to test setting
+  });
+
   describe("type_", async function () {
     it("returns expected value", async function () {
       const config = await loadFixture(_beforeEach);

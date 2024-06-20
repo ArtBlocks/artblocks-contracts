@@ -18,19 +18,19 @@
     }
   },
   "devDependencies": {
-    "@babel/core": "^7.23.9",
-    "@babel/preset-env": "^7.24.4",
+    "@babel/core": "^7.24.7",
+    "@babel/preset-env": "^7.24.7",
     "@babel/preset-typescript": "^7.24.7",
     "@jest/globals": "^29.7.0",
-    "@types/lodash": "^4.14.196",
+    "@types/lodash": "^4.17.5",
     "abitype": "^0.8.7",
     "eslint-config-custom": "*",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "jsdoc": "^4.0.3",
     "jsdoc-plugin-typescript": "^2.2.1",
-    "lint-staged": "^15.2.2",
-    "prettier": "^3.3.1",
+    "lint-staged": "^15.2.5",
+    "prettier": "^3.3.2",
     "tsconfig": "*",
     "tsup": "^8.1.0",
     "typescript": "^5.4.5"
@@ -71,7 +71,7 @@
   "dependencies": {
     "@artblocks/contracts": "^1.0.2",
     "encoding": "^0.1.13",
-    "graphql": "^16.7.1",
+    "graphql": "^16.8.2",
     "graphql-request": "^6.1.0",
     "lodash": "^4.17.21",
     "merkletreejs": "^0.3.11",

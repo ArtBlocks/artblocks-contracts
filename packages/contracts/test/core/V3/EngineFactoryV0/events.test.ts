@@ -28,7 +28,8 @@ describe(`EngineFactoryV0 Events`, async function () {
         config?.engineFlexImplementation?.address,
         config?.coreRegistry?.address,
         config.accounts.deployer.address, // required owner address
-        DEFAULT_BASE_URI
+        DEFAULT_BASE_URI,
+        config?.universalReader?.address
       );
 
       const receipt = await await tx.deployTransaction.wait();
