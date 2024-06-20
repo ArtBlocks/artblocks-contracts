@@ -8,7 +8,7 @@ export const deployNetworkConfiguration = {
   environment: "base",
   useLedgerSigner: true,
   useGnosisSafe: true,
-  safeAddress: "0x437461553625d179A49c265258Fa71E442bBffEF",
+  safeAddress: "0x62F8fa18C079C20743F45E74925F80658c68f7b3",
   transactionServiceUrl: "https://safe-transaction-base.safe.global/",
   // set the transaction hash after successful execution of the batch creation
   transactionHash:
@@ -24,8 +24,8 @@ export const deployConfigDetailsArray = [
     // see /scripts/util/constants.ts::MAIN_CONFIG for the correct address if prod deployment
     renderProviderAddress: "0xc8D1099702cB95baf954a4E3e2bEaF883314f464",
     platformProviderAddress: "0x0000000000000000000000000000000000000000",
-    // dev admin address
-    newSuperAdminAddress: "0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4",
+    // base admin address
+    newSuperAdminAddress: "0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef",
     startingProjectId: 0,
     // autoApproveArtistSplitProposals should be true for Studio deployments
     autoApproveArtistSplitProposals: true,
@@ -53,8 +53,8 @@ export const deployConfigDetailsArray = [
     platformProviderAddress: "0x0000000000000000000000000000000000000000",
     // set to the address you want to transfer the superAdmin role to
     // (can be the zero address if you have an existing Admin ACL Contract and are not transferring)
-    // dev admin address
-    newSuperAdminAddress: "0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4",
+    // base admin address
+    newSuperAdminAddress: "0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef",
     startingProjectId: 0,
     // autoApproveArtistSplitProposals should be true for Studio deployments
     autoApproveArtistSplitProposals: true,
