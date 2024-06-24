@@ -11,7 +11,8 @@ export const deployNetworkConfiguration = {
   safeAddress: "0x62F8fa18C079C20743F45E74925F80658c68f7b3",
   transactionServiceUrl: "https://safe-transaction-base.safe.global/",
   // set the transaction hash after successful execution of the batch creation
-  transactionHash: "",
+  transactionHash:
+    "0xf9ad6ddc96b041d36c61ed741a96e908ccb1e7e2c3ccd6ec8fac50117fd781ad",
 };
 
 export const deployConfigDetailsArray = [
