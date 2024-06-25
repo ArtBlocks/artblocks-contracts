@@ -56,6 +56,7 @@ contract GenArt721CoreV3_Curated is GenArt721CoreV3_Engine {
      * @notice Construct a new curated Art Blocks ERC-721 core contract.
      * Performs all contract initialization in the constructor.
      * @param engineConfiguration Configuration for the engine contract.
+     * note: parameter `engineConfiguration.newSuperAdminAddress` is not used or operated on in this contract.
      * @param adminACLContract_ Address of the admin ACL contract.
      * @param defaultBaseURIHost Default base URI host for token URIs.
      * @param bytecodeStorageReaderContract_ Address of the bytecode storage reader contract to be used by this
