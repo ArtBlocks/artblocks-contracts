@@ -15,6 +15,7 @@
     "test": "hardhat test",
     "size": "hardhat size-contracts",
     "test:parallel": "hardhat test --parallel",
+    "coverage": "hardhat coverage",
     "coverage-newfile": "npx hardhat coverage --testfiles 'test/core/V3/GenArt721CoreV3_Curated/configure.test.ts'",
     "coverage-newfile2": "npx hardhat coverage --testfiles 'test/create2-factory/*.test.ts'",
     "format": "prettier --write 'contracts/**/*.sol' && prettier --write 'scripts/**/*.ts' && prettier --write 'test/**/*.ts'",
