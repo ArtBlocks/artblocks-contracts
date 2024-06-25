@@ -3,11 +3,13 @@ import { fromPromise, setup, assign, sendParent } from "xstate";
 import { isUserRejectedError } from "../utils";
 import {
   GetReceiptQuery,
+  Minter_Type_Names_Enum,
   ReceiptSettlementDataFragment,
 } from "../../generated/graphql";
 import { iSharedMinterDAExpSettlementV0Abi } from "../../../abis/iSharedMinterDAExpSettlementV0Abi";
 import { graphql } from "../../generated/index";
 import { ArtBlocksClient } from "../..";
+import { iUnsharedDAExpSettlementAbi } from "../../../abis/iUnsharedDAExpSettlementAbi";
 
 /**
  * TODO
@@ -64,28 +66,47 @@ export const excessSettlementFundsClaimMachine = setup({
           throw new Error("Wallet client is not connected to an account");
         }
 
-        const minter = getContract({
-          abi: iSharedMinterDAExpSettlementV0Abi,
+        const isSharedMinter =
+          receipt.minter.minter_type ===
+          Minter_Type_Names_Enum.MinterDaExpSettlementV3;
+
+        const contractConfig = {
           address: receipt.minter.address as Hex,
           client: {
             public: publicClient,
             wallet: walletClient,
           },
-        });
+        };
 
-        const { request } =
-          await minter.simulate.reclaimProjectExcessSettlementFunds(
-            [
-              BigInt(receipt.project.index as number),
-              receipt.project.contract_address as Hex,
-            ],
-            {
-              account: walletClient.account.address,
-            }
-          );
+        const projectIndex = BigInt(receipt.project.index as number);
 
-        const txHash = await walletClient.writeContract(request);
-        return txHash;
+        if (isSharedMinter) {
+          const minter = getContract({
+            ...contractConfig,
+            abi: iSharedMinterDAExpSettlementV0Abi,
+          });
+
+          const { request } =
+            await minter.simulate.reclaimProjectExcessSettlementFunds(
+              [projectIndex, receipt.project.contract_address as Hex],
+              { account: walletClient.account.address }
+            );
+
+          return walletClient.writeContract(request);
+        } else {
+          const minter = getContract({
+            ...contractConfig,
+            abi: iUnsharedDAExpSettlementAbi,
+          });
+
+          const { request } =
+            await minter.simulate.reclaimProjectExcessSettlementFunds(
+              [projectIndex],
+              { account: walletClient.account.address }
+            );
+
+          return walletClient.writeContract(request);
+        }
       }
     ),
     awaitClaimConfirmations: fromPromise(
