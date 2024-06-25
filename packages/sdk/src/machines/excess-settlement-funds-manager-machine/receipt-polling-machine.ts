@@ -1,7 +1,10 @@
 import { ReceiptSettlementDataFragment } from "../../generated/graphql";
 import { graphql } from "../../generated/index";
 import { assign, fromPromise, sendParent, setup } from "xstate";
-import { getMessageFromError, SUPPORTED_MINTER_TYPES } from "../utils";
+import {
+  getMessageFromError,
+  SUPPORTED_SETTLEMENT_CLAIM_MINTER_TYPES,
+} from "../utils";
 import { ArtBlocksClient } from "../..";
 
 /**
@@ -97,7 +100,7 @@ export const receiptPollingMachine = setup({
           getReceiptsWithExcessSettlementFundsForUserDocument,
           {
             userAddress: userAddress.toLowerCase(),
-            supportedMinterTypes: SUPPORTED_MINTER_TYPES,
+            supportedMinterTypes: SUPPORTED_SETTLEMENT_CLAIM_MINTER_TYPES,
           }
         );
         const receipts = res.receipt_metadata;
