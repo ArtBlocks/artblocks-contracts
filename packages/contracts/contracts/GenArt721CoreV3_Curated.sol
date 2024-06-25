@@ -67,7 +67,7 @@ contract GenArt721CoreV3_Curated is GenArt721CoreV3_Engine {
         address adminACLContract_,
         string memory defaultBaseURIHost,
         address bytecodeStorageReaderContract_
-    ) {
+    ) GenArt721CoreV3_Engine() {
         // input validation generally performed by the engine factory
         _onlyNonZeroAddress(engineConfiguration.renderProviderAddress);
         _onlyNonZeroAddress(engineConfiguration.randomizerContract);

@@ -42,7 +42,6 @@ describe(`OwnedCreate2FactoryV0 Events`, async function () {
       const tx = await config.accounts.deployer.sendTransaction(txRequest);
       const result = await tx.wait();
       const event = result.logs[1];
-      console.log("event", event);
       expect(event.topics[0]).to.be.equal(
         ethers.utils.solidityKeccak256(["string"], ["Deployed()"])
       );

@@ -7,7 +7,7 @@ import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
 
-import { T_Config, deployAndGet } from "../util/common";
+import { T_Config } from "../util/common";
 import { OwnedCreate2FactoryV0 } from "../../scripts/contracts";
 import { OwnedCreate2FactoryV0__factory } from "../../scripts/contracts/factories";
 
