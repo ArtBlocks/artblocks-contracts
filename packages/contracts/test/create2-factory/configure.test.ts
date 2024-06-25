@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setupConfig } from "../util/fixtures";
+import { expectRevert } from "@openzeppelin/test-helpers";
 
 import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
@@ -9,6 +10,7 @@ Logger.setLogLevel(Logger.levels.ERROR);
 import { T_Config } from "../util/common";
 import { OwnedCreate2FactoryV0 } from "../../scripts/contracts";
 import { OwnedCreate2FactoryV0__factory } from "../../scripts/contracts/factories";
+import { constants } from "ethers";
 
 interface T_Create2FactoryTestConfig extends T_Config {
   ownedCreate2Factory: OwnedCreate2FactoryV0;
@@ -34,6 +36,24 @@ describe(`OwnedCreate2FactoryV0 Configure`, async function () {
       const expectedOwner = config.accounts.deployer.address;
       const actualOwner = await config.ownedCreate2Factory.owner();
       expect(actualOwner).to.equal(expectedOwner);
+    });
+
+    it("reverts on null owner in constructor", async function () {
+      const config = await loadFixture(setupConfig);
+      const ownedCreate2FactoryFactory = new OwnedCreate2FactoryV0__factory(
+        config.accounts.deployer
+      );
+      await expect(
+        ownedCreate2FactoryFactory.deploy(
+          constants.AddressZero, // null owner,
+          { gasLimit: 10000000 } // gas limit to prevent gas error
+        )
+      )
+        .to.be.revertedWithCustomError(
+          config.ownedCreate2Factory,
+          "OwnableInvalidOwner"
+        )
+        .withArgs(constants.AddressZero);
     });
   });
 

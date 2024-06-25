@@ -43,7 +43,7 @@ contract OwnedCreate2FactoryV0 is Ownable, IOwnedCreate2FactoryV0 {
      */
     constructor(address owner_) Ownable(owner_) {
         // input validation
-        _onlyNonZeroAddress(owner_);
+        // @dev Ownable enforces that the owner must be non-zero
 
         // emit Deployed event
         emit Deployed();
@@ -173,14 +173,5 @@ contract OwnedCreate2FactoryV0 is Ownable, IOwnedCreate2FactoryV0 {
                 salt: salt,
                 bytecodeHash: keccak256(initcode)
             });
-    }
-
-    /**
-     * @notice helper function to validate that an address is non-zero.
-     * Reverts if the address is zero.
-     * @param address_ address to validate
-     */
-    function _onlyNonZeroAddress(address address_) internal pure {
-        require(address_ != address(0), "Must input non-zero address");
     }
 }
