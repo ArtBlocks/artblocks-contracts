@@ -5,11 +5,7 @@
 // source code verification purposes.
 pragma solidity 0.8.22;
 
-import {AdminACLV0} from "./AdminACLV0.sol";
-import {EngineConfiguration} from "./interfaces/v0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import {IOwnedCreate2FactoryV0} from "./interfaces/v0.8.x/IOwnedCreate2FactoryV0.sol";
-import {IAdminACLV0_Extended} from "./interfaces/v0.8.x/IAdminACLV0_Extended.sol";
-import {GenArt721CoreV3_Curated} from "./GenArt721CoreV3_Curated.sol";
 
 import "@openzeppelin-5.0/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin-5.0/contracts/token/ERC20/IERC20.sol";
