@@ -27,7 +27,7 @@ import {Create2} from "@openzeppelin-5.0/contracts/utils/Create2.sol";
  */
 contract OwnedCreate2FactoryV0 is Ownable, IOwnedCreate2FactoryV0 {
     // public type
-    bytes32 public constant type_ = "IOwnedCreate2FactoryV0";
+    bytes32 public constant type_ = "OwnedCreate2FactoryV0";
 
     /**
      * Represents a generic call operation.

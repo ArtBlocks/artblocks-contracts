@@ -1,5 +1,4 @@
 import { ethers } from "hardhat";
-import { expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setupConfig } from "../util/fixtures";
@@ -8,8 +7,7 @@ import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
 
-import { revertMessages } from "./constants";
-import { T_Config } from "../util/common";
+import { T_Config, deployAndGet } from "../util/common";
 import { OwnedCreate2FactoryV0 } from "../../scripts/contracts";
 import { OwnedCreate2FactoryV0__factory } from "../../scripts/contracts/factories";
 
@@ -35,6 +33,7 @@ describe(`OwnedCreate2FactoryV0 Integration`, async function () {
 
   describe("deployCreate2", async function () {
     it("deploys a contract using create2", async function () {
+      // #dev this test also serves as a test for the predictDeterministicAddress function
       const config = await loadFixture(_beforeEach);
       // have the factory deploy a copy of itself for testing purposes
       const salt = ethers.utils.hexZeroPad(ethers.utils.hexlify(0), 32);
@@ -67,253 +66,215 @@ describe(`OwnedCreate2FactoryV0 Integration`, async function () {
     });
   });
 
-  // TODO - CONVERT THE FOLLOWING TESTS SUCH THAT THEY WORK WITH THE TESTED CONTRACT
-  // describe("drainETH", async function () {
-  //   it("reverts if not called by owner", async function () {
-  //     const config = await loadFixture(_beforeEach);
-  //     await expect(
-  //       config.engineFactory
-  //         .connect(config.accounts.user)
-  //         .drainETH(config.accounts.user.address)
-  //     )
-  //       .to.be.revertedWithCustomError(
-  //         config.engineFactory,
-  //         "OwnableUnauthorizedAccount"
-  //       )
-  //       .withArgs(config.accounts.user.address);
-  //   });
-  //   it("drains ETH balance to recipient address", async function () {
-  //     const config = await loadFixture(_beforeEach);
-  //     const sendAmount = ethers.utils.parseEther("1.0");
-  //     await config.accounts.deployer.sendTransaction({
-  //       to: config.engineFactory.address,
-  //       value: sendAmount,
-  //     });
-  //     const initialDeployerBalance = await ethers.provider.getBalance(
-  //       config.accounts.deployer.address
-  //     );
-  //     // check initial balance
-  //     expect(
-  //       await ethers.provider.getBalance(config.engineFactory.address)
-  //     ).to.equal(sendAmount);
-  //     // deployer drains balance
-  //     const drainTx = await config.engineFactory
-  //       .connect(config.accounts.deployer)
-  //       .drainETH(config.accounts.deployer.address);
-  //     const txReceipt = await drainTx.wait();
-  //     const gasUsed = txReceipt.gasUsed;
-  //     const effectiveGasPrice = txReceipt.effectiveGasPrice;
-  //     const gasCost = gasUsed.mul(effectiveGasPrice);
-  //     // check deployers balance
-  //     const finalDeployerBalance = await ethers.provider.getBalance(
-  //       config.accounts.deployer.address
-  //     );
-  //     const expectedBalance = initialDeployerBalance
-  //       .sub(gasCost)
-  //       .add(sendAmount);
-  //     expect(finalDeployerBalance).to.equal(expectedBalance);
-  //     // validate contract balance is 0
-  //     expect(
-  //       await ethers.provider.getBalance(config.engineFactory.address)
-  //     ).to.equal(0);
-  //   });
+  describe("drainETH", async function () {
+    it("reverts if not called by owner", async function () {
+      const config = await loadFixture(_beforeEach);
+      await expect(
+        config.ownedCreate2Factory
+          .connect(config.accounts.user)
+          .drainETH(config.accounts.user.address)
+      )
+        .to.be.revertedWithCustomError(
+          config.ownedCreate2Factory,
+          "OwnableUnauthorizedAccount"
+        )
+        .withArgs(config.accounts.user.address);
+    });
+    it("drains ETH balance to recipient address", async function () {
+      const config = await loadFixture(_beforeEach);
+      const sendAmount = ethers.utils.parseEther("1.0");
+      await config.accounts.deployer.sendTransaction({
+        to: config.ownedCreate2Factory.address,
+        value: sendAmount,
+      });
+      const initialDeployerBalance = await ethers.provider.getBalance(
+        config.accounts.deployer.address
+      );
+      // check initial balance
+      expect(
+        await ethers.provider.getBalance(config.ownedCreate2Factory.address)
+      ).to.equal(sendAmount);
+      // deployer drains balance
+      const drainTx = await config.ownedCreate2Factory
+        .connect(config.accounts.deployer)
+        .drainETH(config.accounts.deployer.address);
+      const txReceipt = await drainTx.wait();
+      const gasUsed = txReceipt.gasUsed;
+      const effectiveGasPrice = txReceipt.effectiveGasPrice;
+      const gasCost = gasUsed.mul(effectiveGasPrice);
+      // check deployers balance
+      const finalDeployerBalance = await ethers.provider.getBalance(
+        config.accounts.deployer.address
+      );
+      const expectedBalance = initialDeployerBalance
+        .sub(gasCost)
+        .add(sendAmount);
+      expect(finalDeployerBalance).to.equal(expectedBalance);
+      // validate contract balance is 0
+      expect(
+        await ethers.provider.getBalance(config.ownedCreate2Factory.address)
+      ).to.equal(0);
+    });
 
-  //   it("handles balance of zero", async function () {
-  //     const config = await loadFixture(_beforeEach);
-  //     const initialDeployerBalance = await ethers.provider.getBalance(
-  //       config.accounts.deployer.address
-  //     );
-  //     // check initial balance
-  //     expect(
-  //       await ethers.provider.getBalance(config.engineFactory.address)
-  //     ).to.equal(0);
-  //     // deployer drains balance
-  //     const drainTx = await config.engineFactory
-  //       .connect(config.accounts.deployer)
-  //       .drainETH(config.accounts.deployer.address);
-  //     const txReceipt = await drainTx.wait();
-  //     const gasUsed = txReceipt.gasUsed;
-  //     const effectiveGasPrice = txReceipt.effectiveGasPrice;
-  //     const gasCost = gasUsed.mul(effectiveGasPrice);
-  //     // check deployers balance
-  //     const finalDeployerBalance = await ethers.provider.getBalance(
-  //       config.accounts.deployer.address
-  //     );
-  //     const expectedBalance = initialDeployerBalance.sub(gasCost);
-  //     expect(finalDeployerBalance).to.equal(expectedBalance);
-  //     // validate contract balance is 0
-  //     expect(
-  //       await ethers.provider.getBalance(config.engineFactory.address)
-  //     ).to.equal(0);
-  //   });
-  // });
-  // describe("drainETH", async function () {
-  //   it("reverts if not called by owner", async function () {
-  //     const config = await loadFixture(_beforeEach);
-  //     await expect(
-  //       config.engineFactory
-  //         .connect(config.accounts.user)
-  //         .drainETH(config.accounts.user.address)
-  //     )
-  //       .to.be.revertedWithCustomError(
-  //         config.engineFactory,
-  //         "OwnableUnauthorizedAccount"
-  //       )
-  //       .withArgs(config.accounts.user.address);
-  //   });
-  //   it("drains ETH balance to recipient address", async function () {
-  //     const config = await loadFixture(_beforeEach);
-  //     const sendAmount = ethers.utils.parseEther("1.0");
-  //     await config.accounts.deployer.sendTransaction({
-  //       to: config.engineFactory.address,
-  //       value: sendAmount,
-  //     });
-  //     const initialDeployerBalance = await ethers.provider.getBalance(
-  //       config.accounts.deployer.address
-  //     );
-  //     // check initial balance
-  //     expect(
-  //       await ethers.provider.getBalance(config.engineFactory.address)
-  //     ).to.equal(sendAmount);
-  //     // deployer drains balance
-  //     const drainTx = await config.engineFactory
-  //       .connect(config.accounts.deployer)
-  //       .drainETH(config.accounts.deployer.address);
-  //     const txReceipt = await drainTx.wait();
-  //     const gasUsed = txReceipt.gasUsed;
-  //     const effectiveGasPrice = txReceipt.effectiveGasPrice;
-  //     const gasCost = gasUsed.mul(effectiveGasPrice);
-  //     // check deployers balance
-  //     const finalDeployerBalance = await ethers.provider.getBalance(
-  //       config.accounts.deployer.address
-  //     );
-  //     const expectedBalance = initialDeployerBalance
-  //       .sub(gasCost)
-  //       .add(sendAmount);
-  //     expect(finalDeployerBalance).to.equal(expectedBalance);
-  //     // validate contract balance is 0
-  //     expect(
-  //       await ethers.provider.getBalance(config.engineFactory.address)
-  //     ).to.equal(0);
-  //   });
-  // });
-  // describe("drainERC20", async function () {
-  //   it("reverts if not called by owner", async function () {
-  //     const config = await loadFixture(_beforeEach);
-  //     // deploy ERC20 token
-  //     const erc20 = await deployAndGet(config, "ERC20Mock", [
-  //       ethers.utils.parseEther("100"),
-  //     ]);
-  //     await expect(
-  //       config.engineFactory
-  //         .connect(config.accounts.user)
-  //         .drainERC20(erc20.address, config.accounts.user.address)
-  //     )
-  //       .to.be.revertedWithCustomError(
-  //         config.engineFactory,
-  //         "OwnableUnauthorizedAccount"
-  //       )
-  //       .withArgs(config.accounts.user.address);
-  //   });
-  //   it("drains ERC20 balance to recipient address", async function () {
-  //     const config = await loadFixture(_beforeEach);
-  //     // deploy ERC20 token
-  //     const erc20 = await deployAndGet(config, "ERC20Mock", [
-  //       ethers.utils.parseEther("100"),
-  //     ]);
-  //     // transfer some tokens
-  //     await erc20
-  //       .connect(config.accounts.deployer)
-  //       .transfer(config.engineFactory.address, ethers.utils.parseEther("1"));
+    it("handles balance of zero", async function () {
+      const config = await loadFixture(_beforeEach);
+      const initialDeployerBalance = await ethers.provider.getBalance(
+        config.accounts.deployer.address
+      );
+      // check initial balance
+      expect(
+        await ethers.provider.getBalance(config.ownedCreate2Factory.address)
+      ).to.equal(0);
+      // deployer drains balance
+      const drainTx = await config.ownedCreate2Factory
+        .connect(config.accounts.deployer)
+        .drainETH(config.accounts.deployer.address);
+      const txReceipt = await drainTx.wait();
+      const gasUsed = txReceipt.gasUsed;
+      const effectiveGasPrice = txReceipt.effectiveGasPrice;
+      const gasCost = gasUsed.mul(effectiveGasPrice);
+      // check deployers balance
+      const finalDeployerBalance = await ethers.provider.getBalance(
+        config.accounts.deployer.address
+      );
+      const expectedBalance = initialDeployerBalance.sub(gasCost);
+      expect(finalDeployerBalance).to.equal(expectedBalance);
+      // validate contract balance is 0
+      expect(
+        await ethers.provider.getBalance(config.ownedCreate2Factory.address)
+      ).to.equal(0);
+    });
+  });
 
-  //     const initialDeployerBalance = await erc20.balanceOf(
-  //       config.accounts.deployer.address
-  //     );
-  //     // check initial balance
-  //     expect(await erc20.balanceOf(config.engineFactory.address)).to.equal(
-  //       ethers.utils.parseEther("1")
-  //     );
-  //     // deployer drains balance
-  //     await config.engineFactory
-  //       .connect(config.accounts.deployer)
-  //       .drainERC20(erc20.address, config.accounts.deployer.address);
-  //     const finalDeployerBalance = await erc20.balanceOf(
-  //       config.accounts.deployer.address
-  //     );
-  //     const expectedBalance = initialDeployerBalance.add(
-  //       ethers.utils.parseEther("1")
-  //     );
-  //     expect(finalDeployerBalance).to.equal(expectedBalance);
-  //     // validate contract balance is 0
-  //     expect(await erc20.balanceOf(config.engineFactory.address)).to.equal(0);
-  //   });
-  // });
-  // describe("execCalls", async function () {
-  //   it("reverts if not called by owner", async function () {
-  //     const config = await loadFixture(_beforeEach);
-  //     // deploy mock ERC20 token
-  //     const erc20 = await deployAndGet(config, "ERC20Mock", [
-  //       ethers.utils.parseEther("100"),
-  //     ]);
-  //     const calls = [
-  //       {
-  //         to: erc20.address,
-  //         data: erc20.interface.encodeFunctionData("transfer", [
-  //           config.accounts.deployer.address,
-  //           ethers.utils.parseEther("100"),
-  //         ]),
-  //       },
-  //     ];
-  //     await expect(
-  //       config.engineFactory.connect(config.accounts.user).execCalls(calls)
-  //     )
-  //       .to.be.revertedWithCustomError(
-  //         config.engineFactory,
-  //         "OwnableUnauthorizedAccount"
-  //       )
-  //       .withArgs(config.accounts.user.address);
-  //   });
-  //   it("able to execute transactions on mocked contract", async function () {
-  //     const config = await loadFixture(_beforeEach);
-  //     // deploy ERC20 token
-  //     const erc20 = await deployAndGet(config, "ERC20Mock", [
-  //       ethers.utils.parseEther("100"),
-  //     ]);
-  //     // Initial balance of the deployer
-  //     const initialDeployerBalance = await erc20.balanceOf(
-  //       config.accounts.deployer.address
-  //     );
-  //     // transfer some tokens
-  //     await erc20
-  //       .connect(config.accounts.deployer)
-  //       .transfer(config.engineFactory.address, ethers.utils.parseEther("1"));
-  //     const calls = [
-  //       {
-  //         to: erc20.address,
-  //         data: erc20.interface.encodeFunctionData("transfer", [
-  //           config.accounts.deployer.address,
-  //           ethers.utils.parseEther("1"),
-  //         ]),
-  //       },
-  //     ];
-  //     // execute batch of calls
-  //     await expect(
-  //       config.engineFactory.connect(config.accounts.deployer).execCalls(calls)
-  //     )
-  //       .to.emit(erc20, "Transfer")
-  //       .withArgs(
-  //         config.engineFactory.address,
-  //         config.accounts.deployer.address,
-  //         ethers.utils.parseEther("1")
-  //       );
-  //     const expectedFinalBalance = initialDeployerBalance;
-  //     const finalDeployerBalance = await erc20.balanceOf(
-  //       config.accounts.deployer.address
-  //     );
-  //     expect(finalDeployerBalance).to.equal(expectedFinalBalance);
-  //     expect(await erc20.balanceOf(config.engineFactory.address)).to.equal(
-  //       ethers.utils.parseEther("0")
-  //     );
-  //   });
-  // });
+  describe("drainERC20", async function () {
+    it("reverts if not called by owner", async function () {
+      const config = await loadFixture(_beforeEach);
+      // deploy ERC20 token
+      const erc20 = await deployAndGet(config, "ERC20Mock", [
+        ethers.utils.parseEther("100"),
+      ]);
+      await expect(
+        config.ownedCreate2Factory
+          .connect(config.accounts.user)
+          .drainERC20(erc20.address, config.accounts.user.address)
+      )
+        .to.be.revertedWithCustomError(
+          config.ownedCreate2Factory,
+          "OwnableUnauthorizedAccount"
+        )
+        .withArgs(config.accounts.user.address);
+    });
+    it("drains ERC20 balance to recipient address", async function () {
+      const config = await loadFixture(_beforeEach);
+      // deploy ERC20 token
+      const erc20 = await deployAndGet(config, "ERC20Mock", [
+        ethers.utils.parseEther("100"),
+      ]);
+      // transfer some tokens
+      await erc20
+        .connect(config.accounts.deployer)
+        .transfer(
+          config.ownedCreate2Factory.address,
+          ethers.utils.parseEther("1")
+        );
+
+      const initialDeployerBalance = await erc20.balanceOf(
+        config.accounts.deployer.address
+      );
+      // check initial balance
+      expect(
+        await erc20.balanceOf(config.ownedCreate2Factory.address)
+      ).to.equal(ethers.utils.parseEther("1"));
+      // deployer drains balance
+      await config.ownedCreate2Factory
+        .connect(config.accounts.deployer)
+        .drainERC20(erc20.address, config.accounts.deployer.address);
+      const finalDeployerBalance = await erc20.balanceOf(
+        config.accounts.deployer.address
+      );
+      const expectedBalance = initialDeployerBalance.add(
+        ethers.utils.parseEther("1")
+      );
+      expect(finalDeployerBalance).to.equal(expectedBalance);
+      // validate contract balance is 0
+      expect(
+        await erc20.balanceOf(config.ownedCreate2Factory.address)
+      ).to.equal(0);
+    });
+  });
+  describe("execCalls", async function () {
+    it("reverts if not called by owner", async function () {
+      const config = await loadFixture(_beforeEach);
+      // deploy mock ERC20 token
+      const erc20 = await deployAndGet(config, "ERC20Mock", [
+        ethers.utils.parseEther("100"),
+      ]);
+      const calls = [
+        {
+          to: erc20.address,
+          data: erc20.interface.encodeFunctionData("transfer", [
+            config.accounts.deployer.address,
+            ethers.utils.parseEther("100"),
+          ]),
+        },
+      ];
+      await expect(
+        config.ownedCreate2Factory
+          .connect(config.accounts.user)
+          .execCalls(calls)
+      )
+        .to.be.revertedWithCustomError(
+          config.ownedCreate2Factory,
+          "OwnableUnauthorizedAccount"
+        )
+        .withArgs(config.accounts.user.address);
+    });
+    it("able to execute transactions on mocked contract", async function () {
+      const config = await loadFixture(_beforeEach);
+      // deploy ERC20 token
+      const erc20 = await deployAndGet(config, "ERC20Mock", [
+        ethers.utils.parseEther("100"),
+      ]);
+      // Initial balance of the deployer
+      const initialDeployerBalance = await erc20.balanceOf(
+        config.accounts.deployer.address
+      );
+      // transfer some tokens
+      await erc20
+        .connect(config.accounts.deployer)
+        .transfer(
+          config.ownedCreate2Factory.address,
+          ethers.utils.parseEther("1")
+        );
+      const calls = [
+        {
+          to: erc20.address,
+          data: erc20.interface.encodeFunctionData("transfer", [
+            config.accounts.deployer.address,
+            ethers.utils.parseEther("1"),
+          ]),
+        },
+      ];
+      // execute batch of calls
+      await expect(
+        config.ownedCreate2Factory
+          .connect(config.accounts.deployer)
+          .execCalls(calls)
+      )
+        .to.emit(erc20, "Transfer")
+        .withArgs(
+          config.ownedCreate2Factory.address,
+          config.accounts.deployer.address,
+          ethers.utils.parseEther("1")
+        );
+      const expectedFinalBalance = initialDeployerBalance;
+      const finalDeployerBalance = await erc20.balanceOf(
+        config.accounts.deployer.address
+      );
+      expect(finalDeployerBalance).to.equal(expectedFinalBalance);
+      expect(
+        await erc20.balanceOf(config.ownedCreate2Factory.address)
+      ).to.equal(ethers.utils.parseEther("0"));
+    });
+  });
 });
