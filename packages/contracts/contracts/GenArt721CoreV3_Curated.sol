@@ -24,11 +24,11 @@ contract GenArt721CoreV3_Curated is GenArt721CoreV3_Engine {
 
     /// override patch version of this core contract
     // @dev this is a constant value that is used to override the inherited core version CORE_VERSION
-    bytes32 constant CORE_VERSION_OVERRIDE = "v3.2.6";
+    bytes32 private constant _CORE_VERSION_OVERRIDE = "v3.2.6";
 
     // @dev overridden core version is returned instead of the inherited core version
     function coreVersion() external pure override returns (string memory) {
-        return CORE_VERSION_OVERRIDE.toString();
+        return _CORE_VERSION_OVERRIDE.toString();
     }
 
     /**
@@ -58,7 +58,7 @@ contract GenArt721CoreV3_Curated is GenArt721CoreV3_Engine {
      * @param engineConfiguration Configuration for the engine contract.
      * note: parameter `engineConfiguration.newSuperAdminAddress` is not used or operated on in this contract.
      * @param adminACLContract_ Address of the admin ACL contract.
-     * @param defaultBaseURIHost Default base URI host for token URIs.
+     * @param defaultBaseURIHost Default base URI host for token URIs, e.g. "https://token.artblocks.io/" for mainnet
      * @param bytecodeStorageReaderContract_ Address of the bytecode storage reader contract to be used by this
      * contract.
      */
@@ -107,7 +107,7 @@ contract GenArt721CoreV3_Curated is GenArt721CoreV3_Engine {
         });
 
         // override default base URI to be curated format instead of Engine (no address required for curated)
-        _updateDefaultBaseURI(string.concat(defaultBaseURIHost, "/"));
+        _updateDefaultBaseURI(defaultBaseURIHost);
     }
 
     /**
@@ -133,7 +133,6 @@ contract GenArt721CoreV3_Curated is GenArt721CoreV3_Engine {
         address _artblocksCurationRegistryAddress
     ) external {
         _onlyAdminACL(this.updateArtblocksCurationRegistryAddress.selector);
-        _onlyNonZeroAddress(_artblocksCurationRegistryAddress);
         artblocksCurationRegistryAddress = _artblocksCurationRegistryAddress;
         emit ArtBlocksCurationRegistryContractUpdated(
             _artblocksCurationRegistryAddress
