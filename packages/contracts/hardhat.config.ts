@@ -11,6 +11,7 @@ import "@nomicfoundation/hardhat-ledger";
 import { solidityConfig } from "./hardhat.solidity-config";
 import { getDeployerWallet } from "./scripts/util/get-deployer-wallet";
 require("@nomicfoundation/hardhat-chai-matchers");
+import "@typechain/hardhat";
 
 // ----- WALLET CONFIGURATION -----
 // initialize with dummy fallback private key
@@ -198,5 +199,12 @@ module.exports = {
   },
   sourcify: {
     enabled: false, // would like to enable this but it's not working
+  },
+  typechain: {
+    outDir: "./scripts/contracts",
+    target: "ethers-v5",
+    alwaysGenerateOverloads: false, // should overloads with full signatures like deposit(uint256) be generated always, even if there are no overloads?
+    externalArtifacts: ["./artifacts/contracts/**/!(*.dbg)*.json"], // optional array of glob patterns with external artifacts to process (for example external libs from node_modules)
+    dontOverrideCompile: false, // defaults to false
   },
 };
