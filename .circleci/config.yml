@@ -37,13 +37,9 @@ jobs:
           command: |
             ls ./packages/contracts/contracts
       - run:
-          name: compile contracts
+          name: compile contracts & generate typechain
           command: |
             yarn workspace @artblocks/contracts run hardhat compile
-      - run:
-          name: generate types
-          command: |
-            yarn workspace @artblocks/contracts run generate:typechain
       - run:
           name: Hardhat Test
           command: |
@@ -63,15 +59,6 @@ jobs:
       - node/install-packages:
           pkg-manager: yarn
           cache-version: v2
-      - run:
-          name: compile contracts
-          command: |
-            yarn workspace @artblocks/contracts run compile
-            yarn workspace @artblocks/contracts run compile
-      - run:
-          name: generate types
-          command: |
-            yarn workspace @artblocks/contracts run generate:typechain
       - run:
           name: coverage
           command: |

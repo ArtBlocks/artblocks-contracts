@@ -6,7 +6,7 @@ import { ethers } from "hardhat";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract, BigNumber, constants } from "ethers";
 import { DEFAULT_BASE_URI, ONE_MINUTE } from "./constants";
-import { SplitProviderV0 } from "../../scripts/contracts/split/split-provider/SplitProviderV0";
+import { SplitProviderV0 } from "../../scripts/contracts/contracts/split/split-provider/SplitProviderV0.sol";
 import {
   GenArt721CoreV3_Curated__factory,
   OwnedCreate2FactoryV0,

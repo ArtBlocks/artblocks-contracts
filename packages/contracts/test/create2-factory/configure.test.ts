@@ -9,7 +9,7 @@ Logger.setLogLevel(Logger.levels.ERROR);
 
 import { T_Config } from "../util/common";
 import { OwnedCreate2FactoryV0 } from "../../scripts/contracts";
-import { OwnedCreate2FactoryV0__factory } from "../../scripts/contracts/factories";
+import { OwnedCreate2FactoryV0__factory } from "../../scripts/contracts/factories/contracts/OwnedCreate2FactoryV0.sol";
 import { constants } from "ethers";
 
 interface T_Create2FactoryTestConfig extends T_Config {
