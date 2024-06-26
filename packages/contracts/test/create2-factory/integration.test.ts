@@ -32,6 +32,22 @@ describe(`OwnedCreate2FactoryV0 Integration`, async function () {
   }
 
   describe("deployCreate2", async function () {
+    it("reverts when not called by owner", async function () {
+      const config = await loadFixture(_beforeEach);
+      const salt = ethers.utils.hexZeroPad(ethers.utils.hexlify(0), 32);
+      const initcode = "0x00";
+      await expect(
+        config.ownedCreate2Factory
+          .connect(config.accounts.user)
+          .deployCreate2(salt, initcode)
+      )
+        .to.be.revertedWithCustomError(
+          config.ownedCreate2Factory,
+          "OwnableUnauthorizedAccount"
+        )
+        .withArgs(config.accounts.user.address);
+    });
+
     it("deploys a contract using create2", async function () {
       // #dev this test also serves as a test for the predictDeterministicAddress function
       const config = await loadFixture(_beforeEach);
