@@ -48,6 +48,17 @@ describe(`OwnedCreate2FactoryV0 Integration`, async function () {
         .withArgs(config.accounts.user.address);
     });
 
+    it("reverts with empty bytecode", async function () {
+      const config = await loadFixture(_beforeEach);
+      const salt = ethers.utils.hexZeroPad(ethers.utils.hexlify(0), 32);
+      const initcode = "0x";
+      await expect(
+        config.ownedCreate2Factory
+          .connect(config.accounts.deployer)
+          .deployCreate2(salt, initcode)
+      ).to.be.reverted;
+    });
+
     it("deploys a contract using create2", async function () {
       // #dev this test also serves as a test for the predictDeterministicAddress function
       const config = await loadFixture(_beforeEach);
