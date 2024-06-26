@@ -1,5 +1,4 @@
-import { constants, expectRevert } from "@openzeppelin/test-helpers";
-import { expect, version } from "chai";
+import { expect } from "chai";
 import { ethers } from "hardhat";
 
 import {
@@ -9,8 +8,6 @@ import {
   deployAndGet,
   deployCoreWithMinterFilter,
   deployWithStorageLibraryAndGet,
-  GENART721_ERROR_NAME,
-  GENART721_ERROR_CODES,
 } from "../util/common";
 
 import { SSTORE2Mock } from "../../scripts/contracts";
@@ -18,8 +15,8 @@ import { BytecodeV2TextCR_DMock } from "../../scripts/contracts";
 import { UniversalBytecodeStorageReader } from "../../scripts/contracts";
 import { GenArt721CoreV3_Engine } from "../../scripts/contracts";
 import { GenArt721CoreV3_Engine_Flex } from "../../scripts/contracts";
-import { BytecodeStorageReaderContractV2__factory } from "../../scripts/contracts/factories/BytecodeStorageReaders/BytecodeStorageReaderContractV2__factory";
-import { BytecodeStorageReaderContractV2 } from "../../scripts/contracts/BytecodeStorageReaders/BytecodeStorageReaderContractV2";
+import { BytecodeStorageReaderContractV2__factory } from "../../scripts/contracts/factories/contracts/BytecodeStorageReaders/BytecodeStorageReaderContractV2.sol";
+import { BytecodeStorageReaderContractV2 } from "../../scripts/contracts/contracts/BytecodeStorageReaders/BytecodeStorageReaderContractV2.sol";
 
 interface T_ReaderTest_Config extends T_Config {
   universalReader: UniversalBytecodeStorageReader;
