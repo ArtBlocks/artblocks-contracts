@@ -283,7 +283,7 @@ contract GenArt721CoreV3_Engine_Flex is
     /// version & type of this core contract
     bytes32 constant CORE_VERSION = "v3.2.5";
 
-    function coreVersion() external pure returns (string memory) {
+    function coreVersion() external pure virtual returns (string memory) {
         return CORE_VERSION.toString();
     }
 
@@ -414,6 +414,7 @@ contract GenArt721CoreV3_Engine_Flex is
      * function will be called atomically by the factory contract that deploys this
      * contract, after which it will be initialized and uncallable.
      * @param engineConfiguration EngineConfiguration to configure the contract with.
+     * note: parameter `engineConfiguration.newSuperAdminAddress` is not used or operated on in this contract.
      * @param adminACLContract_ Address of admin access control contract, to be
      * set as contract owner.
      * @param defaultBaseURIHost Base URI prefix to initialize default base URI with.
@@ -2655,6 +2656,7 @@ contract GenArt721CoreV3_Engine_Flex is
      * This function should be called atomically, immediately after deployment.
      * Only callable once. Validation on `engineConfiguration` is performed by caller.
      * @param engineConfiguration EngineConfiguration to configure the contract with.
+     * note: parameter `engineConfiguration.newSuperAdminAddress` is not used or operated on in this contract.
      * @param adminACLContract_ Address of admin access control contract, to be
      * set as contract owner.
      * @param defaultBaseURIHost Base URI prefix to initialize default base URI with.
