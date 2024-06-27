@@ -31,14 +31,6 @@ contract GenArt721CoreV3_Curated is GenArt721CoreV3_Engine {
         return _CORE_VERSION_OVERRIDE.toString();
     }
 
-    /**
-     * @notice Event emitted when the Art Blocks Curation Registry contract is updated.
-     * @param artblocksCurationRegistryAddress Address of Art Blocks Curation Registry contract.
-     */
-    event ArtBlocksCurationRegistryContractUpdated(
-        address indexed artblocksCurationRegistryAddress
-    );
-
     /// metadata pointer to the previous associated Flagship Artblocks core contracts
     // @dev not defined as constant because constant address arrays are not yet implemented in Solidity
     address[] public PREVIOUS_ART_BLOCKS_CONTRACTS = [
