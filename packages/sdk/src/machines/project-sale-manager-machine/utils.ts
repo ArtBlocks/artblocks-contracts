@@ -96,7 +96,42 @@ export type LiveSaleData = {
   paused: boolean;
   completedTimestamp: bigint;
   isConfigured: boolean;
+  ramMinterAuctionDetails?: {
+    auctionStartDate: Date;
+    auctionEndDate: Date;
+    basePrice: bigint;
+    numTokensInAuction: bigint;
+    numBids: bigint;
+    numBidsMintedTokens: bigint;
+    numBidsErrorRefunded: bigint;
+    minBidSlotIndex: bigint;
+    allowExtraTime: boolean;
+    adminArtistOnlyMintPeriodIfSellout: boolean;
+    revenuesCollected: boolean;
+    projectMinterState: ProjectMinterState;
+    minNextBidValue: bigint;
+    minNextBidSlotIndex: bigint;
+  };
 };
+
+const PROJECT_MINTER_STATE = {
+  PreAuction: "PreAuction",
+  LiveAuction: "LiveAuction",
+  PostAuctionSellOutAdminArtistMint: "PostAuctionSellOutAdminArtistMint",
+  PostAuctionOpenMint: "PostAuctionOpenMint",
+  PostAuctionAllBidsHandled: "PostAuctionAllBidsHandled",
+} as const;
+
+export type ProjectMinterState =
+  (typeof PROJECT_MINTER_STATE)[keyof typeof PROJECT_MINTER_STATE];
+
+export const ProjectMinterStateNumberToEnum = {
+  0: PROJECT_MINTER_STATE.PreAuction,
+  1: PROJECT_MINTER_STATE.LiveAuction,
+  2: PROJECT_MINTER_STATE.PostAuctionSellOutAdminArtistMint,
+  3: PROJECT_MINTER_STATE.PostAuctionOpenMint,
+  4: PROJECT_MINTER_STATE.PostAuctionAllBidsHandled,
+} as const;
 
 export function isProjectComplete(
   project?: ProjectDetails,
@@ -159,6 +194,46 @@ export function isProjectPurchasable(
     if (startDate > new Date()) {
       return false;
     }
+  }
+
+  if (
+    liveSaleData.ramMinterAuctionDetails &&
+    liveSaleData.ramMinterAuctionDetails.projectMinterState !==
+      PROJECT_MINTER_STATE.PostAuctionOpenMint &&
+    liveSaleData.ramMinterAuctionDetails.projectMinterState !==
+      PROJECT_MINTER_STATE.PostAuctionAllBidsHandled
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+export function isProjectRAMBiddable(
+  context: ProjectSaleManagerMachineContext
+) {
+  const { artblocksClient, project, liveSaleData } = context;
+  const walletClient = artblocksClient.getWalletClient();
+
+  if (!liveSaleData) {
+    return false;
+  }
+
+  if (!walletClient || !walletClient.account) {
+    return false;
+  }
+
+  if (!project) {
+    return false;
+  }
+
+  if (!liveSaleData.ramMinterAuctionDetails) {
+    return false;
+  }
+
+  const auctionDetails = liveSaleData.ramMinterAuctionDetails;
+  if (auctionDetails.projectMinterState !== PROJECT_MINTER_STATE.LiveAuction) {
+    return false;
   }
 
   return true;
@@ -390,4 +465,8 @@ export function generateMinterDescription(
       return replacements[variableName] ?? match;
     }
   );
+}
+
+export function bigintTimestampToDate(bigintTimestamp: bigint): Date {
+  return new Date(Number(bigintTimestamp) * 1000);
 }

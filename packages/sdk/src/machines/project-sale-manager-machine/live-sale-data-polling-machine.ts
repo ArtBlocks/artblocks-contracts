@@ -3,9 +3,16 @@ import { Hex, getContract } from "viem";
 
 import { iSharedMinterV0Abi } from "../../../abis/iSharedMinterV0Abi";
 import { iGenArt721CoreContractV3BaseAbi } from "../../../abis/iGenArt721CoreContractV3BaseAbi";
-import { LiveSaleData, ProjectDetails } from "./utils";
+import {
+  LiveSaleData,
+  ProjectDetails,
+  ProjectMinterStateNumberToEnum,
+  bigintTimestampToDate,
+} from "./utils";
 import { getMessageFromError } from "../utils";
 import { ArtBlocksClient } from "../..";
+import { Minter_Type_Names_Enum } from "../../generated/graphql";
+import { minterRAMV0Abi } from "../../../abis/minterRAMV0Abi";
 
 const POLLING_DELAY = 10000;
 
@@ -108,7 +115,7 @@ export const liveSaleDataPollingMachine = setup({
           completedTimestamp,
         ] = projectStateData;
 
-        return {
+        const liveSaleData: LiveSaleData = {
           tokenPriceInWei,
           invocations,
           maxInvocations,
@@ -117,6 +124,66 @@ export const liveSaleDataPollingMachine = setup({
           completedTimestamp,
           isConfigured,
         };
+
+        if (
+          project.minter_configuration.minter.minter_type ===
+          Minter_Type_Names_Enum.MinterRamv0
+        ) {
+          const ramMinterContract = getContract({
+            address: project.minter_configuration.minter.address as Hex,
+            abi: minterRAMV0Abi,
+            client: publicClient,
+          });
+
+          const [
+            [
+              auctionTimestampStart,
+              auctionTimestampEnd,
+              basePrice,
+              numTokensInAuction,
+              numBids,
+              numBidsMintedTokens,
+              numBidsErrorRefunded,
+              minBidSlotIndex,
+              allowExtraTime,
+              adminArtistOnlyMintPeriodIfSellout,
+              revenuesCollected,
+              projectMinterState,
+            ],
+            [minNextBidValue, minNextBidSlotIndex],
+          ] = await Promise.all([
+            ramMinterContract.read.getAuctionDetails([
+              projectIndex,
+              coreContract.address,
+            ]),
+            ramMinterContract.read.getMinimumNextBid([
+              projectIndex,
+              coreContract.address,
+            ]),
+          ]);
+
+          liveSaleData.ramMinterAuctionDetails = {
+            auctionStartDate: bigintTimestampToDate(auctionTimestampStart),
+            auctionEndDate: bigintTimestampToDate(auctionTimestampEnd),
+            basePrice,
+            numTokensInAuction,
+            numBids,
+            numBidsMintedTokens,
+            numBidsErrorRefunded,
+            minBidSlotIndex,
+            allowExtraTime,
+            adminArtistOnlyMintPeriodIfSellout,
+            revenuesCollected,
+            projectMinterState:
+              ProjectMinterStateNumberToEnum[
+                projectMinterState as 0 | 1 | 2 | 3 | 4
+              ],
+            minNextBidValue,
+            minNextBidSlotIndex,
+          };
+        }
+
+        return liveSaleData;
       }
     ),
   },

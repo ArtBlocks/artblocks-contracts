@@ -15,10 +15,12 @@ import {
   isProjectComplete,
   isProjectIneligibleForPrimarySale,
   isProjectPurchasable,
+  isProjectRAMBiddable,
 } from "./utils";
 import { liveSaleDataPollingMachine } from "./live-sale-data-polling-machine";
 import { purchaseInitiationMachine } from "../purchase-initiation-machine";
 import { ArtBlocksClient } from "../..";
+import { ramBidMachine } from "../ram-bid-machine";
 
 type ProjectSaleManagerMachineEvents =
   | {
@@ -55,6 +57,7 @@ export type ProjectSaleManagerMachineContext = {
     typeof purchaseTrackingManagerMachine
   >;
   purchaseInitiationMachine?: ActorRefFrom<typeof purchaseInitiationMachine>;
+  ramBidMachine?: ActorRefFrom<typeof ramBidMachine>;
 };
 
 /**
@@ -101,7 +104,7 @@ export type ProjectSaleManagerMachineContext = {
  * The 'idle' state serves as a decision point, evaluating the current context to
  * determine the next appropriate state transition. If the project is eligible for
  * sale and all necessary context is available, the machine transitions to the
- * 'readyForSale' state, where it spawns the PurchaseInitiationMachine to handle
+ * 'readyForPurchase' state, where it spawns the PurchaseInitiationMachine to handle
  * the sale process.
  *
  * A project is considered ineligible for sale when it does not have a minter
@@ -167,6 +170,7 @@ export const projectSaleManagerMachine = setup({
     ),
     liveSaleDataPollingMachine,
     purchaseInitiationMachine,
+    ramBidMachine,
   },
   actions: {
     assignArtBlocksClient: assign({
@@ -285,6 +289,36 @@ export const projectSaleManagerMachine = setup({
         purchaseInitiationMachine: undefined,
       });
     }),
+    spawnAndAssignRAMBidMachine: assign({
+      ramBidMachine: ({ spawn, context, system }) => {
+        if (!context.project) {
+          return;
+        }
+
+        const liveSaleDataPollingMachineRef = system.get(
+          "liveSaleDataPollingMachine"
+        );
+        if (!liveSaleDataPollingMachineRef) {
+          return;
+        }
+
+        return spawn("ramBidMachine", {
+          systemId: "ramBidMachine",
+          id: "ramBidMachine",
+          input: {
+            artblocksClient: context.artblocksClient,
+            project: context.project,
+            liveSaleDataPollingMachineRef: liveSaleDataPollingMachineRef,
+          },
+        });
+      },
+    }),
+    stopAndAssignRAMBidMachine: enqueueActions(({ enqueue }) => {
+      enqueue.stopChild("ramBidMachine");
+      enqueue.assign({
+        ramBidMachine: undefined,
+      });
+    }),
   },
   guards: {
     isNotPurchasable: ({ context }) => {
@@ -292,6 +326,12 @@ export const projectSaleManagerMachine = setup({
     },
     isPurchasable: ({ context }) => {
       return isProjectPurchasable(context);
+    },
+    isRAMBiddable: ({ context }) => {
+      return isProjectRAMBiddable(context);
+    },
+    isNotRAMBiddable: ({ context }) => {
+      return !isProjectRAMBiddable(context);
     },
     isProjectComplete: ({ context }) => {
       return isProjectComplete(context.project, context.liveSaleData);
@@ -415,8 +455,12 @@ export const projectSaleManagerMachine = setup({
           actions: "stopLiveSaleDataPollingMachine",
         },
         {
-          target: "readyForSale",
+          target: "readyForPurchase",
           guard: "isPurchasable",
+        },
+        {
+          target: "readyForRamBid",
+          guard: "isRAMBiddable",
         },
         {
           guard: "isPublicClientUnavailable",
@@ -427,7 +471,7 @@ export const projectSaleManagerMachine = setup({
         },
       ],
     },
-    readyForSale: {
+    readyForPurchase: {
       description:
         "This state is activated when all necessary context is available and the project is in a purchasable state. The corresponding machine (currently only purchase initiation, with bidding to be implemented) is initiated to manage the sale process. If the project becomes non-purchasable or any essential context is lost, the machine reverts to the 'idle' state.",
       entry: {
@@ -440,6 +484,18 @@ export const projectSaleManagerMachine = setup({
           actions: {
             type: "stopAndAssignPurchaseInitiationMachine",
           },
+        },
+      ],
+    },
+    readyForRamBid: {
+      entry: {
+        type: "spawnAndAssignRAMBidMachine",
+      },
+      always: [
+        {
+          target: "idle",
+          guard: "isNotRAMBiddable",
+          actions: "stopAndAssignRAMBidMachine",
         },
       ],
     },
