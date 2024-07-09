@@ -100,6 +100,7 @@ async function main() {
   for (let i = 0; i < deployConfigDetailsArray.length; i++) {
     const {
       engineCoreContractType,
+      artistName,
       tokenName,
       tokenTicker,
       renderProviderAddress,
@@ -220,6 +221,7 @@ async function main() {
         
         **Metadata**
         - **Starting Project Id:** ${startingProjectId}
+        - **Artist Name:** ${artistName}
         - **Token Name:** ${tokenName}
         - **Token Ticker:** ${tokenTicker}
         - **Auto Approve Artist Split Proposals:** ${autoApproveArtistSplitProposals}
