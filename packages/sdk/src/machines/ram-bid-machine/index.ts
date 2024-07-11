@@ -1,5 +1,5 @@
 import { Hex, formatEther, getContract, parseEventLogs } from "viem";
-import { ActorRefFrom, assign, fromPromise, setup } from "xstate";
+import { ActorRefFrom, assign, fromPromise, setup, stateIn } from "xstate";
 import { ArtBlocksClient } from "../..";
 import { minterRAMV0Abi } from "../../../abis/minterRAMV0Abi";
 import { BidDetailsFragment } from "../../generated/graphql";
@@ -87,7 +87,7 @@ const getUserBidsDocument = graphql(/* GraphQL */ `
   }
 `);
 
-const MAX_RETRIES = 20;
+const MAX_RETRIES = 2;
 
 export const ramBidMachine = setup({
   types: {
@@ -471,18 +471,30 @@ export const ramBidMachine = setup({
             }),
           },
         },
-        onError: {
-          target: "error",
-          actions: {
-            type: "assignErrorMessageFromError",
-            params: ({ event }) => {
-              console.log(event.error);
-              return {
-                error: event.error,
-              };
+        onError: [
+          {
+            target: "awaitingBidAmount",
+            guard: {
+              type: "isUserRejectedError",
+              params: ({ event }) => {
+                return {
+                  error: event.error,
+                };
+              },
             },
           },
-        },
+          {
+            target: "error",
+            actions: {
+              type: "assignErrorMessageFromError",
+              params: ({ event }) => {
+                return {
+                  error: event.error,
+                };
+              },
+            },
+          },
+        ],
       },
     },
     confirmingBidTx: {
@@ -505,9 +517,16 @@ export const ramBidMachine = setup({
     },
     awaitingSync: {
       initial: "fetchingUserBids",
-      onDone: {
-        target: "bidSuccess",
-      },
+      onDone: [
+        {
+          target: "bidSuccess",
+          guard: stateIn({ awaitingSync: "synced" }),
+        },
+        {
+          target: "error",
+          guard: stateIn({ awaitingSync: "error" }),
+        },
+      ],
       states: {
         fetchingUserBids: {
           invoke: {
@@ -570,7 +589,6 @@ export const ramBidMachine = setup({
             ],
             onError: [
               {
-                // TODO: Only retry a set number of times, then give up
                 target: "waiting",
                 actions: {
                   type: "incrementPollingRetries",
