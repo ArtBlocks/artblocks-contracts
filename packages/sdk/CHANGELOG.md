@@ -1,5 +1,11 @@
 # @artblocks/sdk
 
+## 0.1.23
+
+### Patch Changes
+
+- d65085f: Support settlement claim for unshared minters
+
 ## 0.1.12
 
 ### Patch Changes

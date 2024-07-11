@@ -22,6 +22,15 @@ interface IGenArt721CoreContractV3_Base {
     // exposing these state changes via publicly viewable fields.
 
     /**
+     * @notice Event emitted when the Art Blocks Curation Registry contract is updated.
+     * @dev only utilized by subset of V3 core contracts (Art Blocks Curated contracts)
+     * @param artblocksCurationRegistryAddress Address of Art Blocks Curation Registry contract.
+     */
+    event ArtBlocksCurationRegistryContractUpdated(
+        address indexed artblocksCurationRegistryAddress
+    );
+
+    /**
      * @notice Project's royalty splitter was updated to `_splitter`.
      * @dev New event in v3.2
      * @param projectId The project ID.

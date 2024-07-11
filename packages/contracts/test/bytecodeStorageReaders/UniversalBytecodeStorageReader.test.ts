@@ -12,8 +12,8 @@ import {
 import { UniversalBytecodeStorageReader } from "../../scripts/contracts";
 import { GenArt721CoreV3_Engine } from "../../scripts/contracts";
 import { GenArt721CoreV3_Engine_Flex } from "../../scripts/contracts";
-import { BytecodeStorageReaderContractV2__factory } from "../../scripts/contracts/factories/BytecodeStorageReaders/BytecodeStorageReaderContractV2__factory";
-import { BytecodeStorageReaderContractV2 } from "../../scripts/contracts/BytecodeStorageReaders/BytecodeStorageReaderContractV2";
+import { BytecodeStorageReaderContractV2__factory } from "../../scripts/contracts/factories/contracts/BytecodeStorageReaders/BytecodeStorageReaderContractV2.sol";
+import { BytecodeStorageReaderContractV2 } from "../../scripts/contracts/contracts/BytecodeStorageReaders/BytecodeStorageReaderContractV2.sol";
 
 interface T_ReaderTest_Config extends T_Config {
   universalReader: UniversalBytecodeStorageReader;

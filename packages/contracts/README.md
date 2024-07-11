@@ -23,10 +23,6 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 
 `yarn compile`
 
-### generate typescript contract bindings
-
-`yarn generate:typechain`
-
 ### run the tests
 
 `yarn test`

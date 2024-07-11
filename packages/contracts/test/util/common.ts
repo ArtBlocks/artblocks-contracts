@@ -4,9 +4,13 @@
 import { BN } from "@openzeppelin/test-helpers";
 import { ethers } from "hardhat";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Contract, BigNumber } from "ethers";
+import { Contract, BigNumber, constants } from "ethers";
 import { DEFAULT_BASE_URI, ONE_MINUTE } from "./constants";
-import { SplitProviderV0 } from "../../scripts/contracts/split/split-provider/SplitProviderV0";
+import { SplitProviderV0 } from "../../scripts/contracts/contracts/split/split-provider/SplitProviderV0.sol";
+import {
+  GenArt721CoreV3_Curated__factory,
+  OwnedCreate2FactoryV0,
+} from "../../scripts/contracts";
 import { UniversalBytecodeStorageReader } from "../../scripts/contracts";
 
 export type TestAccountsArtBlocks = {
@@ -94,6 +98,7 @@ export type T_Config = {
   splitterFactory?: Contract;
   splitter?: Contract;
   splitProvider?: SplitProviderV0;
+  ownedCreate2Factory?: OwnedCreate2FactoryV0;
   universalReader?: UniversalBytecodeStorageReader;
   // split configs
   validSplit?: T_Split;
@@ -567,6 +572,83 @@ export async function deployCoreWithMinterFilter(
     await genArt721Core
       .connect(config.accounts.deployer)
       .updateMinterContract(minterFilter.address);
+  } else if (coreContractName.endsWith("V3_Curated")) {
+    randomizer = await deployAndGet(config, _randomizerName, []);
+    const minterFilterSuite = await deploySharedMinterFilter(
+      config,
+      minterFilterName
+    );
+    let adminACLContractName = useAdminACLWithEvents
+      ? "MockAdminACLV0Events"
+      : "AdminACLV0";
+    minterFilter = minterFilterSuite.minterFilter;
+
+    // if function input has adminACL contract name, use that instead
+    adminACLContractName = _adminACLContractName
+      ? _adminACLContractName
+      : adminACLContractName;
+    adminACL = await deployAndGet(config, adminACLContractName, []);
+    // split provider
+    const mockSplitterFactory = await deployAndGet(
+      config,
+      "Mock0xSplitsV2PullFactory",
+      []
+    );
+    config.splitProvider = (await deployAndGet(config, "SplitProviderV0", [
+      mockSplitterFactory.address, // _splitterFactory
+    ])) as SplitProviderV0;
+    const validCuratedConfiguration = {
+      tokenName: config.name,
+      tokenSymbol: config.symbol,
+      renderProviderAddress: config.accounts.deployer.address,
+      platformProviderAddress: constants.AddressZero,
+      newSuperAdminAddress: "0x0000000000000000000000000000000000000000",
+      minterFilterAddress: minterFilter.address,
+      randomizerContract: randomizer.address,
+      splitProviderAddress: config.splitProvider?.address,
+      startingProjectId: 999,
+      autoApproveArtistSplitProposals: false,
+      nullPlatformProvider: true,
+      allowArtistProjectActivation: false,
+    };
+    const bytecodeStorageLibFactory = await ethers.getContractFactory(
+      "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+    );
+
+    const library = await bytecodeStorageLibFactory
+      .connect(config.accounts.deployer)
+      .deploy(/* no args for library ever */);
+    const curatedFactory = new GenArt721CoreV3_Curated__factory(
+      {
+        "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+          library.address,
+      },
+      config.accounts.deployer
+    );
+    // deploy UniversalReader
+    config.universalReader = (await deployAndGet(
+      config,
+      "UniversalBytecodeStorageReader",
+      [config.accounts.deployer.address]
+    )) as UniversalBytecodeStorageReader;
+    // deploy version-specific reader and configure universalReader
+    const versionedReaderFactory = await ethers.getContractFactory(
+      "BytecodeStorageReaderContractV2",
+      { libraries: { BytecodeStorageReader: library.address } }
+    );
+    const versionedReader = await versionedReaderFactory
+      .connect(config.accounts.deployer)
+      .deploy();
+    await config.universalReader
+      .connect(config.accounts.deployer)
+      .updateBytecodeStorageReaderContract(versionedReader.address);
+    // deploy curated core
+    genArt721Core = await curatedFactory.deploy(
+      validCuratedConfiguration,
+      adminACL.address,
+      DEFAULT_BASE_URI,
+      config.universalReader.address
+    );
   } else if (
     coreContractName.endsWith("V3_Engine") ||
     coreContractName.endsWith("V3_Engine_Flex") ||
