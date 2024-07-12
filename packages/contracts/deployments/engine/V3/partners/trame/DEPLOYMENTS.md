@@ -37,3 +37,47 @@ Date: 2023-12-08T19:29:01.758Z
 
 ---
 
+
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2024-07-12T18:48:06.986Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** mainnet
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000559cA3F3f1279C0ec121c302ed010457#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x000000008DD9A7CD3f4A267A88082d4a1E2f6553#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x000000004058B5159ABB5a3Dd8cf775A7519E75F#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine Flex | 0x000000412217F67742376769695498074f007b97
+  
+        **Engine Contract:** https://etherscan.io/address/0x000000412217F67742376769695498074f007b97#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Token Name:** TRAMExCPG
+        - **Token Ticker:** TRAMExCPG
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x4C7D8c95a0ABE647E36a8570136cAe0BaA5288af
+        - **Null Platform Provider:** false
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0xba65a9dCa6A8E9a45371495B6535A057E025FD53
+        - **Super Admin Address:** 0x4C7D8c95a0ABE647E36a8570136cAe0BaA5288af        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** tramexcpg-mainnet
+        
+        ---
+      
+        
