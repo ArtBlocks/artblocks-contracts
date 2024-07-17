@@ -645,5 +645,4 @@ export const ramBidMachine = setup({
   },
 });
 
-export type RAMBidMachineRef = ActorRefFrom<typeof ramBidMachine>;
 export { getNearestSlotForBidValue, slotIndexToBidValue } from "./utils";

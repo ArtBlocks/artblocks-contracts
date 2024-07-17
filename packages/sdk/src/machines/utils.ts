@@ -154,3 +154,11 @@ export function getCoreContractAddressAndProjectIndexFromProjectId(
     projectIndex: BigInt(projectIndex),
   };
 }
+
+// Re-export xstate utility types and createEmptyActor function for use in consuming apps
+export {
+  type ActorRef,
+  type ActorRefFrom,
+  type SnapshotFrom,
+  createEmptyActor,
+} from "xstate";
