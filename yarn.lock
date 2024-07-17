@@ -17788,7 +17788,7 @@ xmlhttprequest@1.8.0:
   resolved "https://registry.yarnpkg.com/xmlhttprequest/-/xmlhttprequest-1.8.0.tgz#67fe075c5c24fef39f9d65f5f7b7fe75171968fc"
   integrity sha512-58Im/U0mlVBLM38NdZjHyhuMtCqa61469k2YP/AaPbvCoV9aQGUpbJBj1QRm2ytRiVQBD/fsw7L2bJGDVQswBA==
 
-xstate@^5.13.2:
+xstate@5.13.2:
   version "5.13.2"
   resolved "https://registry.yarnpkg.com/xstate/-/xstate-5.13.2.tgz#5ce49bcfca40c26a4c12986643e5defd72e10857"
   integrity sha512-cFbFJUuK7n8NGe9rsT9G8QjK/8KQO5WaxCkpl1GxnvSDb9oXM/+cbZbEtLT/YaAjDfaGA2nzOKyw5oev2LuNRw==

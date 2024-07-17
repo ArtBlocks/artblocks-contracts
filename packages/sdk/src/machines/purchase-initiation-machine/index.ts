@@ -15,7 +15,6 @@ import {
   isUserRejectedError,
 } from "../utils";
 import { ProjectDetails } from "../project-sale-manager-machine/utils";
-import { liveSaleDataPollingMachine } from "../project-sale-manager-machine/live-sale-data-polling-machine";
 import {
   getHolderMinterUserPurchaseContext,
   getMerkleMinterUserPurchaseContext,
@@ -200,7 +199,6 @@ export const purchaseInitiationMachine = setup({
         return await initiateBasePurchase(input);
       }
     ),
-    liveSaleDataPollingMachine,
   },
   actions: {
     assignPurchaseToAddress: assign({

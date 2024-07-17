@@ -15,7 +15,11 @@ import {
 } from ".";
 import { minterSetPriceMerkleV5Abi } from "../../../abis/minterSetPriceMerkleV5Abi";
 import { iSharedMinterSimplePurchaseV0Abi } from "../../../abis/iSharedMinterSimplePurchaseV0Abi";
-import { isHolderMinterType, isMerkleMinterType } from "../utils";
+import {
+  getCoreContractAddressAndProjectIndexFromProjectId,
+  isHolderMinterType,
+  isMerkleMinterType,
+} from "../utils";
 import { graphql } from "../../generated/index";
 import { iSharedMinterHolderV0Abi } from "../../../abis/iSharedMinterHolderV0Abi";
 import {
@@ -68,19 +72,6 @@ function assertLiveSaleData(
   if (!liveSaleData) {
     throw new Error("Live sale data not available");
   }
-}
-
-function getCoreContractAddressAndProjectIndexFromProjectId(projectId: string) {
-  const [coreContractAddress, projectIndex] = projectId.split("-");
-
-  if (!coreContractAddress || !projectIndex) {
-    throw new Error("Invalid project ID");
-  }
-
-  return {
-    coreContractAddress: coreContractAddress as Hex,
-    projectIndex: BigInt(projectIndex),
-  };
 }
 
 /** Token Gated Minter Helpers **/
