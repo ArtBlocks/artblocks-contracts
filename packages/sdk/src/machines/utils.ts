@@ -1,6 +1,7 @@
 import { Minter_Type_Names_Enum } from "../generated/graphql";
 import {
   BaseError,
+  Hex,
   TransactionExecutionError,
   UserRejectedRequestError,
 } from "viem";
@@ -18,6 +19,7 @@ export const SUPPORTED_MINTER_TYPES = [
   Minter_Type_Names_Enum.MinterDaExpHolderV5,
   Minter_Type_Names_Enum.MinterSetPriceHolderV5,
   Minter_Type_Names_Enum.MinterDaExpSettlementV3,
+  Minter_Type_Names_Enum.MinterRamv0,
 ];
 
 export const SUPPORTED_SETTLEMENT_CLAIM_MINTER_TYPES = [
@@ -137,3 +139,26 @@ export function getMessageFromError(error: unknown, fallbackMessage?: string) {
 
   return fallbackMessage ?? "Unknown error";
 }
+
+export function getCoreContractAddressAndProjectIndexFromProjectId(
+  projectId: string
+) {
+  const [coreContractAddress, projectIndex] = projectId.split("-");
+
+  if (!coreContractAddress || !projectIndex) {
+    throw new Error("Invalid project ID");
+  }
+
+  return {
+    coreContractAddress: coreContractAddress as Hex,
+    projectIndex: BigInt(projectIndex),
+  };
+}
+
+// Re-export xstate utility types and createEmptyActor function for use in consuming apps
+export {
+  type ActorRef,
+  type ActorRefFrom,
+  type SnapshotFrom,
+  createEmptyActor,
+} from "xstate";
