@@ -152,14 +152,22 @@ async function generateSelectMinterForm({
   if (minterSelectionFormSchemaWithMinters.properties?.["minter.address"]) {
     const globallyAllowedMinters =
       project.contract.minter_filter.globally_allowed_minters ?? [];
-    const latestMinters = globallyAllowedMinters.reduce(
+    // dedupe to get latest minter type version numbers, as well as only include supported minters
+    const latestSupportedMinters = globallyAllowedMinters.reduce(
       (dedupedMinters, minter) => {
         return dedupedMinters.filter((mntr) => {
           return (
+            // if current minter, include
             minterConfiguration?.minter?.address === mntr.address ||
-            mntr.type?.unversioned_type !== minter.type?.unversioned_type ||
-            (mntr.type?.version_number || 0) >=
-              (minter.type?.version_number || 0)
+            // if not current minter, ignore all polyptych minters (unsupported in SDK)
+            (!mntr.type?.unversioned_type
+              ?.toLowerCase()
+              .includes("polyptych") &&
+              // if different unversioned type, include
+              (mntr.type?.unversioned_type !== minter.type?.unversioned_type ||
+                // if same unversioned type, only include if version number is higher
+                (mntr.type?.version_number || 0) >=
+                  (minter.type?.version_number || 0)))
           );
         });
       },
@@ -167,7 +175,7 @@ async function generateSelectMinterForm({
     );
 
     minterSelectionFormSchemaWithMinters.properties["minter.address"].oneOf =
-      latestMinters.map((minter) => ({
+      latestSupportedMinters.map((minter) => ({
         const: minter.address,
         title: `${minter.type?.label ?? ""} - ${minter.address}`,
       }));
