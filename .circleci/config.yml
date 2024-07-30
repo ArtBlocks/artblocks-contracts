@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  node: circleci/node@5.1.0
+  node: circleci/node@5.2.0
   aws-cli: circleci/aws-cli@3.0.0
 
 jobs:
@@ -15,7 +15,9 @@ jobs:
           install-yarn: true
           node-version: "20.10"
       - node/install-packages:
-          pkg-manager: yarn
+          check-cache: always
+          pkg-manager: yarn-berry
+          with-cache: true
       - run:
           name: Lint
           command: yarn workspace @artblocks/contracts lint
@@ -30,8 +32,10 @@ jobs:
           install-yarn: true
           node-version: "20.10"
       - node/install-packages:
-          pkg-manager: yarn
+          pkg-manager: yarn-berry
+          check-cache: always
           cache-version: v2
+          with-cache: true
       - run:
           name: debug list files
           command: |
@@ -57,7 +61,7 @@ jobs:
           install-yarn: true
           node-version: "20.10"
       - node/install-packages:
-          pkg-manager: yarn
+          pkg-manager: yarn-berry
           cache-version: v2
       - run:
           name: coverage
@@ -92,7 +96,7 @@ jobs:
           install-yarn: true
           node-version: "20.10"
       - node/install-packages:
-          pkg-manager: yarn
+          pkg-manager: yarn-berry
       - attach_workspace:
           at: /tmp/coverage
       - run:
