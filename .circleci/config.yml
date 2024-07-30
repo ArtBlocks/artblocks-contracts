@@ -13,6 +13,10 @@ jobs:
       - checkout
       - node/install:
           node-version: "20.10"
+      - run:
+          name: install yarn berry
+          command: |
+            corepack enable && yarn set version berry
       - node/install-packages:
           check-cache: always
           pkg-manager: yarn-berry
@@ -33,7 +37,7 @@ jobs:
           pkg-manager: yarn-berry
           check-cache: always
           cache-version: v2
-          with-cache: true
+          with-cache: false
       - run:
           name: debug list files
           command: |
