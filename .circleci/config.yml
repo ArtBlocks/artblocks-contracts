@@ -12,7 +12,6 @@ jobs:
     steps:
       - checkout
       - node/install:
-          install-yarn: true
           node-version: "20.10"
       - node/install-packages:
           check-cache: always
@@ -29,7 +28,6 @@ jobs:
     steps:
       - checkout
       - node/install:
-          install-yarn: true
           node-version: "20.10"
       - node/install-packages:
           pkg-manager: yarn-berry
@@ -58,7 +56,6 @@ jobs:
     steps:
       - checkout
       - node/install:
-          install-yarn: true
           node-version: "20.10"
       - node/install-packages:
           pkg-manager: yarn-berry
@@ -93,7 +90,6 @@ jobs:
     steps:
       - checkout
       - node/install:
-          install-yarn: true
           node-version: "20.10"
       - node/install-packages:
           pkg-manager: yarn-berry
