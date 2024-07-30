@@ -10,18 +10,23 @@ import {
 import { projectSaleManagerMachine } from "../project-sale-manager-machine";
 import {
   getMessageFromError,
+  isERC20MinterType,
   isHolderMinterType,
   isMerkleMinterType,
   isUserRejectedError,
 } from "../utils";
 import { ProjectDetails } from "../project-sale-manager-machine/utils";
-import { liveSaleDataPollingMachine } from "../project-sale-manager-machine/live-sale-data-polling-machine";
 import {
+  checkERC20Allowance,
+  getERC20Decimals,
   getHolderMinterUserPurchaseContext,
   getMerkleMinterUserPurchaseContext,
   initiateBasePurchase,
+  initiateERC20AllowanceApproval,
+  initiateERC20Purchase,
   initiateHolderMinterPurchase,
   initiateMerkleMinterPurchase,
+  isERC20AllowanceSufficient,
 } from "./utils";
 import { ArtBlocksClient } from "../..";
 
@@ -32,15 +37,18 @@ export type PurchaseInitiationMachineEvents =
     }
   | {
       type: "RESET";
+    }
+  | {
+      type: "APPROVE_ERC20_ALLOWANCE";
+      amount: bigint;
     };
 
 type AdditionalPurchaseData = {
   allowlist?: Hex[];
-  erc20Allowance?: bigint;
-  erc20Balance?: bigint;
-  decimals?: bigint;
+  decimals?: number;
   allowedTokenId?: string;
   vaultAddress?: Hex;
+  erc20Allowance?: bigint;
 };
 
 export type PurchaseInitiationMachineContext = {
@@ -52,6 +60,8 @@ export type PurchaseInitiationMachineContext = {
   additionalPurchaseData?: AdditionalPurchaseData;
   userIneligibilityReason?: string;
   initiatedTxHash?: Hex;
+  erc20ApprovalAmount?: bigint;
+  erc20ApprovalTxHash?: Hex;
 };
 
 // Use this type to ensure that the `projectSaleManagerMachine` is correctly typed
@@ -165,6 +175,23 @@ export const purchaseInitiationMachine = setup({
           return await getHolderMinterUserPurchaseContext(input);
         }
 
+        if (
+          isERC20MinterType(project.minter_configuration?.minter?.minter_type)
+        ) {
+          const [decimals, erc20Allowance] = await Promise.all([
+            getERC20Decimals(input),
+            checkERC20Allowance(input),
+          ]);
+
+          return {
+            isEligible: true,
+            additionalPurchaseData: {
+              decimals,
+              erc20Allowance,
+            },
+          };
+        }
+
         return {
           isEligible: true,
         };
@@ -197,10 +224,64 @@ export const purchaseInitiationMachine = setup({
           return await initiateHolderMinterPurchase(input);
         }
 
+        if (
+          isERC20MinterType(project.minter_configuration?.minter?.minter_type)
+        ) {
+          return await initiateERC20Purchase(input);
+        }
+
         return await initiateBasePurchase(input);
       }
     ),
-    liveSaleDataPollingMachine,
+    checkERC20Allowance: fromPromise(
+      async ({
+        input,
+      }: {
+        input: Pick<
+          PurchaseInitiationMachineContext,
+          "artblocksClient" | "project" | "projectSaleManagerMachine"
+        >;
+      }): Promise<bigint> => {
+        return await checkERC20Allowance(input);
+      }
+    ),
+    initiateERC20AllowanceApproval: fromPromise(
+      async ({
+        input,
+      }: {
+        input: Pick<
+          PurchaseInitiationMachineContext,
+          "artblocksClient" | "project" | "erc20ApprovalAmount"
+        >;
+      }): Promise<Hex> => {
+        return await initiateERC20AllowanceApproval(input);
+      }
+    ),
+    waitForERC20AllowanceApprovalConfirmation: fromPromise(
+      async ({
+        input,
+      }: {
+        input: Pick<
+          PurchaseInitiationMachineContext,
+          "artblocksClient" | "project" | "erc20ApprovalTxHash"
+        >;
+      }): Promise<void> => {
+        const { artblocksClient } = input;
+        const publicClient = artblocksClient.getPublicClient();
+
+        if (!publicClient) {
+          throw new Error("Public client unavailable");
+        }
+
+        if (!input.erc20ApprovalTxHash) {
+          throw new Error("ERC20 approval transaction hash not provided");
+        }
+
+        await publicClient.waitForTransactionReceipt({
+          hash: input.erc20ApprovalTxHash,
+        });
+      }
+    ),
   },
   actions: {
     assignPurchaseToAddress: assign({
@@ -259,6 +340,13 @@ export const purchaseInitiationMachine = setup({
     assignInitiatedTxHash: assign({
       initiatedTxHash: (_, params: { txHash: Hex }) => params.txHash,
     }),
+    assignERC20ApprovalAmount: assign({
+      erc20ApprovalAmount: (_, params: { approvalAmount: bigint }) =>
+        params.approvalAmount,
+    }),
+    assignERC20ApprovalTxHash: assign({
+      erc20ApprovalTxHash: (_, params: { txHash: Hex }) => params.txHash,
+    }),
     emitPurchaseInitiatedEvent: emit((_, params: { txHash: Hex }) => ({
       type: "purchaseInitiated" as const,
       txHash: params.txHash,
@@ -274,9 +362,26 @@ export const purchaseInitiationMachine = setup({
     ) => {
       return userPurchaseContext.isEligible;
     },
+    isERC20MinterType: ({ context }) => {
+      return isERC20MinterType(
+        context.project.minter_configuration?.minter?.minter_type
+      );
+    },
+    isERC20AllowanceSufficient: (
+      { context },
+      { allowance }: { allowance?: bigint }
+    ) => {
+      return isERC20AllowanceSufficient(context.project, allowance);
+    },
+    isERC20AllowanceInsufficient: (
+      { context },
+      { allowance }: { allowance?: bigint }
+    ) => {
+      return !isERC20AllowanceSufficient(context.project, allowance);
+    },
   },
 }).createMachine({
-  /** @xstate-layout N4IgpgJg5mDOIC5QAcCuAnAxgCwIazAEkA7ASwBdTdKB7YgWVx1OLAGIAlAUQGUuAVANoAGALqIUNWBVJ0JIAB6IAtAGZhATgB0AdlUAOfRoCMAFgBsO4auPnTAGhABPRMYBMAVi3HNxo3f03a1UdAF9QxzQsPAISGWpZBiZsFjAtGHJKYigAVQJ0AAUMHHwwLgAbUihSACNSSvInAEFiCABhOnIwBXI2CDo0lgA3GgBrNKiS2LJKBLpGZlZ0sEyWXPyi6NKKqtr6imbWjuIunoRhmkw54hFRW-lkKRk5JEVXYy8-DWFjVVVTfQecz6czmRwuBAWLwaPQ6HQaQKeDRuDThSLFGJEGZUWhJRZpDJZdZgQoY7aVap1BqHdqdbq9fpLC7jLSTTFxWa4hYpJaEtZ5EmbKZlCl7aktWknennYgjK6426CYziV6PaS4+RKBC2YxaUyqb5mRHCPQOZyuNzmLTmXzCNwfIE6TyqNEgNmlDk4xLc1LLVbZAWkrYEHaU-aNCXHU69EnoGjoVnlagAM3jAFtWWTpvEuclfXyAxssyLdlSDpG6WcLvLEoqxA8nhrXlr7do7aYNOYDeY3H8PADwYh9DYtCYjH5+3aQWEIm7i57rj6lugwLgIE4AGLxoWYtiEAByhH4hCa-C4AH0CjkOG0ABJNPj3VWNxKa96dvUGNxWVTf1QeYxBwQS1VC0H4bB0UxTDhO07Fdd1s05b08yZbEEmyHdSj6AYtGZCZ5zQ3N8Vwwi1kwggZTla46xVSR1VfZt3ncbwbRhDxkV-ExVCA-UdD1Dt9Q8FEdF+YdTHggic2Q4iWCkjDizYWN40TFN00zYMsSk+YUMGUj5I0yjLmosQnzo55iDfbV3FAkEfmRDx9A+E0gPMIEwJBHVhECOxXIkjSFyInldLkqByPYJSE2QJNyFTdAMwQzSkO0mS9NC4tDJrOhFWVBt6JeUAtWMdw3E-Nxv0tfRTCEnQwXNBBINMPUEXtGxQUcnQPHCWdiBoCA4AeSSkrxILcvMyy1Eg3Rf1MTwqrhUx3CAoqtH+djQVc8xkVscTZwSgLpKCv0iUDMLQzFcsjkrchRqbAqVF-K09DcGb+w8ebFrqixQI0DxrH0axLE2hy-OFfbksOlc103bdixuhi7oQRzQKBX9LV+1bjB0Hj9D4qrrChUEyv+cwQfZUjwd9WSkP04U4fyt5tRtUC8aglEXuMZEeK7Ud0ZsX8HJMN7SY9cnht9CK6YsxjGb0a0-AWu12KBDQzQhSq+MtYQAUBYQ3pxzrdsGr0KaWVB8hIMBRRqcowC3INaefPKpYRj4cZWowOtUVy3u-DQgIRLRKrW9wtasYcSa6oA */
+  /** @xstate-layout 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 */
   id: "purchaseInitiationMachine",
   context: ({ input }) => ({
     artblocksClient: input.artblocksClient,
@@ -338,14 +443,129 @@ export const purchaseInitiationMachine = setup({
     },
     readyForPurchase: {
       on: {
-        INITIATE_PURCHASE: {
-          target: "initiatingPurchase",
+        INITIATE_PURCHASE: [
+          {
+            target: "initiatingPurchase",
+            actions: {
+              type: "assignPurchaseToAddress",
+              params: ({ event }) => ({
+                purchaseToAddress: event.purchaseToAddress,
+              }),
+            },
+            guard: {
+              type: "isERC20AllowanceSufficient",
+              params: ({ context }) => ({
+                allowance: context.additionalPurchaseData?.erc20Allowance,
+              }),
+            },
+          },
+          {
+            target: "awaitingERC20AllowanceApprovalAmount",
+            actions: {
+              type: "assignPurchaseToAddress",
+              params: ({ event }) => ({
+                purchaseToAddress: event.purchaseToAddress,
+              }),
+            },
+          },
+        ],
+      },
+    },
+    awaitingERC20AllowanceApprovalAmount: {
+      on: {
+        APPROVE_ERC20_ALLOWANCE: {
+          target: "awaitingERC20AllowanceApprovalInitiation",
           actions: {
-            type: "assignPurchaseToAddress",
+            type: "assignERC20ApprovalAmount",
             params: ({ event }) => ({
-              purchaseToAddress: event.purchaseToAddress,
+              approvalAmount: event.amount,
             }),
           },
+          guard: {
+            type: "isERC20AllowanceSufficient",
+            params: ({ event }) => ({
+              allowance: event.amount,
+            }),
+          },
+        },
+        RESET: {
+          target: "gettingUserPurchaseEligibilityAndContext",
+          actions: {
+            type: "resetPurchaseContext",
+          },
+        },
+      },
+    },
+    awaitingERC20AllowanceApprovalInitiation: {
+      invoke: {
+        src: "initiateERC20AllowanceApproval",
+        input: ({ context }) => ({
+          artblocksClient: context.artblocksClient,
+          project: context.project,
+          erc20ApprovalAmount: context.erc20ApprovalAmount,
+        }),
+        onDone: [
+          {
+            target: "waitingForERC20AllowanceApprovalConfirmation",
+            actions: {
+              type: "assignERC20ApprovalTxHash",
+              params: ({ event }) => ({
+                txHash: event.output,
+              }),
+            },
+          },
+        ],
+        onError: [
+          {
+            target: "readyForPurchase",
+            guard: {
+              type: "isUserRejectedError",
+              params: ({ event }) => ({
+                error: event.error,
+              }),
+            },
+          },
+          {
+            target: "error",
+            actions: {
+              type: "assignErrorMessageFromError",
+              params: ({ event }) => ({
+                error: event.error,
+              }),
+            },
+          },
+        ],
+      },
+    },
+    waitingForERC20AllowanceApprovalConfirmation: {
+      invoke: {
+        src: "waitForERC20AllowanceApprovalConfirmation",
+        input: ({ context }) => ({
+          artblocksClient: context.artblocksClient,
+          project: context.project,
+          erc20ApprovalTxHash: context.erc20ApprovalTxHash,
+        }),
+        onDone: {
+          target: "erc20AllowanceApproved",
+        },
+        onError: {
+          target: "error",
+          actions: {
+            type: "assignErrorMessageFromError",
+            params: ({ event }) => ({
+              error: event.error,
+            }),
+          },
+        },
+      },
+    },
+    erc20AllowanceApproved: {
+      on: {
+        INITIATE_PURCHASE: {
+          target: "initiatingPurchase",
+        },
+        RESET: {
+          target: "gettingUserPurchaseEligibilityAndContext",
         },
       },
     },

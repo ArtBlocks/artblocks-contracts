@@ -1,6 +1,7 @@
 import MerkleTree from "merkletreejs";
 import {
   Account,
+  erc20Abi,
   getContract,
   Hex,
   keccak256,
@@ -15,7 +16,12 @@ import {
 } from ".";
 import { minterSetPriceMerkleV5Abi } from "../../../abis/minterSetPriceMerkleV5Abi";
 import { iSharedMinterSimplePurchaseV0Abi } from "../../../abis/iSharedMinterSimplePurchaseV0Abi";
-import { isHolderMinterType, isMerkleMinterType } from "../utils";
+import {
+  getCoreContractAddressAndProjectIndexFromProjectId,
+  isERC20MinterType,
+  isHolderMinterType,
+  isMerkleMinterType,
+} from "../utils";
 import { graphql } from "../../generated/index";
 import { iSharedMinterHolderV0Abi } from "../../../abis/iSharedMinterHolderV0Abi";
 import {
@@ -26,6 +32,7 @@ import {
 import { LiveSaleData } from "../project-sale-manager-machine/utils";
 import { iDelegationRegistryAbi } from "../../../abis/iDelegationRegistryAbi";
 import { DELEGATION_REGISTRY_ADDRESS } from "../../utils/addresses";
+import { minterSetPriceERC20V5Abi } from "../../../abis/minterSetPriceERC20V5Abi";
 
 /** Shared Helpers **/
 type WalletClientWithAccount = WalletClient & {
@@ -68,19 +75,6 @@ function assertLiveSaleData(
   if (!liveSaleData) {
     throw new Error("Live sale data not available");
   }
-}
-
-function getCoreContractAddressAndProjectIndexFromProjectId(projectId: string) {
-  const [coreContractAddress, projectIndex] = projectId.split("-");
-
-  if (!coreContractAddress || !projectIndex) {
-    throw new Error("Invalid project ID");
-  }
-
-  return {
-    coreContractAddress: coreContractAddress as Hex,
-    projectIndex: BigInt(projectIndex),
-  };
 }
 
 /** Token Gated Minter Helpers **/
@@ -521,6 +515,179 @@ export async function initiateMerkleMinterPurchase(
     [projectIndex, coreContractAddress, merkleProof],
     {
       value: liveSaleData.tokenPriceInWei,
+      account: walletClient.account.address,
+    }
+  );
+
+  const purchaseTransactionHash = await walletClient.writeContract(request);
+
+  return purchaseTransactionHash;
+}
+
+/** ERC20 Minter Helpers **/
+export async function checkERC20Allowance(
+  input: Pick<PurchaseInitiationMachineContext, "artblocksClient" | "project">
+): Promise<bigint> {
+  const { artblocksClient, project } = input;
+  const publicClient = artblocksClient.getPublicClient();
+  const walletClient = artblocksClient.getWalletClient();
+
+  assertPublicClientAvailable(publicClient);
+  assertWalletClientWithAccount(walletClient);
+  assertProjectWithValidMinterConfiguration(project);
+
+  if (!isERC20MinterType(project.minter_configuration?.minter?.minter_type)) {
+    throw new Error(
+      "Project is not configured to allow payment in ERC-20 tokens"
+    );
+  }
+
+  const erc20Contract = getContract({
+    abi: erc20Abi,
+    address: project.minter_configuration.currency_address as Hex,
+    client: publicClient,
+  });
+
+  const allowance = await erc20Contract.read.allowance([
+    walletClient.account.address,
+    project.minter_configuration.minter.address as Hex,
+  ]);
+
+  return allowance;
+}
+
+export async function getERC20Decimals(
+  input: Pick<PurchaseInitiationMachineContext, "artblocksClient" | "project">
+): Promise<number> {
+  const { artblocksClient, project } = input;
+  const publicClient = artblocksClient.getPublicClient();
+
+  assertProjectWithValidMinterConfiguration(project);
+  assertPublicClientAvailable(publicClient);
+
+  const erc20Contract = getContract({
+    abi: erc20Abi,
+    address: project.minter_configuration.currency_address as Hex,
+    client: publicClient,
+  });
+
+  const decimals = await erc20Contract.read.decimals();
+
+  return decimals;
+}
+
+export async function initiateERC20AllowanceApproval(
+  input: Pick<
+    PurchaseInitiationMachineContext,
+    "artblocksClient" | "project" | "erc20ApprovalAmount"
+  >
+) {
+  const { artblocksClient, project, erc20ApprovalAmount } = input;
+  const walletClient = artblocksClient.getWalletClient();
+  const publicClient = artblocksClient.getPublicClient();
+
+  assertPublicClientAvailable(publicClient);
+  assertWalletClientWithAccount(walletClient);
+  assertProjectWithValidMinterConfiguration(project);
+
+  if (!isERC20MinterType(project.minter_configuration?.minter?.minter_type)) {
+    throw new Error(
+      "Project is not configured to allow payment in ERC-20 tokens"
+    );
+  }
+
+  if (!erc20ApprovalAmount) {
+    throw new Error("No ERC-20 approval amount provided");
+  }
+
+  const erc20Contract = getContract({
+    abi: erc20Abi,
+    address: project.minter_configuration.currency_address as Hex,
+    client: publicClient,
+  });
+
+  const { request } = await erc20Contract.simulate.approve(
+    [project.minter_configuration.minter.address as Hex, erc20ApprovalAmount],
+    {
+      account: walletClient.account.address,
+    }
+  );
+
+  return walletClient.writeContract(request);
+}
+
+export function isERC20AllowanceSufficient(
+  project: ProjectDetailsFragment,
+  allowance: bigint | undefined
+): boolean {
+  if (!isERC20MinterType(project.minter_configuration?.minter?.minter_type)) {
+    return true;
+  }
+
+  return (
+    (allowance ?? BigInt(0)) >=
+    BigInt(project.minter_configuration?.base_price ?? Infinity)
+  );
+}
+
+export async function initiateERC20Purchase(
+  input: Pick<
+    PurchaseInitiationMachineContextWithFullTypes,
+    | "artblocksClient"
+    | "project"
+    | "projectSaleManagerMachine"
+    | "purchaseToAddress"
+  >
+): Promise<Hex> {
+  const { artblocksClient, project, projectSaleManagerMachine } = input;
+
+  const walletClient = artblocksClient.getWalletClient();
+  const publicClient = artblocksClient.getPublicClient();
+  const liveSaleData =
+    projectSaleManagerMachine.getSnapshot().context.liveSaleData;
+
+  assertPublicClientAvailable(publicClient);
+  assertWalletClientWithAccount(walletClient);
+  assertProjectWithValidMinterConfiguration(project);
+  assertLiveSaleData(liveSaleData);
+
+  const { projectIndex, coreContractAddress } =
+    getCoreContractAddressAndProjectIndexFromProjectId(project.id);
+
+  const minterContract = getContract({
+    address: project.minter_configuration?.minter.address as Hex,
+    abi: minterSetPriceERC20V5Abi,
+    client: {
+      public: publicClient,
+      wallet: walletClient,
+    },
+  });
+
+  const currencyAddress = project.minter_configuration.currency_address as Hex;
+  const basePrice = BigInt(project.minter_configuration.base_price ?? 0);
+
+  if (input.purchaseToAddress) {
+    const { request } = await minterContract.simulate.purchaseTo(
+      [
+        input.purchaseToAddress,
+        projectIndex,
+        coreContractAddress,
+        basePrice,
+        currencyAddress,
+      ],
+      {
+        account: walletClient.account.address,
+      }
+    );
+
+    const purchaseTransactionHash = await walletClient.writeContract(request);
+
+    return purchaseTransactionHash;
+  }
+
+  const { request } = await minterContract.simulate.purchase(
+    [projectIndex, coreContractAddress, basePrice, currencyAddress],
+    {
       account: walletClient.account.address,
     }
   );

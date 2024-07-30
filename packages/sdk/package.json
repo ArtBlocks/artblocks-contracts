@@ -1,6 +1,6 @@
 {
   "name": "@artblocks/sdk",
-  "version": "0.1.23",
+  "version": "0.1.28-alpha",
   "description": "JavaScript SDK for configuring and using Art Blocks minters.",
   "main": "dist/index.js",
   "repository": "git@github.com:ArtBlocks/artblocks-sdk.git",
@@ -15,6 +15,10 @@
     "./machines/*": {
       "types": "./dist/machines/*/index.d.ts",
       "default": "./dist/machines/*/index.js"
+    },
+    "./machines/utils": {
+      "types": "./dist/machines/utils.d.ts",
+      "default": "./dist/machines/utils.js"
     }
   },
   "devDependencies": {
@@ -36,7 +40,7 @@
     "typescript": "^5.4.5"
   },
   "scripts": {
-    "build": "yarn codegen && tsup src/index.ts src/machines/**/index.ts --dts",
+    "build": "yarn codegen && tsup src/index.ts src/machines/**/index.ts src/machines/utils.ts --dts",
     "codegen": "yarn --cwd=\"../..\" run codegen:project sdk",
     "lint": "prettier --check src/**/*.ts && eslint src/**/*.ts",
     "fmt": "prettier --write src/**/*.ts && eslint src/**/*.ts --fix",
@@ -76,7 +80,7 @@
     "lodash": "^4.17.21",
     "merkletreejs": "^0.3.11",
     "viem": "^2.13.7",
-    "xstate": "^5.13.2",
+    "xstate": "5.13.2",
     "zod": "^3.23.8"
   },
   "files": [
