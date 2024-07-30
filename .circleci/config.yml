@@ -16,7 +16,7 @@ jobs:
       - node/install-packages:
           check-cache: always
           pkg-manager: yarn-berry
-          with-cache: true
+          with-cache: false
       - run:
           name: Lint
           command: yarn workspace @artblocks/contracts lint
