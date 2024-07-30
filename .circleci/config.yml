@@ -14,7 +14,7 @@ jobs:
       - node/install:
           node-version: "20.10"
       - run:
-          name: install yarn berry
+          name: Use yarn berry
           command: |
             corepack enable && yarn set version berry
       - node/install-packages:
@@ -33,6 +33,10 @@ jobs:
       - checkout
       - node/install:
           node-version: "20.10"
+      - run:
+          name: Use yarn berry
+          command: |
+            corepack enable && yarn set version berry
       - node/install-packages:
           pkg-manager: yarn-berry
           check-cache: always
@@ -61,6 +65,10 @@ jobs:
       - checkout
       - node/install:
           node-version: "20.10"
+      - run:
+          name: Use yarn berry
+          command: |
+            corepack enable && yarn set version berry
       - node/install-packages:
           pkg-manager: yarn-berry
           cache-version: v2
@@ -95,6 +103,10 @@ jobs:
       - checkout
       - node/install:
           node-version: "20.10"
+      - run:
+          name: Use yarn berry
+          command: |
+            corepack enable && yarn set version berry
       - node/install-packages:
           pkg-manager: yarn-berry
       - attach_workspace:
