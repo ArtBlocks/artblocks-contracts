@@ -20,7 +20,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - run: corepack enable && yarn --frozen-lockfile
+      - run: corepack enable && yarn --immutable
         working-directory: packages/sdk
       - name: Build # requires access to secrets
         run: yarn run build
