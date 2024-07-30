@@ -20,7 +20,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - run: yarn --frozen-lockfile
+      - run: corepack enable && yarn --frozen-lockfile
         working-directory: packages/sdk
       - name: Lint
         run: yarn run lint
