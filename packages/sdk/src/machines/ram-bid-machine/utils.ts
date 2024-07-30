@@ -1,4 +1,4 @@
-import { formatEther, parseEther } from "viem";
+import { parseEther } from "viem";
 
 const SLOTS_PER_PRICE_DOUBLE = BigInt(64);
 
