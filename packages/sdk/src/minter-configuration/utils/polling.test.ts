@@ -2,7 +2,7 @@ import {
   pollForSyncedMinterConfigUpdates,
   pollForProjectUpdates,
 } from "./polling";
-import ArtBlocksClient, { ArtBlocksClientContext } from "../..";
+import { ArtBlocksClientContext } from "../..";
 import { asyncPoll } from "../../utils/async-poll";
 
 jest.mock("graphql-request");

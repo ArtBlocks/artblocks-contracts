@@ -33,7 +33,9 @@ jobs:
           node-version: ">=18.12.0"
           cache: "npm"
       - name: install dependencies
-        run: yarn install
+        run: |
+          corepack enable
+          yarn install
       - name: Set up dummy env vars
         run: |
           echo "MAINNET_JSON_RPC_PROVIDER_URL=https://mainnet.infura.io/v3/dummyApiKey" >> $GITHUB_ENV

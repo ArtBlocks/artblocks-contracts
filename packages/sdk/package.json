@@ -1,6 +1,6 @@
 {
   "name": "@artblocks/sdk",
-  "version": "0.1.25-alpha",
+  "version": "0.1.28-alpha",
   "description": "JavaScript SDK for configuring and using Art Blocks minters.",
   "main": "dist/index.js",
   "repository": "git@github.com:ArtBlocks/artblocks-sdk.git",
@@ -42,8 +42,8 @@
   "scripts": {
     "build": "yarn codegen && tsup src/index.ts src/machines/**/index.ts src/machines/utils.ts --dts",
     "codegen": "yarn --cwd=\"../..\" run codegen:project sdk",
-    "lint": "prettier --check src/**/*.ts && eslint src/**/*.ts",
-    "fmt": "prettier --write src/**/*.ts && eslint src/**/*.ts --fix",
+    "lint": "prettier --check src/**/*.ts && npx eslint src/**/*.ts",
+    "fmt": "prettier --write src/**/*.ts && npx eslint src/**/*.ts --fix",
     "test": "jest",
     "build:docs": "jsdoc -c jsdoc.json",
     "pre-commit": "yarn lint",
@@ -51,7 +51,7 @@
   },
   "lint-staged": {
     "*.{js,ts,tsx, jsx}": [
-      "eslint --quiet --fix"
+      "npx eslint --quiet --fix"
     ],
     "*.{json,md,html,js,jsx,ts,tsx}": [
       "prettier --write"

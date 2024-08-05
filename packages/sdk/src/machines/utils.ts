@@ -20,6 +20,7 @@ export const SUPPORTED_MINTER_TYPES = [
   Minter_Type_Names_Enum.MinterSetPriceHolderV5,
   Minter_Type_Names_Enum.MinterDaExpSettlementV3,
   Minter_Type_Names_Enum.MinterRamv0,
+  Minter_Type_Names_Enum.MinterSetPriceErc20V5,
 ];
 
 export const SUPPORTED_SETTLEMENT_CLAIM_MINTER_TYPES = [
@@ -35,6 +36,8 @@ const HOLDER_MINTER_TYPES = [
   Minter_Type_Names_Enum.MinterDaExpHolderV5,
   Minter_Type_Names_Enum.MinterSetPriceHolderV5,
 ];
+
+const ERC20_MINTER_TYPES = [Minter_Type_Names_Enum.MinterSetPriceErc20V5];
 
 /**
  * Checks if a minter type is supported by the purchase machine.
@@ -75,6 +78,20 @@ export function isHolderMinterType(
 ) {
   return (
     HOLDER_MINTER_TYPES as Array<Minter_Type_Names_Enum | undefined>
+  ).includes(minterType);
+}
+
+/**
+ * Checks if a minter type is an ERC20 minter.
+ *
+ * @param minterType - The minter type to check.
+ * @returns A boolean indicating whether the minter type is an ERC20 minter.
+ */
+export function isERC20MinterType(
+  minterType: Minter_Type_Names_Enum | undefined
+) {
+  return (
+    ERC20_MINTER_TYPES as Array<Minter_Type_Names_Enum | undefined>
   ).includes(minterType);
 }
 
