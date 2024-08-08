@@ -11,10 +11,11 @@ import {ISeaDrop} from "../../../interfaces/v0.8.x/integration-refs/OpenSea/ISea
 import {ERC721SeaDropStructsErrorsAndEvents} from "../../../interfaces/v0.8.x/integration-refs/OpenSea/ERC721SeaDropStructsErrorsAndEvents.sol";
 import {PublicDrop, AllowListData, TokenGatedDropStage, SignedMintValidationParams} from "../../../interfaces/v0.8.x/integration-refs/OpenSea/SeaDropStructs.sol";
 import {IGenArt721CoreContractV3_Base} from "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import {IGenArt721CoreContractV3_ProjectFinance} from "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_ProjectFinance.sol";
 
 import {ERC165} from "@openzeppelin-4.7/contracts/utils/introspection/ERC165.sol";
 import {IERC165} from "@openzeppelin-4.7/contracts/utils/introspection/IERC165.sol";
-import {IERC721} from "@openzeppelin-4.7/contracts/token/ERC721/IERC721.sol";
+import {IERC2981} from "@openzeppelin-4.7/contracts/interfaces/IERC2981.sol";
 import {ReentrancyGuard} from "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
 
 /**
@@ -326,6 +327,58 @@ contract SeaDropXArtBlocksShim is
         ISeaDrop(seaDropImpl).updatePayer(payer, allowed);
     }
 
+    // --- external functions from ISeaDropTokenContractMetadata ---
+
+    /**
+     * @notice Sets the base URI for the token metadata and emits an event.
+     * Reverts - baseURI must be configured on the Art Blocks core contract.
+     */
+    function setBaseURI(string calldata /*tokenURI*/) external pure {
+        revert(
+            "SeaDropXArtBlocksShim: baseURI must be configured on the Art Blocks core contract"
+        );
+    }
+
+    /**
+     * @notice Sets the contract URI for contract metadata.
+     * Reverts - contractURI is not supported on the Art Blocks core contract.
+     */
+    function setContractURI(string calldata /*newContractURI*/) external pure {
+        revert(
+            "SeaDropXArtBlocksShim: contractURI is not supported on the Art Blocks core contract"
+        );
+    }
+
+    /**
+     * @notice Sets the max supply and emits an event.
+     * Reverts - maxSupply must be configured on the Art Blocks core contract.
+     */
+    function setMaxSupply(uint256 /*newMaxSupply*/) external pure {
+        revert(
+            "SeaDropXArtBlocksShim: maxSupply must be configured on the Art Blocks core contract"
+        );
+    }
+
+    /**
+     * @notice Sets the provenance hash and emits an event.
+     * Not supported on Art Blocks contracts.
+     */
+    function setProvenanceHash(bytes32 /*newProvenanceHash*/) external pure {
+        revert(
+            "SeaDropXArtBlocksShim: provenance hash is not supported on Art Blocks contracts"
+        );
+    }
+
+    /**
+     * @notice Sets the address and basis points for royalties.
+     * Reverts - royalties must be configured on the Art Blocks core contract.
+     */
+    function setRoyaltyInfo(RoyaltyInfo calldata /*newInfo*/) external pure {
+        revert(
+            "SeaDropXArtBlocksShim: royalties must be configured on the Art Blocks core contract"
+        );
+    }
+
     // --- external functions from https://github.com/ProjectOpenSea/seadrop/blob/main/src/ERC721SeaDrop.sol ---
 
     /**
@@ -521,21 +574,113 @@ contract SeaDropXArtBlocksShim is
         returns (
             uint256 minterNumMinted_,
             uint256 currentTotalSupply,
-            uint256 maxSupply
+            uint256 maxSupply_
         )
     {
         // @dev only able to track mint qty performed via this contract; Art Blocks does not implement ERC721Enumerable
         minterNumMinted_ = minterNumMinted[minter];
 
         // defer to the core contract for the current supply details, for assumed project
-        (uint256 invocations, uint256 maxInvocations, , , , ) = genArt721Core
-            .projectStateData(ASSUMED_PROJECT_ID);
-
+        (
+            uint256 invocations,
+            uint256 maxInvocations
+        ) = _getInvocationsDataFromCore();
         // current supply is number of invocations for the assumed project
         currentTotalSupply = invocations;
         // max supply is the max invocations for the assumed project
-        maxSupply = maxInvocations;
+        maxSupply_ = maxInvocations;
     }
+
+    // --- public view functions from ISeaDropTokenContractMetadata ---
+    /**
+     * @notice Returns the base URI for token metadata.
+     */
+    function baseURI() external view returns (string memory) {
+        return genArt721Core.projectURIInfo(ASSUMED_PROJECT_ID);
+    }
+
+    /**
+     * @notice Returns the contract URI.
+     * Reverts, because the contract URI is not supported on Art Blocks contracts.
+     */
+    function contractURI() external pure returns (string memory) {
+        revert(
+            "SeaDropXArtBlocksShim: contractURI is not supported on Art Blocks contracts"
+        );
+    }
+
+    /**
+     * @notice Returns the max token supply.
+     */
+    function maxSupply() external view returns (uint256) {
+        // defer to the core contract for the current supply details, for assumed project
+        (, uint256 maxInvocations) = _getInvocationsDataFromCore();
+        // max supply is the max invocations for the assumed project
+        return maxInvocations;
+    }
+
+    /**
+     * @notice Returns the provenance hash.
+     *         The provenance hash is used for random reveals, which
+     *         is a hash of the ordered metadata to show it is unmodified
+     *         after mint has started.
+     */
+    function provenanceHash() external pure returns (bytes32) {
+        revert(
+            "SeaDropXArtBlocksShim: provenance hash is not supported on Art Blocks contracts"
+        );
+    }
+
+    /**
+     * @notice Returns the address that receives royalties.
+     */
+    function royaltyAddress() external view returns (address) {
+        // defer to the core contract for the royalty splitter address, for assumed project
+        // @dev assumes v3.2 or later, where the ERC2981 royaltySplitter is stored in the project financials
+        return
+            IGenArt721CoreContractV3_ProjectFinance(address(genArt721Core))
+                .projectIdToFinancials(ASSUMED_PROJECT_ID)
+                .royaltySplitter;
+    }
+
+    /**
+     * @notice Returns the royalty basis points out of 10_000.
+     */
+    function royaltyBasisPoints() external view returns (uint256) {
+        // defer to the core contract for the royalty basis points, for assumed project
+        // @dev assumes v3.2 or later, where the ERC2981 royaltySplitter is stored in the project financials
+        IGenArt721CoreContractV3_ProjectFinance.ProjectFinance
+            memory financials = IGenArt721CoreContractV3_ProjectFinance(
+                address(genArt721Core)
+            ).projectIdToFinancials(ASSUMED_PROJECT_ID);
+        // total royalty basis points is the sum of the artist's royalty percentage converted to BPS, the platform
+        // provider's secondary sales BPS, and the render provider's secondary sales BPS
+        return
+            (financials.secondaryMarketRoyaltyPercentage * 100) +
+            financials.platformProviderSecondarySalesBPS +
+            financials.renderProviderSecondarySalesBPS;
+    }
+
+    // --- public view functions from IERC2981 ---
+
+    /**
+     * @dev Returns how much royalty is owed and to whom, based on a sale price that may be denominated in any unit of
+     * exchange. The royalty amount is denominated and should be paid in that same unit of exchange.
+     */
+    function royaltyInfo(
+        uint256 tokenId,
+        uint256 salePrice
+    ) external view returns (address receiver, uint256 royaltyAmount) {
+        // defer to the core contract for the royalty receiver and amount, for the given token ID
+        // @dev assumes v3.2 or later, where ERC2981 is supported
+        return
+            IERC2981(address(genArt721Core)).royaltyInfo({
+                tokenId: tokenId,
+                salePrice: salePrice
+            });
+    }
+
+    // --- public view functions from IERC165 ---
 
     /**
      * @notice Returns whether the interface is supported.
@@ -543,15 +688,28 @@ contract SeaDropXArtBlocksShim is
      */
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(ERC165) returns (bool) {
+    ) public view virtual override(ERC165, IERC165) returns (bool) {
+        // Note: do not support ERC721, ERC721Metadata in this shim layer
         return
             interfaceId == type(INonFungibleSeaDropToken).interfaceId ||
             interfaceId == type(ISeaDropTokenContractMetadata).interfaceId ||
+            interfaceId == type(IERC2981).interfaceId ||
             // ERC165 returns supportsInterface true for ERC165
             super.supportsInterface(interfaceId);
-        // GenArt721 returns supportsInterface true for EIP-2981, ERC721, ERC721Metadata
-        // TODO - do we need to forward requests for all of these interfaces and support them? can we ignore?
-        // e.g., do we need to forward ownerOf requests, because SeaDrop wants to check ownership? I don't think so...
-        // if we do forward requests, can add here: || genArt721Core.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @notice Returns the invocations and max invocations for the assumed project, from the core contract.
+     * @return invocations The number of invocations for the assumed project.
+     * @return maxInvocations The max invocations for the assumed project.
+     */
+    function _getInvocationsDataFromCore()
+        private
+        view
+        returns (uint256 invocations, uint256 maxInvocations)
+    {
+        (invocations, maxInvocations, , , , ) = genArt721Core.projectStateData(
+            ASSUMED_PROJECT_ID
+        );
     }
 }

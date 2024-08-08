@@ -7,9 +7,7 @@ import {ISeaDropTokenContractMetadata} from "./ISeaDropTokenContractMetadata.sol
 
 import {AllowListData, PublicDrop, TokenGatedDropStage, SignedMintValidationParams} from "./SeaDropStructs.sol";
 
-// TODO - determine if we also need ISeaDropTokenContractMetadata?
-// interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata {
-interface INonFungibleSeaDropToken {
+interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata {
     /**
      * @dev Revert with an error if a contract is not an allowed
      *      SeaDrop address.
