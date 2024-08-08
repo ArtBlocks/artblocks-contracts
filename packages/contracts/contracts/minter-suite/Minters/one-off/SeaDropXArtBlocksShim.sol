@@ -24,12 +24,13 @@ import {ReentrancyGuard} from "@openzeppelin-4.7/contracts/security/ReentrancyGu
  */
 contract SeaDropXArtBlocksShim is
     INonFungibleSeaDropToken,
+    ERC721SeaDropStructsErrorsAndEvents,
     ERC165,
     ReentrancyGuard
 {
     uint256 private constant ASSUMED_PROJECT_ID = 0;
 
-    INonFungibleSeaDropToken public allowedSeaDrop;
+    ISeaDrop public allowedSeaDrop;
     IGenArt721CoreContractV3_Base public genArt721Core;
 
     /// @notice mapping of minter address to number of tokens minted on this contract
@@ -79,20 +80,21 @@ contract SeaDropXArtBlocksShim is
     }
 
     constructor(
-        INonFungibleSeaDropToken allowedSeaDrop_,
+        ISeaDrop allowedSeaDrop_,
         IGenArt721CoreContractV3_Base genArt721Core_
     ) {
         allowedSeaDrop = allowedSeaDrop_;
         genArt721Core = genArt721Core_;
+        emit SeaDropTokenDeployed();
     }
 
-    // --- external functions ---
+    // --- external functions from INonFungibleSeaDropToken ---
 
-    // TODO - determine if we can remove this function and make SeaDrop non-updateable
+    // TODO - confirm that we can not support this function, making allowedSeaDrop immutable
     function updateAllowedSeaDrop(
         address[] calldata /*allowedSeaDrop*/
-    ) external {
-        revert("SeaDropXArtBlocksShim: updateAllowedSeaDrop not implemented");
+    ) external pure {
+        revert("SeaDropXArtBlocksShim: updateAllowedSeaDrop not supported");
     }
 
     /**
@@ -107,7 +109,7 @@ contract SeaDropXArtBlocksShim is
         // Ensure the caller is an allowed SeaDrop contract
         _onlyAllowedSeaDrop(msg.sender);
 
-        // no need for max supply check - enforced by the core contract
+        // no need for max supply check - enforced by the Art Blocks core contract
         // @dev acknowledge additional gas could be used to query and surface MintQuantityExceedsMaxSupply custom error
 
         // EFFECTS
@@ -324,6 +326,8 @@ contract SeaDropXArtBlocksShim is
         ISeaDrop(seaDropImpl).updatePayer(payer, allowed);
     }
 
+    // --- external functions from https://github.com/ProjectOpenSea/seadrop/blob/main/src/ERC721SeaDrop.sol ---
+
     /**
      * @notice Configure multiple properties at a time.
      * Note: The individual configure methods should be used to unset or reset any properties to zero, as this method
@@ -337,9 +341,7 @@ contract SeaDropXArtBlocksShim is
      *
      * @param config The configuration struct.
      */
-    function multiConfigure(
-        ERC721SeaDropStructsErrorsAndEvents.MultiConfigureStruct calldata config
-    ) external {
+    function multiConfigure(MultiConfigureStruct calldata config) external {
         // CHECKS
         _onlyArtist(msg.sender);
 
@@ -360,10 +362,7 @@ contract SeaDropXArtBlocksShim is
             );
         }
         if (
-            // TODO - what is the _cast in the ERC721SeaDrop.sol implementation of this function??
-            (config.publicDrop.startTime != 0) |
-                (config.publicDrop.endTime != 0) ==
-            1
+            config.publicDrop.startTime != 0 || config.publicDrop.endTime != 0
         ) {
             this.updatePublicDrop(config.seaDropImpl, config.publicDrop);
         }
@@ -380,7 +379,9 @@ contract SeaDropXArtBlocksShim is
             );
         }
         if (config.provenanceHash != bytes32(0)) {
-            this.setProvenanceHash(config.provenanceHash);
+            revert(
+                "SeaDropXArtBlocksShim: provenance hash not supported on Art Blocks contracts"
+            );
         }
         if (config.allowedFeeRecipients.length > 0) {
             for (uint256 i = 0; i < config.allowedFeeRecipients.length; ) {
@@ -435,7 +436,7 @@ contract SeaDropXArtBlocksShim is
                 config.tokenGatedDropStages.length !=
                 config.tokenGatedAllowedNftTokens.length
             ) {
-                revert ERC721SeaDropStructsErrorsAndEvents.TokenGatedMismatch();
+                revert TokenGatedMismatch();
             }
             for (uint256 i = 0; i < config.tokenGatedDropStages.length; ) {
                 this.updateTokenGatedDrop(
@@ -470,7 +471,7 @@ contract SeaDropXArtBlocksShim is
                 config.signedMintValidationParams.length !=
                 config.signers.length
             ) {
-                revert ERC721SeaDropStructsErrorsAndEvents.SignersMismatch();
+                revert SignersMismatch();
             }
             for (
                 uint256 i = 0;
@@ -502,7 +503,7 @@ contract SeaDropXArtBlocksShim is
         }
     }
 
-    // --- public view functions ---
+    // --- public view functions from INonFungibleSeaDropToken ---
 
     /**
      * @notice Returns a set of mint stats for the address.
@@ -542,7 +543,7 @@ contract SeaDropXArtBlocksShim is
      */
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(ERC165, IERC165) returns (bool) {
+    ) public view virtual override(ERC165) returns (bool) {
         return
             interfaceId == type(INonFungibleSeaDropToken).interfaceId ||
             interfaceId == type(ISeaDropTokenContractMetadata).interfaceId ||
