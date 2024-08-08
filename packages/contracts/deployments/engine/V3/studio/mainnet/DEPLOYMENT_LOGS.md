@@ -64,3 +64,8 @@
       [INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/studio/mainnet/2024-08-08-deployment-config.ts
 
     
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2024-08-08T19:28:18.098Z
+      [INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/studio/mainnet/2024-08-08-deployment-config.ts
+
+    
