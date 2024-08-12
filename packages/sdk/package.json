@@ -19,6 +19,10 @@
     "./machines/utils": {
       "types": "./dist/machines/utils.d.ts",
       "default": "./dist/machines/utils.js"
+    },
+    "./dist/machines/utils": {
+      "types": "./dist/machines/utils.d.ts",
+      "default": "./dist/machines/utils.js"
     }
   },
   "devDependencies": {
