@@ -1,5 +1,11 @@
 # @artblocks/sdk
 
+## 0.1.29
+
+### Patch Changes
+
+- 35e00f2: Support RAM bid flow
+
 ## 0.1.23
 
 ### Patch Changes
