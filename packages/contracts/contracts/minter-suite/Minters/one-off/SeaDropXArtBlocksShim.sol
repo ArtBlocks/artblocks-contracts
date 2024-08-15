@@ -17,21 +17,34 @@ import {ERC165} from "@openzeppelin-4.7/contracts/utils/introspection/ERC165.sol
 import {IERC165} from "@openzeppelin-4.7/contracts/utils/introspection/IERC165.sol";
 import {IERC2981} from "@openzeppelin-4.7/contracts/interfaces/IERC2981.sol";
 import {ReentrancyGuard} from "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin-4.7/contracts/access/Ownable.sol";
 
 /**
  * @title SeaDropXArtBlocksShim
  * @author Art Blocks Inc.
  * @notice A shim minter to allow OpenSea's SeaDrop system to mint Art Blocks tokens.
+ * This contract is a shim layer between the SeaDrop system and the Art Blocks core contract.
+ * It allows the SeaDrop system to mint Art Blocks tokens, enforcing the max supply and max mintable
+ * by wallet restrictions.
+ * The contract is owned by the artist, and the artist can configure the SeaDrop system to mint.
+ * The contract is configured at the time of deployment to point to a single Art Blocks project, and
+ * can never be updated.
+ * A core contract is expected to set this contract as its minter, bypassing the typical Shared Minter Suite.
  */
 contract SeaDropXArtBlocksShim is
     INonFungibleSeaDropToken,
     ERC721SeaDropStructsErrorsAndEvents,
     ERC165,
+    Ownable,
     ReentrancyGuard
 {
-    uint256 private constant ASSUMED_PROJECT_ID = 0;
+    /// @notice The immutable project ID for the Art Blocks project.
+    uint256 public immutable projectId;
 
+    /// @notice The SeaDrop contract allowed to mint on this shim layer.
     ISeaDrop public allowedSeaDrop;
+
+    /// @notice The Art Blocks core contract for the project.
     IGenArt721CoreContractV3_Base public genArt721Core;
 
     /// @notice mapping of minter address to number of tokens minted on this contract
@@ -52,16 +65,15 @@ contract SeaDropXArtBlocksShim is
     }
 
     /**
-     * @notice Reverts if `msgSender` is not the owner or self.
+     * @notice Reverts if `msgSender` is not the artist or self.
      * This function is inlined instead of being a modifier
      * to save contract space from being inlined N times.
-     * @param msgSender The address to check if owner or self.
+     * @param msgSender The address to check if artist or self.
      */
     function _onlyArtistOrSelf(address msgSender) internal view {
         if (
             msgSender != address(this) &&
-            msgSender !=
-            genArt721Core.projectIdToArtistAddress(ASSUMED_PROJECT_ID)
+            msgSender != genArt721Core.projectIdToArtistAddress(projectId)
         ) {
             revert(
                 "SeaDropXArtBlocksShim: Only the artist or self may call this function"
@@ -69,29 +81,62 @@ contract SeaDropXArtBlocksShim is
         }
     }
 
+    /**
+     * @notice Reverts if `msgSender` is not the artist.
+     * This function is inlined instead of being a modifier
+     * to save contract space from being inlined N times.
+     * @param msgSender The address to check if artist.
+     */
     function _onlyArtist(address msgSender) internal view {
-        if (
-            msgSender !=
-            genArt721Core.projectIdToArtistAddress(ASSUMED_PROJECT_ID)
-        ) {
+        if (msgSender != genArt721Core.projectIdToArtistAddress(projectId)) {
             revert(
                 "SeaDropXArtBlocksShim: Only the artist may call this function"
             );
         }
     }
 
+    /**
+     *
+     * @param allowedSeaDrop_ The SeaDrop contract allowed to mint on this shim layer.
+     * @param genArt721Core_ The core contract for the Art Blocks project.
+     * @param projectId The project ID for the Art Blocks project.
+     */
     constructor(
         ISeaDrop allowedSeaDrop_,
-        IGenArt721CoreContractV3_Base genArt721Core_
-    ) {
+        IGenArt721CoreContractV3_Base genArt721Core_,
+        uint256 projectId
+    ) Ownable() {
         allowedSeaDrop = allowedSeaDrop_;
         genArt721Core = genArt721Core_;
+        // set ownership to be the artist (snapshot)
+        // @dev if artist address is updated on the core contract, use the function syncOwnerToArtistAddress to update
+        // the ownership of this contract to the new artist address. The ownership of this contract only affects
+        // frontend displays, and does not affect the permissions of configuring drop settings.
+        _transferOwnership(genArt721Core.projectIdToArtistAddress(projectId));
         emit SeaDropTokenDeployed();
+    }
+
+    // -- external functions to sync ownership for UI --
+
+    /**
+     * @notice Sync the ownership of this contract to the artist address on the core contract.
+     * This function is useful if the artist address is updated on the core contract.
+     * The ownership of this contract only affects frontend displays, and does not affect the permissions of
+     * configuring drop settings.
+     * @dev intentionally unpermissioned, as this function only syncs state and is not manipulatable by untrusted
+     * third parties.
+     */
+    function syncOwnerToArtistAddress() external {
+        _transferOwnership(genArt721Core.projectIdToArtistAddress(projectId));
     }
 
     // --- external functions from INonFungibleSeaDropToken ---
 
-    // TODO - confirm that we can not support this function, making allowedSeaDrop immutable
+    /**
+     *
+     * @notice Update the allowed SeaDrop contract.
+     * Reverts - not supported on this contract.
+     */
     function updateAllowedSeaDrop(
         address[] calldata /*allowedSeaDrop*/
     ) external pure {
@@ -123,7 +168,7 @@ contract SeaDropXArtBlocksShim is
         for (uint256 i = 0; i < quantity; i++) {
             genArt721Core.mint_Ecf({
                 _to: minter,
-                _projectId: ASSUMED_PROJECT_ID,
+                _projectId: projectId,
                 _by: msg.sender
             });
         }
@@ -580,14 +625,14 @@ contract SeaDropXArtBlocksShim is
         // @dev only able to track mint qty performed via this contract; Art Blocks does not implement ERC721Enumerable
         minterNumMinted_ = minterNumMinted[minter];
 
-        // defer to the core contract for the current supply details, for assumed project
+        // defer to the core contract for the current supply details, for configured project
         (
             uint256 invocations,
             uint256 maxInvocations
         ) = _getInvocationsDataFromCore();
-        // current supply is number of invocations for the assumed project
+        // current supply is number of invocations for the configured project
         currentTotalSupply = invocations;
-        // max supply is the max invocations for the assumed project
+        // max supply is the max invocations for the configured project
         maxSupply_ = maxInvocations;
     }
 
@@ -596,7 +641,7 @@ contract SeaDropXArtBlocksShim is
      * @notice Returns the base URI for token metadata.
      */
     function baseURI() external view returns (string memory) {
-        return genArt721Core.projectURIInfo(ASSUMED_PROJECT_ID);
+        return genArt721Core.projectURIInfo(projectId);
     }
 
     /**
@@ -604,18 +649,19 @@ contract SeaDropXArtBlocksShim is
      * Reverts, because the contract URI is not supported on Art Blocks contracts.
      */
     function contractURI() external pure returns (string memory) {
+        // return "https://external-link-url.com/my-contract-metadata.json";
         revert(
             "SeaDropXArtBlocksShim: contractURI is not supported on Art Blocks contracts"
         );
     }
 
     /**
-     * @notice Returns the max token supply.
+     * @notice Returns the max token supply for the configured project.
      */
     function maxSupply() external view returns (uint256) {
-        // defer to the core contract for the current supply details, for assumed project
+        // defer to the core contract for the current supply details, for configured project
         (, uint256 maxInvocations) = _getInvocationsDataFromCore();
-        // max supply is the max invocations for the assumed project
+        // max supply is the max invocations for the configured project
         return maxInvocations;
     }
 
@@ -635,11 +681,11 @@ contract SeaDropXArtBlocksShim is
      * @notice Returns the address that receives royalties.
      */
     function royaltyAddress() external view returns (address) {
-        // defer to the core contract for the royalty splitter address, for assumed project
+        // defer to the core contract for the royalty splitter address, for configured project
         // @dev assumes v3.2 or later, where the ERC2981 royaltySplitter is stored in the project financials
         return
             IGenArt721CoreContractV3_ProjectFinance(address(genArt721Core))
-                .projectIdToFinancials(ASSUMED_PROJECT_ID)
+                .projectIdToFinancials(projectId)
                 .royaltySplitter;
     }
 
@@ -647,12 +693,12 @@ contract SeaDropXArtBlocksShim is
      * @notice Returns the royalty basis points out of 10_000.
      */
     function royaltyBasisPoints() external view returns (uint256) {
-        // defer to the core contract for the royalty basis points, for assumed project
+        // defer to the core contract for the royalty basis points, for configured project
         // @dev assumes v3.2 or later, where the ERC2981 royaltySplitter is stored in the project financials
         IGenArt721CoreContractV3_ProjectFinance.ProjectFinance
             memory financials = IGenArt721CoreContractV3_ProjectFinance(
                 address(genArt721Core)
-            ).projectIdToFinancials(ASSUMED_PROJECT_ID);
+            ).projectIdToFinancials(projectId);
         // total royalty basis points is the sum of the artist's royalty percentage converted to BPS, the platform
         // provider's secondary sales BPS, and the render provider's secondary sales BPS
         return
@@ -699,9 +745,9 @@ contract SeaDropXArtBlocksShim is
     }
 
     /**
-     * @notice Returns the invocations and max invocations for the assumed project, from the core contract.
-     * @return invocations The number of invocations for the assumed project.
-     * @return maxInvocations The max invocations for the assumed project.
+     * @notice Returns the invocations and max invocations for the configured project, from the core contract.
+     * @return invocations The number of invocations for the configured project.
+     * @return maxInvocations The max invocations for the configured project.
      */
     function _getInvocationsDataFromCore()
         private
@@ -709,7 +755,7 @@ contract SeaDropXArtBlocksShim is
         returns (uint256 invocations, uint256 maxInvocations)
     {
         (invocations, maxInvocations, , , , ) = genArt721Core.projectStateData(
-            ASSUMED_PROJECT_ID
+            projectId
         );
     }
 }
