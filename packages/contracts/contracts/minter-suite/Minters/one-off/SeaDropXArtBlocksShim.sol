@@ -34,7 +34,7 @@ import {Ownable} from "@openzeppelin-4.7/contracts/access/Ownable.sol";
  */
 contract SeaDropXArtBlocksShim is
     ISeaDropShimForContract,
-    ISeaDropTokenContractMetadata,
+    INonFungibleSeaDropToken,
     ERC721SeaDropStructsErrorsAndEvents,
     ERC165,
     Ownable,
@@ -101,12 +101,12 @@ contract SeaDropXArtBlocksShim is
      *
      * @param allowedSeaDrop_ The SeaDrop contract allowed to mint on this shim layer.
      * @param genArt721Core_ The core contract for the Art Blocks project.
-     * @param projectId The project ID for the Art Blocks project.
+     * @param projectId_ The project ID for the Art Blocks project.
      */
     constructor(
         ISeaDrop allowedSeaDrop_,
         IGenArt721CoreContractV3_Base genArt721Core_,
-        uint256 projectId
+        uint256 projectId_
     ) Ownable() {
         allowedSeaDrop = allowedSeaDrop_;
         genArt721Core = genArt721Core_;
@@ -114,7 +114,7 @@ contract SeaDropXArtBlocksShim is
         // @dev if artist address is updated on the core contract, use the function syncOwnerToArtistAddress to update
         // the ownership of this contract to the new artist address. The ownership of this contract only affects
         // frontend displays, and does not affect the permissions of configuring drop settings.
-        _transferOwnership(genArt721Core.projectIdToArtistAddress(projectId));
+        _transferOwnership(genArt721Core.projectIdToArtistAddress(projectId_));
         emit SeaDropTokenDeployed();
         // indicate this is a shim layer that mints tokens on a different contract
         emit SeaDropShimForContract(address(genArt721Core_));
