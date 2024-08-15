@@ -56,9 +56,12 @@ export type RAMBidMachineContext = {
   txHash?: Hex;
   // Action to be performed (create or top up)
   bidAction?: BidAction;
+  // Number of times the polling for new/increased bid has been retried
   pollingRetries: number;
   // On-Chain ID of the pending bid
   pendingBidId?: number;
+  // Submitted bid
+  syncedBid?: BidDetailsFragment;
 };
 
 export type RAMBidMachineInput = Pick<
@@ -71,6 +74,9 @@ graphql(/* GraphQL */ `
     id
     slot_index
     bid_value
+    ranking
+    time_of_bid
+    bidder_address
   }
 `);
 
@@ -87,7 +93,7 @@ const getUserBidsDocument = graphql(/* GraphQL */ `
   }
 `);
 
-const MAX_RETRIES = 2;
+const MAX_RETRIES = 10;
 
 export const ramBidMachine = setup({
   types: {
@@ -312,12 +318,29 @@ export const ramBidMachine = setup({
       topUpBidId: undefined,
       bidSlotIndex: undefined,
       pendingBidId: undefined,
+      syncedBid: undefined,
+      pollingRetries: 0,
     }),
     assignInitiatedTxHash: assign({
       txHash: (_, params: { txHash: Hex }) => params.txHash,
     }),
     incrementPollingRetries: assign({
       pollingRetries: ({ context }) => context.pollingRetries + 1,
+    }),
+    assignSyncedBid: assign({
+      syncedBid: (
+        { context },
+        { userBids }: { userBids: Array<BidDetailsFragment> }
+      ) => {
+        const bid = userBids.find((bid) => {
+          // RAM bid ids in our db follow the format {minter contract address}-{full project ID}-{bidID}
+          const splitBidId = bid.id.split("-");
+          const bidId = splitBidId[splitBidId.length - 1];
+          return bidId === context.pendingBidId?.toString();
+        });
+
+        return bid;
+      },
     }),
   },
   guards: {
@@ -326,6 +349,53 @@ export const ramBidMachine = setup({
     },
     topUpBidSelected: ({ context }) => {
       return Boolean(context.topUpBidId);
+    },
+    topUpActionAllowed: (
+      { context },
+      { bidAction }: { bidAction: BidAction }
+    ) => {
+      return bidAction === "topUp" && context.userBids.length > 0;
+    },
+    isBidSynced: (
+      { context },
+      { userBids }: { userBids: Array<BidDetailsFragment> }
+    ) => {
+      const bid = userBids.find((bid) => {
+        // RAM bid ids in our db follow the format {minter contract address}-{full project ID}-{bidID}
+        const splitBidId = bid.id.split("-");
+        const bidId = splitBidId[splitBidId.length - 1];
+        return bidId === context.pendingBidId?.toString();
+      });
+
+      // For new bids, the presence of a matching bid means that the bid has synced.
+      // For top-ups, the bid slot index must match the new slot index in context
+      return Boolean(bid && bid.slot_index === context.bidSlotIndex);
+    },
+    retriesRemaining: ({ context }) => {
+      return context.pollingRetries < MAX_RETRIES;
+    },
+    maxRetriesReached: ({ context }) => {
+      return context.pollingRetries >= MAX_RETRIES;
+    },
+    isValidBidSlotIndex: (
+      { context },
+      { bidSlotIndex }: { bidSlotIndex: number }
+    ) => {
+      const topUpBid = context.topUpBidId
+        ? context.userBids.find((bid) => {
+            return bid.id === context.topUpBidId;
+          })
+        : undefined;
+
+      const liveSaleData =
+        context.liveSaleDataPollingMachineRef.getSnapshot().context
+          .liveSaleData;
+      const minBidSlotIndex = Math.max(
+        Number(liveSaleData?.ramMinterAuctionDetails?.minNextBidSlotIndex),
+        topUpBid ? Number(topUpBid.slot_index ?? 0) + 1 : 0
+      );
+
+      return bidSlotIndex >= minBidSlotIndex;
     },
   },
 }).createMachine({
@@ -380,8 +450,11 @@ export const ramBidMachine = setup({
                 bidAction: event.bidAction,
               }),
             },
-            guard: ({ event, context }) => {
-              return event.bidAction === "topUp" && context.userBids.length > 0;
+            guard: {
+              type: "topUpActionAllowed",
+              params: ({ event }) => ({
+                bidAction: event.bidAction,
+              }),
             },
           },
           {
@@ -418,24 +491,11 @@ export const ramBidMachine = setup({
               bidSlotIndex: event.bidSlotIndex,
             }),
           },
-          guard: ({ context, event }) => {
-            const topUpBid = context.topUpBidId
-              ? context.userBids.find((bid) => {
-                  return bid.id === context.topUpBidId;
-                })
-              : undefined;
-
-            const liveSaleData =
-              context.liveSaleDataPollingMachineRef.getSnapshot().context
-                .liveSaleData;
-            const minBidSlotIndex = Math.max(
-              Number(
-                liveSaleData?.ramMinterAuctionDetails?.minNextBidSlotIndex
-              ),
-              topUpBid ? Number(topUpBid.slot_index ?? 0) + 1 : 0
-            );
-
-            return event.bidSlotIndex >= minBidSlotIndex;
+          guard: {
+            type: "isValidBidSlotIndex",
+            params: ({ event }) => ({
+              bidSlotIndex: event.bidSlotIndex,
+            }),
           },
         },
         BACK: [
@@ -538,25 +598,27 @@ export const ramBidMachine = setup({
             onDone: [
               {
                 target: "synced",
-                actions: {
-                  type: "assignUserBids",
+                actions: [
+                  {
+                    type: "assignUserBids",
+                    params: ({ event }) => ({
+                      userBids: event.output,
+                    }),
+                  },
+                  {
+                    type: "assignSyncedBid",
+                    params({ event }) {
+                      return {
+                        userBids: event.output,
+                      };
+                    },
+                  },
+                ],
+                guard: {
+                  type: "isBidSynced",
                   params: ({ event }) => ({
                     userBids: event.output,
                   }),
-                },
-                guard: ({ context, event }) => {
-                  const bid = event.output.find((bid) => {
-                    // RAM bid ids in our db follow the format {minter contract address}-{full project ID}-{bidID}
-                    const splitBidId = bid.id.split("-");
-                    const bidId = splitBidId[splitBidId.length - 1];
-                    return bidId === context.pendingBidId?.toString();
-                  });
-
-                  // For new bids, the presence of a matching bid means that the bid has synced.
-                  // For top-ups, the bid slot index must match the new slot index in context
-                  return Boolean(
-                    bid && bid.slot_index === context.bidSlotIndex
-                  );
                 },
               },
               {
@@ -572,9 +634,7 @@ export const ramBidMachine = setup({
                     }),
                   },
                 ],
-                guard: ({ context }) => {
-                  return context.pollingRetries < MAX_RETRIES;
-                },
+                guard: "retriesRemaining",
               },
               {
                 target: "error",
@@ -593,9 +653,7 @@ export const ramBidMachine = setup({
                 actions: {
                   type: "incrementPollingRetries",
                 },
-                guard: ({ context }) => {
-                  return context.pollingRetries < MAX_RETRIES;
-                },
+                guard: "retriesRemaining",
               },
               {
                 target: "error",
