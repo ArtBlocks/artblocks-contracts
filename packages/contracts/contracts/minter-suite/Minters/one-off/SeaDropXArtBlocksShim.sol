@@ -10,6 +10,7 @@ import {ISeaDropTokenContractMetadata} from "../../../interfaces/v0.8.x/integrat
 import {ISeaDrop} from "../../../interfaces/v0.8.x/integration-refs/OpenSea/ISeaDrop.sol";
 import {ERC721SeaDropStructsErrorsAndEvents} from "../../../interfaces/v0.8.x/integration-refs/OpenSea/ERC721SeaDropStructsErrorsAndEvents.sol";
 import {PublicDrop, AllowListData, TokenGatedDropStage, SignedMintValidationParams} from "../../../interfaces/v0.8.x/integration-refs/OpenSea/SeaDropStructs.sol";
+import {ISeaDropShimForContract} from "../../../interfaces/v0.8.x/ISeaDropShimForContract.sol";
 import {IGenArt721CoreContractV3_Base} from "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import {IGenArt721CoreContractV3_ProjectFinance} from "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_ProjectFinance.sol";
 
@@ -32,7 +33,8 @@ import {Ownable} from "@openzeppelin-4.7/contracts/access/Ownable.sol";
  * A core contract is expected to set this contract as its minter, bypassing the typical Shared Minter Suite.
  */
 contract SeaDropXArtBlocksShim is
-    INonFungibleSeaDropToken,
+    ISeaDropShimForContract,
+    ISeaDropTokenContractMetadata,
     ERC721SeaDropStructsErrorsAndEvents,
     ERC165,
     Ownable,
@@ -114,6 +116,8 @@ contract SeaDropXArtBlocksShim is
         // frontend displays, and does not affect the permissions of configuring drop settings.
         _transferOwnership(genArt721Core.projectIdToArtistAddress(projectId));
         emit SeaDropTokenDeployed();
+        // indicate this is a shim layer that mints tokens on a different contract
+        emit SeaDropShimForContract(address(genArt721Core_));
     }
 
     // -- external functions to sync ownership for UI --
