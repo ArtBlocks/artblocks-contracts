@@ -31,6 +31,16 @@ import {Ownable} from "@openzeppelin-4.7/contracts/access/Ownable.sol";
  * The contract is configured at the time of deployment to point to a single Art Blocks project, and
  * can never be updated.
  * A core contract is expected to set this contract as its minter, bypassing the typical Shared Minter Suite.
+ * The core Art Blocks contract that this is a shim layer for should only have a single project - this is because this
+ * contract indicates via Event that it is a shim layer for the core contract's address, and OpenSea's forwarding does
+ * not have enough information for further granularity to choose a specific collection that this contract is a shim
+ * for.
+ * This contract does not support setting the baseURI, maxSupply, or fee recipients, as these are configured on the
+ * Art Blocks core contract.
+ * This contract does not support contractURI or provenanceHash, as these are not supported on Art Blocks contracts.
+ * SeaDrop must be configured to route primary sales to the appropriate creator payout address. This will likely be a
+ * splitter wallet that distributes funds to the artist and other parties such as render provider. The process is not
+ * automated and must be done manually by the artist via the SeaDrop UI.
  */
 contract SeaDropXArtBlocksShim is
     ISeaDropShimForContract,
@@ -98,7 +108,11 @@ contract SeaDropXArtBlocksShim is
     }
 
     /**
-     *
+     * @notice Constructor for the SeaDropXArtBlocksShim contract.
+     * Transfers ownership to the artist address for the project, as indicated by the core contract.
+     * @dev The ownership of this contract only affects frontend displays, and does not affect the permissions of
+     * configuring drop settings.
+     * allowedSeaDrop, genArt721Core, and projectId are immutable and cannot be updated.
      * @param allowedSeaDrop_ The SeaDrop contract allowed to mint on this shim layer.
      * @param genArt721Core_ The core contract for the Art Blocks project.
      * @param projectId_ The project ID for the Art Blocks project.
@@ -115,8 +129,9 @@ contract SeaDropXArtBlocksShim is
         // the ownership of this contract to the new artist address. The ownership of this contract only affects
         // frontend displays, and does not affect the permissions of configuring drop settings.
         _transferOwnership(genArt721Core.projectIdToArtistAddress(projectId_));
+        // emit SeaDrop event for indexing purposes
         emit SeaDropTokenDeployed();
-        // indicate this is a shim layer that mints tokens on a different contract
+        // indicate this is a shim layer that mints tokens on a different contract, for OpenSea's indexing purposes
         emit SeaDropShimForContract(address(genArt721Core_));
     }
 
@@ -149,7 +164,7 @@ contract SeaDropXArtBlocksShim is
 
     /**
      * @notice Mint tokens, restricted to the SeaDrop contract.
-     * @param minter   The address to mint to.
+     * @param minter The address to mint to.
      * @param quantity The number of tokens to mint.
      */
     function mintSeaDrop(
@@ -180,10 +195,9 @@ contract SeaDropXArtBlocksShim is
 
     /**
      * @notice Update the public drop data for this nft contract on SeaDrop.
-     *         Only the owner can use this function.
-     *
+     * Only the artist can use this function.
      * @param seaDropImpl The allowed SeaDrop contract.
-     * @param publicDrop  The public drop data.
+     * @param publicDrop The public drop data.
      */
     function updatePublicDrop(
         address seaDropImpl,
@@ -202,9 +216,8 @@ contract SeaDropXArtBlocksShim is
 
     /**
      * @notice Update the allow list data for this nft contract on SeaDrop.
-     *         Only the owner can use this function.
-     *
-     * @param seaDropImpl   The allowed SeaDrop contract.
+     * Only the artist can use this function.
+     * @param seaDropImpl The allowed SeaDrop contract.
      * @param allowListData The allow list data.
      */
     function updateAllowList(
@@ -223,21 +236,18 @@ contract SeaDropXArtBlocksShim is
     }
 
     /**
-     * @notice Update the token gated drop stage data for this nft contract
-     *         on SeaDrop.
-     *         Only the owner can use this function.
+     * @notice Update the token gated drop stage data for this nft contract on SeaDrop.
+     * Only the artist can use this function.
      *
-     *         Note: If two INonFungibleSeaDropToken tokens are doing
-     *         simultaneous token gated drop promotions for each other,
-     *         they can be minted by the same actor until
-     *         `maxTokenSupplyForStage` is reached. Please ensure the
-     *         `allowedNftToken` is not running an active drop during the
-     *         `dropStage` time period.
-     *
-     *
-     * @param seaDropImpl     The allowed SeaDrop contract.
+     * Note: If two INonFungibleSeaDropToken tokens are doing
+     * simultaneous token gated drop promotions for each other,
+     * they can be minted by the same actor until
+     * `maxTokenSupplyForStage` is reached. Please ensure the
+     * `allowedNftToken` is not running an active drop during the
+     * `dropStage` time period.
+     * @param seaDropImpl The allowed SeaDrop contract.
      * @param allowedNftToken The allowed nft token.
-     * @param dropStage       The token gated drop stage data.
+     * @param dropStage The token gated drop stage data.
      */
     function updateTokenGatedDrop(
         address seaDropImpl,
@@ -257,10 +267,9 @@ contract SeaDropXArtBlocksShim is
 
     /**
      * @notice Update the drop URI for this nft contract on SeaDrop.
-     *         Only the owner can use this function.
-     *
+     * Only the artist can use this function.
      * @param seaDropImpl The allowed SeaDrop contract.
-     * @param dropURI     The new drop URI.
+     * @param dropURI The new drop URI.
      */
     function updateDropURI(
         address seaDropImpl,
@@ -278,11 +287,9 @@ contract SeaDropXArtBlocksShim is
     }
 
     /**
-     * @notice Update the creator payout address for this nft contract on
-     *         SeaDrop.
-     *         Only the owner can set the creator payout address.
-     *
-     * @param seaDropImpl   The allowed SeaDrop contract.
+     * @notice Update the creator payout address for this nft contract on SeaDrop.
+     * Only the artist can set the creator payout address.
+     * @param seaDropImpl The allowed SeaDrop contract.
      * @param payoutAddress The new payout address.
      */
     function updateCreatorPayoutAddress(
@@ -303,7 +310,7 @@ contract SeaDropXArtBlocksShim is
     /**
      * @notice Update the allowed fee recipient for this nft contract on SeaDrop.
      * Reverts - ERC2981 fees must be configured on the Art Blocks core contract.
-     * @param seaDropImpl  The allowed SeaDrop contract.
+     * @param seaDropImpl The allowed SeaDrop contract.
      * @param feeRecipient The new fee recipient.
      */
     function updateAllowedFeeRecipient(
@@ -317,14 +324,11 @@ contract SeaDropXArtBlocksShim is
     }
 
     /**
-     * @notice Update the server-side signers for this nft contract
-     *         on SeaDrop.
-     *         Only the owner can use this function.
-     *
-     * @param seaDropImpl                The allowed SeaDrop contract.
-     * @param signer                     The signer to update.
-     * @param signedMintValidationParams Minimum and maximum parameters
-     *                                   to enforce for signed mints.
+     * @notice Update the server-side signers for this nft contract on SeaDrop.
+     * Only the artist can use this function.
+     * @param seaDropImpl The allowed SeaDrop contract.
+     * @param signer The signer to update.
+     * @param signedMintValidationParams Minimum and maximum parameters to enforce for signed mints.
      */
     function updateSignedMintValidationParams(
         address seaDropImpl,
@@ -347,11 +351,10 @@ contract SeaDropXArtBlocksShim is
 
     /**
      * @notice Update the allowed payers for this nft contract on SeaDrop.
-     *         Only the owner can use this function.
-     *
+     * Only the artist can use this function.
      * @param seaDropImpl The allowed SeaDrop contract.
-     * @param payer       The payer to update.
-     * @param allowed     Whether the payer is allowed.
+     * @param payer The payer to update.
+     * @param allowed Whether the payer is allowed.
      */
     function updatePayer(
         address seaDropImpl,
@@ -403,7 +406,7 @@ contract SeaDropXArtBlocksShim is
 
     /**
      * @notice Sets the provenance hash and emits an event.
-     * Not supported on Art Blocks contracts.
+     * Reverts - provenanceHash is not supported on the Art Blocks core contract.
      */
     function setProvenanceHash(bytes32 /*newProvenanceHash*/) external pure {
         revert(
@@ -427,11 +430,15 @@ contract SeaDropXArtBlocksShim is
      * @notice Configure multiple properties at a time.
      * Note: The individual configure methods should be used to unset or reset any properties to zero, as this method
      * will ignore zero-value properties in the config struct.
-     * The following parameters are not supported in this function, and should be configured on the Art Blocks core
-     * contract directly:
+     * The following parameters are not supported in this function, will cause revert, and should be configured on the
+     * Art Blocks core contract directly:
      * - maxSupply
      * - baseURI
+     * - allowedFeeRecipients
+     * - disallowedFeeRecipients
+     * The following parameters are not supported by Art Blocks contracts and will cause revert:
      * - contractURI
+     * - provenanceHash
      * @param config The configuration struct.
      */
     function multiConfigure(MultiConfigureStruct calldata config) external {
@@ -585,11 +592,12 @@ contract SeaDropXArtBlocksShim is
     // --- public view functions from INonFungibleSeaDropToken ---
 
     /**
-     * @notice Returns a set of mint stats for the address.
-     *         This assists SeaDrop in enforcing maxSupply,
-     *         maxTotalMintableByWallet, and maxTokenSupplyForStage checks.
-     *
+     * @notice Returns a set of mint stats for the address. This assists SeaDrop in enforcing maxSupply,
+     * maxTotalMintableByWallet, and maxTokenSupplyForStage checks.
      * @param minter The minter address.
+     * @return minterNumMinted_ The number of tokens minted by the minter.
+     * @return currentTotalSupply The current total supply of the project (sourced from the core contract).
+     * @return maxSupply_ The max supply of the project (sourced from the core contract).
      */
     function getMintStats(
         address minter
@@ -620,6 +628,7 @@ contract SeaDropXArtBlocksShim is
     // --- public view functions from ISeaDropTokenContractMetadata ---
     /**
      * @notice Returns the base URI for token metadata.
+     * @return The base URI.
      */
     function baseURI() external view returns (string memory) {
         return genArt721Core.projectURIInfo(projectId);
@@ -648,9 +657,7 @@ contract SeaDropXArtBlocksShim is
 
     /**
      * @notice Returns the provenance hash.
-     *         The provenance hash is used for random reveals, which
-     *         is a hash of the ordered metadata to show it is unmodified
-     *         after mint has started.
+     * Reverts - provenance hash is not supported on Art Blocks contracts.
      */
     function provenanceHash() external pure returns (bytes32) {
         revert(
@@ -660,6 +667,8 @@ contract SeaDropXArtBlocksShim is
 
     /**
      * @notice Returns the address that receives royalties.
+     * @dev defers to the core contract for the royalty splitter address, for configured project.
+     * @return The address that receives royalties.
      */
     function royaltyAddress() external view returns (address) {
         // defer to the core contract for the royalty splitter address, for configured project
@@ -672,6 +681,8 @@ contract SeaDropXArtBlocksShim is
 
     /**
      * @notice Returns the royalty basis points out of 10_000.
+     * @dev defers to the core contract for the royalty basis points, for configured project.
+     * @return The royalty basis points.
      */
     function royaltyBasisPoints() external view returns (uint256) {
         // defer to the core contract for the royalty basis points, for configured project
@@ -691,8 +702,13 @@ contract SeaDropXArtBlocksShim is
     // --- public view functions from IERC2981 ---
 
     /**
+     * @notice Returns the royalty receiver and amount for a given token ID and sale price.
      * @dev Returns how much royalty is owed and to whom, based on a sale price that may be denominated in any unit of
      * exchange. The royalty amount is denominated and should be paid in that same unit of exchange.
+     * @param tokenId The token ID for which royalty information is needed.
+     * @param salePrice The sale price of the token.
+     * @return receiver The address of the royalty receiver.
+     * @return royaltyAmount The amount of royalty that is owed.
      */
     function royaltyInfo(
         uint256 tokenId,
@@ -712,6 +728,7 @@ contract SeaDropXArtBlocksShim is
     /**
      * @notice Returns whether the interface is supported.
      * @param interfaceId The interface id to check against.
+     * @return Whether the interface is supported.
      */
     function supportsInterface(
         bytes4 interfaceId
