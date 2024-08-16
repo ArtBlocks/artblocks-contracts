@@ -301,9 +301,8 @@ contract SeaDropXArtBlocksShim is
     }
 
     /**
-     * @notice Update the allowed fee recipient for this nft contract
-     *         on SeaDrop.
-     *
+     * @notice Update the allowed fee recipient for this nft contract on SeaDrop.
+     * Reverts - ERC2981 fees must be configured on the Art Blocks core contract.
      * @param seaDropImpl  The allowed SeaDrop contract.
      * @param feeRecipient The new fee recipient.
      */
@@ -312,15 +311,9 @@ contract SeaDropXArtBlocksShim is
         address feeRecipient,
         bool allowed
     ) external virtual override {
-        // CHECKS
-        // sender must be artist or contract itself
-        _onlyArtistOrSelf(msg.sender);
-        // only update the allowed SeaDrop contract
-        _onlyAllowedSeaDrop(seaDropImpl);
-
-        // EFFECTS
-        // Update the allowed fee recipient.
-        ISeaDrop(seaDropImpl).updateAllowedFeeRecipient(feeRecipient, allowed);
+        revert(
+            "SeaDropXArtBlocksShim: ERC2981 fees must be configured on the Art Blocks core contract"
+        );
     }
 
     /**
@@ -439,8 +432,6 @@ contract SeaDropXArtBlocksShim is
      * - maxSupply
      * - baseURI
      * - contractURI
-     *
-     *
      * @param config The configuration struct.
      */
     function multiConfigure(MultiConfigureStruct calldata config) external {
@@ -486,28 +477,14 @@ contract SeaDropXArtBlocksShim is
             );
         }
         if (config.allowedFeeRecipients.length > 0) {
-            for (uint256 i = 0; i < config.allowedFeeRecipients.length; ) {
-                this.updateAllowedFeeRecipient(
-                    config.seaDropImpl,
-                    config.allowedFeeRecipients[i],
-                    true
-                );
-                unchecked {
-                    ++i;
-                }
-            }
+            revert(
+                "SeaDropXArtBlocksShim: ERC2981 fees must be configured on the Art Blocks core contract"
+            );
         }
         if (config.disallowedFeeRecipients.length > 0) {
-            for (uint256 i = 0; i < config.disallowedFeeRecipients.length; ) {
-                this.updateAllowedFeeRecipient(
-                    config.seaDropImpl,
-                    config.disallowedFeeRecipients[i],
-                    false
-                );
-                unchecked {
-                    ++i;
-                }
-            }
+            revert(
+                "SeaDropXArtBlocksShim: ERC2981 fees must be configured on the Art Blocks core contract"
+            );
         }
         if (config.allowedPayers.length > 0) {
             for (uint256 i = 0; i < config.allowedPayers.length; ) {
