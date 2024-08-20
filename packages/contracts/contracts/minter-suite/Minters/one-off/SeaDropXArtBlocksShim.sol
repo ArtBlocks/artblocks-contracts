@@ -31,16 +31,15 @@ import {Ownable} from "@openzeppelin-4.7/contracts/access/Ownable.sol";
  * The contract is configured at the time of deployment to point to a single Art Blocks project, and
  * can never be updated.
  * A core contract is expected to set this contract as its minter, bypassing the typical Shared Minter Suite.
- * The core Art Blocks contract that this is a shim layer for should only have a single project - this is because this
- * contract indicates via Event that it is a shim layer for the core contract's address, and OpenSea's forwarding does
- * not have enough information for further granularity to choose a specific collection that this contract is a shim
- * for.
- * This contract does not support setting the baseURI, maxSupply, or fee recipients, as these are configured on the
+ * This contract does not support setting the baseURI, or fee recipients, as these are configured on the
  * Art Blocks core contract.
+ * maxSupply is configurable on this contract, but should be less than or equal to the project's max invocations.
  * This contract does not support contractURI or provenanceHash, as these are not supported on Art Blocks contracts.
  * SeaDrop must be configured to route primary sales to the appropriate creator payout address. This will likely be a
  * splitter wallet that distributes funds to the artist and other parties such as render provider. The process is not
  * automated and must be done manually by the artist via the SeaDrop UI.
+ * Any secondary fee recipients configured through SeaDrop will not be enforced on tokens minted through this shim,
+ * as the fees are configured on the Art Blocks core contract for the tokens that are minted.
  */
 contract SeaDropXArtBlocksShim is
     ISeaDropShimForContract,
@@ -61,6 +60,9 @@ contract SeaDropXArtBlocksShim is
 
     /// @notice mapping of minter address to number of tokens minted on this contract
     mapping(address => uint256) public minterNumMinted;
+
+    /// @notice local max supply for this contract, enforced by this contract. Defers to core if 0 or > core max invocations
+    uint256 public localMaxSupply;
 
     // --- internal modifier-like functions ---
 
@@ -175,8 +177,24 @@ contract SeaDropXArtBlocksShim is
         // Ensure the caller is an allowed SeaDrop contract
         _onlyAllowedSeaDrop(msg.sender);
 
-        // no need for max supply check - enforced by the Art Blocks core contract
-        // @dev acknowledge additional gas could be used to query and surface MintQuantityExceedsMaxSupply custom error
+        // check max supply, considering the local max supply and the core project's max invocations
+        // @dev block scope to free up stack
+        {
+            (
+                uint256 invocations,
+                uint256 maxInvocations
+            ) = _getInvocationsDataFromCore();
+            uint256 maxSupply_ = _calcMaxSupply({
+                coreMaxInvocations: maxInvocations,
+                localMaxSupply_: localMaxSupply
+            });
+            if (invocations + quantity > maxSupply_) {
+                revert MintQuantityExceedsMaxSupply(
+                    invocations + quantity,
+                    maxSupply_
+                );
+            }
+        }
 
         // EFFECTS
         // track the number of tokens minted by the minter via this contract to enforce maxTotalMintableByWallet
@@ -310,18 +328,26 @@ contract SeaDropXArtBlocksShim is
 
     /**
      * @notice Update the allowed fee recipient for this nft contract on SeaDrop.
-     * Reverts - ERC2981 fees must be configured on the Art Blocks core contract.
-     * @param seaDropImpl The allowed SeaDrop contract.
+     * Note: ERC2981 fees must be configured on the Art Blocks core contract. This setting has no effect on tokens
+     * minted on the core contract that this shim layer is for.
+     * @param seaDropImpl  The allowed SeaDrop contract.
      * @param feeRecipient The new fee recipient.
+     * @param allowed Whether the fee recipient is allowed.
      */
     function updateAllowedFeeRecipient(
         address seaDropImpl,
         address feeRecipient,
         bool allowed
     ) external virtual override {
-        revert(
-            "SeaDropXArtBlocksShim: ERC2981 fees must be configured on the Art Blocks core contract"
-        );
+        // CHECKS
+        // sender must be artist or contract itself
+        _onlyArtistOrSelf(msg.sender);
+        // only update the allowed SeaDrop contract
+        _onlyAllowedSeaDrop(seaDropImpl);
+
+        // EFFECTS
+        // Update the allowed fee recipient.
+        ISeaDrop(seaDropImpl).updateAllowedFeeRecipient(feeRecipient, allowed);
     }
 
     /**
@@ -397,12 +423,29 @@ contract SeaDropXArtBlocksShim is
 
     /**
      * @notice Sets the max supply and emits an event.
-     * Reverts - maxSupply must be configured on the Art Blocks core contract.
+     * newMaxSupply must be less than or equal to the project's maxInvocations configured on the Art Blocks core
+     * contract.
+     * @dev this function enables SeaDrop to enforce a minter-local max invocations, while still deferring to the core
+     * contract for the project's total max invocations.
+     * @param newMaxSupply The new max supply to limit this shim minter to. Stored locally - does not affect max
+     * invocations on the core contract.
      */
-    function setMaxSupply(uint256 /*newMaxSupply*/) external pure {
-        revert(
-            "SeaDropXArtBlocksShim: maxSupply must be configured on the Art Blocks core contract"
-        );
+    function setMaxSupply(uint256 newMaxSupply) external {
+        // CHECKS
+        _onlyArtistOrSelf(msg.sender);
+
+        // ensure maxSupply lte project's max invocations on core contract
+        (, uint256 maxInvocations) = _getInvocationsDataFromCore();
+        if (newMaxSupply > maxInvocations) {
+            revert(
+                "SeaDropXArtBlocksShim: Only newMaxSupply lte max invocations on the Art Blocks core contract"
+            );
+        }
+
+        // EFFECTS
+        // set the local max supply
+        localMaxSupply = newMaxSupply;
+        emit LocalMaxSupplyUpdated(newMaxSupply);
     }
 
     /**
@@ -448,9 +491,7 @@ contract SeaDropXArtBlocksShim is
 
         // INTERACTIONS w/self
         if (config.maxSupply > 0) {
-            revert(
-                "SeaDropXArtBlocksShim: maxSupply must be configured on the Art Blocks core contract"
-            );
+            this.setMaxSupply(config.maxSupply);
         }
         if (bytes(config.baseURI).length != 0) {
             revert(
@@ -485,14 +526,28 @@ contract SeaDropXArtBlocksShim is
             );
         }
         if (config.allowedFeeRecipients.length > 0) {
-            revert(
-                "SeaDropXArtBlocksShim: ERC2981 fees must be configured on the Art Blocks core contract"
-            );
+            for (uint256 i = 0; i < config.allowedFeeRecipients.length; ) {
+                this.updateAllowedFeeRecipient(
+                    config.seaDropImpl,
+                    config.allowedFeeRecipients[i],
+                    true
+                );
+                unchecked {
+                    ++i;
+                }
+            }
         }
         if (config.disallowedFeeRecipients.length > 0) {
-            revert(
-                "SeaDropXArtBlocksShim: ERC2981 fees must be configured on the Art Blocks core contract"
-            );
+            for (uint256 i = 0; i < config.disallowedFeeRecipients.length; ) {
+                this.updateAllowedFeeRecipient(
+                    config.seaDropImpl,
+                    config.disallowedFeeRecipients[i],
+                    false
+                );
+                unchecked {
+                    ++i;
+                }
+            }
         }
         if (config.allowedPayers.length > 0) {
             for (uint256 i = 0; i < config.allowedPayers.length; ) {
@@ -622,8 +677,11 @@ contract SeaDropXArtBlocksShim is
         ) = _getInvocationsDataFromCore();
         // current supply is number of invocations for the configured project
         currentTotalSupply = invocations;
-        // max supply is the max invocations for the configured project
-        maxSupply_ = maxInvocations;
+        // max supply depends on the local max supply and the core project's max invocations
+        maxSupply_ = _calcMaxSupply({
+            coreMaxInvocations: maxInvocations,
+            localMaxSupply_: localMaxSupply
+        });
     }
 
     // --- public view functions from ISeaDropTokenContractMetadata ---
@@ -652,8 +710,11 @@ contract SeaDropXArtBlocksShim is
     function maxSupply() external view returns (uint256) {
         // defer to the core contract for the current supply details, for configured project
         (, uint256 maxInvocations) = _getInvocationsDataFromCore();
-        // max supply is the max invocations for the configured project
-        return maxInvocations;
+        return
+            _calcMaxSupply({
+                coreMaxInvocations: maxInvocations,
+                localMaxSupply_: localMaxSupply
+            });
     }
 
     /**
@@ -757,5 +818,22 @@ contract SeaDropXArtBlocksShim is
         (invocations, maxInvocations, , , , ) = genArt721Core.projectStateData(
             projectId
         );
+    }
+
+    /**
+     * helper function to calculate the max supply for this contract, based on the core max invocations and local max
+     * supply.
+     * @dev if localMaxSupply is 0 or > coreMaxInvocations, defers to coreMaxInvocations
+     * @param coreMaxInvocations The max invocations for the configured project on the Art Blocks core contract.
+     * @param localMaxSupply_ The local max supply for this contract (configured via setMaxSupply).
+     */
+    function _calcMaxSupply(
+        uint256 coreMaxInvocations,
+        uint256 localMaxSupply_
+    ) private pure returns (uint256) {
+        return
+            localMaxSupply_ == 0 || localMaxSupply_ > coreMaxInvocations
+                ? coreMaxInvocations
+                : localMaxSupply_;
     }
 }
