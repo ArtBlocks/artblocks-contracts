@@ -124,6 +124,7 @@ contract SeaDropXArtBlocksShim is
     ) Ownable() {
         allowedSeaDrop = allowedSeaDrop_;
         genArt721Core = genArt721Core_;
+        projectId = projectId_;
         // set ownership to be the artist (snapshot)
         // @dev if artist address is updated on the core contract, use the function syncOwnerToArtistAddress to update
         // the ownership of this contract to the new artist address. The ownership of this contract only affects
@@ -390,7 +391,7 @@ contract SeaDropXArtBlocksShim is
      */
     function setContractURI(string calldata /*newContractURI*/) external pure {
         revert(
-            "SeaDropXArtBlocksShim: contractURI is not supported on the Art Blocks core contract"
+            "SeaDropXArtBlocksShim: contractURI not supported on the Art Blocks core contract"
         );
     }
 
@@ -410,7 +411,7 @@ contract SeaDropXArtBlocksShim is
      */
     function setProvenanceHash(bytes32 /*newProvenanceHash*/) external pure {
         revert(
-            "SeaDropXArtBlocksShim: provenance hash is not supported on Art Blocks contracts"
+            "SeaDropXArtBlocksShim: provenance hash not supported on Art Blocks contracts"
         );
     }
 
@@ -458,7 +459,7 @@ contract SeaDropXArtBlocksShim is
         }
         if (bytes(config.contractURI).length != 0) {
             revert(
-                "SeaDropXArtBlocksShim: contractURI must be configured on the Art Blocks core contract"
+                "SeaDropXArtBlocksShim: contractURI not supported on the Art Blocks core contract"
             );
         }
         if (
@@ -641,7 +642,7 @@ contract SeaDropXArtBlocksShim is
     function contractURI() external pure returns (string memory) {
         // return "https://external-link-url.com/my-contract-metadata.json";
         revert(
-            "SeaDropXArtBlocksShim: contractURI is not supported on Art Blocks contracts"
+            "SeaDropXArtBlocksShim: contractURI not supported on the Art Blocks core contract"
         );
     }
 
@@ -661,7 +662,7 @@ contract SeaDropXArtBlocksShim is
      */
     function provenanceHash() external pure returns (bytes32) {
         revert(
-            "SeaDropXArtBlocksShim: provenance hash is not supported on Art Blocks contracts"
+            "SeaDropXArtBlocksShim: provenance hash not supported on Art Blocks contracts"
         );
     }
 
@@ -693,8 +694,9 @@ contract SeaDropXArtBlocksShim is
             ).projectIdToFinancials(projectId);
         // total royalty basis points is the sum of the artist's royalty percentage converted to BPS, the platform
         // provider's secondary sales BPS, and the render provider's secondary sales BPS
+        // @dev uint256 required to avoid overflow for reasonable royalty percentages
         return
-            (financials.secondaryMarketRoyaltyPercentage * 100) +
+            (uint256(financials.secondaryMarketRoyaltyPercentage) * 100) +
             financials.platformProviderSecondarySalesBPS +
             financials.renderProviderSecondarySalesBPS;
     }
