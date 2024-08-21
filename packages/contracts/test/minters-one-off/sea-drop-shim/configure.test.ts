@@ -551,14 +551,12 @@ runForEach.forEach((params) => {
         maxTotalMintableByWallet: 1,
         feeBps: 0,
         restrictFeeRecipients: true,
-      }; // TODO
+      };
       const allowListDataStruct = {
         merkleRoot: ethers.constants.HashZero,
         publicKeyURIs: [],
         allowListURI: "",
-      }; // TODO
-      // const tokenGatedDropStageStruct = {}; // TODO
-      // const signedMintValidationParamsStruct = {}; // TODO
+      };
       const multiConfigureStruct = {
         maxSupply: 0,
         baseURI: "",
