@@ -103,6 +103,49 @@ runForEach.forEach((params) => {
           )
         ).to.equal(config.accounts.artist.address);
       });
+
+      it("reverts if minting more than core max invocations", async function () {
+        const config = await _beforeEach();
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .mintSeaDrop(config.accounts.artist.address, 16)
+        )
+          .to.be.revertedWithCustomError(
+            config.minter,
+            "MintQuantityExceedsMaxSupply"
+          )
+          .withArgs(16, 15);
+      });
+
+      it("reverts if minting more than local max supply", async function () {
+        const config = await _beforeEach();
+        await config.minter.connect(config.accounts.artist).setMaxSupply(5);
+        // mint one token successfully
+        await config.minter
+          .connect(config.accounts.deployer)
+          .mintSeaDrop(config.accounts.artist.address, 1);
+        // minting 5 more should trigger revert
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .mintSeaDrop(config.accounts.artist.address, 5)
+        )
+          .to.be.revertedWithCustomError(
+            config.minter,
+            "MintQuantityExceedsMaxSupply"
+          )
+          .withArgs(6, 5);
+      });
+
+      it("mints up to max supply", async function () {
+        const config = await _beforeEach();
+        await config.minter.connect(config.accounts.artist).setMaxSupply(5);
+        // mint 5 tokens, no revert indicates success
+        await config.minter
+          .connect(config.accounts.deployer)
+          .mintSeaDrop(config.accounts.artist.address, 5);
+      });
     });
   });
 });

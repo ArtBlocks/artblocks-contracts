@@ -5,8 +5,6 @@ export const revertMessages = {
     "SeaDropXArtBlocksShim: Only the artist or self may call this function",
   onlyArtist: "SeaDropXArtBlocksShim: Only the artist may call this function",
   onlySeaDrop: "SeaDropXArtBlocksShim: Only the SeaDrop may call this function",
-  updateAllowedFeeRecipientNotSupported:
-    "SeaDropXArtBlocksShim: ERC2981 fees must be configured on the Art Blocks core contract",
   setBaseURINotSupported:
     "SeaDropXArtBlocksShim: baseURI must be configured on the Art Blocks core contract",
   setContractURINotSupported:
@@ -17,4 +15,6 @@ export const revertMessages = {
     "SeaDropXArtBlocksShim: provenance hash not supported on Art Blocks contracts",
   setRoyaltyInfoNotSupported:
     "SeaDropXArtBlocksShim: royalties must be configured on the Art Blocks core contract",
+  maxSupplyExceedsMaxInvocations:
+    "SeaDropXArtBlocksShim: Only newMaxSupply lte max invocations on the Art Blocks core contract",
 };

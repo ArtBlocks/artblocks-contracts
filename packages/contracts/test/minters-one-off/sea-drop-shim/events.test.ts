@@ -1,15 +1,19 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setupConfigWitMinterFilterV2Suite } from "../../util/fixtures";
-import { deployCore, safeAddProject } from "../../util/common";
+import { deployAndGet, deployCore, safeAddProject } from "../../util/common";
 import { ethers } from "hardhat";
 import { expect } from "chai";
 
 import { T_Config } from "../../util/common";
-import { GenArt721CoreV3_Engine } from "../../../scripts/contracts";
+import {
+  GenArt721CoreV3_Engine,
+  SeaDropXArtBlocksShim,
+} from "../../../scripts/contracts";
 import { SeaDropXArtBlocksShim__factory } from "../../../scripts/contracts";
 
 interface T_SeaDropShimTestConfig extends T_Config {
   genArt721Core: GenArt721CoreV3_Engine;
+  minter: SeaDropXArtBlocksShim;
   projectZero: number;
 }
 
@@ -19,6 +23,11 @@ const runForEach = [
     core: "GenArt721CoreV3_Engine",
   },
 ];
+
+// we don't mock SeaDrop contract, instead rely on end-to-end testing on testnet for SeaDrop integration
+// @dev this maintains security via testing our contract logic, but also tests the integration with SeaDrop
+// on systems outside of our dev environment and developed by third party teams
+const SEA_DROP_ADDRESS = ethers.Wallet.createRandom().address;
 
 // we don't mock SeaDrop contract, instead rely on end-to-end testing on testnet for SeaDrop integration
 // @dev this maintains security via testing our contract logic, but also tests the integration with SeaDrop
@@ -43,7 +52,23 @@ runForEach.forEach((params) => {
         config.accounts.artist.address
       );
 
-      // only events are in constructor, so no need to deploy shim minter
+      config.minter = await deployAndGet(config, "SeaDropXArtBlocksShim", [
+        SEA_DROP_ADDRESS,
+        config.genArt721Core.address,
+        config.projectZero,
+      ]);
+
+      // non-standard - set contract's minter as the shim minter directly
+      await config.genArt721Core.updateMinterContract(config.minter.address);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectZero);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .toggleProjectIsPaused(config.projectZero);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectZero, 15);
 
       return config as T_SeaDropShimTestConfig;
     }
@@ -88,6 +113,20 @@ runForEach.forEach((params) => {
         expect(currentCoreFromTopic).to.be.equal(
           config.genArt721Core.address.toLowerCase()
         );
+      });
+    });
+
+    describe("LocalMaxSupplyUpdated", async function () {
+      it("emits LocalMaxSupplyUpdated when local max supply is updated", async function () {
+        const config = await _beforeEach();
+        const newSupply = 10;
+        expect(
+          await config.minter
+            .connect(config.accounts.artist)
+            .setMaxSupply(newSupply)
+        )
+          .to.emit(config.minter, "LocalMaxSupplyUpdated")
+          .withArgs(newSupply);
       });
     });
   });

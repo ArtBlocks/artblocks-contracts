@@ -319,16 +319,36 @@ runForEach.forEach((params) => {
       });
     });
 
+    // while fees do not affect minted tokens, allowing fees to be set makes OS UI work as expected, and
+    // therefore does not cause reverts in our contract logic
     describe("updateAllowedFeeRecipient", async function () {
-      it("reverts as not supported", async function () {
+      it("reverts on not artist", async function () {
         const config = await loadFixture(_beforeEach);
         await expectRevert(
-          config.minter.updateAllowedFeeRecipient(
-            SEA_DROP_ADDRESS,
-            ZERO_ADDRESS,
-            true
-          ),
-          revertMessages.updateAllowedFeeRecipientNotSupported
+          config.minter
+            .connect(config.accounts.deployer)
+            .updateAllowedFeeRecipient(SEA_DROP_ADDRESS, ZERO_ADDRESS, true),
+          revertMessages.onlyArtistOrSelf
+        );
+      });
+
+      it("reverts on wrong SeaDrop address", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .updateAllowedFeeRecipient(ZERO_ADDRESS, ZERO_ADDRESS, true)
+        ).to.be.revertedWithCustomError(config.minter, "OnlyAllowedSeaDrop");
+      });
+
+      it("calls SeaDrop implementation when called by artist", async function () {
+        const config = await loadFixture(_beforeEach);
+        // will still revert as SeaDrop not implemented/mocked, but not with authentication error
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .updateAllowedFeeRecipient(SEA_DROP_ADDRESS, ZERO_ADDRESS, true),
+          ERROR_CALL_NON_CONTRACT
         );
       });
     });
@@ -439,12 +459,40 @@ runForEach.forEach((params) => {
     });
 
     describe("setMaxSupply", async function () {
-      it("reverts as not supported", async function () {
+      it("reverts on not artist", async function () {
         const config = await loadFixture(_beforeEach);
         await expectRevert(
-          config.minter.setMaxSupply(0),
-          revertMessages.setMaxSupplyNotSupported
+          config.minter.connect(config.accounts.deployer).setMaxSupply(1),
+          revertMessages.onlyArtistOrSelf
         );
+      });
+
+      it("reverts when maxSupply > core max invocations", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter.connect(config.accounts.artist).setMaxSupply(16),
+          revertMessages.maxSupplyExceedsMaxInvocations
+        );
+      });
+
+      it("updates maxSupply when less than core max invocations", async function () {
+        const config = await loadFixture(_beforeEach);
+        const configuredValue = 10;
+        await config.minter
+          .connect(config.accounts.artist)
+          .setMaxSupply(configuredValue);
+        const maxSupply = await config.minter.maxSupply();
+        expect(maxSupply).to.equal(configuredValue);
+      });
+
+      it("updates maxSupply when equal to core max invocations", async function () {
+        const config = await loadFixture(_beforeEach);
+        const configuredValue = 15;
+        await config.minter
+          .connect(config.accounts.artist)
+          .setMaxSupply(configuredValue);
+        const maxSupply = await config.minter.maxSupply();
+        expect(maxSupply).to.equal(configuredValue);
       });
     });
 
@@ -474,6 +522,7 @@ runForEach.forEach((params) => {
 
     // @dev multiConfigure reverts are tested, but logic consistent with OpenSea's reference implementation not tested
     // to simplify required mocks and focus on our developed contract logic
+    // Additional e2e testing was completed on OpenSea's website to confirm multiConfigure functionality
     describe("multiConfigure", async function () {
       const publicDropStruct = {
         mintPrice: 0,
@@ -521,15 +570,14 @@ runForEach.forEach((params) => {
         );
       });
 
-      it("reverts when maxSupply > 0", async function () {
+      it("updates state when maxSupply > 0", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.minter.connect(config.accounts.artist).multiConfigure({
-            ...multiConfigureStruct,
-            maxSupply: 1,
-          }),
-          revertMessages.setMaxSupplyNotSupported
-        );
+        await config.minter.connect(config.accounts.artist).multiConfigure({
+          ...multiConfigureStruct,
+          maxSupply: 1,
+        });
+        const maxSupply = await config.minter.maxSupply();
+        expect(maxSupply).to.equal(1);
       });
 
       it("reverts when baseURI is not empty", async function () {
@@ -562,28 +610,6 @@ runForEach.forEach((params) => {
             provenanceHash: ethers.constants.HashZero.replace("0x0", "0x1"),
           }),
           revertMessages.setProvenanceHashNotSupported
-        );
-      });
-
-      it("reverts when allowedFeeRecipients is not empty", async function () {
-        const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.minter.connect(config.accounts.artist).multiConfigure({
-            ...multiConfigureStruct,
-            allowedFeeRecipients: [ZERO_ADDRESS],
-          }),
-          revertMessages.updateAllowedFeeRecipientNotSupported
-        );
-      });
-
-      it("reverts when disallowedFeeRecipients is not empty", async function () {
-        const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.minter.connect(config.accounts.artist).multiConfigure({
-            ...multiConfigureStruct,
-            disallowedFeeRecipients: [ZERO_ADDRESS],
-          }),
-          revertMessages.updateAllowedFeeRecipientNotSupported
         );
       });
 

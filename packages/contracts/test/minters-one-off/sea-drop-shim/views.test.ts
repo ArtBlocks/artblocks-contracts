@@ -111,6 +111,24 @@ runForEach.forEach((params) => {
       });
     });
 
+    describe("localMaxSupply", async function () {
+      it("should return 0 localMaxSupply prior to configuring", async function () {
+        const config = await _beforeEach();
+        const localMaxSupply = await config.minter.localMaxSupply();
+        expect(localMaxSupply).to.equal(0);
+      });
+
+      it("should return configured localMaxSupply after configuring", async function () {
+        const config = await _beforeEach();
+        const configuredValue = 10;
+        await config.minter
+          .connect(config.accounts.artist)
+          .setMaxSupply(configuredValue);
+        const localMaxSupply = await config.minter.localMaxSupply();
+        expect(localMaxSupply).to.equal(configuredValue);
+      });
+    });
+
     // view functions
     describe("getMintStats", async function () {
       it("should return correct stats", async function () {
@@ -148,10 +166,34 @@ runForEach.forEach((params) => {
     });
 
     describe("maxSupply", async function () {
-      it("should return the maxSupply", async function () {
+      it("should return core max invocations when unconfigured", async function () {
         const config = await _beforeEach();
         const maxSupply = await config.minter.maxSupply();
         expect(maxSupply).to.equal(15);
+      });
+
+      it("should return local maxSupply when unconfigured and less than or equal to core max invocations", async function () {
+        const config = await _beforeEach();
+        const configuredValue = 10;
+        await config.minter
+          .connect(config.accounts.artist)
+          .setMaxSupply(configuredValue);
+        const maxSupply = await config.minter.maxSupply();
+        expect(maxSupply).to.equal(configuredValue);
+      });
+
+      it("should return core max invocations when local maxSupply is greater than core max invocations", async function () {
+        const config = await _beforeEach();
+        const configuredValue = 10;
+        await config.minter
+          .connect(config.accounts.artist)
+          .setMaxSupply(configuredValue);
+        // set core max invocations to 5
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 5);
+        const maxSupply = await config.minter.maxSupply();
+        expect(maxSupply).to.equal(5);
       });
     });
 
