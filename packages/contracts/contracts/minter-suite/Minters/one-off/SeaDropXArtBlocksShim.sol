@@ -13,6 +13,8 @@ import {PublicDrop, AllowListData, TokenGatedDropStage, SignedMintValidationPara
 import {ISeaDropShimForContract} from "../../../interfaces/v0.8.x/ISeaDropShimForContract.sol";
 import {IGenArt721CoreContractV3_Base} from "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import {IGenArt721CoreContractV3_ProjectFinance} from "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_ProjectFinance.sol";
+import {IMinterFilterV1} from "../../../interfaces/v0.8.x/IMinterFilterV1.sol";
+import {ISharedMinterRequired} from "../../../interfaces/v0.8.x/ISharedMinterRequired.sol";
 
 import {ERC165} from "@openzeppelin-4.7/contracts/utils/introspection/ERC165.sol";
 import {IERC165} from "@openzeppelin-4.7/contracts/utils/introspection/IERC165.sol";
@@ -44,19 +46,27 @@ import {Ownable} from "@openzeppelin-4.7/contracts/access/Ownable.sol";
 contract SeaDropXArtBlocksShim is
     ISeaDropShimForContract,
     INonFungibleSeaDropToken,
+    ISharedMinterRequired,
     ERC721SeaDropStructsErrorsAndEvents,
     ERC165,
     Ownable,
     ReentrancyGuard
 {
+    /// minterType for this minter
+    // @dev no version due to no plan of indexing the minter in AB subgraph
+    string public constant minterType = "SeaDropXArtBlocksShim";
+
     /// @notice The immutable project ID for the Art Blocks project.
     uint256 public immutable projectId;
 
     /// @notice The SeaDrop contract allowed to mint on this shim layer.
-    ISeaDrop public allowedSeaDrop;
+    ISeaDrop public immutable allowedSeaDrop;
 
     /// @notice The Art Blocks core contract for the project.
-    IGenArt721CoreContractV3_Base public genArt721Core;
+    IGenArt721CoreContractV3_Base public immutable genArt721Core;
+
+    /// Minter filter this minter may interact with.
+    IMinterFilterV1 public immutable minterFilter;
 
     /// @notice mapping of minter address to number of tokens minted on this contract
     mapping(address => uint256) public minterNumMinted;
@@ -115,15 +125,18 @@ contract SeaDropXArtBlocksShim is
      * @dev The ownership of this contract only affects frontend displays, and does not affect the permissions of
      * configuring drop settings.
      * allowedSeaDrop, genArt721Core, and projectId are immutable and cannot be updated.
+     * @param minterFilter_ Minter filter for which this will be a filtered minter.
      * @param allowedSeaDrop_ The SeaDrop contract allowed to mint on this shim layer.
      * @param genArt721Core_ The core contract for the Art Blocks project.
      * @param projectId_ The project ID for the Art Blocks project.
      */
     constructor(
+        IMinterFilterV1 minterFilter_,
         ISeaDrop allowedSeaDrop_,
         IGenArt721CoreContractV3_Base genArt721Core_,
         uint256 projectId_
     ) Ownable() {
+        minterFilter = minterFilter_;
         allowedSeaDrop = allowedSeaDrop_;
         genArt721Core = genArt721Core_;
         projectId = projectId_;
@@ -204,10 +217,11 @@ contract SeaDropXArtBlocksShim is
         // INTERACTIONS
         // Mint the quantity of tokens to the minter
         for (uint256 i = 0; i < quantity; i++) {
-            genArt721Core.mint_Ecf({
-                _to: minter,
-                _projectId: projectId,
-                _by: msg.sender
+            minterFilter.mint_joo({
+                to: minter,
+                projectId: projectId,
+                coreContract: address(genArt721Core),
+                sender: msg.sender
             });
         }
     }
@@ -643,6 +657,19 @@ contract SeaDropXArtBlocksShim is
                 }
             }
         }
+    }
+
+    // -- required shared minter view functions for minter suite compatibility (ISharedMinterRequired) --
+
+    // @dev minterType requirement satisfied by public constant minterType
+
+    /**
+     * @notice Returns the minter's associated shared minter filter address.
+     * @dev used by subgraph indexing service for entity relation purposes.
+     * @return The minter filter address.
+     */
+    function minterFilterAddress() external view returns (address) {
+        return address(minterFilter);
     }
 
     // --- public view functions from INonFungibleSeaDropToken ---

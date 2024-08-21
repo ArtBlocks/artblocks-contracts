@@ -7,12 +7,14 @@ import { expect } from "chai";
 import { T_Config } from "../../util/common";
 import {
   GenArt721CoreV3_Engine,
+  MinterFilterV2,
   SeaDropXArtBlocksShim,
 } from "../../../scripts/contracts";
 import { SeaDropXArtBlocksShim__factory } from "../../../scripts/contracts";
 
 interface T_SeaDropShimTestConfig extends T_Config {
   genArt721Core: GenArt721CoreV3_Engine;
+  minterFilter: MinterFilterV2;
   minter: SeaDropXArtBlocksShim;
   projectZero: number;
 }
@@ -45,6 +47,11 @@ runForEach.forEach((params) => {
         adminACL: config.adminACL,
       } = await deployCore(config, params.core, config.coreRegistry));
 
+      // update core's minter as the minter filter
+      await config.genArt721Core.updateMinterContract(
+        config.minterFilter.address
+      );
+
       // Project setup (do prior to minter deployment for pre-syncing artist address in constructor test)
       await safeAddProject(
         config.genArt721Core,
@@ -53,13 +60,13 @@ runForEach.forEach((params) => {
       );
 
       config.minter = await deployAndGet(config, "SeaDropXArtBlocksShim", [
+        config.minterFilter.address,
         SEA_DROP_ADDRESS,
         config.genArt721Core.address,
         config.projectZero,
       ]);
 
-      // non-standard - set contract's minter as the shim minter directly
-      await config.genArt721Core.updateMinterContract(config.minter.address);
+      // set up project 0
       await config.genArt721Core
         .connect(config.accounts.deployer)
         .toggleProjectIsActive(config.projectZero);
@@ -86,6 +93,7 @@ runForEach.forEach((params) => {
         let deployTx = factory
           .connect(config.accounts.deployer)
           .getDeployTransaction(
+            config.minterFilter.address, // minterFilter
             config.accounts.deployer.address, // allowedSeaDrop
             config.genArt721Core.address, // core
             config.projectZero // projectId
