@@ -1,6 +1,7 @@
 import prompt from "prompt";
 import fs from "fs";
 import path from "path";
+import { ProductClassEnum } from "./constants";
 var util = require("util");
 import { ethers } from "hardhat";
 
@@ -50,6 +51,7 @@ type NoGnosisSafeConfig = BaseConfig & {
 export type DeployNetworkConfiguration = GnosisSafeConfig | NoGnosisSafeConfig;
 
 export type DeployConfigDetails = {
+  productClass?: ProductClassEnum;
   network?: string;
   environment?: string;
   // shared randomizer fields

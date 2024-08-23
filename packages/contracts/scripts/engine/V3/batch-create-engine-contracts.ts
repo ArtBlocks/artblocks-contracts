@@ -184,16 +184,11 @@ async function main() {
   // Get shared split provider
   const splitProviderAddress = getActiveSharedSplitProvider();
 
-  // get the required render provider payment address, if required (e.g. required on prod networks)
-  const requiredRenderProviderAddress = getProdRenderProviderPaymentAddress(
-    networkName,
-    deployNetworkConfiguration.environment
-  );
-
   const txData: MetaTransactionData[] = [];
 
   for (const engineContractConfiguration of deployConfigDetailsArray) {
     const {
+      productClass,
       engineCoreContractType,
       tokenName,
       tokenTicker,
@@ -207,6 +202,11 @@ async function main() {
       adminACLContract,
       salt,
     } = engineContractConfiguration;
+
+    // require that productClass is defined
+    if (!productClass) {
+      throw new Error(`[ERROR] productClass must be defined`);
+    }
 
     // validate adminACLContract is defined
     if (adminACLContract === undefined) {
@@ -297,12 +297,18 @@ async function main() {
     }
 
     // validate render provider address meets requirements
+    // get the required render provider payment address, if required (e.g. required on prod networks)
+    const requiredRenderProviderAddress = getProdRenderProviderPaymentAddress(
+      networkName,
+      deployNetworkConfiguration.environment,
+      productClass
+    );
     if (
       requiredRenderProviderAddress &&
       renderProviderAddress !== requiredRenderProviderAddress
     ) {
       throw new Error(
-        `[ERROR] Render provider address ${renderProviderAddress} does not match required address for (network,env) ${requiredRenderProviderAddress}`
+        `[ERROR] Render provider address ${renderProviderAddress} does not match required address for (network,env,product) ${requiredRenderProviderAddress}`
       );
     }
 

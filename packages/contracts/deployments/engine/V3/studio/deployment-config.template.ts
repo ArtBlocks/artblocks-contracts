@@ -17,6 +17,8 @@ export const deployNetworkConfiguration = {
 
 export const deployConfigDetailsArray = [
   {
+    // productClass is either "Engine" or "Studio", and used to validate render provider payment address
+    productClass: "Studio",
     // 0 for Engine, 1 for Engine Flex
     engineCoreContractType: 0,
     // INCREMENT THESE NUMBERS FOR EACH NEW STUDIO DEPLOYMENT

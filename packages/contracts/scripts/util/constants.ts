@@ -138,27 +138,47 @@ export async function getActiveCoreRegistry(
   return activeCoreRegistryAddress;
 }
 
+export enum ProductClassEnum {
+  Engine = "Engine",
+  Sudio = "Studio",
+}
+
 /**
  * Helper function to get the prod render provider payment address for the given
  * network and environment, if there is a requirement.
  * Returns undefined if there is no requirement for a specific render provider (e.g. testnet)
  * @param networkName network name, e.g. "mainnet", "arbitrum", etc.
  * @param environment environment, e.g. "mainnet", "staging", "dev"
+ * @param productClass product class, "Engine", "Studio"
  * @returns address if require a specific render provider payment address for the given network and environment, otherwise undefined
  */
 export function getProdRenderProviderPaymentAddress(
   networkName: string,
-  environment: string
+  environment: string,
+  productClass: ProductClassEnum
 ): string | undefined {
-  return MAIN_CONFIG[networkName]?.[environment]
+  // verify that a missing product class is not reason for returning undefined
+  if (
+    !productClass ||
+    !Object.values(ProductClassEnum).includes(productClass)
+  ) {
+    throw new Error(
+      `productClass is required and must be a valid ProductClassEnum. value: ${productClass}`
+    );
+  }
+  return MAIN_CONFIG[networkName]?.[environment]?.[productClass]
     ?.prodRenderProviderPaymentAddress;
 }
+
+type T_RENDER_PROVIDER_PAYMENT_ADDRESSES = {
+  [ProductClassEnum: string]: string;
+};
 
 type T_NETWORK_ENV_CONFIG = {
   engineFactory: string;
   sharedMinterFilter: string;
   sharedRandomizer: string;
-  prodRenderProviderPaymentAddress?: string;
+  prodRenderProviderPaymentAddress?: T_RENDER_PROVIDER_PAYMENT_ADDRESSES;
 };
 type T_MAIN_CONFIG = {
   [network: string]: {
@@ -171,8 +191,10 @@ const MAIN_CONFIG: T_MAIN_CONFIG = {
       engineFactory: "0x000000004058B5159ABB5a3Dd8cf775A7519E75F",
       sharedMinterFilter: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
       sharedRandomizer: "0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91",
-      prodRenderProviderPaymentAddress:
-        "0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd",
+      prodRenderProviderPaymentAddress: {
+        [ProductClassEnum.Engine]: "0xa9F7C2b5Fd91C842B2E1b839A1Cf0f3DE2a24249",
+        [ProductClassEnum.Sudio]: "0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd",
+      },
     },
   },
   arbitrum: {
@@ -180,8 +202,10 @@ const MAIN_CONFIG: T_MAIN_CONFIG = {
       engineFactory: "0x000000007566E6566771d28E91bD465bEE8426a5",
       sharedMinterFilter: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
       sharedRandomizer: "0x6a5976391E708fBf918c3786cd1FcbB88732fbc1",
-      prodRenderProviderPaymentAddress:
-        "0x23636eAa2605B9c4a988E56d2093b488793f1C42",
+      prodRenderProviderPaymentAddress: {
+        [ProductClassEnum.Engine]: "0x4fbFc0F88270FE3405Ee5bf8c98CC03647b4fdA4",
+        [ProductClassEnum.Sudio]: "0x23636eAa2605B9c4a988E56d2093b488793f1C42",
+      },
     },
   },
   base: {
@@ -189,8 +213,10 @@ const MAIN_CONFIG: T_MAIN_CONFIG = {
       engineFactory: "0x00000BA55cae9d000000b156875D91854124fd7e",
       sharedMinterFilter: "0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5",
       sharedRandomizer: "0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98",
-      prodRenderProviderPaymentAddress:
-        "0xc8D1099702cB95baf954a4E3e2bEaF883314f464",
+      prodRenderProviderPaymentAddress: {
+        [ProductClassEnum.Engine]: "0xc5bd90634d9355B93FE8d07e6F79eAB5EF20AbCc",
+        [ProductClassEnum.Sudio]: "0xc8D1099702cB95baf954a4E3e2bEaF883314f464",
+      },
     },
   },
   sepolia: {
