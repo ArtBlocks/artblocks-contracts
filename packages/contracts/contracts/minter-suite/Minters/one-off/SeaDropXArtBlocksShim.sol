@@ -497,6 +497,8 @@ contract SeaDropXArtBlocksShim is
      * The following parameters are not supported by Art Blocks contracts and will cause revert:
      * - contractURI
      * - provenanceHash
+     * @dev logic for supported operations is taken from example SeaDrop implementation, and was tested end-to-end, and
+     * therefore may not be covered in this repository's tests. Unsupported operations are tested for reversion.
      * @param config The configuration struct.
      */
     function multiConfigure(MultiConfigureStruct calldata config) external {
@@ -823,6 +825,7 @@ contract SeaDropXArtBlocksShim is
     function supportsInterface(
         bytes4 interfaceId
     ) public view virtual override(ERC165, IERC165) returns (bool) {
+        // @dev no coverage
         // Note: do not support ERC721, ERC721Metadata in this shim layer
         return
             interfaceId == type(INonFungibleSeaDropToken).interfaceId ||
