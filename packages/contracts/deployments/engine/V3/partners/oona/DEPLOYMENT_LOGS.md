@@ -19,3 +19,8 @@
       [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/oona/deployment-config.staging.ts
 
     
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2024-08-26T19:00:28.500Z
+      [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/oona/deployment-config.mainnet.ts
+
+    
