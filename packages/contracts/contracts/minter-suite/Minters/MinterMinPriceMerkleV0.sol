@@ -39,7 +39,7 @@ import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGu
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
  * - updateMerkleRoot
- * - initializeProject - TODO - implement this? just do when updating merkle root?
+ * - initializeProject
  * - setProjectInvocationsPerAddress
  * - syncProjectMaxInvocationsToCore
  * - manuallyLimitProjectMaxInvocations
