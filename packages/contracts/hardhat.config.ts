@@ -171,6 +171,12 @@ module.exports = {
     alphaSort: true,
     runOnCompile: true,
     disambiguatePaths: false,
+    only: [
+      "GenArt721CoreV3_Curated$",
+      "GenArt721CoreV3_Engine$",
+      "GenArt721CoreV3_Engine_Flex$",
+      "MinterRAM.*",
+    ],
   },
   docgen: {
     path: "./docs",
