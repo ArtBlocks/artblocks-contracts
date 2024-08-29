@@ -47,6 +47,7 @@ export const getProjectMinterConfigurationQueryDocument = graphql(
           unversioned_type
           version_number
         }
+        extra_minter_details
       }
     }
   `
