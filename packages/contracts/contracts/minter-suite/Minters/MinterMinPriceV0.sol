@@ -35,7 +35,7 @@ import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGu
  * - updateDefaultMintFee
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
- * - initializeProject
+ * - updatePricePerTokenInWei
  * - syncProjectMaxInvocationsToCore
  * - manuallyLimitProjectMaxInvocations
  * ----------------------------------------------------------------------------
@@ -110,7 +110,7 @@ contract MinterMinPriceV0 is
         MinPriceLib._updateDefaultMintFee({
             newDefaultMintFee: newDefaultMintFee
         });
-        // @dev this update applies to an-on projects to call `initializeProject`
+        // @dev this update applies to an-on projects to call `updatePricePerTokenInWei`
         // on this minter. There is no need to sync this value to existing projects.
     }
 
@@ -144,26 +144,36 @@ contract MinterMinPriceV0 is
     }
 
     /**
-     * @notice Initializes this minter's price per token of project `projectId`
-     * to be `defaultMintFee`, in Wei. Must be called by the project's artist
-     * prior to minting to confirm and properly set the price per token.
+     * @notice Updates this minter's price per token of project `projectId`
+     * to be '_pricePerTokenInWei`, in Wei.
+     * Reverts if price per token is less than the default mint fee.
      * @param projectId Project ID to set the price per token for.
      * @param coreContract Core contract address for the given project.
+     * @param pricePerTokenInWei Price per token to set for the project, in Wei.
+     * Must be greater than or equal to the default mint fee.
      */
-    function initializeProject(
+    function updatePricePerTokenInWei(
         uint256 projectId,
-        address coreContract
+        address coreContract,
+        uint248 pricePerTokenInWei
     ) external {
         AuthLib.onlyArtist({
             projectId: projectId,
             coreContract: coreContract,
             sender: msg.sender
         });
+        // require configured price gte min mint fee
+        // @dev intentionally support price > min mint fee, to handle cases
+        // such as opt-in premium off-chain services
+        require(
+            pricePerTokenInWei >= MinPriceLib.getDefaultMintFee(),
+            "Only gte min mint fee"
+        );
         // price per token is the default mint fee
         SetPriceLib.updatePricePerToken({
             projectId: projectId,
             coreContract: coreContract,
-            pricePerToken: MinPriceLib.getDefaultMintFee()
+            pricePerToken: pricePerTokenInWei
         });
 
         // for convenience, sync local max invocations to the core contract if
