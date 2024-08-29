@@ -4,7 +4,7 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title This interface adds support for serial English auction minting.
+ * @title This interface adds support for minimum price minting.
  * @author Art Blocks Inc.
  */
 interface ISharedMinterMinPriceV0 {
