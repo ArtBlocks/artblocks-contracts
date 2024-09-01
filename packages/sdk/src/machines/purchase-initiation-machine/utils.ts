@@ -21,10 +21,12 @@ import {
   isERC20MinterType,
   isHolderMinterType,
   isMerkleMinterType,
+  isRAMMinterType,
 } from "../utils";
 import { graphql } from "../../generated/index";
 import { iSharedMinterHolderV0Abi } from "../../../abis/iSharedMinterHolderV0Abi";
 import {
+  GetUserBidsDocument,
   MinterConfigurationDetailsFragment,
   MinterDetailsFragment,
   ProjectDetailsFragment,
@@ -695,6 +697,35 @@ export async function initiateERC20Purchase(
   const purchaseTransactionHash = await walletClient.writeContract(request);
 
   return purchaseTransactionHash;
+}
+
+/** RAM Minter Helpers **/
+export async function getRAMMinterUserPurchaseContext(
+  input: Pick<PurchaseInitiationMachineContext, "artblocksClient" | "project">
+): Promise<UserPurchaseContext> {
+  const { artblocksClient, project } = input;
+  const walletClient = artblocksClient.getWalletClient();
+  const publicClient = artblocksClient.getPublicClient();
+
+  assertPublicClientAvailable(publicClient);
+  assertWalletClientWithAccount(walletClient);
+  assertProjectWithValidMinterConfiguration(project);
+
+  if (!isRAMMinterType(project.minter_configuration?.minter?.minter_type)) {
+    throw new Error("Project is not a RAM minter");
+  }
+
+  const userBids = await artblocksClient.graphqlRequest(GetUserBidsDocument, {
+    projectId: project.id,
+    userAddress: walletClient.account.address.toLowerCase(),
+  });
+
+  return {
+    isEligible: true,
+    additionalPurchaseData: {
+      userBids: userBids.bids_metadata,
+    },
+  };
 }
 
 /** Base Minter Helpers **/
