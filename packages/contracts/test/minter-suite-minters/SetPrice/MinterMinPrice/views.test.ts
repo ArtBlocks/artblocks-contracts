@@ -4,6 +4,7 @@ import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
 import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
 import { SetPrice_Common_Views } from "../common.views";
 import { T_Config } from "../../../util/common";
+import { ethers } from "hardhat";
 import {
   MinterMinPriceV0,
   GenArt721CoreV3_Engine,
