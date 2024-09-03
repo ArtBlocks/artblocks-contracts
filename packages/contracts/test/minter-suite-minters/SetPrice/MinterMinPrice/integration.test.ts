@@ -335,6 +335,44 @@ runForEach.forEach((params) => {
           );
         });
 
+        it("refunds excess payment to user", async function () {
+          const config = this.config;
+          // ensure that we induce an overpayment
+          expect(config.higherPricePerTokenInWei).to.be.gt(
+            config.pricePerTokenInWei
+          );
+          await config.minter
+            .connect(config.accounts.artist)
+            .updatePricePerTokenInWei(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.pricePerTokenInWei
+            );
+          // record user balance before purchase
+          const userBalanceBefore = await ethers.provider.getBalance(
+            config.accounts.user.address
+          );
+          // expect successful purchase
+          // set gas price of next transaction to 0 to ensure no gas fees are paid for accurate balance tracking
+          await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+            "0x0",
+          ]);
+          await config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address, {
+              value: config.higherPricePerTokenInWei, // overpayment
+              gasPrice: 0,
+            });
+          // record user balance after purchase
+          const userBalanceAfter = await ethers.provider.getBalance(
+            config.accounts.user.address
+          );
+          // expect difference in user balance to be equal to price paid
+          expect(userBalanceBefore.sub(userBalanceAfter)).to.equal(
+            config.pricePerTokenInWei
+          );
+        });
+
         it("requires successful payment to render provider", async function () {
           // get config from beforeEach
           const config = this.config;

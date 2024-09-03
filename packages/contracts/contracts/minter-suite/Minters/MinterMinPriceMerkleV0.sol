@@ -68,7 +68,7 @@ import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGu
  * configured on this minter, but they will not be able to mint tokens due to
  * checks performed by this minter's Minter Filter.
  */
-contract MinterMinPriceMerkleV5 is
+contract MinterMinPriceMerkleV0 is
     ReentrancyGuard,
     ISharedMinterV0,
     ISharedMinterMerkleV0
