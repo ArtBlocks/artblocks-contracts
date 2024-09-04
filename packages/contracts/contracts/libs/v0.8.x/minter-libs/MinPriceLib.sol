@@ -33,7 +33,7 @@ library MinPriceLib {
      * an event.
      * @param newDefaultMinMintFee New default minimum mint fee, in wei
      */
-    function _updateDefaultMinMintFee(uint256 newDefaultMinMintFee) internal {
+    function updateDefaultMinMintFee(uint256 newDefaultMinMintFee) internal {
         MinPriceLibStorage storage minPriceLibStorage_ = s();
         minPriceLibStorage_.defaultMinMintFee = newDefaultMinMintFee;
         emit DefaultMinMintFeeUpdated(newDefaultMinMintFee);

@@ -86,7 +86,7 @@ contract MinterMinPriceV0 is
         minterFilterAddress = minterFilter;
         _minterFilter = IMinterFilterV1(minterFilter);
 
-        MinPriceLib._updateDefaultMinMintFee({
+        MinPriceLib.updateDefaultMinMintFee({
             newDefaultMinMintFee: defaultMinMintFee_
         });
     }
@@ -109,7 +109,7 @@ contract MinterMinPriceV0 is
             selector: this.updateDefaultMinMintFee.selector
         });
         // EFFECTS
-        MinPriceLib._updateDefaultMinMintFee({
+        MinPriceLib.updateDefaultMinMintFee({
             newDefaultMinMintFee: newDefaultMinMintFee
         });
         // @dev this update applies to an-on projects to call `updatePricePerTokenInWei`

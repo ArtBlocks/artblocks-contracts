@@ -117,7 +117,7 @@ contract MinterMinPriceMerkleV0 is
             delegationRegistryAddress_
         );
 
-        MinPriceLib._updateDefaultMinMintFee({
+        MinPriceLib.updateDefaultMinMintFee({
             newDefaultMinMintFee: defaultMinMintFee_
         });
 
@@ -146,7 +146,7 @@ contract MinterMinPriceMerkleV0 is
             selector: this.updateDefaultMinMintFee.selector
         });
         // EFFECTS
-        MinPriceLib._updateDefaultMinMintFee({
+        MinPriceLib.updateDefaultMinMintFee({
             newDefaultMinMintFee: newDefaultMinMintFee
         });
         // @dev this update applies to an-on projects to call `updatePricePerTokenInWei`
