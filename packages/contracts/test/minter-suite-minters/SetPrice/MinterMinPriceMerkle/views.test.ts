@@ -263,11 +263,11 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("defaultMinMintFee", async function () {
-      it("correctly reports defaultMinMintFee", async function () {
+    describe("minMintFee", async function () {
+      it("correctly reports minMintFee", async function () {
         const config = await loadFixture(_beforeEach);
-        const defaultMinMintFee = await config.minter.defaultMinMintFee();
-        expect(defaultMinMintFee).to.equal(DEFAULT_MIN_MINT_FEE);
+        const minMintFee = await config.minter.minMintFee();
+        expect(minMintFee).to.equal(DEFAULT_MIN_MINT_FEE);
       });
     });
 

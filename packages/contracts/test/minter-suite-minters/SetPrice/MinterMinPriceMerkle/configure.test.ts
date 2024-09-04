@@ -614,23 +614,23 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("updateDefaultMinMintFee", async function () {
+    describe("updateMinMintFee", async function () {
       it("reverts when caller is not minter filter admin", async function () {
         const config = await loadFixture(_beforeEach);
         await expectRevert(
           config.minter
             .connect(config.accounts.artist)
-            .updateDefaultMinMintFee(DEFAULT_MIN_MINT_FEE.add(1)),
+            .updateMinMintFee(DEFAULT_MIN_MINT_FEE.add(1)),
           revertMessages.onlyMinterFilterACL
         );
       });
 
-      it("updates default min mint fee", async function () {
+      it("updates min mint fee", async function () {
         const config = await loadFixture(_beforeEach);
         await config.minter
           .connect(config.accounts.deployer)
-          .updateDefaultMinMintFee(DEFAULT_MIN_MINT_FEE.add(1));
-        const updatedMinMintFee = await config.minter.defaultMinMintFee();
+          .updateMinMintFee(DEFAULT_MIN_MINT_FEE.add(1));
+        const updatedMinMintFee = await config.minter.minMintFee();
         expect(updatedMinMintFee).to.equal(DEFAULT_MIN_MINT_FEE.add(1));
       });
     });

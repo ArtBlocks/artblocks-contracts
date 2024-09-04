@@ -250,8 +250,8 @@ runForEach.forEach((params) => {
       await SetPrice_Common_Events(_beforeEach);
     });
 
-    describe("DefaultMinMintFeeUpdated", async function () {
-      it("should emit DefaultMinMintFeeUpdated event", async function () {
+    describe("MinMintFeeUpdated", async function () {
+      it("should emit MinMintFeeUpdated event", async function () {
         const config = await loadFixture(_beforeEach);
         const newFee = DEFAULT_MIN_MINT_FEE.add(
           ethers.utils.parseEther("0.01")
@@ -259,11 +259,11 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.deployer)
-            .updateDefaultMinMintFee(newFee)
+            .updateMinMintFee(newFee)
         )
           .to.emit(
             await ethers.getContractAt("MinPriceLib", config.minter.address),
-            "DefaultMinMintFeeUpdated"
+            "MinMintFeeUpdated"
           )
           .withArgs(newFee);
       });
