@@ -35,7 +35,7 @@ import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGu
  * addresses are secure behind a multi-sig or other access control mechanism.
  * ----------------------------------------------------------------------------
  * The following functions are restricted to the minter filter's admin ACL:
- * - updateDefaultMinMintFee
+ * - updateMinMintFee
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
  * - updateMerkleRoot
@@ -101,13 +101,13 @@ contract MinterMinPriceMerkleV0 is
      * @param minterFilter Minter filter for which this will be a
      * filtered minter.
      * @param delegationRegistryAddress_ Delegation registry contract address.
-     * @param defaultMinMintFee_ Default min mint fee for this minter, applied to all
+     * @param minMintFee_ Min mint fee for this minter, applied to all
      * and-on projects that use this minter.
      */
     constructor(
         address minterFilter,
         address delegationRegistryAddress_,
-        uint256 defaultMinMintFee_
+        uint256 minMintFee_
     ) ReentrancyGuard() {
         minterFilterAddress = minterFilter;
         _minterFilter = IMinterFilterV1(minterFilter);
@@ -117,9 +117,7 @@ contract MinterMinPriceMerkleV0 is
             delegationRegistryAddress_
         );
 
-        MinPriceLib.updateDefaultMinMintFee({
-            newDefaultMinMintFee: defaultMinMintFee_
-        });
+        MinPriceLib.updateMinMintFee({newMinMintFee: minMintFee_});
 
         emit MerkleLib.DelegationRegistryUpdated(delegationRegistryAddress_);
         // broadcast default max invocations per address for this minter
@@ -129,26 +127,24 @@ contract MinterMinPriceMerkleV0 is
     }
 
     /**
-     * @notice Updates the default min mint fee for this minter.
+     * @notice Updates the min mint fee for this minter.
      * This function is restricted to the minter filter's admin.
-     * This function is intended to be used to update the default min mint fee
+     * This function is intended to be used to update the min mint fee
      * for this minter, which is applied to all and-on projects that use this
      * minter. This function does not update the price per token for existing
      * projects that have already been initialized.
-     * @param newDefaultMinMintFee New default min mint fee for this minter.
+     * @param newMinMintFee New min mint fee for this minter.
      */
-    function updateDefaultMinMintFee(uint256 newDefaultMinMintFee) external {
+    function updateMinMintFee(uint256 newMinMintFee) external {
         // CHECKS
         AuthLib.onlyMinterFilterAdminACL({
             minterFilterAddress: minterFilterAddress,
             sender: msg.sender,
             contract_: address(this),
-            selector: this.updateDefaultMinMintFee.selector
+            selector: this.updateMinMintFee.selector
         });
         // EFFECTS
-        MinPriceLib.updateDefaultMinMintFee({
-            newDefaultMinMintFee: newDefaultMinMintFee
-        });
+        MinPriceLib.updateMinMintFee({newMinMintFee: newMinMintFee});
         // @dev this update applies to an-on projects to call `updatePricePerTokenInWei`
         // on this minter. There is no need to sync this value to existing projects.
     }
@@ -185,11 +181,11 @@ contract MinterMinPriceMerkleV0 is
     /**
      * @notice Updates this minter's price per token of project `projectId`
      * to be '_pricePerTokenInWei`, in Wei.
-     * Reverts if price per token is less than the default min mint fee.
+     * Reverts if price per token is less than the min mint fee.
      * @param projectId Project ID to set the price per token for.
      * @param coreContract Core contract address for the given project.
      * @param pricePerTokenInWei Price per token to set for the project, in Wei.
-     * Must be greater than or equal to the default min mint fee.
+     * Must be greater than or equal to the min mint fee.
      */
     function updatePricePerTokenInWei(
         uint256 projectId,
@@ -205,7 +201,7 @@ contract MinterMinPriceMerkleV0 is
         // @dev intentionally support price > min mint fee, to handle cases
         // such as opt-in premium off-chain services
         require(
-            pricePerTokenInWei >= MinPriceLib.getDefaultMinMintFee(),
+            pricePerTokenInWei >= MinPriceLib.getMinMintFee(),
             "Only gte min mint fee"
         );
         // price per token is the input pricePerTokenInWei
@@ -608,12 +604,12 @@ contract MinterMinPriceMerkleV0 is
     }
 
     /**
-     * @notice Returns the default min mint fee for this minter, applied to all
+     * @notice Returns the min mint fee for this minter, applied to all
      * and-on projects.
-     * @return defaultMinMintFee Default min mint fee, in wei
+     * @return minMintFee Min mint fee, in wei
      */
-    function defaultMinMintFee() external view returns (uint256) {
-        return MinPriceLib.getDefaultMinMintFee();
+    function minMintFee() external view returns (uint256) {
+        return MinPriceLib.getMinMintFee();
     }
 
     /**

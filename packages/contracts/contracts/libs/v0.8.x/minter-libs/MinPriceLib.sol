@@ -12,11 +12,11 @@ pragma solidity ^0.8.0;
 
 library MinPriceLib {
     /**
-     * @notice Default min mint fee, in wei, was updated to be the
+     * @notice Min mint fee, in wei, was updated to be the
      * provided value.
-     * @param defaultMinMintFee Default min mint fee, in wei
+     * @param minMintFee Min mint fee, in wei
      */
-    event DefaultMinMintFeeUpdated(uint256 defaultMinMintFee);
+    event MinMintFeeUpdated(uint256 minMintFee);
 
     // position of MinPrice Lib storage, using a diamond storage pattern
     // for this library
@@ -25,29 +25,25 @@ library MinPriceLib {
 
     // Diamond storage pattern is used in this library
     struct MinPriceLibStorage {
-        uint256 defaultMinMintFee;
+        uint256 minMintFee;
     }
 
     /**
-     * @notice Update the default minimum mint fee for the minter, and emit
+     * @notice Update the minimum mint fee for the minter, and emit
      * an event.
-     * @param newDefaultMinMintFee New default minimum mint fee, in wei
+     * @param newMinMintFee New minimum mint fee, in wei
      */
-    function updateDefaultMinMintFee(uint256 newDefaultMinMintFee) internal {
+    function updateMinMintFee(uint256 newMinMintFee) internal {
         MinPriceLibStorage storage minPriceLibStorage_ = s();
-        minPriceLibStorage_.defaultMinMintFee = newDefaultMinMintFee;
-        emit DefaultMinMintFeeUpdated(newDefaultMinMintFee);
+        minPriceLibStorage_.minMintFee = newMinMintFee;
+        emit MinMintFeeUpdated(newMinMintFee);
     }
 
     /**
-     * @notice Loads the default min mint fee from storage.
+     * @notice Loads the min mint fee from storage.
      */
-    function getDefaultMinMintFee()
-        internal
-        view
-        returns (uint256 defaultMinMintFee)
-    {
-        return s().defaultMinMintFee;
+    function getMinMintFee() internal view returns (uint256 minMintFee) {
+        return s().minMintFee;
     }
 
     /**
