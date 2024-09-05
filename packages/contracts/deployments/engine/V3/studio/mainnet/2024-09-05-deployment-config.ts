@@ -17,6 +17,8 @@ export const deployNetworkConfiguration = {
 
 export const deployConfigDetailsArray = [
   {
+    // productClass is either "Engine" or "Studio", and used to validate render provider payment address
+    productClass: "Studio",
     // 0 for Engine, 1 for Engine Flex
     engineCoreContractType: 1,
     // prod-only: see efficient_addresses...txt in network directories for a list of efficient salts
@@ -48,6 +50,8 @@ export const deployConfigDetailsArray = [
     defaultVerticalName: "studio",
   },
   {
+    // productClass is either "Engine" or "Studio", and used to validate render provider payment address
+    productClass: "Studio",
     // 0 for Engine, 1 for Engine Flex
     engineCoreContractType: 1,
     // prod-only: see efficient_addresses...txt in network directories for a list of efficient salts
@@ -79,6 +83,8 @@ export const deployConfigDetailsArray = [
     defaultVerticalName: "studio",
   },
   {
+    // productClass is either "Engine" or "Studio", and used to validate render provider payment address
+    productClass: "Studio",
     // 0 for Engine, 1 for Engine Flex
     engineCoreContractType: 1,
     // prod-only: see efficient_addresses...txt in network directories for a list of efficient salts
@@ -110,6 +116,8 @@ export const deployConfigDetailsArray = [
     defaultVerticalName: "studio",
   },
   {
+    // productClass is either "Engine" or "Studio", and used to validate render provider payment address
+    productClass: "Studio",
     // 0 for Engine, 1 for Engine Flex
     engineCoreContractType: 1,
     // prod-only: see efficient_addresses...txt in network directories for a list of efficient salts
@@ -141,6 +149,8 @@ export const deployConfigDetailsArray = [
     defaultVerticalName: "studio",
   },
   {
+    // productClass is either "Engine" or "Studio", and used to validate render provider payment address
+    productClass: "Studio",
     // 0 for Engine, 1 for Engine Flex
     engineCoreContractType: 0,
     // prod-only: see efficient_addresses...txt in network directories for a list of efficient salts
