@@ -233,3 +233,41 @@ Date: 2024-04-03T17:24:43.723Z
 
 ---
 
+
+# Shared Minter Deployment
+
+Date: 2024-09-06T22:25:35.870Z
+
+## **Network:** sepolia
+
+## **Environment:** dev
+
+**Deployment Input File:** `deployments/minters/sepolia-dev/shared-minter-deploy-config-03.dev.ts`
+
+**MinterMinPriceV0:** https://sepolia.etherscan.io/address/0x8b15aC3F02D9dd200C48c126d3e22d3e0325a6a5#code
+
+**Associated Minter Filter:** 0x29e9f09244497503f304FA549d50eFC751D818d2
+
+**Deployment Args:** 0x29e9f09244497503f304FA549d50eFC751D818d2,1500000000000000
+
+---
+
+
+# Shared Minter Deployment
+
+Date: 2024-09-06T22:27:44.816Z
+
+## **Network:** sepolia
+
+## **Environment:** dev
+
+**Deployment Input File:** `deployments/minters/sepolia-dev/shared-minter-deploy-config-03.dev.ts`
+
+**MinterMinPriceMerkleV0:** https://sepolia.etherscan.io/address/0x6063504bc2408dA5D51167A73e0d4f49ad593288#code
+
+**Associated Minter Filter:** 0x29e9f09244497503f304FA549d50eFC751D818d2
+
+**Deployment Args:** 0x29e9f09244497503f304FA549d50eFC751D818d2,0x00000000000076A84feF008CDAbe6409d2FE638B,1500000000000000
+
+---
+
