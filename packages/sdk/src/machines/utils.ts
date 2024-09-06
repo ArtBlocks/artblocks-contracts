@@ -21,6 +21,8 @@ export const SUPPORTED_MINTER_TYPES = [
   Minter_Type_Names_Enum.MinterDaExpSettlementV3,
   Minter_Type_Names_Enum.MinterRamv0,
   Minter_Type_Names_Enum.MinterSetPriceErc20V5,
+  Minter_Type_Names_Enum.MinterMinPriceV0,
+  Minter_Type_Names_Enum.MinterMinPriceMerkleV0,
 ];
 
 export const SUPPORTED_SETTLEMENT_CLAIM_MINTER_TYPES = [
@@ -30,7 +32,10 @@ export const SUPPORTED_SETTLEMENT_CLAIM_MINTER_TYPES = [
   Minter_Type_Names_Enum.MinterDaExpSettlementV3,
 ];
 
-const MERKLE_MINTER_TYPES = [Minter_Type_Names_Enum.MinterSetPriceMerkleV5];
+const MERKLE_MINTER_TYPES = [
+  Minter_Type_Names_Enum.MinterSetPriceMerkleV5,
+  Minter_Type_Names_Enum.MinterMinPriceMerkleV0,
+];
 const HOLDER_MINTER_TYPES = [
   Minter_Type_Names_Enum.MinterDaLinHolderV5,
   Minter_Type_Names_Enum.MinterDaExpHolderV5,
