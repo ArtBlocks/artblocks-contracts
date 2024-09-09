@@ -10,11 +10,17 @@ pragma solidity ^0.8.0;
  * interface.
  */
 interface ISharedMinterRequired {
-    // Function returns the minter type, and is called by the MinterFilter for
-    // metadata purposes.
+    /**
+     * @notice Returns the minter's type, used by the minter filter for metadata
+     * purposes.
+     * @return The minter type.
+     */
     function minterType() external view returns (string memory);
 
-    // Function returns the minter's associated shared minter filter address,
-    // and is called by subgraph indexing service for entity relation purposes.
+    /**
+     * @notice Returns the minter's associated shared minter filter address.
+     * @dev used by subgraph indexing service for entity relation purposes.
+     * @return The minter filter address.
+     */
     function minterFilterAddress() external returns (address);
 }
