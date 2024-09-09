@@ -47,12 +47,10 @@ const RAM_MINTER_TYPES = [Minter_Type_Names_Enum.MinterRamv0];
  * @param minterType - The minter type to check.
  * @returns A boolean indicating whether the minter type is supported.
  */
-export function isSupportedMinterType(
-  minterType: Minter_Type_Names_Enum | undefined
-) {
-  return (
-    SUPPORTED_MINTER_TYPES as Array<Minter_Type_Names_Enum | undefined>
-  ).includes(minterType);
+export function isSupportedMinterType(minterType: string | undefined) {
+  return (SUPPORTED_MINTER_TYPES as Array<string | undefined>).includes(
+    minterType
+  );
 }
 
 /**
