@@ -15,12 +15,12 @@ import {
   isProjectComplete,
   isProjectIneligibleForPrimarySale,
   isProjectPurchasable,
-  isProjectRAMBiddable,
+  shouldStartRAMMachine,
 } from "./utils";
 import { liveSaleDataPollingMachine } from "./live-sale-data-polling-machine";
 import { purchaseInitiationMachine } from "../purchase-initiation-machine";
 import { ArtBlocksClient } from "../..";
-import { ramBidMachine } from "../ram-bid-machine";
+import { ramMachine } from "../ram-machine";
 
 type ProjectSaleManagerMachineEvents =
   | {
@@ -57,7 +57,7 @@ export type ProjectSaleManagerMachineContext = {
     typeof purchaseTrackingManagerMachine
   >;
   purchaseInitiationMachine?: ActorRefFrom<typeof purchaseInitiationMachine>;
-  ramBidMachine?: ActorRefFrom<typeof ramBidMachine>;
+  ramMachine?: ActorRefFrom<typeof ramMachine>;
 };
 
 /**
@@ -170,7 +170,7 @@ export const projectSaleManagerMachine = setup({
     ),
     liveSaleDataPollingMachine,
     purchaseInitiationMachine,
-    ramBidMachine,
+    ramMachine,
   },
   actions: {
     assignArtBlocksClient: assign({
@@ -289,8 +289,8 @@ export const projectSaleManagerMachine = setup({
         purchaseInitiationMachine: undefined,
       });
     }),
-    spawnAndAssignRAMBidMachine: assign({
-      ramBidMachine: ({ spawn, context, system }) => {
+    spawnAndAssignRamMachine: assign({
+      ramMachine: ({ spawn, context, system }) => {
         if (!context.project) {
           return;
         }
@@ -302,9 +302,9 @@ export const projectSaleManagerMachine = setup({
           return;
         }
 
-        return spawn("ramBidMachine", {
-          systemId: "ramBidMachine",
-          id: "ramBidMachine",
+        return spawn("ramMachine", {
+          systemId: "ramMachine",
+          id: "ramMachine",
           input: {
             artblocksClient: context.artblocksClient,
             project: context.project,
@@ -313,10 +313,10 @@ export const projectSaleManagerMachine = setup({
         });
       },
     }),
-    stopAndAssignRAMBidMachine: enqueueActions(({ enqueue }) => {
-      enqueue.stopChild("ramBidMachine");
+    stopAndAssignRamMachine: enqueueActions(({ enqueue }) => {
+      enqueue.stopChild("ramMachine");
       enqueue.assign({
-        ramBidMachine: undefined,
+        ramMachine: undefined,
       });
     }),
   },
@@ -327,11 +327,11 @@ export const projectSaleManagerMachine = setup({
     isPurchasable: ({ context }) => {
       return isProjectPurchasable(context);
     },
-    isRAMBiddable: ({ context }) => {
-      return isProjectRAMBiddable(context);
+    shouldStartRAMMachine: ({ context }) => {
+      return shouldStartRAMMachine(context);
     },
-    isNotRAMBiddable: ({ context }) => {
-      return !isProjectRAMBiddable(context);
+    shouldNotStartRAMMachine: ({ context }) => {
+      return !shouldStartRAMMachine(context);
     },
     isProjectComplete: ({ context }) => {
       return isProjectComplete(context.project, context.liveSaleData);
@@ -459,8 +459,8 @@ export const projectSaleManagerMachine = setup({
           guard: "isPurchasable",
         },
         {
-          target: "readyForRamBid",
-          guard: "isRAMBiddable",
+          target: "readyForRam",
+          guard: "shouldStartRAMMachine",
         },
         {
           guard: "isPublicClientUnavailable",
@@ -487,15 +487,15 @@ export const projectSaleManagerMachine = setup({
         },
       ],
     },
-    readyForRamBid: {
+    readyForRam: {
       entry: {
-        type: "spawnAndAssignRAMBidMachine",
+        type: "spawnAndAssignRamMachine",
       },
       always: [
         {
           target: "idle",
-          guard: "isNotRAMBiddable",
-          actions: "stopAndAssignRAMBidMachine",
+          guard: "shouldNotStartRAMMachine",
+          actions: "stopAndAssignRamMachine",
         },
       ],
     },

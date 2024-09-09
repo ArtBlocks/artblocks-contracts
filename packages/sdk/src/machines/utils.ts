@@ -39,18 +39,18 @@ const HOLDER_MINTER_TYPES = [
 
 const ERC20_MINTER_TYPES = [Minter_Type_Names_Enum.MinterSetPriceErc20V5];
 
+const RAM_MINTER_TYPES = [Minter_Type_Names_Enum.MinterRamv0];
+
 /**
  * Checks if a minter type is supported by the purchase machine.
  *
  * @param minterType - The minter type to check.
  * @returns A boolean indicating whether the minter type is supported.
  */
-export function isSupportedMinterType(
-  minterType: Minter_Type_Names_Enum | undefined
-) {
-  return (
-    SUPPORTED_MINTER_TYPES as Array<Minter_Type_Names_Enum | undefined>
-  ).includes(minterType);
+export function isSupportedMinterType(minterType: string | undefined) {
+  return (SUPPORTED_MINTER_TYPES as Array<string | undefined>).includes(
+    minterType
+  );
 }
 
 /**
@@ -92,6 +92,20 @@ export function isERC20MinterType(
 ) {
   return (
     ERC20_MINTER_TYPES as Array<Minter_Type_Names_Enum | undefined>
+  ).includes(minterType);
+}
+
+/**
+ * Checks if a minter type is a RAM minter.
+ *
+ * @param minterType - The minter type to check.
+ * @returns A boolean indicating whether the minter type is a RAM minter.
+ */
+export function isRAMMinterType(
+  minterType: Minter_Type_Names_Enum | undefined
+) {
+  return (
+    RAM_MINTER_TYPES as Array<Minter_Type_Names_Enum | undefined>
   ).includes(minterType);
 }
 
@@ -171,6 +185,12 @@ export function getCoreContractAddressAndProjectIndexFromProjectId(
     projectIndex: BigInt(projectIndex),
   };
 }
+
+// TODO: Add machine specific utils exports
+export {
+  PROJECT_MINTER_STATE,
+  type ProjectMinterState,
+} from "./project-sale-manager-machine/utils";
 
 // Re-export xstate utility types and createEmptyActor function for use in consuming apps
 export {

@@ -2,7 +2,7 @@ import { Snapshot, createActor } from "xstate";
 import { projectSaleManagerMachine, ProjectSaleManagerMachineContext } from ".";
 import { graphql } from "../../generated/index";
 import { GetProjectDetailsQuery } from "../../generated/graphql";
-import { isSupportedMinterType } from "../utils";
+import { isRAMMinterType, isSupportedMinterType } from "../utils";
 import { ArtBlocksClient } from "../..";
 import { formatEther } from "viem";
 
@@ -111,15 +111,17 @@ export type LiveSaleData = {
     projectMinterState: ProjectMinterState;
     minNextBidValue: bigint;
     minNextBidSlotIndex: bigint;
+    maxHasBeenInvoked: boolean;
+    maxInvocations: bigint;
   };
 };
 
-const PROJECT_MINTER_STATE = {
+export const PROJECT_MINTER_STATE = {
   PreAuction: "PreAuction",
-  LiveAuction: "LiveAuction",
-  PostAuctionSellOutAdminArtistMint: "PostAuctionSellOutAdminArtistMint",
-  PostAuctionOpenMint: "PostAuctionOpenMint",
-  PostAuctionAllBidsHandled: "PostAuctionAllBidsHandled",
+  LiveAuction: "LiveAuction", // Ram bid flow - all data available
+  PostAuctionSellOutAdminArtistMint: "PostAuctionSellOutAdminArtistMint", // Idle - live sale data available, user bids not available
+  PostAuctionOpenMint: "PostAuctionOpenMint", // Purchase flow - live sale data available, user bids currently not available
+  PostAuctionAllBidsHandled: "PostAuctionAllBidsHandled", // Idle or potentially complete
 } as const;
 
 export type ProjectMinterState =
@@ -133,12 +135,28 @@ export const ProjectMinterStateNumberToEnum = {
   4: PROJECT_MINTER_STATE.PostAuctionAllBidsHandled,
 } as const;
 
+/**
+ * Determines if a project is complete based on project details and live sale data.
+ *
+ * @param project - The project details.
+ * @param liveSaleData - The live sale data for the project.
+ * @returns A boolean indicating whether the project is complete.
+ *
+ * @remarks
+ * RAM minters are treated as a special case. For these minters, we always want
+ * to be able to look up user data, so we don't transition to the complete state.
+ * This ensures that user bid information remains accessible even after the
+ * auction has ended.
+ */
 export function isProjectComplete(
   project?: ProjectDetails,
   liveSaleData?: LiveSaleData
 ): boolean {
-  return Boolean(
-    project?.complete || (liveSaleData && liveSaleData.completedTimestamp)
+  return (
+    !isRAMMinterType(project?.minter_configuration?.minter?.minter_type) &&
+    Boolean(
+      project?.complete || (liveSaleData && liveSaleData.completedTimestamp)
+    )
   );
 }
 
@@ -196,20 +214,26 @@ export function isProjectPurchasable(
     }
   }
 
-  if (
-    liveSaleData.ramMinterAuctionDetails &&
-    liveSaleData.ramMinterAuctionDetails.projectMinterState !==
-      PROJECT_MINTER_STATE.PostAuctionOpenMint &&
-    liveSaleData.ramMinterAuctionDetails.projectMinterState !==
-      PROJECT_MINTER_STATE.PostAuctionAllBidsHandled
-  ) {
-    return false;
+  if (liveSaleData.ramMinterAuctionDetails) {
+    const { maxHasBeenInvoked, projectMinterState } =
+      liveSaleData.ramMinterAuctionDetails;
+
+    const isPostAuctionOpenMint =
+      projectMinterState === PROJECT_MINTER_STATE.PostAuctionOpenMint;
+    const isPostAuctionAllBidsHandled =
+      projectMinterState === PROJECT_MINTER_STATE.PostAuctionAllBidsHandled;
+    const isPostAuctionState =
+      isPostAuctionOpenMint || isPostAuctionAllBidsHandled;
+
+    if (maxHasBeenInvoked || !isPostAuctionState) {
+      return false;
+    }
   }
 
   return true;
 }
 
-export function isProjectRAMBiddable(
+export function shouldStartRAMMachine(
   context: ProjectSaleManagerMachineContext
 ) {
   const { artblocksClient, project, liveSaleData } = context;
@@ -232,7 +256,7 @@ export function isProjectRAMBiddable(
   }
 
   const auctionDetails = liveSaleData.ramMinterAuctionDetails;
-  if (auctionDetails.projectMinterState !== PROJECT_MINTER_STATE.LiveAuction) {
+  if (auctionDetails.projectMinterState === PROJECT_MINTER_STATE.PreAuction) {
     return false;
   }
 

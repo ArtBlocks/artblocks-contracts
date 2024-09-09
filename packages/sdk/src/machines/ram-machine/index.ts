@@ -13,7 +13,7 @@ import {
 } from "../utils";
 import { dbBidIdToOnChainBidId, slotIndexToBidValue } from "./utils";
 
-export type RAMBidMachineEvents =
+export type RAMMachineEvents =
   | {
       type: "SUBMIT_BID";
       bidSlotIndex: number;
@@ -35,7 +35,7 @@ export type RAMBidMachineEvents =
 
 type BidAction = "create" | "topUp";
 
-export type RAMBidMachineContext = {
+export type RAMMachineContext = {
   // Client used to interact with ArtBlocks API with access to walletClient and publicClient
   artblocksClient: ArtBlocksClient;
   // Details of the project relevant to sale
@@ -64,8 +64,8 @@ export type RAMBidMachineContext = {
   syncedBid?: BidDetailsFragment;
 };
 
-export type RAMBidMachineInput = Pick<
-  RAMBidMachineContext,
+export type RAMMachineInput = Pick<
+  RAMMachineContext,
   "artblocksClient" | "project"
 >;
 
@@ -77,6 +77,7 @@ graphql(/* GraphQL */ `
     ranking
     time_of_bid
     bidder_address
+    is_removed
   }
 `);
 
@@ -95,21 +96,21 @@ const getUserBidsDocument = graphql(/* GraphQL */ `
 
 const MAX_RETRIES = 10;
 
-export const ramBidMachine = setup({
+export const ramMachine = setup({
   types: {
     input: {} as Pick<
-      RAMBidMachineContext,
+      RAMMachineContext,
       "project" | "artblocksClient" | "liveSaleDataPollingMachineRef"
     >,
-    context: {} as RAMBidMachineContext,
-    events: {} as RAMBidMachineEvents,
+    context: {} as RAMMachineContext,
+    events: {} as RAMMachineEvents,
   },
   actors: {
     fetchUserBids: fromPromise(
       async ({
         input,
       }: {
-        input: Pick<RAMBidMachineContext, "artblocksClient" | "project">;
+        input: Pick<RAMMachineContext, "artblocksClient" | "project">;
       }): Promise<Array<BidDetailsFragment>> => {
         const { artblocksClient, project } = input;
         const publicClient = artblocksClient.getPublicClient();
@@ -137,7 +138,7 @@ export const ramBidMachine = setup({
         input,
       }: {
         input: Pick<
-          RAMBidMachineContext,
+          RAMMachineContext,
           | "artblocksClient"
           | "project"
           | "topUpBidId"
@@ -238,7 +239,7 @@ export const ramBidMachine = setup({
       async ({
         input,
       }: {
-        input: Pick<RAMBidMachineContext, "artblocksClient" | "txHash">;
+        input: Pick<RAMMachineContext, "artblocksClient" | "txHash">;
       }): Promise<bigint> => {
         const { artblocksClient, txHash } = input;
         const publicClient = artblocksClient.getPublicClient();
@@ -397,9 +398,20 @@ export const ramBidMachine = setup({
 
       return bidSlotIndex >= minBidSlotIndex;
     },
+    isSaleComplete: ({ context }) => {
+      const liveSaleData =
+        context.liveSaleDataPollingMachineRef.getSnapshot().context
+          .liveSaleData;
+
+      return Boolean(
+        liveSaleData?.ramMinterAuctionDetails?.maxHasBeenInvoked &&
+          liveSaleData.ramMinterAuctionDetails.projectMinterState !==
+            "LiveAuction"
+      );
+    },
   },
 }).createMachine({
-  /** @xstate-layout N4IgpgJg5mDOIC5QCcCGBbAQgSwgWVQGMALbAOzADoAzMAFxPKgFVYxkcJYBiCAewqVyANz4BrKmiy4CjQbQakyLNh1ywEIvoVR1sAgNoAGALrGTiUAAc+sbHoGWQAD0QBaAEwB2AJwBGSi8AZgAODyMjADYQyJ9vABoQAE9EPyMvABZKII8Mn0z0yLyAVgyAXzLEqU5ZJSoFORV2Th52ZD5kSisAG11qDvRKapkiOpp6RtZm9U0yUR0HMnNzJxs7RadXBDcgv3DskKDioJ84kK8i4sSUhD984so-IKMPSKjwvb9IiqqMGtHyFRUAB3VD2JicACChEWAGFiHxsIQwNxMABJAAiAH1IbCACpogDyADksbCABKEgDKAFFiSskCA1uDHIytp4jBkPJQ3pEPB5igK-BldtdUkYQkYeaUgkcvOkvBcvD8QMN8ADBCCwXplFCYfoyPDEcjUZicfiiaSKdS6QY-BZGcyNmz3OFipEeZKMoKjHELn4vGKECERZRvMU7l4-O6QqdlZVVX8RnIgaDwco8XwrMwrJwjUiUXjCQAFLHMUvo7HW2n00yrWwssibdxpPKUHwxMJBSInSKRaNBtKS6UiuUKpUqtW1QGULXpqCZ7O53D5k2YXEAaQZ1gbztA7OjkQeGQyfmFitCso8QUHHjulCMaSOLxD4S8IUnSfVKdnaZ1UChdA+AAVzIOhuCpZhMDwNE8SxSttyZXcDWbbZDwfYofGKEIQjSCUuRyIN-CyIxSmKTkcOwjILk-aRvzGOd-0AkCwNRTdEKdFCXW2HspX5cIXiPUphQyW9ii8ShcOI7toglD8EynDVU21CFcEhIDQPA9dYS3e163WLj93cN4JNyaMTmKQUsO9QdTyCdt-A8Hx0i5eUolo-4f3IcFdFUiA8WcXgBCoLQJCGL9p0Eby9F83VcAC2Z5l8wxTA45DWSM247hCQIPEODIjxFTIe0HKIcreciYkw0jJQ8DzkzGaLsFigD4sCtoOi6Xo6H6ZBBkUryyB8pi2sS7RkqWVK60ddKm2468snlXJzkid8vmOQNklSfkJIiIpnMlISJXq+iZyalrOAC7gOs6Ho+gGcK6MikKhpikb-OcMaFgNZY9JmgyMpcRBXnsoIRVInxeKMXYSq224jiybt32o05vWeOqFIipTKEIARqGwPq-Ku-gormcRJCxn9cbIfHCbij6vom5Zpp3AG5sy8I8vbdJ3SiTko0iUqvG5AVnKKMIXmwoITue38VOUKkkjIQggsEWA6F0CmnuxximEV5W0rZ1DQmcyTDmCajMksq44fOHKwZCSzo3lDIonjX5tZ-XWFaVlWSaodXNcezyGL-PXfbtB1WcbY3ziyXCXgIvsvHdUr-EecN8liC5qPkj2Q5nb2oH1whxkUJgpjULhVZe0QwoG0P5eL32y8mVQWkZxZmajpCjfmvsfEocSsNCajwh8G84aCYJHjOa9u0w0pVplnWw595XW6UJoq54f2hDJ+vKcb+cS83iv25mLRvpSsw-ujvcgYQV5jiH0ichiE5302m5ebDB3x-SGDaMK8vZr2bhvBoW9K4tBrvvOuWsC6ajAafSB59phcE7j9VKHge6cUBlsPK7oHz+BiKtHCGRDhBmCIPQUvhgjHEFIcPOiZPbH3-CgiYUCL7Vxul1e6fVg4NULsgluqDlDQMvmTa+k0zAs17jHeaUZB4XFwqEF4pwbY3D2E5WeV4OwXE5MKEBbDw4QM4Wgne11kDtFut1Xq-Uj7CKbhw8u4juEaCvkzVKd95EPwIfKB4sQThdm7FEVag5p67XIpDR8RxYx+GMU4k+LcwHcGcIHOgQJqCZOQAACnIhEAAlNwBuST2EpKbobBRHNHaD1OLkTCB0IaCzhmkQUPJdixg7KeV2y9MasJnAAI1wFSYChBkSwB4AAJRpLSPEVS-GIFPDonwIpVnYT2HHTRqRohm12BGV4kpFRHkSYIG63AZlzIWYZR+-JhQ8goeEIqsMtHOXshPCh09djpFyNLfpiDlLzmYppCCUEYJwQQj4vB7NH5uC+AEKMUYwjnDvMcNO9l6F8lWasgMuQKgJjIHwCAcAnClIoPpapsKcjvgcgdR2pC8gtJuLhA4ORvBFDoZZHwpz6jmLceg+A-1KXshyM8WlclsJ9kZaVc4lBTxvIuHlGSCT-lCKQU3PUcIEQFgpYs7Y14Z4hgiIcCUmRVmTy0b6B4konjI2coUP5+c1WAv-IuHMeZtXIl1Tcg8PYJLiwlIKINiofAyoCKEPCaQBTvm5aq066qgVqQ0mBb1+D3ClAkrsO4pFMJ5FWR4dFgQ5QFK+PK74cbZbnXegFVNMKti7HsnsfITCChg22bcdIfEjiWUOOJaIIoeU4zxgTdARMtj3x9Tsl4Dy+xfGvDm04pU+xD1wthR8eU9oYydfGl1pjCC1tQteIocrdh5WouJF2QZCE8jOP4QUoQjz5EHUXFxbcBUHvmssk9mzz2Kk5KVbwHS-BVV6T24oz6REbzAR+zKORvRhgiGRC4vMwilVlLPKV9r3SymYWS3d69S6wF9pAGDj9u3+olk8TCuFfAhCDCcQeXInJmUlWVCDziW43VI-W90Ho1lGo7P4YUQYQwBFKPK3wE8-Tlu3bLYZEBRnjLgIKidaaEBcmHHEXN5xxN9hExcSSFCCLmyPI6lhALKBcaFXqkGOVcLAZ7EVC2BbWm1MCAUYWiohwxHxWUIAA */
+  /** @xstate-layout N4IgpgJg5mDOIC5QCcCGBbAQgSwgWVQGMALbAOzADoAzMAFxPKgFVYxkcJYBiCAewqVyANz4BrKmiy4CjQbQakyLNh1ywEIvoVR1sAgNoAGALrGTiUAAc+sbHoGWQAD0QBaAEwAOAGwBmSg8AFh8ATj8-IKCvPy8ARg8AGhAAT0QvAFZQygB2OKMMoLic0J8MjN8AX0rkqU5ZJSoFORV2Th5+QS0JSjqZIkaaehbWNvVNMlEdBzJzAziLJBAbOxmnVwRPL29KYuCcqJ8jUNCc5LSEfNPKP2P-EJyjDziE6tqMeoHyJuGlVrUuNx2Mg+MhKFYADa6aig9C9D79OQ-RRMUYAjRaab6WamcxOFb2bHrdx+BJGG4xDJ+E7eHI+IIZc6IOKnDK7W4eI4+DxGBJxHxvEB9fBfQSoADuqEJyk4AEFCDMAMLEPjYQhgbiYACSABEAPqyxUAFS1AHkAHJ6xUACVNAGUAKLmvFLAlrJYbTxGIIeShcjweDKBuJBUlMy5GLzksqhvwZR45RM+HKC4UNb6UCVSvQy3DypUqtUa7X6w0mi1W22O50LfG2QmOD3uHkZHx+qMMnmhDx04rhryhwI5DIsvKtrwnFM1IUIkVIzOS6VQI18KzMKycZWq9XcI2mgAKeuYh5LlftTpd1nr7tAnvyQWyoV82z8-lKPjijNSzMj0cKEXjIxEzpKd3mkOdBizJcVzXDdcC3ItNUNABpS9lmvIkm02T8ykoKIXiCRNYgiDw-HDPlsl5Iw4yeAceRyLxU1ndMxUXHMoDldA+AAVzIOhuDtZhMDwLUjT1Es0LdTDb3cHDKAKUIKniIxIx9Pwkm-BBQhDeTCgyb0vEyAc6SY8CWKoKD2M4ni+KQxVUNMOtVmklx3H8ckAx5J4ykKEMgnIwMckoeJtNDHwfCjQzTM+edLKYazeP4zAUPmRYr2cxsZM2I4guCT9qXKDxFIZciigCE4ElCICfUeIwBWnNNRSochCV0eLcCNZxeAEZrJnESRmKaoQyFaqyOucCYpjawxcUc10MMy1zLhZLxcm8SIYz8A5-HIurVqOfTfCyAoow8aLEUGFq9Da3MIE6oFkBBMFIWhWF4TMoaruwG6OPGybtGmnEzDm9KGzIYkEFIoJcieaIQPiMotoCnt5Lqh9fx8yNzogjMvp+zh7uBUFwShOgYWQOFGvnPGxruibMUBuZa3mjLwawzkAkiW4snc6j+TIzS4jjaHXwYwiTgZDlsfMyhCAEahsAp9q6e6ro+p6KnBjlsgFaV27Ov+rEZuBtL0NZiGeR2Krhy5b08h8Xacl9QMqvpbYngqPxpaGuLlDtFIyEIVWqFgOhdAGj7YrYph-cDySFrZrLYiq4KYhySJEwZcp+wYm5onKT9HiCOrQJnSPIOjv2A6DzoQ7DugI5iivsxj6vUqcsGIdiA5gvyYJSPCm3du03YeyyOlTnpBjvajluq8DoYUWUNF2mD4bRA1wbZ6XWPCEXkZVHaQ3Gdm02pMWjZOTCSh40U2JCK7AWLi2gIWW8UjXyyQpkxn5ud+r-efwV7qDXt0RuF0My+ygLvQBqJD7jAZjMJmZ8E4W0RjfAo6lfDUgYmcTSrYPKRHdtbSIn5f6QMrtAgBzQgHwMBLXde-V3pNwoXPKhC8aFwLGFwY+SDcQeBQebdmmQ2zHDiL4ZMhlohP0QOnbIQYSjpypEGGIjEGpbz-uxGBnDl50J4ETZ6pNyaUw0aw-+HDfhcPRLw7EcwQZm07uzPI2Q6TxFiE8E4X4LgJCKrscI6knx0m9CGchrE2HaMsbo7h+jHrExemTN6mszFaOoZE-4R9EG2NxMzUGN4lo9gKH6cIT4P5cmTORLaQUCh3F5HGCccRQkWUoTAyh3BnCh3DpmagDdkAAAp9IqQAJTcCSWE8xe9KHxyEVlbwWRKA0gZCcX8PNdpBj9KSCcT4ijFx-uo8uGYABGuA7TcUIOqWAPAABKDpHRGimY4rKRRfGhFDC8ioCQvAHC8cyCKqdSQjk5FGJMGRGmUAMdwa5tz7l5Mvs8aGbseShjpDIy4VVypEJfvkJ2oZqjTjIHwCAcAnCjLAB3GFJIeyrROFVQyFRwoPgdppeIFIORlA-PpIWaiwIsPkGk4BXAyUuU9OpW48ylm0okQy3any8IsmonSda4UGl7J5SHVAEIwCKj4OgSE9BSUsweUtTw6k2S3yfNbGMcR+wjnmSyB8oZMHUi5WXVVC42FygVNiBC6pBUX2bK+OIuQKgfwAunb05EXirQYv4I4LyQgjlLiSt10FVzrk3IWH1BryXYX8EFN2kYgyFsTKEaVgbYj5CooFCcoKoEJT4r6xORrChBVJHK8oLyJYaW8ccAISjhwqX5EUUooKabK06g2ruQtR6nFUQcaiJVBZAUIeUT28YIo4pVRAwQ2tdboDHRsXJQqflPD9CED83JuZZBLYu8KN94gVF5N4FS3Ia3NOrhO9mr5oahg+YReMRdwyzKKZyJ8ZRwhiyCK+8JqSl7pPUB+mZTy8Kkm8H+xM4bF0o38OImMdVyiZCg+MyglCENLXUgyQIKk9J0gIdsXaEQ-H0qqgUfwsRCMpIXrAaukBSMbDjPGdsPIhZZHiCULw4ZqTZB9EVPKdK9rsdbgvAxvHEBxlva8gcxx6khn7EUG++FTgnGpD2eq3Kt1UCORAE5Zy4DwCzUehAPoozzJdnDQoZ6c5tgHHRYiNGvabpxoIZT9m-WQ38KteIOGuZER9ORTILi51O0TPkQy9VqhAA */
   id: "ramBidMachine",
   context: ({ input }) => ({
     artblocksClient: input.artblocksClient,
@@ -417,17 +429,23 @@ export const ramBidMachine = setup({
           artblocksClient: context.artblocksClient,
           project: context.project,
         }),
-        onDone: {
-          target: "awaitingBidActionChoice",
-          actions: [
-            {
-              type: "assignUserBids",
-              params: ({ event }) => ({
-                userBids: event.output,
-              }),
-            },
-          ],
-        },
+        onDone: [
+          {
+            target: "saleComplete",
+            guard: "isSaleComplete",
+          },
+          {
+            target: "awaitingBidActionChoice",
+            actions: [
+              {
+                type: "assignUserBids",
+                params: ({ event }) => ({
+                  userBids: event.output,
+                }),
+              },
+            ],
+          },
+        ],
         onError: {
           target: "error",
           actions: {
@@ -439,6 +457,7 @@ export const ramBidMachine = setup({
         },
       },
     },
+    saleComplete: {},
     awaitingBidActionChoice: {
       on: {
         BID_ACTION_CHOSEN: [
