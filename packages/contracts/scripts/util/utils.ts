@@ -69,6 +69,7 @@ export type DeployConfigDetails = {
   minterName?: string;
   minterFilterAddress?: string;
   approveMinterGlobally?: boolean;
+  minMintFeeETH?: string;
   // engine core fields (shared minter suite)
   engineCoreContractType?: number; // 0 for Engine, 1 for Engine Flex
   genArt721CoreContractName?: string;
