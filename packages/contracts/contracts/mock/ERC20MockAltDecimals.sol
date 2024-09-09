@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin-4.5/contracts/token/ERC20/ERC20.sol";
 
-contract ERC20Mock is ERC20 {
+contract ERC20MockAltDecimals is ERC20 {
     // add a banned address to enable testing of unsuccessful transfers
     address public bannedReceiver;
 
