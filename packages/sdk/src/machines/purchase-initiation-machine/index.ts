@@ -13,6 +13,7 @@ import {
   isERC20MinterType,
   isHolderMinterType,
   isMerkleMinterType,
+  isRAMMinterType,
   isUserRejectedError,
 } from "../utils";
 import { ProjectDetails } from "../project-sale-manager-machine/utils";
@@ -21,6 +22,7 @@ import {
   getERC20Decimals,
   getHolderMinterUserPurchaseContext,
   getMerkleMinterUserPurchaseContext,
+  getRAMMinterUserPurchaseContext,
   initiateBasePurchase,
   initiateERC20AllowanceApproval,
   initiateERC20Purchase,
@@ -29,6 +31,7 @@ import {
   isERC20AllowanceSufficient,
 } from "./utils";
 import { ArtBlocksClient } from "../..";
+import { BidDetailsFragment } from "../../generated/graphql";
 
 export type PurchaseInitiationMachineEvents =
   | {
@@ -49,6 +52,7 @@ type AdditionalPurchaseData = {
   allowedTokenId?: string;
   vaultAddress?: Hex;
   erc20Allowance?: bigint;
+  userBids?: Array<BidDetailsFragment>;
 };
 
 export type PurchaseInitiationMachineContext = {
@@ -190,6 +194,12 @@ export const purchaseInitiationMachine = setup({
               erc20Allowance,
             },
           };
+        }
+
+        if (
+          isRAMMinterType(project.minter_configuration?.minter?.minter_type)
+        ) {
+          return await getRAMMinterUserPurchaseContext(input);
         }
 
         return {

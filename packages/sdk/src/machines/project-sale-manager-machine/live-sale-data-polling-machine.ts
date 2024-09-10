@@ -9,9 +9,8 @@ import {
   ProjectMinterStateNumberToEnum,
   bigintTimestampToDate,
 } from "./utils";
-import { getMessageFromError } from "../utils";
+import { getMessageFromError, isRAMMinterType } from "../utils";
 import { ArtBlocksClient } from "../..";
-import { Minter_Type_Names_Enum } from "../../generated/graphql";
 import { minterRAMV0Abi } from "../../../abis/minterRAMV0Abi";
 
 const POLLING_DELAY = 10000;
@@ -125,10 +124,7 @@ export const liveSaleDataPollingMachine = setup({
           isConfigured,
         };
 
-        if (
-          project.minter_configuration.minter.minter_type ===
-          Minter_Type_Names_Enum.MinterRamv0
-        ) {
+        if (isRAMMinterType(project.minter_configuration.minter.minter_type)) {
           const ramMinterContract = getContract({
             address: project.minter_configuration.minter.address as Hex,
             abi: minterRAMV0Abi,
@@ -151,12 +147,17 @@ export const liveSaleDataPollingMachine = setup({
               projectMinterState,
             ],
             [minNextBidValue, minNextBidSlotIndex],
+            { maxHasBeenInvoked, maxInvocations: ramMaxInvocations },
           ] = await Promise.all([
             ramMinterContract.read.getAuctionDetails([
               projectIndex,
               coreContract.address,
             ]),
             ramMinterContract.read.getMinimumNextBid([
+              projectIndex,
+              coreContract.address,
+            ]),
+            ramMinterContract.read.maxInvocationsProjectConfig([
               projectIndex,
               coreContract.address,
             ]),
@@ -180,6 +181,8 @@ export const liveSaleDataPollingMachine = setup({
               ],
             minNextBidValue,
             minNextBidSlotIndex,
+            maxHasBeenInvoked,
+            maxInvocations: BigInt(ramMaxInvocations),
           };
         }
 

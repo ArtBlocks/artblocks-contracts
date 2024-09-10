@@ -48,6 +48,12 @@ async function main() {
   // Perform the following steps for each to-be-deployed contract
   for (let index = 0; index < deployConfigDetailsArray.length; index++) {
     const deployDetails = deployConfigDetailsArray[index];
+    // require minter name
+    if (!deployDetails.minterName) {
+      throw new Error(
+        `[ERROR] minterName must be defined at index ${index}, but is ${deployDetails.minterName}`
+      );
+    }
     // check network consistency
     if (networkName != deployDetails.network) {
       throw new Error(
@@ -58,6 +64,16 @@ async function main() {
     if (!ethers.utils.isAddress(deployDetails.minterFilterAddress)) {
       throw new Error(
         `[ERROR] minterFilterAddress must be defined at index ${index}, but is ${deployDetails.minterFilterAddress}`
+      );
+    }
+
+    // require min fee in ETH be defined if minter type is a min price minter
+    if (
+      deployDetails?.minterName?.includes("MinPrice") &&
+      !deployDetails?.minMintFeeETH
+    ) {
+      throw new Error(
+        `[ERROR] minMintFeeETH must be defined at index ${index} for min price minter, but is ${deployDetails.minMintFeeETH}`
       );
     }
   }
@@ -76,11 +92,11 @@ async function main() {
     // deploy new shared minter contract
     const minterName = deployDetails.minterName;
     const minterConstructorArgs = [deployDetails.minterFilterAddress];
-    // add delegation registry address to constructor args if needed
+    // push delegation registry address on constructor args if needed
     if (
-      minterName.includes("Holder") ||
-      minterName.includes("Merkle") ||
-      minterName.includes("Polyptych")
+      minterName?.includes("Holder") ||
+      minterName?.includes("Merkle") ||
+      minterName?.includes("Polyptych")
     ) {
       const delegationRegistryAddress =
         DELEGATION_REGISTRY_ADDRESSES[networkName];
@@ -90,6 +106,13 @@ async function main() {
         );
       }
       minterConstructorArgs.push(DELEGATION_REGISTRY_ADDRESSES[networkName]);
+    }
+    // push min mint fee on constructor args if a min price minter
+    if (minterName?.includes("MinPrice")) {
+      // @dev already validated that minMintFeeETH is defined
+      minterConstructorArgs.push(
+        ethers.utils.parseEther(deployDetails.minMintFeeETH).toString()
+      );
     }
     const minterFactory = await ethers.getContractFactory(minterName);
     const minter = await minterFactory.deploy(...minterConstructorArgs);
