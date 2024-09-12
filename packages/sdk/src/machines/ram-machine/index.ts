@@ -20,6 +20,7 @@ export type RAMMachineEvents =
     }
   | {
       type: "RESET";
+      bidAction?: BidAction;
     }
   | {
       type: "BID_ACTION_CHOSEN";
@@ -88,6 +89,7 @@ const getUserBidsDocument = graphql(/* GraphQL */ `
         project_id: { _eq: $projectId }
         bidder_address: { _eq: $userAddress }
       }
+      order_by: { ranking: asc }
     ) {
       ...BidDetails
     }
@@ -315,7 +317,7 @@ export const ramMachine = setup({
     resetBidContext: assign({
       errorMessage: undefined,
       txHash: undefined,
-      bidAction: undefined,
+      bidAction: (_, params?: { bidAction?: BidAction }) => params?.bidAction,
       topUpBidId: undefined,
       bidSlotIndex: undefined,
       pendingBidId: undefined,
@@ -409,9 +411,15 @@ export const ramMachine = setup({
             "LiveAuction"
       );
     },
+    isBidActionCreate: ({ context }) => {
+      return context.bidAction === "create";
+    },
+    isBidActionTopUp: ({ context }) => {
+      return context.bidAction === "topUp";
+    },
   },
 }).createMachine({
-  /** @xstate-layout N4IgpgJg5mDOIC5QCcCGBbAQgSwgWVQGMALbAOzADoAzMAFxPKgFVYxkcJYBiCAewqVyANz4BrKmiy4CjQbQakyLNh1ywEIvoVR1sAgNoAGALrGTiUAAc+sbHoGWQAD0QBaAEwAOAGwBmSg8AFh8ATj8-IKCvPy8ARg8AGhAAT0QvAFZQygB2OKMMoLic0J8MjN8AX0rkqU5ZJSoFORV2Th5+QS0JSjqZIkaaehbWNvVNMlEdBzJzAziLJBAbOxmnVwRPL29KYuCcqJ8jUNCc5LSEfNPKP2P-EJyjDziE6tqMeoHyJuGlVrUuNx2Mg+MhKFYADa6aig9C9D79OQ-RRMUYAjRaab6WamcxOFb2bHrdx+BJGG4xDJ+E7eHI+IIZc6IOKnDK7W4eI4+DxGBJxHxvEB9fBfQSoADuqEJyk4AEFCDMAMLEPjYQhgbiYACSABEAPqyxUAFS1AHkAHJ6xUACVNAGUAKLmvFLAlrJYbTxGIIeShcjweDKBuJBUlMy5GLzksqhvwZR45RM+HKC4UNb6UCVSvQy3DypUqtUa7X6w0mi1W22O50LfG2QmOD3uHkZHx+qMMnmhDx04rhryhwI5DIsvKtrwnFM1IUIkVIzOS6VQI18KzMKycZWq9XcI2mgAKeuYh5LlftTpd1nr7tAnvyQWyoV82z8-lKPjijNSzMj0cKEXjIxEzpKd3mkOdBizJcVzXDdcC3ItNUNABpS9lmvIkm02T8ykoKIXiCRNYgiDw-HDPlsl5Iw4yeAceRyLxU1ndMxUXHMoDldA+AAVzIOhuDtZhMDwLUjT1Es0LdTDb3cHDKAKUIKniIxIx9Pwkm-BBQhDeTCgyb0vEyAc6SY8CWKoKD2M4ni+KQxVUNMOtVmklx3H8ckAx5J4ykKEMgnIwMckoeJtNDHwfCjQzTM+edLKYazeP4zAUPmRYr2cxsZM2I4guCT9qXKDxFIZciigCE4ElCICfUeIwBWnNNRSochCV0eLcCNZxeAEZrJnESRmKaoQyFaqyOucCYpjawxcUc10MMy1zLhZLxcm8SIYz8A5-HIurVqOfTfCyAoow8aLEUGFq9Da3MIE6oFkBBMFIWhWF4TMoaruwG6OPGybtGmnEzDm9KGzIYkEFIoJcieaIQPiMotoCnt5Lqh9fx8yNzogjMvp+zh7uBUFwShOgYWQOFGvnPGxruibMUBuZa3mjLwawzkAkiW4snc6j+TIzS4jjaHXwYwiTgZDlsfMyhCAEahsAp9q6e6ro+p6KnBjlsgFaV27Ov+rEZuBtL0NZiGeR2Krhy5b08h8Xacl9QMqvpbYngqPxpaGuLlDtFIyEIVWqFgOhdAGj7YrYph-cDySFrZrLYiq4KYhySJEwZcp+wYm5onKT9HiCOrQJnSPIOjv2A6DzoQ7DugI5iivsxj6vUqcsGIdiA5gvyYJSPCm3du03YeyyOlTnpBjvajluq8DoYUWUNF2mD4bRA1wbZ6XWPCEXkZVHaQ3Gdm02pMWjZOTCSh40U2JCK7AWLi2gIWW8UjXyyQpkxn5ud+r-efwV7qDXt0RuF0My+ygLvQBqJD7jAZjMJmZ8E4W0RjfAo6lfDUgYmcTSrYPKRHdtbSIn5f6QMrtAgBzQgHwMBLXde-V3pNwoXPKhC8aFwLGFwY+SDcQeBQebdmmQ2zHDiL4ZMhlohP0QOnbIQYSjpypEGGIjEGpbz-uxGBnDl50J4ETZ6pNyaUw0aw-+HDfhcPRLw7EcwQZm07uzPI2Q6TxFiE8E4X4LgJCKrscI6knx0m9CGchrE2HaMsbo7h+jHrExemTN6mszFaOoZE-4R9EG2NxMzUGN4lo9gKH6cIT4P5cmTORLaQUCh3F5HGCccRQkWUoTAyh3BnCh3DpmagDdkAAAp9IqQAJTcCSWE8xe9KHxyEVlbwWRKA0gZCcX8PNdpBj9KSCcT4ijFx-uo8uGYABGuA7TcUIOqWAPAABKDpHRGimY4rKRRfGhFDC8ioCQvAHC8cyCKqdSQjk5FGJMGRGmUAMdwa5tz7l5Mvs8aGbseShjpDIy4VVypEJfvkJ2oZqjTjIHwCAcAnCjLAB3GFJIeyrROFVQyFRwoPgdppeIFIORlA-PpIWaiwIsPkGk4BXAyUuU9OpW48ylm0okQy3any8IsmonSda4UGl7J5SHVAEIwCKj4OgSE9BSUsweUtTw6k2S3yfNbGMcR+wjnmSyB8oZMHUi5WXVVC42FygVNiBC6pBUX2bK+OIuQKgfwAunb05EXirQYv4I4LyQgjlLiSt10FVzrk3IWH1BryXYX8EFN2kYgyFsTKEaVgbYj5CooFCcoKoEJT4r6xORrChBVJHK8oLyJYaW8ccAISjhwqX5EUUooKabK06g2ruQtR6nFUQcaiJVBZAUIeUT28YIo4pVRAwQ2tdboDHRsXJQqflPD9CED83JuZZBLYu8KN94gVF5N4FS3Ia3NOrhO9mr5oahg+YReMRdwyzKKZyJ8ZRwhiyCK+8JqSl7pPUB+mZTy8Kkm8H+xM4bF0o38OImMdVyiZCg+MyglCENLXUgyQIKk9J0gIdsXaEQ-H0qqgUfwsRCMpIXrAaukBSMbDjPGdsPIhZZHiCULw4ZqTZB9EVPKdK9rsdbgvAxvHEBxlva8gcxx6khn7EUG++FTgnGpD2eq3Kt1UCORAE5Zy4DwCzUehAPoozzJdnDQoZ6c5tgHHRYiNGvabpxoIZT9m-WQ38KteIOGuZER9ORTILi51O0TPkQy9VqhAA */
+  /** @xstate-layout N4IgpgJg5mDOIC5QCcCGBbAQgSwgWVQGMALbAOzADoAzMAFxPKgFVYxkcJYBiCAewqVyANz4BrKmiy4CjQbQakyLNh1ywEIvoVR1sAgNoAGALrGTiUAAc+sbHoGWQAD0QBaAEwA2ACwAOSgBOAEYAVg8-AHYvYK9Ij1CAGhAAT0QfAGZAyh9I4L8-ENyPD0iAXzLkqU5ZJSoFORV2Th5+QS0JSmqZIjqaekbWZvVNMlEdBzJzA2CLJBAbO0mnVwRPUOCjSiMfTL8vffzQg+S0hFDQrYyw3dCMqLujYIqqjBre8nqBpSa1Ll4BFQOpI3j05F9FEwhn8NFoJvopqYDB45tZbPYESt3B4ssFKFkvMdgtcMjtoqdEISAoE-EZwqEfDE7pFAi8QN18B95N8oaoWgD2mNxCDpJzwf1IcpoS1RuNdAjphlUQt0ct5qtPH5dvjCdEYqUnjsKQhNglKHlgoFbpkEhkfGyObVPhLBnz1Nx2Mg+MhKFYADa6aje9BdUFivoNH7SkZw+WGJGmJyLDGOdXua4eK5+DJ3QKBCLRHxJVKIS2RUKUYlGbxGLyZ4IeWIOsNOwSoADuqAxyk4AEFCJMAMLEPjYQhgbiYACSABEAPq9wcAFSnAHkAHJzwcACVXAGUAKLr8xJ1WYtNrTMXSsRHyle4XLwZLzG00+SiNzNPjaBS535uiq2VAdl2eg9rg-ZDiOY4TtO86LiuG5bruh7HrMp5LOeoAaleXiUAcOzhEY+bRMEkTGlqGQfuWZZhAceblJU7ItlywGdt2UBLnwVjMFYnDDqO47cEuq4AApzsw4lwch+5Hie8zJmq2HuJsPjZDSBw4k+gReEyr5GLS+EMhkOaREYkQWXEAHvOKIEcVxPF8bgAkwZOi4ANLyWimGpspax0RWuzBMEuSRPcJk4q+jbZIaObVlqmaRH41lgn0dlgVAfboHwACuZB0Nwe7MJgeBTkuc5wV5Ko+WQWL+cc2yhL+BSbAZd4ZB4xpFI1RY7AUoRatEKXhs66VMFluX5W5g6eYmClnr5LjuE+WwlJm1aEgyIU+FFoSRJQfiWiFz4EQUw1AZQY3gRAvbZXlBWYB5MzKopWFLWsXjmR+PhhFkFweL+Ravj9VF5g2gTmXeZm1udrFCGQGLytdS7OAKQJCp0jpw+QiMZZwKOytocaImYc3eSmtUXsFNLmhEdqEpkkSMhk+kHPhdIGYSEMDdWsPijjehI5luAox6yBej6-qBsGoaAdjCOC3jIvOIT8LxqTL0LZTfk4u+ZkeP40RJbEzJRaU2y1mpBm1hcBl830AvYEL+Oo563q+gGdBBsgIZY-zCtO0rEAE7GkzTOh801XV3hUXapJNStRjXE+r45u+z5JbkeZFqSHj286hACNQ2A++Nyto-DoiYyx4qF2Qxel8jKuhwqCaa1HF6ZhEQTmcctZkrE+nxB+TWW34XcDRk+dtuxGV7ikZCEBXsB0LoIo2Wls9MPPi9Va9i2rPcEMHdmYWhUWFwUUl+L+BcYRmT4taMa8cu2Vvyg70vbRUCva+yxvo135QE-s9DCFM6r3CZgdN8Wk4jHH0iEG85ZAjRBQb4JK082KgW3gvQgLooxun+N-Suwp-6pUAdgj+uD8G8mGFwVWxNphk2quAzuulsh7V-PcYoxEWYlgQBkMKlZ8zjxMlzBkVkmJ+03pQ4B1DIy0JhBXYEZCRoz1kZ-GhUpCGwiFGrEmoDI6sJ1oSKilw7gRG0klci-C+4fjtOPYi5k7RhEwZdIBmiFHaLoa0QEJDq6vxkRxTxPJvEwgYWHJEKIwFKXehEBqxF8i6SSlqbMxowocNKCgnMOY6bJSkTXIJc95GhN+PyN2ktPbe19oUihwSSmSjKTGPRjC24xLeqsUolpzQHGJLSAGv4zbZEtBFGk0QdghTcVdORi8tFNP+BUj20sfaqIutMkJjToz0JburQx5NYmdLMhWLwgQsiiOfLWOIqcLKNWIp9YkA0QhTI8dQoB3BnC-zoMBagXzkAAApLhGCMAASm4NIupxTZlAL3lraOfgmpBHzEWPM1sE76XCPha4hQaQ-UfpIl+ADBAACNcB7hyoQccsAeAACUDyHiXDCjufkfoAyCJkK0A0GxRCBvw2IAQCjXA2N4WkllQhuIqdwWl9LGXGLiY2d8vhHGMxTryiGoMHGCOuOZA2U82RkD4BAOAThwUUHaQfdMAMAh3D+tWUkd46QUTxOFEKYUSiWn2M-ZigTnRePmfAIxByLWXEoNa38tqdhXn0jifC-Vdg6uJAbNxsBUB+jAIOPg6B-T0DAGa7W71PAlGyGZbMHUoiCKSsWM4jMgh5FPodFkJQizPNkX2AcCIXLjlzXVTw1bgqHBCgUUoe19K5ErAUZJ+QgVNgKd69R9luK8X4tBTtAaOkqRiBwqININgZMGfwq0Ww8w6WzADTYZlPUmqwRxCa90u0XjcAyfa1xLR0iampK0nVeW8PNKZQFsQfo6TcY7Z2ys71+RJDeFB2ZuVJx5WcM9q0cwXGzHtA4mQ3F1wbugMuwdVj7LXSaT6Hh8KMhiHWeOTVAiszwpynmXKgV1mbfUxeYG4nPnfJkLluQ9oP2NPE-CIiXGQOIlaJjkK8G+q2f6-D5qEAGwbDkDMg0eNGi-ebJ8SSGQ2wGmKmdhKr3icoEA1jh8DYVnWgyVDfdx76RMsI3SVs6RPnuGJnBszYC4MgCZxASH9qaSeDmGkZEaTGiyNkO8AN5MDU+gcVzVDZkVO8wI44eF2VamIoUYKO1+FajxAyADLJTkkS8G4klEAyUUrgNJlhgaEB3kMvmN9Dxdi6SvnhVJ7VT6mPFeLb0SWY78r7U+RmZ9P3wfhUWpm2qLKbHHRUCoQA */
   id: "ramBidMachine",
   context: ({ input }) => ({
     artblocksClient: input.artblocksClient,
@@ -433,6 +441,14 @@ export const ramMachine = setup({
           {
             target: "saleComplete",
             guard: "isSaleComplete",
+          },
+          {
+            target: "awaitingBidAmount",
+            guard: "isBidActionCreate",
+          },
+          {
+            target: "awaitingTopUpBidChoice",
+            guard: "isBidActionTopUp",
           },
           {
             target: "awaitingBidActionChoice",
@@ -704,6 +720,9 @@ export const ramMachine = setup({
         RESET: {
           actions: {
             type: "resetBidContext",
+            params: ({ event }) => ({
+              bidAction: event.bidAction,
+            }),
           },
           target: "fetchingUserBids",
         },
