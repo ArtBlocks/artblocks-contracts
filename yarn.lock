@@ -131,7 +131,7 @@ __metadata:
     hardhat: "npm:^2.22.5"
     hardhat-contract-sizer: "npm:^2.10.0"
     hardhat-docgen: "npm:^1.3.0"
-    hardhat-gas-reporter: "npm:^2.1.1"
+    hardhat-gas-reporter: "npm:^2.2.1"
     husky: "npm:^9.0.11"
     istanbul-combine: "npm:^0.3.0"
     keccak256: "npm:^1.0.6"
@@ -14239,9 +14239,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"hardhat-gas-reporter@npm:^2.1.1":
-  version: 2.1.1
-  resolution: "hardhat-gas-reporter@npm:2.1.1"
+"hardhat-gas-reporter@npm:^2.2.1":
+  version: 2.2.1
+  resolution: "hardhat-gas-reporter@npm:2.2.1"
   dependencies:
     "@ethersproject/abi": "npm:^5.7.0"
     "@ethersproject/bytes": "npm:^5.7.0"
@@ -14260,7 +14260,7 @@ __metadata:
     viem: "npm:2.7.14"
   peerDependencies:
     hardhat: ^2.16.0
-  checksum: 10c0/5bd5b937e7af3507b7d29f99c17fc0648da1d72c4190ea26ef3be05b78c576a765cb5aa400703b51d0bf0a232a8383ec7fc100aed7571ac65825fce29ceed0e3
+  checksum: 10c0/b0925488981a72a2fa82e8f07cdee1ae86059c7e241a7e934cb4363603a31dc22f48d59356da598343faa0bf5b43c1a8d21ef49b9d7b828f33993d144c2a0300
   languageName: node
   linkType: hard
 
