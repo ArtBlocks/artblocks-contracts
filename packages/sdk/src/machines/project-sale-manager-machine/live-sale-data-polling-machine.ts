@@ -146,14 +146,9 @@ export const liveSaleDataPollingMachine = setup({
               revenuesCollected,
               projectMinterState,
             ],
-            [minNextBidValue, minNextBidSlotIndex],
             { maxHasBeenInvoked, maxInvocations: ramMaxInvocations },
           ] = await Promise.all([
             ramMinterContract.read.getAuctionDetails([
-              projectIndex,
-              coreContract.address,
-            ]),
-            ramMinterContract.read.getMinimumNextBid([
               projectIndex,
               coreContract.address,
             ]),
@@ -162,6 +157,21 @@ export const liveSaleDataPollingMachine = setup({
               coreContract.address,
             ]),
           ]);
+
+          let [minNextBidValue, minNextBidSlotIndex]: [bigint, bigint] = [
+            tokenPriceInWei,
+            BigInt(0),
+          ];
+
+          try {
+            [minNextBidValue, minNextBidSlotIndex] =
+              await ramMinterContract.read.getMinimumNextBid([
+                projectIndex,
+                coreContract.address,
+              ]);
+          } catch (error) {
+            // Minimum next bid reverts at the end of the auction. Assume this is the case.
+          }
 
           liveSaleData.ramMinterAuctionDetails = {
             auctionStartDate: bigintTimestampToDate(auctionTimestampStart),
