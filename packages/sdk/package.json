@@ -1,6 +1,6 @@
 {
   "name": "@artblocks/sdk",
-  "version": "0.1.30-5",
+  "version": "0.1.30-6",
   "description": "JavaScript SDK for configuring and using Art Blocks minters.",
   "main": "dist/index.js",
   "repository": "git@github.com:ArtBlocks/artblocks-sdk.git",
@@ -89,6 +89,5 @@
   },
   "files": [
     "dist"
-  ],
-  "stableVersion": "0.1.30-4"
+  ]
 }
