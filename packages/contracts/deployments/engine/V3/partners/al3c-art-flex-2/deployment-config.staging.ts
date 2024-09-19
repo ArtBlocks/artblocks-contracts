@@ -12,7 +12,8 @@ export const deployNetworkConfiguration = {
   safeAddress: "0x62DC3F6C7Bf5FA8A834E6B97dee3daB082873600",
   transactionServiceUrl: "https://safe-transaction-sepolia.safe.global",
   // set the transaction hash after successful execution of the batch creation
-  transactionHash: "",
+  transactionHash:
+    "0x6539b6d7e9104b1d02a05228b7265cd799a7108386013ffd77f258d9f8fb0c59",
 };
 
 export const deployConfigDetailsArray = [
@@ -21,8 +22,8 @@ export const deployConfigDetailsArray = [
     productClass: "Engine",
     // 0 for Engine, 1 for Engine Flex
     engineCoreContractType: 1,
-    tokenName: "AL3C.art",
-    tokenTicker: "AL3C",
+    tokenName: "AL3C.art2",
+    tokenTicker: "AL3C2",
     // see /scripts/util/constants.ts::MAIN_CONFIG for the correct address if prod deployment
     renderProviderAddress: "0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef",
     // platform provider address should be set to the zero address for Studio deployments
