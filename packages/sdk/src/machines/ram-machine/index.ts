@@ -626,6 +626,17 @@ export const ramMachine = setup({
             }),
           },
         },
+        onError: {
+          target: "error",
+          actions: {
+            type: "assignErrorMessageFromError",
+            params: ({ event }) => {
+              return {
+                error: event.error,
+              };
+            },
+          },
+        },
       },
     },
     awaitingSync: {
