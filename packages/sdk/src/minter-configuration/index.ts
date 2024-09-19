@@ -167,10 +167,12 @@ async function generateSelectMinterForm({
     );
 
     minterSelectionFormSchemaWithMinters.properties["minter.address"].oneOf =
-      latestMinters.map((minter) => ({
-        const: minter.address,
-        title: `${minter.type?.label ?? ""} - ${minter.address}`,
-      }));
+      latestMinters
+        .map((minter) => ({
+          const: minter.address,
+          title: `${minter.type?.label ?? ""} - ${minter.address}`,
+        }))
+        .sort((a, b) => b.title.localeCompare(a.title));
   }
 
   // Initialize configurationForms with the minter selection form
