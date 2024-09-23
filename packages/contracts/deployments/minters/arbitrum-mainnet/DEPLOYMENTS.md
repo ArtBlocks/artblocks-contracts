@@ -207,3 +207,41 @@ Date: 2023-11-16T19:46:41.861Z
 
 ---
 
+
+# Shared Minter Deployment
+
+Date: 2024-09-23T20:10:23.609Z
+
+## **Network:** arbitrum
+
+## **Environment:** arbitrum-mainnet
+
+**Deployment Input File:** `deployments/minters/arbitrum-mainnet/shared-minter-deploy-config-01.arb.ts`
+
+**MinterMinPriceV0:** https://arbitrum.etherscan.io/address/0x340dF1843e9A535e8E39d35CAc2987e716A475A2#code
+
+**Associated Minter Filter:** 0x94560abECb897f359ee1A6Ed0E922315Da11752d
+
+**Deployment Args:** 0x94560abECb897f359ee1A6Ed0E922315Da11752d,1500000000000000
+
+---
+
+
+# Shared Minter Deployment
+
+Date: 2024-09-23T20:11:44.748Z
+
+## **Network:** arbitrum
+
+## **Environment:** arbitrum-mainnet
+
+**Deployment Input File:** `deployments/minters/arbitrum-mainnet/shared-minter-deploy-config-01.arb.ts`
+
+**MinterMinPriceMerkleV0:** https://arbitrum.etherscan.io/address/0x44fa83C329bAE521E3226c3072F9CC775956a7E7#code
+
+**Associated Minter Filter:** 0x94560abECb897f359ee1A6Ed0E922315Da11752d
+
+**Deployment Args:** 0x94560abECb897f359ee1A6Ed0E922315Da11752d,0x00000000000076A84feF008CDAbe6409d2FE638B,1500000000000000
+
+---
+

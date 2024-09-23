@@ -195,3 +195,41 @@ Date: 2024-06-18T20:42:35.275Z
 **Deployment Args:** 0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5,0x00000000000076A84feF008CDAbe6409d2FE638B
 
 ---
+
+# Shared Minter Deployment
+
+Date: 2024-09-23T20:16:05.541Z
+
+## **Network:** base
+
+## **Environment:** base-mainnet
+
+**Deployment Input File:** `deployments/minters/base/shared-minter-deploy-config-01.base.ts`
+
+**MinterMinPriceV0:** https://base.etherscan.io/address/0xAd8001D5d7d878BdB93F84A6dF61B8f8c95e719C#code
+
+**Associated Minter Filter:** 0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5
+
+**Deployment Args:** 0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5,1500000000000000
+
+---
+
+
+# Shared Minter Deployment
+
+Date: 2024-09-23T20:17:28.676Z
+
+## **Network:** base
+
+## **Environment:** base-mainnet
+
+**Deployment Input File:** `deployments/minters/base/shared-minter-deploy-config-01.base.ts`
+
+**MinterMinPriceMerkleV0:** https://base.etherscan.io/address/0x09a637F5b66A280834dB1A65648f621E27f03295#code
+
+**Associated Minter Filter:** 0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5
+
+**Deployment Args:** 0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5,0x00000000000076A84feF008CDAbe6409d2FE638B,1500000000000000
+
+---
+
