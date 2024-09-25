@@ -75,3 +75,18 @@ args:
 Registration tx:
 
 - https://sepolia.etherscan.io/tx/0xcb1e306bee145f323dcdcbb7bf6b3bbf61ccc8f4ecd08b5bb795cfaa463d0fec
+
+III. Re-Call `updateMinterContract` on `GenArt721CoreV3_Curated` to set `MinterFilter` contract:
+
+> Note: This fixes an indexing quirk associated with not approving the core in same block as deployment. It does not alter on-chain state.
+
+- https://sepolia.etherscan.io/tx/0x5004b5f15f40b151bd1b12171db85028367f64f9bcfe327a55cac0137bab2926
+
+## Follow-on steps:
+
+- create image bucket on s3: `art-blocks-curated-dev-sepolia`
+
+- hasura metadata update to contracts_metadata:
+  - `bucket_name` = `art-blocks-curated-dev-sepolia`
+  - `name` = "Art Blocks Curated"
+  - `default_vertical_name` = "fullyonchain"
