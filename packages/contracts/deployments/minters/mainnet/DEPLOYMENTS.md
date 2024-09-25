@@ -207,3 +207,41 @@ Date: 2023-11-02T19:42:26.764Z
 
 ---
 
+
+# Shared Minter Deployment
+
+Date: 2024-09-23T20:21:00.450Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/minters/mainnet/shared-minter-deploy-config-01.mainnet.ts`
+
+**MinterMinPriceV0:** https://etherscan.io/address/0xf5733268d28DDe96fC32f2bA8E1267Eb64120875#code
+
+**Associated Minter Filter:** 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+
+**Deployment Args:** 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b,1500000000000000
+
+---
+
+
+# Shared Minter Deployment
+
+Date: 2024-09-23T20:22:32.563Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/minters/mainnet/shared-minter-deploy-config-01.mainnet.ts`
+
+**MinterMinPriceMerkleV0:** https://etherscan.io/address/0x723EBF276f95E992480D009bC132c9820A39B58F#code
+
+**Associated Minter Filter:** 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+
+**Deployment Args:** 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b,0x00000000000076A84feF008CDAbe6409d2FE638B,1500000000000000
+
+---
+

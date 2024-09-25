@@ -144,3 +144,14 @@ https://basescan.org/address/0x8651eFeBA58F94A3785113B6Bc60a50Aa305df4c#code
 [INFO] MinterDALinHolderV5 contract verified on Etherscan at 0x8651eFeBA58F94A3785113B6Bc60a50Aa305df4c
 [INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/base/DEPLOYMENTS.md
 [INFO] Done!
+
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2024-09-23T20:13:45.426Z
+      [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/base/shared-minter-deploy-config-01.base.ts
+
+    
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2024-09-23T20:14:39.444Z
+      [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/base/shared-minter-deploy-config-01.base.ts
+
+    
