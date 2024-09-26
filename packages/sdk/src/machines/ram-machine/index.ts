@@ -441,14 +441,32 @@ export const ramMachine = setup({
           {
             target: "saleComplete",
             guard: "isSaleComplete",
+            actions: {
+              type: "assignUserBids",
+              params: ({ event }) => ({
+                userBids: event.output,
+              }),
+            },
           },
           {
             target: "awaitingBidAmount",
             guard: "isBidActionCreate",
+            actions: {
+              type: "assignUserBids",
+              params: ({ event }) => ({
+                userBids: event.output,
+              }),
+            },
           },
           {
             target: "awaitingTopUpBidChoice",
             guard: "isBidActionTopUp",
+            actions: {
+              type: "assignUserBids",
+              params: ({ event }) => ({
+                userBids: event.output,
+              }),
+            },
           },
           {
             target: "awaitingBidActionChoice",
@@ -606,6 +624,17 @@ export const ramMachine = setup({
             params: ({ event }) => ({
               bidId: Number(event.output),
             }),
+          },
+        },
+        onError: {
+          target: "error",
+          actions: {
+            type: "assignErrorMessageFromError",
+            params: ({ event }) => {
+              return {
+                error: event.error,
+              };
+            },
           },
         },
       },
