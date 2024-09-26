@@ -2,7 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import hre, { ethers } from "hardhat";
-import { DependencyRegistryV0__factory } from "../contracts/factories/DependencyRegistryV0__factory";
+import { DependencyRegistryV0__factory } from "../contracts/factories/contracts/DependencyRegistryV0.sol/DependencyRegistryV0__factory";
 import { getNetworkName } from "../util/utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { getDeployerWallet } from "../util/get-deployer-wallet";
@@ -165,7 +165,7 @@ async function main() {
       );
       txData.push({
         to: config.dependencyRegistryAddress,
-        value: "0x00",
+        value: "0",
         data,
       });
     } else {
