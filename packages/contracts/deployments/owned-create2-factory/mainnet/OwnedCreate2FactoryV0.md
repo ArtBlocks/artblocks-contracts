@@ -22,4 +22,4 @@ Deploys to address: `0x000000AB6881DbbBD231dB99D69134FEA2385Bf8`
 
 ### Deployment transactions:
 
-- etherscan_tbd
+- https://etherscan.io/tx/0x5157bf60406f10bfdbf381e5c1873319393657b9ed2fc4df8384df258e68ec13
