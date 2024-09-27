@@ -32,6 +32,6 @@ Deploys to address: `0x000000abB7A99780820c87c850Af7fD1Bc5e6788`
 
 Update superAdmin from OwnedCreate2FactoryV0 to mainnet admin (`0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283`):
 
-- etherscan_tbd
+- https://etherscan.io/tx/0x74e9ebb1cd3b36b0dc2cb046a7876268fc4bf12b6102e8065ff1fc1d48031587
 
 note: easy to get appropriate calldata from a failed tx generated on etherscan, then use gnosis tx builder to execute the call
