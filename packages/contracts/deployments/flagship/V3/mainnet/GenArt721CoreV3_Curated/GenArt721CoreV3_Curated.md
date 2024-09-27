@@ -80,6 +80,7 @@ III. Follow-on configuring:
 
 - update dependency registry
 - set render provider primary and secondary sales addresses
+- update render provider primary sales percentage
 
 - etherscan_tbd
 
