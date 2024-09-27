@@ -68,17 +68,22 @@ args:
 
 Registration tx:
 
-- etherscan_tbd
+- 0x6b5f48538e70ec624ae592bc2d82bc8d7976a3b9b83d9e48795703964729b8f1
 
 II. Re-Call `updateMinterContract` on `GenArt721CoreV3_Curated` to set `MinterFilter` contract:
 
 > Note: This fixes an indexing quirk associated with not approving the core in same block as deployment. It does not alter on-chain state.
 
+- https://etherscan.io/tx/0x91f7530374cd00f87c174a655e9e09973db860149032e3495915fbbad20f5919
+
+III. Follow-on configuring:
+
+- update dependency registry
+- set render provider primary and secondary sales addresses
+
 - etherscan_tbd
 
-## Follow-on steps:
-
-- create image bucket on s3: `art-blocks-curated-mainnet`
+## Off-chain steps:
 
 - hasura metadata update to contracts_metadata:
   - `bucket_name` = `artblocks-mainnet`
