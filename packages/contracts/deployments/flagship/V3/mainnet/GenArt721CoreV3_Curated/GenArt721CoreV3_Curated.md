@@ -52,7 +52,7 @@ Deploys to address: `0xAB0000000000aa06f89B268D604a9c1C41524Ac6`
 
 ### Deployment transactions:
 
-- etherscan_tbd
+- https://etherscan.io/tx/0x875d301f99a48593010704730d0fa3eb020f3d29de9d38bc59d13818e4a0ccb7
 
 ## Follow-on transactions:
 
@@ -70,7 +70,7 @@ Registration tx:
 
 - etherscan_tbd
 
-III. Re-Call `updateMinterContract` on `GenArt721CoreV3_Curated` to set `MinterFilter` contract:
+II. Re-Call `updateMinterContract` on `GenArt721CoreV3_Curated` to set `MinterFilter` contract:
 
 > Note: This fixes an indexing quirk associated with not approving the core in same block as deployment. It does not alter on-chain state.
 
