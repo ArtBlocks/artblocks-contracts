@@ -82,7 +82,7 @@ III. Follow-on configuring:
 - set render provider primary and secondary sales addresses
 - update render provider primary sales percentage
 
-- etherscan_tbd
+- https://etherscan.io/tx/0x94f7d8aa80738179a5ec981ca5937815d12a9d353b0486191d9050b718735fdc
 
 ## Off-chain steps:
 
