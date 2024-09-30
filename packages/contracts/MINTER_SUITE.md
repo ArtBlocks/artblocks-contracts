@@ -113,6 +113,10 @@ These are the smart contracts that receive funds, and split them between the art
 
 - V0 (shared with Engine): [0x723EBF276f95E992480D009bC132c9820A39B58F](https://etherscan.io/address/0x723EBF276f95E992480D009bC132c9820A39B58F#code)
 
+#### MinterRAM (Ranked Auction Minter)
+
+- V0 (shared with Engine): [0xDeA98CB77d90e03dbF312626402ADb452Ed7a4e3](https://etherscan.io/address/0xDeA98CB77d90e03dbF312626402ADb452Ed7a4e3#code)
+
 ### Other Flagship Minter Contracts
 
 Legacy minting contract for flagship V0 core: [0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7](https://etherscan.io/address/0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7).
