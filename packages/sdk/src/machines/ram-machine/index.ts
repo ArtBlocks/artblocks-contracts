@@ -400,17 +400,6 @@ export const ramMachine = setup({
 
       return bidSlotIndex >= minBidSlotIndex;
     },
-    isSaleComplete: ({ context }) => {
-      const liveSaleData =
-        context.liveSaleDataPollingMachineRef.getSnapshot().context
-          .liveSaleData;
-
-      return Boolean(
-        liveSaleData?.ramMinterAuctionDetails?.maxHasBeenInvoked &&
-          liveSaleData.ramMinterAuctionDetails.projectMinterState !==
-            "LiveAuction"
-      );
-    },
     isBidActionCreate: ({ context }) => {
       return context.bidAction === "create";
     },
@@ -438,16 +427,6 @@ export const ramMachine = setup({
           project: context.project,
         }),
         onDone: [
-          {
-            target: "saleComplete",
-            guard: "isSaleComplete",
-            actions: {
-              type: "assignUserBids",
-              params: ({ event }) => ({
-                userBids: event.output,
-              }),
-            },
-          },
           {
             target: "awaitingBidAmount",
             guard: "isBidActionCreate",
@@ -491,7 +470,6 @@ export const ramMachine = setup({
         },
       },
     },
-    saleComplete: {},
     awaitingBidActionChoice: {
       on: {
         BID_ACTION_CHOSEN: [

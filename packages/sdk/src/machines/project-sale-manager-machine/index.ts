@@ -14,13 +14,15 @@ import {
   getProjectDetailsDocument,
   isProjectComplete,
   isProjectIneligibleForPrimarySale,
+  isProjectPostRAM,
   isProjectPurchasable,
-  shouldStartRAMMachine,
+  isProjectRAMBiddable,
 } from "./utils";
 import { liveSaleDataPollingMachine } from "./live-sale-data-polling-machine";
 import { purchaseInitiationMachine } from "../purchase-initiation-machine";
 import { ArtBlocksClient } from "../..";
 import { ramMachine } from "../ram-machine";
+import { postRAMMachine } from "../post-ram-machine";
 
 type ProjectSaleManagerMachineEvents =
   | {
@@ -58,6 +60,7 @@ export type ProjectSaleManagerMachineContext = {
   >;
   purchaseInitiationMachine?: ActorRefFrom<typeof purchaseInitiationMachine>;
   ramMachine?: ActorRefFrom<typeof ramMachine>;
+  postRAMMachine?: ActorRefFrom<typeof postRAMMachine>;
 };
 
 /**
@@ -171,6 +174,7 @@ export const projectSaleManagerMachine = setup({
     liveSaleDataPollingMachine,
     purchaseInitiationMachine,
     ramMachine,
+    postRAMMachine,
   },
   actions: {
     assignArtBlocksClient: assign({
@@ -319,6 +323,22 @@ export const projectSaleManagerMachine = setup({
         ramMachine: undefined,
       });
     }),
+    spawnAndAssignPostRAMMachine: assign({
+      postRAMMachine: ({ spawn, context }) => {
+        if (!context.project) {
+          return;
+        }
+
+        return spawn("postRAMMachine", {
+          systemId: "postRAMMachine",
+          id: "postRAMMachine",
+          input: {
+            artblocksClient: context.artblocksClient,
+            project: context.project,
+          },
+        });
+      },
+    }),
   },
   guards: {
     isNotPurchasable: ({ context }) => {
@@ -327,11 +347,17 @@ export const projectSaleManagerMachine = setup({
     isPurchasable: ({ context }) => {
       return isProjectPurchasable(context);
     },
-    shouldStartRAMMachine: ({ context }) => {
-      return shouldStartRAMMachine(context);
+    isRAMBiddable: ({ context }) => {
+      return isProjectRAMBiddable(context);
     },
-    shouldNotStartRAMMachine: ({ context }) => {
-      return !shouldStartRAMMachine(context);
+    isNotRAMBiddable: ({ context }) => {
+      return !isProjectRAMBiddable(context);
+    },
+    isPostRAM: ({ context }) => {
+      return isProjectPostRAM(context);
+    },
+    isNotPostRAM: ({ context }) => {
+      return !isProjectPostRAM(context);
     },
     isProjectComplete: ({ context }) => {
       return isProjectComplete(context.project, context.liveSaleData);
@@ -347,7 +373,7 @@ export const projectSaleManagerMachine = setup({
     },
   },
 }).createMachine({
-  /** @xstate-layout N4IgpgJg5mDOIC5QAcBOB7AVmAxgFwGUBDAGzAFkiA7ImVSnACwEsqwBiAQQCUAVAfQBCAGQDyAYQDSBfuOEBJAKIA5AQFUACgBFOvRVoDaABgC6iFOljM8zdFXMgAHogCMAVhcBOAHQB2AMwALP5u-v4AHAGevm4ANCAAnogATABsbt5GvuGpLl6+nv5Z-r4AvqXxaFi4hKQU1LRg9ERMrBwaatziABKcBIr8vNycUvLKAOL85JzKnOOK3FMj3WMDnABqnPLCnCKKxmZIIMiW1rb2R84IALQuvoGp3l5ugeGFLqnJyR7xSQhubnC3hyLn8ySMRmSbxcyU85UqGGw+GIZEoNDoDBYbHYHS6vX6g2GowmS1m80W0x6q34almm22u2E+1MDhOVhsdgcV1uMUenjcvi+yTBnkinmSv0QMQyIUCvhi0QFRkK8OOiJqKPq6KamLa7AW3FE3AOrNOHIuoG5MWS3ge4SM6TcUMCHhckoQXkC3lFMV87g8gP8qqqSNqqIaGJaWI4CnWAwInCZ-B0vE4-AAYopeD19CajmyzpzLohbkYgsCPKlwslAlCXIF3Z7vZEBf73OEgxU1dVkXU0Y1mq02N4AGZgPBDqAadX4LREPBEdgQOxgbysABu6AA1quQxq+xGdVG2qPx5Ppz28HOFwgN+gcPPzgc8xZ2ecuSW-f5vIC3LkjEq4ReO6qRVj+EReCUnipGEeTBjOYZagOurDmOE5YlOCHXouTQYKg3jICQ84jugqAALYEQhmr9pGQ6rmh55YfORC3lQm4Puaz4svmZrvsWNzykYTwAp47ipNBgRGLWjZSS43j+KkRigrCMKCsK8GXtRh6DtGa4QGQ7AvscvFFpaiBBN+DyhEBLhKWk9buk6Xr+LZLqCgBYRvBpoZadqOknsw+kcAYLiHK+hYWk45mgsCyows6Dr+IUIFyt43wAhC4lQpEZRdnuvbhn5KGroFBkGMkYXGW+plRQgFm2ukEG2TCuQNokUpvPJtapC6oHfNW4TefuhXIcew6lcF-iVQW5ofnV4mZB4sKpAUHbJL4qTutBQKiaEfVKZJWRDQVSG0bpE2GYE00mZFVxhI8SVvBtdy1nKMl+vJAGwi6EKeNEx2ITRR50XpZVuNd1W3eZJTyTW0rNX1ErtR6Lgdj+XyKTC9bFINeVUQeRVjauqBgEQEAJOmpGaoZ3HhbN-GgncP7iutcpFC8dyNmkXq1vayrRHa63lF2VDoBAcCsvjI1nW0pqQ3Ntzgt+UI9eJ0SiYK4TusEjxAQBSnRBEeupADvmjSDDEYReobYXLEUK3kAJpTkDx-QUdxQu64SBHJBR-l4ySqbjCKaQT5vnUFdv02ZNywU8vVSYEbl3JtyPyl6fvpKjWNeHCeOh9LwO6STZMU1TdRR3xMcwrWP4PCK2SeFk0RbR83pFOEfOCoCAGm2HMvDvliHiOgZGEeOYCVzVVygh9ArrQK8oKSUXu2Zk4nPFJ3xynnIc+f3RcnrhpFT1DHrBEJwoqU6ERLXEyMvBkZa+Jlv5FD7feF-5g8IfIbAkMwKAzAABGZBKaoGnMwMiRBUAJE1KfOaoJyzKi+G8B0f1bL+BAitZs4I3AQk1k6XG5QgA */
+  /** @xstate-layout N4IgpgJg5mDOIC5QAcBOB7AVmAxgFwGUBDAGzAFkiA7ImVSnACwEsqwBiAQQCUAVAfQBCAGQDyAYQDSBfuOEBJAKIA5AQFUACgBFOvRVoDaABgC6iFOljM8zdFXMgAHogCMANgBMADgB0XlwDsAMzeAJwALC4eweEANCAAnojhAKzhPgEB4dluLl4pQQVuAQC+JfFoWLiEpBTUtGD0REysHBpq3OIAEpwEivy83JxS8soA4vzknMqcY4rck8Ndo-2cAGqc8sKcIorGZkggyJbWtvaHzggAtO5BAT4uUSkud55B4aEe8UkIWb4pKQCLjSHneoRSnzKFQw2HwxDIlBodAYLDY7HanR6fQGQxG40WMzmCym3RW-DUMw2Wx2wj2pgcxysNjsDkuNzc4XuXiyHnCxQCbiMRhC30QERSPiMKSMuSMeUCANK5SOMOq8LqSMaKNa7Hm3FE3H2DJOzPOoDZHKCPiC+SMXlCoSygJSX0SiBt6TcXneUoCgM8oSCUJVVThtURDSaLTRCjW-QInFp-B0vE4-AAYopeN19EbDozTiyLogrp8JQLuTLueEPByXKKEB6fF6fc6BR5A8HKrCagj6sjmqiwD4AGZgPDRqAaVX4LREPBEdgQOzD1gAN3QAGth921eH+1rB61R+PJ9PQ3g5wuEOv0Dh52d9nmLEyzqyS4L0tLa4U5W4IkEDb5L4oLhEY3hCqCmQpF2M69hqkbamwJ4TqiU5wVei6NBgqA+MgJDziO6CoAAtnhcHqhGA7RsOY6oaw6EXphN5UBu96mk+9L5iab7Ftcbi5JKAQdmBLg1i63oNlEQQuJKAKhMUjzcl6biwRelEHlGQ4+MwEBkOwz5HDxRbmq4qRGNaoTAo6sotq6PxeukXi5AUdxGFkRjhGpPYaZqWnHrp+kGC4BwvoWZpOGZHgWcEBTekC-41kB7l+DKALAkEbgugJ3l7n2flIauekcAYHihUZr4mZFCBidKlnWQKLhViKboIBEoR+IG-5ZTKHh9blYb5YhR7IYFJVBOVBamu+NWchKjp+hyRhWeB4FSU8PiApynliS8HxKtC6n7gVI1FUF4STcZEWXGJwl+IKIQuIGYlZQEUnvFaNpeHy3hZdkUoDfBVGHjROnFQZKSXZV11mfkDxeO53jeDaLZSQUX4hG4QSfEKCkuIDvnDaDY0GW4UPhTNYmZT4ta+g6vpZVJr3Wp5KTOZ5IScwTx1E9pJMGAE5PTXxYnZDT0qOvK7y8m9rV5AUPiRPkbPgT13jc0N1HaagYBEBACTpsRGgAK6oEwRCwCVXFhcLpkIHy9zPLaCmRLWT2yz8TXhCBaSZUCISq14GsIVrx463rBvEdwRAkQZ1sVRTfHSm4ispIKgRY3yYFuO97ybStmVszWoSeWUypUOgEBwAyFE86HbDGtDM03Mt6TRWC2QeC6CmhA2EL3JlwIdu5DrhHcwfA-5yF0WeGHzkQjeJ3bLd8jTwofJ33f-lJwqyR8tXvHkXg-hPmmFWDZCL7b1VXH1HiSp4nhePaeSRIzrUu4rVne+n-gCfjypdyDRDiDbWut9aG1QCbM2jALZgCvrxO2mQvzejZkCLu-hnI7zuIrIImU367TTkHQBtdNagLDuAyOqBo4kQQVVS4zl0jgj5MUTy+Q8i9zlpzOSMkmqIwegdEMPk67kOQoyPAQxyB0JhggDwLx74Ag9KkGSbNn5SW9ukLIY8Preg5GzU+J1QZAPguIdAJF8LjngdxJufE5EOkVryUI3IHR+ntDnD+AQLKeFVt+RKHYDG82PNhYi0iZp9TZpKdhqQfp8hSA2TxEpVHuSyt1B0ADDrCLIVPHccF5BsBIMwKAzAABGZBIHTmYCRIgqAEjqlCbY9wskIipCeh2FGgFWrH3+HgqIQpAQyyVGUIAA */
   id: "projectSaleManagerMachine",
   context: ({ input }) => ({
     projectId: input.projectId,
@@ -460,7 +486,11 @@ export const projectSaleManagerMachine = setup({
         },
         {
           target: "readyForRam",
-          guard: "shouldStartRAMMachine",
+          guard: "isRAMBiddable",
+        },
+        {
+          target: "postRAM",
+          guard: "isPostRAM",
         },
         {
           guard: "isPublicClientUnavailable",
@@ -494,10 +524,15 @@ export const projectSaleManagerMachine = setup({
       always: [
         {
           target: "idle",
-          guard: "shouldNotStartRAMMachine",
+          guard: "isNotRAMBiddable",
           actions: "stopAndAssignRamMachine",
         },
       ],
+    },
+    postRAM: {
+      entry: {
+        type: "spawnAndAssignPostRAMMachine",
+      },
     },
     projectSaleComplete: {},
     error: {},
