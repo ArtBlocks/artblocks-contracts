@@ -152,7 +152,7 @@ async function generateSelectMinterForm({
   if (minterSelectionFormSchemaWithMinters.properties?.["minter.address"]) {
     const globallyAllowedMinters =
       project.contract.minter_filter.globally_allowed_minters ?? [];
-    const latestMinters = globallyAllowedMinters.reduce(
+    let latestMinters = globallyAllowedMinters.reduce(
       (dedupedMinters, minter) => {
         return dedupedMinters.filter((mntr) => {
           return (
@@ -164,6 +164,15 @@ async function generateSelectMinterForm({
         });
       },
       globallyAllowedMinters
+    );
+
+    // filter out RAM minters if not on curated mainnet, until supported on platform frontend
+    latestMinters = latestMinters.filter(
+      (minter) =>
+        !minter.type?.unversioned_type?.includes("MinterRAM") ||
+        project.project_id.startsWith(
+          "0xab0000000000aa06f89b268d604a9c1c41524ac6-"
+        )
     );
 
     minterSelectionFormSchemaWithMinters.properties["minter.address"].oneOf =
