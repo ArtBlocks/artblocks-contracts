@@ -779,45 +779,12 @@ export const deployConfigDetailsArray = [
     // productClass is either "Engine" or "Studio", and used to validate render provider payment address
     productClass: "Studio",
     // 0 for Engine, 1 for Engine Flex
-    engineCoreContractType: 1,
-    // prod-only: see efficient_addresses...txt in network directories for a list of efficient salts
-    salt: "0x0000000000000000000000000000000000000000a73bf3db9deb6961fa000060",
-    // INCREMENT THESE NUMBERS FOR EACH NEW STUDIO DEPLOYMENT
-    tokenName: "Art Blocks Studio | 55",
-    tokenTicker: "ABSTUDIO_55",
-    // set to the address you want to transfer the superAdmin role to
-    // (can be the zero address if you have an existing Admin ACL Contract and are not transferring)
-    newSuperAdminAddress: "0x6f1A0262A3Bb149856F2089CD40Ab44eCFf72eef",
-    // see /scripts/util/constants.ts::MAIN_CONFIG for the correct address if prod deployment
-    renderProviderAddress: "0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd",
-    // platform provider address should be set to the zero address for Studio deployments
-    platformProviderAddress: "0x0000000000000000000000000000000000000000",
-    startingProjectId: 0,
-    // autoApproveArtistSplitProposals should be true for Studio deployments
-    autoApproveArtistSplitProposals: true,
-    // nullPlatformProvider must be true for Studio deployments
-    nullPlatformProvider: true,
-    // allowArtistProjectActivation must be true for Studio deployments
-    allowArtistProjectActivation: true,
-    // if you want to use an existing admin ACL, set the address here (otherwise set as the zero address to deploy a new one)
-    adminACLContract: "0x0000000000000000000000000000000000000000",
-    // optionally define this to set default vertical name for the contract after deployment.
-    // if not defined, the default vertical name will be "unassigned".
-    // common values include `studio`, `fullyonchain`, `flex`, or partnerships like `artblocksxpace`.
-    // also note that if you desire to create a new vertical, you will need to add the vertical name to the
-    // `project_verticals` table in the database before running this deploy script.
-    defaultVerticalName: "studio",
-  },
-  {
-    // productClass is either "Engine" or "Studio", and used to validate render provider payment address
-    productClass: "Studio",
-    // 0 for Engine, 1 for Engine Flex
     engineCoreContractType: 0,
     // prod-only: see efficient_addresses...txt in network directories for a list of efficient salts
     salt: "0x0000000000000000000000000000000000000000f7634f1ab331b5f500010020",
     // INCREMENT THESE NUMBERS FOR EACH NEW STUDIO DEPLOYMENT
-    tokenName: "Art Blocks Studio | 56",
-    tokenTicker: "ABSTUDIO_56",
+    tokenName: "Art Blocks Studio | 55",
+    tokenTicker: "ABSTUDIO_55",
     // set to the address you want to transfer the superAdmin role to
     // (can be the zero address if you have an existing Admin ACL Contract and are not transferring)
     newSuperAdminAddress: "0x0D998d023376b2b82B8f6190c17189c1164ab238",
@@ -849,8 +816,8 @@ export const deployConfigDetailsArray = [
     // prod-only: see efficient_addresses...txt in network directories for a list of efficient salts
     salt: "0x0000000000000000000000000000000000000000f7634f1ab33130cd90010090",
     // INCREMENT THESE NUMBERS FOR EACH NEW STUDIO DEPLOYMENT
-    tokenName: "Art Blocks Studio | 57",
-    tokenTicker: "ABSTUDIO_57",
+    tokenName: "Art Blocks Studio | 56",
+    tokenTicker: "ABSTUDIO_56",
     // set to the address you want to transfer the superAdmin role to
     // (can be the zero address if you have an existing Admin ACL Contract and are not transferring)
     newSuperAdminAddress: "0x8d19C87C37c9f1512BF0436012453e4e7C2C5a2c",
