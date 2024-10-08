@@ -393,10 +393,12 @@ export const ramMachine = setup({
       const liveSaleData =
         context.liveSaleDataPollingMachineRef.getSnapshot().context
           .liveSaleData;
-      const minBidSlotIndex = Math.max(
-        Number(liveSaleData?.ramMinterAuctionDetails?.minNextBidSlotIndex),
-        topUpBid ? Number(topUpBid.slot_index ?? 0) + 1 : 0
-      );
+
+      const minBidSlotIndex = topUpBid
+        ? Number(topUpBid.slot_index ?? 0) + 1
+        : Number(
+            liveSaleData?.ramMinterAuctionDetails?.minNextBidSlotIndex ?? 0
+          );
 
       return bidSlotIndex >= minBidSlotIndex;
     },
