@@ -29,7 +29,7 @@ export type PostRAMMachineInput = Pick<
 
 export const postRAMMachine = setup({
   types: {
-    input: {} as Pick<PostRAMMachineContext, "project" | "artblocksClient">,
+    input: {} as PostRAMMachineInput,
     context: {} as PostRAMMachineContext,
     events: {} as PostRAMMachineEvents,
   },
