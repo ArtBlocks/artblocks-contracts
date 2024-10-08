@@ -140,6 +140,6 @@
     "@urql/exchange-retry": "^1.2.1",
     "graphql": "^16.8.2",
     "solady": "^0.0.181",
-    "urql": "^4.0.7"
+    "urql": "^4.1.0"
   }
 }
