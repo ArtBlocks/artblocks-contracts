@@ -233,7 +233,7 @@ export function isProjectPurchasable(
   return true;
 }
 
-export function shouldStartRAMMachine(
+export function isProjectRAMBiddable(
   context: ProjectSaleManagerMachineContext
 ) {
   const { artblocksClient, project, liveSaleData } = context;
@@ -256,11 +256,49 @@ export function shouldStartRAMMachine(
   }
 
   const auctionDetails = liveSaleData.ramMinterAuctionDetails;
-  if (auctionDetails.projectMinterState === PROJECT_MINTER_STATE.PreAuction) {
+  if (auctionDetails.projectMinterState !== PROJECT_MINTER_STATE.LiveAuction) {
     return false;
   }
 
   return true;
+}
+
+export function isProjectPostRAM(context: ProjectSaleManagerMachineContext) {
+  const { artblocksClient, project, liveSaleData } = context;
+  const walletClient = artblocksClient.getWalletClient();
+
+  if (!liveSaleData) {
+    return false;
+  }
+
+  if (!walletClient || !walletClient.account) {
+    return false;
+  }
+
+  if (!project) {
+    return false;
+  }
+
+  if (!liveSaleData.ramMinterAuctionDetails) {
+    return false;
+  }
+
+  if (isProjectRAMBiddable(context)) {
+    return false;
+  }
+
+  if (isProjectPurchasable(context)) {
+    return false;
+  }
+
+  const { projectMinterState } = liveSaleData.ramMinterAuctionDetails;
+
+  return (
+    projectMinterState === PROJECT_MINTER_STATE.PostAuctionOpenMint ||
+    projectMinterState === PROJECT_MINTER_STATE.PostAuctionAllBidsHandled ||
+    projectMinterState ===
+      PROJECT_MINTER_STATE.PostAuctionSellOutAdminArtistMint
+  );
 }
 
 /**
