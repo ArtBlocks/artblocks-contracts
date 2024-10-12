@@ -50,7 +50,10 @@ describe("processAllowlistFileToMerkleRoot", () => {
     });
 
     // Mock the fetch request to upload the file to s3
-    (global.fetch as jest.Mock).mockResolvedValueOnce({});
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve(""),
+    });
 
     // Mock generating the merkle root
     (merkleUtils.getMerkleRoot as jest.Mock).mockReturnValue(
