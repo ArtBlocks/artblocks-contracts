@@ -83,7 +83,6 @@ describe("processAllowlistFileToMerkleRoot", () => {
     expect(global.fetch).toHaveBeenCalledWith("fake-url", {
       method: "PUT",
       headers: {
-        "x-amz-acl": "public-read",
         "Content-Type": "application/json",
       },
       body: JSON.stringify(["address1", "address2"]),
