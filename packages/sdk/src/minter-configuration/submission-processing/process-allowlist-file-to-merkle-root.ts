@@ -71,14 +71,18 @@ export async function processAllowlistFileToMerkleRoot(
 
   try {
     // Upload allowlist file to s3 as a json file
-    await fetch(url, {
+    const res = await fetch(url, {
       method: "PUT",
       body: JSON.stringify(allowlist),
       headers: {
-        "x-amz-acl": "public-read",
         "Content-Type": "application/json",
       },
     });
+
+    if (!res.ok) {
+      console.error(await res.text());
+      throw new Error("Unexpected error uploading allowlist file");
+    }
   } catch (e) {
     console.error(e);
     throw new Error("Unexpected error uploading allowlist file");
