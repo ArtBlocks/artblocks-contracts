@@ -50,7 +50,10 @@ describe("processAllowlistFileToMerkleRoot", () => {
     });
 
     // Mock the fetch request to upload the file to s3
-    (global.fetch as jest.Mock).mockResolvedValueOnce({});
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve(""),
+    });
 
     // Mock generating the merkle root
     (merkleUtils.getMerkleRoot as jest.Mock).mockReturnValue(
@@ -83,7 +86,6 @@ describe("processAllowlistFileToMerkleRoot", () => {
     expect(global.fetch).toHaveBeenCalledWith("fake-url", {
       method: "PUT",
       headers: {
-        "x-amz-acl": "public-read",
         "Content-Type": "application/json",
       },
       body: JSON.stringify(["address1", "address2"]),
