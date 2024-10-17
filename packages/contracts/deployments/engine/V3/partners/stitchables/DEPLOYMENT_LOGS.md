@@ -19,3 +19,18 @@
       [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/stitchables/deployment-config.mainnet.ts
 
     
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2024-10-17T23:50:32.123Z
+      [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/stitchables/deployment-config.sepolia-staging.ts
+
+    
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2024-10-17T23:55:20.807Z
+      [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/stitchables/deployment-config.mainnet.ts
+
+    
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2024-10-17T23:58:26.559Z
+      [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/stitchables/deployment-config.sepolia-staging.ts
+
+    

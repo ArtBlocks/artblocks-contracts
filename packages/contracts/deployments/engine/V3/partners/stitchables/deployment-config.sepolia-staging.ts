@@ -12,7 +12,8 @@ export const deployNetworkConfiguration = {
   safeAddress: "0x62DC3F6C7Bf5FA8A834E6B97dee3daB082873600",
   transactionServiceUrl: "https://safe-transaction-sepolia.safe.global",
   // set the transaction hash after successful execution of the batch creation
-  transactionHash: "",
+  transactionHash:
+    "0x70a0665eff375d0c9583cbd28ceece7b0dc70120e965937b86d1b2975b5cc5d3",
 };
 
 export const deployConfigDetailsArray = [
@@ -24,7 +25,7 @@ export const deployConfigDetailsArray = [
     // prod-only: see efficient_addresses...txt in network directories for a list of efficient salts
     salt: "0x0",
     // INCREMENT THESE NUMBERS FOR EACH NEW STUDIO DEPLOYMENT
-    tokenName: "Stitchables",
+    tokenName: "Stitchablesv3p2", // note: added v3p2 suffix post-deployment to deconflict with existing staging contract
     tokenTicker: "STITCH",
     // optionally define this for improved readability and searchability in the deployment logs
     artistName: "",
