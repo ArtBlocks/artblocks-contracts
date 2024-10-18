@@ -1,4 +1,12 @@
-import { Hex, formatEther, getContract, parseEventLogs } from "viem";
+import {
+  Chain,
+  Hex,
+  JsonRpcAccount,
+  SimulateContractReturnType,
+  formatEther,
+  getContract,
+  parseEventLogs,
+} from "viem";
 import { ActorRefFrom, assign, fromPromise, setup, stateIn } from "xstate";
 import { ArtBlocksClient } from "../..";
 import { minterRAMV0Abi } from "../../../abis/minterRAMV0Abi";
@@ -36,6 +44,30 @@ export type RAMMachineEvents =
 
 type BidAction = "create" | "topUp";
 
+type SimulateCreateBidRequest = SimulateContractReturnType<
+  typeof minterRAMV0Abi,
+  "createBid",
+  readonly [bigint, `0x${string}`, number],
+  Chain | undefined,
+  JsonRpcAccount | undefined,
+  Chain | undefined,
+  JsonRpcAccount | undefined
+>["request"];
+
+type SimulateTopUpBidRequest = SimulateContractReturnType<
+  typeof minterRAMV0Abi,
+  "topUpBid",
+  readonly [bigint, `0x${string}`, number, number],
+  Chain | undefined,
+  JsonRpcAccount | undefined,
+  Chain | undefined,
+  JsonRpcAccount | undefined
+>["request"];
+
+type SimulateCreateOrTopUpBidRequest =
+  | SimulateCreateBidRequest
+  | SimulateTopUpBidRequest;
+
 export type RAMMachineContext = {
   // Client used to interact with ArtBlocks API with access to walletClient and publicClient
   artblocksClient: ArtBlocksClient;
@@ -55,6 +87,9 @@ export type RAMMachineContext = {
   >;
   // Transaction hash of the createBid or topUpBid transaction
   txHash?: Hex;
+  // Transaction request object for the createBid or topUpBid transaction
+  // Useful to resimulate a transaction that fails while polling for confirmation
+  txRequest?: SimulateCreateOrTopUpBidRequest;
   // Action to be performed (create or top up)
   bidAction?: BidAction;
   // Number of times the polling for new/increased bid has been retried
@@ -148,7 +183,10 @@ export const ramMachine = setup({
           | "liveSaleDataPollingMachineRef"
           | "userBids"
         >;
-      }): Promise<Hex> => {
+      }): Promise<{
+        txHash: Hex;
+        txRequest: SimulateCreateOrTopUpBidRequest;
+      }> => {
         const { project, artblocksClient } = input;
         const publicClient = artblocksClient.getPublicClient();
         const walletClient = artblocksClient.getWalletClient();
@@ -221,7 +259,10 @@ export const ramMachine = setup({
 
           const txHash = await walletClient.writeContract(request);
 
-          return txHash;
+          return {
+            txHash,
+            txRequest: request,
+          };
         }
 
         const { request } = await minterContract.simulate.createBid(
@@ -234,32 +275,48 @@ export const ramMachine = setup({
 
         const txHash = await walletClient.writeContract(request);
 
-        return txHash;
+        return {
+          txHash,
+          txRequest: request,
+        };
       }
     ),
     waitForBidTxConfirmation: fromPromise(
       async ({
         input,
       }: {
-        input: Pick<RAMMachineContext, "artblocksClient" | "txHash">;
+        input: Pick<
+          RAMMachineContext,
+          "artblocksClient" | "txHash" | "txRequest"
+        >;
       }): Promise<bigint> => {
-        const { artblocksClient, txHash } = input;
+        const { artblocksClient, txHash, txRequest } = input;
         const publicClient = artblocksClient.getPublicClient();
 
         if (!publicClient) {
           throw new Error("Public client unavailable");
         }
 
-        if (!txHash) {
-          throw new Error("Transaction hash is required");
+        if (!txHash || !txRequest) {
+          throw new Error("Transaction hash and request are required");
         }
 
         const txReceipt = await publicClient.waitForTransactionReceipt({
           hash: txHash,
         });
 
+        // If the transaction was reverted, resimulate it to get the revert reason
         if (txReceipt.status === "reverted") {
-          throw new Error("Purchase transaction reverted");
+          // These if statements are necessary for type checking
+          if (txRequest.functionName === "createBid") {
+            // Resimulate the transaction to get the revert reason
+            await publicClient.simulateContract(txRequest);
+          }
+
+          if (txRequest.functionName === "topUpBid") {
+            // Resimulate the transaction to get the revert reason
+            await publicClient.simulateContract(txRequest);
+          }
         }
 
         const events = parseEventLogs({
@@ -317,6 +374,7 @@ export const ramMachine = setup({
     resetBidContext: assign({
       errorMessage: undefined,
       txHash: undefined,
+      txRequest: undefined,
       bidAction: (_, params?: { bidAction?: BidAction }) => params?.bidAction,
       topUpBidId: undefined,
       bidSlotIndex: undefined,
@@ -326,6 +384,10 @@ export const ramMachine = setup({
     }),
     assignInitiatedTxHash: assign({
       txHash: (_, params: { txHash: Hex }) => params.txHash,
+    }),
+    assignInitiatedTxRequest: assign({
+      txRequest: (_, params: { txRequest: SimulateCreateOrTopUpBidRequest }) =>
+        params.txRequest,
     }),
     incrementPollingRetries: assign({
       pollingRetries: ({ context }) => context.pollingRetries + 1,
@@ -557,12 +619,20 @@ export const ramMachine = setup({
         }),
         onDone: {
           target: "confirmingBidTx",
-          actions: {
-            type: "assignInitiatedTxHash",
-            params: ({ event }) => ({
-              txHash: event.output,
-            }),
-          },
+          actions: [
+            {
+              type: "assignInitiatedTxHash",
+              params: ({ event }) => ({
+                txHash: event.output.txHash,
+              }),
+            },
+            {
+              type: "assignInitiatedTxRequest",
+              params: ({ event }) => ({
+                txRequest: event.output.txRequest,
+              }),
+            },
+          ],
         },
         onError: [
           {
@@ -596,6 +666,7 @@ export const ramMachine = setup({
         input: ({ context }) => ({
           artblocksClient: context.artblocksClient,
           txHash: context.txHash,
+          txRequest: context.txRequest,
         }),
         onDone: {
           target: "awaitingSync",
