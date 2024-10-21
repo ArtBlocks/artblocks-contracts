@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.19;
+pragma solidity 0.8.22;
 
 import "../DependencyRegistryV0.sol";
 import "../interfaces/v0.8.x/IGenArt721CoreProjectScriptV0.sol";

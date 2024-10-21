@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {IContractScript} from "scripty.sol/contracts/scripty/interfaces/IContractScript.sol";
+import {IScriptyContractStorage} from "scripty.sol/contracts/scripty/interfaces/IScriptyContractStorage.sol";
 
-contract MockFileStore is IContractScript {
+contract MockFileStore is IScriptyContractStorage {
     string constant GUNZIP_SCRIPT_NAME = "gunzipScripts-0.0.1.js";
 
-    function getScript(
+    function getContent(
         string calldata name,
         bytes memory
     ) external pure returns (bytes memory script) {
