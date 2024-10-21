@@ -4,6 +4,8 @@ module.exports = {
     "legacy/",
     "libs/v0.5.x/",
     "libs/v0.8.x/ERC721_PackedHashSeed.sol",
+    "libs/v0.8.x/ERC721_PackedHashSeedV1.sol",
+    "minter-suite/Minters/one-off/MinterSetPriceV5_SingleCore.sol",
     "libs/abi/",
     "libs/integration-refs/",
     "archive/",

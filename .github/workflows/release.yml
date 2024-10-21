@@ -21,7 +21,9 @@ jobs:
           node-version: ">=18.12.0"
 
       - name: Install Dependencies
-        run: yarn
+        run: |
+          corepack enable
+          yarn
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
@@ -32,3 +34,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          HASURA_ADMIN_SECRET: ${{ secrets.HASURA_ADMIN_SECRET }}
+          HASURA_GRAPHQL_API_ENDPOINT: ${{ secrets.HASURA_GRAPHQL_API_ENDPOINT }}

@@ -3,60 +3,58 @@
 
 pragma solidity ^0.8.0;
 
-/**
- * @title Art Blocks Script Storage Library (Reader)
- * @notice This interface defines the expected read functions for the Art Blocks Script Storage Library (Reader).
- */
-interface IBytecodeStorageReader {
-    /**
-     * @notice Read a string from contract bytecode
-     * @param _address address of deployed contract with bytecode stored in the V0 or V1 format
-     * @return data string read from contract bytecode
-     * @dev This function performs input validation that the contract to read is in an expected format
-     */
-    function readFromBytecode(
-        address _address
-    ) external view returns (string memory data);
+import {IBytecodeStorageReader_Base} from "./IBytecodeStorageReader_Base.sol";
 
+/**
+ * @title Art Blocks Script Storage Library - Reader Contract
+ * @notice This interface defines the expected read functions for the Art Blocks Script Storage Library's Reader
+ * Contracts. It is extended from the base interface to add additional read functions for further introspection of
+ * stored data.
+ */
+interface IBytecodeStorageReader is IBytecodeStorageReader_Base {
     /**
-     * @notice Read the bytes from contract bytecode that was written to the EVM using SSTORE2
-     * @param _address address of deployed contract with bytecode stored in the SSTORE2 format
-     * @return data bytes read from contract bytecode
-     * @dev This function performs no input validation on the provided contract,
-     *      other than that there is content to read (but not that its a "storage contract")
+     * @notice Read a bytes array from the SSTORE2-formatted bytecode of a contract.
+     * Note that this function is only compatible with contracts that have been deployed using the popular SSTORE2
+     * library.
+     * @dev see versioned BytecodeStorageReader implementation details to understand which data are being returned,
+     * espcially in the context of EOF updates.
+     * @param address_ address of contract with SSTORE2-formatted bytecode to be read
+     * @return data The bytes data stored at the specific address.
      */
     function readBytesFromSSTORE2Bytecode(
-        address _address
+        address address_
     ) external view returns (bytes memory data);
 
     /**
-     * @notice Read the bytes from contract bytecode, with an explicitly provided starting offset
-     * @param _address address of deployed contract with bytecode stored in the V0 or V1 format
-     * @param _offset offset to read from in contract bytecode, explicitly provided (not calculated)
-     * @return data bytes read from contract bytecode
-     * @dev This function performs no input validation on the provided contract,
-     *      other than that there is content to read (but not that its a "storage contract")
+     * @notice Read a bytes array from the a contract deployed via BytecodeStorage.
+     * @dev see versioned BytecodeStorageReader implementation details to understand which data are being returned, and
+     * how offset is interpreted, especially in the context of EOF updates.
+     * @param address_ address of contract with valid bytecode to be read
+     * @param offset offset to read from in contract bytecode, explicitly provided (not calculated)
+     * @return The bytes data stored at the specific address.
      */
     function readBytesFromBytecode(
-        address _address,
-        uint256 _offset
-    ) external view returns (bytes memory data);
+        address address_,
+        uint256 offset
+    ) external view returns (bytes memory);
+
+    //------ Metadata Functions ------//
 
     /**
-     * @notice Get address for deployer for given contract bytecode
-     * @param _address address of deployed contract with bytecode stored in the V0 or V1 format
-     * @return writerAddress address read from contract bytecode
+     * @notice Get address of deployer for given contract deployed via BytecodeStorage.
+     * @param address_ address of deployed contract
+     * @return writerAddress address of deployer
      */
     function getWriterAddressForBytecode(
-        address _address
+        address address_
     ) external view returns (address);
 
     /**
-     * @notice Get version for given contract bytecode
-     * @param _address address of deployed contract with bytecode stored in the V0 or V1 format
-     * @return version version read from contract bytecode
+     * @notice Get version for given contract deployed via BytecodeStorage.
+     * @param address_ address of deployed contract
+     * @return version version of the contract
      */
     function getLibraryVersionForBytecode(
-        address _address
+        address address_
     ) external view returns (bytes32);
 }

@@ -37,6 +37,7 @@ Below is a table of the shared minter filter contracts that are deployed on main
 | ------------------------------- | -------------------------------------------- |
 | Mainnet (Ethereum)              | `0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b` |
 | Artist Staging Goerli           | `0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824` |
+| Base                            | `0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5` |
 | Arbitrum One                    | `0x94560abECb897f359ee1A6Ed0E922315Da11752d` |
 | Artist Staging Arbitrum-Sepolia | `0xa07f47c30C262adcC263A4D44595972c50e04db7` |
 
@@ -100,9 +101,21 @@ These are the smart contracts that receive funds, and split them between the art
 - V5: [0xB8Bd1D2836C466DB149f665F777928bEE267304d](https://etherscan.io/address/0xB8Bd1D2836C466DB149f665F777928bEE267304d#code)
 - V5 (shared with Engine): [0xa19Bf77719A9B6E7daa3c33b3AAC119AF865e1c4](https://etherscan.io/address/0xa19Bf77719A9B6E7daa3c33b3AAC119AF865e1c4#code)
 
-#### Minter Holder (Token Holder)
+#### MinterHolder (Token Holder)
 
 - V5 (shared with Engine): [0x69f04FDDF0c4c32642B22E68b867282d5074A98a](https://etherscan.io/address/0x69f04FDDF0c4c32642B22E68b867282d5074A98a#code)
+
+#### MinterMinPrice
+
+- V0 (shared with Engine): [0xf5733268d28DDe96fC32f2bA8E1267Eb64120875](https://etherscan.io/address/0xf5733268d28DDe96fC32f2bA8E1267Eb64120875#code)
+
+#### MinterMinPriceMerkle
+
+- V0 (shared with Engine): [0x723EBF276f95E992480D009bC132c9820A39B58F](https://etherscan.io/address/0x723EBF276f95E992480D009bC132c9820A39B58F#code)
+
+#### MinterRAM (Ranked Auction Minter)
+
+- V0 (shared with Engine): [0xDeA98CB77d90e03dbF312626402ADb452Ed7a4e3](https://etherscan.io/address/0xDeA98CB77d90e03dbF312626402ADb452Ed7a4e3#code)
 
 ### Other Flagship Minter Contracts
 

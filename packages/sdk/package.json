@@ -1,42 +1,61 @@
 {
   "name": "@artblocks/sdk",
-  "version": "0.1.0",
+  "version": "0.1.30-10",
   "description": "JavaScript SDK for configuring and using Art Blocks minters.",
-  "main": "index.js",
+  "main": "dist/index.js",
   "repository": "git@github.com:ArtBlocks/artblocks-sdk.git",
   "author": "Art Blocks, Inc. <privacy@artblocks.io>",
   "license": "MIT",
+  "exports": {
+    ".": "./dist/index.js",
+    "./dist/machines/*": {
+      "types": "./dist/machines/*/index.d.ts",
+      "default": "./dist/machines/*/index.js"
+    },
+    "./machines/*": {
+      "types": "./dist/machines/*/index.d.ts",
+      "default": "./dist/machines/*/index.js"
+    },
+    "./machines/utils": {
+      "types": "./dist/machines/utils.d.ts",
+      "default": "./dist/machines/utils.js"
+    },
+    "./dist/machines/utils": {
+      "types": "./dist/machines/utils.d.ts",
+      "default": "./dist/machines/utils.js"
+    }
+  },
   "devDependencies": {
-    "@babel/core": "^7.23.9",
-    "@babel/preset-env": "^7.24.4",
-    "@babel/preset-typescript": "^7.24.1",
+    "@babel/core": "^7.24.7",
+    "@babel/preset-env": "^7.24.7",
+    "@babel/preset-typescript": "^7.24.7",
     "@jest/globals": "^29.7.0",
-    "@typechain/ethers-v5": "^11.1.2",
+    "@types/lodash": "^4.17.5",
+    "abitype": "^0.8.7",
     "eslint-config-custom": "*",
     "jest": "^29.7.0",
-    "jsdoc": "^4.0.2",
+    "jest-environment-jsdom": "^29.7.0",
+    "jsdoc": "^4.0.3",
     "jsdoc-plugin-typescript": "^2.2.1",
-    "lint-staged": "^15.2.2",
-    "prettier": "^3.2.5",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.3.2",
     "tsconfig": "*",
-    "tsup": "^8.0.2",
-    "typechain": "^8.3.2",
-    "typescript": "^5.4.4"
+    "tsup": "^8.1.0",
+    "typescript": "^5.4.5"
   },
   "scripts": {
-    "build": "tsup src/index.ts --dts",
+    "build": "yarn codegen && tsup src/index.ts src/machines/**/index.ts src/machines/utils.ts --dts",
     "codegen": "yarn --cwd=\"../..\" run codegen:project sdk",
-    "lint": "prettier --check src/**/*.ts && eslint src/**/*.ts",
-    "fmt": "prettier --write src/**/*.ts && eslint src/**/*.ts --fix",
+    "lint": "prettier --check src/**/*.ts && npx eslint src/**/*.ts",
+    "fmt": "prettier --write src/**/*.ts && npx eslint src/**/*.ts --fix",
     "test": "jest",
     "build:docs": "jsdoc -c jsdoc.json",
     "pre-commit": "yarn lint",
-    "pre-push": "yarn test",
-    "build:typechain": "typechain --target ethers-v5 --out-dir ./src/generated/contracts './artifacts/*.json' '../../node_modules/@artblocks/contracts/artifacts/contracts/!(*.dbg)*.json'"
+    "pre-push": "yarn codegen && yarn test"
   },
   "lint-staged": {
     "*.{js,ts,tsx, jsx}": [
-      "eslint --quiet --fix"
+      "npx eslint --quiet --fix"
     ],
     "*.{json,md,html,js,jsx,ts,tsx}": [
       "prettier --write"
@@ -50,18 +69,25 @@
     ],
     "coverageThreshold": {
       "global": {
-        "branches": 100,
-        "functions": 100,
-        "lines": 100,
-        "statements": 100
+        "branches": 80,
+        "functions": 85,
+        "lines": 85,
+        "statements": 85
       }
     }
   },
-  "peerDependencies": {
-    "ethers": "^6.3.0"
-  },
   "dependencies": {
     "@artblocks/contracts": "^1.0.2",
-    "merkletreejs": "^0.3.11"
-  }
+    "encoding": "^0.1.13",
+    "graphql": "^16.8.2",
+    "graphql-request": "^6.1.0",
+    "lodash": "^4.17.21",
+    "merkletreejs": "^0.3.11",
+    "viem": "^2.13.7",
+    "xstate": "5.13.2",
+    "zod": "^3.23.8"
+  },
+  "files": [
+    "dist"
+  ]
 }

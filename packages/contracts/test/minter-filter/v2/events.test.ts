@@ -71,7 +71,7 @@ runForEach.forEach((params) => {
     // PUBLIC STATE VARIABLE GETTER FUNCTIONS
     ///////////////////////////////////////////////////////////////////////////
 
-    describe("Deployed", async function () {
+    describe("Deployed [ @skip-on-coverage ]", async function () {
       it("should emit Deployed during deployment", async function () {
         const config = await loadFixture(_beforeEach);
         const minterFilterFactory =
@@ -92,7 +92,7 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("MinterApprovedGlobally", async function () {
+    describe("MinterApprovedGlobally [ @skip-on-coverage ]", async function () {
       it("emits when a minter is added", async function () {
         const config = await loadFixture(_beforeEach);
         await expect(
@@ -105,7 +105,7 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("revokeMinterGlobally", async function () {
+    describe("revokeMinterGlobally [ @skip-on-coverage ]", async function () {
       it("emits when a minter is removed", async function () {
         const config = await loadFixture(_beforeEach);
         await expect(
@@ -118,7 +118,7 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("approveMinterForContract", async function () {
+    describe("approveMinterForContract [ @skip-on-coverage ]", async function () {
       it("emits when a minter is added for contract", async function () {
         const config = await loadFixture(_beforeEach);
         await expect(
@@ -138,7 +138,7 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("revokeMinterForContract", async function () {
+    describe("revokeMinterForContract [ @skip-on-coverage ]", async function () {
       it("emits when a minter is removed for contract", async function () {
         const config = await loadFixture(_beforeEach);
         // approve minter for contract
@@ -161,7 +161,7 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("ProjectMinterRegistered", async function () {
+    describe("ProjectMinterRegistered [ @skip-on-coverage ]", async function () {
       it("emits when a project minter is registered", async function () {
         const config = await loadFixture(_beforeEach);
         await expect(
@@ -183,7 +183,7 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("ProjectMinterRemoved", async function () {
+    describe("ProjectMinterRemoved [ @skip-on-coverage ]", async function () {
       it("emits when a project minter is removed", async function () {
         const config = await loadFixture(_beforeEach);
         // set project zero minter
@@ -206,7 +206,7 @@ runForEach.forEach((params) => {
           .withArgs(config.projectZero, config.genArt721Core.address);
       });
 
-      it("emits when multiple project minters are removed", async function () {
+      it("emits when multiple project minters are removed [ @skip-on-coverage ]", async function () {
         const config = await loadFixture(_beforeEach);
         // set project zero minter
         await config.minterFilter
@@ -240,7 +240,7 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("CoreRegistryUpdated", async function () {
+    describe("CoreRegistryUpdated [ @skip-on-coverage ]", async function () {
       it("emits when the core registry is updated", async function () {
         const config = await loadFixture(_beforeEach);
         // update to dummy new core registry

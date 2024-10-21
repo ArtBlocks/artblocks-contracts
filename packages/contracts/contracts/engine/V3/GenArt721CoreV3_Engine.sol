@@ -1,19 +1,22 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.19;
+pragma solidity 0.8.22;
 
 // Created By: Art Blocks Inc.
 
 import "../../interfaces/v0.8.x/IRandomizer_V3CoreBase.sol";
-import "../../interfaces/v0.8.x/IAdminACLV0.sol";
+import "../../interfaces/v0.8.x/IAdminACLV0_Extended.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine.sol";
+import {IGenArt721CoreContractV3_ProjectFinance} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_ProjectFinance.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
-import "../../interfaces/v0.8.x/IManifold.sol";
+import {ISplitProviderV0} from "../../interfaces/v0.8.x/ISplitProviderV0.sol";
+import {IBytecodeStorageReader_Base} from "../../interfaces/v0.8.x/IBytecodeStorageReader_Base.sol";
 
-import "@openzeppelin-4.7/contracts/utils/Strings.sol";
-import "@openzeppelin-4.7/contracts/access/Ownable.sol";
-import "../../libs/v0.8.x/ERC721_PackedHashSeed.sol";
-import "../../libs/v0.8.x/BytecodeStorageV1.sol";
+import "@openzeppelin-5.0/contracts/utils/Strings.sol";
+import "@openzeppelin-5.0/contracts/access/Ownable.sol";
+import {IERC2981} from "@openzeppelin-5.0/contracts/interfaces/IERC2981.sol";
+import "../../libs/v0.8.x/ERC721_PackedHashSeedV1.sol";
+import {BytecodeStorageWriter, BytecodeStorageReader} from "../../libs/v0.8.x/BytecodeStorageV2.sol";
 import "../../libs/v0.8.x/Bytes32Strings.sol";
 
 /**
@@ -33,22 +36,28 @@ import "../../libs/v0.8.x/Bytes32Strings.sol";
  * ----------------------------------------------------------------------------
  * The following functions are restricted to the Admin ACL contract:
  * - updateArtblocksDependencyRegistryAddress
+ * - updateArtblocksOnChainGeneratorAddress
+ * - updateNextCoreContract
  * - updateProviderSalesAddresses
  * - updateProviderPrimarySalesPercentages (up to 100%)
- * - updateProviderSecondarySalesBPS (up to 100%)
+ * - updateProviderDefaultSecondarySalesBPS (up to 100%)
+ * - syncProviderSecondaryForProjectToDefaults
  * - updateMinterContract
  * - updateRandomizerAddress
- * - toggleProjectIsActive
+ * - toggleProjectIsActive (note: artist may be configured to activate projects)
  * - addProject
  * - forbidNewProjects (forever forbidding new projects)
  * - updateDefaultBaseURI (used to initialize new project base URIs)
+ * - updateSplitProvider
+ * - updateBytecodeStorageReaderContract
  * ----------------------------------------------------------------------------
  * The following functions are restricted to either the Artist address or
  * the Admin ACL contract, only when the project is not locked:
  * - updateProjectName
  * - updateProjectArtistName
  * - updateProjectLicense
- * - Change project script via addProjectScript, updateProjectScript,
+ * - Change project script via addProjectScript, addProjectScriptCompressed,
+ *   updateProjectScript, updateProjectScriptCompressed,
  *   and removeProjectLastScript
  * - updateProjectScriptType
  * - updateProjectAspectRatio
@@ -92,14 +101,16 @@ import "../../libs/v0.8.x/Bytes32Strings.sol";
  * registries, and other contracts that may interact with this core contract.
  */
 contract GenArt721CoreV3_Engine is
-    ERC721_PackedHashSeed,
+    ERC721_PackedHashSeedV1,
     Ownable,
+    IERC2981,
     IDependencyRegistryCompatibleV0,
-    IManifold,
     IGenArt721CoreContractV3_Engine,
+    IGenArt721CoreContractV3_ProjectFinance,
     IGenArt721CoreContractExposesHashSeed
 {
     using BytecodeStorageWriter for string;
+    using BytecodeStorageWriter for bytes;
     using Bytes32Strings for bytes32;
     using Strings for uint256;
     using Strings for address;
@@ -113,49 +124,16 @@ contract GenArt721CoreV3_Engine is
     uint256 constant MAX_PROVIDER_SECONDARY_SALES_BPS = 10000; // 10_000 BPS = 100%
     uint256 constant ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE = 95; // 95%
 
-    // This contract emits generic events that contain fields that indicate
-    // which parameter has been updated. This is sufficient for application
-    // state management, while also simplifying the contract and indexing code.
-    // This was done as an alternative to having custom events that emit what
-    // field-values have changed for each event, given that changed values can
-    // be introspected by indexers due to the design of this smart contract
-    // exposing these state changes via publicly viewable fields.
-    //
-    // The following fields are used to indicate which contract-level parameter
-    // has been updated in the `PlatformUpdated` event:
-    bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";
-    bytes32 constant FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
-    bytes32 constant FIELD_DEFAULT_BASE_URI = "defaultBaseURI";
-    bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
-    bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
-        "dependencyRegistryAddress";
-    bytes32 constant FIELD_PROVIDER_SALES_ADDRESSES = "providerSalesAddresses";
-    bytes32 constant FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES =
-        "providerPrimaryPercentages";
-    bytes32 constant FIELD_PROVIDER_SECONDARY_SALES_BPS =
-        "providerSecondaryBPS";
-    // The following fields are used to indicate which project-level parameter
-    // has been updated in the `ProjectUpdated` event:
-    bytes32 constant FIELD_PROJECT_COMPLETED = "completed";
-    bytes32 constant FIELD_PROJECT_ACTIVE = "active";
-    bytes32 constant FIELD_PROJECT_ARTIST_ADDRESS = "artistAddress";
-    bytes32 constant FIELD_PROJECT_PAUSED = "paused";
-    bytes32 constant FIELD_PROJECT_CREATED = "created";
-    bytes32 constant FIELD_PROJECT_NAME = "name";
-    bytes32 constant FIELD_PROJECT_ARTIST_NAME = "artistName";
-    bytes32 constant FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
-        "royaltyPercentage";
-    bytes32 constant FIELD_PROJECT_DESCRIPTION = "description";
-    bytes32 constant FIELD_PROJECT_WEBSITE = "website";
-    bytes32 constant FIELD_PROJECT_LICENSE = "license";
-    bytes32 constant FIELD_PROJECT_MAX_INVOCATIONS = "maxInvocations";
-    bytes32 constant FIELD_PROJECT_SCRIPT = "script";
-    bytes32 constant FIELD_PROJECT_SCRIPT_TYPE = "scriptType";
-    bytes32 constant FIELD_PROJECT_ASPECT_RATIO = "aspectRatio";
-    bytes32 constant FIELD_PROJECT_BASE_URI = "baseURI";
+    /// pointer to next core contract associated with this contract
+    address public nextCoreContract;
 
     /// Dependency registry managed by Art Blocks
     address public artblocksDependencyRegistryAddress;
+    /// On chain generator managed by Art Blocks
+    address public artblocksOnChainGeneratorAddress;
+
+    /// ensure initialization can only be performed once
+    bool private _initialized;
 
     /// current randomizer contract
     IRandomizer_V3CoreBase public randomizerContract;
@@ -189,20 +167,10 @@ contract GenArt721CoreV3_Engine is
 
     mapping(uint256 => Project) projects;
 
-    /// packed struct containing project financial information
-    struct ProjectFinance {
-        address payable additionalPayeePrimarySales;
-        // packed uint: max of 95, max uint8 = 255
-        uint8 secondaryMarketRoyaltyPercentage;
-        address payable additionalPayeeSecondarySales;
-        // packed uint: max of 100, max uint8 = 255
-        uint8 additionalPayeeSecondarySalesPercentage;
-        address payable artistAddress;
-        // packed uint: max of 100, max uint8 = 255
-        uint8 additionalPayeePrimarySalesPercentage;
-    }
-    // Project financials mapping
-    mapping(uint256 => ProjectFinance) projectIdToFinancials;
+    /// private mapping from project ID to project financial information. See
+    /// `projectIdToFinancials` getter for public access.
+    mapping(uint256 _projectId => ProjectFinance)
+        private _projectIdToFinancials;
 
     /// hash of artist's proposed payment updates to be approved by admin
     mapping(uint256 => bytes32) public proposedArtistAddressesAndSplitsHash;
@@ -213,33 +181,54 @@ contract GenArt721CoreV3_Engine is
     /// Percentage of primary sales revenue allocated to the render provider
     /// (packed)
     // packed uint: max of 100, max uint8 = 255
-    uint8 private _renderProviderPrimarySalesPercentage = 10;
+    uint8 private _renderProviderPrimarySalesPercentage;
     /// The platform provider payment address for all primary sales revenues
     /// (packed)
     address payable public platformProviderPrimarySalesAddress;
     /// Percentage of primary sales revenue allocated to the platform provider
     /// (packed)
     // packed uint: max of 100, max uint8 = 255
-    uint8 private _platformProviderPrimarySalesPercentage = 10;
+    uint8 private _platformProviderPrimarySalesPercentage;
 
-    /// The render provider payment address for all secondary sales royalty
-    /// revenues
-    address payable public renderProviderSecondarySalesAddress;
-    /// Basis Points of secondary sales royalties allocated to the
-    /// render provider
-    uint256 public renderProviderSecondarySalesBPS = 250;
-    /// The platform provider payment address for all secondary sales royalty
-    /// revenues
-    address payable public platformProviderSecondarySalesAddress;
-    /// Basis Points of secondary sales royalties allocated to the
-    /// platform provider
-    uint256 public platformProviderSecondarySalesBPS = 250;
+    /// @dev Note on "default" provider secondary values - the only way these can
+    /// be different on a per project basis is if admin updates these and then
+    /// does not call syncProviderSecondaryForProjectToDefaults for the project.
+    /// -----------------------------------------------------------------------
+    /// The default render provider payment address for all secondary sales royalty
+    /// revenues, for all new projects. Individual project payment info is defined
+    /// in each project's ProjectFinance struct.
+    /// Projects can be updated to this value by calling the
+    /// `syncProviderSecondaryForProjectToDefaults` function for each project.
+    address payable public defaultRenderProviderSecondarySalesAddress;
+    /// The default basis points allocated to render provider for all secondary
+    /// sales royalty revenues, for all new projects. Individual project
+    /// payment info is defined in each project's ProjectFinance struct.
+    /// Projects can be updated to this value by calling the
+    /// `syncProviderSecondaryForProjectToDefaults` function for each project.
+    uint256 public defaultRenderProviderSecondarySalesBPS;
+    /// The default platform provider payment address for all secondary sales royalty
+    /// revenues, for all new projects. Individual project payment info is defined
+    /// in each project's ProjectFinance struct.
+    /// Projects can be updated to this value by calling the
+    /// `syncProviderSecondaryForProjectToDefaults` function for each project.
+    address payable public defaultPlatformProviderSecondarySalesAddress;
+    /// The default basis points allocated to platform provider for all secondary
+    /// sales royalty revenues, for all new projects. Individual project
+    /// payment info is defined in each project's ProjectFinance struct.
+    /// Projects can be updated to this value by calling the
+    /// `syncProviderSecondaryForProjectToDefaults` function for each project.
+    uint256 public defaultPlatformProviderSecondarySalesBPS;
+    /// -----------------------------------------------------------------------
 
     /// single minter allowed for this core contract
     address public minterContract;
 
-    /// starting (initial) project ID on this contract
-    uint256 public immutable startingProjectId;
+    /// starting (initial) project ID on this contract configured
+    /// at time of deployment and intended to be immutable after initialization.
+    /// Not marked as immutable due to initialization requirements
+    /// under the ERC-1167 minimal proxy pattern, which necessitates
+    /// setting this value post-deployment.
+    uint256 public startingProjectId;
 
     /// next project ID to be created
     uint248 private _nextProjectId;
@@ -248,19 +237,39 @@ contract GenArt721CoreV3_Engine is
     /// default behavior is to allow new projects
     bool public newProjectsForbidden;
 
-    /// configuration variable (determined at time of deployment)
-    /// that determines whether or not admin approval^ should be required
-    /// to accept artist address change proposals, or if these proposals
-    /// should always auto-approve, as determined by the business process
-    /// requirements of the Engine partner using this contract.
+    /// configuration variable set at time of deployment, intended to be
+    /// immutable after initialization, that determines whether or not
+    /// admin approval^ should be required to accept artist address change
+    /// proposals, or if these proposals should always auto-approve, as
+    /// determined by the business process requirements of the Engine
+    /// partner using this contract.
     ///
     /// ^does not apply in the case where contract-ownership itself is revoked
-    bool public immutable autoApproveArtistSplitProposals;
+    /// Not marked as immutable due to initialization requirements
+    /// under the ERC-1167 minimal proxy pattern, which necessitates
+    /// setting this value post-deployment.
+    bool public autoApproveArtistSplitProposals;
+
+    /// configuration variable set at time of deployment, intended to be
+    /// immutable after initialization, that determines if platform provider
+    /// fees and addresses are always required to be set to zero.
+    /// Not marked as immutable due to initialization requirements
+    /// under the ERC-1167 minimal proxy pattern, which necessitates
+    /// setting this value post-deployment.
+    bool public nullPlatformProvider;
+
+    /// configuration variable set at time of deployment, intended to be
+    /// immutable after initialization, that determines if artists are allowed
+    /// to activate their own projects.
+    /// Not marked as immutable due to initialization requirements
+    /// under the ERC-1167 minimal proxy pattern, which necessitates
+    /// setting this value post-deployment.
+    bool public allowArtistProjectActivation;
 
     /// version & type of this core contract
-    bytes32 constant CORE_VERSION = "v3.1.4";
+    bytes32 constant CORE_VERSION = "v3.2.4";
 
-    function coreVersion() external pure returns (string memory) {
+    function coreVersion() external pure virtual returns (string memory) {
         return CORE_VERSION.toString();
     }
 
@@ -273,54 +282,87 @@ contract GenArt721CoreV3_Engine is
     /// default base URI to initialize all new project projectBaseURI values to
     string public defaultBaseURI;
 
+    // ERC2981 royalty support and default royalty values
+    bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a;
+    uint8 private constant _DEFAULT_ARTIST_SECONDARY_ROYALTY_PERCENTAGE = 5;
+
+    // royalty split provider
+    ISplitProviderV0 public splitProvider;
+
+    // bytecode storage reader contract; may be universal or specific version reader contract
+    IBytecodeStorageReader_Base public bytecodeStorageReaderContract;
+
+    /**
+     * @dev This constructor sets the owner to a non-functional address as a formality.
+     * It is only ever ran on the implementation contract. The `Ownable` constructor is
+     * called to satisfy the contract's inheritance requirements. This owner has no
+     * operational significance and should not be considered secure or meaningful.
+     * The true ownership will be set in the `initialize` function post-deployment to
+     * ensure correct owner management in the proxy architecture.
+     * Explicitly setting the owner to '0xdead' to indicate non-operational use.
+     */
+    constructor() Ownable(0x000000000000000000000000000000000000dEaD) {}
+
     function _onlyNonZeroAddress(address _address) internal pure {
-        require(_address != address(0), "Must input non-zero address");
+        if (_address == address(0)) {
+            revert GenArt721Error(ErrorCodes.OnlyNonZeroAddress);
+        }
     }
 
     function _onlyNonEmptyString(string memory _string) internal pure {
-        require(bytes(_string).length != 0, "Must input non-empty string");
+        if (bytes(_string).length == 0) {
+            revert GenArt721Error(ErrorCodes.OnlyNonEmptyString);
+        }
+    }
+
+    function _onlyNonEmptyBytes(bytes memory _bytes) internal pure {
+        if (_bytes.length == 0) {
+            revert GenArt721Error(ErrorCodes.OnlyNonEmptyBytes);
+        }
     }
 
     function _onlyValidTokenId(uint256 _tokenId) internal view {
-        require(_exists(_tokenId), "Token ID does not exist");
+        if (_ownerOf(_tokenId) == address(0)) {
+            revert GenArt721Error(ErrorCodes.TokenDoesNotExist);
+        }
     }
 
     function _onlyValidProjectId(uint256 _projectId) internal view {
-        require(
-            (_projectId >= startingProjectId) && (_projectId < _nextProjectId),
-            "Project ID does not exist"
-        );
+        if (_projectId < startingProjectId || _projectId >= _nextProjectId) {
+            revert GenArt721Error(ErrorCodes.ProjectDoesNotExist);
+        }
     }
 
     function _onlyUnlocked(uint256 _projectId) internal view {
         // Note: calling `_projectUnlocked` enforces that the `_projectId`
         //       passed in is valid.`
-        require(_projectUnlocked(_projectId), "Only if unlocked");
+        if (!_projectUnlocked(_projectId)) {
+            revert GenArt721Error(ErrorCodes.OnlyUnlockedProjects);
+        }
     }
 
     function _onlyAdminACL(bytes4 _selector) internal {
-        require(
-            adminACLAllowed(msg.sender, address(this), _selector),
-            "Only Admin ACL allowed"
-        );
+        if (!adminACLAllowed(msg.sender, address(this), _selector)) {
+            revert GenArt721Error(ErrorCodes.OnlyAdminACL);
+        }
     }
 
     function _onlyArtist(uint256 _projectId) internal view {
-        require(
-            msg.sender == projectIdToFinancials[_projectId].artistAddress,
-            "Only artist"
-        );
+        if (msg.sender != _projectIdToFinancials[_projectId].artistAddress) {
+            revert GenArt721Error(ErrorCodes.OnlyArtist);
+        }
     }
 
     function _onlyArtistOrAdminACL(
         uint256 _projectId,
         bytes4 _selector
     ) internal {
-        require(
-            msg.sender == projectIdToFinancials[_projectId].artistAddress ||
-                adminACLAllowed(msg.sender, address(this), _selector),
-            "Only artist or Admin ACL allowed"
-        );
+        if (
+            !(msg.sender == _projectIdToFinancials[_projectId].artistAddress ||
+                adminACLAllowed(msg.sender, address(this), _selector))
+        ) {
+            revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminACL);
+        }
     }
 
     /**
@@ -333,71 +375,50 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         bytes4 _selector
     ) internal {
-        require(
-            adminACLAllowed(msg.sender, address(this), _selector) ||
-                (owner() == address(0) &&
-                    msg.sender ==
-                    projectIdToFinancials[_projectId].artistAddress),
-            "Only Admin ACL allowed, or artist if owner has renounced"
-        );
+        // check if Admin ACL is allowed to call this function
+        if (adminACLAllowed(msg.sender, address(this), _selector)) {
+            return;
+        }
+        // check if the owner has renounced ownership and the caller is the
+        // artist of the project
+        if (
+            owner() == address(0) &&
+            msg.sender == _projectIdToFinancials[_projectId].artistAddress
+        ) {
+            return;
+        }
+        // neither of the above conditions were met, revert
+        revert GenArt721Error(ErrorCodes.OnlyAdminACLOrRenouncedArtist);
     }
 
     /**
-     * @notice Initializes contract.
-     * @param _tokenName Name of token.
-     * @param _tokenSymbol Token symbol.
-     * @param _randomizerContract Randomizer contract.
-     * @param _adminACLContract Address of admin access control contract, to be
+     * @notice Initializes the contract with the provided `engineConfiguration`.
+     * This function should be called atomically, immediately after deployment.
+     * Only callable once. Validation on `engineConfiguration` is performed by caller.
+     * @dev This function is intentionally unpermissioned to allow for the
+     * initialization of the contract post-deployment. It is expected that this
+     * function will be called atomically by the factory contract that deploys this
+     * contract, after which it will be initialized and uncallable.
+     * @param engineConfiguration EngineConfiguration to configure the contract with.
+     * note: parameter `engineConfiguration.newSuperAdminAddress` is not used or operated on in this contract.
+     * @param adminACLContract_ Address of admin access control contract, to be
      * set as contract owner.
-     * @param _startingProjectId The initial next project ID.
-     * @param _autoApproveArtistSplitProposals Whether or not to always
-     * auto-approve proposed artist split updates.
-     * @dev _startingProjectId should be set to a value much, much less than
-     * max(uint248), but an explicit input type of `uint248` is used as it is
-     * safer to cast up to `uint256` than it is to cast down for the purposes
-     * of setting `_nextProjectId`.
+     * @param defaultBaseURIHost Base URI prefix to initialize default base URI with.
+     * @param bytecodeStorageReaderContract_ Address of the bytecode storage reader contract.
      */
-    constructor(
-        string memory _tokenName,
-        string memory _tokenSymbol,
-        address _renderProviderAddress,
-        address _platformProviderAddress,
-        address _randomizerContract,
-        address _adminACLContract,
-        uint248 _startingProjectId,
-        bool _autoApproveArtistSplitProposals
-    ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
-        _onlyNonZeroAddress(_renderProviderAddress);
-        _onlyNonZeroAddress(_platformProviderAddress);
-        _onlyNonZeroAddress(_randomizerContract);
-        _onlyNonZeroAddress(_adminACLContract);
-        // setup immutable `autoApproveArtistSplitProposals` config
-        autoApproveArtistSplitProposals = _autoApproveArtistSplitProposals;
-        // record contracts starting project ID
-        // casting-up is safe
-        startingProjectId = uint256(_startingProjectId);
-        _updateProviderSalesAddresses(
-            _renderProviderAddress,
-            _renderProviderAddress,
-            _platformProviderAddress,
-            _platformProviderAddress
-        );
-        _updateRandomizerAddress(_randomizerContract);
-        // set AdminACL management contract as owner
-        _transferOwnership(_adminACLContract);
-        // initialize default base URI
-        _updateDefaultBaseURI(
-            string.concat(
-                "https://token.artblocks.io/",
-                address(this).toHexString(),
-                "/"
-            )
-        );
-        // initialize next project ID
-        _nextProjectId = _startingProjectId;
-        emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
-        // @dev follow-on action: This contract does not self-register. A core
-        // registry owner must register contract in a subsequent call.
+    function initialize(
+        EngineConfiguration memory engineConfiguration,
+        address adminACLContract_,
+        string memory defaultBaseURIHost,
+        address bytecodeStorageReaderContract_
+    ) external virtual {
+        // @dev internal function call so derived contracts have access to initialization logic
+        _initialize({
+            engineConfiguration: engineConfiguration,
+            adminACLContract_: adminACLContract_,
+            defaultBaseURIHost: defaultBaseURIHost,
+            bytecodeStorageReaderContract_: bytecodeStorageReaderContract_
+        });
     }
 
     /**
@@ -417,7 +438,9 @@ contract GenArt721CoreV3_Engine is
         address _by
     ) external returns (uint256 _tokenId) {
         // CHECKS
-        require(msg.sender == minterContract, "Must mint from minter contract");
+        if (msg.sender != minterContract) {
+            revert GenArt721Error(ErrorCodes.OnlyMinterContract);
+        }
         Project storage project = projects[_projectId];
         // load invocations into memory
         uint24 invocationsBefore = project.invocations;
@@ -428,21 +451,21 @@ contract GenArt721CoreV3_Engine is
             invocationsAfter = invocationsBefore + 1;
         }
         uint24 maxInvocations = project.maxInvocations;
-
-        require(
-            invocationsBefore < maxInvocations,
-            "Must not exceed max invocations"
-        );
-        require(
-            project.active ||
-                _by == projectIdToFinancials[_projectId].artistAddress,
-            "Project must exist and be active"
-        );
-        require(
-            !project.paused ||
-                _by == projectIdToFinancials[_projectId].artistAddress,
-            "Purchases are paused."
-        );
+        if (invocationsBefore >= maxInvocations) {
+            revert GenArt721Error(ErrorCodes.MaxInvocationsReached);
+        }
+        if (
+            !(project.active ||
+                _by == _projectIdToFinancials[_projectId].artistAddress)
+        ) {
+            revert GenArt721Error(ErrorCodes.ProjectMustExistAndBeActive);
+        }
+        if (
+            project.paused &&
+            _by != _projectIdToFinancials[_projectId].artistAddress
+        ) {
+            revert GenArt721Error(ErrorCodes.PurchasesPaused);
+        }
 
         // EFFECTS
         // increment project's invocations
@@ -494,15 +517,15 @@ contract GenArt721CoreV3_Engine is
         OwnerAndHashSeed storage ownerAndHashSeed = _ownersAndHashSeeds[
             _tokenId
         ];
-        require(
-            msg.sender == address(randomizerContract),
-            "Only randomizer may set"
-        );
-        require(
-            ownerAndHashSeed.hashSeed == bytes12(0),
-            "Token hash already set"
-        );
-        require(_hashSeed != bytes12(0), "No zero hash seed");
+        if (msg.sender != address(randomizerContract)) {
+            revert GenArt721Error(ErrorCodes.OnlyRandomizer);
+        }
+        if (ownerAndHashSeed.hashSeed != bytes12(0)) {
+            revert GenArt721Error(ErrorCodes.TokenHashAlreadySet);
+        }
+        if (_hashSeed == bytes12(0)) {
+            revert GenArt721Error(ErrorCodes.NoZeroHashSeed);
+        }
         ownerAndHashSeed.hashSeed = bytes12(_hashSeed);
     }
 
@@ -534,6 +557,18 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
+     * @notice Updates reference to next core contract, associated with this contract.
+     * @param _nextCoreContract Address of the next core contract
+     */
+    function updateNextCoreContract(address _nextCoreContract) external {
+        _onlyAdminACL(this.updateNextCoreContract.selector);
+        nextCoreContract = _nextCoreContract;
+        emit PlatformUpdated(
+            bytes32(uint256(PlatformUpdatedFields.FIELD_NEXT_CORE_CONTRACT))
+        );
+    }
+
+    /**
      * @notice Updates reference to Art Blocks Dependency Registry contract.
      * @param _artblocksDependencyRegistryAddress Address of new Dependency
      * Registry.
@@ -544,43 +579,74 @@ contract GenArt721CoreV3_Engine is
         _onlyAdminACL(this.updateArtblocksDependencyRegistryAddress.selector);
         _onlyNonZeroAddress(_artblocksDependencyRegistryAddress);
         artblocksDependencyRegistryAddress = _artblocksDependencyRegistryAddress;
-        emit PlatformUpdated(FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS);
+        emit PlatformUpdated(
+            bytes32(
+                uint256(
+                    PlatformUpdatedFields
+                        .FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS
+                )
+            )
+        );
+    }
+
+    /**
+     * @notice Updates reference to Art Blocks On Chain Generator contract.
+     * @param _artblocksOnChainGeneratorAddress Address of new on chain generator.
+     */
+    function updateArtblocksOnChainGeneratorAddress(
+        address _artblocksOnChainGeneratorAddress
+    ) external {
+        _onlyAdminACL(this.updateArtblocksOnChainGeneratorAddress.selector);
+        _onlyNonZeroAddress(_artblocksOnChainGeneratorAddress);
+        artblocksOnChainGeneratorAddress = _artblocksOnChainGeneratorAddress;
+        emit PlatformUpdated(
+            bytes32(
+                uint256(
+                    PlatformUpdatedFields
+                        .FIELD_ARTBLOCKS_ON_CHAIN_GENERATOR_ADDRESS
+                )
+            )
+        );
     }
 
     /**
      * @notice Updates sales addresses for the platform and render providers to
      * the input parameters.
+     * note: This does not update splitter contracts for all projects on
+     * this core contract. If updated splitter contracts are desired, they must be
+     * updated after this update via the `syncProviderSecondaryForProjectToDefaults` function.
      * @param _renderProviderPrimarySalesAddress Address of new primary sales
      * payment address.
-     * @param _renderProviderSecondarySalesAddress Address of new secondary sales
+     * @param _defaultRenderProviderSecondarySalesAddress Default address of new secondary sales
      * payment address.
      * @param _platformProviderPrimarySalesAddress Address of new primary sales
      * payment address.
-     * @param _platformProviderSecondarySalesAddress Address of new secondary sales
+     * @param _defaultPlatformProviderSecondarySalesAddress Default address of new secondary sales
      * payment address.
      */
     function updateProviderSalesAddresses(
         address payable _renderProviderPrimarySalesAddress,
-        address payable _renderProviderSecondarySalesAddress,
+        address payable _defaultRenderProviderSecondarySalesAddress,
         address payable _platformProviderPrimarySalesAddress,
-        address payable _platformProviderSecondarySalesAddress
+        address payable _defaultPlatformProviderSecondarySalesAddress
     ) external {
         _onlyAdminACL(this.updateProviderSalesAddresses.selector);
         _onlyNonZeroAddress(_renderProviderPrimarySalesAddress);
-        _onlyNonZeroAddress(_renderProviderSecondarySalesAddress);
-        _onlyNonZeroAddress(_platformProviderPrimarySalesAddress);
-        _onlyNonZeroAddress(_platformProviderSecondarySalesAddress);
+        _onlyNonZeroAddress(_defaultRenderProviderSecondarySalesAddress);
+        // @dev checks on platform provider addresses performed in _updateProviderSalesAddresses
         _updateProviderSalesAddresses(
             _renderProviderPrimarySalesAddress,
-            _renderProviderSecondarySalesAddress,
+            _defaultRenderProviderSecondarySalesAddress,
             _platformProviderPrimarySalesAddress,
-            _platformProviderSecondarySalesAddress
+            _defaultPlatformProviderSecondarySalesAddress
         );
     }
 
     /**
      * @notice Updates the render and platform provider primary sales revenue percentage to
      * the provided inputs.
+     * If contract is configured to have a null platform provider, the platform provider
+     * primary sales percentage must be set to zero.
      * @param renderProviderPrimarySalesPercentage_ New primary sales revenue % for the render provider
      * @param platformProviderPrimarySalesPercentage_ New primary sales revenue % for the platform provider
      * percentage.
@@ -590,13 +656,20 @@ contract GenArt721CoreV3_Engine is
         uint256 platformProviderPrimarySalesPercentage_
     ) external {
         _onlyAdminACL(this.updateProviderPrimarySalesPercentages.selector);
+        // require no platform provider payment if null platform provider
+        if (
+            nullPlatformProvider && platformProviderPrimarySalesPercentage_ != 0
+        ) {
+            revert GenArt721Error(ErrorCodes.OnlyNullPlatformProvider);
+        }
 
         // Validate that the sum of the proposed %s, does not exceed 100%.
-        require(
+        if (
             (renderProviderPrimarySalesPercentage_ +
-                platformProviderPrimarySalesPercentage_) <= ONE_HUNDRED,
-            "Max sum of ONE_HUNDRED %"
-        );
+                platformProviderPrimarySalesPercentage_) > ONE_HUNDRED
+        ) {
+            revert GenArt721Error(ErrorCodes.OverMaxSumOfPercentages);
+        }
         // Casting to `uint8` here is safe due check above, which does not allow
         // overflow as of solidity version ^0.8.0.
         _renderProviderPrimarySalesPercentage = uint8(
@@ -605,15 +678,27 @@ contract GenArt721CoreV3_Engine is
         _platformProviderPrimarySalesPercentage = uint8(
             platformProviderPrimarySalesPercentage_
         );
-        emit PlatformUpdated(FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES);
+        emit PlatformUpdated(
+            bytes32(
+                uint256(
+                    PlatformUpdatedFields
+                        .FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES
+                )
+            )
+        );
     }
 
     /**
-     * @notice Updates render and platform provider secondary sales royalty Basis Points to
-     * the provided inputs.
-     * @param _renderProviderSecondarySalesBPS New secondary sales royalty Basis
+     * @notice Updates default render and platform provider secondary sales royalty
+     * Basis Points to the provided inputs.
+     * If contract is configured to have a null platform provider, the platform provider
+     * secondary sales BPS must be set to zero.
+     * note: This does not update splitter contracts for all projects on
+     * this core contract. If updated splitter contracts are desired, they must be
+     * updated after this update via the `syncProviderSecondaryForProjectToDefaults` function.
+     * @param _defaultRenderProviderSecondarySalesBPS New default secondary sales royalty Basis
      * points.
-     * @param _platformProviderSecondarySalesBPS New secondary sales royalty Basis
+     * @param _defaultPlatformProviderSecondarySalesBPS New default secondary sales royalty Basis
      * points.
      * @dev Due to secondary royalties being ultimately enforced via social
      * consensus, no hard upper limit is imposed on the BPS value, other than
@@ -621,21 +706,35 @@ contract GenArt721CoreV3_Engine is
      * changing this value is expected to either never occur, or be a rare
      * occurrence.
      */
-    function updateProviderSecondarySalesBPS(
-        uint256 _renderProviderSecondarySalesBPS,
-        uint256 _platformProviderSecondarySalesBPS
+    function updateProviderDefaultSecondarySalesBPS(
+        uint256 _defaultRenderProviderSecondarySalesBPS,
+        uint256 _defaultPlatformProviderSecondarySalesBPS
     ) external {
-        _onlyAdminACL(this.updateProviderSecondarySalesBPS.selector);
+        _onlyAdminACL(this.updateProviderDefaultSecondarySalesBPS.selector);
+        // require no platform provider payment if null platform provider
+        if (
+            nullPlatformProvider &&
+            _defaultPlatformProviderSecondarySalesBPS != 0
+        ) {
+            revert GenArt721Error(ErrorCodes.OnlyNullPlatformProvider);
+        }
         // Validate that the sum of the proposed provider BPS, does not exceed 10_000 BPS.
-        require(
-            (_renderProviderSecondarySalesBPS +
-                _platformProviderSecondarySalesBPS) <=
-                MAX_PROVIDER_SECONDARY_SALES_BPS,
-            "Over max sum of BPS"
+        if (
+            _defaultRenderProviderSecondarySalesBPS +
+                _defaultPlatformProviderSecondarySalesBPS >
+            MAX_PROVIDER_SECONDARY_SALES_BPS
+        ) {
+            revert GenArt721Error(ErrorCodes.OverMaxSumOfBPS);
+        }
+        defaultRenderProviderSecondarySalesBPS = _defaultRenderProviderSecondarySalesBPS;
+        defaultPlatformProviderSecondarySalesBPS = _defaultPlatformProviderSecondarySalesBPS;
+        emit PlatformUpdated(
+            bytes32(
+                uint256(
+                    PlatformUpdatedFields.FIELD_PROVIDER_SECONDARY_SALES_BPS
+                )
+            )
         );
-        renderProviderSecondarySalesBPS = _renderProviderSecondarySalesBPS;
-        platformProviderSecondarySalesBPS = _platformProviderSecondarySalesBPS;
-        emit PlatformUpdated(FIELD_PROVIDER_SECONDARY_SALES_BPS);
     }
 
     /**
@@ -645,8 +744,7 @@ contract GenArt721CoreV3_Engine is
     function updateMinterContract(address _address) external {
         _onlyAdminACL(this.updateMinterContract.selector);
         _onlyNonZeroAddress(_address);
-        minterContract = _address;
-        emit MinterUpdated(_address);
+        _updateMinterContract(_address);
     }
 
     /**
@@ -660,14 +758,50 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
+     * @notice Updates split provider address to `_splitProviderAddress`.
+     * Reverts if `_splitProviderAddress` is zero address.
+     * @param _splitProviderAddress New split provider address.
+     */
+    function updateSplitProvider(address _splitProviderAddress) external {
+        _onlyAdminACL(this.updateSplitProvider.selector);
+        _updateSplitProvider(_splitProviderAddress);
+    }
+
+    /**
+     * @notice Updates bytecode storage reader contract to `_bytecodeStorageReaderContract`.
+     * Reverts if `_bytecodeStorageReaderContract` is zero address.
+     * Updating the active Bytecode Storage Reader contract may affect the ability to read
+     * data related to existing projects. Care should be taken to ensure that the new
+     * contract is compatible with the existing project data.
+     * @param _bytecodeStorageReaderContract New bytecode storage reader contract address.
+     */
+    function updateBytecodeStorageReaderContract(
+        address _bytecodeStorageReaderContract
+    ) external {
+        _onlyAdminACL(this.updateBytecodeStorageReaderContract.selector);
+        _onlyNonZeroAddress(_bytecodeStorageReaderContract);
+        _updateBytecodeStorageReaderContract(_bytecodeStorageReaderContract);
+    }
+
+    /**
      * @notice Toggles project `_projectId` as active/inactive.
      * @param _projectId Project ID to be toggled.
      */
     function toggleProjectIsActive(uint256 _projectId) external {
-        _onlyAdminACL(this.toggleProjectIsActive.selector);
+        if (allowArtistProjectActivation) {
+            _onlyArtistOrAdminACL(
+                _projectId,
+                this.toggleProjectIsActive.selector
+            );
+        } else {
+            _onlyAdminACL(this.toggleProjectIsActive.selector);
+        }
         _onlyValidProjectId(_projectId);
         projects[_projectId].active = !projects[_projectId].active;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_ACTIVE);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_ACTIVE))
+        );
     }
 
     /**
@@ -712,25 +846,28 @@ contract GenArt721CoreV3_Engine is
         _onlyValidProjectId(_projectId);
         _onlyArtist(_projectId);
         _onlyNonZeroAddress(_artistAddress);
-        ProjectFinance storage projectFinance = projectIdToFinancials[
+        ProjectFinance storage projectFinance = _projectIdToFinancials[
             _projectId
         ];
         // checks
-        require(
-            _additionalPayeePrimarySalesPercentage <= ONE_HUNDRED &&
-                _additionalPayeeSecondarySalesPercentage <= ONE_HUNDRED,
-            "Max of 100%"
-        );
-        require(
-            _additionalPayeePrimarySalesPercentage == 0 ||
-                _additionalPayeePrimarySales != address(0),
-            "Primary payee is zero address"
-        );
-        require(
-            _additionalPayeeSecondarySalesPercentage == 0 ||
-                _additionalPayeeSecondarySales != address(0),
-            "Secondary payee is zero address"
-        );
+        if (
+            _additionalPayeePrimarySalesPercentage > ONE_HUNDRED ||
+            _additionalPayeeSecondarySalesPercentage > ONE_HUNDRED
+        ) {
+            revert GenArt721Error(ErrorCodes.MaxOf100Percent);
+        }
+        if (
+            _additionalPayeePrimarySalesPercentage > 0 &&
+            _additionalPayeePrimarySales == address(0)
+        ) {
+            revert GenArt721Error(ErrorCodes.PrimaryPayeeIsZeroAddress);
+        }
+        if (
+            _additionalPayeeSecondarySalesPercentage > 0 &&
+            _additionalPayeeSecondarySales == address(0)
+        ) {
+            revert GenArt721Error(ErrorCodes.SecondaryPayeeIsZeroAddress);
+        }
         // effects
         // emit event for off-chain indexing
         // note: always emit a proposal event, even in the pathway of
@@ -766,6 +903,7 @@ contract GenArt721CoreV3_Engine is
         if (automaticAccept) {
             // clear any previously proposed values
             proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
+
             // update storage
             // artist address can change during automatic accept if
             // autoApproveArtistSplitProposals is true
@@ -782,6 +920,11 @@ contract GenArt721CoreV3_Engine is
             projectFinance.additionalPayeeSecondarySalesPercentage = uint8(
                 _additionalPayeeSecondarySalesPercentage
             );
+
+            // assign project's splitter
+            // @dev only call after all previous storage updates
+            _assignSplitter(_projectId);
+
             // emit event for off-chain indexing
             emit AcceptedArtistAddressesAndSplits(_projectId);
         } else {
@@ -837,21 +980,22 @@ contract GenArt721CoreV3_Engine is
         );
         _onlyNonZeroAddress(_artistAddress);
         // checks
-        require(
-            proposedArtistAddressesAndSplitsHash[_projectId] ==
-                keccak256(
-                    abi.encode(
-                        _artistAddress,
-                        _additionalPayeePrimarySales,
-                        _additionalPayeePrimarySalesPercentage,
-                        _additionalPayeeSecondarySales,
-                        _additionalPayeeSecondarySalesPercentage
-                    )
-                ),
-            "Must match artist proposal"
-        );
+        if (
+            proposedArtistAddressesAndSplitsHash[_projectId] !=
+            keccak256(
+                abi.encode(
+                    _artistAddress,
+                    _additionalPayeePrimarySales,
+                    _additionalPayeePrimarySalesPercentage,
+                    _additionalPayeeSecondarySales,
+                    _additionalPayeeSecondarySalesPercentage
+                )
+            )
+        ) {
+            revert GenArt721Error(ErrorCodes.MustMatchArtistProposal);
+        }
         // effects
-        ProjectFinance storage projectFinance = projectIdToFinancials[
+        ProjectFinance storage projectFinance = _projectIdToFinancials[
             _projectId
         ];
         projectFinance.artistAddress = _artistAddress;
@@ -867,6 +1011,11 @@ contract GenArt721CoreV3_Engine is
         );
         // clear proposed values
         proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
+
+        // assign project's splitter
+        // @dev only call after all previous storage updates
+        _assignSplitter(_projectId);
+
         // emit event for off-chain indexing
         emit AcceptedArtistAddressesAndSplits(_projectId);
     }
@@ -888,8 +1037,17 @@ contract GenArt721CoreV3_Engine is
             this.updateProjectArtistAddress.selector
         );
         _onlyNonZeroAddress(_artistAddress);
-        projectIdToFinancials[_projectId].artistAddress = _artistAddress;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_ADDRESS);
+
+        _projectIdToFinancials[_projectId].artistAddress = _artistAddress;
+
+        // assign project's splitter
+        // @dev only call after all previous storage updates
+        _assignSplitter(_projectId);
+
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_ARTIST_ADDRESS))
+        );
     }
 
     /**
@@ -899,7 +1057,10 @@ contract GenArt721CoreV3_Engine is
     function toggleProjectIsPaused(uint256 _projectId) external {
         _onlyArtist(_projectId);
         projects[_projectId].paused = !projects[_projectId].paused;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_PAUSED);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_PAUSED))
+        );
     }
 
     /**
@@ -915,16 +1076,44 @@ contract GenArt721CoreV3_Engine is
         _onlyAdminACL(this.addProject.selector);
         _onlyNonEmptyString(_projectName);
         _onlyNonZeroAddress(_artistAddress);
-        require(!newProjectsForbidden, "New projects forbidden");
+        if (newProjectsForbidden) {
+            revert GenArt721Error(ErrorCodes.NewProjectsForbidden);
+        }
         uint256 projectId = _nextProjectId;
-        projectIdToFinancials[projectId].artistAddress = _artistAddress;
+        ProjectFinance storage projectFinance = _projectIdToFinancials[
+            projectId
+        ];
+        projectFinance.artistAddress = _artistAddress;
         projects[projectId].name = _projectName;
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION_UINT24;
         projects[projectId].projectBaseURI = defaultBaseURI;
+        // assign default artist royalty to artist
+        projectFinance
+            .secondaryMarketRoyaltyPercentage = _DEFAULT_ARTIST_SECONDARY_ROYALTY_PERCENTAGE;
+        // copy default platform and render provider royalties to ProjectFinance
+        projectFinance
+            .platformProviderSecondarySalesAddress = defaultPlatformProviderSecondarySalesAddress;
+        projectFinance.platformProviderSecondarySalesBPS = uint16(
+            defaultPlatformProviderSecondarySalesBPS
+        );
+        projectFinance
+            .renderProviderSecondarySalesAddress = defaultRenderProviderSecondarySalesAddress;
+        projectFinance.renderProviderSecondarySalesBPS = uint16(
+            defaultRenderProviderSecondarySalesBPS
+        );
 
         _nextProjectId = uint248(projectId) + 1;
-        emit ProjectUpdated(projectId, FIELD_PROJECT_CREATED);
+
+        // @dev emit initial project created event before splitter event
+        emit ProjectUpdated(
+            projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_CREATED))
+        );
+
+        // assign project's splitter
+        // @dev only call after all previous storage updates
+        _assignSplitter(projectId);
     }
 
     /**
@@ -932,7 +1121,9 @@ contract GenArt721CoreV3_Engine is
      */
     function forbidNewProjects() external {
         _onlyAdminACL(this.forbidNewProjects.selector);
-        require(!newProjectsForbidden, "Already forbidden");
+        if (newProjectsForbidden) {
+            revert GenArt721Error(ErrorCodes.NewProjectsAlreadyForbidden);
+        }
         _forbidNewProjects();
     }
 
@@ -949,12 +1140,17 @@ contract GenArt721CoreV3_Engine is
         _onlyArtistOrAdminACL(_projectId, this.updateProjectName.selector);
         _onlyNonEmptyString(_projectName);
         projects[_projectId].name = _projectName;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_NAME);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_NAME))
+        );
     }
 
     /**
      * @notice Updates artist name for project `_projectId` to be
      * `_projectArtistName`.
+     * @dev allows admin to update after project is locked, due to our
+     * experiences of artist name changes being requested post-lock.
      * @param _projectId Project ID.
      * @param _projectArtistName New artist name.
      */
@@ -962,42 +1158,111 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         string memory _projectArtistName
     ) external {
-        _onlyUnlocked(_projectId);
-        _onlyArtistOrAdminACL(
-            _projectId,
-            this.updateProjectArtistName.selector
-        );
+        // if unlocked, only artist may update, if locked, only admin may update
+        // @dev valid project checked in _projectUnlocked function
+        if (_projectUnlocked(_projectId)) {
+            if (
+                msg.sender != _projectIdToFinancials[_projectId].artistAddress
+            ) {
+                revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
+            }
+        } else {
+            if (
+                !adminACLAllowed(
+                    msg.sender,
+                    address(this),
+                    this.updateProjectArtistName.selector
+                )
+            ) {
+                revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
+            }
+        }
         _onlyNonEmptyString(_projectArtistName);
         projects[_projectId].artist = _projectArtistName;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_NAME);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_ARTIST_NAME))
+        );
     }
 
     /**
      * @notice Updates artist secondary market royalties for project
-     * `_projectId` to be `_secondMarketRoyalty` percent.
+     * `_projectId` to be `_secondaryMarketRoyalty` percent.
+     * This deploys a new splitter contract if needed.
      * This DOES NOT include the secondary market royalty percentages collected
      * by the issuing platform; it is only the total percentage of royalties
      * that will be split to artist and additionalSecondaryPayee.
      * @param _projectId Project ID.
-     * @param _secondMarketRoyalty Percent of secondary sales revenue that will
+     * @param _secondaryMarketRoyalty Percent of secondary sales revenue that will
      * be split to artist and additionalSecondaryPayee. This must be less than
      * or equal to ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent.
      */
     function updateProjectSecondaryMarketRoyaltyPercentage(
         uint256 _projectId,
-        uint256 _secondMarketRoyalty
+        uint256 _secondaryMarketRoyalty
     ) external {
         _onlyArtist(_projectId);
-        require(
-            _secondMarketRoyalty <= ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE,
-            "Over max percent"
-        );
-        projectIdToFinancials[_projectId]
-            .secondaryMarketRoyaltyPercentage = uint8(_secondMarketRoyalty);
+        if (_secondaryMarketRoyalty > ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE) {
+            revert GenArt721Error(ErrorCodes.OverMaxSecondaryRoyaltyPercentage);
+        }
+        _projectIdToFinancials[_projectId]
+            .secondaryMarketRoyaltyPercentage = uint8(_secondaryMarketRoyalty);
+
+        // assign project's splitter
+        // @dev only call after all previous storage updates
+        _assignSplitter(_projectId);
+
         emit ProjectUpdated(
             _projectId,
-            FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE
+            bytes32(
+                uint256(
+                    ProjectUpdatedFields
+                        .FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE
+                )
+            )
         );
+    }
+
+    /**
+     * @notice Updates platform and render provider secondary market royalty addresses
+     * and BPS to the contract-level default values for project `_projectId`.
+     * This updates the splitter parameters on the existing splitter for the project.
+     * Reverts if called by a non-admin address.
+     * @param _projectId Project ID.
+     */
+    function syncProviderSecondaryForProjectToDefaults(
+        uint256 _projectId
+    ) external {
+        _onlyAdminACL(this.syncProviderSecondaryForProjectToDefaults.selector);
+        _onlyValidProjectId(_projectId);
+        ProjectFinance storage projectFinance = _projectIdToFinancials[
+            _projectId
+        ];
+        // update project finance for project in storage
+        projectFinance
+            .platformProviderSecondarySalesAddress = defaultPlatformProviderSecondarySalesAddress;
+        projectFinance.platformProviderSecondarySalesBPS = uint16(
+            defaultPlatformProviderSecondarySalesBPS
+        );
+        projectFinance
+            .renderProviderSecondarySalesAddress = defaultRenderProviderSecondarySalesAddress;
+        projectFinance.renderProviderSecondarySalesBPS = uint16(
+            defaultRenderProviderSecondarySalesBPS
+        );
+
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(
+                uint256(
+                    ProjectUpdatedFields
+                        .FIELD_PROJECT_PROVIDER_SECONDARY_FINANCIALS
+                )
+            )
+        );
+
+        // assign project's splitter
+        // @dev only call after all previous storage updates
+        _assignSplitter(_projectId);
     }
 
     /**
@@ -1018,22 +1283,33 @@ contract GenArt721CoreV3_Engine is
         string memory _projectDescription
     ) external {
         // checks
-        require(
-            _projectUnlocked(_projectId)
-                ? msg.sender == projectIdToFinancials[_projectId].artistAddress
-                : adminACLAllowed(
+        // if unlocked, only artist may update, if locked, only admin may update
+        if (_projectUnlocked(_projectId)) {
+            if (
+                msg.sender != _projectIdToFinancials[_projectId].artistAddress
+            ) {
+                revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
+            }
+        } else {
+            if (
+                !adminACLAllowed(
                     msg.sender,
                     address(this),
                     this.updateProjectDescription.selector
-                ),
-            "Only artist when unlocked, owner when locked"
-        );
+                )
+            ) {
+                revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
+            }
+        }
         // effects
         // store description in contract bytecode, replacing reference address from
         // the old storage description with the newly created one
         projects[_projectId].descriptionAddress = _projectDescription
             .writeToBytecode();
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_DESCRIPTION);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_DESCRIPTION))
+        );
     }
 
     /**
@@ -1048,7 +1324,10 @@ contract GenArt721CoreV3_Engine is
     ) external {
         _onlyArtist(_projectId);
         projects[_projectId].website = _projectWebsite;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_WEBSITE);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_WEBSITE))
+        );
     }
 
     /**
@@ -1064,7 +1343,10 @@ contract GenArt721CoreV3_Engine is
         _onlyArtistOrAdminACL(_projectId, this.updateProjectLicense.selector);
         _onlyNonEmptyString(_projectLicense);
         projects[_projectId].license = _projectLicense;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_LICENSE);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_LICENSE))
+        );
     }
 
     /**
@@ -1084,14 +1366,18 @@ contract GenArt721CoreV3_Engine is
         // CHECKS
         Project storage project = projects[_projectId];
         uint256 _invocations = project.invocations;
-        require(
-            (_maxInvocations < project.maxInvocations),
-            "Only maxInvocations decrease"
-        );
-        require(_maxInvocations >= _invocations, "Only gte invocations");
+        if (_maxInvocations >= project.maxInvocations) {
+            revert GenArt721Error(ErrorCodes.OnlyMaxInvocationsDecrease);
+        }
+        if (_maxInvocations < _invocations) {
+            revert GenArt721Error(ErrorCodes.OnlyGteInvocations);
+        }
         // EFFECTS
         project.maxInvocations = _maxInvocations;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_MAX_INVOCATIONS);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_MAX_INVOCATIONS))
+        );
 
         // register completed timestamp if action completed the project
         if (_maxInvocations == _invocations) {
@@ -1117,7 +1403,41 @@ contract GenArt721CoreV3_Engine is
         project.scriptBytecodeAddresses[project.scriptCount] = _script
             .writeToBytecode();
         project.scriptCount = project.scriptCount + 1;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT))
+        );
+    }
+
+    /**
+     * @notice Adds a pre-compressed script to project `_projectId`. The script
+     * should be compressed using `getCompressed`. This function stores the script
+     * in a compressed format on-chain. For reads, the compressed script is
+     * decompressed on-chain, ensuring the original text is reconstructed without
+     * external dependencies.
+     * @param _projectId Project to be updated.
+     * @param _compressedScript Pre-compressed script to be added.
+     * Required to be non-empty, but no further validation is performed.
+     */
+    function addProjectScriptCompressed(
+        uint256 _projectId,
+        bytes memory _compressedScript
+    ) external {
+        _onlyUnlocked(_projectId);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.addProjectScriptCompressed.selector
+        );
+        _onlyNonEmptyBytes(_compressedScript);
+        Project storage project = projects[_projectId];
+        // store compressed script in contract bytecode
+        project.scriptBytecodeAddresses[project.scriptCount] = _compressedScript
+            .writeToBytecodeCompressed();
+        project.scriptCount = project.scriptCount + 1;
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT))
+        );
     }
 
     /**
@@ -1136,11 +1456,52 @@ contract GenArt721CoreV3_Engine is
         _onlyArtistOrAdminACL(_projectId, this.updateProjectScript.selector);
         _onlyNonEmptyString(_script);
         Project storage project = projects[_projectId];
-        require(_scriptId < project.scriptCount, "scriptId out of range");
+        if (_scriptId >= project.scriptCount) {
+            revert GenArt721Error(ErrorCodes.ScriptIdOutOfRange);
+        }
         // store script in contract bytecode, replacing reference address from
         // the old storage contract with the newly created one
         project.scriptBytecodeAddresses[_scriptId] = _script.writeToBytecode();
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT))
+        );
+    }
+
+    /**
+     * @notice Updates script for project `_projectId` at script ID `_scriptId`
+     * with a pre-compressed script. The script should be compressed using
+     * `getCompressed`. This function stores the script in a compressed format
+     * on-chain. For reads, the compressed script is decompressed on-chain, ensuring
+     * the original text is reconstructed without external dependencies.
+     * @param _projectId Project to be updated.
+     * @param _scriptId Script ID to be updated.
+     * @param _compressedScript The updated pre-compressed script value.
+     * Required to be non-empty, but no further validation is performed.
+     */
+    function updateProjectScriptCompressed(
+        uint256 _projectId,
+        uint256 _scriptId,
+        bytes memory _compressedScript
+    ) external {
+        _onlyUnlocked(_projectId);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.updateProjectScriptCompressed.selector
+        );
+        _onlyNonEmptyBytes(_compressedScript);
+        Project storage project = projects[_projectId];
+        if (_scriptId >= project.scriptCount) {
+            revert GenArt721Error(ErrorCodes.ScriptIdOutOfRange);
+        }
+        // store script in contract bytecode, replacing reference address from
+        // the old storage contract with the newly created one
+        project.scriptBytecodeAddresses[_scriptId] = _compressedScript
+            .writeToBytecodeCompressed();
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT))
+        );
     }
 
     /**
@@ -1154,13 +1515,18 @@ contract GenArt721CoreV3_Engine is
             this.removeProjectLastScript.selector
         );
         Project storage project = projects[_projectId];
-        require(project.scriptCount > 0, "No scripts to remove");
+        if (project.scriptCount == 0) {
+            revert GenArt721Error(ErrorCodes.NoScriptsToRemove);
+        }
         // delete reference to old storage contract address
         delete project.scriptBytecodeAddresses[project.scriptCount - 1];
         unchecked {
             project.scriptCount = project.scriptCount - 1;
         }
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT))
+        );
     }
 
     /**
@@ -1180,15 +1546,19 @@ contract GenArt721CoreV3_Engine is
         );
         Project storage project = projects[_projectId];
         // require exactly one @ symbol in _scriptTypeAndVersion
-        require(
-            _scriptTypeAndVersion.containsExactCharacterQty(
+        if (
+            !_scriptTypeAndVersion.containsExactCharacterQty(
                 AT_CHARACTER_CODE,
                 uint8(1)
-            ),
-            "must contain exactly one @"
-        );
+            )
+        ) {
+            revert GenArt721Error(ErrorCodes.ScriptTypeAndVersionFormat);
+        }
         project.scriptTypeAndVersion = _scriptTypeAndVersion;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TYPE);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT_TYPE))
+        );
     }
 
     /**
@@ -1211,7 +1581,9 @@ contract GenArt721CoreV3_Engine is
         // Perform more detailed input validation for aspect ratio.
         bytes memory aspectRatioBytes = bytes(_aspectRatio);
         uint256 bytesLength = aspectRatioBytes.length;
-        require(bytesLength <= 11, "Aspect ratio format too long");
+        if (bytesLength > 11) {
+            revert GenArt721Error(ErrorCodes.AspectRatioTooLong);
+        }
         bool hasSeenDecimalSeparator = false;
         bool hasSeenNumber = false;
         for (uint256 i; i < bytesLength; i++) {
@@ -1231,12 +1603,17 @@ contract GenArt721CoreV3_Engine is
                     continue;
                 }
             }
-            revert("Improperly formatted aspect ratio");
+            revert GenArt721Error(ErrorCodes.AspectRatioImproperFormat);
         }
-        require(hasSeenNumber, "Aspect ratio has no numbers");
+        if (!hasSeenNumber) {
+            revert GenArt721Error(ErrorCodes.AspectRatioNoNumbers);
+        }
 
         projects[_projectId].aspectRatio = _aspectRatio;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_ASPECT_RATIO);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_ASPECT_RATIO))
+        );
     }
 
     /**
@@ -1254,7 +1631,10 @@ contract GenArt721CoreV3_Engine is
         _onlyArtist(_projectId);
         _onlyNonEmptyString(_newBaseURI);
         projects[_projectId].projectBaseURI = _newBaseURI;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_BASE_URI))
+        );
     }
 
     /**
@@ -1343,7 +1723,7 @@ contract GenArt721CoreV3_Engine is
     function projectIdToArtistAddress(
         uint256 _projectId
     ) external view returns (address payable) {
-        return projectIdToFinancials[_projectId].artistAddress;
+        return _projectIdToFinancials[_projectId].artistAddress;
     }
 
     /**
@@ -1358,60 +1738,19 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId
     ) external view returns (uint256) {
         return
-            projectIdToFinancials[_projectId].secondaryMarketRoyaltyPercentage;
+            _projectIdToFinancials[_projectId].secondaryMarketRoyaltyPercentage;
     }
 
     /**
-     * @notice View function returning Artist's additional payee address for
-     * primary sales, for project `_projectId`.
+     * @notice View function returning project financial details for project
+     * `_projectId`.
      * @param _projectId Project ID to be queried.
-     * @return address Artist's additional payee address for primary sales.
+     * @return ProjectFinance Project financial details.
      */
-    function projectIdToAdditionalPayeePrimarySales(
+    function projectIdToFinancials(
         uint256 _projectId
-    ) external view returns (address payable) {
-        return projectIdToFinancials[_projectId].additionalPayeePrimarySales;
-    }
-
-    /**
-     * @notice View function returning Artist's additional payee primary sales
-     * percentage, for project `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return uint256 Artist's additional payee primary sales percentage.
-     */
-    function projectIdToAdditionalPayeePrimarySalesPercentage(
-        uint256 _projectId
-    ) external view returns (uint256) {
-        return
-            projectIdToFinancials[_projectId]
-                .additionalPayeePrimarySalesPercentage;
-    }
-
-    /**
-     * @notice View function returning Artist's additional payee address for
-     * secondary sales, for project `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return address payable Artist's additional payee address for secondary
-     * sales.
-     */
-    function projectIdToAdditionalPayeeSecondarySales(
-        uint256 _projectId
-    ) external view returns (address payable) {
-        return projectIdToFinancials[_projectId].additionalPayeeSecondarySales;
-    }
-
-    /**
-     * @notice View function returning Artist's additional payee secondary
-     * sales percentage, for project `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return uint256 Artist's additional payee secondary sales percentage.
-     */
-    function projectIdToAdditionalPayeeSecondarySalesPercentage(
-        uint256 _projectId
-    ) external view returns (uint256) {
-        return
-            projectIdToFinancials[_projectId]
-                .additionalPayeeSecondarySalesPercentage;
+    ) external view returns (ProjectFinance memory) {
+        return _projectIdToFinancials[_projectId];
     }
 
     /**
@@ -1486,54 +1825,6 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
-     * @notice Returns artist payment information for project `_projectId`.
-     * @param _projectId Project to be queried
-     * @return artistAddress Project Artist's address
-     * @return additionalPayeePrimarySales Additional payee address for primary
-     * sales
-     * @return additionalPayeePrimarySalesPercentage Percentage of artist revenue
-     * to be sent to the additional payee address for primary sales
-     * @return additionalPayeeSecondarySales Additional payee address for secondary
-     * sales royalties
-     * @return additionalPayeeSecondarySalesPercentage Percentage of artist revenue
-     * to be sent to the additional payee address for secondary sales royalties
-     * @return secondaryMarketRoyaltyPercentage Royalty percentage to be sent to
-     * combination of artist and additional payee. This does not include the
-     * platform's percentage of secondary sales royalties, which is defined as
-     * the sum of `renderProviderSecondarySalesBPS`
-     * and `platformProviderSecondarySalesBPS`.
-     */
-    function projectArtistPaymentInfo(
-        uint256 _projectId
-    )
-        external
-        view
-        returns (
-            address artistAddress,
-            address additionalPayeePrimarySales,
-            uint256 additionalPayeePrimarySalesPercentage,
-            address additionalPayeeSecondarySales,
-            uint256 additionalPayeeSecondarySalesPercentage,
-            uint256 secondaryMarketRoyaltyPercentage
-        )
-    {
-        ProjectFinance storage projectFinance = projectIdToFinancials[
-            _projectId
-        ];
-        artistAddress = projectFinance.artistAddress;
-        additionalPayeePrimarySales = projectFinance
-            .additionalPayeePrimarySales;
-        additionalPayeePrimarySalesPercentage = projectFinance
-            .additionalPayeePrimarySalesPercentage;
-        additionalPayeeSecondarySales = projectFinance
-            .additionalPayeeSecondarySales;
-        additionalPayeeSecondarySalesPercentage = projectFinance
-            .additionalPayeeSecondarySalesPercentage;
-        secondaryMarketRoyaltyPercentage = projectFinance
-            .secondaryMarketRoyaltyPercentage;
-    }
-
-    /**
      * @notice Returns script information for project `_projectId`.
      * @param _projectId Project to be queried.
      * @return scriptTypeAndVersion Project's script type and version
@@ -1569,6 +1860,19 @@ contract GenArt721CoreV3_Engine is
         uint256 _index
     ) external view returns (address) {
         return projects[_projectId].scriptBytecodeAddresses[_index];
+    }
+
+    /**
+     * @notice Returns the compressed form of a string in bytes using solady LibZip's flz compress algorithm. The bytes output from this function are intended to be used as input to `addProjectScriptCompressed` and `updateProjectScriptCompressed`.
+     * @param _script Script to be compressed. Required to be a non-empty string, but no further validaton is performed.
+     * @return bytes compressed bytes
+     */
+    function getCompressed(
+        string memory _script
+    ) external pure returns (bytes memory) {
+        _onlyNonEmptyString(_script);
+        // @dev want a potentially version-specific compression algorithm, so use version-specific library here
+        return BytecodeStorageReader.getCompressed(_script);
     }
 
     /**
@@ -1630,82 +1934,50 @@ contract GenArt721CoreV3_Engine is
     function getHistoricalRandomizerAt(
         uint256 _index
     ) external view returns (address) {
-        require(
-            _index < _historicalRandomizerAddresses.length,
-            "Index out of bounds"
-        );
+        if (_index >= _historicalRandomizerAddresses.length) {
+            revert GenArt721Error(ErrorCodes.IndexOutOfBounds);
+        }
         return _historicalRandomizerAddresses[_index];
     }
 
     /**
-     * @notice Gets royalty Basis Points (BPS) for token ID `_tokenId`.
-     * This conforms to the IManifold interface designated in the Royalty
-     * Registry's RoyaltyEngineV1.sol contract.
-     * ref: https://github.com/manifoldxyz/royalty-registry-solidity
-     * @param _tokenId Token ID to be queried.
-     * @return recipients Array of royalty payment recipients
-     * @return bps Array of Basis Points (BPS) allocated to each recipient,
-     * aligned by index.
+     * @notice Gets ERC-2981 royalty information for token with ID `_tokenId`
+     * and sale price `_salePrice`.
+     * @param _tokenId Token ID to be queried for royalty information
+     * @param _salePrice the sale price of the NFT asset specified by _tokenId
+     * @return receiver address that should be sent the royalty payment
+     * @return royaltyAmount the royalty payment amount for `_salePrice
      * @dev reverts if invalid _tokenId
-     * @dev only returns recipients that have a non-zero BPS allocation
      */
-    function getRoyalties(
-        uint256 _tokenId
-    )
-        external
-        view
-        returns (address payable[] memory recipients, uint256[] memory bps)
-    {
+    function royaltyInfo(
+        uint256 _tokenId,
+        uint256 _salePrice
+    ) external view returns (address receiver, uint256 royaltyAmount) {
         _onlyValidTokenId(_tokenId);
-        // initialize arrays with maximum potential length
-        recipients = new address payable[](4);
-        bps = new uint256[](4);
 
+        // populate receiver with project's royalty splitter
+        // @dev royalty splitter created upon project creation, so will always exist
+        // for valid token ID
         uint256 projectId = tokenIdToProjectId(_tokenId);
-        ProjectFinance storage projectFinance = projectIdToFinancials[
+        ProjectFinance storage projectFinance = _projectIdToFinancials[
             projectId
         ];
-        // load values into memory
-        uint256 royaltyPercentageForArtistAndAdditional = projectFinance
-            .secondaryMarketRoyaltyPercentage;
-        uint256 additionalPayeePercentage = projectFinance
-            .additionalPayeeSecondarySalesPercentage;
-        // calculate BPS = percentage * 100
-        uint256 artistBPS = (ONE_HUNDRED - additionalPayeePercentage) *
-            royaltyPercentageForArtistAndAdditional;
+        receiver = projectFinance.royaltySplitter;
 
-        uint256 additionalBPS = additionalPayeePercentage *
-            royaltyPercentageForArtistAndAdditional;
-        uint256 renderProviderBPS = renderProviderSecondarySalesBPS;
-        uint256 platformProviderBPS = platformProviderSecondarySalesBPS;
-        // populate arrays
-        uint256 payeeCount;
-        if (artistBPS > 0) {
-            recipients[payeeCount] = projectFinance.artistAddress;
-            bps[payeeCount++] = artistBPS;
+        // populate royaltyAmount with calculated royalty amount
+        // @dev important to cast to uint256 before multiplying to avoid overflow
+        uint256 totalRoyaltyBPS = (100 *
+            uint256(projectFinance.secondaryMarketRoyaltyPercentage)) +
+            projectFinance.platformProviderSecondarySalesBPS +
+            projectFinance.renderProviderSecondarySalesBPS;
+        // @dev totalRoyaltyBPS guaranteed to be <= 10,000,
+        if (totalRoyaltyBPS > 10_000) {
+            revert GenArt721Error(ErrorCodes.OverMaxSumOfBPS);
         }
-        if (additionalBPS > 0) {
-            recipients[payeeCount] = projectFinance
-                .additionalPayeeSecondarySales;
-            bps[payeeCount++] = additionalBPS;
-        }
-        if (renderProviderBPS > 0) {
-            recipients[payeeCount] = renderProviderSecondarySalesAddress;
-            bps[payeeCount++] = renderProviderBPS;
-        }
-        if (platformProviderBPS > 0) {
-            recipients[payeeCount] = platformProviderSecondarySalesAddress;
-            bps[payeeCount++] = platformProviderBPS;
-        }
-        // trim arrays if necessary
-        if (4 > payeeCount) {
-            assembly {
-                let decrease := sub(4, payeeCount)
-                mstore(recipients, sub(mload(recipients), decrease))
-                mstore(bps, sub(mload(bps), decrease))
-            }
-        }
-        return (recipients, bps);
+        // @dev overflow automatically checked in solidity 0.8
+        // @dev totalRoyaltyBPS guaranteed to be <= 10_000,
+        // so overflow only possible with unreasonably high _salePrice values near uint256 max
+        royaltyAmount = (_salePrice * totalRoyaltyBPS) / 10_000;
     }
 
     /**
@@ -1758,7 +2030,7 @@ contract GenArt721CoreV3_Engine is
             address payable additionalPayeePrimaryAddress_
         )
     {
-        ProjectFinance storage projectFinance = projectIdToFinancials[
+        ProjectFinance storage projectFinance = _projectIdToFinancials[
             _projectId
         ];
         // calculate revenues – this is a three-way split between the
@@ -1880,9 +2152,15 @@ contract GenArt721CoreV3_Engine is
      */
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override returns (bool) {
+    )
+        public
+        view
+        virtual
+        override(ERC721_PackedHashSeedV1, IERC165)
+        returns (bool)
+    {
         return
-            interfaceId == type(IManifold).interfaceId ||
+            interfaceId == _INTERFACE_ID_ERC2981 ||
             super.supportsInterface(interfaceId);
     }
 
@@ -1894,7 +2172,11 @@ contract GenArt721CoreV3_Engine is
     function _forbidNewProjects() internal {
         if (!newProjectsForbidden) {
             newProjectsForbidden = true;
-            emit PlatformUpdated(FIELD_NEW_PROJECTS_FORBIDDEN);
+            emit PlatformUpdated(
+                bytes32(
+                    uint256(PlatformUpdatedFields.FIELD_NEW_PROJECTS_FORBIDDEN)
+                )
+            );
         }
     }
 
@@ -1914,37 +2196,65 @@ contract GenArt721CoreV3_Engine is
     /**
      * @notice Updates sales addresses for the platform and render providers to
      * the input parameters.
+     * Reverts if invalid platform provider addresses are provided given the
+     * contract's immutably configured nullPlatformProvider state.
+     * Does not check render provider addresses in any way.
      * @param _renderProviderPrimarySalesAddress Address of new primary sales
      * payment address.
-     * @param _renderProviderSecondarySalesAddress Address of new secondary sales
+     * @param _defaultRenderProviderSecondarySalesAddress Address of new secondary sales
      * payment address.
      * @param _platformProviderPrimarySalesAddress Address of new primary sales
      * payment address.
-     * @param _platformProviderSecondarySalesAddress Address of new secondary sales
+     * @param _defaultPlatformProviderSecondarySalesAddress Address of new secondary sales
      * payment address.
-     * @dev Note that this method does not check that the input address is
-     * not `address(0)`, as it is expected that callers of this method should
-     * perform input validation where applicable.
      */
     function _updateProviderSalesAddresses(
         address _renderProviderPrimarySalesAddress,
-        address _renderProviderSecondarySalesAddress,
+        address _defaultRenderProviderSecondarySalesAddress,
         address _platformProviderPrimarySalesAddress,
-        address _platformProviderSecondarySalesAddress
+        address _defaultPlatformProviderSecondarySalesAddress
     ) internal {
+        if (nullPlatformProvider) {
+            // require null platform provider address
+            if (
+                _platformProviderPrimarySalesAddress != address(0) ||
+                _defaultPlatformProviderSecondarySalesAddress != address(0)
+            ) {
+                revert GenArt721Error(ErrorCodes.OnlyNullPlatformProvider);
+            }
+        } else {
+            _onlyNonZeroAddress(_platformProviderPrimarySalesAddress);
+            _onlyNonZeroAddress(_defaultPlatformProviderSecondarySalesAddress);
+        }
         platformProviderPrimarySalesAddress = payable(
             _platformProviderPrimarySalesAddress
         );
-        platformProviderSecondarySalesAddress = payable(
-            _platformProviderSecondarySalesAddress
+        defaultPlatformProviderSecondarySalesAddress = payable(
+            _defaultPlatformProviderSecondarySalesAddress
         );
         renderProviderPrimarySalesAddress = payable(
             _renderProviderPrimarySalesAddress
         );
-        renderProviderSecondarySalesAddress = payable(
-            _renderProviderSecondarySalesAddress
+        defaultRenderProviderSecondarySalesAddress = payable(
+            _defaultRenderProviderSecondarySalesAddress
         );
-        emit PlatformUpdated(FIELD_PROVIDER_SALES_ADDRESSES);
+        emit PlatformUpdated(
+            bytes32(
+                uint256(PlatformUpdatedFields.FIELD_PROVIDER_SALES_ADDRESSES)
+            )
+        );
+    }
+
+    /**
+     * @notice Updates minter address to `_minterAddress`.
+     * @param _minterAddress New minter address.
+     * @dev Note that this method does not check that the input address is
+     * not `address(0)`, as it is expected that callers of this method should
+     * perform input validation where applicable.
+     */
+    function _updateMinterContract(address _minterAddress) internal {
+        minterContract = _minterAddress;
+        emit MinterUpdated(_minterAddress);
     }
 
     /**
@@ -1958,7 +2268,85 @@ contract GenArt721CoreV3_Engine is
         randomizerContract = IRandomizer_V3CoreBase(_randomizerAddress);
         // populate historical randomizer array
         _historicalRandomizerAddresses.push(_randomizerAddress);
-        emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
+        emit PlatformUpdated(
+            bytes32(uint256(PlatformUpdatedFields.FIELD_RANDOMIZER_ADDRESS))
+        );
+    }
+
+    /**
+     * @notice Updates split provider address to `_splitProviderAddress`.
+     * Reverts if `_splitProviderAddress` is the zero address.
+     * @param _splitProviderAddress New split provider address.
+     * @dev Note that this method does not check that the input address is
+     * not `address(0)`, as it is expected that callers of this method should
+     * perform input validation where applicable.
+     */
+    function _updateSplitProvider(address _splitProviderAddress) internal {
+        // require non-zero split provider address
+        _onlyNonZeroAddress(_splitProviderAddress);
+        splitProvider = ISplitProviderV0(_splitProviderAddress);
+        emit PlatformUpdated(
+            bytes32(uint256(PlatformUpdatedFields.FIELD_SPLIT_PROVIDER))
+        );
+    }
+
+    /**
+     * @notice Update the bytecode storage reader contract address, and emit corresponding event.
+     * @param _bytecodeStorageReaderContract New bytecode storage reader contract address.
+     */
+    function _updateBytecodeStorageReaderContract(
+        address _bytecodeStorageReaderContract
+    ) internal {
+        bytecodeStorageReaderContract = IBytecodeStorageReader_Base(
+            _bytecodeStorageReaderContract
+        );
+        emit PlatformUpdated(
+            bytes32(
+                uint256(PlatformUpdatedFields.FIELD_BYTECODE_STORAGE_READER)
+            )
+        );
+    }
+
+    /**
+     * @notice internal function to update a splitter contract for a project,
+     * based on the project's financials in this contract's storage.
+     * @dev Warning: this function uses storage reads to get the project's
+     * financials, so ensure storage has been updated before calling this
+     * @dev This function includes a trusted interaction that is entrusted to
+     * not reenter this contract.
+     * @param projectId Project ID to be updated.
+     */
+    function _assignSplitter(uint256 projectId) internal {
+        ProjectFinance storage projectFinance = _projectIdToFinancials[
+            projectId
+        ];
+        // assign project's royalty splitter
+        // @dev loads values from storage, so need to ensure storage has been updated
+        address royaltySplitter = splitProvider.getOrCreateSplitter(
+            ISplitProviderV0.SplitInputs({
+                platformProviderSecondarySalesAddress: projectFinance
+                    .platformProviderSecondarySalesAddress,
+                platformProviderSecondarySalesBPS: projectFinance
+                    .platformProviderSecondarySalesBPS,
+                renderProviderSecondarySalesAddress: projectFinance
+                    .renderProviderSecondarySalesAddress,
+                renderProviderSecondarySalesBPS: projectFinance
+                    .renderProviderSecondarySalesBPS,
+                artistTotalRoyaltyPercentage: projectFinance
+                    .secondaryMarketRoyaltyPercentage,
+                artist: projectFinance.artistAddress,
+                additionalPayee: projectFinance.additionalPayeeSecondarySales,
+                additionalPayeePercentage: projectFinance
+                    .additionalPayeeSecondarySalesPercentage
+            })
+        );
+
+        projectFinance.royaltySplitter = royaltySplitter;
+
+        emit ProjectRoyaltySplitterUpdated({
+            projectId: projectId,
+            royaltySplitter: royaltySplitter
+        });
     }
 
     /**
@@ -1972,7 +2360,9 @@ contract GenArt721CoreV3_Engine is
      */
     function _updateDefaultBaseURI(string memory _defaultBaseURI) internal {
         defaultBaseURI = _defaultBaseURI;
-        emit PlatformUpdated(FIELD_DEFAULT_BASE_URI);
+        emit PlatformUpdated(
+            bytes32(uint256(PlatformUpdatedFields.FIELD_DEFAULT_BASE_URI))
+        );
     }
 
     /**
@@ -1981,7 +2371,92 @@ contract GenArt721CoreV3_Engine is
      */
     function _completeProject(uint256 _projectId) internal {
         projects[_projectId].completedTimestamp = uint64(block.timestamp);
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_COMPLETED);
+        emit ProjectUpdated(
+            _projectId,
+            bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_COMPLETED))
+        );
+    }
+
+    /**
+     * @notice Initializes the contract with the provided `engineConfiguration`.
+     * This function should be called atomically, immediately after deployment.
+     * Only callable once. Validation on `engineConfiguration` is performed by caller.
+     * @param engineConfiguration EngineConfiguration to configure the contract with.
+     * note: parameter `engineConfiguration.newSuperAdminAddress` is not used or operated on in this contract.
+     * @param adminACLContract_ Address of admin access control contract, to be
+     * set as contract owner.
+     * @param defaultBaseURIHost Base URI prefix to initialize default base URI with.
+     * @param bytecodeStorageReaderContract_ Address of bytecode storage reader contract.
+     */
+    function _initialize(
+        EngineConfiguration memory engineConfiguration,
+        address adminACLContract_,
+        string memory defaultBaseURIHost,
+        address bytecodeStorageReaderContract_
+    ) internal {
+        // can only be initialized once
+        if (_initialized) {
+            revert GenArt721Error(ErrorCodes.ContractInitialized);
+        }
+        // immediately mark as initialized
+        _initialized = true;
+        // @dev assume renderProviderAddress, randomizer, and AdminACL non-zero
+        // checks on platform provider addresses performed in _updateProviderSalesAddresses
+        // initialize default sales revenue percentages and basis points
+        _renderProviderPrimarySalesPercentage = 10;
+        defaultRenderProviderSecondarySalesBPS = 250;
+        _platformProviderPrimarySalesPercentage = engineConfiguration
+            .nullPlatformProvider
+            ? 0
+            : 10;
+        defaultPlatformProviderSecondarySalesBPS = engineConfiguration
+            .nullPlatformProvider
+            ? 0
+            : 250;
+
+        // set token name and token symbol
+        ERC721_PackedHashSeedV1.initialize(
+            engineConfiguration.tokenName,
+            engineConfiguration.tokenSymbol
+        );
+        // update minter if populated
+        if (engineConfiguration.minterFilterAddress != address(0)) {
+            _updateMinterContract(engineConfiguration.minterFilterAddress);
+        }
+        _updateSplitProvider(engineConfiguration.splitProviderAddress);
+        _updateBytecodeStorageReaderContract(bytecodeStorageReaderContract_);
+        // setup immutable `autoApproveArtistSplitProposals` config
+        autoApproveArtistSplitProposals = engineConfiguration
+            .autoApproveArtistSplitProposals;
+        // setup immutable `nullPlatformProvider` config
+        nullPlatformProvider = engineConfiguration.nullPlatformProvider;
+        // setup immutable `allowArtistProjectActivation` config
+        allowArtistProjectActivation = engineConfiguration
+            .allowArtistProjectActivation;
+        // record contracts starting project ID
+        // casting-up is safe
+        startingProjectId = uint256(engineConfiguration.startingProjectId);
+        // @dev nullPlatformProvider must be set before calling _updateProviderSalesAddresses
+        _updateProviderSalesAddresses(
+            engineConfiguration.renderProviderAddress,
+            engineConfiguration.renderProviderAddress,
+            engineConfiguration.platformProviderAddress,
+            engineConfiguration.platformProviderAddress
+        );
+        _updateRandomizerAddress(engineConfiguration.randomizerContract);
+        // set AdminACL management contract as owner
+        _transferOwnership(adminACLContract_);
+        // initialize default base URI
+        _updateDefaultBaseURI(
+            string.concat(defaultBaseURIHost, address(this).toHexString(), "/")
+        );
+        // initialize next project ID
+        _nextProjectId = engineConfiguration.startingProjectId;
+        emit PlatformUpdated(
+            bytes32(uint256(PlatformUpdatedFields.FIELD_NEXT_PROJECT_ID))
+        );
+        // @dev This contract is registered on the core registry in a
+        // subsequent call by the factory.
     }
 
     /**
@@ -2006,12 +2481,12 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
-     * Helper for calling `BytecodeStorageReader` external library reader method,
+     * @notice Helper for calling bytecodeStorageReaderContract reader method;
      * added for bytecode size reduction purposes.
      */
     function _readFromBytecode(
         address _address
     ) internal view returns (string memory) {
-        return BytecodeStorageReader.readFromBytecode(_address);
+        return bytecodeStorageReaderContract.readFromBytecode(_address);
     }
 }

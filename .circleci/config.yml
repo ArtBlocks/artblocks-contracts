@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  node: circleci/node@5.1.0
+  node: circleci/node@5.2.0
   aws-cli: circleci/aws-cli@3.0.0
 
 jobs:
@@ -12,10 +12,15 @@ jobs:
     steps:
       - checkout
       - node/install:
-          install-yarn: true
           node-version: "20.10"
+      - run:
+          name: Use yarn berry
+          command: |
+            corepack enable && yarn set version berry
       - node/install-packages:
-          pkg-manager: yarn
+          check-cache: always
+          pkg-manager: yarn-berry
+          with-cache: false
       - run:
           name: Lint
           command: yarn workspace @artblocks/contracts lint
@@ -27,22 +32,24 @@ jobs:
     steps:
       - checkout
       - node/install:
-          install-yarn: true
           node-version: "20.10"
+      - run:
+          name: Use yarn berry
+          command: |
+            corepack enable && yarn set version berry
       - node/install-packages:
-          pkg-manager: yarn
+          pkg-manager: yarn-berry
+          check-cache: always
+          cache-version: v2
+          with-cache: false
       - run:
           name: debug list files
           command: |
             ls ./packages/contracts/contracts
       - run:
-          name: compile contracts
+          name: compile contracts & generate typechain
           command: |
             yarn workspace @artblocks/contracts run hardhat compile
-      - run:
-          name: generate types
-          command: |
-            yarn workspace @artblocks/contracts run generate:typechain
       - run:
           name: Hardhat Test
           command: |
@@ -57,19 +64,14 @@ jobs:
     steps:
       - checkout
       - node/install:
-          install-yarn: true
           node-version: "20.10"
+      - run:
+          name: Use yarn berry
+          command: |
+            corepack enable && yarn set version berry
       - node/install-packages:
-          pkg-manager: yarn
-      - run:
-          name: compile contracts
-          command: |
-            yarn workspace @artblocks/contracts run compile
-            yarn workspace @artblocks/contracts run compile
-      - run:
-          name: generate types
-          command: |
-            yarn workspace @artblocks/contracts run generate:typechain
+          pkg-manager: yarn-berry
+          cache-version: v2
       - run:
           name: coverage
           command: |
@@ -100,10 +102,13 @@ jobs:
     steps:
       - checkout
       - node/install:
-          install-yarn: true
           node-version: "20.10"
+      - run:
+          name: Use yarn berry
+          command: |
+            corepack enable && yarn set version berry
       - node/install-packages:
-          pkg-manager: yarn
+          pkg-manager: yarn-berry
       - attach_workspace:
           at: /tmp/coverage
       - run:

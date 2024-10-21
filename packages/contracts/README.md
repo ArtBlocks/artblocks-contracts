@@ -23,10 +23,6 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 
 `yarn compile`
 
-### generate typescript contract bindings
-
-`yarn generate:typechain`
-
 ### run the tests
 
 `yarn test`
@@ -95,6 +91,43 @@ For details on the Art Blocks Minter Suite, see the [minter suite documentation]
 
 ## Deploying New Contracts
 
+Art Blocks deploys contracts a variety of ways, depending on the contract or library and its intended use. In general, we use Hardhat for deployments and verification, and have a variety of deployment scripts that can be used to deploy contracts to various networks. Additionally, at times we may use a keyless create2 factory to deploy standard infrastructure contracts to enable permissionless deployments of infrastructure on any network that supports pre-EIP-155 transactions.
+
+A summary of our deployed infrastructure is available on our [Infrastructure Documentation](./INFRASTRUCTURE.md).
+
+### Keyless Create2 Factory
+
+We use the following keyless create2 factory to deploy standard infrastructure contracts to enable permissionless deployments of infrastructure on any network that supports pre-EIP-155 transactions.
+
+Contracts that are deployed using the keyless create2 factory include the `BytecodeStorageReader` and `V3FlexLib` external library contracts.
+
+<table>
+    <tr>
+        <td>Name</td>
+        <td>Address</td>
+    </tr>
+    <tr>
+        <td>KEYLESS_CREATE2_DEPLOYER_ADDRESS</td>
+        <td>0x4c8D290a1B368ac4728d83a9e8321fC3af2b39b1</td>
+    </tr>
+    <tr>
+        <td>KEYLESS_CREATE2_ADDRESS</td>
+        <td>0x7A0D94F55792C434d74a40883C6ed8545E406D12</td>
+    </tr>
+    <tr>
+        <td>INEFFICIENT_IMMUTABLE_CREATE2_FACTORY_ADDRESS</td>
+        <td>0xcfA3A7637547094fF06246817a35B8333C315196</td>
+    </tr>
+    <tr>
+        <td>IMMUTABLE_CREATE2_FACTORY_ADDRESS</td>
+        <td>0x0000000000ffe8b47b3e2130213b802212439497</td>
+    </tr>
+</table>
+
+If you are interested in deploying the create2 factory contracts on a new network, please reference the documentation here: https://github.com/ProjectOpenSea/seaport/blob/main/docs/Deployment.md#setting-up-factory-on-a-new-chain
+
+### Hardhat Scripts
+
 > IMPORTANT - many scripts rely on typechain-generated factories, so ensure you have run `yarn generate:typechain` before running any deployment scripts.
 
 We have two types of deployment scripts: Generic and Specific. In general, most new deployments now use generic scripts.
@@ -127,25 +160,11 @@ Core contracts use the versioning schema below:
 | :-----------------------: | :-----------------------: | :-----------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 |        AB Core V0         |            V0             |      0-2      | `0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a`                                                                                                                                                                     |
 |        AB Core V1         |            V1             |     3-373     | `0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270`                                                                                                                                                                     |
+|        AB Core V3         |            V3             |    374-493    | `0x99a9B7c1116f9ceEB1652de04d5969CcE509B069`                                                                                                                                                                     |
+|  AB Core V3.2 (current)   |           V3.2            |     494+      | `0xAB0000000000aa06f89B268D604a9c1C41524Ac6`                                                                                                                                                                     |
 |     Engine Cores (V2)     |          V2_PBAB          | All V2 Engine | Various - see `deployments/engine/` directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3Aartblocks%2Fartblocks-contracts+path%3A*.md+path%3A**%2FDEPLOYMENTS.md&type=Code&ref=advsearch&l=&l=)    |
 | Engine Partner Cores (V2) |         V2_PRTNR          | All V2 PRTNR  | Various - see `deployments/engine/` directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3Aartblocks%2Fartblocks-contracts+path%3A*.md+path%3A**%2FDEPLOYMENTS.md&type=Code&ref=advsearch&l=&l=)    |
-|   AB Core V3 (current)    |            V3             |     374+      | `0x99a9B7c1116f9ceEB1652de04d5969CcE509B069`                                                                                                                                                                     |
 | Engine_V3, Engine_V3_Flex | Engine_V3, Engine_V3_Flex | All V3 Engine | Various - see `deployments/engine/V3/` directory [DEPLOYMENTS.md](https://github.com/search?q=repo%3Aartblocks%2Fartblocks-contracts+path%3A*.md+path%3A**%2FDEPLOYMENTS.md&type=Code&ref=advsearch&l=&l=) files |
-
-> AB Core V3 [changelog here](./contracts/V3_CHANGELOG.md), and [performance metrics here](./contracts/V3_PERFORMANCE.md).
-
-### Testnet Contracts
-
-The following represents the current set of flagship core contracts deployed on the Goerli testnet, and their active Minter Filters:
-
-- Art Blocks Artist Staging (Goerli):
-
-  - V1 Core (deprecated): https://goerli.etherscan.io/address/0xDa62f67BE7194775A75BE91CBF9FEeDcC5776D4b
-  - V3 Core: https://goerli.etherscan.io/address/0xB614C578062a62714c927CD8193F0b8Bfb90055C
-
-- Art Blocks Dev (Goerli):
-  - V1 Core (deprecated): https://goerli.etherscan.io/address/0x1Bf03F29c4FEFFFe4eE26704aaA31d85c026aCE6
-  - V3 Core: https://goerli.etherscan.io/address/0xF396C180bb2f92EE28535D23F5224A5b9425ceca
 
 ## Art Blocks Engine Core Contracts
 

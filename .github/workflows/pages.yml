@@ -33,7 +33,9 @@ jobs:
           node-version: ">=18.12.0"
           cache: "npm"
       - name: install dependencies
-        run: yarn install
+        run: |
+          corepack enable
+          yarn install
       - name: Set up dummy env vars
         run: |
           echo "MAINNET_JSON_RPC_PROVIDER_URL=https://mainnet.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
@@ -43,6 +45,7 @@ jobs:
           echo "KOVAN_JSON_RPC_PROVIDER_URL=https://kovan.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
           echo "PALM_MAINNET_JSON_RPC_PROVIDER_URL=https://palm-mainnet.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
           echo "PALM_TESTNET_JSON_RPC_PROVIDER_URL=https://palm-testnet.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
+          echo "BASE_MAINNET_JSON_RPC_PROVIDER_URL=https://base-mainnet.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
           echo "ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL=https://arbitrum-mainnet.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
           echo "ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL=https://arbitrum-goerli.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
       - name: build docs

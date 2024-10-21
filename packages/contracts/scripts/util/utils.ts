@@ -1,6 +1,7 @@
 import prompt from "prompt";
 import fs from "fs";
 import path from "path";
+import { ProductClassEnum } from "./constants";
 var util = require("util");
 import { ethers } from "hardhat";
 
@@ -28,7 +29,29 @@ export async function getAppPath() {
   }
 }
 
+type BaseConfig = {
+  network: string;
+  environment: string;
+  useLedgerSigner: boolean;
+  transactionHash?: string;
+};
+
+type GnosisSafeConfig = BaseConfig & {
+  useGnosisSafe: true;
+  safeAddress: string;
+  transactionServiceUrl: string;
+};
+
+type NoGnosisSafeConfig = BaseConfig & {
+  useGnosisSafe: false;
+  safeAddress?: never;
+  transactionServiceUrl?: never;
+};
+
+export type DeployNetworkConfiguration = GnosisSafeConfig | NoGnosisSafeConfig;
+
 export type DeployConfigDetails = {
+  productClass?: ProductClassEnum;
   network?: string;
   environment?: string;
   // shared randomizer fields
@@ -37,6 +60,7 @@ export type DeployConfigDetails = {
   pseudorandomAtomicContractName?: string;
   // shared minter filter fields
   existingAdminACL?: string;
+  adminACLContract?: string;
   adminACLContractName?: string;
   minterFilterName?: string;
   existingCoreRegistry?: string;
@@ -45,13 +69,17 @@ export type DeployConfigDetails = {
   minterName?: string;
   minterFilterAddress?: string;
   approveMinterGlobally?: boolean;
+  minMintFeeETH?: string;
   // engine core fields (shared minter suite)
+  engineCoreContractType?: number; // 0 for Engine, 1 for Engine Flex
   genArt721CoreContractName?: string;
   tokenName?: string;
   tokenTicker?: string;
   startingProjectId?: number;
+  allowArtistProjectActivation?: boolean;
   autoApproveArtistSplitProposals?: boolean;
   renderProviderAddress?: string;
+  nullPlatformProvider?: boolean;
   platformProviderAddress?: string;
   addInitialProject?: boolean;
   doTransferSuperAdmin?: boolean;
@@ -59,6 +87,7 @@ export type DeployConfigDetails = {
   renderProviderSplitPercentagePrimary?: number;
   renderProviderSplitBPSSecondary?: number;
   defaultVerticalName?: string;
+  salt?: string;
   // flagship core fields
   artblocksPrimarySalesAddress?: string;
   artblocksSecondarySalesAddress?: string;
@@ -74,6 +103,7 @@ export async function getConfigInputs(
   promptMessage: string
 ): Promise<{
   deployConfigDetailsArray: DeployConfigDetails[];
+  deployNetworkConfiguration?: DeployNetworkConfiguration;
   deploymentConfigFile: string;
   inputFileDirectory: string;
 }> {
@@ -94,29 +124,36 @@ export async function getConfigInputs(
   const fullImportPath = path.join(fullDeploymentConfigPath);
   const inputFileDirectory = path.dirname(fullImportPath);
   let deployConfigDetailsArray: DeployConfigDetails[];
+  let deployNetworkConfiguration;
   try {
-    ({ deployConfigDetailsArray } = await import(fullImportPath));
+    ({ deployConfigDetailsArray, deployNetworkConfiguration } = await import(
+      fullImportPath
+    ));
   } catch (error) {
     throw new Error(
       `[ERROR] Unable to import deployment configuration file at: ${fullDeploymentConfigPath}
       Please ensure the file exists (e.g. deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-01.dev.ts)`
     );
   }
-  // record all deployment logs to a file, monkey-patching stdout
-  const pathToMyLogFile = path.join(inputFileDirectory, "DEPLOYMENT_LOGS.log");
-  var myLogFileStream = fs.createWriteStream(pathToMyLogFile, { flags: "a+" });
-  var log_stdout = process.stdout;
-  console.log = function (d) {
-    myLogFileStream.write(util.format(d) + "\n");
-    log_stdout.write(util.format(d) + "\n");
+  // record all deployment logs to a markdown file
+  try {
+    const pathToMyLogFile = path.join(inputFileDirectory, "DEPLOYMENT_LOGS.md");
+    const outputMD = `
+      ----------------------------------------
+      [INFO] Datetime of deployment: ${new Date().toISOString()}
+      [INFO] Deployment configuration file: ${fullDeploymentConfigPath}
+
+    `;
+    fs.writeFileSync(pathToMyLogFile, outputMD, { flag: "as+" });
+  } catch (error) {
+    console.error("[ERROR] Updating deployment file failed:", error);
+  }
+  return {
+    deployConfigDetailsArray,
+    deployNetworkConfiguration,
+    deploymentConfigFile,
+    inputFileDirectory,
   };
-  // record relevant deployment information in logs
-  console.log(`----------------------------------------`);
-  console.log(`[INFO] Datetime of deployment: ${new Date().toISOString()}`);
-  console.log(
-    `[INFO] Deployment configuration file: ${fullDeploymentConfigPath}`
-  );
-  return { deployConfigDetailsArray, deploymentConfigFile, inputFileDirectory };
 }
 
 export async function getNetworkName() {
@@ -128,6 +165,9 @@ export async function getNetworkName() {
     // The arbitrum-sepolia rpc currently only returns a chainId
     // for arbitrum-sepolia so we need to manually set the name here
     networkName = "arbitrum-sepolia";
+  } else if (networkName === "unknown" && network.chainId === 8453) {
+    // base rpc doesn't return name, so handle unknown + chainId
+    networkName = "base";
   }
 
   return networkName;

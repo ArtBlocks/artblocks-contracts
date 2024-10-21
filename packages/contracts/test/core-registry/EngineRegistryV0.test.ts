@@ -88,6 +88,19 @@ for (const coreContractName of coreContractsToTest) {
     describe("unregisterContract", function () {
       it("allows deployer to register arbitrary address", async function () {
         const config = await loadFixture(_beforeEach);
+        const coreVersion = await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .coreVersion();
+        const coreType = await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .coreType();
+        await config.engineRegistry
+          .connect(config.accounts.deployer)
+          .registerContract(
+            config.genArt721Core.address,
+            ethers.utils.formatBytes32String(coreVersion),
+            ethers.utils.formatBytes32String(coreType)
+          );
         await expect(
           config.engineRegistry
             .connect(config.accounts.deployer)

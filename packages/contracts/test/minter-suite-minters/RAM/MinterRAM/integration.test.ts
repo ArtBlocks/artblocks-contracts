@@ -2,7 +2,13 @@ import { expectRevert } from "@openzeppelin/test-helpers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
-import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
+import {
+  deployAndGet,
+  deployCore,
+  safeAddProject,
+  GENART721_ERROR_NAME,
+  GENART721_ERROR_CODES,
+} from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import { ethers } from "hardhat";
 import { revertMessages } from "../../constants";
@@ -1412,16 +1418,33 @@ runForEach.forEach((params) => {
           .connect(config.accounts.artist)
           .updateProjectMaxInvocations(config.projectZero, 14);
         // expect revert from core when num tokens to mint gt tokens owed due to E1
-        await expectRevert(
-          config.minter
-            .connect(config.accounts.artist)
-            .adminArtistAutoMintTokensToWinners(
-              config.projectZero,
-              config.genArt721Core.address,
-              2
-            ),
-          revertMessages.noExceedMaxInvocations
-        );
+        if (params.core.includes("Engine")) {
+          await expect(
+            config.minter
+              .connect(config.accounts.artist)
+              .adminArtistAutoMintTokensToWinners(
+                config.projectZero,
+                config.genArt721Core.address,
+                2
+              )
+          )
+            .to.be.revertedWithCustomError(
+              config.genArt721Core,
+              GENART721_ERROR_NAME
+            )
+            .withArgs(GENART721_ERROR_CODES.MaxInvocationsReached);
+        } else {
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.artist)
+              .adminArtistAutoMintTokensToWinners(
+                config.projectZero,
+                config.genArt721Core.address,
+                2
+              ),
+            revertMessages.noExceedMaxInvocations
+          );
+        }
       });
 
       it("updates state when successful", async function () {
@@ -1703,16 +1726,33 @@ runForEach.forEach((params) => {
           .connect(config.accounts.artist)
           .updateProjectMaxInvocations(config.projectZero, 14);
         // expect revert from core when num tokens to mint gt tokens owed due to E1
-        await expectRevert(
-          config.minter
-            .connect(config.accounts.artist)
-            .adminArtistDirectMintTokensToWinners(
-              config.projectZero,
-              config.genArt721Core.address,
-              [14, 15]
-            ),
-          revertMessages.noExceedMaxInvocations
-        );
+        if (params.core.includes("Engine")) {
+          await expect(
+            config.minter
+              .connect(config.accounts.artist)
+              .adminArtistDirectMintTokensToWinners(
+                config.projectZero,
+                config.genArt721Core.address,
+                [14, 15]
+              )
+          )
+            .to.be.revertedWithCustomError(
+              config.genArt721Core,
+              GENART721_ERROR_NAME
+            )
+            .withArgs(GENART721_ERROR_CODES.MaxInvocationsReached);
+        } else {
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.artist)
+              .adminArtistDirectMintTokensToWinners(
+                config.projectZero,
+                config.genArt721Core.address,
+                [14, 15]
+              ),
+            revertMessages.noExceedMaxInvocations
+          );
+        }
       });
 
       it("reverts in minter code when minting non-existent bid", async function () {
@@ -1898,10 +1938,24 @@ runForEach.forEach((params) => {
             [15]
           );
         // ensure token ID 0 was not yet minted (i.e. minting was skipped)
-        await expectRevert(
-          config.genArt721Core.ownerOf(0),
-          "ERC721: invalid token ID"
-        );
+        // @dev Engine and Engine Flex use a fork of v5.0 of ERC721
+        // that uses custom error codes.
+        if (
+          params.core === "GenArt721CoreV3_Engine" ||
+          params.core === "GenArt721CoreV3_Engine_Flex"
+        ) {
+          await expect(config.genArt721Core.ownerOf(0))
+            .to.be.revertedWithCustomError(
+              config.genArt721Core,
+              "ERC721NonexistentToken"
+            )
+            .withArgs(0);
+        } else {
+          await expectRevert(
+            config.genArt721Core.ownerOf(0),
+            "ERC721: invalid token ID"
+          );
+        }
       });
 
       it("does not settle previously settled bid", async function () {

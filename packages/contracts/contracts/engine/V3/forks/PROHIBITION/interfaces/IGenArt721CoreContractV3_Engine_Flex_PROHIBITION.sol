@@ -4,7 +4,7 @@
 pragma solidity ^0.8.0;
 
 import "./IAdminACLV0_PROHIBITION.sol";
-import "../../../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
+import "../../../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex_PreV3p2.sol";
 
 /**
  * @title This interface is intended to house interface items that are common
@@ -12,7 +12,7 @@ import "../../../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.so
  * @author Art Blocks Inc.
  */
 interface IGenArt721CoreContractV3_Engine_Flex_PROHIBITION is
-    IGenArt721CoreContractV3_Engine_Flex
+    IGenArt721CoreContractV3_Engine_Flex_PreV3p2
 {
     /**
      * Function determining if _sender is allowed to call function with

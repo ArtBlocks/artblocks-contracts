@@ -33,7 +33,7 @@ export const SetPrice_Common_Events = async (
           )
       )
         .to.emit(
-          await ethers.getContractFactory("SetPriceLib"),
+          await ethers.getContractAt("SetPriceLib", config.minter.address),
           "PricePerTokenUpdated"
         )
         .withArgs(

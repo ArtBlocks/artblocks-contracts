@@ -20,14 +20,14 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - run: yarn --frozen-lockfile
+      - run: corepack enable && yarn --immutable
         working-directory: packages/sdk
-      - name: Build
+      - name: Build # requires access to secrets
         run: yarn run build
         working-directory: packages/sdk
-      - name: Typechain
-        run: yarn run build:typechain
-        working-directory: packages/sdk
+        env:
+          HASURA_GRAPHQL_API_ENDPOINT: ${{ secrets.HASURA_GRAPHQL_API_ENDPOINT }}
+          HASURA_ADMIN_SECRET: ${{ secrets.HASURA_ADMIN_SECRET }}
       - name: Run Tests
         run: yarn run test
         working-directory: packages/sdk

@@ -1,28 +1,18 @@
 import { ethers } from "hardhat";
 
+export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
 // empirically have found adding 10 seconds between txs in scripts is enough to
 // avoid chain reorgs and tx failures
 export const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
 
 // delegation registry addresses on supported networks
 export const DELEGATION_REGISTRY_ADDRESSES = {
-  // note: same address for goerli and mainnet
-  goerli: "0x00000000000076A84feF008CDAbe6409d2FE638B",
   mainnet: "0x00000000000076A84feF008CDAbe6409d2FE638B",
   sepolia: "0x00000000000076A84feF008CDAbe6409d2FE638B",
   arbitrum: "0x00000000000076A84feF008CDAbe6409d2FE638B",
   "arbitrum-sepolia": "0x00000000000076A84feF008CDAbe6409d2FE638B",
-};
-
-// BytecodeStorageReader library addresses on supported networks
-export const BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES = {
-  // note: _different_ address for goerli and mainnet
-  "arbitrum-goerli": "0x681861cD4fC92d70aE57745385065ef862954662",
-  "arbitrum-sepolia": "0xb219C04128c9749b597c35D416b9988bEa9E1114",
-  arbitrum: "0xa07f47c30C262adcC263A4D44595972c50e04db7",
-  goerli: "0xB8B806A10d16cc80dB788552B54B3ECb4A2A3C3D",
-  mainnet: "0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5",
-  sepolia: "0x7497909537cE00fDda93c12d5083D8647C593c67",
+  base: "0x00000000000076A84feF008CDAbe6409d2FE638B",
 };
 
 /**
@@ -37,7 +27,7 @@ export function getActiveSharedMinterFilter(
   environment: string
 ): string {
   const activeMinterFilter =
-    ACTIVE_SHARED_MINTER_FILTERS[networkName]?.[environment];
+    MAIN_CONFIG[networkName]?.[environment]?.sharedMinterFilter;
   if (!activeMinterFilter) {
     throw new Error(
       `No active shared minter filter found for network ${networkName} and environment ${environment}`
@@ -45,28 +35,6 @@ export function getActiveSharedMinterFilter(
   }
   return activeMinterFilter;
 }
-// Active shared minter filter contracts being used for the shared minter
-// suite, on each network and environment.
-// format is [network]: { [environment]: [minter filter address] }
-const ACTIVE_SHARED_MINTER_FILTERS = {
-  goerli: {
-    dev: "0x15B337C090170D56e45124ebd2Ce278a5b6Ff101",
-    staging: "0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824",
-  },
-  mainnet: {
-    mainnet: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
-  },
-  "arbitrum-sepolia": {
-    "arbitrum-staging": "0xa07f47c30C262adcC263A4D44595972c50e04db7",
-  },
-  arbitrum: {
-    arbitrum: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
-  },
-  sepolia: {
-    dev: "0x29e9f09244497503f304FA549d50eFC751D818d2",
-    staging: "0xa07f47c30C262adcC263A4D44595972c50e04db7",
-  },
-};
 
 /**
  * Get active shared randomizer contract address for the given network and
@@ -80,7 +48,7 @@ export function getActiveSharedRandomizer(
   environment: string
 ): string {
   const activeSharedRandomizer =
-    ACTIVE_SHARED_RANDOMIZERS[networkName]?.[environment];
+    MAIN_CONFIG[networkName]?.[environment]?.sharedRandomizer;
   if (!activeSharedRandomizer) {
     throw new Error(
       `No active shared randomizer found for network ${networkName} and environment ${environment}`
@@ -88,28 +56,58 @@ export function getActiveSharedRandomizer(
   }
   return activeSharedRandomizer;
 }
-// Active shared randomizer contracts being used for the shared minter
-// suite, on each network and environment.
-// format is [network]: { [environment]: [randomizer address] }
-const ACTIVE_SHARED_RANDOMIZERS = {
-  goerli: {
-    dev: "0x16D3b6164E7F05869287CC0fE57f3EA2572178A0",
-    staging: "0xC91CFC2062D8B4Ff53A7c8836CAEf925a7C78c81",
-  },
-  mainnet: {
-    mainnet: "0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91",
-  },
-  "arbitrum-sepolia": {
-    "arbitrum-staging": "0x28f2D3805652FB5d359486dFfb7D08320D403240",
-  },
-  arbitrum: {
-    arbitrum: "0x6a5976391E708fBf918c3786cd1FcbB88732fbc1",
-  },
-  sepolia: {
-    dev: "0xA6F7e62F3B52552f79b2Baa2858a1DB18016c09B",
-    staging: "0x28f2D3805652FB5d359486dFfb7D08320D403240",
-  },
-};
+
+export function getActiveSharedSplitProvider(): string {
+  return "0x0000000004B100B47f061968a387c82702AFe946";
+}
+
+export async function getActiveEngineImplementations(
+  networkName: string,
+  environment: string
+): Promise<{
+  activeEngineImplementationAddress: string;
+  activeEngineFlexImplementationAddress: string;
+}> {
+  // get the engine factory
+  const engineFactoryAddress = getActiveEngineFactoryAddress(
+    networkName,
+    environment
+  );
+  const engineContractFactory =
+    await ethers.getContractFactory("EngineFactoryV0");
+  const engineFactory = engineContractFactory.attach(engineFactoryAddress);
+
+  const activeEngineImplementationAddress =
+    await engineFactory.engineImplementation();
+  const activeEngineFlexImplementationAddress =
+    await engineFactory.engineFlexImplementation();
+  if (
+    !activeEngineImplementationAddress ||
+    !activeEngineFlexImplementationAddress
+  ) {
+    throw new Error(
+      `No active engine or engine flex implementation found for network ${networkName} and environment ${environment}`
+    );
+  }
+  return {
+    activeEngineImplementationAddress,
+    activeEngineFlexImplementationAddress,
+  };
+}
+
+export function getActiveEngineFactoryAddress(
+  networkName: string,
+  environment: string
+): string {
+  const activeEngineFactory =
+    MAIN_CONFIG[networkName]?.[environment]?.engineFactory;
+  if (!activeEngineFactory) {
+    throw new Error(
+      `No active engine factory found for network ${networkName} and environment ${environment}`
+    );
+  }
+  return activeEngineFactory;
+}
 
 /**
  * Gets active core registry contract address for the given network and
@@ -140,42 +138,97 @@ export async function getActiveCoreRegistry(
   return activeCoreRegistryAddress;
 }
 
-// DEPRECATED - use getActiveCoreRegistry after migration to shared minter suite
-// deprecated V3 engine registry contracts, and their deployers
-// format is [network]: { [registry address]: [deployer address] }
-export const DEPRECATED_ENGINE_REGISTRIES = {
-  goerli: {
-    // [INDEXED] goerli staging registry, indexed in staging subgraph | deployer: staging deployer wallet
-    "0xEa698596b6009A622C3eD00dD5a8b5d1CAE4fC36":
-      "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63",
+export enum ProductClassEnum {
+  Engine = "Engine",
+  Sudio = "Studio",
+}
 
-    // [INDEXED] goerli dev registry, indexed in dev subgraph | deployer: dev admin wallet
-    "0x2A39132E8d594d2c840D6656327fB26d900C05bA":
-      "0x2246475beddf9333b6a6D9217194576E7617Afd1",
+/**
+ * Helper function to get the prod render provider payment address for the given
+ * network and environment, if there is a requirement.
+ * Returns undefined if there is no requirement for a specific render provider (e.g. testnet)
+ * @param networkName network name, e.g. "mainnet", "arbitrum", etc.
+ * @param environment environment, e.g. "mainnet", "staging", "dev"
+ * @param productClass product class, "Engine", "Studio"
+ * @returns address if require a specific render provider payment address for the given network and environment, otherwise undefined
+ */
+export function getProdRenderProviderPaymentAddress(
+  networkName: string,
+  environment: string,
+  productClass: ProductClassEnum
+): string | undefined {
+  // verify that a missing product class is not reason for returning undefined
+  if (
+    !productClass ||
+    !Object.values(ProductClassEnum).includes(productClass)
+  ) {
+    throw new Error(
+      `productClass is required and must be a valid ProductClassEnum. value: ${productClass}`
+    );
+  }
+  return MAIN_CONFIG[networkName]?.[environment]?.[productClass]
+    ?.prodRenderProviderPaymentAddress;
+}
 
-    // [NOT INDEXED] goerli dev admin wallet, not indexed in any subgraphs (for testing only) | deployer: dev admin wallet
-    "0x263113c07CB69eE047E6572E135E8C3C6302feFE":
-      "0x2246475beddf9333b6a6D9217194576E7617Afd1",
-  },
+type T_RENDER_PROVIDER_PAYMENT_ADDRESSES = {
+  [ProductClassEnum: string]: string;
+};
+
+type T_NETWORK_ENV_CONFIG = {
+  engineFactory: string;
+  sharedMinterFilter: string;
+  sharedRandomizer: string;
+  prodRenderProviderPaymentAddress?: T_RENDER_PROVIDER_PAYMENT_ADDRESSES;
+};
+type T_MAIN_CONFIG = {
+  [network: string]: {
+    [environment: string]: T_NETWORK_ENV_CONFIG;
+  };
+};
+const MAIN_CONFIG: T_MAIN_CONFIG = {
   mainnet: {
-    // [INDEXED] mainnet registry, indexed in mainnet subgraph | deployer: mainnet deployer wallet
-    "0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2":
-      "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63",
-  },
-  "arbitrum-goerli": {
-    // [INDEXED] arbitrum goerli dev | deployer: lindsay dev wallet
-    "0x429af8eE97750aaddE1e8df9e921e11406ff9ed2":
-      "0x3b9038fa89783CBA1933c1689043b4dae2032d1c",
-    // [INDEXED] arbitrum goerli staging | deployer: lindsay dev wallet
-    "0x25841600e79E9A5263Ec4badcC328AD9CFE5f8C8":
-      "0x3b9038fa89783CBA1933c1689043b4dae2032d1c",
-    // [INDEXED] arbitrum goerli staging | deployer: arbitrum staging deployer wallet
-    "0x3b30d421a6dA95694EaaE09971424F15Eb375269":
-      "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63",
+    mainnet: {
+      engineFactory: "0x000000004058B5159ABB5a3Dd8cf775A7519E75F",
+      sharedMinterFilter: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
+      sharedRandomizer: "0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91",
+      prodRenderProviderPaymentAddress: {
+        [ProductClassEnum.Engine]: "0xa9F7C2b5Fd91C842B2E1b839A1Cf0f3DE2a24249",
+        [ProductClassEnum.Sudio]: "0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd",
+      },
+    },
   },
   arbitrum: {
-    // [INDEXED] arbitrum mainnet | deployer: arbitrum mainnet deployer wallet
-    "0xdAe755c2944Ec125a0D8D5CB082c22837593441a":
-      "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63",
+    arbitrum: {
+      engineFactory: "0x000000007566E6566771d28E91bD465bEE8426a5",
+      sharedMinterFilter: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
+      sharedRandomizer: "0x6a5976391E708fBf918c3786cd1FcbB88732fbc1",
+      prodRenderProviderPaymentAddress: {
+        [ProductClassEnum.Engine]: "0x4fbFc0F88270FE3405Ee5bf8c98CC03647b4fdA4",
+        [ProductClassEnum.Sudio]: "0x23636eAa2605B9c4a988E56d2093b488793f1C42",
+      },
+    },
+  },
+  base: {
+    base: {
+      engineFactory: "0x00000BA55cae9d000000b156875D91854124fd7e",
+      sharedMinterFilter: "0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5",
+      sharedRandomizer: "0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98",
+      prodRenderProviderPaymentAddress: {
+        [ProductClassEnum.Engine]: "0xc5bd90634d9355B93FE8d07e6F79eAB5EF20AbCc",
+        [ProductClassEnum.Sudio]: "0xc8D1099702cB95baf954a4E3e2bEaF883314f464",
+      },
+    },
+  },
+  sepolia: {
+    staging: {
+      engineFactory: "0x0000A9AA9b00F46c009f15b3F68122e1878D7d18",
+      sharedMinterFilter: "0xa07f47c30C262adcC263A4D44595972c50e04db7",
+      sharedRandomizer: "0x28f2D3805652FB5d359486dFfb7D08320D403240",
+    },
+    dev: {
+      engineFactory: "0x000000C969c34e95C9b9F24ea7bD597Af554a1c2",
+      sharedMinterFilter: "0x29e9f09244497503f304FA549d50eFC751D818d2",
+      sharedRandomizer: "0xA6F7e62F3B52552f79b2Baa2858a1DB18016c09B",
+    },
   },
 };

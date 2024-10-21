@@ -17,6 +17,7 @@ const supportedNetworks = [
   "arbitrum",
   "sepolia",
   "arbitrum-sepolia",
+  "base",
 ];
 
 const ethereumAWSCreds = {
@@ -29,6 +30,11 @@ const arbitrumAWSCreds = {
   secretAccessKey: process.env.ARBITRUM_AWS_SECRET_ACCESS_KEY,
 };
 
+const baseAWSCreds = {
+  accessKeyId: process.env.BASE_AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.BASE_AWS_SECRET_ACCESS_KEY,
+};
+
 const ethereumS3Client = new S3Client({
   region: "us-east-1",
   credentials: ethereumAWSCreds,
@@ -37,6 +43,11 @@ const ethereumS3Client = new S3Client({
 const arbitrumS3Client = new S3Client({
   region: "us-east-1",
   credentials: arbitrumAWSCreds,
+});
+
+const baseS3Client = new S3Client({
+  region: "us-east-1",
+  credentials: baseAWSCreds,
 });
 
 const createBucket = async (bucketName: string, client: any) => {
@@ -104,6 +115,8 @@ const createEngineBucket = async (
   if (client === undefined) {
     if (networkName === "arbitrum" || networkName === "arbitrum-goerli") {
       client = arbitrumS3Client;
+    } else if (networkName === "base") {
+      client = baseS3Client;
     } else {
       client = ethereumS3Client;
     }
