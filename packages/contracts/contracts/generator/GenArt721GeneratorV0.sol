@@ -383,7 +383,6 @@ contract GenArt721GeneratorV0 is Initializable {
                 preferredCDN,
                 '">'
             );
-            bodyTags[0].tagContent = "// Noop"; // ScriptyBuilder requires scriptContent for this to work
             bodyTags[0].tagClose = "</script>";
         } else {
             bytes memory dependencyScript = getDependencyScriptBytes(
