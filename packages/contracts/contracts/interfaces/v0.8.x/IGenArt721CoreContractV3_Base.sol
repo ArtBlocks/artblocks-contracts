@@ -4,6 +4,7 @@
 pragma solidity ^0.8.0;
 
 import "./IAdminACLV0.sol";
+import "./IGenArt721CoreProjectScriptV1.sol";
 
 /**
  * @title This interface is intended to house interface items that are common
@@ -12,7 +13,7 @@ import "./IAdminACLV0.sol";
  * add support the Royalty Registry by default.
  * @author Art Blocks Inc.
  */
-interface IGenArt721CoreContractV3_Base {
+interface IGenArt721CoreContractV3_Base is IGenArt721CoreProjectScriptV1 {
     // This interface emits generic events that contain fields that indicate
     // which parameter has been updated. This is sufficient for application
     // state management, while also simplifying the contract and indexing code.
