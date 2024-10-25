@@ -321,6 +321,8 @@ contract GenArt721GeneratorV0 is Initializable {
             .stringToBytes32();
 
         bytes32 tokenHash;
+        bool isV0CoreContract = false;
+
         // @dev Attempt to get token hash from V1 and up core contracts first.
         try
             IGenArt721CoreTokenHashProviderV1(coreContract).tokenIdToHash(
@@ -340,6 +342,7 @@ contract GenArt721GeneratorV0 is Initializable {
                     tokenId
                 )
             returns (bytes32[] memory tokenHashes) {
+                isV0CoreContract = true;
                 tokenHash = tokenHashes[0];
             } catch {
                 revert("Unable to retrieve token hash.");
@@ -356,13 +359,13 @@ contract GenArt721GeneratorV0 is Initializable {
             'let tokenData = {"tokenId":"',
             Strings.toString(tokenId),
             '"',
-            ',"hash":"',
+            isV0CoreContract ? ',"hashes":["' : ',"hash":"',
             Strings.toHexString(uint256(tokenHash)),
-            '"}'
+            isV0CoreContract ? '"]}' : '"}'
         );
         headTags[1].tagType = HTMLTagType.script;
 
-        HTMLTag[] memory bodyTags = new HTMLTag[](3);
+        HTMLTag[] memory bodyTags = new HTMLTag[](4);
         // Get script count and preferred CDN for the dependency.
         (
             ,
@@ -378,12 +381,17 @@ contract GenArt721GeneratorV0 is Initializable {
 
         // If no scripts on-chain, load the script from the preferred CDN.
         if (scriptCount == 0) {
-            bodyTags[0].tagOpen = abi.encodePacked(
-                '<script type="text/javascript" src="',
-                preferredCDN,
-                '">'
-            );
-            bodyTags[0].tagClose = "</script>";
+            bool cdnAvailable = bytes(preferredCDN).length > 0;
+            // If no CDN is available, we don't need to add any tags.
+            // Expected for dependencies like "js@na" and "svg@na".
+            bodyTags[0].tagOpen = cdnAvailable
+                ? abi.encodePacked(
+                    '<script type="text/javascript" src="',
+                    preferredCDN,
+                    '">'
+                )
+                : bytes("");
+            bodyTags[0].tagClose = bytes(cdnAvailable ? "</script>" : "");
         } else {
             bytes memory dependencyScript = getDependencyScriptBytes(
                 dependencyNameAndVersion
@@ -400,12 +408,20 @@ contract GenArt721GeneratorV0 is Initializable {
             BytecodeStorageReader.readFromBytecode(gunzipScriptBytecodeAddress)
         );
 
+        if (dependencyNameAndVersion == "js@na") {
+            bodyTags[2].tagOpen = "<canvas>";
+            bodyTags[2].tagClose = "</canvas>";
+        } else {
+            bodyTags[2].tagOpen = "";
+            bodyTags[2].tagClose = "";
+        }
+
         bytes memory projectScript = getProjectScriptBytes(
             coreContract,
             projectId
         );
-        bodyTags[2].tagContent = projectScript;
-        bodyTags[2].tagType = HTMLTagType.script; // <script>[script]</script>
+        bodyTags[3].tagContent = projectScript;
+        bodyTags[3].tagType = HTMLTagType.script; // <script>[script]</script>
 
         HTMLRequest memory htmlRequest;
         htmlRequest.headTags = headTags;

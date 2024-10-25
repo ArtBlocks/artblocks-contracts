@@ -46,7 +46,7 @@ function getScriptTag(script: string) {
 }
 
 function getScriptTagWithSrc(src: string) {
-  return `<script type="text/javascript" src="${src}">// Noop</script>`;
+  return `<script type="text/javascript" src="${src}"></script>`;
 }
 
 function getScriptBase64DataUriScriptTag(script: string) {
@@ -239,6 +239,14 @@ describe(`GenArt721GeneratorV0`, async function () {
       expect(tokenHtml).to.include(
         getScriptBase64DataUriScriptTag(GUNZIP_SCRIPT_BASE64)
       );
+
+      // Token data
+      const hashes = await genArt721CoreV0.showTokenHashes(0);
+      const hash = hashes[0];
+      expect(tokenHtml).to.include(
+        getScriptTag(`let tokenData = {"tokenId":"0","hashes":["${hash}"]}`)
+      );
+
       // Project script
       expect(tokenHtml).to.include(getScriptTag(projectScript));
 
@@ -328,6 +336,13 @@ describe(`GenArt721GeneratorV0`, async function () {
       expect(tokenHtml).to.include(
         getScriptBase64DataUriScriptTag(GUNZIP_SCRIPT_BASE64)
       );
+      // Token data
+      const hash = await genArt721CoreV1.tokenIdToHash(tokenId);
+      expect(tokenHtml).to.include(
+        getScriptTag(
+          `let tokenData = {"tokenId":"${tokenId}","hash":"${hash}"}`
+        )
+      );
       // Project script
       expect(tokenHtml).to.include(getScriptTag(projectScript));
     });
@@ -397,6 +412,13 @@ describe(`GenArt721GeneratorV0`, async function () {
       // Gunzip script
       expect(tokenHtml).to.include(
         getScriptBase64DataUriScriptTag(GUNZIP_SCRIPT_BASE64)
+      );
+      // Token data
+      const hash = await genArt721CoreV2.tokenIdToHash(tokenId);
+      expect(tokenHtml).to.include(
+        getScriptTag(
+          `let tokenData = {"tokenId":"${tokenId}","hash":"${hash}"}`
+        )
       );
       // Project script
       expect(tokenHtml).to.include(getScriptTag(projectScript));
@@ -481,6 +503,13 @@ describe(`GenArt721GeneratorV0`, async function () {
       // Gunzip script
       expect(tokenHtml).to.include(
         getScriptBase64DataUriScriptTag(GUNZIP_SCRIPT_BASE64)
+      );
+      // Token data
+      const hash = await genArt721CoreV3.tokenIdToHash(tokenId);
+      expect(tokenHtml).to.include(
+        getScriptTag(
+          `let tokenData = {"tokenId":"${tokenId}","hash":"${hash}"}`
+        )
       );
       // Project script
       expect(tokenHtml).to.include(getScriptTag(projectScript));
