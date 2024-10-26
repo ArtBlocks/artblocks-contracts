@@ -75,7 +75,7 @@ graphql(/* GraphQL */ `
     id
     slot_index
     bid_value
-    ranking
+    rank
     time_of_bid
     bidder_address
     is_removed
@@ -84,12 +84,10 @@ graphql(/* GraphQL */ `
 
 const getUserBidsDocument = graphql(/* GraphQL */ `
   query GetUserBids($projectId: String!, $userAddress: String!) {
-    bids_metadata(
-      where: {
-        project_id: { _eq: $projectId }
-        bidder_address: { _eq: $userAddress }
-      }
-      order_by: { ranking: asc }
+    project_ranked_bids(
+      args: { project: $projectId }
+      where: { bidder_address: { _eq: $userAddress } }
+      order_by: { rank: asc }
     ) {
       ...BidDetails
     }
@@ -132,7 +130,7 @@ export const ramMachine = setup({
           userAddress: walletClient.account.address.toLowerCase(),
         });
 
-        return bids.bids_metadata;
+        return bids.project_ranked_bids;
       }
     ),
     initiateBidTx: fromPromise(
