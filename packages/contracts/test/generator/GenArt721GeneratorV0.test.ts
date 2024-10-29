@@ -67,8 +67,13 @@ describe(`GenArt721GeneratorV0`, async function () {
   const p5NameAndVersion = "p5js@1.0.0";
   const p5NameAndVersionBytes =
     ethers.utils.formatBytes32String(p5NameAndVersion);
-  const licenseType = "MIT";
-  const licenseTypeBytes = ethers.utils.formatBytes32String(licenseType);
+  const jsNameAndVersion = "js@na";
+  const jsNameAndVersionBytes =
+    ethers.utils.formatBytes32String(jsNameAndVersion);
+  const mitLicenseType = "MIT";
+  const mitLicenseTypeBytes = ethers.utils.formatBytes32String(mitLicenseType);
+  const naLicenseType = "NA";
+  const naLicenseTypeBytes = ethers.utils.formatBytes32String(naLicenseType);
   const preferredCDN =
     "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/p5.min.js";
   const p5PreferredRepository = "https://github.com/processing/p5.js";
@@ -101,12 +106,24 @@ describe(`GenArt721GeneratorV0`, async function () {
     // Add MIT license type to registry
     await config.dependencyRegistry
       .connect(config.accounts.deployer)
-      .addLicenseType(licenseTypeBytes);
+      .addLicenseType(mitLicenseTypeBytes);
+
+    // Add "NA" license type to registry
+    await config.dependencyRegistry.addLicenseType(naLicenseTypeBytes);
+
+    // Add js to registry
+    await config.dependencyRegistry.addDependency(
+      jsNameAndVersionBytes,
+      naLicenseTypeBytes,
+      "",
+      "",
+      ""
+    );
 
     // Add p5 to registry
     await config.dependencyRegistry.addDependency(
       p5NameAndVersionBytes,
-      licenseTypeBytes,
+      mitLicenseTypeBytes,
       preferredCDN,
       p5PreferredRepository,
       p5DependencyWebsite
@@ -533,7 +550,7 @@ describe(`GenArt721GeneratorV0`, async function () {
     // Add new dependency without script
     await config.dependencyRegistry.addDependency(
       threeNameAndVersionBytes,
-      licenseTypeBytes,
+      mitLicenseTypeBytes,
       threePreferredCDN,
       "",
       ""
@@ -614,6 +631,236 @@ describe(`GenArt721GeneratorV0`, async function () {
     expect(encodedTokenHtml).to.equal(
       `data:text/html;base64,${Buffer.from(tokenHtml).toString("base64")}`
     );
+  });
+
+  it("includes canvas tag for relevant dependencies", async function () {
+    const config = await loadFixture(_beforeEach);
+    const { genArt721Core: genArt721CoreV3, minterFilter } =
+      await deployCoreWithMinterFilter(
+        config,
+        "GenArt721CoreV3",
+        "MinterFilterV1"
+      );
+
+    const minter = (await deployAndGet(config, "MinterSetPriceV2", [
+      genArt721CoreV3.address,
+      minterFilter.address,
+    ])) as MinterSetPriceV2;
+
+    await minterFilter
+      .connect(config.accounts.deployer)
+      .addApprovedMinter(minter.address);
+
+    const projectId = await genArt721CoreV3.nextProjectId();
+    const projectScript = "console.log('test')";
+
+    // Create project
+    await genArt721CoreV3
+      .connect(config.accounts.deployer)
+      .addProject("Test Project", config.accounts.artist.address);
+
+    // Add project script
+    await genArt721CoreV3
+      .connect(config.accounts.artist)
+      .addProjectScript(projectId, projectScript);
+
+    // Mint token 0
+    await minterFilter
+      .connect(config.accounts.artist)
+      .setMinterForProject(projectId, minter.address);
+    await minter
+      .connect(config.accounts.artist)
+      .updatePricePerTokenInWei(projectId, 0);
+    await minter.connect(config.accounts.artist).purchase(projectId);
+
+    const tokenId = projectId.mul(ONE_MILLION);
+
+    // Add contract to dependency registry
+    await config.dependencyRegistry
+      .connect(config.accounts.deployer)
+      .addSupportedCoreContract(genArt721CoreV3.address);
+
+    // Test each dependency that should have a canvas
+    const dependenciesToTest = [
+      { name: "js", version: "na", expectedId: "js-canvas", skipAdd: true },
+      { name: "babylon", version: "1.0.0", expectedId: "babylon-canvas" },
+      { name: "tone", version: "1.0.0", expectedId: "tone-canvas" },
+      { name: "zdog", version: "1.0.0", expectedId: "zdog-canvas" },
+      {
+        name: "processing-js",
+        version: "1.4.6",
+        expectedId: "processing-js-canvas",
+      },
+    ];
+
+    for (const dep of dependenciesToTest) {
+      const nameAndVersion = `${dep.name}@${dep.version}`;
+      const nameAndVersionBytes =
+        ethers.utils.formatBytes32String(nameAndVersion);
+
+      // Add dependency to registry
+      if (!dep.skipAdd) {
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addDependency(nameAndVersionBytes, mitLicenseTypeBytes, "", "", "");
+      }
+
+      // Update project script type
+      await genArt721CoreV3
+        .connect(config.accounts.artist)
+        .updateProjectScriptType(projectId, nameAndVersionBytes);
+
+      // Get token html
+      const tokenHtml = await config.genArt721Generator.getTokenHtml(
+        genArt721CoreV3.address,
+        tokenId
+      );
+
+      // Check for canvas tag with correct id
+      expect(tokenHtml).to.include(`<canvas id='${dep.expectedId}'>`);
+
+      // For processing-js, check that canvas comes after script
+      if (dep.name === "processing-js") {
+        const scriptIndex = tokenHtml.indexOf(
+          "<script type='application/processing'>"
+        );
+        const canvasIndex = tokenHtml.indexOf(
+          `<canvas id='${dep.expectedId}'>`
+        );
+        expect(scriptIndex).to.be.lessThan(canvasIndex);
+      } else {
+        // For other dependencies, canvas should come before script
+        const scriptIndex = tokenHtml.indexOf(getScriptTag(projectScript));
+        const canvasIndex = tokenHtml.indexOf(
+          `<canvas id='${dep.expectedId}'>`
+        );
+
+        expect(canvasIndex).to.be.lessThan(scriptIndex);
+      }
+    }
+  });
+
+  describe("getDependencyScript", function () {
+    it("returns dependency script when available", async function () {
+      const config = await loadFixture(_beforeEach);
+
+      // Get script for p5js which was added in beforeEach with compressed script
+      const script =
+        await config.genArt721Generator.getDependencyScript("p5js@1.0.0");
+      expect(script).to.equal(compressedDepScript);
+    });
+
+    it("returns empty string when script count is zero", async function () {
+      const config = await loadFixture(_beforeEach);
+
+      // js@na was added in beforeEach with no scripts
+      const script =
+        await config.genArt721Generator.getDependencyScript("js@na");
+      expect(script).to.equal("");
+    });
+  });
+
+  describe("getProjectScript", function () {
+    it("returns project script when available", async function () {
+      const config = await loadFixture(_beforeEach);
+
+      // Deploy core contract
+      const { genArt721Core: genArt721CoreV3 } =
+        await deployCoreWithMinterFilter(
+          config,
+          "GenArt721CoreV3",
+          "MinterFilterV1"
+        );
+
+      // Add contract to dependency registry
+      await config.dependencyRegistry
+        .connect(config.accounts.deployer)
+        .addSupportedCoreContract(genArt721CoreV3.address);
+
+      // Create project with script
+      const projectId = await genArt721CoreV3.nextProjectId();
+      await genArt721CoreV3
+        .connect(config.accounts.deployer)
+        .addProject("name", config.accounts.artist.address);
+
+      const projectScript = "console.log('test');";
+      await genArt721CoreV3
+        .connect(config.accounts.artist)
+        .addProjectScript(projectId, projectScript);
+
+      // Get project script
+      const script = await config.genArt721Generator.getProjectScript(
+        genArt721CoreV3.address,
+        projectId
+      );
+      expect(script).to.equal(projectScript);
+    });
+
+    it("returns empty string when script count is zero", async function () {
+      const config = await loadFixture(_beforeEach);
+
+      // Deploy core contract
+      const { genArt721Core: genArt721CoreV3 } =
+        await deployCoreWithMinterFilter(
+          config,
+          "GenArt721CoreV3",
+          "MinterFilterV1"
+        );
+
+      // Add contract to dependency registry
+      await config.dependencyRegistry
+        .connect(config.accounts.deployer)
+        .addSupportedCoreContract(genArt721CoreV3.address);
+
+      // Create project without script
+      const projectId = await genArt721CoreV3.nextProjectId();
+      await genArt721CoreV3
+        .connect(config.accounts.deployer)
+        .addProject("name", config.accounts.artist.address);
+
+      // Get project script
+      const script = await config.genArt721Generator.getProjectScript(
+        genArt721CoreV3.address,
+        projectId
+      );
+      expect(script).to.equal("");
+
+      // Test pre-V3 core contract
+      const { genArt721Core: genArt721CoreV1 } =
+        await deployCoreWithMinterFilter(
+          config,
+          "GenArt721CoreV1",
+          "MinterFilterV0"
+        );
+      await config.dependencyRegistry
+        .connect(config.accounts.deployer)
+        .addSupportedCoreContract(genArt721CoreV1.address);
+      const projectId2 = await genArt721CoreV1.nextProjectId();
+      await genArt721CoreV1
+        .connect(config.accounts.deployer)
+        .addProject("name", config.accounts.artist.address, 0, true);
+      const script2 = await config.genArt721Generator.getProjectScript(
+        genArt721CoreV1.address,
+        projectId2
+      );
+      expect(script2).to.equal("");
+    });
+
+    it("reverts when core contract is not supported", async function () {
+      const config = await loadFixture(_beforeEach);
+
+      // Deploy core contract without adding to dependency registry
+      const { genArt721Core: genArt721CoreV3 } =
+        await deployCoreWithMinterFilter(
+          config,
+          "GenArt721CoreV3",
+          "MinterFilterV1"
+        );
+
+      await expect(
+        config.genArt721Generator.getProjectScript(genArt721CoreV3.address, 0)
+      ).to.be.revertedWith("Unsupported core contract");
+    });
   });
 
   describe("updateDependencyRegistry", function () {

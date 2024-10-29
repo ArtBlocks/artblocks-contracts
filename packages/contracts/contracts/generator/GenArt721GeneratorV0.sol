@@ -128,6 +128,87 @@ contract GenArt721GeneratorV0 is Initializable {
     }
 
     /**
+     * @notice Get the dependency script for a given dependency name and version string.
+     * @param dependencyNameAndVersion The name and version of the dependency
+     * to retrieve the script for.
+     * @return The dependency script stiched together from all of the script chunks as a string.
+     * @dev This function will revert if the dependency name and version is not
+     * supported by the DependencyRegistry or if the script storage version is
+     * not supported.
+     */
+    function getDependencyScript(
+        string memory dependencyNameAndVersion
+    ) external view returns (string memory) {
+        bytes memory dependencyScript = _getDependencyScriptBytes(
+            dependencyNameAndVersion.stringToBytes32()
+        );
+
+        return string(dependencyScript);
+    }
+
+    /**
+     * @notice Get the project script for a given core contract address and
+     * project ID.
+     * @param coreContract The address of the core contract to retrieve
+     * the project script from.
+     * @param projectId The ID of the project to retrieve the script for.
+     * @return The project script stiched together from all of the script chunks as a string.
+     * @dev This function will revert if the core contract address is not
+     * supported by the DependencyRegistry or if the contract at the address
+     * does not implement the IGenArt721CoreProjectScriptV0 or IGenArt721CoreProjectScriptV1.
+     */
+    function getProjectScript(
+        address coreContract,
+        uint256 projectId
+    ) external view returns (string memory) {
+        bytes memory projectScript = _getProjectScriptBytes(
+            coreContract,
+            projectId
+        );
+
+        return string(projectScript);
+    }
+
+    /**
+     * @notice Get the data URI for the HTML for a given token (e.g. data:text/html;base64,[html])
+     * @param coreContract The address of the core contract the token belongs to.
+     * @param tokenId The ID of the token to retrieve the HTML for.
+     * @return The data URI for the HTML for the token.
+     */
+    function getTokenHtmlBase64EncodedDataUri(
+        address coreContract,
+        uint256 tokenId
+    ) external view returns (string memory) {
+        HTMLRequest memory htmlRequest = _getTokenHtmlRequest(
+            coreContract,
+            tokenId
+        );
+        string memory base64EncodedHTMLDataURI = scriptyBuilder
+            .getEncodedHTMLString(htmlRequest);
+
+        return base64EncodedHTMLDataURI;
+    }
+
+    /**
+     * @notice Get the HTML for a given token.
+     * @param coreContract The address of the core contract the token belongs to.
+     * @param tokenId The ID of the token to retrieve the HTML for.
+     * @return The HTML for the token.
+     */
+    function getTokenHtml(
+        address coreContract,
+        uint256 tokenId
+    ) external view returns (string memory) {
+        HTMLRequest memory htmlRequest = _getTokenHtmlRequest(
+            coreContract,
+            tokenId
+        );
+        string memory html = scriptyBuilder.getHTMLString(htmlRequest);
+
+        return html;
+    }
+
+    /**
      * @notice Get the dependency script for a given dependency name and version.
      * @param dependencyNameAndVersion The name and version of the dependency
      * to retrieve the script for.
@@ -136,7 +217,7 @@ contract GenArt721GeneratorV0 is Initializable {
      * supported by the DependencyRegistry or if the script storage version is
      * not supported.
      */
-    function getDependencyScriptBytes(
+    function _getDependencyScriptBytes(
         bytes32 dependencyNameAndVersion
     ) internal view returns (bytes memory) {
         uint256 scriptCount = dependencyRegistry.getDependencyScriptCount(
@@ -178,25 +259,6 @@ contract GenArt721GeneratorV0 is Initializable {
     }
 
     /**
-     * @notice Get the dependency script for a given dependency name and version string.
-     * @param dependencyNameAndVersion The name and version of the dependency
-     * to retrieve the script for.
-     * @return The dependency script stiched together from all of the script chunks as a string.
-     * @dev This function will revert if the dependency name and version is not
-     * supported by the DependencyRegistry or if the script storage version is
-     * not supported.
-     */
-    function getDependencyScript(
-        string memory dependencyNameAndVersion
-    ) external view returns (string memory) {
-        bytes memory dependencyScript = getDependencyScriptBytes(
-            dependencyNameAndVersion.stringToBytes32()
-        );
-
-        return string(dependencyScript);
-    }
-
-    /**
      * @notice Get the project script for a given core contract address and
      * project ID.
      * @param coreContract The address of the core contract to retrieve
@@ -207,7 +269,7 @@ contract GenArt721GeneratorV0 is Initializable {
      * supported by the DependencyRegistry or if the contract at the address
      * does not implement the IGenArt721CoreProjectScriptV0 or IGenArt721CoreProjectScriptV1.
      */
-    function getProjectScriptBytes(
+    function _getProjectScriptBytes(
         address coreContract,
         uint256 projectId
     ) internal view returns (bytes memory) {
@@ -280,35 +342,12 @@ contract GenArt721GeneratorV0 is Initializable {
     }
 
     /**
-     * @notice Get the project script for a given core contract address and
-     * project ID.
-     * @param coreContract The address of the core contract to retrieve
-     * the project script from.
-     * @param projectId The ID of the project to retrieve the script for.
-     * @return The project script stiched together from all of the script chunks as a string.
-     * @dev This function will revert if the core contract address is not
-     * supported by the DependencyRegistry or if the contract at the address
-     * does not implement the IGenArt721CoreProjectScriptV0 or IGenArt721CoreProjectScriptV1.
-     */
-    function getProjectScript(
-        address coreContract,
-        uint256 projectId
-    ) external view returns (string memory) {
-        bytes memory projectScript = getProjectScriptBytes(
-            coreContract,
-            projectId
-        );
-
-        return string(projectScript);
-    }
-
-    /**
      * @notice Get the HTMLRequest for a given token.
      * @param coreContract The core contract address the token belongs to.
      * @param tokenId The ID of the token to retrieve the HTMLRequest for.
      * @return The HTMLRequest for the token.
      */
-    function getTokenHtmlRequest(
+    function _getTokenHtmlRequest(
         address coreContract,
         uint256 tokenId
     ) internal view returns (HTMLRequest memory) {
@@ -320,36 +359,14 @@ contract GenArt721GeneratorV0 is Initializable {
             .getDependencyNameAndVersionForProject(coreContract, projectId)
             .stringToBytes32();
 
-        bytes32 tokenHash;
-        bool isV0CoreContract = false;
-
+        // Create head tags
         // @dev Attempt to get token hash from V1 and up core contracts first.
-        try
-            IGenArt721CoreTokenHashProviderV1(coreContract).tokenIdToHash(
-                tokenId
-            )
-        returns (bytes32 _tokenHash) {
-            tokenHash = _tokenHash;
-        } catch {
-            // Noop try again for older contracts.
-        }
+        (bytes32 tokenHash, bool isV0CoreContract) = _getTokenHash(
+            coreContract,
+            tokenId
+        );
 
-        // @dev If we failed to get the token hash try again using the interface
-        // for V0 core contracts.
-        if (tokenHash == bytes32(0)) {
-            try
-                IGenArt721CoreTokenHashProviderV0(coreContract).showTokenHashes(
-                    tokenId
-                )
-            returns (bytes32[] memory tokenHashes) {
-                isV0CoreContract = true;
-                tokenHash = tokenHashes[0];
-            } catch {
-                revert("Unable to retrieve token hash.");
-            }
-        }
-
-        HTMLTag[] memory headTags = new HTMLTag[](2);
+        HTMLTag[] memory headTags = new HTMLTag[](3);
         headTags[0].tagOpen = "<style>";
         headTags[0]
             .tagContent = "html{height:100%}body{min-height:100%;margin:0;padding:0}canvas{padding:0;margin:auto;display:block;position:absolute;top:0;bottom:0;left:0;right:0}";
@@ -365,7 +382,10 @@ contract GenArt721GeneratorV0 is Initializable {
         );
         headTags[1].tagType = HTMLTagType.script;
 
+        // Create body tags
         HTMLTag[] memory bodyTags = new HTMLTag[](4);
+
+        // Dependency script tag
         // Get script count and preferred CDN for the dependency.
         (
             ,
@@ -393,7 +413,7 @@ contract GenArt721GeneratorV0 is Initializable {
                 : bytes("");
             bodyTags[0].tagClose = bytes(cdnAvailable ? "</script>" : "");
         } else {
-            bytes memory dependencyScript = getDependencyScriptBytes(
+            bytes memory dependencyScript = _getDependencyScriptBytes(
                 dependencyNameAndVersion
             );
             bodyTags[0].tagContent = dependencyScript;
@@ -408,20 +428,37 @@ contract GenArt721GeneratorV0 is Initializable {
             BytecodeStorageReader.readFromBytecode(gunzipScriptBytecodeAddress)
         );
 
-        if (dependencyNameAndVersion == "js@na") {
-            bodyTags[2].tagOpen = "<canvas>";
-            bodyTags[2].tagClose = "</canvas>";
-        } else {
-            bodyTags[2].tagOpen = "";
-            bodyTags[2].tagClose = "";
-        }
+        HTMLTag memory canvasTag = _createCanvasTagIfNeeded(
+            dependencyNameAndVersion
+        );
 
-        bytes memory projectScript = getProjectScriptBytes(
+        bool isProcessingDep = dependencyNameAndVersion ==
+            bytes32("processing-js@1.4.6");
+
+        bytes memory projectScript = _getProjectScriptBytes(
             coreContract,
             projectId
         );
-        bodyTags[3].tagContent = projectScript;
-        bodyTags[3].tagType = HTMLTagType.script; // <script>[script]</script>
+
+        HTMLTag memory projectScriptTag = HTMLTag({
+            tagOpen: isProcessingDep
+                ? bytes("<script type='application/processing'>")
+                : bytes("<script>"),
+            tagClose: bytes("</script>"),
+            tagType: HTMLTagType.useTagOpenAndClose,
+            name: "",
+            contractAddress: address(0),
+            contractData: "",
+            tagContent: projectScript
+        });
+
+        if (isProcessingDep) {
+            bodyTags[2] = projectScriptTag;
+            bodyTags[3] = canvasTag;
+        } else {
+            bodyTags[3] = projectScriptTag;
+            bodyTags[2] = canvasTag;
+        }
 
         HTMLRequest memory htmlRequest;
         htmlRequest.headTags = headTags;
@@ -431,41 +468,94 @@ contract GenArt721GeneratorV0 is Initializable {
     }
 
     /**
-     * @notice Get the data URI for the HTML for a given token (e.g. data:text/html;base64,[html])
-     * @param coreContract The address of the core contract the token belongs to.
-     * @param tokenId The ID of the token to retrieve the HTML for.
-     * @return The data URI for the HTML for the token.
+     * @dev Helper function to get token hash with fallback support
+     * @return tokenHash The hash for the token
+     * @return isV0CoreContract Whether the contract is a V0 core contract
      */
-    function getTokenHtmlBase64EncodedDataUri(
+    function _getTokenHash(
         address coreContract,
         uint256 tokenId
-    ) external view returns (string memory) {
-        HTMLRequest memory htmlRequest = getTokenHtmlRequest(
-            coreContract,
-            tokenId
-        );
-        string memory base64EncodedHTMLDataURI = scriptyBuilder
-            .getEncodedHTMLString(htmlRequest);
+    ) private view returns (bytes32 tokenHash, bool isV0CoreContract) {
+        // Try V1+ contracts first
+        try
+            IGenArt721CoreTokenHashProviderV1(coreContract).tokenIdToHash(
+                tokenId
+            )
+        returns (bytes32 hash) {
+            if (hash != bytes32(0)) {
+                return (hash, false);
+            }
+        } catch {}
 
-        return base64EncodedHTMLDataURI;
+        // Fallback to V0 contracts
+        try
+            IGenArt721CoreTokenHashProviderV0(coreContract).showTokenHashes(
+                tokenId
+            )
+        returns (bytes32[] memory hashes) {
+            require(hashes[0] != bytes32(0), "Invalid token hash");
+            return (hashes[0], true);
+        } catch {
+            revert("Unable to retrieve token hash");
+        }
     }
 
     /**
-     * @notice Get the HTML for a given token.
-     * @param coreContract The address of the core contract the token belongs to.
-     * @param tokenId The ID of the token to retrieve the HTML for.
-     * @return The HTML for the token.
+     * @dev Helper function to get a canvas tag or an empty tag depending on the dependency name.
+     * @return The canvas tag or an empty tag.
      */
-    function getTokenHtml(
-        address coreContract,
-        uint256 tokenId
-    ) external view returns (string memory) {
-        HTMLRequest memory htmlRequest = getTokenHtmlRequest(
-            coreContract,
-            tokenId
-        );
-        string memory html = scriptyBuilder.getHTMLString(htmlRequest);
+    function _createCanvasTagIfNeeded(
+        bytes32 dependencyNameAndVersion
+    ) internal pure returns (HTMLTag memory) {
+        // Extract dependency name before @ symbol
+        uint atSignIndex;
+        for (uint i = 0; i < dependencyNameAndVersion.length; i++) {
+            if (dependencyNameAndVersion[i] == "@") {
+                atSignIndex = i;
+                break;
+            }
+        }
 
-        return html;
+        bytes memory nameBeforeAt = new bytes(atSignIndex);
+        for (uint i = 0; i < atSignIndex; i++) {
+            nameBeforeAt[i] = dependencyNameAndVersion[i];
+        }
+        string memory depNameStr = string(nameBeforeAt);
+
+        // Check if dependency needs canvas
+        bytes32 nameHash = keccak256(nameBeforeAt);
+        if (
+            nameHash == keccak256(bytes("js")) ||
+            nameHash == keccak256(bytes("babylon")) ||
+            nameHash == keccak256(bytes("tone")) ||
+            nameHash == keccak256(bytes("zdog")) ||
+            nameHash == keccak256(bytes("processing-js"))
+        ) {
+            return
+                HTMLTag({
+                    tagOpen: abi.encodePacked(
+                        "<canvas id='",
+                        depNameStr,
+                        "-canvas'>"
+                    ),
+                    tagClose: bytes("</canvas>"),
+                    tagType: HTMLTagType.useTagOpenAndClose,
+                    name: "",
+                    contractAddress: address(0),
+                    contractData: "",
+                    tagContent: ""
+                });
+        } else {
+            return
+                HTMLTag({
+                    tagOpen: "",
+                    tagClose: "",
+                    tagType: HTMLTagType.useTagOpenAndClose,
+                    name: "",
+                    contractAddress: address(0),
+                    contractData: "",
+                    tagContent: ""
+                });
+        }
     }
 }
