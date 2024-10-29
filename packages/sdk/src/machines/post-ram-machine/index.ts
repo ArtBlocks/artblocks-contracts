@@ -58,7 +58,7 @@ export const postRAMMachine = setup({
           userAddress: walletClient.account.address.toLowerCase(),
         });
 
-        return bids.bids_metadata;
+        return bids.project_ranked_bids;
       }
     ),
   },

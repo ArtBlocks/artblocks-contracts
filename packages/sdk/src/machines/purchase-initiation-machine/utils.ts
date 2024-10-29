@@ -723,7 +723,7 @@ export async function getRAMMinterUserPurchaseContext(
   return {
     isEligible: true,
     additionalPurchaseData: {
-      userBids: userBids.bids_metadata,
+      userBids: userBids.project_ranked_bids,
     },
   };
 }
