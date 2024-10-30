@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.22;
 
-import "../DependencyRegistryV0.sol";
+import "../interfaces/v0.8.x/IDependencyRegistryV0.sol";
 import "../interfaces/v0.8.x/IGenArt721CoreProjectScriptV0.sol";
 import "../interfaces/v0.8.x/IGenArt721CoreProjectScriptV1.sol";
 import "../interfaces/v0.8.x/IGenArt721CoreTokenHashProviderV0.sol";
@@ -31,7 +31,7 @@ contract GenArt721GeneratorV0 is Initializable {
     // @dev This is an upgradable contract so we need to maintain
     // the order of the variables to ensure we don't overwrite
     // storage when upgrading.
-    DependencyRegistryV0 public dependencyRegistry;
+    IDependencyRegistryV0 public dependencyRegistry;
     IScriptyBuilderV2 public scriptyBuilder;
     address public gunzipScriptBytecodeAddress;
 
@@ -73,7 +73,7 @@ contract GenArt721GeneratorV0 is Initializable {
         address _scriptyBuilder,
         address _gunzipScriptBytecodeAddress
     ) public initializer {
-        dependencyRegistry = DependencyRegistryV0(_dependencyRegistry);
+        dependencyRegistry = IDependencyRegistryV0(_dependencyRegistry);
         scriptyBuilder = IScriptyBuilderV2(_scriptyBuilder);
         gunzipScriptBytecodeAddress = _gunzipScriptBytecodeAddress;
 
@@ -93,7 +93,7 @@ contract GenArt721GeneratorV0 is Initializable {
     function updateDependencyRegistry(address _dependencyRegistry) external {
         _onlyDependencyRegistryAdminACL(this.updateDependencyRegistry.selector);
 
-        dependencyRegistry = DependencyRegistryV0(_dependencyRegistry);
+        dependencyRegistry = IDependencyRegistryV0(_dependencyRegistry);
         emit DependencyRegistryUpdated(_dependencyRegistry);
     }
 
