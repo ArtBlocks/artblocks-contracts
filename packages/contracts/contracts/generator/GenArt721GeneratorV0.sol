@@ -6,6 +6,7 @@ import "../interfaces/v0.8.x/IGenArt721CoreProjectScriptV0.sol";
 import "../interfaces/v0.8.x/IGenArt721CoreProjectScriptV1.sol";
 import "../interfaces/v0.8.x/IGenArt721CoreTokenHashProviderV0.sol";
 import "../interfaces/v0.8.x/IGenArt721CoreTokenHashProviderV1.sol";
+import "../interfaces/v0.8.x/IGenArt721GeneratorV0.sol";
 import "../libs/v0.8.x/Bytes32Strings.sol";
 import "../libs/v0.8.x/BytecodeStorageV1.sol";
 import {ABHelpers} from "../libs/v0.8.x/ABHelpers.sol";
@@ -23,7 +24,7 @@ import {IScriptyBuilderV2, HTMLRequest, HTMLTagType, HTMLTag} from "scripty.sol/
  * by combining the dependency script, project script, token data. It utilizes
  * the ScriptyBuilder contract to generate the HTML.
  */
-contract GenArt721GeneratorV0 is Initializable {
+contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     using Bytes32Strings for bytes32;
     using Bytes32Strings for string;
     using BytecodeStorageWriter for string;
@@ -34,12 +35,6 @@ contract GenArt721GeneratorV0 is Initializable {
     IDependencyRegistryV0 public dependencyRegistry;
     IScriptyBuilderV2 public scriptyBuilder;
     address public gunzipScriptBytecodeAddress;
-
-    event DependencyRegistryUpdated(address indexed _dependencyRegistry);
-    event ScriptyBuilderUpdated(address indexed _scriptyBuilder);
-    event GunzipScriptBytecodeAddressUpdated(
-        address indexed _gunzipScriptBytecodeAddress
-    );
 
     function _onlySupportedCoreContract(address coreContract) internal view {
         require(
