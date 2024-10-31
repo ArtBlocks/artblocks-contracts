@@ -20,10 +20,8 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   const networkName = await getNetworkName();
 
-  if (networkName != "hardhat") {
-    throw new Error(
-      "This script is intended to be run on hardhat local node only"
-    );
+  if (networkName != "mainnet") {
+    throw new Error("This script is intended to be run on mainnet only");
   }
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENT BEGINS HERE

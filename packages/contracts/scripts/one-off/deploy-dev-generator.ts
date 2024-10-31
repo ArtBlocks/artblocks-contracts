@@ -3,13 +3,13 @@
 
 import hre, { ethers, upgrades } from "hardhat";
 import {
-  BytecodeStorageV1Writer__factory,
+  BytecodeStorageV2Writer__factory,
   GenArt721GeneratorV0,
 } from "../contracts";
 import { GenArt721GeneratorV0__factory } from "../contracts/factories/generator/GenArt721GeneratorV0__factory";
 import { getNetworkName } from "../util/utils";
 import { GUNZIP_SCRIPT_BASE64 } from "../util/constants";
-import { StorageContractCreatedEvent } from "../contracts/BytecodeStorageV1Writer";
+import { StorageContractCreatedEvent } from "../contracts/BytecodeStorageV2Writer";
 
 const universalBytecodeStorageReaderAddress =
   "0x000000069EbaecF0d656897bA5527f2145560086";
@@ -25,17 +25,21 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENT BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
-  // Deploy BytecodeStorageV1Writer contract
-  const bytecodeStorageV1WriterFactory = new BytecodeStorageV1Writer__factory(
+  // Deploy BytecodeStorageV2Writer contract
+  const bytecodeStorageV2WriterFactory = new BytecodeStorageV2Writer__factory(
+    {
+      "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+        universalBytecodeStorageReaderAddress,
+    },
     deployer
   );
-  const bytecodeStorageV1Writer = await bytecodeStorageV1WriterFactory.deploy();
+  const bytecodeStorageV2Writer = await bytecodeStorageV2WriterFactory.deploy();
   console.log(
-    `BytecodeStorageV1Writer deployed at ${bytecodeStorageV1Writer.address}`
+    `BytecodeStorageV2Writer deployed at ${bytecodeStorageV2Writer.address}`
   );
 
-  // Use BytecodeStorageV1Writer to upload gunzip script
-  const gunzipUploadTransaction = await bytecodeStorageV1Writer
+  // Use BytecodeStorageV2Writer to upload gunzip script
+  const gunzipUploadTransaction = await bytecodeStorageV2Writer
     .connect(deployer)
     .writeStringToBytecodeStorage(GUNZIP_SCRIPT_BASE64);
 
@@ -89,7 +93,7 @@ async function main() {
 
   try {
     await hre.run("verify:verify", {
-      address: bytecodeStorageV1Writer.address,
+      address: bytecodeStorageV2Writer.address,
     });
   } catch (e) {
     console.error("Failed to verify ETHFSFileStorage programatically", e);
