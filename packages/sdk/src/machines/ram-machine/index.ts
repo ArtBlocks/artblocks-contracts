@@ -1,5 +1,6 @@
 import {
   Chain,
+  ContractFunctionRevertedError,
   Hex,
   JsonRpcAccount,
   SimulateContractReturnType,
@@ -20,6 +21,7 @@ import {
   isUserRejectedError,
 } from "../utils";
 import { dbBidIdToOnChainBidId, slotIndexToBidValue } from "./utils";
+import { traceTransaction } from "../../utils/trace-transaction";
 
 export type RAMMachineEvents =
   | {
@@ -303,17 +305,38 @@ export const ramMachine = setup({
           hash: txHash,
         });
 
-        // If the transaction was reverted, resimulate it to get the revert reason
         if (txReceipt.status === "reverted") {
-          // These if statements are necessary for type checking
-          if (txRequest.functionName === "createBid") {
-            // Resimulate the transaction to get the revert reason
-            await publicClient.simulateContract(txRequest);
-          }
+          // If the transaction was reverted attempt to use the public client
+          // to call trace_transaction to get the revert reason. This is not
+          // universally supported by all JSON RPC providers so we must wrap
+          // this call in a try/catch block. Fallback to resimulating the tx
+          // if the trace_transaction call fails. Because chain state may have
+          // been updated between the receipt being returned and the trace
+          // being fetched it is possible that the revert reason will not be
+          // accurate in this case.
+          try {
+            const traceResult = await traceTransaction(publicClient, txHash);
 
-          if (txRequest.functionName === "topUpBid") {
-            // Resimulate the transaction to get the revert reason
-            await publicClient.simulateContract(txRequest);
+            throw new ContractFunctionRevertedError({
+              abi: minterRAMV0Abi,
+              functionName: txRequest.functionName,
+              data: traceResult?.[0]?.result?.output,
+            });
+          } catch (e) {
+            if (e instanceof ContractFunctionRevertedError) {
+              throw e;
+            }
+
+            // These if statements are necessary for type checking
+            if (txRequest.functionName === "createBid") {
+              // Resimulate the transaction to get the revert reason
+              await publicClient.simulateContract(txRequest);
+            }
+
+            if (txRequest.functionName === "topUpBid") {
+              // Resimulate the transaction to get the revert reason
+              await publicClient.simulateContract(txRequest);
+            }
           }
         }
 
