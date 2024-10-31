@@ -57,7 +57,7 @@ for (const coreContractName of coreContractsToTest) {
       it("emits event after setting", async function () {
         const config = await loadFixture(_beforeEach);
         const newAddress = config.accounts.deployer.address;
-        expect(
+        await expect(
           config.genArt721Core.updateArtblocksCurationRegistryAddress(
             newAddress
           )

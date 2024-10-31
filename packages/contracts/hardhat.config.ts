@@ -10,7 +10,7 @@ import "@openzeppelin/hardhat-upgrades";
 import "@nomicfoundation/hardhat-ledger";
 import { solidityConfig } from "./hardhat.solidity-config";
 import { getDeployerWallet } from "./scripts/util/get-deployer-wallet";
-require("@nomicfoundation/hardhat-chai-matchers");
+import "@nomicfoundation/hardhat-chai-matchers";
 import "@typechain/hardhat";
 
 // ----- WALLET CONFIGURATION -----
