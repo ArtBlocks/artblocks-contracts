@@ -13,6 +13,8 @@ import {
   GenArt721,
   BytecodeStorageV1Writer,
   UniversalBytecodeStorageReader,
+  GenArt721CoreV3_Engine,
+  MinterFilterV1,
 } from "../../scripts/contracts";
 
 import {
@@ -544,6 +546,99 @@ describe(`GenArt721GeneratorV0`, async function () {
         `data:text/html;base64,${Buffer.from(tokenHtml).toString("base64")}`
       );
     });
+
+    it("gets html for a given V3 core contract using script compression", async function () {
+      const config = await loadFixture(_beforeEach);
+
+      const {
+        genArt721Core: genArt721CoreV3,
+        minterFilter,
+        randomizer,
+      } = await deployCoreWithMinterFilter(
+        config,
+        "GenArt721CoreV3_Engine",
+        "MinterFilterV1"
+      );
+
+      const minter = (await deployAndGet(config, "MinterSetPriceV2", [
+        genArt721CoreV3.address,
+        minterFilter.address,
+      ])) as MinterSetPriceV2;
+
+      await minterFilter
+        .connect(config.accounts.deployer)
+        .addApprovedMinter(minter.address);
+
+      const projectId = await genArt721CoreV3.nextProjectId();
+      // Add and configure project
+      await genArt721CoreV3
+        .connect(config.accounts.deployer)
+        .addProject("name", config.accounts.artist.address);
+
+      const projectScript =
+        "console.log(tokenData); console.log(blah); console.log(bleh);";
+      const projectScriptCompressed =
+        await genArt721CoreV3.getCompressed(projectScript);
+      await genArt721CoreV3
+        .connect(config.accounts.artist)
+        .addProjectScriptCompressed(projectId, projectScriptCompressed);
+      await genArt721CoreV3
+        .connect(config.accounts.artist)
+        .updateProjectScriptType(projectId, p5NameAndVersionBytes);
+
+      // Mint token 0
+      await minterFilter
+        .connect(config.accounts.artist)
+        .setMinterForProject(projectId, minter.address);
+      await minter
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(projectId, 0);
+      await minter.connect(config.accounts.artist).purchase(projectId);
+
+      const tokenId = projectId.mul(ONE_MILLION);
+
+      // Add contract to dependency registry
+      await config.dependencyRegistry
+        .connect(config.accounts.deployer)
+        .addSupportedCoreContract(genArt721CoreV3.address);
+
+      // Get token html
+      const tokenHtml = await config.genArt721Generator.getTokenHtml(
+        genArt721CoreV3.address,
+        tokenId
+      );
+
+      const encodedTokenHtml =
+        await config.genArt721Generator.getTokenHtmlBase64EncodedDataUri(
+          genArt721CoreV3.address,
+          tokenId
+        );
+
+      // Default style
+      expect(tokenHtml).to.include(STYLE_TAG);
+      // Gzipped dependency script
+      expect(tokenHtml).to.include(
+        getGzipBase64DataUriScriptTag(compressedDepScript)
+      );
+      // Gunzip script
+      expect(tokenHtml).to.include(
+        getScriptBase64DataUriScriptTag(GUNZIP_SCRIPT_BASE64)
+      );
+      // Token data
+      const hash = await genArt721CoreV3.tokenIdToHash(tokenId);
+      expect(tokenHtml).to.include(
+        getScriptTag(
+          `let tokenData = {"tokenId":"${tokenId}","hash":"${hash}"}`
+        )
+      );
+      // Project script
+      expect(tokenHtml).to.include(getScriptTag(projectScript));
+
+      // Base64 encoded data uri
+      expect(encodedTokenHtml).to.equal(
+        `data:text/html;base64,${Buffer.from(tokenHtml).toString("base64")}`
+      );
+    });
   });
 
   it("gets html for a given V3 core contract token with dependency script not on-chain", async function () {
@@ -797,10 +892,11 @@ describe(`GenArt721GeneratorV0`, async function () {
         .addProjectScript(projectId, projectScript);
 
       // get and verify project script from universal reader
+      const newUniversalReader = await deployAndGetUniversalReader(config);
       const scriptBytecodeAddress =
         await genArt721CoreV3.projectScriptBytecodeAddressByIndex(projectId, 0);
       const projectScriptFromUniversalReader =
-        await config.universalReader.readFromBytecode(scriptBytecodeAddress);
+        await newUniversalReader.readFromBytecode(scriptBytecodeAddress);
       expect(projectScriptFromUniversalReader).to.equal(projectScript);
 
       // Get project script
