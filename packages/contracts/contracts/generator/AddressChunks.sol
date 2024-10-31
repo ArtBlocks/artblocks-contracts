@@ -27,7 +27,7 @@ library AddressChunks {
                 let readerCalldata := mload(0x40)
                 mstore(readerCalldata, 0x75662f38) // function selector for readFromBytecode(address)
                 // calldata in memory will look like:
-                //  000000000000000000000000000000000000000000000000000000006e242d7f
+                //  0000000000000000000000000000000000000000000000000000000075662f38
                 //  000000000000000000000000<-------------chunk-address------------>
                 // @dev do not populate address yet - do in call loop
                 // update free memory pointer two words ahead, past end reserved for calldata
