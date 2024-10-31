@@ -178,6 +178,9 @@ type T_NETWORK_ENV_CONFIG = {
   engineFactory: string;
   sharedMinterFilter: string;
   sharedRandomizer: string;
+  universalBytecodeStorageReader: string;
+  dependencyRegistry?: string;
+  scriptyBuilderV2?: string;
   prodRenderProviderPaymentAddress?: T_RENDER_PROVIDER_PAYMENT_ADDRESSES;
 };
 type T_MAIN_CONFIG = {
@@ -185,12 +188,16 @@ type T_MAIN_CONFIG = {
     [environment: string]: T_NETWORK_ENV_CONFIG;
   };
 };
-const MAIN_CONFIG: T_MAIN_CONFIG = {
+export const MAIN_CONFIG: T_MAIN_CONFIG = {
   mainnet: {
     mainnet: {
       engineFactory: "0x000000004058B5159ABB5a3Dd8cf775A7519E75F",
       sharedMinterFilter: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
       sharedRandomizer: "0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91",
+      universalBytecodeStorageReader:
+        "0x000000000000A791ABed33872C44a3D215a3743B",
+      scriptyBuilderV2: "0xD7587F110E08F4D120A231bA97d3B577A81Df022",
+      dependencyRegistry: "0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF",
       prodRenderProviderPaymentAddress: {
         [ProductClassEnum.Engine]: "0xa9F7C2b5Fd91C842B2E1b839A1Cf0f3DE2a24249",
         [ProductClassEnum.Sudio]: "0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd",
@@ -202,6 +209,8 @@ const MAIN_CONFIG: T_MAIN_CONFIG = {
       engineFactory: "0x000000007566E6566771d28E91bD465bEE8426a5",
       sharedMinterFilter: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
       sharedRandomizer: "0x6a5976391E708fBf918c3786cd1FcbB88732fbc1",
+      universalBytecodeStorageReader:
+        "0x000000005795aA93c8E5De234Ff0DE0000C98946",
       prodRenderProviderPaymentAddress: {
         [ProductClassEnum.Engine]: "0x4fbFc0F88270FE3405Ee5bf8c98CC03647b4fdA4",
         [ProductClassEnum.Sudio]: "0x23636eAa2605B9c4a988E56d2093b488793f1C42",
@@ -213,6 +222,9 @@ const MAIN_CONFIG: T_MAIN_CONFIG = {
       engineFactory: "0x00000BA55cae9d000000b156875D91854124fd7e",
       sharedMinterFilter: "0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5",
       sharedRandomizer: "0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98",
+      universalBytecodeStorageReader:
+        "0x00000000000E85B0806ABB37B6C9d80A7100A0C5",
+      scriptyBuilderV2: "0xD7587F110E08F4D120A231bA97d3B577A81Df022",
       prodRenderProviderPaymentAddress: {
         [ProductClassEnum.Engine]: "0xc5bd90634d9355B93FE8d07e6F79eAB5EF20AbCc",
         [ProductClassEnum.Sudio]: "0xc8D1099702cB95baf954a4E3e2bEaF883314f464",
@@ -224,11 +236,19 @@ const MAIN_CONFIG: T_MAIN_CONFIG = {
       engineFactory: "0x0000A9AA9b00F46c009f15b3F68122e1878D7d18",
       sharedMinterFilter: "0xa07f47c30C262adcC263A4D44595972c50e04db7",
       sharedRandomizer: "0x28f2D3805652FB5d359486dFfb7D08320D403240",
+      universalBytecodeStorageReader:
+        "0x000000069EbaecF0d656897bA5527f2145560086",
+      scriptyBuilderV2: "0xD7587F110E08F4D120A231bA97d3B577A81Df022",
+      dependencyRegistry: "0xEFA7Ef074A6E90a99fba8bAd4dCf337ef298387f",
     },
     dev: {
       engineFactory: "0x000000C969c34e95C9b9F24ea7bD597Af554a1c2",
       sharedMinterFilter: "0x29e9f09244497503f304FA549d50eFC751D818d2",
       sharedRandomizer: "0xA6F7e62F3B52552f79b2Baa2858a1DB18016c09B",
+      universalBytecodeStorageReader:
+        "0x000000069EbaecF0d656897bA5527f2145560086",
+      scriptyBuilderV2: "0xD7587F110E08F4D120A231bA97d3B577A81Df022",
+      dependencyRegistry: "0x5Fcc415BCFb164C5F826B5305274749BeB684e9b",
     },
   },
 };

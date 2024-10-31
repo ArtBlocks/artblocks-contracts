@@ -8,13 +8,11 @@ import {
 } from "../contracts";
 import { GenArt721GeneratorV0__factory } from "../contracts/factories/generator/GenArt721GeneratorV0__factory";
 import { getNetworkName } from "../util/utils";
-import { GUNZIP_SCRIPT_BASE64 } from "../util/constants";
+import { GUNZIP_SCRIPT_BASE64, MAIN_CONFIG } from "../util/constants";
 import { StorageContractCreatedEvent } from "../contracts/BytecodeStorageV2Writer";
 
-const universalBytecodeStorageReaderAddress =
-  "0x000000069EbaecF0d656897bA5527f2145560086";
-const dependencyRegistryAddress = "0x5Fcc415BCFb164C5F826B5305274749BeB684e9b";
-const scriptyBuilderV2Address = "0xD7587F110E08F4D120A231bA97d3B577A81Df022";
+const bytecodeStorageReaderAddress =
+  "0x000000000016A5A5ff2FA7799C4BEe89bA59B74e";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -22,6 +20,21 @@ async function main() {
   if (networkName != "sepolia") {
     throw new Error("This script is intended to be run on sepolia only");
   }
+
+  const {
+    universalBytecodeStorageReader: universalBytecodeStorageReaderAddress,
+    scriptyBuilderV2: scriptyBuilderV2Address,
+    dependencyRegistry: dependencyRegistryAddress,
+  } = MAIN_CONFIG["sepolia"]["dev"];
+
+  if (
+    !universalBytecodeStorageReaderAddress ||
+    !scriptyBuilderV2Address ||
+    !dependencyRegistryAddress
+  ) {
+    throw new Error("Missing configuration for sepolia");
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENT BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
@@ -29,7 +42,7 @@ async function main() {
   const bytecodeStorageV2WriterFactory = new BytecodeStorageV2Writer__factory(
     {
       "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
-        universalBytecodeStorageReaderAddress,
+        bytecodeStorageReaderAddress,
     },
     deployer
   );

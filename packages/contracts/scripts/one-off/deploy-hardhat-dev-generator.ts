@@ -9,12 +9,10 @@ import {
 import { GenArt721GeneratorV0__factory } from "../contracts/factories/generator/GenArt721GeneratorV0__factory";
 import { getNetworkName } from "../util/utils";
 import { StorageContractCreatedEvent } from "../contracts/BytecodeStorageV2Writer";
-import { GUNZIP_SCRIPT_BASE64 } from "../util/constants";
+import { GUNZIP_SCRIPT_BASE64, MAIN_CONFIG } from "../util/constants";
 
-const universalBytecodeStorageReaderAddress =
-  "0x000000000000A791ABed33872C44a3D215a3743B";
-const dependencyRegistryAddress = "0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF";
-const scriptyBuilderV2Address = "0xD7587F110E08F4D120A231bA97d3B577A81Df022";
+const bytecodeStorageReaderAddress =
+  "0x000000000016A5A5ff2FA7799C4BEe89bA59B74e";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -25,6 +23,20 @@ async function main() {
       "This script is intended to be run on hardhat local node only"
     );
   }
+
+  const {
+    universalBytecodeStorageReader: universalBytecodeStorageReaderAddress,
+    scriptyBuilderV2: scriptyBuilderV2Address,
+    dependencyRegistry: dependencyRegistryAddress,
+  } = MAIN_CONFIG["mainnet"]["mainnet"];
+
+  if (
+    !universalBytecodeStorageReaderAddress ||
+    !scriptyBuilderV2Address ||
+    !dependencyRegistryAddress
+  ) {
+    throw new Error("Missing configuration for mainnet");
+  }
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENT BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
@@ -32,7 +44,7 @@ async function main() {
   const bytecodeStorageV2WriterFactory = new BytecodeStorageV2Writer__factory(
     {
       "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
-        universalBytecodeStorageReaderAddress,
+        bytecodeStorageReaderAddress,
     },
     deployer
   );
