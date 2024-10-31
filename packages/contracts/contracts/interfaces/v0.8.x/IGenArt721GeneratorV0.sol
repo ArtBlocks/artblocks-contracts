@@ -8,4 +8,7 @@ interface IGenArt721GeneratorV0 {
     event GunzipScriptBytecodeAddressUpdated(
         address indexed _gunzipScriptBytecodeAddress
     );
+    event UniversalBytecodeStorageReaderUpdated(
+        address indexed _universalBytecodeStorageReader
+    );
 }

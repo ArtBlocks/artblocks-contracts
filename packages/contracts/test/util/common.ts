@@ -510,6 +510,38 @@ export async function deployWithStorageLibraryAndGet(
   }
 }
 
+export async function deployAndGetUniversalReader(
+  config: T_Config
+): Promise<UniversalBytecodeStorageReader> {
+  // Note that for testing purposes, we deploy a new version of the library,
+  // but in production we would use the same library deployment for all contracts
+  const libraryFactory = await ethers.getContractFactory(
+    "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+  );
+  const library = await libraryFactory
+    .connect(config.accounts.deployer)
+    .deploy(/* no args for library ever */);
+
+  // deploy UniversalReader
+  config.universalReader = (await deployAndGet(
+    config,
+    "UniversalBytecodeStorageReader",
+    [config.accounts.deployer.address]
+  )) as UniversalBytecodeStorageReader;
+  // deploy version-specific reader and configure universalReader
+  const versionedReaderFactory = await ethers.getContractFactory(
+    "BytecodeStorageReaderContractV2",
+    { libraries: { BytecodeStorageReader: library.address } }
+  );
+  const versionedReader = await versionedReaderFactory
+    .connect(config.accounts.deployer)
+    .deploy();
+  await config.universalReader
+    .connect(config.accounts.deployer)
+    .updateBytecodeStorageReaderContract(versionedReader.address);
+  return config.universalReader;
+}
+
 type SupportedMinterFilterNames =
   | "MinterFilterV0"
   | "MinterFilterV1"

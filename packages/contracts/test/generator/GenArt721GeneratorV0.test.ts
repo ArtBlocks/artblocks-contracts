@@ -12,6 +12,7 @@ import {
   GenArt721GeneratorV0,
   GenArt721,
   BytecodeStorageV1Writer,
+  UniversalBytecodeStorageReader,
 } from "../../scripts/contracts";
 
 import {
@@ -20,6 +21,7 @@ import {
   assignDefaultConstants,
   deployAndGet,
   deployWithStorageLibraryAndGet,
+  deployAndGetUniversalReader,
   deployCoreWithMinterFilter,
   deployAndGetPBAB,
 } from "../util/common";
@@ -61,6 +63,7 @@ interface GenArt721GeneratorV0TestConfig extends T_Config {
   dependencyRegistry: DependencyRegistryV0;
   genArt721Generator: GenArt721GeneratorV0;
   scriptyBuilder: Contract;
+  universalReader: UniversalBytecodeStorageReader;
 }
 
 describe(`GenArt721GeneratorV0`, async function () {
@@ -170,15 +173,20 @@ describe(`GenArt721GeneratorV0`, async function () {
     // Deploy scripty builder
     config.scriptyBuilder = await deployAndGet(config, "ScriptyBuilderV2");
 
+    // deploy and get universalReader to use as input arg
+    config.universalReader = await deployAndGetUniversalReader(config);
+
     // Deploy GenArt721GeneratorV0
-    config.genArt721Generator = (await deployWithStorageLibraryAndGet(
+    config.genArt721Generator = (await deployAndGet(
       config,
       "GenArt721GeneratorV0"
     )) as GenArt721GeneratorV0;
+
     await config.genArt721Generator!.initialize(
       config.dependencyRegistry.address,
       config.scriptyBuilder.address,
-      gunzipStorageContractAddress
+      gunzipStorageContractAddress,
+      config.universalReader.address
     );
 
     return config as GenArt721GeneratorV0TestConfig;
@@ -787,6 +795,13 @@ describe(`GenArt721GeneratorV0`, async function () {
       await genArt721CoreV3
         .connect(config.accounts.artist)
         .addProjectScript(projectId, projectScript);
+
+      // get and verify project script from universal reader
+      const scriptBytecodeAddress =
+        await genArt721CoreV3.projectScriptBytecodeAddressByIndex(projectId, 0);
+      const projectScriptFromUniversalReader =
+        await config.universalReader.readFromBytecode(scriptBytecodeAddress);
+      expect(projectScriptFromUniversalReader).to.equal(projectScript);
 
       // Get project script
       const script = await config.genArt721Generator.getProjectScript(
