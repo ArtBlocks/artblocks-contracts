@@ -7,8 +7,8 @@ import "../interfaces/v0.8.x/IGenArt721CoreProjectScriptV1.sol";
 import "../interfaces/v0.8.x/IGenArt721CoreTokenHashProviderV0.sol";
 import "../interfaces/v0.8.x/IGenArt721CoreTokenHashProviderV1.sol";
 import "../interfaces/v0.8.x/IGenArt721GeneratorV0.sol";
+import {IUniversalBytecodeStorageReader} from "../interfaces/v0.8.x/IUniversalBytecodeStorageReader.sol";
 import "../libs/v0.8.x/Bytes32Strings.sol";
-import "../libs/v0.8.x/BytecodeStorageV1.sol";
 import {ABHelpers} from "../libs/v0.8.x/ABHelpers.sol";
 import {AddressChunks} from "./AddressChunks.sol";
 
@@ -27,7 +27,6 @@ import {IScriptyBuilderV2, HTMLRequest, HTMLTagType, HTMLTag} from "scripty.sol/
 contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     using Bytes32Strings for bytes32;
     using Bytes32Strings for string;
-    using BytecodeStorageWriter for string;
 
     // @dev This is an upgradable contract so we need to maintain
     // the order of the variables to ensure we don't overwrite
@@ -35,6 +34,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     IDependencyRegistryV0 public dependencyRegistry;
     IScriptyBuilderV2 public scriptyBuilder;
     address public gunzipScriptBytecodeAddress;
+    IUniversalBytecodeStorageReader public universalBytecodeStorageReader;
 
     function _onlySupportedCoreContract(address coreContract) internal view {
         require(
@@ -62,19 +62,27 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
      * to be used for generating the HTML for tokens.
      * @param _gunzipScriptBytecodeAddress The address of the gunzip script bytecode
      * storage contract used to gunzip the dependency scripts in the browser.
+     * @param _universalBytecodeStorageReader The address of the universal bytecode storage reader contract.
      */
     function initialize(
         address _dependencyRegistry,
         address _scriptyBuilder,
-        address _gunzipScriptBytecodeAddress
+        address _gunzipScriptBytecodeAddress,
+        address _universalBytecodeStorageReader
     ) public initializer {
         dependencyRegistry = IDependencyRegistryV0(_dependencyRegistry);
         scriptyBuilder = IScriptyBuilderV2(_scriptyBuilder);
         gunzipScriptBytecodeAddress = _gunzipScriptBytecodeAddress;
+        universalBytecodeStorageReader = IUniversalBytecodeStorageReader(
+            _universalBytecodeStorageReader
+        );
 
         emit DependencyRegistryUpdated(_dependencyRegistry);
         emit ScriptyBuilderUpdated(_scriptyBuilder);
         emit GunzipScriptBytecodeAddressUpdated(_gunzipScriptBytecodeAddress);
+        emit UniversalBytecodeStorageReaderUpdated(
+            _universalBytecodeStorageReader
+        );
     }
 
     /**
@@ -120,6 +128,26 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
 
         gunzipScriptBytecodeAddress = _gunzipScriptBytecodeAddress;
         emit GunzipScriptBytecodeAddressUpdated(_gunzipScriptBytecodeAddress);
+    }
+
+    /**
+     * @notice Set the universalBytecodeStorageReader contract address.
+     * @param _universalBytecodeStorageReader The address of the universal bytecode storage reader contract.
+     * @dev This function is gated to only the DependencyRegistry AdminACL.
+     */
+    function updateUniversalBytecodeStorageReader(
+        address _universalBytecodeStorageReader
+    ) external {
+        _onlyDependencyRegistryAdminACL(
+            this.updateUniversalBytecodeStorageReader.selector
+        );
+
+        universalBytecodeStorageReader = IUniversalBytecodeStorageReader(
+            _universalBytecodeStorageReader
+        );
+        emit UniversalBytecodeStorageReaderUpdated(
+            _universalBytecodeStorageReader
+        );
     }
 
     /**
@@ -233,24 +261,13 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                 );
         }
 
-        bytes32 storageVersion = BytecodeStorageReader
-            .getLibraryVersionForBytecode(scriptBytecodeAddresses[0]);
-
-        // @dev In order to properly stitch the script chunks together we need
-        // to know the offset of the script content in the bytecode. This is
-        // different for each storage version.
-        uint256 offset;
-        if (storageVersion == BytecodeStorageReader.V0_VERSION_STRING) {
-            offset = 104;
-        } else if (storageVersion == BytecodeStorageReader.V1_VERSION_STRING) {
-            offset = 65;
-        } else {
-            revert("Unsupported storage version");
-        }
-
         // @dev We concatenate the script chunks together with assembly
         // in AddressChunks for gas efficiency.
-        return AddressChunks.mergeChunks(scriptBytecodeAddresses, offset);
+        return
+            AddressChunks.mergeChunks(
+                scriptBytecodeAddresses,
+                address(universalBytecodeStorageReader)
+            );
     }
 
     /**
@@ -290,23 +307,13 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                 ).projectScriptBytecodeAddressByIndex(projectId, i);
             }
 
-            bytes32 storageVersion = BytecodeStorageReader
-                .getLibraryVersionForBytecode(scriptBytecodeAddresses[0]);
-
-            uint256 offset;
-            if (storageVersion == BytecodeStorageReader.V0_VERSION_STRING) {
-                offset = 104;
-            } else if (
-                storageVersion == BytecodeStorageReader.V1_VERSION_STRING
-            ) {
-                offset = 65;
-            } else {
-                revert("Unsupported storage version");
-            }
-
             // @dev We concatenate the script chunks together with assembly
             // in AddressChunks for gas efficiency.
-            return AddressChunks.mergeChunks(scriptBytecodeAddresses, offset);
+            return
+                AddressChunks.mergeChunks(
+                    scriptBytecodeAddresses,
+                    address(universalBytecodeStorageReader)
+                );
         } catch {
             // Noop try again for older contracts.
         }
@@ -420,7 +427,9 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         bodyTags[1].name = "gunzipScripts-0.0.1.js";
         bodyTags[1].tagType = HTMLTagType.scriptBase64DataURI; // <script src="data:text/javascript;base64,[script]"></script>
         bodyTags[1].tagContent = bytes(
-            BytecodeStorageReader.readFromBytecode(gunzipScriptBytecodeAddress)
+            universalBytecodeStorageReader.readFromBytecode(
+                gunzipScriptBytecodeAddress
+            )
         );
 
         HTMLTag memory canvasTag = _createCanvasTagIfNeeded(
