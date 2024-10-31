@@ -11,10 +11,8 @@ import {
   MinterSetPriceV2,
   GenArt721GeneratorV0,
   GenArt721,
-  BytecodeStorageV1Writer,
+  BytecodeStorageV2Writer,
   UniversalBytecodeStorageReader,
-  GenArt721CoreV3_Engine,
-  MinterFilterV1,
 } from "../../scripts/contracts";
 
 import {
@@ -27,7 +25,7 @@ import {
   deployCoreWithMinterFilter,
   deployAndGetPBAB,
 } from "../util/common";
-import { StorageContractCreatedEvent } from "../../scripts/contracts/BytecodeStorageV1Writer";
+import { StorageContractCreatedEvent } from "../../scripts/contracts/BytecodeStorageV2Writer";
 import { GUNZIP_SCRIPT_BASE64 } from "../../scripts/util/constants";
 
 const NO_OVERRIDE_ERROR =
@@ -142,15 +140,15 @@ describe(`GenArt721GeneratorV0`, async function () {
       compressedDepScript.slice(Math.floor(compressedDepScript.length / 2))
     );
 
-    // Deploy BytecodeStorageV1Writer contract
-    const bytecodeStorageV1Writer = (await deployAndGet(
+    // Deploy BytecodeStorageV2Writer contract
+    const bytecodeStorageV2Writer = (await deployWithStorageLibraryAndGet(
       config,
-      "BytecodeStorageV1Writer"
-    )) as BytecodeStorageV1Writer;
+      "BytecodeStorageV2Writer"
+    )) as BytecodeStorageV2Writer;
 
-    // Use BytecodeStorageV1Writer to upload gunzip script
+    // Use BytecodeStorageV2Writer to upload gunzip script
     const gunzipUploadTransaction =
-      await bytecodeStorageV1Writer.writeStringToBytecodeStorage(
+      await bytecodeStorageV2Writer.writeStringToBytecodeStorage(
         GUNZIP_SCRIPT_BASE64
       );
 
