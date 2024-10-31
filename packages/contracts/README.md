@@ -218,6 +218,19 @@ In some instances, splitter contracts may be used by projects to split revenue b
 | Sepolia | Staging     | 0xe3D5373D2dc56948737E79244C8C6C856336BF1A | 0xc673EdD8c29Fbb6462Ff48ce61803fa6d7f4d7A3 |
 | Mainnet | Prod        | 0xb26aaD97B0e1d250dB131CD4133c11629EBB4ef7 | 0x853a03Ec9CCbf8203DF0C40926398B959d81AFd2 |
 
+## GenArt721Generator
+
+The GenArt721GeneratorV0 is an upgradeable contract that generates the HTML required to display Art Blocks artworks. It combines dependency scripts, project scripts, and token data to create the complete HTML for each token. The contract works in conjunction with the DependencyRegistry to retrieve project dependencies and ScriptyBuilder to generate the final HTML output.
+
+Each token's HTML includes the necessary JavaScript dependencies (either loaded from a CDN or stored on-chain), a canvas element if required by the dependency, the project's core script, and token-specific data like the token ID and hash. The contract supports both base64-encoded data URIs and plain HTML output formats.
+
+The contract handles backwards compatibility with different core contract versions and provides flexibility in how dependencies are loaded. It can retrieve scripts stored directly in contract bytecode using the UniversalBytecodeStorageReader, or load them from preferred CDN sources when available.
+
+| Network | Environment | Proxy Address                              | Implementation Address                     |
+| ------- | ----------- | ------------------------------------------ | ------------------------------------------ |
+| Sepolia | Dev         | 0x705E55FCD5CB00eB727213aa777C914B814817Be | 0xB7d6C7b686421cb9ee453fCc96aae8A704d5b473 |
+| Mainnet | Prod        | 0x953D288708bB771F969FCfD9BA0819eF506Ac718 | 0x5f9990E2160d315EFd2C07CCD9341272D672afB8 |
+
 ## Contract Source Code Verification
 
 All mainnet deployments of contracts developed in this repository are verified on Etherscan. To protect against centralized source code verification failures (for example, if Etherscan were to disappear), the PR history of this repository may be used to determine the commit at which a given deployment was performed, and source code verification may be submitted by anyone to a different source code verification service. Deployment details are recorded in the `deployments/` directory.
