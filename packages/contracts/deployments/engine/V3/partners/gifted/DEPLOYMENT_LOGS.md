@@ -34,3 +34,13 @@
       [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/gifted/deployment-config.base-mainnet.ts
 
     
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2024-11-01T16:57:21.552Z
+      [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/gifted/deployment-config.arbitrum.ts
+
+    
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2024-11-01T17:13:52.898Z
+      [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/gifted/deployment-config.arbitrum.ts
+
+    
