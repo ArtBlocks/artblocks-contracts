@@ -168,6 +168,8 @@ export async function getNetworkName() {
   } else if (networkName === "unknown" && network.chainId === 8453) {
     // base rpc doesn't return name, so handle unknown + chainId
     networkName = "base";
+  } else if (networkName === "unknown" && network.chainId === 31337) {
+    networkName = "hardhat";
   }
 
   return networkName;

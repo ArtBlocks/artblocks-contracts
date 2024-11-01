@@ -128,10 +128,8 @@ runForEach.forEach((params) => {
       it("emits LocalMaxSupplyUpdated when local max supply is updated", async function () {
         const config = await _beforeEach();
         const newSupply = 10;
-        expect(
-          await config.minter
-            .connect(config.accounts.artist)
-            .setMaxSupply(newSupply)
+        await expect(
+          config.minter.connect(config.accounts.artist).setMaxSupply(newSupply)
         )
           .to.emit(config.minter, "LocalMaxSupplyUpdated")
           .withArgs(newSupply);

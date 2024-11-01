@@ -63,4 +63,24 @@ library Bytes32Strings {
         }
         return _occurrences == targetQty;
     }
+
+    /**
+     * @notice Converts string to bytes32.
+     * https://ethereum.stackexchange.com/a/9152
+     * @param source string to be converted.
+     * @return result bytes32 representation of string.
+     * @dev If string is longer than 32 bytes, it truncates to the right.
+     */
+    function stringToBytes32(
+        string memory source
+    ) internal pure returns (bytes32 result) {
+        bytes memory tempEmptyStringTest = bytes(source);
+        if (tempEmptyStringTest.length == 0) {
+            return 0x0;
+        }
+
+        assembly ("memory-safe") {
+            result := mload(add(source, 32))
+        }
+    }
 }

@@ -98,7 +98,7 @@ for (const coreContractName of coreContractsToTest) {
           DEFAULT_BASE_URI,
           config.universalReader.address
         );
-        expect(config.accounts.deployer.sendTransaction(deployTx))
+        await expect(config.accounts.deployer.sendTransaction(deployTx))
           .to.be.revertedWithCustomError(
             config.genArt721Core,
             GENART721_ERROR_NAME
@@ -142,7 +142,7 @@ for (const coreContractName of coreContractsToTest) {
           DEFAULT_BASE_URI,
           config.universalReader.address
         );
-        expect(config.accounts.deployer.sendTransaction(deployTx))
+        await expect(config.accounts.deployer.sendTransaction(deployTx))
           .to.be.revertedWithCustomError(
             config.genArt721Core,
             GENART721_ERROR_NAME
@@ -186,7 +186,7 @@ for (const coreContractName of coreContractsToTest) {
           DEFAULT_BASE_URI,
           config.universalReader.address
         );
-        expect(config.accounts.deployer.sendTransaction(deployTx))
+        await expect(config.accounts.deployer.sendTransaction(deployTx))
           .to.be.revertedWithCustomError(
             config.genArt721Core,
             GENART721_ERROR_NAME
@@ -230,7 +230,7 @@ for (const coreContractName of coreContractsToTest) {
           DEFAULT_BASE_URI,
           constants.ZERO_ADDRESS // INVALID ZERO ADDRESS
         );
-        expect(config.accounts.deployer.sendTransaction(deployTx))
+        await expect(config.accounts.deployer.sendTransaction(deployTx))
           .to.be.revertedWithCustomError(
             config.genArt721Core,
             GENART721_ERROR_NAME
@@ -274,7 +274,7 @@ for (const coreContractName of coreContractsToTest) {
           "", // INVALID EMPTY BASE URI
           config.universalReader.address
         );
-        expect(
+        await expect(
           config.accounts.deployer.sendTransaction(deployTx)
         ).to.be.revertedWith(
           "GenArt721CoreV3_Curated: defaultBaseURIHost must be non-empty"
@@ -317,7 +317,7 @@ for (const coreContractName of coreContractsToTest) {
           "dummybaseurihost",
           config.universalReader.address
         );
-        expect(
+        await expect(
           config.accounts.deployer.sendTransaction(deployTx)
         ).to.be.revertedWith(
           "GenArt721CoreV3_Curated: autoApproveArtistSplitProposals must be false"
@@ -360,7 +360,7 @@ for (const coreContractName of coreContractsToTest) {
           "dummybaseurihost",
           config.universalReader.address
         );
-        expect(
+        await expect(
           config.accounts.deployer.sendTransaction(deployTx)
         ).to.be.revertedWith(
           "GenArt721CoreV3_Curated: nullPlatformProvider must be true"
@@ -403,7 +403,7 @@ for (const coreContractName of coreContractsToTest) {
           "dummybaseurihost",
           config.universalReader.address
         );
-        expect(
+        await expect(
           config.accounts.deployer.sendTransaction(deployTx)
         ).to.be.revertedWith(
           "GenArt721CoreV3_Curated: allowArtistProjectActivation must be false"
@@ -446,7 +446,7 @@ for (const coreContractName of coreContractsToTest) {
           "dummybaseurihost",
           config.universalReader.address
         );
-        expect(
+        await expect(
           config.accounts.deployer.sendTransaction(deployTx)
         ).to.be.revertedWith(
           "GenArt721CoreV3_Curated: startingProjectId must be greater than 0"
