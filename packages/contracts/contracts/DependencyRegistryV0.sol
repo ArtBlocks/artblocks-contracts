@@ -36,6 +36,7 @@ contract DependencyRegistryV0 is
 {
     using BytecodeStorageWriter for string;
     using Bytes32Strings for bytes32;
+    using Bytes32Strings for string;
     using Strings for uint256;
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -93,6 +94,10 @@ contract DependencyRegistryV0 is
             DependencyRegistryStorageLib.s().licenseTypes.contains(licenseType),
             "License type does not exist"
         );
+    }
+
+    function _onlyBytes32String(string memory input) internal pure {
+        require(bytes(input).length <= 32, "String too long");
     }
 
     /**
@@ -930,7 +935,8 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Returns details for a given dependency type `dependencyNameAndVersion`.
+     * @notice Returns details for a given dependency type `dependencyNameAndVersion` input as string.
+     * Reverts if input string does not fit within 32 bytes.
      * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
      * @return nameAndVersion String representation of `dependencyNameAndVersion`.
      *                        (e.g. "p5js(atSymbol)1.0.0")
@@ -943,8 +949,8 @@ contract DependencyRegistryV0 is
      * @return availableOnChain Whether dependency is available on chain
      * @return scriptCount Count of on-chain scripts for dependency
      */
-    function getDependencyDetails(
-        bytes32 dependencyNameAndVersion
+    function getDependencyDetailsFromString(
+        string memory dependencyNameAndVersion
     )
         external
         view
@@ -960,22 +966,8 @@ contract DependencyRegistryV0 is
             uint24 scriptCount
         )
     {
-        DependencyRegistryStorageLib.Dependency
-            storage dependency = DependencyRegistryStorageLib
-                .s()
-                .dependencyRecords[dependencyNameAndVersion];
-
-        return (
-            dependencyNameAndVersion.toString(),
-            dependency.licenseType.toString(),
-            dependency.preferredCDN,
-            dependency.additionalCDNCount,
-            dependency.preferredRepository,
-            dependency.additionalRepositoryCount,
-            dependency.website,
-            dependency.scriptCount > 0,
-            dependency.scriptCount
-        );
+        _onlyBytes32String(dependencyNameAndVersion);
+        return getDependencyDetails(dependencyNameAndVersion.stringToBytes32());
     }
 
     /**
@@ -1224,6 +1216,20 @@ contract DependencyRegistryV0 is
     }
 
     /**
+     * @notice utility function to convert from string to bytes32.
+     * Useful when a human is calling functions that take bytes32 as input.
+     * Reverts if input string does not fit within 32 bytes.
+     * @param input String to convert to bytes32.
+     * @return bytes32 representation of input.
+     */
+    function stringToBytes32(
+        string memory input
+    ) external pure returns (bytes32) {
+        _onlyBytes32String(input);
+        return input.stringToBytes32();
+    }
+
+    /**
      * @notice Convenience function that returns whether `_sender` is allowed
      * to call function with selector `_selector` on contract `_contract`, as
      * determined by this contract's current Admin ACL contract. Expected use
@@ -1254,6 +1260,55 @@ contract DependencyRegistryV0 is
                 contract_,
                 selector
             );
+    }
+
+    /**
+     * @notice Returns details for a given dependency type `dependencyNameAndVersion`.
+     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
+     * @return nameAndVersion String representation of `dependencyNameAndVersion`.
+     *                        (e.g. "p5js(atSymbol)1.0.0")
+     * @return licenseType License type for dependency
+     * @return preferredCDN Preferred CDN URL for dependency
+     * @return additionalCDNCount Count of additional CDN URLs for dependency
+     * @return preferredRepository Preferred repository URL for dependency
+     * @return additionalRepositoryCount Count of additional repository URLs for dependency
+     * @return dependencyWebsite Project website URL for dependency
+     * @return availableOnChain Whether dependency is available on chain
+     * @return scriptCount Count of on-chain scripts for dependency
+     */
+    function getDependencyDetails(
+        bytes32 dependencyNameAndVersion
+    )
+        public
+        view
+        returns (
+            string memory nameAndVersion,
+            string memory licenseType,
+            string memory preferredCDN,
+            uint24 additionalCDNCount,
+            string memory preferredRepository,
+            uint24 additionalRepositoryCount,
+            string memory dependencyWebsite,
+            bool availableOnChain,
+            uint24 scriptCount
+        )
+    {
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
+
+        return (
+            dependencyNameAndVersion.toString(),
+            dependency.licenseType.toString(),
+            dependency.preferredCDN,
+            dependency.additionalCDNCount,
+            dependency.preferredRepository,
+            dependency.additionalRepositoryCount,
+            dependency.website,
+            dependency.scriptCount > 0,
+            dependency.scriptCount
+        );
     }
 
     /**
