@@ -34,7 +34,7 @@ export const deployConfigDetailsArray = [
     // see /scripts/util/constants.ts::MAIN_CONFIG for the correct address if prod deployment
     renderProviderAddress: "0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef",
     // platform provider address should be set to the zero address for Studio deployments
-    platformProviderAddress: "0xdBAf6F4434a3b60B7461A0ae50c2083fE19d5CDb",
+    platformProviderAddress: "0xFaa539EAE6cDc1Be93e367f39cCd06555f39322e",
     startingProjectId: 1,
     // autoApproveArtistSplitProposals should be true for Studio deployments
     autoApproveArtistSplitProposals: false,
