@@ -24,3 +24,13 @@
       [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/in-resonance/deployment-config.arbitrum.ts
 
     
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2024-11-04T20:05:19.736Z
+      [INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/in-resonance/deployment-config.staging-sepolia.ts
+
+    
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2024-11-04T20:15:28.982Z
+      [INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/in-resonance/deployment-config.staging-sepolia.ts
+
+    
