@@ -197,16 +197,21 @@ Each dependency is identified by a unique name and version (in the format "name@
 
 The contract allows for the overriding of project dependencies. This means that specific projects can use different versions of dependencies than what's stored on the core contract. The override is defined by the address of the core contract, the project ID, and the bytes32 representation of the dependency name and version.
 
-- `DependencyRegistry` (sepolia dev):
-  - TransparentUpgradeableProxy https://sepolia.etherscan.io/address/0x5Fcc415BCFb164C5F826B5305274749BeB684e9b#code
-  - V0 Implementation https://sepolia.etherscan.io/address/0x2B0EaC9FBdD487e09f3326BB616EeAD72ade9876#code
-- `DependencyRegistry` (sepolia staging):
-  - TransparentUpgradeableProxy https://sepolia.etherscan.io/address/0xEFA7Ef074A6E90a99fba8bAd4dCf337ef298387f#code
-  - V0 Implementation https://sepolia.etherscan.io/address/0x2B0EaC9FBdD487e09f3326BB616EeAD72ade9876#code
 - `DependencyRegistry` (mainnet)
-  - TransparentUpgradeableProxy https://etherscan.io/address/0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF#code
-  - V0 Implementation https://etherscan.io/address/0x2d3f8D5c5294B7934aFBe4B901EEb5E7B48a4e97#code
-  - AdminACLV0 https://etherscan.io/address/0x569cDfECFD848a02Ad3e74175a1A4a74484Ef944#code
+  - https://etherscan.io/address/0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF#code
+
+## GenArt721Generator
+
+The GenArt721GeneratorV0 is an upgradeable contract that generates the HTML required to display Art Blocks artworks. It combines dependency scripts, project scripts, and token data to create the complete HTML for each token. The contract works in conjunction with the DependencyRegistry to retrieve project dependencies and ScriptyBuilder to generate the final HTML output.
+
+Each token's HTML includes the necessary JavaScript dependencies (either loaded from a CDN or stored on-chain), a canvas element if required by the dependency, the project's core script, and token-specific data like the token ID and hash. The contract supports both base64-encoded data URIs and plain HTML output formats.
+
+The contract handles backwards compatibility with different core contract versions and provides flexibility in how dependencies are loaded. It can retrieve scripts stored directly in contract bytecode using the UniversalBytecodeStorageReader, or load them from preferred CDN sources when available.
+
+The contract currently supports most Art Blocks Flagship projects on mainnet.
+
+- `OnChainGenerator` (mainnet)
+  - https://etherscan.io/address/0x953D288708bB771F969FCfD9BA0819eF506Ac718
 
 ## Splitter Factories
 
@@ -217,19 +222,6 @@ In some instances, splitter contracts may be used by projects to split revenue b
 | Sepolia | Dev         | 0x39D9580445A3Fcf486c6AD0d06F66fe0d42230eC | 0xDaf4BB19982927aBEACd9bCd1cE070f188ddb26E |
 | Sepolia | Staging     | 0xe3D5373D2dc56948737E79244C8C6C856336BF1A | 0xc673EdD8c29Fbb6462Ff48ce61803fa6d7f4d7A3 |
 | Mainnet | Prod        | 0xb26aaD97B0e1d250dB131CD4133c11629EBB4ef7 | 0x853a03Ec9CCbf8203DF0C40926398B959d81AFd2 |
-
-## GenArt721Generator
-
-The GenArt721GeneratorV0 is an upgradeable contract that generates the HTML required to display Art Blocks artworks. It combines dependency scripts, project scripts, and token data to create the complete HTML for each token. The contract works in conjunction with the DependencyRegistry to retrieve project dependencies and ScriptyBuilder to generate the final HTML output.
-
-Each token's HTML includes the necessary JavaScript dependencies (either loaded from a CDN or stored on-chain), a canvas element if required by the dependency, the project's core script, and token-specific data like the token ID and hash. The contract supports both base64-encoded data URIs and plain HTML output formats.
-
-The contract handles backwards compatibility with different core contract versions and provides flexibility in how dependencies are loaded. It can retrieve scripts stored directly in contract bytecode using the UniversalBytecodeStorageReader, or load them from preferred CDN sources when available.
-
-| Network | Environment | Proxy Address                              | Implementation Address                     |
-| ------- | ----------- | ------------------------------------------ | ------------------------------------------ |
-| Sepolia | Dev         | 0x705E55FCD5CB00eB727213aa777C914B814817Be | 0xB7d6C7b686421cb9ee453fCc96aae8A704d5b473 |
-| Mainnet | Prod        | 0x953D288708bB771F969FCfD9BA0819eF506Ac718 | 0x5f9990E2160d315EFd2C07CCD9341272D672afB8 |
 
 ## Contract Source Code Verification
 
