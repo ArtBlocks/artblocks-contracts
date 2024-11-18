@@ -22,7 +22,7 @@ export const deployConfigDetailsArray = [
     // 0 for Engine, 1 for Engine Flex
     engineCoreContractType: 1,
     // prod-only: see efficient_addresses...txt in network directories for a list of efficient salts
-    salt: "0x0000000000000000000000000000000000000000a73bf3db9debdfb453060010",
+    salt: "0xb1fc536a4ec61b8b746aa7247ea9fdbe0111bc011c05294b81ee97a127551858",
     // INCREMENT THESE NUMBERS FOR EACH NEW STUDIO DEPLOYMENT
     tokenName: "XCORE",
     tokenTicker: "XCORE",
