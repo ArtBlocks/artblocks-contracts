@@ -74,3 +74,48 @@ Date: 2023-12-08T01:19:25.632Z
 - **Image Bucket:** xcore-sepolia
 
 ---
+
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2024-11-18T20:36:49.350Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** mainnet
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000559cA3F3f1279C0ec121c302ed010457#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x000000008DD9A7CD3f4A267A88082d4a1E2f6553#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x000000004058B5159ABB5a3Dd8cf775A7519E75F#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine Flex | 0xC04E0000726ED7c5b9f0045Bc0c4806321BC6C65
+  
+        **Engine Contract:** https://etherscan.io/address/0xC04E0000726ED7c5b9f0045Bc0c4806321BC6C65#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** XCOPY
+        - **Token Name:** XCORE
+        - **Token Ticker:** XCORE
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0xa9F7C2b5Fd91C842B2E1b839A1Cf0f3DE2a24249
+        - **Platform Provider Address, Primary Sales:** 0xA4acfE833B9aAa3C488c05DcBC9Dcd29a8252C84
+        - **Null Platform Provider:** false
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x540Fd8688d57b4cfaED06993892FE304EBA62AF1
+        - **Super Admin Address:** 0xA4acfE833B9aAa3C488c05DcBC9Dcd29a8252C84        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** xcore-mainnet
+        
+        ---
+      
+        
