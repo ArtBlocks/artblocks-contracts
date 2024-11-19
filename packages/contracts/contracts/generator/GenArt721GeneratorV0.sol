@@ -344,6 +344,31 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     }
 
     /**
+     * @notice Get the token data for a given token.
+     * @param coreContract The core contract address the token belongs to.
+     * @param tokenId The ID of the token to retrieve the data for.
+     * @return tokenDataJson The token data as a JSON string as bytes.
+     */
+    function _getTokenData(
+        address coreContract,
+        uint256 tokenId
+    ) internal view returns (bytes memory tokenDataJson) {
+        // @dev Attempt to get token hash from V1 and up core contracts first.
+        (bytes32 tokenHash, bool isV0CoreContract) = _getTokenHash(
+            coreContract,
+            tokenId
+        );
+        tokenDataJson = abi.encodePacked(
+            'let tokenData = {"tokenId":"',
+            Strings.toString(tokenId),
+            '"',
+            isV0CoreContract ? ',"hashes":["' : ',"hash":"',
+            Strings.toHexString(uint256(tokenHash)),
+            isV0CoreContract ? '"]}' : '"}'
+        );
+    }
+
+    /**
      * @notice Get the HTMLRequest for a given token.
      * @param coreContract The core contract address the token belongs to.
      * @param tokenId The ID of the token to retrieve the HTMLRequest for.
@@ -362,11 +387,6 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             .stringToBytes32();
 
         // Create head tags
-        // @dev Attempt to get token hash from V1 and up core contracts first.
-        (bytes32 tokenHash, bool isV0CoreContract) = _getTokenHash(
-            coreContract,
-            tokenId
-        );
 
         HTMLTag[] memory headTags = new HTMLTag[](3);
         headTags[0].tagOpen = "<style>";
@@ -374,14 +394,10 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             .tagContent = "html{height:100%}body{min-height:100%;margin:0;padding:0}canvas{padding:0;margin:auto;display:block;position:absolute;top:0;bottom:0;left:0;right:0}";
         headTags[0].tagClose = "</style>";
 
-        headTags[1].tagContent = abi.encodePacked(
-            'let tokenData = {"tokenId":"',
-            Strings.toString(tokenId),
-            '"',
-            isV0CoreContract ? ',"hashes":["' : ',"hash":"',
-            Strings.toHexString(uint256(tokenHash)),
-            isV0CoreContract ? '"]}' : '"}'
-        );
+        headTags[1].tagContent = _getTokenData({
+            coreContract: coreContract,
+            tokenId: tokenId
+        });
         headTags[1].tagType = HTMLTagType.script;
 
         // Create body tags
