@@ -42,9 +42,8 @@ library JsonStatic {
 
     struct Json {
         JsonType jsonType;
-        string[] objectKeys; // keys of children if type is OBJECT
-        Json[] objectChildren; // children if type is OBJECT
-        Json[] arrayChildren; // array of children if type is ARRAY
+        string[] objectKeys; // array of keys if type is OBJECT
+        Json[] values; // array of values if type is OBJECT, or array values if type is ARRAY
         StringEncodingFlag stringEncodingFlag;
         string elementValueString; // value if type is ELEMENT_STRING
         uint256 elementValueUint; // value if type is ELEMENT_UINT
@@ -67,8 +66,7 @@ library JsonStatic {
             Json({
                 jsonType: JsonType.ELEMENT_STRING, // type
                 objectKeys: new string[](0), // default
-                objectChildren: new Json[](0), // default
-                arrayChildren: new Json[](0), // default
+                values: new Json[](0), // default
                 stringEncodingFlag: stringEncodingFlag, // input
                 elementValueString: value, // input
                 elementValueUint: 0, // default
@@ -108,20 +106,20 @@ library JsonStatic {
     ) private pure returns (string memory) {
         // pre-allocate string array to avoid dynamic memory allocation
         uint256 keysLength = json.objectKeys.length;
-        string[] memory children = new string[](keysLength);
+        string[] memory valueStrings = new string[](keysLength);
         for (uint256 i = 0; i < keysLength; i++) {
             // only trailing comma if not last child, per JSON spec
             string memory trailingChar = i < keysLength - 1 ? "," : "";
-            children[i] = string.concat(
+            valueStrings[i] = string.concat(
                 '"',
                 json.objectKeys[i], // keys assumed to be valid JSON keys
                 '":',
-                json.objectChildren[i].write(),
+                json.values[i].write(),
                 trailingChar
             );
         }
-        // concat all children and return
-        return string.concat("{", _concatenateStrings(children), "}");
+        // concat all valueStrings and return
+        return string.concat("{", _concatenateStrings(valueStrings), "}");
     }
 
     /**
@@ -133,18 +131,18 @@ library JsonStatic {
         Json memory json
     ) private pure returns (string memory) {
         // pre-allocate string array to avoid dynamic memory allocation
-        uint256 childrenLength = json.arrayChildren.length;
-        string[] memory children = new string[](childrenLength);
-        for (uint256 i = 0; i < childrenLength; i++) {
+        uint256 valuesLength = json.values.length;
+        string[] memory valueStrings = new string[](valuesLength);
+        for (uint256 i = 0; i < valuesLength; i++) {
             // only trailing comma if not last child, per JSON spec
-            string memory trailingChar = i < childrenLength - 1 ? "," : "";
-            children[i] = string.concat(
-                json.arrayChildren[i].write(),
+            string memory trailingChar = i < valuesLength - 1 ? "," : "";
+            valueStrings[i] = string.concat(
+                json.values[i].write(),
                 trailingChar
             );
         }
-        // concat all children and return
-        return string.concat("[", _concatenateStrings(children), "]");
+        // concat all valueStrings and return
+        return string.concat("[", _concatenateStrings(valueStrings), "]");
     }
 
     /**

@@ -411,8 +411,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             tokenDataValues[1] = JsonStatic.Json({
                 jsonType: JsonStatic.JsonType.ARRAY,
                 objectKeys: new string[](0),
-                objectChildren: new JsonStatic.Json[](0),
-                arrayChildren: tokenDataValuesHashes,
+                values: tokenDataValuesHashes,
                 stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE,
                 elementValueString: "",
                 elementValueUint: 0,
@@ -503,8 +502,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                 externalAssetDependencies[i] = JsonStatic.Json({
                     jsonType: JsonStatic.JsonType.OBJECT, // type
                     objectKeys: dependencyKeys, // populated object
-                    objectChildren: dependencyValues, // populated object
-                    arrayChildren: new JsonStatic.Json[](0), // default
+                    values: dependencyValues, // populated object
                     stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE, // default
                     elementValueString: "", // default
                     elementValueUint: 0, // default
@@ -517,8 +515,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         JsonStatic.Json memory tokenData = JsonStatic.Json({
             jsonType: JsonStatic.JsonType.OBJECT, // type
             objectKeys: tokenDataKeys, // populated object
-            objectChildren: tokenDataValues, // populated object
-            arrayChildren: new JsonStatic.Json[](0), // default
+            values: tokenDataValues, // populated object
             stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE, // default
             elementValueString: "", // default
             elementValueUint: 0, // default
