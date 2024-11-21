@@ -267,7 +267,9 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hashes = await genArt721CoreV0.showTokenHashes(0);
       const hash = hashes[0];
       expect(tokenHtml).to.include(
-        getScriptTag(`let tokenData = {"tokenId":"0","hashes":["${hash}"]}`)
+        getScriptTag(
+          `let tokenData = JSON.parse(\`{"tokenId":"0","hashes":["${hash}"]}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
+        )
       );
 
       // Project script
@@ -363,7 +365,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = await genArt721CoreV1.tokenIdToHash(tokenId);
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = {"tokenId":"${tokenId}","hash":"${hash}"}`
+          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
         )
       );
       // Project script
@@ -440,7 +442,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = await genArt721CoreV2.tokenIdToHash(tokenId);
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = {"tokenId":"${tokenId}","hash":"${hash}"}`
+          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
         )
       );
       // Project script
@@ -531,7 +533,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = await genArt721CoreV3.tokenIdToHash(tokenId);
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = {"tokenId":"${tokenId}","hash":"${hash}"}`
+          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
         )
       );
       // Project script
@@ -624,7 +626,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = await genArt721CoreV3.tokenIdToHash(tokenId);
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = {"tokenId":"${tokenId}","hash":"${hash}"}`
+          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
         )
       );
       // Project script

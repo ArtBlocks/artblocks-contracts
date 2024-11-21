@@ -7,8 +7,10 @@ import "../interfaces/v0.8.x/IGenArt721CoreProjectScriptV1.sol";
 import "../interfaces/v0.8.x/IGenArt721CoreTokenHashProviderV0.sol";
 import "../interfaces/v0.8.x/IGenArt721CoreTokenHashProviderV1.sol";
 import "../interfaces/v0.8.x/IGenArt721GeneratorV0.sol";
+import {IGenArt721CoreContractV3_Engine_Flex} from "../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
 import {IUniversalBytecodeStorageReader} from "../interfaces/v0.8.x/IUniversalBytecodeStorageReader.sol";
 import "../libs/v0.8.x/Bytes32Strings.sol";
+import {JsonStatic} from "../libs/v0.8.x/JsonStatic.sol";
 import {ABHelpers} from "../libs/v0.8.x/ABHelpers.sol";
 import {AddressChunks} from "./AddressChunks.sol";
 
@@ -27,6 +29,7 @@ import {IScriptyBuilderV2, HTMLRequest, HTMLTagType, HTMLTag} from "scripty.sol/
 contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     using Bytes32Strings for bytes32;
     using Bytes32Strings for string;
+    using JsonStatic for JsonStatic.Json;
 
     // @dev This is an upgradable contract so we need to maintain
     // the order of the variables to ensure we don't overwrite
@@ -344,6 +347,25 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     }
 
     /**
+     * @notice Get the isFlex status for a given core contract.
+     * @dev uses the existence of preferredIPFSGateway function as indicator for flex contracts.
+     * @param coreContract The core contract address to check if it is a flex contract.
+     */
+    function _getIsFlex(address coreContract) internal view returns (bool) {
+        try
+            // all flex (V2, V3) contracts have this function, so use as isFlex indicator
+            IGenArt721CoreContractV3_Engine_Flex(coreContract)
+                .preferredIPFSGateway()
+        returns (string memory) {
+            // if contract did not revert, interpret it is a flex contract
+            return true;
+        } catch {
+            // if contract reverted, interpret it is not a flex contract
+            return false;
+        }
+    }
+
+    /**
      * @notice Get the token data for a given token.
      * @param coreContract The core contract address the token belongs to.
      * @param tokenId The ID of the token to retrieve the data for.
@@ -358,14 +380,153 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             coreContract,
             tokenId
         );
-        tokenDataJson = abi.encodePacked(
-            'let tokenData = {"tokenId":"',
-            Strings.toString(tokenId),
-            '"',
-            isV0CoreContract ? ',"hashes":["' : ',"hash":"',
-            Strings.toHexString(uint256(tokenHash)),
-            isV0CoreContract ? '"]}' : '"}'
-        );
+        // get any flex assets
+        bool isFlex = _getIsFlex({coreContract: coreContract});
+
+        // build tokenData json object
+        string[] memory tokenDataKeys = isFlex
+            ? new string[](5)
+            : new string[](2);
+        JsonStatic.Json[] memory tokenDataValues = isFlex
+            ? new JsonStatic.Json[](5)
+            : new JsonStatic.Json[](2);
+
+        // token id
+        tokenDataKeys[0] = "tokenId";
+        tokenDataValues[0] = JsonStatic.newStringElement({
+            value: Strings.toString(tokenId),
+            stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE
+        });
+
+        // token hash
+        if (isV0CoreContract) {
+            // @dev V0 contracts return an array of hashes, with only one hash
+            tokenDataKeys[1] = "hashes";
+            JsonStatic.Json[]
+                memory tokenDataValuesHashes = new JsonStatic.Json[](1);
+            tokenDataValuesHashes[0] = JsonStatic.newStringElement({
+                value: Strings.toHexString(uint256(tokenHash)),
+                stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE
+            });
+            tokenDataValues[1] = JsonStatic.Json({
+                jsonType: JsonStatic.JsonType.ARRAY,
+                objectKeys: new string[](0),
+                objectChildren: new JsonStatic.Json[](0),
+                arrayChildren: tokenDataValuesHashes,
+                stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE,
+                elementValueString: "",
+                elementValueUint: 0,
+                elementValueBoolean: false
+            });
+        } else {
+            tokenDataKeys[1] = "hash";
+            tokenDataValues[1] = JsonStatic.newStringElement({
+                value: Strings.toHexString(uint256(tokenHash)),
+                stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE
+            });
+        }
+
+        // flex contracts have additional fields
+        if (isFlex) {
+            // preferredIPFSGateway
+            tokenDataKeys[2] = "preferredArweaveGateway";
+            tokenDataValues[2] = JsonStatic.newStringElement({
+                value: IGenArt721CoreContractV3_Engine_Flex(coreContract)
+                    .preferredArweaveGateway(),
+                stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE
+            });
+
+            // preferredArweaveGateway
+            tokenDataKeys[3] = "preferredIPFSGateway";
+            tokenDataValues[3] = JsonStatic.newStringElement({
+                value: IGenArt721CoreContractV3_Engine_Flex(coreContract)
+                    .preferredIPFSGateway(),
+                stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE
+            });
+
+            // externalAssetDependencies (variable length array)
+            tokenDataKeys[4] = "externalAssetDependencies";
+            // @dev pre-allocate array to avoid dynamic memory allocation of variable-length array
+            uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
+            uint256 externalAssetDependencyCount = IGenArt721CoreContractV3_Engine_Flex(
+                    coreContract
+                ).projectExternalAssetDependencyCount(projectId);
+            JsonStatic.Json[]
+                memory externalAssetDependencies = new JsonStatic.Json[](
+                    externalAssetDependencyCount
+                );
+            for (uint256 i = 0; i < externalAssetDependencyCount; i++) {
+                // each external asset dependency has 3 fields, so pre-allocate array to avoid dynamic memory allocation
+                JsonStatic.Json[]
+                    memory dependencyValues = new JsonStatic.Json[](3);
+                string[] memory dependencyKeys = new string[](3);
+                // get external asset dependency with data
+                IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyWithData
+                    memory externalAssetDependencyWithData = IGenArt721CoreContractV3_Engine_Flex(
+                        coreContract
+                    ).projectExternalAssetDependencyByIndex({
+                            _projectId: projectId,
+                            _index: i
+                        });
+                // populate external asset dependency json object
+                dependencyKeys[0] = "dependency_type";
+                dependencyValues[0] = JsonStatic.newStringElement({
+                    value: _dependencyTypeToString(
+                        externalAssetDependencyWithData.dependencyType
+                    ),
+                    stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE
+                });
+                dependencyKeys[1] = "cid";
+                dependencyValues[1] = JsonStatic.newStringElement({
+                    value: externalAssetDependencyWithData.cid,
+                    stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE
+                });
+                dependencyKeys[2] = "data";
+                if (
+                    externalAssetDependencyWithData.dependencyType ==
+                    IGenArt721CoreContractV3_Engine_Flex
+                        .ExternalAssetDependencyType
+                        .ONCHAIN
+                ) {
+                    dependencyValues[2] = JsonStatic.newStringElement({
+                        value: externalAssetDependencyWithData.data,
+                        stringEncodingFlag: JsonStatic.StringEncodingFlag.BASE64
+                    });
+                } else {
+                    dependencyValues[2] = JsonStatic.newStringElement({
+                        value: "", // empty string for non-ONCHAIN dependencies
+                        stringEncodingFlag: JsonStatic.StringEncodingFlag.BASE64
+                    });
+                }
+                // TODO: handle ART_BLOCKS_DEPENDENCY_REGISTRY dependency type
+
+                externalAssetDependencies[i] = JsonStatic.Json({
+                    jsonType: JsonStatic.JsonType.OBJECT, // type
+                    objectKeys: dependencyKeys, // populated object
+                    objectChildren: dependencyValues, // populated object
+                    arrayChildren: new JsonStatic.Json[](0), // default
+                    stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE, // default
+                    elementValueString: "", // default
+                    elementValueUint: 0, // default
+                    elementValueBoolean: false // default
+                });
+            }
+        }
+
+        // build tokenData json object
+        JsonStatic.Json memory tokenData = JsonStatic.Json({
+            jsonType: JsonStatic.JsonType.OBJECT, // type
+            objectKeys: tokenDataKeys, // populated object
+            objectChildren: tokenDataValues, // populated object
+            arrayChildren: new JsonStatic.Json[](0), // default
+            stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE, // default
+            elementValueString: "", // default
+            elementValueUint: 0, // default
+            elementValueBoolean: false // default
+        });
+
+        // return tokenData as JSON string via write function
+        return bytes(tokenData.write());
     }
 
     /**
@@ -394,10 +555,12 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             .tagContent = "html{height:100%}body{min-height:100%;margin:0;padding:0}canvas{padding:0;margin:auto;display:block;position:absolute;top:0;bottom:0;left:0;right:0}";
         headTags[0].tagClose = "</style>";
 
-        headTags[1].tagContent = _getTokenData({
-            coreContract: coreContract,
-            tokenId: tokenId
-        });
+        // @dev decode any base64 encoded flex data in the browser while parsing the json
+        headTags[1].tagContent = abi.encodePacked(
+            "let tokenData = JSON.parse(`",
+            _getTokenData({coreContract: coreContract, tokenId: tokenId}),
+            '`, (key, value) => key === "data" && value !== null ? atob(value) : value);'
+        );
         headTags[1].tagType = HTMLTagType.script;
 
         // Create body tags
@@ -576,6 +739,42 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                     contractData: "",
                     tagContent: ""
                 });
+        }
+    }
+
+    function _dependencyTypeToString(
+        IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyType dependencyType
+    ) internal pure returns (string memory) {
+        if (
+            dependencyType ==
+            IGenArt721CoreContractV3_Engine_Flex
+                .ExternalAssetDependencyType
+                .IPFS
+        ) {
+            return "IPFS";
+        } else if (
+            dependencyType ==
+            IGenArt721CoreContractV3_Engine_Flex
+                .ExternalAssetDependencyType
+                .ARWEAVE
+        ) {
+            return "ARWEAVE";
+        } else if (
+            dependencyType ==
+            IGenArt721CoreContractV3_Engine_Flex
+                .ExternalAssetDependencyType
+                .ONCHAIN
+        ) {
+            return "ONCHAIN";
+        } else if (
+            dependencyType ==
+            IGenArt721CoreContractV3_Engine_Flex
+                .ExternalAssetDependencyType
+                .ART_BLOCKS_DEPENDENCY_REGISTRY
+        ) {
+            return "ART_BLOCKS_DEPENDENCY_REGISTRY";
+        } else {
+            return "UNKNOWN"; // never expected to happen
         }
     }
 }
