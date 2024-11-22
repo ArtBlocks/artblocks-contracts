@@ -423,11 +423,6 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                 memory
         )
     {
-        // check if a V2 flex contract
-        // @dev acknowledge that this could be function input parameter to avoid one call per dependency, but
-        // stack to deep error limits memoization opportunity in functions calling this function
-        bool isV2Flex = _getIsV2Flex(coreContract);
-
         // pre-allocate generic externalAssetDependencyWithData to avoid dynamic memory allocation
         IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyWithData
             memory externalAssetDependencyWithData = IGenArt721CoreContractV3_Engine_Flex
@@ -441,7 +436,9 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                 });
         // @dev flex V2 and V3 have different return types for the function projectExternalAssetDependencyByIndex - must branch logic
         // @dev reference change in return type between V2 and V3 here: https://github.com/ArtBlocks/artblocks-contracts/pull/450
-        if (isV2Flex) {
+        // @dev acknowledge that this could be function input parameter to avoid one call per dependency, but
+        // stack to deep error limits memoization opportunity in functions calling this function
+        if (_getIsV2Flex(coreContract)) {
             ILegacyGenArt721CoreV2_PBAB_Flex.LegacyExternalAssetDependencyWithoutData
                 memory legacyExternalAssetDependencyWithoutData = ILegacyGenArt721CoreV2_PBAB_Flex(
                     coreContract
