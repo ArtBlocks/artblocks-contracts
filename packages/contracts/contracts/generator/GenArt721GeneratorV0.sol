@@ -19,6 +19,24 @@ import "@openzeppelin-4.8/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import {IScriptyBuilderV2, HTMLRequest, HTMLTagType, HTMLTag} from "scripty.sol/contracts/scripty/interfaces/IScriptyBuilderV2.sol";
 
+// @dev legacy interface for V2 flex contracts - used to get external legacy asset dependencies
+interface ILegacyGenArt721CoreV2_PBAB_Flex {
+    enum LegacyExternalAssetDependencyType {
+        IPFS,
+        ARWEAVE
+    }
+    // legacy struct for V2 flex contracts
+    struct LegacyExternalAssetDependencyWithoutData {
+        string cid;
+        LegacyExternalAssetDependencyType dependencyType;
+    }
+
+    function projectExternalAssetDependencyByIndex(
+        uint256 _projectId,
+        uint256 _index
+    ) external view returns (LegacyExternalAssetDependencyWithoutData memory);
+}
+
 /**
  * @title GenArt721GeneratorV0
  * @author Art Blocks Inc.
@@ -353,7 +371,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
      */
     function _getIsFlex(address coreContract) internal view returns (bool) {
         try
-            // all flex (V2, V3) contracts have this function, so use as isFlex indicator
+            // @dev all flex (V2, V3) contracts have this function, so use as isFlex indicator
             IGenArt721CoreContractV3_Engine_Flex(coreContract)
                 .preferredIPFSGateway()
         returns (string memory) {
@@ -363,6 +381,74 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             // if contract reverted, interpret it is not a flex contract
             return false;
         }
+    }
+
+    function _getProjectExternalAssetDependencyByIndex(
+        address coreContract,
+        uint256 projectId,
+        uint256 index
+    )
+        internal
+        view
+        returns (
+            IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyWithData
+                memory
+        )
+    {
+        // check if a V2 flex contract
+        // @dev acknowledge that this could be function input parameter to avoid one call per dependency, but
+        // stack to deep error limits memoization opportunity in functions calling this function
+        // @dev all flex (V2, V3) contracts have the function coreType(),
+        // and all V2 flex contracts have the coreType "GenArt721CoreV2_ENGINE_FLEX"
+        string memory coreType = IGenArt721CoreContractV3_Engine_Flex(
+            coreContract
+        ).coreType();
+        bool isV2Flex = keccak256(abi.encodePacked(coreType)) ==
+            keccak256(abi.encodePacked("GenArt721CoreV2_ENGINE_FLEX"));
+
+        // pre-allocate generic externalAssetDependencyWithData to avoid dynamic memory allocation
+        IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyWithData
+            memory externalAssetDependencyWithData = IGenArt721CoreContractV3_Engine_Flex
+                .ExternalAssetDependencyWithData({
+                    cid: "",
+                    dependencyType: IGenArt721CoreContractV3_Engine_Flex
+                        .ExternalAssetDependencyType
+                        .IPFS, // default to IPFS, index 0 of enum
+                    bytecodeAddress: address(0),
+                    data: ""
+                });
+        // @dev flex V2 and V3 have different return types for the function projectExternalAssetDependencyByIndex - must branch logic
+        // @dev reference change in return type between V2 and V3 here: https://github.com/ArtBlocks/artblocks-contracts/pull/450
+        if (isV2Flex) {
+            ILegacyGenArt721CoreV2_PBAB_Flex.LegacyExternalAssetDependencyWithoutData
+                memory legacyExternalAssetDependencyWithoutData = ILegacyGenArt721CoreV2_PBAB_Flex(
+                    coreContract
+                ).projectExternalAssetDependencyByIndex({
+                        _projectId: projectId,
+                        _index: index
+                    });
+            // populate external asset dependency json object
+            externalAssetDependencyWithData
+                .cid = legacyExternalAssetDependencyWithoutData.cid;
+            // @dev legacy external asset dependency types are a subset of V3 external asset dependency types,
+            // so we can safely cast the legacy type to the V3 type
+            externalAssetDependencyWithData
+                .dependencyType = IGenArt721CoreContractV3_Engine_Flex
+                .ExternalAssetDependencyType(
+                    uint256(
+                        legacyExternalAssetDependencyWithoutData.dependencyType
+                    )
+                );
+            // leave data as empty string - V2 contracts do not support data
+        } else {
+            externalAssetDependencyWithData = IGenArt721CoreContractV3_Engine_Flex(
+                coreContract
+            ).projectExternalAssetDependencyByIndex({
+                    _projectId: projectId,
+                    _index: index
+                });
+        }
+        return externalAssetDependencyWithData;
     }
 
     /**
@@ -423,6 +509,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         if (isFlex) {
             // preferredIPFSGateway
             tokenDataKeys[2] = "preferredArweaveGateway";
+            // @dev all flex (V2, V3) contracts have the function preferredArweaveGateway()
             tokenDataValues[2] = JsonStatic.newStringElement({
                 value: IGenArt721CoreContractV3_Engine_Flex(coreContract)
                     .preferredArweaveGateway(),
@@ -431,6 +518,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
 
             // preferredArweaveGateway
             tokenDataKeys[3] = "preferredIPFSGateway";
+            // @dev all flex (V2, V3) contracts have the function preferredIPFSGateway()
             tokenDataValues[3] = JsonStatic.newStringElement({
                 value: IGenArt721CoreContractV3_Engine_Flex(coreContract)
                     .preferredIPFSGateway(),
@@ -441,6 +529,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             tokenDataKeys[4] = "externalAssetDependencies";
             // @dev pre-allocate array to avoid dynamic memory allocation of variable-length array
             uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
+            // @dev all flex (V2, V3) contracts have the function projectExternalAssetDependencyCount()
             uint256 externalAssetDependencyCount = IGenArt721CoreContractV3_Engine_Flex(
                     coreContract
                 ).projectExternalAssetDependencyCount(projectId);
@@ -453,12 +542,11 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                 string[] memory dependencyKeys = JsonStatic.newKeysArray(3);
                 // get external asset dependency with data
                 IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyWithData
-                    memory externalAssetDependencyWithData = IGenArt721CoreContractV3_Engine_Flex(
-                        coreContract
-                    ).projectExternalAssetDependencyByIndex({
-                            _projectId: projectId,
-                            _index: i
-                        });
+                    memory externalAssetDependencyWithData = _getProjectExternalAssetDependencyByIndex({
+                        coreContract: coreContract,
+                        projectId: projectId,
+                        index: i
+                    });
                 // populate external asset dependency json object
                 dependencyKeys[0] = "dependency_type";
                 dependencyValues[0] = JsonStatic.newStringElement({
@@ -480,7 +568,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                         .ONCHAIN
                 ) {
                     dependencyValues[2] = JsonStatic.newStringElement({
-                        value: externalAssetDependencyWithData.data,
+                        value: externalAssetDependencyWithData.data, // assign data for ONCHAIN dependencies
                         stringEncodingFlag: JsonStatic.StringEncodingFlag.BASE64
                     });
                 } else {
