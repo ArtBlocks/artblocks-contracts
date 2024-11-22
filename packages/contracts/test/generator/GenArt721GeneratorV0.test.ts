@@ -7,6 +7,7 @@ import { expectRevert } from "@openzeppelin/test-helpers";
 
 import {
   AdminACLV0,
+  CoreRegistryV1,
   DependencyRegistryV0,
   MinterSetPriceV2,
   GenArt721GeneratorV0,
@@ -187,6 +188,18 @@ describe(`GenArt721GeneratorV0`, async function () {
       config.universalReader.address
     );
 
+    // deploy core registry
+    config.coreRegistry = (await deployAndGet(
+      config,
+      "CoreRegistryV1",
+      []
+    )) as CoreRegistryV1;
+
+    // update core registry address on dependency registry
+    await config.dependencyRegistry
+      .connect(config.accounts.deployer)
+      .updateCoreRegistryAddress(config.coreRegistry.address);
+
     return config as GenArt721GeneratorV0TestConfig;
   }
 
@@ -222,10 +235,14 @@ describe(`GenArt721GeneratorV0`, async function () {
       // Mint token 0
       await genArt721CoreV0.connect(config.accounts.artist).purchase(0);
 
-      // Add contract to dependency registry
-      await config.dependencyRegistry
-        .connect(config.accounts.deployer)
-        .addSupportedCoreContract(genArt721CoreV0.address);
+      // Add contract to core registry
+      await config.coreRegistry
+        ?.connect(config.accounts.deployer)
+        .registerContract(
+          genArt721CoreV0.address,
+          ethers.utils.formatBytes32String("DUMMY_VERSION"),
+          ethers.utils.formatBytes32String("DUMMY_TYPE")
+        );
 
       // Expect revert if dependency override not set for pre-V3 core contracts
       await expect(
@@ -324,10 +341,14 @@ describe(`GenArt721GeneratorV0`, async function () {
 
       const tokenId = projectId.mul(ONE_MILLION);
 
-      // Add contract to dependency registry
-      await config.dependencyRegistry
-        .connect(config.accounts.deployer)
-        .addSupportedCoreContract(genArt721CoreV1.address);
+      // Add contract to core registry
+      await config.coreRegistry
+        ?.connect(config.accounts.deployer)
+        .registerContract(
+          genArt721CoreV1.address,
+          ethers.utils.formatBytes32String("DUMMY_VERSION"),
+          ethers.utils.formatBytes32String("DUMMY_TYPE")
+        );
 
       // Expect revert if dependency override not set for pre-V3 core contracts
       await expect(
@@ -395,10 +416,14 @@ describe(`GenArt721GeneratorV0`, async function () {
 
       const tokenId = projectId.mul(ONE_MILLION);
 
-      // Add contract to dependency registry
-      await config.dependencyRegistry
-        .connect(config.accounts.deployer)
-        .addSupportedCoreContract(genArt721CoreV2.address);
+      // Add contract to core registry
+      await config.coreRegistry
+        ?.connect(config.accounts.deployer)
+        .registerContract(
+          genArt721CoreV2.address,
+          ethers.utils.formatBytes32String("DUMMY_VERSION"),
+          ethers.utils.formatBytes32String("DUMMY_TYPE")
+        );
 
       // Expect revert if dependency override not set for pre-V3 core contracts
       await expect(
@@ -500,10 +525,14 @@ describe(`GenArt721GeneratorV0`, async function () {
 
       const tokenId = projectId.mul(ONE_MILLION);
 
-      // Add contract to dependency registry
-      await config.dependencyRegistry
-        .connect(config.accounts.deployer)
-        .addSupportedCoreContract(genArt721CoreV3.address);
+      // Add contract to core registry
+      await config.coreRegistry
+        ?.connect(config.accounts.deployer)
+        .registerContract(
+          genArt721CoreV3.address,
+          ethers.utils.formatBytes32String("DUMMY_VERSION"),
+          ethers.utils.formatBytes32String("DUMMY_TYPE")
+        );
 
       // Get token html
       const tokenHtml = await config.genArt721Generator.getTokenHtml(
@@ -593,10 +622,14 @@ describe(`GenArt721GeneratorV0`, async function () {
 
       const tokenId = projectId.mul(ONE_MILLION);
 
-      // Add contract to dependency registry
-      await config.dependencyRegistry
-        .connect(config.accounts.deployer)
-        .addSupportedCoreContract(genArt721CoreV3.address);
+      // Add contract to core registry
+      await config.coreRegistry
+        ?.connect(config.accounts.deployer)
+        .registerContract(
+          genArt721CoreV3.address,
+          ethers.utils.formatBytes32String("DUMMY_VERSION"),
+          ethers.utils.formatBytes32String("DUMMY_TYPE")
+        );
 
       // Get token html
       const tokenHtml = await config.genArt721Generator.getTokenHtml(
@@ -699,10 +732,14 @@ describe(`GenArt721GeneratorV0`, async function () {
 
     const tokenId = projectId.mul(ONE_MILLION);
 
-    // Add contract to dependency registry
-    await config.dependencyRegistry
-      .connect(config.accounts.deployer)
-      .addSupportedCoreContract(genArt721CoreV3.address);
+    // Add contract to core registry
+    await config.coreRegistry
+      ?.connect(config.accounts.deployer)
+      .registerContract(
+        genArt721CoreV3.address,
+        ethers.utils.formatBytes32String("DUMMY_VERSION"),
+        ethers.utils.formatBytes32String("DUMMY_TYPE")
+      );
 
     // Get token html
     const tokenHtml = await config.genArt721Generator.getTokenHtml(
@@ -774,10 +811,14 @@ describe(`GenArt721GeneratorV0`, async function () {
 
     const tokenId = projectId.mul(ONE_MILLION);
 
-    // Add contract to dependency registry
-    await config.dependencyRegistry
-      .connect(config.accounts.deployer)
-      .addSupportedCoreContract(genArt721CoreV3.address);
+    // Add contract to core registry
+    await config.coreRegistry
+      ?.connect(config.accounts.deployer)
+      .registerContract(
+        genArt721CoreV3.address,
+        ethers.utils.formatBytes32String("DUMMY_VERSION"),
+        ethers.utils.formatBytes32String("DUMMY_TYPE")
+      );
 
     // Test each dependency that should have a canvas
     const dependenciesToTest = [
@@ -862,7 +903,6 @@ describe(`GenArt721GeneratorV0`, async function () {
   describe("getProjectScript", function () {
     it("returns project script when available", async function () {
       const config = await loadFixture(_beforeEach);
-
       // Deploy core contract
       const { genArt721Core: genArt721CoreV3 } =
         await deployCoreWithMinterFilter(
@@ -871,10 +911,14 @@ describe(`GenArt721GeneratorV0`, async function () {
           "MinterFilterV1"
         );
 
-      // Add contract to dependency registry
-      await config.dependencyRegistry
-        .connect(config.accounts.deployer)
-        .addSupportedCoreContract(genArt721CoreV3.address);
+      // Add contract to core registry
+      await config.coreRegistry
+        ?.connect(config.accounts.deployer)
+        .registerContract(
+          genArt721CoreV3.address,
+          ethers.utils.formatBytes32String("DUMMY_VERSION"),
+          ethers.utils.formatBytes32String("DUMMY_TYPE")
+        );
 
       // Create project with script
       const projectId = await genArt721CoreV3.nextProjectId();
@@ -914,10 +958,14 @@ describe(`GenArt721GeneratorV0`, async function () {
           "MinterFilterV1"
         );
 
-      // Add contract to dependency registry
-      await config.dependencyRegistry
-        .connect(config.accounts.deployer)
-        .addSupportedCoreContract(genArt721CoreV3.address);
+      // Add contract to core registry
+      await config.coreRegistry
+        ?.connect(config.accounts.deployer)
+        .registerContract(
+          genArt721CoreV3.address,
+          ethers.utils.formatBytes32String("DUMMY_VERSION"),
+          ethers.utils.formatBytes32String("DUMMY_TYPE")
+        );
 
       // Create project without script
       const projectId = await genArt721CoreV3.nextProjectId();
@@ -939,9 +987,13 @@ describe(`GenArt721GeneratorV0`, async function () {
           "GenArt721CoreV1",
           "MinterFilterV0"
         );
-      await config.dependencyRegistry
-        .connect(config.accounts.deployer)
-        .addSupportedCoreContract(genArt721CoreV1.address);
+      await config.coreRegistry
+        ?.connect(config.accounts.deployer)
+        .registerContract(
+          genArt721CoreV1.address,
+          ethers.utils.formatBytes32String("DUMMY_VERSION"),
+          ethers.utils.formatBytes32String("DUMMY_TYPE")
+        );
       const projectId2 = await genArt721CoreV1.nextProjectId();
       await genArt721CoreV1
         .connect(config.accounts.deployer)
