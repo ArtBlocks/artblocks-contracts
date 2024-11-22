@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import "../../interfaces/v0.8.x/IAdminACLV0.sol";
+import "../../interfaces/v0.8.x/ICoreRegistryV1.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
 
 /**
@@ -66,11 +67,17 @@ library DependencyRegistryStorageLib {
         mapping(bytes32 dependencyNameAndVersion => Dependency dependency) dependencyRecords;
         // mapping from licenseTypes to License, which stores the properties of each license
         mapping(bytes32 licenseType => License license) allLicenses;
+        // @dev This set is vestigial and no longer used. It has been replaced by CoreRegistry functionality.
+        // Cannot be removed due to storage layout requirements in upgradeable contracts.
+        // See https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable#modifying-your-contracts
+        EnumerableSet.AddressSet supportedCoreContracts;
         // Mapping that allows for the overriding of project dependencies.
         // The first key is the address of the core contract, the second key is the project ID,
         // and the value is the bytes32 representation of the dependency name and version (i.e. name@version).
         // This allows for specific projects to use different versions of dependencies than what's stored on the core contract.
         mapping(address coreContractAddress => mapping(uint256 projectId => bytes32 dependencyNameAndVersion) projectToDependencyNameAndVersionMapping) projectDependencyOverrides;
+        // address of the CoreRegistry contract
+        ICoreRegistryV1 coreRegistryContract;
     }
 
     /**
