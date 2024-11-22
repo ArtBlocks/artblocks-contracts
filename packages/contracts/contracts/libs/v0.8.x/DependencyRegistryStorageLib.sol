@@ -66,9 +66,6 @@ library DependencyRegistryStorageLib {
         mapping(bytes32 dependencyNameAndVersion => Dependency dependency) dependencyRecords;
         // mapping from licenseTypes to License, which stores the properties of each license
         mapping(bytes32 licenseType => License license) allLicenses;
-        // Set of addresses for the core contracts that are supported by the DependencyRegistry.
-        // Each address represents a unique core contract in the Art Blocks ecosystem.
-        EnumerableSet.AddressSet supportedCoreContracts;
         // Mapping that allows for the overriding of project dependencies.
         // The first key is the address of the core contract, the second key is the project ID,
         // and the value is the bytes32 representation of the dependency name and version (i.e. name@version).

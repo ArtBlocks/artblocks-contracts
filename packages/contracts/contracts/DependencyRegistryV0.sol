@@ -6,6 +6,7 @@ pragma solidity 0.8.19;
 import "./interfaces/v0.8.x/IAdminACLV0.sol";
 import "./interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
 import "./interfaces/v0.8.x/IDependencyRegistryV0.sol";
+import "./interfaces/v0.8.x/ICoreRegistryV1.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
@@ -42,6 +43,8 @@ contract DependencyRegistryV0 is
     using EnumerableSet for EnumerableSet.AddressSet;
     using SafeCast for uint24;
 
+    address public coreRegistryAddress;
+
     uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
 
     function _onlyNonZeroAddress(address address_) internal pure {
@@ -67,7 +70,7 @@ contract DependencyRegistryV0 is
         address coreContractAddress
     ) internal view {
         require(
-            DependencyRegistryStorageLib.s().supportedCoreContracts.contains(
+            ICoreRegistryV1(coreRegistryAddress).isRegisteredContract(
                 coreContractAddress
             ),
             "Core contract not supported"
@@ -104,12 +107,28 @@ contract DependencyRegistryV0 is
      * @notice Initializes contract.
      * @param adminACLContract_ Address of admin access control contract, to be
      * set as contract owner.
+     * @param coreRegistryAddress_ Address of core registry contract.
      */
-    function initialize(address adminACLContract_) public initializer {
+    function initialize(
+        address adminACLContract_,
+        address coreRegistryAddress_
+    ) public initializer {
         __Ownable_init();
 
         // set AdminACL management contract as owner
         _transferOwnership(adminACLContract_);
+        // set core registry address
+        coreRegistryAddress = coreRegistryAddress_;
+    }
+
+    /**
+     * @notice Updates the core registry address.
+     * @param _coreRegistryAddress Address of core registry contract.
+     */
+    function updateCoreRegistryAddress(address _coreRegistryAddress) external {
+        _onlyAdminACL(this.updateCoreRegistryAddress.selector);
+        _onlyNonZeroAddress(_coreRegistryAddress);
+        coreRegistryAddress = _coreRegistryAddress;
     }
 
     /**
@@ -617,40 +636,6 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Adds a new core contract to the list of supported core contracts.
-     * @param contractAddress Address of the core contract to be added.
-     */
-    function addSupportedCoreContract(address contractAddress) external {
-        _onlyAdminACL(this.addSupportedCoreContract.selector);
-        _onlyNonZeroAddress(contractAddress);
-
-        require(
-            // @dev the add function returns false if set already contains value
-            DependencyRegistryStorageLib.s().supportedCoreContracts.add(
-                contractAddress
-            ),
-            "Contract already supported"
-        );
-        emit SupportedCoreContractAdded(contractAddress);
-    }
-
-    /**
-     * @notice Removes a core contract from the list of supported core contracts.
-     * @param contractAddress Address of the core contract to be removed.
-     */
-    function removeSupportedCoreContract(address contractAddress) external {
-        _onlyAdminACL(this.removeSupportedCoreContract.selector);
-        require(
-            // @dev the remove function returns false if set does not contain value
-            DependencyRegistryStorageLib.s().supportedCoreContracts.remove(
-                contractAddress
-            ),
-            "Core contract already removed or not in set"
-        );
-        emit SupportedCoreContractRemoved(contractAddress);
-    }
-
-    /**
      * @notice Overrides the script type and version that
      * would be returned by the core contract (`_contractAddress`)
      * for a given project  (`projectId`) with the given dependency
@@ -975,7 +960,7 @@ contract DependencyRegistryV0 is
      * @return Number of supported core contracts.
      */
     function getSupportedCoreContractCount() external view returns (uint256) {
-        return DependencyRegistryStorageLib.s().supportedCoreContracts.length();
+        return ICoreRegistryV1(coreRegistryAddress).getNumRegisteredContracts();
     }
 
     /**
@@ -987,15 +972,8 @@ contract DependencyRegistryV0 is
     function getSupportedCoreContract(
         uint256 index
     ) external view returns (address) {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
-
-        _onlyInRangeIndex({
-            index: index,
-            length: ds.supportedCoreContracts.length()
-        });
-
-        return ds.supportedCoreContracts.at(index);
+        return
+            ICoreRegistryV1(coreRegistryAddress).getRegisteredContractAt(index);
     }
 
     /**
@@ -1007,7 +985,7 @@ contract DependencyRegistryV0 is
         address coreContractAddress
     ) external view returns (bool) {
         return
-            DependencyRegistryStorageLib.s().supportedCoreContracts.contains(
+            ICoreRegistryV1(coreRegistryAddress).isRegisteredContract(
                 coreContractAddress
             );
     }
@@ -1023,16 +1001,13 @@ contract DependencyRegistryV0 is
         view
         returns (address[] memory)
     {
-        DependencyRegistryStorageLib.Storage
-            storage ds = DependencyRegistryStorageLib.s();
+        uint256 count = ICoreRegistryV1(coreRegistryAddress)
+            .getNumRegisteredContracts();
+        address[] memory supportedCoreContracts = new address[](count);
 
-        uint256 supportedCoreContractCount = ds.supportedCoreContracts.length();
-        address[] memory supportedCoreContracts = new address[](
-            supportedCoreContractCount
-        );
-
-        for (uint256 i; i < supportedCoreContractCount; ) {
-            supportedCoreContracts[i] = ds.supportedCoreContracts.at(i);
+        for (uint256 i; i < count; ) {
+            supportedCoreContracts[i] = ICoreRegistryV1(coreRegistryAddress)
+                .getRegisteredContractAt(i);
             unchecked {
                 ++i;
             }
