@@ -383,6 +383,15 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         }
     }
 
+    /**
+     * @notice Get the external asset dependency for a given project and index.
+     * @dev This function handles both V2 and V3 flex contracts, and converts the legacy V2 external asset dependency
+     * type to the V3 external asset dependency type, as the V3 type is a superset of the V2 type.
+     * @param coreContract The core contract address the project belongs to.
+     * @param projectId The ID of the project to retrieve the external asset dependency for.
+     * @param index The index of the external asset dependency to retrieve.
+     * @return The external asset dependency for the project and index.
+     */
     function _getProjectExternalAssetDependencyByIndex(
         address coreContract,
         uint256 projectId,
