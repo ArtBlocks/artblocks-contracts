@@ -385,11 +385,11 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
 
         // build tokenData json object
         string[] memory tokenDataKeys = isFlex
-            ? new string[](5)
-            : new string[](2);
+            ? JsonStatic.newKeysArray(5)
+            : JsonStatic.newKeysArray(2);
         JsonStatic.Json[] memory tokenDataValues = isFlex
-            ? new JsonStatic.Json[](5)
-            : new JsonStatic.Json[](2);
+            ? JsonStatic.newValuesArray(5)
+            : JsonStatic.newValuesArray(2);
 
         // token id
         tokenDataKeys[0] = "tokenId";
@@ -402,8 +402,8 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         if (isV0CoreContract) {
             // @dev V0 contracts return an array of hashes, with only one hash
             tokenDataKeys[1] = "hashes";
-            JsonStatic.Json[]
-                memory tokenDataValuesHashes = new JsonStatic.Json[](1);
+            JsonStatic.Json[] memory tokenDataValuesHashes = JsonStatic
+                .newValuesArray(1);
             tokenDataValuesHashes[0] = JsonStatic.newStringElement({
                 value: Strings.toHexString(uint256(tokenHash)),
                 stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE
@@ -444,15 +444,13 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             uint256 externalAssetDependencyCount = IGenArt721CoreContractV3_Engine_Flex(
                     coreContract
                 ).projectExternalAssetDependencyCount(projectId);
-            JsonStatic.Json[]
-                memory externalAssetDependencies = new JsonStatic.Json[](
-                    externalAssetDependencyCount
-                );
+            JsonStatic.Json[] memory externalAssetDependencies = JsonStatic
+                .newValuesArray(externalAssetDependencyCount);
             for (uint256 i = 0; i < externalAssetDependencyCount; i++) {
                 // each external asset dependency has 3 fields, so pre-allocate array to avoid dynamic memory allocation
-                JsonStatic.Json[]
-                    memory dependencyValues = new JsonStatic.Json[](3);
-                string[] memory dependencyKeys = new string[](3);
+                JsonStatic.Json[] memory dependencyValues = JsonStatic
+                    .newValuesArray(3);
+                string[] memory dependencyKeys = JsonStatic.newKeysArray(3);
                 // get external asset dependency with data
                 IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyWithData
                     memory externalAssetDependencyWithData = IGenArt721CoreContractV3_Engine_Flex(

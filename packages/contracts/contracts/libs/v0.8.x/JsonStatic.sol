@@ -51,6 +51,28 @@ library JsonStatic {
     }
 
     /**
+     * Convenience function to create a new values array.
+     * @param length the length of the values array.
+     * @return the new values array.
+     */
+    function newValuesArray(
+        uint256 length
+    ) internal pure returns (Json[] memory) {
+        return new Json[](length);
+    }
+
+    /**
+     * Convenience function to create a new keys array.
+     * @param length the length of the keys array.
+     * @return the new keys array.
+     */
+    function newKeysArray(
+        uint256 length
+    ) internal pure returns (string[] memory) {
+        return new string[](length);
+    }
+
+    /**
      * Convenience function to create a new object element.
      * @param keys the keys of the object element.
      * @param values the values of the object element.
