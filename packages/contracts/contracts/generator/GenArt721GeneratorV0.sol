@@ -384,6 +384,25 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     }
 
     /**
+     * @notice Get if a flex contract is a V2 flex contract.
+     * Assumes that the core contract is a flex contract.
+     * @param flexCoreContract The core contract address to check if it is a V2 flex contract.
+     * @return isV2Flex Whether the core contract is a V2 flex contract.
+     */
+    function _getIsV2Flex(
+        address flexCoreContract
+    ) internal view returns (bool) {
+        // @dev all flex (V2, V3) contracts have the function coreType(),
+        // and all V2 flex contracts have the coreType "GenArt721CoreV2_ENGINE_FLEX"
+        string memory coreType = IGenArt721CoreContractV3_Engine_Flex(
+            flexCoreContract
+        ).coreType();
+        return
+            keccak256(abi.encodePacked(coreType)) ==
+            keccak256(abi.encodePacked("GenArt721CoreV2_ENGINE_FLEX"));
+    }
+
+    /**
      * @notice Get the external asset dependency for a given project and index.
      * @dev This function handles both V2 and V3 flex contracts, and converts the legacy V2 external asset dependency
      * type to the V3 external asset dependency type, as the V3 type is a superset of the V2 type.
@@ -407,13 +426,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         // check if a V2 flex contract
         // @dev acknowledge that this could be function input parameter to avoid one call per dependency, but
         // stack to deep error limits memoization opportunity in functions calling this function
-        // @dev all flex (V2, V3) contracts have the function coreType(),
-        // and all V2 flex contracts have the coreType "GenArt721CoreV2_ENGINE_FLEX"
-        string memory coreType = IGenArt721CoreContractV3_Engine_Flex(
-            coreContract
-        ).coreType();
-        bool isV2Flex = keccak256(abi.encodePacked(coreType)) ==
-            keccak256(abi.encodePacked("GenArt721CoreV2_ENGINE_FLEX"));
+        bool isV2Flex = _getIsV2Flex(coreContract);
 
         // pre-allocate generic externalAssetDependencyWithData to avoid dynamic memory allocation
         IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyWithData
