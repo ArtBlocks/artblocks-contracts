@@ -46,9 +46,48 @@ library JsonStatic {
         Json[] values; // array of values if type is OBJECT, or array values if type is ARRAY
         StringEncodingFlag stringEncodingFlag;
         string elementValueString; // value if type is ELEMENT_STRING
-        uint256 elementValueUint; // value if type is ELEMENT_UINT
-        bool elementValueBoolean; // value if type is ELEMENT_BOOLEAN
+        uint256 elementValueUintOrBool; // value if type is ELEMENT_UINT, 0/1 if type is ELEMENT_BOOLEAN
         // implied null if type is ELEMENT_NULL
+    }
+
+    /**
+     * Convenience function to create a new object element.
+     * @param keys the keys of the object element.
+     * @param values the values of the object element.
+     * @return the new object element.
+     */
+    function newObjectElement(
+        string[] memory keys,
+        Json[] memory values
+    ) internal pure returns (Json memory) {
+        return
+            Json({
+                jsonType: JsonType.OBJECT, // type
+                objectKeys: keys, // input
+                values: values, // input
+                stringEncodingFlag: StringEncodingFlag.NONE, // default
+                elementValueString: "", // default
+                elementValueUintOrBool: 0 // default
+            });
+    }
+
+    /**
+     * Convenience function to create a new array element.
+     * @param values the values of the array element.
+     * @return the new array element.
+     */
+    function newArrayElement(
+        Json[] memory values
+    ) internal pure returns (Json memory) {
+        return
+            Json({
+                jsonType: JsonType.ARRAY, // type
+                objectKeys: new string[](0), // default
+                values: values, // input
+                stringEncodingFlag: StringEncodingFlag.NONE, // default
+                elementValueString: "", // default
+                elementValueUintOrBool: 0 // default
+            });
     }
 
     /**
@@ -57,6 +96,7 @@ library JsonStatic {
      * should NOT already be encoded. Passing an already encoded value will result in double encoding.
      * @param value the string value of the element.
      * @param stringEncodingFlag the string encoding flag for the element.
+     * @return the new string element.
      */
     function newStringElement(
         string memory value,
@@ -69,8 +109,41 @@ library JsonStatic {
                 values: new Json[](0), // default
                 stringEncodingFlag: stringEncodingFlag, // input
                 elementValueString: value, // input
-                elementValueUint: 0, // default
-                elementValueBoolean: false // default
+                elementValueUintOrBool: 0 // default
+            });
+    }
+
+    /**
+     * Convenience function to create a new uint element.
+     * @param value the uint value of the element.
+     * @return the new uint element.
+     */
+    function newUintElement(uint256 value) internal pure returns (Json memory) {
+        return
+            Json({
+                jsonType: JsonType.ELEMENT_UINT, // type
+                objectKeys: new string[](0), // default
+                values: new Json[](0), // default
+                stringEncodingFlag: StringEncodingFlag.NONE, // default
+                elementValueString: "", // default
+                elementValueUintOrBool: value // input
+            });
+    }
+
+    /**
+     * Convenience function to create a new boolean element.
+     * @param value the boolean value of the element.
+     * @return the new boolean element.
+     */
+    function newBooleanElement(bool value) internal pure returns (Json memory) {
+        return
+            Json({
+                jsonType: JsonType.ELEMENT_BOOLEAN, // type
+                objectKeys: new string[](0), // default
+                values: new Json[](0), // default
+                stringEncodingFlag: StringEncodingFlag.NONE, // default
+                elementValueString: "", // default
+                elementValueUintOrBool: value ? 1 : 0 // input
             });
     }
 
@@ -88,9 +161,9 @@ library JsonStatic {
             return
                 _writeString(json.elementValueString, json.stringEncodingFlag);
         } else if (json.jsonType == JsonType.ELEMENT_UINT) {
-            return _writeUint(json.elementValueUint);
+            return _writeUint(json.elementValueUintOrBool);
         } else if (json.jsonType == JsonType.ELEMENT_BOOLEAN) {
-            return _writeBoolean(json.elementValueBoolean);
+            return _writeBoolean(json.elementValueUintOrBool);
         } else {
             return _writeNull();
         }
@@ -196,13 +269,15 @@ library JsonStatic {
     }
 
     /**
-     * @notice writes a boolean value to a valid json string
-     * @param value the boolean value to write
+     * @notice writes a boolean value to a valid json string.
+     * If the value is equal to zero, it is written as false, otherwise it is written as true.
+     * @dev Booleans are written as true or false without quotes.
+     * @param value the value to write
      * @return the json string
      */
-    function _writeBoolean(bool value) private pure returns (string memory) {
+    function _writeBoolean(uint256 value) private pure returns (string memory) {
         // @dev no quotes around booleans
-        return value ? "true" : "false";
+        return (value > 0) ? "true" : "false";
     }
 
     /**

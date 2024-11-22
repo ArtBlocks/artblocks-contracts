@@ -408,14 +408,8 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                 value: Strings.toHexString(uint256(tokenHash)),
                 stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE
             });
-            tokenDataValues[1] = JsonStatic.Json({
-                jsonType: JsonStatic.JsonType.ARRAY,
-                objectKeys: new string[](0),
-                values: tokenDataValuesHashes,
-                stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE,
-                elementValueString: "",
-                elementValueUint: 0,
-                elementValueBoolean: false
+            tokenDataValues[1] = JsonStatic.newArrayElement({
+                values: tokenDataValuesHashes
             });
         } else {
             tokenDataKeys[1] = "hash";
@@ -499,27 +493,17 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                 }
                 // TODO: handle ART_BLOCKS_DEPENDENCY_REGISTRY dependency type
 
-                externalAssetDependencies[i] = JsonStatic.Json({
-                    jsonType: JsonStatic.JsonType.OBJECT, // type
-                    objectKeys: dependencyKeys, // populated object
-                    values: dependencyValues, // populated object
-                    stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE, // default
-                    elementValueString: "", // default
-                    elementValueUint: 0, // default
-                    elementValueBoolean: false // default
+                externalAssetDependencies[i] = JsonStatic.newObjectElement({
+                    keys: dependencyKeys,
+                    values: dependencyValues
                 });
             }
         }
 
         // build tokenData json object
-        JsonStatic.Json memory tokenData = JsonStatic.Json({
-            jsonType: JsonStatic.JsonType.OBJECT, // type
-            objectKeys: tokenDataKeys, // populated object
-            values: tokenDataValues, // populated object
-            stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE, // default
-            elementValueString: "", // default
-            elementValueUint: 0, // default
-            elementValueBoolean: false // default
+        JsonStatic.Json memory tokenData = JsonStatic.newObjectElement({
+            keys: tokenDataKeys,
+            values: tokenDataValues
         });
 
         // return tokenData as JSON string via write function
