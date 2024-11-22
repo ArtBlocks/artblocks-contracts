@@ -496,6 +496,10 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                     values: dependencyValues
                 });
             }
+            // assign externalAssetDependencies array to tokenDataValues
+            tokenDataValues[4] = JsonStatic.newArrayElement(
+                externalAssetDependencies
+            );
         }
 
         // build tokenData json object
