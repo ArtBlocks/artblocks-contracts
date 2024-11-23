@@ -57,6 +57,11 @@ function getGzipBase64DataUriScriptTag(script: string) {
   return `<script type="text/javascript+gzip" src="data:text/javascript;base64,${script}"></script>`;
 }
 
+function containsSpecificBetween(text, start, target, end) {
+  const regex = new RegExp(`${start}.*?${target}.*?${end}`);
+  return regex.test(text);
+}
+
 interface GenArt721GeneratorV0TestConfig extends T_Config {
   dependencyRegistry: DependencyRegistryV0;
   genArt721Generator: GenArt721GeneratorV0;
@@ -722,7 +727,7 @@ describe(`GenArt721GeneratorV0`, async function () {
           2 // ONCHAIN
         );
         // 3 - ART_BLOCKS_DEPENDENCY_REGISTRY
-        const onchainLibraryName = "js@na";
+        const onchainLibraryName = "p5js@1.0.0";
         await genArt721CoreV3.addProjectExternalAssetDependency(
           projectId,
           onchainLibraryName,
@@ -759,6 +764,25 @@ describe(`GenArt721GeneratorV0`, async function () {
             `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}","preferredArweaveGateway":"${preferredArweaveGateway}","preferredIPFSGateway":"${preferredIpfsGateway}","externalAssetDependencies":[{"dependency_type":"IPFS","cid":"${ipfsCid}","data":""},{"dependency_type":"ARWEAVE","cid":"${arweaveCid}","data":""},{"dependency_type":"ONCHAIN","cid":"","data":"${btoa(onchainData)}"},{"dependency_type":"ART_BLOCKS_DEPENDENCY_REGISTRY","cid":"${onchainLibraryName}","data":""}]}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
           )
         );
+        // flex Dependency Registry injected script was injected in the head element (whereas the project script was injected in the body element)
+        expect(
+          containsSpecificBetween(
+            tokenHtml,
+            "<head>",
+            compressedDepScript,
+            "</head>"
+          )
+        ).to.be.true;
+        // typical dependency script was injected in the body element
+        expect(
+          containsSpecificBetween(
+            tokenHtml,
+            "<body>",
+            compressedDepScript,
+            "</body>"
+          )
+        );
+        expect(tokenHtml).to.include;
         // Project script
         expect(tokenHtml).to.include(getScriptTag(projectScript));
 
