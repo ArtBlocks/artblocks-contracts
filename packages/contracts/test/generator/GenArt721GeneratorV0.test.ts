@@ -267,7 +267,9 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hashes = await genArt721CoreV0.showTokenHashes(0);
       const hash = hashes[0];
       expect(tokenHtml).to.include(
-        getScriptTag(`let tokenData = {"tokenId":"0","hashes":["${hash}"]}`)
+        getScriptTag(
+          `let tokenData = JSON.parse(\`{"tokenId":"0","hashes":["${hash}"]}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
+        )
       );
 
       // Project script
@@ -363,7 +365,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = await genArt721CoreV1.tokenIdToHash(tokenId);
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = {"tokenId":"${tokenId}","hash":"${hash}"}`
+          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
         )
       );
       // Project script
@@ -440,7 +442,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = await genArt721CoreV2.tokenIdToHash(tokenId);
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = {"tokenId":"${tokenId}","hash":"${hash}"}`
+          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
         )
       );
       // Project script
@@ -531,7 +533,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = await genArt721CoreV3.tokenIdToHash(tokenId);
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = {"tokenId":"${tokenId}","hash":"${hash}"}`
+          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
         )
       );
       // Project script
@@ -624,7 +626,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = await genArt721CoreV3.tokenIdToHash(tokenId);
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = {"tokenId":"${tokenId}","hash":"${hash}"}`
+          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
         )
       );
       // Project script
@@ -634,6 +636,137 @@ describe(`GenArt721GeneratorV0`, async function () {
       expect(encodedTokenHtml).to.equal(
         `data:text/html;base64,${Buffer.from(tokenHtml).toString("base64")}`
       );
+    });
+
+    describe("flex", function () {
+      it("gets html for a V3 flex with all flex dependency types", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        const {
+          genArt721Core: genArt721CoreV3,
+          minterFilter,
+          randomizer,
+        } = await deployCoreWithMinterFilter(
+          config,
+          "GenArt721CoreV3_Engine_Flex",
+          "MinterFilterV1"
+        );
+
+        const minter = (await deployAndGet(config, "MinterSetPriceV2", [
+          genArt721CoreV3.address,
+          minterFilter.address,
+        ])) as MinterSetPriceV2;
+
+        await minterFilter
+          .connect(config.accounts.deployer)
+          .addApprovedMinter(minter.address);
+
+        const projectId = await genArt721CoreV3.nextProjectId();
+        // Add and configure project
+        await genArt721CoreV3
+          .connect(config.accounts.deployer)
+          .addProject("name", config.accounts.artist.address);
+
+        const projectScript =
+          "console.log(tokenData); console.log(blah); console.log(bleh);";
+        const projectScriptCompressed =
+          await genArt721CoreV3.getCompressed(projectScript);
+        await genArt721CoreV3
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(projectId, projectScriptCompressed);
+        await genArt721CoreV3
+          .connect(config.accounts.artist)
+          .updateProjectScriptType(projectId, p5NameAndVersionBytes);
+
+        // Mint token 0
+        await minterFilter
+          .connect(config.accounts.artist)
+          .setMinterForProject(projectId, minter.address);
+        await minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(projectId, 0);
+        await minter.connect(config.accounts.artist).purchase(projectId);
+
+        const tokenId = projectId.mul(ONE_MILLION);
+
+        // Add contract to dependency registry
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addSupportedCoreContract(genArt721CoreV3.address);
+
+        // define preferred gateways
+        const preferredIpfsGateway = "https://ipfs.io/ipfs/";
+        const preferredArweaveGateway = "https://arweave.net/";
+        await genArt721CoreV3.updateIPFSGateway(preferredIpfsGateway);
+        await genArt721CoreV3.updateArweaveGateway(preferredArweaveGateway);
+        // add all flex dependencies
+        // 0 - IPFS
+        const ipfsCid = "cidIpfsTest";
+        await genArt721CoreV3.addProjectExternalAssetDependency(
+          projectId,
+          ipfsCid,
+          0 // IPFS
+        );
+        // 1 - ARWEAVE
+        const arweaveCid = "cidArweaveTest";
+        await genArt721CoreV3.addProjectExternalAssetDependency(
+          projectId,
+          arweaveCid,
+          1 // ARWEAVE
+        );
+        // 2 - ONCHAIN
+        const onchainData = "1234567890123456789012345678901234567890";
+        await genArt721CoreV3.addProjectExternalAssetDependency(
+          projectId,
+          onchainData,
+          2 // ONCHAIN
+        );
+        // 3 - ART_BLOCKS_DEPENDENCY_REGISTRY
+        const onchainLibraryName = "js@na";
+        await genArt721CoreV3.addProjectExternalAssetDependency(
+          projectId,
+          onchainLibraryName,
+          3 // ART_BLOCKS_DEPENDENCY_REGISTRY
+        );
+
+        // Get token html
+        const tokenHtml = await config.genArt721Generator.getTokenHtml(
+          genArt721CoreV3.address,
+          tokenId
+        );
+
+        const encodedTokenHtml =
+          await config.genArt721Generator.getTokenHtmlBase64EncodedDataUri(
+            genArt721CoreV3.address,
+            tokenId
+          );
+
+        // Default style
+        expect(tokenHtml).to.include(STYLE_TAG);
+        // Gzipped dependency script
+        expect(tokenHtml).to.include(
+          getGzipBase64DataUriScriptTag(compressedDepScript)
+        );
+        // Gunzip script
+        expect(tokenHtml).to.include(
+          getScriptBase64DataUriScriptTag(GUNZIP_SCRIPT_BASE64)
+        );
+        // Token data
+        const hash = await genArt721CoreV3.tokenIdToHash(tokenId);
+        console.log("TOKEN_HTML", tokenHtml);
+        expect(tokenHtml).to.include(
+          getScriptTag(
+            `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}","preferredArweaveGateway":"${preferredArweaveGateway}","preferredIPFSGateway":"${preferredIpfsGateway}","externalAssetDependencies":[{"dependency_type":"IPFS","cid":"${ipfsCid}","data":""},{"dependency_type":"ARWEAVE","cid":"${arweaveCid}","data":""},{"dependency_type":"ONCHAIN","cid":"","data":"${btoa(onchainData)}"},{"dependency_type":"ART_BLOCKS_DEPENDENCY_REGISTRY","cid":"${onchainLibraryName}","data":""}]}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
+          )
+        );
+        // Project script
+        expect(tokenHtml).to.include(getScriptTag(projectScript));
+
+        // Base64 encoded data uri
+        expect(encodedTokenHtml).to.equal(
+          `data:text/html;base64,${Buffer.from(tokenHtml).toString("base64")}`
+        );
+      });
     });
   });
 
