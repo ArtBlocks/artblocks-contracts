@@ -1,0 +1,15 @@
+query GetUnregisteredContracts($registryAddresses: [String!]!) {
+  contracts_metadata(
+    where: {
+      _or: [
+        { registered_on: { _is_null: true } }
+        { registered_on: { _nin: $registryAddresses } }
+      ]
+    }
+  ) {
+    contract_type
+    core_version
+    registered_on
+    address
+  }
+}
