@@ -1,0 +1,15 @@
+query GetProjectsNullOverrides {
+  projects_metadata(
+    where: {
+      script_type_and_version_override: { _is_null: true }
+      script_type_and_version: { _is_null: false }
+      is_artblocks: { _eq: false }
+    }
+  ) {
+    name
+    contract_address
+    project_id
+    script_type_and_version
+    script_type_and_version_override
+  }
+}
