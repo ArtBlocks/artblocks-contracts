@@ -158,7 +158,7 @@ async function main() {
       const data = dependencyRegistry.interface.encodeFunctionData(
         "addProjectDependencyOverride",
         [
-          config.dependencyRegistryAddress,
+          contractAddress,
           projectId,
           ethers.utils.formatBytes32String(scriptTypeAndVersion),
         ]
