@@ -722,10 +722,14 @@ describe(`GenArt721GeneratorV0`, async function () {
 
         const tokenId = projectId.mul(ONE_MILLION);
 
-        // Add contract to dependency registry
-        await config.dependencyRegistry
-          .connect(config.accounts.deployer)
-          .addSupportedCoreContract(genArt721CoreV3.address);
+        // Add contract to core registry
+        await config.coreRegistry
+          ?.connect(config.accounts.deployer)
+          .registerContract(
+            genArt721CoreV3.address,
+            ethers.utils.formatBytes32String("DUMMY_VERSION"),
+            ethers.utils.formatBytes32String("DUMMY_TYPE")
+          );
 
         // define preferred gateways
         const preferredIpfsGateway = "https://ipfs.io/ipfs/";
