@@ -1,4 +1,4 @@
-query GetProjectsNullOverrides {
+query GetNonFlagshipProjectsNullOverrides {
   projects_metadata(
     where: {
       script_type_and_version_override: { _is_null: true }

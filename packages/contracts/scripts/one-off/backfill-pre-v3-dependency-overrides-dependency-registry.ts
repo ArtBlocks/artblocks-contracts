@@ -2,7 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import hre, { ethers } from "hardhat";
-import { GetProjectsNullOverridesDocument } from "../../generated/graphql";
+import { GetNonFlagshipProjectsNullOverrides } from "../../generated/graphql";
 import { getClient } from "../util/graphql-client-utils";
 import { DependencyRegistryV0__factory } from "../contracts";
 import { getNetworkName } from "../util/utils";
@@ -120,7 +120,7 @@ async function main() {
   // query for projects with null script_type_and_version_override
   const client = getClient();
   const res = await client
-    .query(GetProjectsNullOverridesDocument, {})
+    .query(GetNonFlagshipProjectsNullOverrides, {})
     .toPromise();
 
   if (!res.data?.projects_metadata) {
