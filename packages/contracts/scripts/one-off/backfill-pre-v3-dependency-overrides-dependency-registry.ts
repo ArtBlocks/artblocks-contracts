@@ -39,8 +39,8 @@ type Config = GnosisSafeConfig | NoGnosisSafeConfig;
 
 // Fill this out before running the script
 const config: Config = {
-  network: "",
-  dependencyRegistryAddress: "",
+  network: "mainnet",
+  dependencyRegistryAddress: "0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF",
   useLedgerSigner: false,
   useGnosisSafe: false,
 };
