@@ -22,4 +22,9 @@ interface ICoreRegistryV1 is IEngineRegistryV0 {
     function isRegisteredContract(
         address contractAddress
     ) external view returns (bool isRegistered);
+
+    function getAllRegisteredContracts()
+        external
+        view
+        returns (address[] memory);
 }
