@@ -8,14 +8,14 @@ import { Wallet } from "ethers";
 import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 import SafeApiKit from "@safe-global/api-kit";
 import { MetaTransactionData } from "@gnosis.pm/safe-core-sdk-types";
-import { CoreRegistryV1__factory } from "../contracts";
+import { EngineFactoryV0__factory } from "../contracts";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
 //////////////////////////////////////////////////////////////////////////////
 type BaseConfig = {
   network: string;
-  coreRegistryAddress: string;
+  engineFactoryAddress: string;
   useLedgerSigner: boolean;
 };
 
@@ -35,9 +35,11 @@ type Config = GnosisSafeConfig | NoGnosisSafeConfig;
 
 const config: Config = {
   network: "mainnet",
-  coreRegistryAddress: "0x652490c8bb6e7ec3fd798537d2f348d7904bbbc2",
+  engineFactoryAddress: "0x000000004058B5159ABB5a3Dd8cf775A7519E75F",
   useLedgerSigner: false,
-  useGnosisSafe: false,
+  useGnosisSafe: true,
+  safeAddress: "0x52119BB73Ac8bdbE59aF0EEdFd4E4Ee6887Ed2EA",
+  transactionServiceUrl: "https://safe-transaction-mainnet.safe.global/",
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -129,46 +131,74 @@ async function main() {
     return;
   }
 
-  const coreRegistry = CoreRegistryV1__factory.connect(
-    config.coreRegistryAddress,
+  const contractAddresses: string[] = [];
+  const coreVersions: string[] = [];
+  const coreTypes: string[] = [];
+
+  // format data
+  for (const contract of res.data.contracts_metadata) {
+    if (!contract.contract_type) {
+      throw new Error(`Contract ${contract.address} has no type specified`);
+    }
+    // add contract version if not specified
+    let version = contract.core_version;
+    if (!version) {
+      switch (contract.contract_type) {
+        case "GenArt721CoreV2_PBAB":
+          version = "v2.0.0";
+          break;
+        case "GenArt721CoreV0":
+          version = "v0.0.1";
+          break;
+        case "GenArt721CoreV1":
+          version = "v1.0.0";
+          break;
+        default:
+          throw new Error(
+            `Contract ${contract.address} has no core_version and has unrecognized contract_type: ${contract.contract_type}`
+          );
+      }
+    }
+
+    contractAddresses.push(contract.address);
+    coreVersions.push(ethers.utils.formatBytes32String(version));
+    coreTypes.push(ethers.utils.formatBytes32String(contract.contract_type));
+  }
+
+  const engineFactory = EngineFactoryV0__factory.connect(
+    config.engineFactoryAddress,
     signer
   );
 
   const txData: MetaTransactionData[] = [];
-  for (const contract of res.data.contracts_metadata) {
-    const contractCoreVersion = contract.core_version
-      ? ethers.utils.formatBytes32String(contract.core_version)
-      : ethers.constants.HashZero; // "0x0000000000000000000000000000000000000000000000000000000000000000"
 
-    const contractType = contract.contract_type
-      ? ethers.utils.formatBytes32String(contract.contract_type)
-      : ethers.constants.HashZero;
-
-    if (config.useGnosisSafe) {
-      const data = coreRegistry.interface.encodeFunctionData(
-        "registerContract",
-        [contract.address, contractCoreVersion, contractType]
+  if (config.useGnosisSafe) {
+    const data = engineFactory.interface.encodeFunctionData(
+      "registerMultipleContracts",
+      [contractAddresses, coreVersions, coreTypes]
+    );
+    txData.push({
+      to: config.engineFactoryAddress,
+      value: "0x00",
+      data,
+    });
+  } else {
+    try {
+      const tx = await engineFactory.registerMultipleContracts(
+        contractAddresses,
+        coreVersions,
+        coreTypes
       );
-      txData.push({
-        to: config.coreRegistryAddress,
-        value: "0x00",
-        data,
+      await tx.wait();
+      console.log(
+        `Successfully registered ${contractAddresses.length} contracts`
+      );
+      // Log the addresses for verification
+      contractAddresses.forEach((address) => {
+        console.log(`- ${address}`);
       });
-    } else {
-      try {
-        const tx = await coreRegistry.registerContract(
-          contract.address,
-          contractCoreVersion,
-          contractType
-        );
-        await tx.wait();
-        console.log(`Successfully registered contract: ${contract.address}`);
-      } catch (error) {
-        console.error(
-          `Failed to register contract ${contract.address}:`,
-          error
-        );
-      }
+    } catch (error) {
+      console.error(`Failed to register contracts:`, error);
     }
   }
 
