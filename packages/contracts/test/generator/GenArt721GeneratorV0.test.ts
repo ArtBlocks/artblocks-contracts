@@ -1583,7 +1583,6 @@ describe(`GenArt721GeneratorV0`, async function () {
       const dummyNameAndVersion = "dummy@1.0.0";
       const dummyNameAndVersionBytes =
         ethers.utils.formatBytes32String(dummyNameAndVersion);
-      console.log("DUMMY_NAME_AND_VERSION_BYTES", dummyNameAndVersionBytes);
       await config.dependencyRegistry.addDependency(
         dummyNameAndVersionBytes,
         mitLicenseTypeBytes,
@@ -1603,13 +1602,6 @@ describe(`GenArt721GeneratorV0`, async function () {
         dummyNameAndVersion, // on chain dependency, in string form
         3 // ART_BLOCKS_DEPENDENCY_REGISTRY
       );
-
-      // get dependency info from dependency registry
-      const dependencyDetails =
-        await config.dependencyRegistry.getDependencyDetails(
-          dummyNameAndVersionBytes
-        );
-      console.log("DEPENDENCY_DETAILS", dependencyDetails);
 
       // on-chain dependency status should be false for flex dependency registry asset
       const onChainStatus = await config.genArt721Generator.getOnChainStatus(
