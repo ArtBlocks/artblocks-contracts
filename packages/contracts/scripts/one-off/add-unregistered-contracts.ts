@@ -36,7 +36,7 @@ type Config = GnosisSafeConfig | NoGnosisSafeConfig;
 const config: Config = {
   network: "mainnet",
   engineFactoryAddress: "0x000000004058B5159ABB5a3Dd8cf775A7519E75F",
-  useLedgerSigner: false,
+  useLedgerSigner: true,
   useGnosisSafe: true,
   safeAddress: "0x52119BB73Ac8bdbE59aF0EEdFd4E4Ee6887Ed2EA",
   transactionServiceUrl: "https://safe-transaction-mainnet.safe.global/",
@@ -176,7 +176,7 @@ async function main() {
     );
     txData.push({
       to: config.engineFactoryAddress,
-      value: "0x00",
+      value: "0",
       data,
     });
   } else {
