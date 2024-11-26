@@ -321,12 +321,11 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                         .ART_BLOCKS_DEPENDENCY_REGISTRY
                 ) {
                     // get the bytes representation of the dependencyRegistryAsset
-                    string
-                        memory currentDependencyNameAndVersionString = externalAssetDependencyWithData
-                            .cid;
+                    bytes32 currentDependencyNameAndVersion = externalAssetDependencyWithData
+                            .cid
+                            .stringToBytes32();
                     bool currentDependencyFullyOnChain = _getIsDependencyOnChain(
-                            currentDependencyNameAndVersionString
-                                .stringToBytes32()
+                            currentDependencyNameAndVersion
                         );
                     if (!(currentDependencyFullyOnChain)) {
                         // return (true, true, true);
@@ -988,8 +987,8 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     ) internal view returns (bool availableOnChain) {
         // special case for "js@na" and "svg@na" - consider fully on chain
         if (
-            uint256(dependencyNameAndVersion) == uint256(JS_AT_NA_BYTES32) ||
-            uint256(dependencyNameAndVersion) == uint256(SVG_AT_NA_BYTES32)
+            dependencyNameAndVersion == JS_AT_NA_BYTES32 ||
+            dependencyNameAndVersion == SVG_AT_NA_BYTES32
         ) {
             return true;
         }
