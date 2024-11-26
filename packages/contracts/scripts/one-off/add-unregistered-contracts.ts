@@ -114,10 +114,7 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
 
   // Query for unregistered contracts
-  const registryAddresses = [
-    "0x2ee7b9bb2e038be7323a119701a191c030a61ec6",
-    "0x652490c8bb6e7ec3fd798537d2f348d7904bbbc2",
-  ];
+  const registryAddresses = ["0x2ee7b9bb2e038be7323a119701a191c030a61ec6"];
 
   const client = getClient();
   const res = await client
