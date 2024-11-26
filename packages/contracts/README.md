@@ -199,6 +199,8 @@ The contract allows for the overriding of project dependencies. This means that 
 
 - `DependencyRegistry` (mainnet)
   - https://etherscan.io/address/0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF#code
+- `DependencyRegistry` (sepolia staging)
+  - https://sepolia.etherscan.io/address/0x5Fcc415BCFb164C5F826B5305274749BeB684e9b#code
 
 ## GenArt721Generator
 
@@ -212,6 +214,8 @@ The contract currently supports most Art Blocks Flagship projects on mainnet.
 
 - `OnChainGenerator` (mainnet)
   - https://etherscan.io/address/0x953D288708bB771F969FCfD9BA0819eF506Ac718
+- `OnChainGenerator` (sepolia staging)
+  - https://sepolia.etherscan.io/address/0xdC862938cA0a2D8dcabe5733C23e54ac7aAFFF27
 
 ## Splitter Factories
 
