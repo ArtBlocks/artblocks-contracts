@@ -49,12 +49,6 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     using Bytes32Strings for string;
     using JsonStatic for JsonStatic.Json;
 
-    // @dev contants do not use sequential storage slots, and may be added/removed from upgradeable contracts
-    bytes32 constant JS_AT_NA_BYTES32 =
-        0x6a73406e61000000000000000000000000000000000000000000000000000000; // "js@na"
-    bytes32 constant SVG_AT_NA_BYTES32 =
-        0x737667406e610000000000000000000000000000000000000000000000000000; // "svg@na"
-
     // @dev This is an upgradable contract so we need to maintain
     // the order of the variables to ensure we don't overwrite
     // storage when upgrading.
@@ -62,6 +56,12 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     IScriptyBuilderV2 public scriptyBuilder;
     address public gunzipScriptBytecodeAddress;
     IUniversalBytecodeStorageReader public universalBytecodeStorageReader;
+
+    // @dev contants do not use sequential storage slots, and may be added/removed from upgradeable contracts
+    bytes32 constant JS_AT_NA_BYTES32 =
+        0x6a73406e61000000000000000000000000000000000000000000000000000000; // "js@na"
+    bytes32 constant SVG_AT_NA_BYTES32 =
+        0x737667406e610000000000000000000000000000000000000000000000000000; // "svg@na"
 
     function _onlySupportedCoreContract(address coreContract) internal view {
         require(
