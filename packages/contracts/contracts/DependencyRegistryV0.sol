@@ -67,10 +67,9 @@ contract DependencyRegistryV0 is
     function _onlySupportedCoreContract(
         address coreContractAddress
     ) internal view {
+        // defer to public function logic
         require(
-            ICoreRegistryV1(
-                DependencyRegistryStorageLib.s().coreRegistryContract
-            ).isRegisteredContract(coreContractAddress),
+            isSupportedCoreContract(coreContractAddress),
             "Core contract not supported"
         );
     }
@@ -123,6 +122,9 @@ contract DependencyRegistryV0 is
         DependencyRegistryStorageLib.s().coreRegistryContract = ICoreRegistryV1(
             _coreRegistryAddress
         );
+        emit CoreRegistryAddressUpdated({
+            coreRegistryAddress: _coreRegistryAddress
+        });
     }
 
     /**
@@ -668,6 +670,50 @@ contract DependencyRegistryV0 is
     // }
 
     /**
+     * @notice Adds a new core contract to be supported by the dependency registry.
+     * This is in addition to the set of contracts specified as supported by the core registry.
+     * @dev use case is a contract not allowed to mint on minter filter, but still needs to be
+     * supported by dependency registry.
+     * @param contractAddress Address of the core contract.
+     */
+    function addSupportedCoreContractOverride(
+        address contractAddress
+    ) external {
+        _onlyAdminACL(this.addSupportedCoreContractOverride.selector);
+        _onlyNonZeroAddress(contractAddress);
+
+        require(
+            // @dev the add function returns false if set already contains value
+            DependencyRegistryStorageLib.s().supportedCoreContractsOverride.add(
+                contractAddress
+            ),
+            "Contract already supported"
+        );
+        emit SupportedCoreContractOverrideAdded(contractAddress);
+    }
+
+    /**
+     * @notice Removes a core contract previously listed as override supported by the dependency registry.
+     * This removes from the set of core contracts that are suppported by the dependency in addition to
+     * the set of contracts specified as supported by the core registry.
+     * @param contractAddress Address of the core contract.
+     */
+    function removeSupportedCoreContractOverride(
+        address contractAddress
+    ) external {
+        _onlyAdminACL(this.removeSupportedCoreContractOverride.selector);
+        require(
+            // @dev the remove function returns false if set does not contain value
+            DependencyRegistryStorageLib
+                .s()
+                .supportedCoreContractsOverride
+                .remove(contractAddress),
+            "Core contract already removed or not in set"
+        );
+        emit SupportedCoreContractOverrideRemoved(contractAddress);
+    }
+
+    /**
      * @notice Overrides the script type and version that
      * would be returned by the core contract (`_contractAddress`)
      * for a given project  (`projectId`) with the given dependency
@@ -989,42 +1035,80 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Returns the count of supported core contracts
+     * @dev This concatenates the core contracts from the core registry with the
+     * core contracts that are overridden as supported by the dependency registry.
+     * Some duplicate entries may exist between the two sets, although this is not
+     * intended to be the case.
      * @return Number of supported core contracts.
      */
     function getSupportedCoreContractCount() external view returns (uint256) {
-        return
-            ICoreRegistryV1(
-                DependencyRegistryStorageLib.s().coreRegistryContract
-            ).getNumRegisteredContracts();
+        uint256 coreRegistryCount = ICoreRegistryV1(
+            DependencyRegistryStorageLib.s().coreRegistryContract
+        ).getNumRegisteredContracts();
+        uint256 overrideCount = DependencyRegistryStorageLib
+            .s()
+            .supportedCoreContractsOverride
+            .length();
+        return coreRegistryCount + overrideCount;
     }
 
     /**
      * @notice Returns the address of the supported core contract at index `index`.
+     * @dev This concatenates the core contracts from the core registry with the
+     * core contracts that are overridden as supported by the dependency registry, and
+     * consistent with the length returned by `getSupportedCoreContractCount`.
      * @param index Index of the core contract to be returned, relative to the overall
-     *               list of supported core contracts.
+     * list of supported core contracts.
      * @return address of the core contract.
      */
     function getSupportedCoreContract(
         uint256 index
     ) external view returns (address) {
-        return
-            ICoreRegistryV1(
-                DependencyRegistryStorageLib.s().coreRegistryContract
-            ).getRegisteredContractAt(index);
+        uint256 coreRegistryCount = ICoreRegistryV1(
+            DependencyRegistryStorageLib.s().coreRegistryContract
+        ).getNumRegisteredContracts();
+        if (index < coreRegistryCount) {
+            return
+                ICoreRegistryV1(
+                    DependencyRegistryStorageLib.s().coreRegistryContract
+                ).getRegisteredContractAt(index);
+        }
+        uint256 overrideCount = DependencyRegistryStorageLib
+            .s()
+            .supportedCoreContractsOverride
+            .length();
+        require(
+            index < coreRegistryCount + overrideCount,
+            "Index out of range"
+        );
+
+        unchecked {
+            return
+                DependencyRegistryStorageLib
+                    .s()
+                    .supportedCoreContractsOverride
+                    .at(index - coreRegistryCount);
+        }
     }
 
     /**
      * @notice Returns whether the given contract address is a supported core contract.
+     * @dev This checks if the given contract address is registered in the core registry
+     * or if it is overridden as supported by the dependency registry.
      * @param coreContractAddress Address of the core contract to be queried.
      * @return True if the given contract address is a supported core contract.
      */
     function isSupportedCoreContract(
         address coreContractAddress
-    ) external view returns (bool) {
+    ) public view returns (bool) {
         return
             ICoreRegistryV1(
                 DependencyRegistryStorageLib.s().coreRegistryContract
-            ).isRegisteredContract(coreContractAddress);
+            ).isRegisteredContract(coreContractAddress) ||
+            DependencyRegistryStorageLib
+                .s()
+                .supportedCoreContractsOverride
+                .contains(coreContractAddress);
     }
 
     /**
@@ -1038,10 +1122,37 @@ contract DependencyRegistryV0 is
         view
         returns (address[] memory)
     {
-        return
-            ICoreRegistryV1(
-                DependencyRegistryStorageLib.s().coreRegistryContract
-            ).getAllRegisteredContracts();
+        // get all registered contracts on the core registry
+        address[] memory coreRegistryRegisteredContracts = ICoreRegistryV1(
+            DependencyRegistryStorageLib.s().coreRegistryContract
+        ).getAllRegisteredContracts();
+        // @dev memoize for efficiency
+        uint256 coreRegistryRegisteredContractsLength = coreRegistryRegisteredContracts
+                .length;
+        // get all overridden contracts in the supportedCoreContractsOverride set
+        address[]
+            memory supportedCoreContractsOverride = DependencyRegistryStorageLib
+                .s()
+                .supportedCoreContractsOverride
+                .values();
+
+        // concat the two address arrays and return the result
+        address[] memory supportedCoreContracts = new address[](
+            coreRegistryRegisteredContracts.length +
+                supportedCoreContractsOverride.length
+        );
+        // @dev memoize for efficiency
+        uint256 supportedCoreContractsLength = supportedCoreContracts.length;
+        for (uint i = 0; i < supportedCoreContractsLength; i++) {
+            if (i < coreRegistryRegisteredContractsLength) {
+                supportedCoreContracts[i] = coreRegistryRegisteredContracts[i];
+            } else {
+                supportedCoreContracts[i] = supportedCoreContractsOverride[
+                    i - coreRegistryRegisteredContractsLength
+                ];
+            }
+        }
+        return supportedCoreContracts;
     }
 
     /**
