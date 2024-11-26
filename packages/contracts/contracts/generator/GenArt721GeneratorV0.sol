@@ -49,6 +49,12 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     using Bytes32Strings for string;
     using JsonStatic for JsonStatic.Json;
 
+    // @dev contants do not use sequential storage slots, and may be added/removed from upgradeable contracts
+    bytes32 constant JS_AT_NA_BYTES32 =
+        0x6a73406e61000000000000000000000000000000000000000000000000000000; // "js@na"
+    bytes32 constant SVG_AT_NA_BYTES32 =
+        0x737667406e610000000000000000000000000000000000000000000000000000; // "svg@na"
+
     // @dev This is an upgradable contract so we need to maintain
     // the order of the variables to ensure we don't overwrite
     // storage when upgrading.
@@ -250,6 +256,87 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         string memory html = scriptyBuilder.getHTMLString(htmlRequest);
 
         return html;
+    }
+
+    /**
+     * @notice Gets summary of details of how on-chain a project is.
+     * @param coreContract The core contract address to query.
+     * @param projectId The project ID to query.
+     * @return dependencyFullyOnChain Whether the project's dependency is fully on-chain.
+     * @return injectsDecentralizedStorageNetworkAssets Whether the project injects decentralized storage network assets.
+     * @return hasOffChainFlexDepRegDependencies True if the project uses flex assets of type ART_BLOCKS_DEPENDENCY_REGISTRY
+     * that are not fully on-chain; false otherwise.
+     */
+    function getOnChainStatus(
+        address coreContract,
+        uint256 projectId
+    )
+        external
+        view
+        returns (
+            bool dependencyFullyOnChain,
+            bool injectsDecentralizedStorageNetworkAssets,
+            bool hasOffChainFlexDepRegDependencies
+        )
+    {
+        // get dependency name and version
+        bytes32 dependencyNameAndVersion = dependencyRegistry
+            .getDependencyNameAndVersionForProject(coreContract, projectId)
+            .stringToBytes32();
+        dependencyFullyOnChain = _getIsDependencyOnChain(
+            dependencyNameAndVersion
+        );
+
+        // iterate over project's flex dependencies to check if they are fully on-chain
+        if (_getIsFlex(coreContract)) {
+            // @dev all flex (V2, V3) contracts have the function projectExternalAssetDependencyCount()
+            uint256 externalAssetDependencyCount = IGenArt721CoreContractV3_Engine_Flex(
+                    coreContract
+                ).projectExternalAssetDependencyCount({_projectId: projectId});
+            for (uint256 i = 0; i < externalAssetDependencyCount; i++) {
+                // get external asset dependency with data
+                IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyWithData
+                    memory externalAssetDependencyWithData = _getProjectExternalAssetDependencyByIndex({
+                        coreContract: coreContract,
+                        projectId: projectId,
+                        index: i
+                    });
+                // if ipfs or arweave, label injectsDecentralizedStorageNetworkAssets as true
+                if (
+                    externalAssetDependencyWithData.dependencyType ==
+                    IGenArt721CoreContractV3_Engine_Flex
+                        .ExternalAssetDependencyType
+                        .IPFS ||
+                    externalAssetDependencyWithData.dependencyType ==
+                    IGenArt721CoreContractV3_Engine_Flex
+                        .ExternalAssetDependencyType
+                        .ARWEAVE
+                ) {
+                    // if any dependency is IPFS or ARWEAVE, label injectsDecentralizedStorageNetworkAssets as true
+                    injectsDecentralizedStorageNetworkAssets = true;
+                } else if (
+                    externalAssetDependencyWithData.dependencyType ==
+                    IGenArt721CoreContractV3_Engine_Flex
+                        .ExternalAssetDependencyType
+                        .ART_BLOCKS_DEPENDENCY_REGISTRY
+                ) {
+                    // get the bytes representation of the dependencyRegistryAsset
+                    bytes32 currentDependencyNameAndVersion = externalAssetDependencyWithData
+                            .cid
+                            .stringToBytes32();
+                    bool currentDependencyFullyOnChain = _getIsDependencyOnChain(
+                            currentDependencyNameAndVersion
+                        );
+                    if (!(currentDependencyFullyOnChain)) {
+                        // return (true, true, true);
+                        // // if any dependency is not fully on-chain, label usesDependencyRegistryFlexAssetsNotFullyOnChain as true
+                        hasOffChainFlexDepRegDependencies = true;
+                    }
+                }
+            }
+        }
+
+        // @dev all return values previously populated or remain at initial values of false
     }
 
     /**
@@ -889,6 +976,25 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         } catch {
             revert("Unable to retrieve token hash");
         }
+    }
+
+    /**
+     * @dev Helper function to check if a dependency is on chain.
+     * @param dependencyNameAndVersion The name and version of the dependency to check.
+     */
+    function _getIsDependencyOnChain(
+        bytes32 dependencyNameAndVersion
+    ) internal view returns (bool availableOnChain) {
+        // special case for "js@na" and "svg@na" - consider fully on chain
+        if (
+            dependencyNameAndVersion == JS_AT_NA_BYTES32 ||
+            dependencyNameAndVersion == SVG_AT_NA_BYTES32
+        ) {
+            return true;
+        }
+        // query and return result of dependency registry for on-chain status
+        (, , , , , , , availableOnChain, ) = dependencyRegistry
+            .getDependencyDetails(dependencyNameAndVersion);
     }
 
     /**
