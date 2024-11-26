@@ -1980,6 +1980,333 @@ describe(`DependencyRegistryV0`, async function () {
       // pass config to tests in this describe block
       this.config = config;
     });
+
+    describe("addSupportedCoreContractOverride", function () {
+      it("does not allow non-admins to add supported core contract", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.user)
+            .addSupportedCoreContractOverride(config.genArt721Core.address),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+      it("does not allow adding supported core contract that already exists", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addSupportedCoreContractOverride(config.genArt721Core.address);
+
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addSupportedCoreContractOverride(config.genArt721Core.address),
+          "Contract already supported"
+        );
+      });
+      it("does not allow removing supported core contract that has already been removed", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addSupportedCoreContractOverride(config.genArt721Core.address);
+
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeSupportedCoreContractOverride(config.genArt721Core.address)
+        )
+          .to.emit(
+            config.dependencyRegistry,
+            "SupportedCoreContractOverrideRemoved"
+          )
+          .withArgs(config.genArt721Core.address);
+
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeSupportedCoreContractOverride(config.genArt721Core.address),
+          "Core contract already removed or not in set"
+        );
+      });
+      it("does not allow the zero addresss", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addSupportedCoreContractOverride(ethers.constants.AddressZero),
+          "Must input non-zero address"
+        );
+      });
+
+      it("allows admin to add supported core contract", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addSupportedCoreContractOverride(config.genArt721Core.address)
+        )
+          .to.emit(
+            config.dependencyRegistry,
+            "SupportedCoreContractOverrideAdded"
+          )
+          .withArgs(config.genArt721Core.address);
+
+        const supportedCoreContractCount =
+          await config.dependencyRegistry.getSupportedCoreContractCount();
+        expect(supportedCoreContractCount).to.eq(1);
+
+        const storedCoreContract =
+          await config.dependencyRegistry.getSupportedCoreContract(0);
+        expect(storedCoreContract).to.eq(config.genArt721Core.address);
+
+        const supportedCoreContracts =
+          await config.dependencyRegistry.getSupportedCoreContracts();
+        expect(supportedCoreContracts).to.deep.eq([
+          config.genArt721Core.address,
+        ]);
+
+        const isSupportedCoreContract =
+          await config.dependencyRegistry.isSupportedCoreContract(
+            config.genArt721Core.address
+          );
+        expect(isSupportedCoreContract).to.eq(true);
+      });
+    });
+    describe("removeSupportedCoreContractOverride", function () {
+      it("does not allow non-admins to remove supported core contract", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.user)
+            .removeSupportedCoreContractOverride(config.genArt721Core.address),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+      it("does not allow removing supported core contract that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeSupportedCoreContractOverride(config.genArt721Core.address),
+          "Core contract already removed or not in set"
+        );
+      });
+      it("allows admin to remove supported core contract", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addSupportedCoreContractOverride(config.genArt721Core.address);
+
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeSupportedCoreContractOverride(config.genArt721Core.address)
+        )
+          .to.emit(
+            config.dependencyRegistry,
+            "SupportedCoreContractOverrideRemoved"
+          )
+          .withArgs(config.genArt721Core.address);
+
+        const supportedCoreContractCount =
+          await config.dependencyRegistry.getSupportedCoreContractCount();
+        expect(supportedCoreContractCount).to.eq(0);
+
+        await expectRevert(
+          config.dependencyRegistry.getSupportedCoreContract(0),
+          INDEX_OUT_OF_RANGE_ERROR
+        );
+
+        const supportedCoreContracts =
+          await config.dependencyRegistry.getSupportedCoreContracts();
+        expect(supportedCoreContracts).to.deep.eq([]);
+
+        const isSupportedCoreContract =
+          await config.dependencyRegistry.isSupportedCoreContract(
+            config.genArt721Core.address
+          );
+        expect(isSupportedCoreContract).to.eq(false);
+      });
+    });
+
+    describe("getSupportedCoreContractCount", function () {
+      it("returns the correct count of supported core contracts", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addSupportedCoreContractOverride(config.genArt721Core.address);
+
+        const supportedCoreContractCount =
+          await config.dependencyRegistry.getSupportedCoreContractCount();
+        expect(supportedCoreContractCount).to.eq(1);
+        // add supported core contract to core registry
+        await config.coreRegistry
+          ?.connect(config.accounts.deployer)
+          .registerContract(
+            config.genArt721Core.address,
+            ethers.utils.formatBytes32String("DUMMY_VERSION"),
+            ethers.utils.formatBytes32String("DUMMY_TYPE")
+          );
+        // count should now be 2
+        const supportedCoreContractCount2 =
+          await config.dependencyRegistry.getSupportedCoreContractCount();
+        expect(supportedCoreContractCount2).to.eq(2);
+        // remove from override list on dependency registry
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .removeSupportedCoreContractOverride(config.genArt721Core.address);
+        // count should now be 1
+        const supportedCoreContractCount3 =
+          await config.dependencyRegistry.getSupportedCoreContractCount();
+        expect(supportedCoreContractCount3).to.eq(1);
+        // remove from core registry
+        await config.coreRegistry
+          ?.connect(config.accounts.deployer)
+          .unregisterContract(config.genArt721Core.address);
+        // count should now be 0
+        const supportedCoreContractCount4 =
+          await config.dependencyRegistry.getSupportedCoreContractCount();
+        expect(supportedCoreContractCount4).to.eq(0);
+      });
+    });
+
+    describe("getSupportedCoreContract", function () {
+      it("reverts if index is out of range", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry.getSupportedCoreContract(0),
+          INDEX_OUT_OF_RANGE_ERROR
+        );
+      });
+
+      it("returns the correct supported core contract", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addSupportedCoreContractOverride(config.genArt721Core.address);
+
+        const supportedCoreContract =
+          await config.dependencyRegistry.getSupportedCoreContract(0);
+        expect(supportedCoreContract).to.eq(config.genArt721Core.address);
+      });
+
+      it("returns the correct core contract when multiple are added as overrides and core registry", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        // get random address
+        const dummyCoreAddress = ethers.Wallet.createRandom().address;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addSupportedCoreContractOverride(dummyCoreAddress);
+        // add supported core contract to core registry
+        await config.coreRegistry
+          ?.connect(config.accounts.deployer)
+          .registerContract(
+            config.genArt721Core.address,
+            ethers.utils.formatBytes32String("DUMMY_VERSION"),
+            ethers.utils.formatBytes32String("DUMMY_TYPE")
+          );
+
+        const supportedCoreContract =
+          await config.dependencyRegistry.getSupportedCoreContract(0);
+        expect(supportedCoreContract).to.eq(config.genArt721Core.address);
+        // index 1 should also be the dummy address
+        const supportedCoreContract2 =
+          await config.dependencyRegistry.getSupportedCoreContract(1);
+        expect(supportedCoreContract2).to.eq(dummyCoreAddress);
+      });
+    });
+
+    describe("isSupportedCoreContract", function () {
+      it("returns false if core contract is not supported", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const isSupportedCoreContract =
+          await config.dependencyRegistry.isSupportedCoreContract(
+            config.genArt721Core.address
+          );
+        expect(isSupportedCoreContract).to.eq(false);
+      });
+
+      it("returns true if core contract is supported as override", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addSupportedCoreContractOverride(config.genArt721Core.address);
+
+        const isSupportedCoreContract =
+          await config.dependencyRegistry.isSupportedCoreContract(
+            config.genArt721Core.address
+          );
+        expect(isSupportedCoreContract).to.eq(true);
+      });
+
+      it("returns true if core contract is supported as core registry", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.coreRegistry
+          ?.connect(config.accounts.deployer)
+          .registerContract(
+            config.genArt721Core.address,
+            ethers.utils.formatBytes32String("DUMMY_VERSION"),
+            ethers.utils.formatBytes32String("DUMMY_TYPE")
+          );
+
+        const isSupportedCoreContract =
+          await config.dependencyRegistry.isSupportedCoreContract(
+            config.genArt721Core.address
+          );
+        expect(isSupportedCoreContract).to.eq(true);
+      });
+    });
+
+    describe("getSupportedCoreContracts", function () {
+      it("returns empty array if no supported core contracts", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const supportedCoreContracts =
+          await config.dependencyRegistry.getSupportedCoreContracts();
+        expect(supportedCoreContracts).to.deep.eq([]);
+      });
+
+      it("returns concat of supported core contracts from override and core registry", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        // get random address
+        const dummyCoreAddress = ethers.Wallet.createRandom().address;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addSupportedCoreContractOverride(dummyCoreAddress);
+        // add supported core contract to core registry
+        await config.coreRegistry
+          ?.connect(config.accounts.deployer)
+          .registerContract(
+            config.genArt721Core.address,
+            ethers.utils.formatBytes32String("DUMMY_VERSION"),
+            ethers.utils.formatBytes32String("DUMMY_TYPE")
+          );
+
+        const supportedCoreContracts =
+          await config.dependencyRegistry.getSupportedCoreContracts();
+        expect(supportedCoreContracts).to.deep.eq([
+          config.genArt721Core.address,
+          dummyCoreAddress,
+        ]);
+      });
+    });
+
     describe("addProjectDependencyOverride", function () {
       it("does not allow non-admins to add project dependency override", async function () {
         // get config from beforeEach
