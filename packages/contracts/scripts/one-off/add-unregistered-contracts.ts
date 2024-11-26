@@ -8,7 +8,10 @@ import { Wallet } from "ethers";
 import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 import SafeApiKit from "@safe-global/api-kit";
 import { MetaTransactionData } from "@gnosis.pm/safe-core-sdk-types";
-import { EngineFactoryV0__factory } from "../contracts";
+import {
+  EngineFactoryV0__factory,
+  CoreRegistryV1__factory,
+} from "../contracts";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
@@ -132,10 +135,21 @@ async function main() {
   const coreVersions: string[] = [];
   const coreTypes: string[] = [];
 
+  // core registry contract
+  const coreRegistry = CoreRegistryV1__factory.connect(
+    "0x2ee7b9bb2e038be7323a119701a191c030a61ec6",
+    signer
+  );
+
   // format data
   for (const contract of res.data.contracts_metadata) {
     if (!contract.contract_type) {
       throw new Error(`Contract ${contract.address} has no type specified`);
+    }
+    // skip contract if already registered
+    if (await coreRegistry.isRegisteredContract(contract.address)) {
+      console.log(`Contract ${contract.address} already registered`);
+      continue;
     }
     // add contract version if not specified
     let version = contract.core_version;
