@@ -471,20 +471,103 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     }
 
     /**
+     * @notice get external asset dependency and populate json keys and values,
+     * as well as any dependency name and version if the dependency is an
+     * ART_BLOCKS_DEPENDENCY_REGISTRY dependency.
+     * @param coreContract The core contract address the project belongs to.
+     * @param projectId The ID of the project to retrieve the external asset dependency for.
+     * @param index The index of the external asset dependency to retrieve.
+     */
+    function _getExternalAssetDependencyKeysAndValues(
+        address coreContract,
+        uint256 projectId,
+        uint256 index
+    )
+        internal
+        view
+        returns (
+            string[] memory /*keys*/,
+            JsonStatic.Json[] memory /*values*/,
+            bytes32 /*dependencyNameAndVersion*/
+        )
+    {
+        // default as not an art blocks dependency registry dependency
+        bytes32 dependencyNameAndVersion; // default as not an art blocks dependency registry dependency
+        // each external asset dependency has 3 fields, so pre-allocate array to avoid dynamic memory allocation
+        JsonStatic.Json[] memory dependencyValues = JsonStatic.newValuesArray(
+            3
+        );
+        string[] memory dependencyKeys = JsonStatic.newKeysArray(3);
+        // get external asset dependency with data
+        IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyWithData
+            memory externalAssetDependencyWithData = _getProjectExternalAssetDependencyByIndex({
+                coreContract: coreContract,
+                projectId: projectId,
+                index: index
+            });
+        // populate external asset dependency json object
+        dependencyKeys[0] = "dependency_type";
+        dependencyValues[0] = JsonStatic.newStringElement({
+            value: _dependencyTypeToString(
+                externalAssetDependencyWithData.dependencyType
+            ),
+            stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE
+        });
+        dependencyKeys[1] = "cid";
+        dependencyValues[1] = JsonStatic.newStringElement({
+            value: externalAssetDependencyWithData.cid,
+            stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE
+        });
+        dependencyKeys[2] = "data";
+        if (
+            externalAssetDependencyWithData.dependencyType ==
+            IGenArt721CoreContractV3_Engine_Flex
+                .ExternalAssetDependencyType
+                .ONCHAIN
+        ) {
+            dependencyValues[2] = JsonStatic.newStringElement({
+                value: externalAssetDependencyWithData.data, // assign data for ONCHAIN dependencies
+                stringEncodingFlag: JsonStatic.StringEncodingFlag.BASE64
+            });
+        } else {
+            dependencyValues[2] = JsonStatic.newStringElement({
+                value: "", // empty string for non-ONCHAIN dependencies
+                stringEncodingFlag: JsonStatic.StringEncodingFlag.BASE64
+            });
+            if (
+                externalAssetDependencyWithData.dependencyType ==
+                IGenArt721CoreContractV3_Engine_Flex
+                    .ExternalAssetDependencyType
+                    .ART_BLOCKS_DEPENDENCY_REGISTRY
+            ) {
+                // get the bytes representation of the dependencyRegistryAsset
+                dependencyNameAndVersion = externalAssetDependencyWithData
+                    .cid
+                    .stringToBytes32();
+            }
+        }
+        return (dependencyKeys, dependencyValues, dependencyNameAndVersion);
+    }
+
+    /**
      * @notice Get the token data for a given token.
      * @param coreContract The core contract address the token belongs to.
      * @param tokenId The ID of the token to retrieve the data for.
      * @return tokenDataJson The token data as a JSON string as bytes.
+     * @return dependencyRegistryAssetNameAndVersions Any dependency registry asset name and versions
+     * as bytes32 (will contain default-value bytes32 if not an ART_BLOCKS_DEPENDENCY_REGISTRY dependency).
      */
-    function _getTokenData(
+    function _getTokenDataAndDependencyRegistryAssets(
         address coreContract,
         uint256 tokenId
-    ) internal view returns (bytes memory tokenDataJson) {
-        // @dev Attempt to get token hash from V1 and up core contracts first.
-        (bytes32 tokenHash, bool isV0CoreContract) = _getTokenHash(
-            coreContract,
-            tokenId
-        );
+    )
+        internal
+        view
+        returns (
+            bytes memory tokenDataJson,
+            bytes32[] memory dependencyRegistryAssetNameAndVersions
+        )
+    {
         // get any flex assets
         bool isFlex = _getIsFlex({coreContract: coreContract});
 
@@ -504,27 +587,36 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         });
 
         // token hash
-        if (isV0CoreContract) {
-            // @dev V0 contracts return an array of hashes, with only one hash
-            tokenDataKeys[1] = "hashes";
-            JsonStatic.Json[] memory tokenDataValuesHashes = JsonStatic
-                .newValuesArray(1);
-            tokenDataValuesHashes[0] = JsonStatic.newStringElement({
-                value: Strings.toHexString(uint256(tokenHash)),
-                stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE
-            });
-            tokenDataValues[1] = JsonStatic.newArrayElement({
-                values: tokenDataValuesHashes
-            });
-        } else {
-            tokenDataKeys[1] = "hash";
-            tokenDataValues[1] = JsonStatic.newStringElement({
-                value: Strings.toHexString(uint256(tokenHash)),
-                stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE
-            });
+        // @dev block scope to avoid stack too deep error
+        {
+            // @dev Attempt to get token hash from V1 and up core contracts first.
+            (bytes32 tokenHash, bool isV0CoreContract) = _getTokenHash(
+                coreContract,
+                tokenId
+            );
+            if (isV0CoreContract) {
+                // @dev V0 contracts return an array of hashes, with only one hash
+                tokenDataKeys[1] = "hashes";
+                JsonStatic.Json[] memory tokenDataValuesHashes = JsonStatic
+                    .newValuesArray(1);
+                tokenDataValuesHashes[0] = JsonStatic.newStringElement({
+                    value: Strings.toHexString(uint256(tokenHash)),
+                    stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE
+                });
+                tokenDataValues[1] = JsonStatic.newArrayElement({
+                    values: tokenDataValuesHashes
+                });
+            } else {
+                tokenDataKeys[1] = "hash";
+                tokenDataValues[1] = JsonStatic.newStringElement({
+                    value: Strings.toHexString(uint256(tokenHash)),
+                    stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE
+                });
+            }
         }
 
         // flex contracts have additional fields
+        dependencyRegistryAssetNameAndVersions = new bytes32[](0); // default if no assets or not flex
         if (isFlex) {
             // preferredIPFSGateway
             tokenDataKeys[2] = "preferredArweaveGateway";
@@ -551,58 +643,37 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             // @dev all flex (V2, V3) contracts have the function projectExternalAssetDependencyCount()
             uint256 externalAssetDependencyCount = IGenArt721CoreContractV3_Engine_Flex(
                     coreContract
-                ).projectExternalAssetDependencyCount(projectId);
+                ).projectExternalAssetDependencyCount({_projectId: projectId});
             JsonStatic.Json[] memory externalAssetDependencies = JsonStatic
                 .newValuesArray(externalAssetDependencyCount);
+            // populate the type and version of all ART_BLOCKS_DEPENDENCY_REGISTRY dependencies
+            dependencyRegistryAssetNameAndVersions = new bytes32[](
+                externalAssetDependencyCount
+            );
             for (uint256 i = 0; i < externalAssetDependencyCount; i++) {
-                // each external asset dependency has 3 fields, so pre-allocate array to avoid dynamic memory allocation
-                JsonStatic.Json[] memory dependencyValues = JsonStatic
-                    .newValuesArray(3);
-                string[] memory dependencyKeys = JsonStatic.newKeysArray(3);
-                // get external asset dependency with data
-                IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyWithData
-                    memory externalAssetDependencyWithData = _getProjectExternalAssetDependencyByIndex({
+                (
+                    string[] memory dependencyKeys,
+                    JsonStatic.Json[] memory dependencyValues,
+                    bytes32 dependencyNameAndVersion
+                ) = _getExternalAssetDependencyKeysAndValues({
                         coreContract: coreContract,
                         projectId: projectId,
                         index: i
                     });
-                // populate external asset dependency json object
-                dependencyKeys[0] = "dependency_type";
-                dependencyValues[0] = JsonStatic.newStringElement({
-                    value: _dependencyTypeToString(
-                        externalAssetDependencyWithData.dependencyType
-                    ),
-                    stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE
-                });
-                dependencyKeys[1] = "cid";
-                dependencyValues[1] = JsonStatic.newStringElement({
-                    value: externalAssetDependencyWithData.cid,
-                    stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE
-                });
-                dependencyKeys[2] = "data";
-                if (
-                    externalAssetDependencyWithData.dependencyType ==
-                    IGenArt721CoreContractV3_Engine_Flex
-                        .ExternalAssetDependencyType
-                        .ONCHAIN
-                ) {
-                    dependencyValues[2] = JsonStatic.newStringElement({
-                        value: externalAssetDependencyWithData.data, // assign data for ONCHAIN dependencies
-                        stringEncodingFlag: JsonStatic.StringEncodingFlag.BASE64
-                    });
-                } else {
-                    dependencyValues[2] = JsonStatic.newStringElement({
-                        value: "", // empty string for non-ONCHAIN dependencies
-                        stringEncodingFlag: JsonStatic.StringEncodingFlag.BASE64
-                    });
+                // handle ART_BLOCKS_DEPENDENCY_REGISTRY dependency type
+                if (dependencyNameAndVersion != bytes32(0)) {
+                    dependencyRegistryAssetNameAndVersions[
+                        i
+                    ] = dependencyNameAndVersion;
                 }
-                // TODO: handle ART_BLOCKS_DEPENDENCY_REGISTRY dependency type
 
+                // build tokenData json object
                 externalAssetDependencies[i] = JsonStatic.newObjectElement({
                     keys: dependencyKeys,
                     values: dependencyValues
                 });
             }
+
             // assign externalAssetDependencies array to tokenDataValues
             tokenDataValues[4] = JsonStatic.newArrayElement(
                 externalAssetDependencies
@@ -615,8 +686,58 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             values: tokenDataValues
         });
 
-        // return tokenData as JSON string via write function
-        return bytes(tokenData.write());
+        // return tokenData as bytes-encoded JSON string via write function
+        return (
+            bytes(tokenData.write()),
+            dependencyRegistryAssetNameAndVersions
+        );
+    }
+
+    /**
+     * @notice populates an empty HTMLTag with script information for a given dependency.
+     * Assumes the dependency is available on the dependencyRegistry.
+     * Populates the script via on-chain information if available, otherwise injects script tag with src
+     * pointing to the preferred CDN.
+     * @param dependencyNameAndVersion The name and version of the dependency to populate the script for.
+     * @param htmlTag The HTMLTag to populate with the script information, memory reference; modified in place.
+     */
+    function _populateDependencyScriptHtmlTag(
+        bytes32 dependencyNameAndVersion,
+        HTMLTag memory htmlTag
+    ) internal view {
+        // Get script count and preferred CDN for the dependency.
+        (
+            ,
+            ,
+            string memory preferredCDN,
+            ,
+            ,
+            ,
+            ,
+            ,
+            uint24 scriptCount
+        ) = dependencyRegistry.getDependencyDetails(dependencyNameAndVersion);
+
+        // If no scripts on-chain, load the script from the preferred CDN.
+        if (scriptCount == 0) {
+            bool cdnAvailable = bytes(preferredCDN).length > 0;
+            // If no CDN is available, we don't need to add any tags.
+            // Expected for dependencies like "js@na" and "svg@na".
+            htmlTag.tagOpen = cdnAvailable
+                ? abi.encodePacked(
+                    '<script type="text/javascript" src="',
+                    preferredCDN,
+                    '">'
+                )
+                : bytes("");
+            htmlTag.tagClose = bytes(cdnAvailable ? "</script>" : "");
+        } else {
+            bytes memory dependencyScript = _getDependencyScriptBytes(
+                dependencyNameAndVersion
+            );
+            htmlTag.tagContent = dependencyScript;
+            htmlTag.tagType = HTMLTagType.scriptGZIPBase64DataURI; // <script type="text/javascript+gzip" src="data:text/javascript;base64,[script]"></script>
+        }
     }
 
     /**
@@ -638,8 +759,21 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             .stringToBytes32();
 
         // Create head tags
-
-        HTMLTag[] memory headTags = new HTMLTag[](3);
+        // pre-fetch data to properly allocate memory for HTML tags
+        (
+            bytes memory tokenDataJson,
+            bytes32[] memory dependencyRegistryAssetNameAndVersions
+        ) = _getTokenDataAndDependencyRegistryAssets({
+                coreContract: coreContract,
+                tokenId: tokenId
+            });
+        // @dev memoize length for efficiency
+        uint256 dependencyRegistryAssetNamesAndVersionsLength = dependencyRegistryAssetNameAndVersions
+                .length;
+        // @dev length is 2 (style, tokenData) + number of external asset dependencies
+        HTMLTag[] memory headTags = new HTMLTag[](
+            2 + dependencyRegistryAssetNamesAndVersionsLength
+        );
         headTags[0].tagOpen = "<style>";
         headTags[0]
             .tagContent = "html{height:100%}body{min-height:100%;margin:0;padding:0}canvas{padding:0;margin:auto;display:block;position:absolute;top:0;bottom:0;left:0;right:0}";
@@ -648,48 +782,32 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         // @dev decode any base64 encoded flex data in the browser while parsing the json
         headTags[1].tagContent = abi.encodePacked(
             "let tokenData = JSON.parse(`",
-            _getTokenData({coreContract: coreContract, tokenId: tokenId}),
+            tokenDataJson,
             '`, (key, value) => key === "data" && value !== null ? atob(value) : value);'
         );
         headTags[1].tagType = HTMLTagType.script;
+        for (
+            uint256 i = 0;
+            i < dependencyRegistryAssetNamesAndVersionsLength;
+            i++
+        ) {
+            // skip if empty (not a dependency registry asset)
+            // @dev okay to have empty html tags - they will be ignored
+            if (dependencyRegistryAssetNameAndVersions[i] == bytes32(0)) {
+                continue;
+            }
+            // populate head tags with dependency registry scripts
+            _populateDependencyScriptHtmlTag(
+                dependencyRegistryAssetNameAndVersions[i],
+                headTags[2 + i]
+            );
+        }
 
         // Create body tags
         HTMLTag[] memory bodyTags = new HTMLTag[](4);
 
         // Dependency script tag
-        // Get script count and preferred CDN for the dependency.
-        (
-            ,
-            ,
-            string memory preferredCDN,
-            ,
-            ,
-            ,
-            ,
-            ,
-            uint24 scriptCount
-        ) = dependencyRegistry.getDependencyDetails(dependencyNameAndVersion);
-
-        // If no scripts on-chain, load the script from the preferred CDN.
-        if (scriptCount == 0) {
-            bool cdnAvailable = bytes(preferredCDN).length > 0;
-            // If no CDN is available, we don't need to add any tags.
-            // Expected for dependencies like "js@na" and "svg@na".
-            bodyTags[0].tagOpen = cdnAvailable
-                ? abi.encodePacked(
-                    '<script type="text/javascript" src="',
-                    preferredCDN,
-                    '">'
-                )
-                : bytes("");
-            bodyTags[0].tagClose = bytes(cdnAvailable ? "</script>" : "");
-        } else {
-            bytes memory dependencyScript = _getDependencyScriptBytes(
-                dependencyNameAndVersion
-            );
-            bodyTags[0].tagContent = dependencyScript;
-            bodyTags[0].tagType = HTMLTagType.scriptGZIPBase64DataURI; // <script type="text/javascript+gzip" src="data:text/javascript;base64,[script]"></script>
-        }
+        _populateDependencyScriptHtmlTag(dependencyNameAndVersion, bodyTags[0]);
 
         // @dev We expect all of our dependencies to be added gzip'd and base64 encoded
         // so we need to include this so we can gunzip them in the browser.
