@@ -1293,4 +1293,333 @@ describe(`GenArt721GeneratorV0`, async function () {
       );
     });
   });
+
+  describe("getOnChainStatus", function () {
+    it("returns true if dependency is on-chain", async function () {
+      const config = await loadFixture(_beforeEach);
+
+      const { genArt721Core: genArt721CoreV3 } =
+        await deployCoreWithMinterFilter(
+          config,
+          "GenArt721CoreV3",
+          "MinterFilterV1"
+        );
+
+      const projectId = await genArt721CoreV3.nextProjectId();
+      await genArt721CoreV3
+        .connect(config.accounts.deployer)
+        .addProject("name", config.accounts.artist.address);
+
+      // update dependency for project
+      await genArt721CoreV3
+        .connect(config.accounts.artist)
+        .updateProjectScriptType(projectId, p5NameAndVersionBytes);
+
+      // add core to core registry
+      await config.coreRegistry
+        ?.connect(config.accounts.deployer)
+        .registerContract(
+          genArt721CoreV3.address,
+          ethers.utils.formatBytes32String("DUMMY_VERSION"),
+          ethers.utils.formatBytes32String("DUMMY_TYPE")
+        );
+
+      const onChainStatus = await config.genArt721Generator.getOnChainStatus(
+        genArt721CoreV3.address,
+        projectId
+      );
+      expect(onChainStatus.dependencyFullyOnChain).to.be.true;
+      expect(onChainStatus.injectsDecentralizedStorageNetworkAssets).to.be
+        .false;
+      expect(onChainStatus.hasOffChainFlexDepRegDependencies).to.be.false;
+    });
+
+    it("returns false if dependency is not on-chain", async function () {
+      const config = await loadFixture(_beforeEach);
+
+      const { genArt721Core: genArt721CoreV3 } =
+        await deployCoreWithMinterFilter(
+          config,
+          "GenArt721CoreV3",
+          "MinterFilterV1"
+        );
+
+      const projectId = await genArt721CoreV3.nextProjectId();
+      await genArt721CoreV3
+        .connect(config.accounts.deployer)
+        .addProject("name", config.accounts.artist.address);
+
+      // update dependency to unknown dependency
+      await genArt721CoreV3
+        .connect(config.accounts.artist)
+        .updateProjectScriptType(
+          projectId,
+          ethers.utils.formatBytes32String("unknown@1.0.0")
+        );
+
+      // add core to core registry
+      await config.coreRegistry
+        ?.connect(config.accounts.deployer)
+        .registerContract(
+          genArt721CoreV3.address,
+          ethers.utils.formatBytes32String("DUMMY_VERSION"),
+          ethers.utils.formatBytes32String("DUMMY_TYPE")
+        );
+
+      const onChainStatus = await config.genArt721Generator.getOnChainStatus(
+        genArt721CoreV3.address,
+        projectId
+      );
+      expect(onChainStatus.dependencyFullyOnChain).to.be.false;
+      expect(onChainStatus.injectsDecentralizedStorageNetworkAssets).to.be
+        .false;
+      expect(onChainStatus.hasOffChainFlexDepRegDependencies).to.be.false;
+    });
+
+    it("returns true if dependency is special cases of js@na or svg@na", async function () {
+      const config = await loadFixture(_beforeEach);
+
+      const { genArt721Core: genArt721CoreV3 } =
+        await deployCoreWithMinterFilter(
+          config,
+          "GenArt721CoreV3",
+          "MinterFilterV1"
+        );
+
+      const projectId = await genArt721CoreV3.nextProjectId();
+      await genArt721CoreV3
+        .connect(config.accounts.deployer)
+        .addProject("name", config.accounts.artist.address);
+
+      // update dependency to unknown dependency
+      await genArt721CoreV3
+        .connect(config.accounts.artist)
+        .updateProjectScriptType(
+          projectId,
+          ethers.utils.formatBytes32String("js@na")
+        );
+
+      // add core to core registry
+      await config.coreRegistry
+        ?.connect(config.accounts.deployer)
+        .registerContract(
+          genArt721CoreV3.address,
+          ethers.utils.formatBytes32String("DUMMY_VERSION"),
+          ethers.utils.formatBytes32String("DUMMY_TYPE")
+        );
+
+      const onChainStatus = await config.genArt721Generator.getOnChainStatus(
+        genArt721CoreV3.address,
+        projectId
+      );
+      expect(onChainStatus.dependencyFullyOnChain).to.be.true;
+      expect(onChainStatus.injectsDecentralizedStorageNetworkAssets).to.be
+        .false;
+      expect(onChainStatus.hasOffChainFlexDepRegDependencies).to.be.false;
+
+      // update dependency to svg@na
+      await genArt721CoreV3
+        .connect(config.accounts.artist)
+        .updateProjectScriptType(
+          projectId,
+          ethers.utils.formatBytes32String("svg@na")
+        );
+      const onChainStatus2 = await config.genArt721Generator.getOnChainStatus(
+        genArt721CoreV3.address,
+        projectId
+      );
+      expect(onChainStatus2.dependencyFullyOnChain).to.be.true;
+      expect(onChainStatus2.injectsDecentralizedStorageNetworkAssets).to.be
+        .false;
+      expect(onChainStatus2.hasOffChainFlexDepRegDependencies).to.be.false;
+    });
+
+    it("returns ipfs as true if flex and uses a ipfs or arweave asset", async function () {
+      const config = await loadFixture(_beforeEach);
+
+      const { genArt721Core: genArt721CoreV3 } =
+        await deployCoreWithMinterFilter(
+          config,
+          "GenArt721CoreV3_Engine_Flex",
+          "MinterFilterV1"
+        );
+
+      const projectId = await genArt721CoreV3.nextProjectId();
+      await genArt721CoreV3
+        .connect(config.accounts.deployer)
+        .addProject("name", config.accounts.artist.address);
+
+      // update dependency to unknown dependency
+      await genArt721CoreV3
+        .connect(config.accounts.artist)
+        .updateProjectScriptType(projectId, p5NameAndVersionBytes);
+
+      // add core to core registry
+      await config.coreRegistry
+        ?.connect(config.accounts.deployer)
+        .registerContract(
+          genArt721CoreV3.address,
+          ethers.utils.formatBytes32String("DUMMY_VERSION"),
+          ethers.utils.formatBytes32String("DUMMY_TYPE")
+        );
+      // define preferred gateways
+      const preferredIpfsGateway = "https://ipfs.io/ipfs/";
+      const preferredArweaveGateway = "https://arweave.net/";
+      await genArt721CoreV3.updateIPFSGateway(preferredIpfsGateway);
+      await genArt721CoreV3.updateArweaveGateway(preferredArweaveGateway);
+      // add ipfs flex dependency
+      // 0 - IPFS
+      const ipfsCid = "cidIpfsTest";
+      await genArt721CoreV3.addProjectExternalAssetDependency(
+        projectId,
+        ipfsCid,
+        0 // IPFS
+      );
+      // on-chain dependency status should be true for ipfs
+      const onChainStatus = await config.genArt721Generator.getOnChainStatus(
+        genArt721CoreV3.address,
+        projectId
+      );
+      expect(onChainStatus.dependencyFullyOnChain).to.be.true;
+      expect(onChainStatus.injectsDecentralizedStorageNetworkAssets).to.be.true; // ipfs
+      expect(onChainStatus.hasOffChainFlexDepRegDependencies).to.be.false;
+      // replace ipfs with arweave
+      // 1 - ARWEAVE
+      const arweaveCid = "cidArweaveTest";
+      await genArt721CoreV3.updateProjectExternalAssetDependency(
+        projectId,
+        0, // index
+        arweaveCid,
+        1 // ARWEAVE
+      );
+      // on-chain dependency status should be true for arweave
+      const onChainStatus2 = await config.genArt721Generator.getOnChainStatus(
+        genArt721CoreV3.address,
+        projectId
+      );
+      expect(onChainStatus2.dependencyFullyOnChain).to.be.true;
+      expect(onChainStatus2.injectsDecentralizedStorageNetworkAssets).to.be
+        .true; // arweave
+      expect(onChainStatus2.hasOffChainFlexDepRegDependencies).to.be.false;
+    });
+
+    it("returns appropriately if uses flex ab dependency registry asset that is not fully on-chain", async function () {
+      const config = await loadFixture(_beforeEach);
+
+      const { genArt721Core: genArt721CoreV3 } =
+        await deployCoreWithMinterFilter(
+          config,
+          "GenArt721CoreV3_Engine_Flex",
+          "MinterFilterV1"
+        );
+
+      const projectId = await genArt721CoreV3.nextProjectId();
+      await genArt721CoreV3
+        .connect(config.accounts.deployer)
+        .addProject("name", config.accounts.artist.address);
+
+      // update dependency to unknown dependency
+      await genArt721CoreV3
+        .connect(config.accounts.artist)
+        .updateProjectScriptType(projectId, p5NameAndVersionBytes);
+
+      // add core to core registry
+      await config.coreRegistry
+        ?.connect(config.accounts.deployer)
+        .registerContract(
+          genArt721CoreV3.address,
+          ethers.utils.formatBytes32String("DUMMY_VERSION"),
+          ethers.utils.formatBytes32String("DUMMY_TYPE")
+        );
+      // add dependency registry flex dependency
+      // 3 - ART_BLOCKS_DEPENDENCY_REGISTRY
+      const offchainLibraryName = "unknown@1.0.0";
+      await genArt721CoreV3.addProjectExternalAssetDependency(
+        projectId,
+        offchainLibraryName,
+        3 // ART_BLOCKS_DEPENDENCY_REGISTRY
+      );
+      // on-chain dependency status should be false for flex dependency registry asset
+      const onChainStatus = await config.genArt721Generator.getOnChainStatus(
+        genArt721CoreV3.address,
+        projectId
+      );
+      expect(onChainStatus.dependencyFullyOnChain).to.be.true;
+      expect(onChainStatus.injectsDecentralizedStorageNetworkAssets).to.be
+        .false;
+      expect(onChainStatus.hasOffChainFlexDepRegDependencies).to.be.true; // flex dependency registry asset
+    });
+
+    it("returns appropriately if uses flex ab dependency registry asset that is fully on-chain", async function () {
+      const config = await loadFixture(_beforeEach);
+
+      const { genArt721Core: genArt721CoreV3 } =
+        await deployCoreWithMinterFilter(
+          config,
+          "GenArt721CoreV3_Engine_Flex",
+          "MinterFilterV1"
+        );
+
+      const projectId = await genArt721CoreV3.nextProjectId();
+      await genArt721CoreV3
+        .connect(config.accounts.deployer)
+        .addProject("name", config.accounts.artist.address);
+
+      // update dependency to unknown dependency
+      await genArt721CoreV3
+        .connect(config.accounts.artist)
+        .updateProjectScriptType(projectId, p5NameAndVersionBytes);
+
+      // add core to core registry
+      await config.coreRegistry
+        ?.connect(config.accounts.deployer)
+        .registerContract(
+          genArt721CoreV3.address,
+          ethers.utils.formatBytes32String("DUMMY_VERSION"),
+          ethers.utils.formatBytes32String("DUMMY_TYPE")
+        );
+      // add dependency registry flex dependency
+      // add a new on-chain dependency to the dependency registry
+      const dummyNameAndVersion = "dummy@1.0.0";
+      const dummyNameAndVersionBytes =
+        ethers.utils.formatBytes32String(dummyNameAndVersion);
+      console.log("DUMMY_NAME_AND_VERSION_BYTES", dummyNameAndVersionBytes);
+      await config.dependencyRegistry.addDependency(
+        dummyNameAndVersionBytes,
+        mitLicenseTypeBytes,
+        preferredCDN,
+        p5PreferredRepository,
+        p5DependencyWebsite
+      );
+      // add script chunk to the dependency
+      const scriptChunk = "console.log('test');";
+      await config.dependencyRegistry.addDependencyScript(
+        dummyNameAndVersionBytes,
+        scriptChunk
+      );
+      // 3 - ART_BLOCKS_DEPENDENCY_REGISTRY
+      await genArt721CoreV3.addProjectExternalAssetDependency(
+        projectId,
+        dummyNameAndVersionBytes, // on chain dependency
+        3 // ART_BLOCKS_DEPENDENCY_REGISTRY
+      );
+
+      // get dependency info from dependency registry
+      const dependencyDetails =
+        await config.dependencyRegistry.getDependencyDetails(
+          dummyNameAndVersionBytes
+        );
+      console.log("DEPENDENCY_DETAILS", dependencyDetails);
+
+      // on-chain dependency status should be false for flex dependency registry asset
+      const onChainStatus = await config.genArt721Generator.getOnChainStatus(
+        genArt721CoreV3.address,
+        projectId
+      );
+      expect(onChainStatus.dependencyFullyOnChain).to.be.true;
+      expect(onChainStatus.injectsDecentralizedStorageNetworkAssets).to.be
+        .false;
+      expect(onChainStatus.hasOffChainFlexDepRegDependencies).to.be.false; // flex dependency registry asset is on chain, so false
+    });
+  });
 });
