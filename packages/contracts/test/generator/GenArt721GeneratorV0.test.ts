@@ -1565,7 +1565,7 @@ describe(`GenArt721GeneratorV0`, async function () {
         .connect(config.accounts.deployer)
         .addProject("name", config.accounts.artist.address);
 
-      // update dependency to unknown dependency
+      // update dependency to p5 on-chain dependency
       await genArt721CoreV3
         .connect(config.accounts.artist)
         .updateProjectScriptType(projectId, p5NameAndVersionBytes);
@@ -1600,7 +1600,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       // 3 - ART_BLOCKS_DEPENDENCY_REGISTRY
       await genArt721CoreV3.addProjectExternalAssetDependency(
         projectId,
-        dummyNameAndVersionBytes, // on chain dependency
+        dummyNameAndVersion, // on chain dependency, in string form
         3 // ART_BLOCKS_DEPENDENCY_REGISTRY
       );
 
