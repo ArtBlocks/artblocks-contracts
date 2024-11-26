@@ -70,7 +70,7 @@ library DependencyRegistryStorageLib {
         // @dev This set is vestigial and no longer used. It has been replaced by CoreRegistry functionality.
         // Cannot be removed due to storage layout requirements in upgradeable contracts.
         // See https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable#modifying-your-contracts
-        EnumerableSet.AddressSet supportedCoreContracts;
+        EnumerableSet.AddressSet DEPRECATED_supportedCoreContracts;
         // Mapping that allows for the overriding of project dependencies.
         // The first key is the address of the core contract, the second key is the project ID,
         // and the value is the bytes32 representation of the dependency name and version (i.e. name@version).
@@ -78,6 +78,10 @@ library DependencyRegistryStorageLib {
         mapping(address coreContractAddress => mapping(uint256 projectId => bytes32 dependencyNameAndVersion) projectToDependencyNameAndVersionMapping) projectDependencyOverrides;
         // address of the CoreRegistry contract
         ICoreRegistryV1 coreRegistryContract;
+        // enumerable set of core contract addresses supported by the DependencyRegistry, in addition to the set of core contracts
+        // that are supported by the CoreRegistry contract
+        // @dev possible there is overlap between the two sets, but not intentionally configured by admin.
+        EnumerableSet.AddressSet supportedCoreContractsOverride;
     }
 
     /**
