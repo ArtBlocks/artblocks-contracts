@@ -3,7 +3,15 @@ query GetNonFlagshipProjectsNullOverrides {
     where: {
       script_type_and_version_override: { _is_null: true }
       script_type_and_version: { _is_null: false }
-      contract: {contract_type: {_nin: [GenArt721CoreV3, GenArt721CoreV3_Engine, GenArt721CoreV3_Engine_Flex]} 
+      contract: {
+        contract_type: {
+          _nin: [
+            GenArt721CoreV3
+            GenArt721CoreV3_Engine
+            GenArt721CoreV3_Engine_Flex
+          ]
+        }
+      }
     }
   ) {
     name

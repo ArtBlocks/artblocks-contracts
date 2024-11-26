@@ -2,7 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import hre, { ethers } from "hardhat";
-import { GetNonFlagshipProjectsNullOverrides } from "../../generated/graphql";
+import { GetNonFlagshipProjectsNullOverridesDocument } from "../../generated/graphql";
 import { getClient } from "../util/graphql-client-utils";
 import { DependencyRegistryV0__factory } from "../contracts";
 import { getNetworkName } from "../util/utils";
@@ -42,12 +42,36 @@ const config: Config = {
   network: "mainnet",
   dependencyRegistryAddress: "0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF",
   useLedgerSigner: false,
-  useGnosisSafe: false,
+  useGnosisSafe: true,
+  safeAddress: "0x52119BB73Ac8bdbE59aF0EEdFd4E4Ee6887Ed2EA",
+  transactionServiceUrl: "https://safe-transaction-mainnet.safe.global/",
 };
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
+
+const supportedDependencies = [
+  "aframe@1.2.0",
+  "aframe@1.5.0",
+  "babylon@5.0.0",
+  "babylon@6.36.0",
+  "js@na",
+  "js-legacy@na",
+  "custom@na",
+  "p5@1.0.0",
+  "p5@1.9.0",
+  "paper@0.12.15",
+  "processing-js@1.4.6",
+  "regl@2.1.0",
+  "svg@na",
+  "three@0.124.0",
+  "three@0.160.0",
+  "three@0.167.0",
+  "tone@14.8.15",
+  "twemoji@14.0.2",
+  "zdog@1.1.2",
+];
 
 async function main() {
   const networkName = await getNetworkName();
@@ -120,7 +144,7 @@ async function main() {
   // query for projects with null script_type_and_version_override
   const client = getClient();
   const res = await client
-    .query(GetNonFlagshipProjectsNullOverrides, {})
+    .query(GetNonFlagshipProjectsNullOverridesDocument, {})
     .toPromise();
 
   if (!res.data?.projects_metadata) {
@@ -149,36 +173,33 @@ async function main() {
         `Missing script_type_and_version for project ${project.name || "unknown"}`
       );
     }
+    if (!supportedDependencies.includes(project.script_type_and_version)) {
+      // If we encounter a dependency that is not supported by the dependency
+      // registry we will skip it.
+      console.log(
+        `Unexpected dependency name and version ${project.script_type_and_version} found for project ${project.id}. Skipping override.`
+      );
+      continue;
+    }
+
     const contractAddress = project.contract_address;
     const projectId = parseInt(project.project_id, 10);
     const scriptTypeAndVersion = project.script_type_and_version;
 
-    // If we're using a gnosis safe, create a transaction to propose adding the override
-    if (config.useGnosisSafe) {
-      const data = dependencyRegistry.interface.encodeFunctionData(
-        "addProjectDependencyOverride",
-        [
-          contractAddress,
-          projectId,
-          ethers.utils.formatBytes32String(scriptTypeAndVersion),
-        ]
-      );
-      txData.push({
-        to: config.dependencyRegistryAddress,
-        value: "0x00",
-        data,
-      });
-    } else {
-      const tx = await dependencyRegistry.addProjectDependencyOverride(
+    // create a transaction to propose adding the override
+    const data = dependencyRegistry.interface.encodeFunctionData(
+      "addProjectDependencyOverride",
+      [
         contractAddress,
         projectId,
-        ethers.utils.formatBytes32String(scriptTypeAndVersion)
-      );
-      await tx.wait();
-      console.log(
-        `Added override for project ${project.name} (${projectId}): ${scriptTypeAndVersion}`
-      );
-    }
+        ethers.utils.formatBytes32String(scriptTypeAndVersion),
+      ]
+    );
+    txData.push({
+      to: config.dependencyRegistryAddress,
+      value: "0x00",
+      data,
+    });
   }
 
   // Use SDK to propose transactions if we're using a gnosis safe
