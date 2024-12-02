@@ -3,9 +3,21 @@
 pragma solidity ^0.8.19;
 
 interface IDependencyRegistryV0 {
+    // legacy event used before deferring to core registry for allowlist
     event SupportedCoreContractAdded(address indexed coreContractAddress);
 
+    // legacy event used before deferring to core registry for allowlist
     event SupportedCoreContractRemoved(address indexed coreContractAddress);
+
+    // active event used to add additional supported contracts beyond what core registry allows
+    event SupportedCoreContractOverrideAdded(
+        address indexed coreContractAddress
+    );
+
+    // active event used to remove additional supported contracts beyond what core registry allows
+    event SupportedCoreContractOverrideRemoved(
+        address indexed coreContractAddress
+    );
 
     event ProjectDependencyOverrideAdded(
         address indexed coreContractAddress,
@@ -70,6 +82,8 @@ interface IDependencyRegistryV0 {
     );
 
     event DependencyScriptUpdated(bytes32 indexed dependencyNameAndVersion);
+
+    event CoreRegistryAddressUpdated(address indexed coreRegistryAddress);
 
     /**
      * @notice Returns the count of scripts for dependency `dependencyNameAndVersion`.
