@@ -116,6 +116,8 @@ graphql(/* GraphQL */ `
     time_of_bid
     bidder_address
     is_removed
+    log_index
+    tx_hash
   }
 `);
 
