@@ -1330,6 +1330,14 @@ contract DependencyRegistryV0 is
     }
 
     /**
+     * @notice returns the address of the core registry currently being used by the dependency registry.
+     * @return address Address of the core registry contract.
+     */
+    function currentCoreRegistry() external view returns (address) {
+        return address(DependencyRegistryStorageLib.s().coreRegistryContract);
+    }
+
+    /**
      * @notice utility function to convert from string to bytes32.
      * Useful when a human is calling functions that take bytes32 as input.
      * Reverts if input string does not fit within 32 bytes.

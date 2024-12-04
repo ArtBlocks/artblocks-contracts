@@ -1981,6 +1981,17 @@ describe(`DependencyRegistryV0`, async function () {
       this.config = config;
     });
 
+    describe("currentCoreRegistry", function () {
+      it("returns the correct core registry address", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const currentCoreRegistry =
+          await config.dependencyRegistry.currentCoreRegistry();
+        // should be the same as the one set in beforeEach
+        expect(currentCoreRegistry).to.eq(config.coreRegistry.address);
+      });
+    });
+
     describe("addSupportedCoreContractOverride", function () {
       it("does not allow non-admins to add supported core contract", async function () {
         // get config from beforeEach
