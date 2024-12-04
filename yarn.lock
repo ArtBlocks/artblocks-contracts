@@ -155,7 +155,7 @@ __metadata:
     tsconfig: "npm:*"
     typechain: "npm:^8.3.2"
     typescript: "npm:^5.4.5"
-    urql: "npm:^4.0.7"
+    urql: "npm:^4.2.1"
   languageName: unknown
   linkType: soft
 
@@ -23340,15 +23340,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"urql@npm:^4.0.7":
-  version: 4.0.7
-  resolution: "urql@npm:4.0.7"
+"urql@npm:^4.2.1":
+  version: 4.2.1
+  resolution: "urql@npm:4.2.1"
   dependencies:
     "@urql/core": "npm:^5.0.0"
     wonka: "npm:^6.3.2"
   peerDependencies:
+    "@urql/core": ^5.0.0
     react: ">= 16.8.0"
-  checksum: 10c0/d939c5eb8721f24ddf45618976437c2db8984f9c2dea3c37a3a4e21a0f6df53f162488be6fd58c38bcbfad2e123a945a0a2157a9e8ab35589cdcb57d77803ef1
+  checksum: 10c0/12dbb5e2824b48a8402c674ac8429f0ff0ba91af4392f10163824cc614a4403a04b8ef876754ec699a8392e93c50d7baa6b61a9b29fdbe2ebd182f5fb481a96b
   languageName: node
   linkType: hard
 
