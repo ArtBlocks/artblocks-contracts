@@ -1,5 +1,11 @@
 # @artblocks/contracts
 
+## 1.2.1
+
+### Patch Changes
+
+- 1558134: update latest on-chain dependency registry and on-chain generator source
+
 ## 1.2.0
 
 ### Minor Changes
