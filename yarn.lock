@@ -142,7 +142,7 @@ __metadata:
     husky: "npm:^9.0.11"
     istanbul-combine: "npm:^0.3.0"
     keccak256: "npm:^1.0.6"
-    merkletreejs: "npm:^0.3.11"
+    merkletreejs: "npm:^0.4.0"
     prettier: "npm:^3.3.2"
     prettier-plugin-solidity: "npm:^1.3.1"
     prompt: "npm:^1.3.0"
@@ -180,7 +180,7 @@ __metadata:
     jsdoc-plugin-typescript: "npm:^2.2.1"
     lint-staged: "npm:^15.2.10"
     lodash: "npm:^4.17.21"
-    merkletreejs: "npm:^0.3.11"
+    merkletreejs: "npm:^0.4.0"
     prettier: "npm:^3.3.2"
     tsconfig: "npm:*"
     tsup: "npm:^8.1.0"
@@ -17878,16 +17878,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"merkletreejs@npm:^0.3.11":
-  version: 0.3.11
-  resolution: "merkletreejs@npm:0.3.11"
+"merkletreejs@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "merkletreejs@npm:0.4.0"
   dependencies:
     bignumber.js: "npm:^9.0.1"
     buffer-reverse: "npm:^1.0.1"
     crypto-js: "npm:^4.2.0"
     treeify: "npm:^1.1.0"
     web3-utils: "npm:^1.3.4"
-  checksum: 10c0/0863dd30ff992c49ae3026d67b6c917e46a1748d0bd574e3cc76cbdfc5f15dc3839be67edd0037f867531fceb7b8f3957854dad3700c82001cab1bff7dac17f0
+  checksum: 10c0/e188fdabf706c5c1b0381962e1ed1ab84258a0c63b88aa1211bb0a93224e8b1fd57c2f30c1f9a41cb519a710c1fe93a415d05786c3617d7bf8cffe212da69c5c
   languageName: node
   linkType: hard
 
