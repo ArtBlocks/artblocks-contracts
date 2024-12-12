@@ -150,7 +150,9 @@ export async function getHolderMinterUserPurchaseContext(
   // If the user has a token that is allowed for this project, we can proceed
   // with the purchase. No need to specify a vault.
   const userToken = userTokensRes.tokens_metadata.find(
-    (token) => token.owner_address === walletClient.account.address
+    (token) =>
+      token.owner_address.toLowerCase() ===
+      walletClient.account.address.toLowerCase()
   );
 
   if (userToken) {
