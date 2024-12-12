@@ -1852,3 +1852,97 @@ Date: 2024-10-03T20:31:48.898Z
         ---
       
         
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2024-12-12T22:44:25.092Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** mainnet
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000559cA3F3f1279C0ec121c302ed010457#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x000000008DD9A7CD3f4A267A88082d4a1E2f6553#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x000000004058B5159ABB5a3Dd8cf775A7519E75F#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine | 0x0000000BF96eb73f37239F61c9344E40d4c3F665
+  
+        **Engine Contract:** https://etherscan.io/address/0x0000000BF96eb73f37239F61c9344E40d4c3F665#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Sputniko!
+        - **Token Name:** Art Blocks Studio | 68
+        - **Token Ticker:** ABSTUDIO_68
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0xf895f1D1055BE07B9c5652948F7b47e8d5a21fE7
+        - **Super Admin Address:** 0x8dFB9266A18efcDBC1c570248CC47e520D9307B0        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-68-mainnet
+        
+        ---
+      
+        
+        ## Deployment: Engine Flex | 0x0000000f17CF8d271DA5C8D35eb5b2A426801b38
+  
+        **Engine Contract:** https://etherscan.io/address/0x0000000f17CF8d271DA5C8D35eb5b2A426801b38#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** ixnayokay
+        - **Token Name:** Art Blocks Studio | 69
+        - **Token Ticker:** ABSTUDIO_69
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0xf53E97bf73A46C9b1B559dBCD078EA3cAE072929
+        - **Super Admin Address:** 0x478dA99A40BEB1Ab3d20F548C2C46a0A0B049F65        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-69-mainnet
+        
+        ---
+      
+        
+        ## Deployment: Engine | 0x00000001c1eAaF08507c38eAACDb2c0d880E7B6d
+  
+        **Engine Contract:** https://etherscan.io/address/0x00000001c1eAaF08507c38eAACDb2c0d880E7B6d#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Cooper Jamieson
+        - **Token Name:** Art Blocks Studio | 70
+        - **Token Ticker:** ABSTUDIO_70
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x2e28b66BcCa02F91796552417Abf5219571F66dB
+        - **Super Admin Address:** 0x393eADB8CC8873b01F2ef07C371211bd60B4da3F        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-70-mainnet
+        
+        ---
+      
+        
