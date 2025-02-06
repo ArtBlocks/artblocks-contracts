@@ -1946,3 +1946,47 @@ Date: 2024-10-03T20:31:48.898Z
         ---
       
         
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2025-02-06T21:47:01.223Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** mainnet
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000559cA3F3f1279C0ec121c302ed010457#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x000000008DD9A7CD3f4A267A88082d4a1E2f6553#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x000000004058B5159ABB5a3Dd8cf775A7519E75F#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine | 0x8Ce22a649a0EA5008900740028007278038d0023
+  
+        **Engine Contract:** https://etherscan.io/address/0x8Ce22a649a0EA5008900740028007278038d0023#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Anna Lucia
+        - **Token Name:** Art Blocks Studio | 71
+        - **Token Ticker:** ABSTUDIO_71
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x4d275b9c7B905C762eaeED8A8C640D889A5869ba
+        - **Super Admin Address:** 0x101419E2d84470d900C41B86974B5912C92f01FE        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-71-mainnet
+        
+        ---
+      
+        
