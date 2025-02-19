@@ -5,4 +5,4 @@ yarn-error.log
 !.env.example
 bin
 .yarn
-.codegpt
+.codegpt/
