@@ -58,7 +58,7 @@ export function getActiveSharedRandomizer(
 }
 
 export function getActiveSharedSplitProvider(): string {
-  return "0x0000000004B100B47f061968a387c82702AFe946";
+  return "0x000000000ef75C77F6bd0b2Ee166501FbBDb40c8";
 }
 
 export async function getActiveEngineImplementations(
