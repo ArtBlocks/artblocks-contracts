@@ -1990,3 +1990,72 @@ Date: 2024-10-03T20:31:48.898Z
         ---
       
         
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2025-02-20T18:20:07.636Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** mainnet
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000559cA3F3f1279C0ec121c302ed010457#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x000000008DD9A7CD3f4A267A88082d4a1E2f6553#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x000000004058B5159ABB5a3Dd8cf775A7519E75F#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine | 0x7C78F67700e700B4005c8a3d920A1A99e6004800
+  
+        **Engine Contract:** https://etherscan.io/address/0x7C78F67700e700B4005c8a3d920A1A99e6004800#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Efdot x Diid
+        - **Token Name:** Art Blocks Studio | 72
+        - **Token Ticker:** ABSTUDIO_72
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x9B3E6F93d6bbA427E1553BF1A9084B6E8516F411
+        - **Super Admin Address:** 0xE8F2069F4886b9E304Bc74354787BfC930507899        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-72-mainnet
+        
+        ---
+      
+        
+        ## Deployment: Engine | 0xb265cb2eE300007D8889440041f900f109aE00c9
+  
+        **Engine Contract:** https://etherscan.io/address/0xb265cb2eE300007D8889440041f900f109aE00c9#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** beervangeer
+        - **Token Name:** Art Blocks Studio | 73
+        - **Token Ticker:** ABSTUDIO_73
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x362D7936b2e492d5Ed9B05b9FD7AEC58C4082794
+        - **Super Admin Address:** 0x35F64560c51c8772f75186a8931929589B7c8D80        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-73-mainnet
+        
+        ---
+      
+        
