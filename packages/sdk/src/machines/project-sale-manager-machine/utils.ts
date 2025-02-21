@@ -199,21 +199,6 @@ export function isProjectPurchasable(
     return false;
   }
 
-  // If the project is paused, only allow the artist to purchase
-  if (
-    liveSaleData.paused &&
-    project.artist_address !== walletClient.account.address.toLowerCase()
-  ) {
-    return false;
-  }
-
-  if (project.auction_start_time) {
-    const startDate = new Date(project.auction_start_time);
-    if (startDate > new Date()) {
-      return false;
-    }
-  }
-
   if (liveSaleData.ramMinterAuctionDetails) {
     const { maxHasBeenInvoked, projectMinterState } =
       liveSaleData.ramMinterAuctionDetails;

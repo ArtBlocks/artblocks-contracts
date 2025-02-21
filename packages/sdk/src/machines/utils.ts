@@ -197,6 +197,8 @@ export {
   type ProjectMinterState,
 } from "./project-sale-manager-machine/utils";
 
+export { getUserIneligibilityReasonMessage } from "./purchase-initiation-machine/utils";
+
 // Re-export xstate utility types and createEmptyActor function for use in consuming apps
 export {
   type ActorRef,
