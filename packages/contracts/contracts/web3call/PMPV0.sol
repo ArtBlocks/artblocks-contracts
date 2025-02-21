@@ -8,6 +8,8 @@ import {IWeb3Call} from "../interfaces/v0.8.x/IWeb3Call.sol";
 import {ERC165} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165.sol";
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
 
+import {ImmutableStringArray} from "../libs/v0.8.x/ImmutableStringArray.sol";
+
 /**
  * @title PMPV0
  * @author Art Blocks Inc.
@@ -20,6 +22,7 @@ contract PMPV0 is
     using Strings for string;
     using Strings for uint256;
     using Strings for int256;
+    using ImmutableStringArray for ImmutableStringArray.StringArray;
 
     bytes32 private constant _TYPE = "PMPV0";
 
@@ -52,19 +55,21 @@ contract PMPV0 is
         DecimalRange,
         HexColor,
         Timestamp,
-        String // TODO determine if we want to support this, how would integrate w/Features?
+        String // utilizes string in PMP struct, all other param types utilize the generic bytes32 param
     }
 
     // @dev core contract address and projectId are implicit based on mapping pointing to ProjectConfig struct
     struct ProjectConfig {
-        // @dev array of pmpKeys for efficient enumeration
-        string[] pmpKeys;
-        // @dev mapping of pmpKeys to PMPConfig for O(1) access, and cheap updates when no changes
-        mapping(bytes32 pmpKeyHash => PMPConfig pmpConfig) pmpConfigs;
+        // @dev array of pmpKeys for efficient enumeration, uses efficient SSTORE2 storage
+        ImmutableStringArray.StringArray pmpKeys; // slot 0: 32 bytes
+        // @dev mapping of pmpKeys to PMPConfigStorage for O(1) access, and cheap updates when no changes
+        mapping(bytes32 pmpKeyHash => PMPConfigStorage pmpConfigStorage) pmpConfigsStorage; // slot 1: 32 bytes
+        // config nonce that is incremented during each configureProject call
+        uint8 configNonce; // slot 2: 1 byte
         // post-configuration hook to be called after a token's PMP is configured
-        address tokenPMPPostConfigHook;
+        address tokenPMPPostConfigHook; // slot 2: 20 bytes
         // token pmp read augmentation hook to be called when reading a token's PMPs
-        address tokenPMPReadAugmentationHook;
+        address tokenPMPReadAugmentationHook; // slot 3: 20 bytes
     }
 
     struct PMPInputConfig {
@@ -72,6 +77,7 @@ contract PMPV0 is
         PMPConfig pmpConfig; // slot 1: 32 bytes
     }
 
+    // @dev struct for function input when configuring a project's PMP
     struct PMPConfig {
         AuthOption authOption; // slot 0: 1 byte
         ParamType paramType; // slot 0: 1 byte
@@ -79,6 +85,18 @@ contract PMPV0 is
         string[] selectOptions; // slot 1: 32 bytes
         // @dev use bytes32 for all range types for SSTORE efficiency
         // @dev minRange and maxRange cast to defined numeric type when verifying assigned PMP values
+        bytes32 minRange; // slot 2: 32 bytes
+        bytes32 maxRange; // slot 3: 32 bytes
+    }
+
+    // @dev storage struct for PMPConfig (same as PMPConfig, but includes highestConfigNonce)
+    struct PMPConfigStorage {
+        // @dev highest config nonce for which this PMPConfig is valid (relative to projectConfig.configNonce)
+        uint8 highestConfigNonce; // slot 0: 1 byte
+        AuthOption authOption; // slot 0: 1 byte
+        ParamType paramType; // slot 0: 1 byte
+        address authAddress; // slot 0: 20 bytes
+        string[] selectOptions; // slot 1: 32 bytes
         bytes32 minRange; // slot 2: 32 bytes
         bytes32 maxRange; // slot 3: 32 bytes
     }
@@ -93,6 +111,8 @@ contract PMPV0 is
         ParamType configuredParamType; // slot 0: 1 byte
         // @dev store values as bytes32 for efficiency, cast appropriately when reading
         bytes32 configuredValue; // slot 1: 32 bytes
+        string artistConfiguredValueString; // slot 4: 32 bytes
+        string nonArtistConfiguredValueString; // slot 5: 32 bytes
     }
 
     // mapping of ProjectConfig structs for each project
@@ -142,6 +162,11 @@ contract PMPV0 is
         ProjectConfig storage projectConfig = projectConfigs[coreContract][
             projectId
         ];
+        // increment config nonce
+        // @dev reverts on overflow (greater than 255 edits not supported)
+        uint8 newConfigNonce = projectConfig.configNonce + 1;
+        projectConfig.configNonce = newConfigNonce;
+
         // efficiently sync pmp keys to ProjectConfig
         // copy input pmp keys to memory array for efficient passing to _syncPMPKeys
         string[] memory pmpKeys = new string[](pmpInputConfigsLength);
@@ -151,11 +176,19 @@ contract PMPV0 is
         _syncPMPKeys({inputKeys: pmpKeys, projectConfig: projectConfig});
         // store pmp configs in ProjectConfig struct's mapping
         for (uint256 i = 0; i < pmpInputConfigsLength; i++) {
-            // store pmpConfig in ProjectConfig struct's mapping
-            // @dev if pmpConfig data are not changed, expensive SSTORE operation is avoided because keyHash is unchanged
-            projectConfig.pmpConfigs[
-                _getStringHash(pmpKeys[i])
-            ] = pmpInputConfigs[i].pmpConfig;
+            // store pmpConfigStorage in ProjectConfig struct's mapping
+            PMPConfigStorage storage pmpConfigStorage = projectConfig
+                .pmpConfigsStorage[_getStringHash(pmpKeys[i])];
+            // update highestConfigNonce
+            pmpConfigStorage.highestConfigNonce = newConfigNonce;
+            // copy function input pmpConfig data to pmpConfigStorage
+            PMPConfig memory inputPMPConfig = pmpInputConfigs[i].pmpConfig;
+            pmpConfigStorage.authOption = inputPMPConfig.authOption;
+            pmpConfigStorage.paramType = inputPMPConfig.paramType;
+            pmpConfigStorage.authAddress = inputPMPConfig.authAddress;
+            pmpConfigStorage.selectOptions = inputPMPConfig.selectOptions;
+            pmpConfigStorage.minRange = inputPMPConfig.minRange;
+            pmpConfigStorage.maxRange = inputPMPConfig.maxRange;
         }
         // TODO: emit event (recommend emitting entire input calldata for indexing without web3 calls)
     }
@@ -164,9 +197,9 @@ contract PMPV0 is
     function configureTokenParams(
         address coreContract,
         uint256 tokenId,
-        PMPInputConfig[] calldata pmpInputConfigs
+        PMPInput[] calldata pmpInputs
     ) external {
-        // TODO: only owners can configure token params
+        // TODO: implement
     }
 
     /**
@@ -191,23 +224,26 @@ contract PMPV0 is
         ProjectConfig storage projectConfig = projectConfigs[coreContract][
             projectId
         ];
+        string[] memory pmpKeys = projectConfig.pmpKeys.getAll();
+        uint256 pmpKeysLength = pmpKeys.length;
         // @dev initialize tokenParams array with maximum possible length
-        tokenParams = new IWeb3Call.TokenParam[](projectConfig.pmpKeys.length);
+        tokenParams = new IWeb3Call.TokenParam[](pmpKeysLength);
         uint256 populatedParamsIndex = 0; // @dev index of next populated tokenParam
-        for (uint256 i = 0; i < projectConfig.pmpKeys.length; i++) {
+        for (uint256 i = 0; i < pmpKeysLength; i++) {
             // load pmp value
-            bytes32 pmpKeyHash = _getStringHash(projectConfig.pmpKeys[i]);
+            bytes32 pmpKeyHash = _getStringHash(pmpKeys[i]);
             (bool isConfigured, string memory value) = _getPMPValue({
-                pmpConfig: projectConfig.pmpConfigs[pmpKeyHash],
+                pmpConfigStorage: projectConfig.pmpConfigsStorage[pmpKeyHash],
                 pmp: tokenPMPs[coreContract][tokenId][pmpKeyHash]
             });
             // continue when param is unconfigured
             if (!isConfigured) {
+                // continue without incrementing populatedParamsIndex
                 continue;
             }
             // append configured to tokenParams array
             tokenParams[populatedParamsIndex] = IWeb3Call.TokenParam({
-                key: projectConfig.pmpKeys[i],
+                key: pmpKeys[i],
                 value: value
             });
             populatedParamsIndex++;
@@ -224,32 +260,33 @@ contract PMPV0 is
     }
 
     function _getPMPValue(
-        PMPConfig storage pmpConfig,
+        PMPConfigStorage storage pmpConfigStorage,
         PMP storage pmp
     ) internal view returns (bool isConfigured, string memory value) {
         ParamType configuredParamType = pmp.configuredParamType;
         // unconfigured param for token
         if (
             configuredParamType == ParamType.Unconfigured || // unconfigured for token
-            configuredParamType == pmpConfig.paramType // stale - token configured param type is different from project config
+            configuredParamType == pmpConfigStorage.paramType // stale - token configured param type is different from project config
         ) {
             return (false, "");
         }
         // if string, return value
-        if (pmpConfig.paramType == ParamType.String) {
+        if (pmpConfigStorage.paramType == ParamType.String) {
             // TODO: implement (if we want to support this)
             return (true, "TODO");
         }
         if (configuredParamType == ParamType.Select) {
             // return unconfigured if index is out of bounds (obviously stale)
             if (
-                uint256(pmp.configuredValue) >= pmpConfig.selectOptions.length
+                uint256(pmp.configuredValue) >=
+                pmpConfigStorage.selectOptions.length
             ) {
                 return (false, "");
             }
             return (
                 true,
-                pmpConfig.selectOptions[uint256(pmp.configuredValue)]
+                pmpConfigStorage.selectOptions[uint256(pmp.configuredValue)]
             );
         }
         if (configuredParamType == ParamType.Bool) {
@@ -264,8 +301,8 @@ contract PMPV0 is
             // verify configured value is within bounds (obviously stale if not)
             uint256 configuredValue = uint256(pmp.configuredValue);
             if (
-                configuredValue < uint256(pmpConfig.minRange) ||
-                configuredValue > uint256(pmpConfig.maxRange)
+                configuredValue < uint256(pmpConfigStorage.minRange) ||
+                configuredValue > uint256(pmpConfigStorage.maxRange)
             ) {
                 return (false, "");
             }
@@ -280,8 +317,8 @@ contract PMPV0 is
             // verify configured value is within bounds (obviously stale if not)
             int256 configuredValue = int256(uint256(pmp.configuredValue));
             if (
-                configuredValue < int256(uint256(pmpConfig.minRange)) ||
-                configuredValue > int256(uint256(pmpConfig.maxRange))
+                configuredValue < int256(uint256(pmpConfigStorage.minRange)) ||
+                configuredValue > int256(uint256(pmpConfigStorage.maxRange))
             ) {
                 return (false, "");
             }
@@ -303,8 +340,8 @@ contract PMPV0 is
         string[] memory inputKeys,
         ProjectConfig storage projectConfig
     ) internal {
-        string[] storage currentKeys = projectConfig.pmpKeys;
-        // determine if inputKeys are different from currentKeys to avoid expensive SSTORE operation
+        string[] memory currentKeys = projectConfig.pmpKeys.getAll();
+        // determine if inputKeys are different from currentKeys to avoid expensive operation
         // @dev in general, we don't expect many changes to pmpKeys after initial configuration
         bool keysChanged = false;
         if (inputKeys.length != currentKeys.length) {
@@ -317,21 +354,10 @@ contract PMPV0 is
                 }
             }
         }
-        // if keys changed, update projectConfig's pmpKeys array (expensive operation)
+        // if keys changed, update projectConfig's pmpKeys (expensive operation)
         if (keysChanged) {
-            // implicit
-            projectConfig.pmpKeys = inputKeys;
+            projectConfig.pmpKeys.store(inputKeys);
         }
-    }
-
-    function _storePMPConfig(
-        ProjectConfig storage projectConfig,
-        bytes32 keyHash,
-        PMPConfig calldata pmpConfig
-    ) internal {
-        // store pmpConfig in ProjectConfig struct's mapping
-        // @dev if pmpConfig data are not changed, expensive SSTORE operation is avoided because keyHash is unchanged
-        projectConfig.pmpConfigs[keyHash] = pmpConfig;
     }
 
     function _validatePMPConfig(PMPConfig calldata pmpConfig) internal pure {
