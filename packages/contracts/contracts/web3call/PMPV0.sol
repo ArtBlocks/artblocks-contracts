@@ -36,6 +36,7 @@ contract PMPV0 is
     uint256 private constant _TIMESTAMP_MIN = 0; // @dev unix timestamp, 0 = 1970-01-01
     uint256 private constant _TIMESTAMP_MAX = type(uint64).max; // max guardrail, ~10 billion years
 
+    // @dev note: enum ordering relied on in _validatePMPConfig (relies on ArtistAndTokenOwnerAndAddress being last)
     enum AuthOption {
         Artist,
         TokenOwner,
@@ -46,6 +47,7 @@ contract PMPV0 is
         ArtistAndTokenOwnerAndAddress
     }
 
+    // @dev note: enum ordering relied on in _validatePMPConfig (relies on String being last)
     enum ParamType {
         Unconfigured, // @dev default value, used to check if PMP is configured
         Select,
@@ -273,8 +275,16 @@ contract PMPV0 is
         }
         // if string, return value
         if (pmpConfigStorage.paramType == ParamType.String) {
-            // TODO: implement (if we want to support this)
-            return (true, "TODO");
+            // return artist configured value if present
+            if (bytes(pmp.artistConfiguredValueString).length > 0) {
+                return (true, pmp.artistConfiguredValueString);
+            }
+            // return non-artist configured value if present
+            if (bytes(pmp.nonArtistConfiguredValueString).length > 0) {
+                return (true, pmp.nonArtistConfiguredValueString);
+            }
+            // empty string is considered not configured
+            return (false, "");
         }
         if (configuredParamType == ParamType.Select) {
             // return unconfigured if index is out of bounds (obviously stale)
@@ -360,26 +370,57 @@ contract PMPV0 is
         }
     }
 
+    /**
+     * @notice Validates a PMP configuration. Ensures arbitrary input is valid and intentional.
+     * @param pmpConfig The PMP configuration to validate.
+     */
     function _validatePMPConfig(PMPConfig calldata pmpConfig) internal pure {
+        // memoize paramType and authOption
+        ParamType paramType = pmpConfig.paramType;
+        AuthOption authOption = pmpConfig.authOption;
         // require type is not unconfigured
         require(
-            pmpConfig.paramType != ParamType.Unconfigured,
+            paramType != ParamType.Unconfigured,
             "PMP: paramType is unconfigured"
         );
         // validate enums are within bounds
         require(
-            pmpConfig.authOption <= AuthOption.ArtistAndTokenOwnerAndAddress,
+            authOption <= AuthOption.ArtistAndTokenOwnerAndAddress,
             "PMP: Invalid authOption"
         );
-        require(
-            pmpConfig.paramType <= ParamType.String,
-            "PMP: Invalid paramType"
-        );
+        require(paramType <= ParamType.String, "PMP: Invalid paramType");
+        // only artist+ authentication types are supported for string params
+        if (paramType == ParamType.String) {
+            require(
+                authOption == AuthOption.Artist ||
+                    authOption == AuthOption.ArtistAndTokenOwner ||
+                    authOption == AuthOption.ArtistAndTokenOwnerAndAddress ||
+                    authOption == AuthOption.ArtistAndAddress,
+                "PMP: String params must have artist+ authentication"
+            );
+        }
+        // validate auth with address has non-zero auth address
+        if (
+            authOption == AuthOption.Address ||
+            authOption == AuthOption.TokenOwnerAndAddress ||
+            authOption == AuthOption.ArtistAndTokenOwnerAndAddress
+        ) {
+            require(
+                pmpConfig.authAddress != address(0),
+                "PMP: authAddress is zero"
+            );
+        } else {
+            // auth address must be zero for any non-address auth option
+            require(
+                pmpConfig.authAddress == address(0),
+                "PMP: authAddress is not zero"
+            );
+        }
         // validate appropriate fields are empty
         if (
-            pmpConfig.paramType == ParamType.Bool ||
-            pmpConfig.paramType == ParamType.String ||
-            pmpConfig.paramType == ParamType.HexColor
+            paramType == ParamType.Bool ||
+            paramType == ParamType.String ||
+            paramType == ParamType.HexColor
         ) {
             // @dev should have all fields empty
             require(
@@ -389,7 +430,7 @@ contract PMPV0 is
             // @dev min/max range for hex color checked during assignment, should be empty in config
             require(pmpConfig.minRange == 0, "PMP: minRange is not empty");
             require(pmpConfig.maxRange == 0, "PMP: maxRange is not empty");
-        } else if (pmpConfig.paramType == ParamType.Select) {
+        } else if (paramType == ParamType.Select) {
             // @dev select should have selectOptions and empty min/max range values
             require(
                 pmpConfig.selectOptions.length > 0,
@@ -404,10 +445,10 @@ contract PMPV0 is
             require(pmpConfig.minRange == 0, "PMP: minRange is not empty");
             require(pmpConfig.maxRange == 0, "PMP: maxRange is not empty");
         } else if (
-            pmpConfig.paramType == ParamType.Uint256Range ||
-            pmpConfig.paramType == ParamType.Int256Range ||
-            pmpConfig.paramType == ParamType.DecimalRange ||
-            pmpConfig.paramType == ParamType.Timestamp
+            paramType == ParamType.Uint256Range ||
+            paramType == ParamType.Int256Range ||
+            paramType == ParamType.DecimalRange ||
+            paramType == ParamType.Timestamp
         ) {
             // @dev range should have empty selectOptions
             require(
@@ -415,7 +456,7 @@ contract PMPV0 is
                 "PMP: selectOptions is not empty"
             );
             // require minRange is less than maxRange
-            if (pmpConfig.paramType == ParamType.Int256Range) {
+            if (paramType == ParamType.Int256Range) {
                 // cast minRange and maxRange to int256
                 int256 minRange = int256(uint256(pmpConfig.minRange));
                 int256 maxRange = int256(uint256(pmpConfig.maxRange));
@@ -427,7 +468,7 @@ contract PMPV0 is
                 uint256 maxRange = uint256(pmpConfig.maxRange);
                 require(minRange < maxRange, "PMP: minRange >= maxRange");
                 // additional guardrails on timestamp range
-                if (pmpConfig.paramType == ParamType.Timestamp) {
+                if (paramType == ParamType.Timestamp) {
                     // require maxRange is not gt _TIMESTAMP_MAX
                     require(
                         maxRange <= _TIMESTAMP_MAX,
