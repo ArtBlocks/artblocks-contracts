@@ -30,7 +30,7 @@ contract PMPV0 is
     uint256 private constant _DECIMAL_PRECISION =
         10 ** _DECIMAL_PRECISION_DIGITS;
 
-    uint256 private constant _HEX_COLOR_MIN = 0x000000;
+    // @dev min hex color assumed to be 0x000000
     uint256 private constant _HEX_COLOR_MAX = 0xFFFFFF;
 
     uint256 private constant _TIMESTAMP_MIN = 0; // @dev unix timestamp, 0 = 1970-01-01
@@ -103,25 +103,30 @@ contract PMPV0 is
         bytes32 maxRange; // slot 3: 32 bytes
     }
 
+    // @dev struct for function input when configuring a token's PMP
     struct PMPInput {
         string key; // slot 0: 32 bytes
-        PMP pmp; // slot 1: 32 bytes
+        ParamType configuredParamType;
+        // @dev store values as bytes32 for efficiency, cast appropriately when reading
+        bytes32 configuredValue;
+        bool configuringArtistString;
+        string configuredValueString;
     }
 
     // @dev key is implicit based on mapping pointing to PMP struct
-    struct PMP {
+    struct PMPStorage {
         ParamType configuredParamType; // slot 0: 1 byte
         // @dev store values as bytes32 for efficiency, cast appropriately when reading
         bytes32 configuredValue; // slot 1: 32 bytes
-        string artistConfiguredValueString; // slot 4: 32 bytes
-        string nonArtistConfiguredValueString; // slot 5: 32 bytes
+        string artistConfiguredValueString; // slot 2: 32 bytes
+        string nonArtistConfiguredValueString; // slot 3: 32 bytes
     }
 
     // mapping of ProjectConfig structs for each project
     mapping(address coreContract => mapping(uint256 projectId => ProjectConfig projectConfig)) projectConfigs;
 
     // mapping of PMP structs for each token
-    mapping(address coreContract => mapping(uint256 tokenId => mapping(bytes32 pmpKeyHash => PMP pmp))) tokenPMPs;
+    mapping(address coreContract => mapping(uint256 tokenId => mapping(bytes32 pmpKeyHash => PMPStorage pmp))) tokenPMPs;
 
     function configureProjectHooks(
         address coreContract,
@@ -201,7 +206,45 @@ contract PMPV0 is
         uint256 tokenId,
         PMPInput[] calldata pmpInputs
     ) external {
-        // TODO: implement
+        // TODO: only registered artblocks projects?
+        // TODO use util library for conversion
+        uint256 projectId = tokenId / 1_000_000;
+        ProjectConfig storage projectConfig = projectConfigs[coreContract][
+            projectId
+        ];
+        //  mapping(address coreContract => mapping(uint256 tokenId => mapping(bytes32 pmpKeyHash => PMPStorage pmp))) tokenPMPs;
+        // assign each pmpInput to the token
+        for (uint256 i = 0; i < pmpInputs.length; i++) {
+            bytes32 pmpKeyHash = _getStringHash(pmpInputs[i].key);
+            PMPInput memory pmpInput = pmpInputs[i];
+            PMPStorage storage tokenPMP = tokenPMPs[coreContract][tokenId][
+                pmpKeyHash
+            ];
+            PMPConfigStorage storage pmpConfigStorage = projectConfig
+                .pmpConfigsStorage[pmpKeyHash];
+            // validate pmpInput
+            _validatePMPInput({
+                tokenId: tokenId,
+                coreContract: coreContract,
+                pmpInput: pmpInput,
+                pmpConfigStorage: pmpConfigStorage,
+                projectConfigNonce: projectConfig.configNonce
+            });
+            // store pmpInput data in PMPStorage struct
+            tokenPMP.configuredParamType = pmpConfigStorage.paramType;
+            // only assign the value that affects param type (gas savings)
+            if (pmpConfigStorage.paramType == ParamType.String) {
+                if (pmpInput.configuringArtistString) {
+                    tokenPMP.artistConfiguredValueString = pmpInput
+                        .configuredValueString;
+                } else {
+                    tokenPMP.nonArtistConfiguredValueString = pmpInput
+                        .configuredValueString;
+                }
+            } else {
+                tokenPMP.configuredValue = pmpInput.configuredValue;
+            }
+        }
     }
 
     /**
@@ -263,7 +306,7 @@ contract PMPV0 is
 
     function _getPMPValue(
         PMPConfigStorage storage pmpConfigStorage,
-        PMP storage pmp
+        PMPStorage storage pmp
     ) internal view returns (bool isConfigured, string memory value) {
         ParamType configuredParamType = pmp.configuredParamType;
         // unconfigured param for token
@@ -480,6 +523,207 @@ contract PMPV0 is
             // @dev should never reach
             revert("PMP: Invalid paramType");
         }
+    }
+
+    /**
+     * @notice Validates a PMP input. Ensures arbitrary input is valid and intentional.
+     * Checks that pmp param is included in most recently configured PMP config for token's project.
+     * @param pmpInput The PMP input to validate, for the token being configured.
+     * @param pmpConfigStorage The PMP configuration storage pointer, for the token's project.
+     * @param projectConfigNonce The project's config nonce.
+     */
+    function _validatePMPInput(
+        uint256 tokenId,
+        address coreContract,
+        PMPInput memory pmpInput,
+        PMPConfigStorage storage pmpConfigStorage,
+        uint8 projectConfigNonce
+    ) internal {
+        // check that the param is part of the project's most recently configured PMP params
+        // @dev use config nonce to check if param is part of most recently configured PMP params
+        require(
+            pmpConfigStorage.highestConfigNonce == projectConfigNonce,
+            "PMP: param not part of most recently configured PMP params"
+        );
+        // check that the param type matches
+        require(
+            pmpInput.configuredParamType == pmpConfigStorage.paramType,
+            "PMP: paramType mismatch"
+        );
+
+        // ensure caller has appropriate auth
+        {
+            // @dev block scope to reduce stack depth
+            AuthOption authOption = pmpConfigStorage.authOption;
+            if (authOption == AuthOption.Artist) {
+                require(
+                    _isArtist({
+                        tokenId: tokenId,
+                        coreContract: coreContract,
+                        sender: msg.sender
+                    }),
+                    "PMP: artist auth required"
+                );
+            } else if (authOption == AuthOption.TokenOwner) {
+                require(
+                    _isTokenOwner({
+                        tokenId: tokenId,
+                        coreContract: coreContract,
+                        sender: msg.sender
+                    }),
+                    "PMP: token owner auth required"
+                );
+            } else if (authOption == AuthOption.ArtistAndTokenOwner) {
+                require(
+                    _isTokenOwner({
+                        tokenId: tokenId,
+                        coreContract: coreContract,
+                        sender: msg.sender
+                    }) ||
+                        _isArtist({
+                            tokenId: tokenId,
+                            coreContract: coreContract,
+                            sender: msg.sender
+                        }),
+                    "PMP: artist and token owner auth required"
+                );
+            } else if (authOption == AuthOption.Address) {
+                require(
+                    msg.sender == pmpConfigStorage.authAddress,
+                    "PMP: address auth required"
+                );
+            } else if (authOption == AuthOption.ArtistAndTokenOwnerAndAddress) {
+                require(
+                    _isTokenOwner({
+                        tokenId: tokenId,
+                        coreContract: coreContract,
+                        sender: msg.sender
+                    }) ||
+                        _isArtist({
+                            tokenId: tokenId,
+                            coreContract: coreContract,
+                            sender: msg.sender
+                        }) ||
+                        msg.sender == pmpConfigStorage.authAddress,
+                    "PMP: artist and token owner and address auth required"
+                );
+            } else if (authOption == AuthOption.ArtistAndAddress) {
+                require(
+                    _isArtist({
+                        tokenId: tokenId,
+                        coreContract: coreContract,
+                        sender: msg.sender
+                    }) || msg.sender == pmpConfigStorage.authAddress,
+                    "PMP: artist and address auth required"
+                );
+            } else if (authOption == AuthOption.TokenOwnerAndAddress) {
+                require(
+                    _isTokenOwner({
+                        tokenId: tokenId,
+                        coreContract: coreContract,
+                        sender: msg.sender
+                    }) || msg.sender == pmpConfigStorage.authAddress,
+                    "PMP: token owner and address auth required"
+                );
+            }
+        }
+
+        // ensure properly configured value
+        // range checks
+        {
+            // @dev block scope to reduce stack depth
+            ParamType paramType = pmpConfigStorage.paramType;
+            if (paramType == ParamType.Select) {
+                require(
+                    uint256(pmpInput.configuredValue) <
+                        pmpConfigStorage.selectOptions.length,
+                    "PMP: param value out of bounds"
+                );
+            } else if (paramType == ParamType.Bool) {
+                require(
+                    pmpInput.configuredValue == bytes32(0) ||
+                        uint256(pmpInput.configuredValue) == 1,
+                    "PMP: bool param value must be 0 or 1"
+                );
+            } else if (
+                paramType == ParamType.Uint256Range ||
+                paramType == ParamType.DecimalRange
+            ) {
+                require(
+                    pmpInput.configuredValue > pmpConfigStorage.minRange &&
+                        pmpInput.configuredValue < pmpConfigStorage.maxRange,
+                    "PMP: param value out of bounds"
+                );
+            } else if (paramType == ParamType.Int256Range) {
+                require(
+                    int256(uint256(pmpInput.configuredValue)) > // @dev ensure this converts as expected
+                        int256(uint256(pmpConfigStorage.minRange)) &&
+                        int256(uint256(pmpInput.configuredValue)) <
+                        int256(uint256(pmpConfigStorage.maxRange)),
+                    "PMP: param value out of bounds"
+                );
+            } else if (paramType == ParamType.Timestamp) {
+                require(
+                    uint256(pmpInput.configuredValue) < _TIMESTAMP_MAX &&
+                        uint256(pmpInput.configuredValue) > _TIMESTAMP_MIN,
+                    "PMP: param value out of bounds"
+                );
+            } else if (paramType == ParamType.HexColor) {
+                require(
+                    // @dev minimum hex color of zero implicitly passed by using uint256
+                    uint256(pmpInput.configuredValue) < _HEX_COLOR_MAX,
+                    "PMP: invalid hex color"
+                );
+            }
+        }
+        // string and non-string checks
+        if (pmpConfigStorage.paramType == ParamType.String) {
+            require(
+                pmpInput.configuredValue == bytes32(0),
+                "PMP: value must be empty for string params"
+            );
+            // require artist is caller if configuring artist string
+            if (pmpInput.configuringArtistString) {
+                // require artist is caller
+                require(
+                    _isArtist({
+                        tokenId: tokenId,
+                        coreContract: coreContract,
+                        sender: msg.sender
+                    }),
+                    "PMP: artist auth required to configure artist string"
+                );
+            }
+        } else {
+            // non-string - ensure configured string is empty
+            require(
+                bytes(pmpInput.configuredValueString).length == 0,
+                "PMP: non-string param must have empty string value"
+            );
+            // non-string - ensure configuring artist string is false
+            require(
+                !pmpInput.configuringArtistString,
+                "PMP: artist string cannot be configured for non-string params"
+            );
+        }
+    }
+
+    function _isArtist(
+        uint256 tokenId,
+        address coreContract,
+        address sender
+    ) internal view returns (bool) {
+        // TODO implement
+        return true;
+    }
+
+    function _isTokenOwner(
+        uint256 tokenId,
+        address coreContract,
+        address sender
+    ) internal view returns (bool) {
+        // TODO implement
+        return true;
     }
 
     function _getStringHash(string memory str) internal pure returns (bytes32) {
