@@ -203,7 +203,12 @@ contract PMPV0 is
         // TODO: emit event (recommend emitting entire input calldata for indexing without web3 calls)
     }
 
-    // TODO add configureTokenParams function
+    /**
+     * @notice Configure the PMPs for a given token.
+     * @param coreContract The address of the core contract to call.
+     * @param tokenId The tokenId of the token to configure.
+     * @param pmpInputs The PMP inputs to configure.
+     */
     function configureTokenParams(
         address coreContract,
         uint256 tokenId,
@@ -247,6 +252,10 @@ contract PMPV0 is
                 tokenPMP.configuredValue = pmpInput.configuredValue;
             }
         }
+        // TODO: call post-config hook
+        // post config hook receives previous state and new state (commonly used for tallying configured options)
+        // TODO - fiture out this interface, etc.
+        // TODO: emit event (recommend emitting entire input calldata for indexing without web3 calls)
     }
 
     /**
