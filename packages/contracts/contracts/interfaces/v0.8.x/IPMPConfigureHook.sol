@@ -5,7 +5,9 @@ pragma solidity ^0.8.0;
 
 import {IPMPV0} from "./IPMPV0.sol";
 
-interface IPMPConfigureHook {
+import {IERC165} from "@openzeppelin-5.0/contracts/interfaces/IERC165.sol";
+
+interface IPMPConfigureHook is IERC165 {
     /**
      * @notice Execution logic to be executed when a token's PMP is configured.
      * @dev This hook is executed after the PMP is configured.
@@ -18,4 +20,6 @@ interface IPMPConfigureHook {
         uint256 tokenId,
         IPMPV0.PMPInput calldata pmpInput
     ) external;
+
+    // @dev ERC156 function supportsInterface must be implemented and broadcast true for this interfaceId
 }

@@ -11,6 +11,7 @@ import {IGenArt721CoreContractV3_Base} from "../interfaces/v0.8.x/IGenArt721Core
 import {IERC721} from "@openzeppelin-5.0/contracts/token/ERC721/IERC721.sol";
 
 import {ERC165} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165.sol";
+import {ERC165Checker} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165Checker.sol";
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
 import {ReentrancyGuard} from "@openzeppelin-5.0/contracts/utils/ReentrancyGuard.sol";
 
@@ -89,9 +90,32 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         IPMPConfigureHook tokenPMPPostConfigHook,
         IPMPAugmentHook tokenPMPReadAugmentationHook
     ) external {
-        // TODO: only registered artblocks projects?
-        // TODO: only artists can configure projects
-        // TODO - validation - check for interface implementation?
+        // only artists may configure project hooks
+        _onlyArtist({
+            coreContract: coreContract,
+            projectId: projectId,
+            sender: msg.sender
+        });
+        // validation - check for ERC165 implementation for non-null hooks
+        if (address(tokenPMPPostConfigHook) != address(0)) {
+            // use ERC165 checker to validate implementation
+            require(
+                ERC165Checker.supportsInterface({
+                    account: address(tokenPMPPostConfigHook),
+                    interfaceId: type(IPMPConfigureHook).interfaceId
+                }),
+                "PMP: tokenPMPPostConfigHook does not implement IPMPConfigureHook"
+            );
+        }
+        if (address(tokenPMPReadAugmentationHook) != address(0)) {
+            require(
+                ERC165Checker.supportsInterface({
+                    account: address(tokenPMPReadAugmentationHook),
+                    interfaceId: type(IPMPAugmentHook).interfaceId
+                }),
+                "PMP: tokenPMPReadAugmentationHook does not implement IPMPAugmentHook"
+            );
+        }
         // update projectConfig
         ProjectConfig storage projectConfig = projectConfigs[coreContract][
             projectId
@@ -110,8 +134,12 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         uint256 projectId,
         PMPInputConfig[] calldata pmpInputConfigs
     ) external {
-        // TODO: only registered artblocks projects?
-        // TODO: only artists can configure projects
+        // only artists may configure projects
+        _onlyArtist({
+            coreContract: coreContract,
+            projectId: projectId,
+            sender: msg.sender
+        });
         // validate pmpInputConfigs
         uint256 pmpInputConfigsLength = pmpInputConfigs.length;
         // TODO - handle empty pmpInputConfigs
@@ -166,7 +194,6 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         uint256 tokenId,
         PMPInput[] calldata pmpInputs
     ) external nonReentrant {
-        // TODO: only registered artblocks projects?
         uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
         ProjectConfig storage projectConfig = projectConfigs[coreContract][
             projectId
@@ -233,7 +260,6 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         override
         returns (IWeb3Call.TokenParam[] memory tokenParams)
     {
-        // TODO: only registered artblocks projects?
         uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
         ProjectConfig storage projectConfig = projectConfigs[coreContract][
             projectId
@@ -685,6 +711,18 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
                 "PMP: artist string cannot be configured for non-string params"
             );
         }
+    }
+
+    function _onlyArtist(
+        address coreContract,
+        uint256 projectId,
+        address sender
+    ) internal view {
+        require(
+            IGenArt721CoreContractV3_Base(coreContract)
+                .projectIdToArtistAddress(projectId) == sender,
+            "PMP: only artist"
+        );
     }
 
     function _isArtist(

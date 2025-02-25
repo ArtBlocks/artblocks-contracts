@@ -6,7 +6,9 @@ pragma solidity ^0.8.0;
 import {IPMPV0} from "./IPMPV0.sol";
 import {IWeb3Call} from "./IWeb3Call.sol";
 
-interface IPMPAugmentHook {
+import {IERC165} from "@openzeppelin-5.0/contracts/interfaces/IERC165.sol";
+
+interface IPMPAugmentHook is IERC165 {
     /**
      * @notice Augment the token parameters for a given token.
      * @dev This hook is called when a token's PMPs are read.
@@ -24,4 +26,6 @@ interface IPMPAugmentHook {
         external
         view
         returns (IWeb3Call.TokenParam[] memory augmentedTokenParams);
+
+    // @dev ERC156 function supportsInterface must be implemented and broadcast true for this interfaceId
 }
