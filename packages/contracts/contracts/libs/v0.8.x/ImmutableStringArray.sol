@@ -60,7 +60,6 @@ library ImmutableStringArray {
         // store the length of the strings array in the first 8 bytes of the packedData
         assembly ("memory-safe") {
             ptr := add(packedData, 0x20) // pointer to first byte of packedData
-            let existing := mload(ptr) // load the full 32-byte word
             mstore(ptr, shl(192, arrayLength)) // left-align only 8 bytes in the 32-byte slot
             ptr := add(ptr, 8) // move pointer forward by 8 bytes
         }
