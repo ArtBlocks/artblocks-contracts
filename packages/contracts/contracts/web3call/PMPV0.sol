@@ -4,11 +4,14 @@
 pragma solidity 0.8.22;
 
 import {IWeb3Call} from "../interfaces/v0.8.x/IWeb3Call.sol";
+import {IGenArt721CoreContractV3_Base} from "../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import {IERC721} from "@openzeppelin-5.0/contracts/token/ERC721/IERC721.sol";
 
 import {ERC165} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165.sol";
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
 
 import {ImmutableStringArray} from "../libs/v0.8.x/ImmutableStringArray.sol";
+import {ABHelpers} from "../libs/v0.8.x/ABHelpers.sol";
 
 /**
  * @title PMPV0
@@ -207,8 +210,7 @@ contract PMPV0 is
         PMPInput[] calldata pmpInputs
     ) external {
         // TODO: only registered artblocks projects?
-        // TODO use util library for conversion
-        uint256 projectId = tokenId / 1_000_000;
+        uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
         ProjectConfig storage projectConfig = projectConfigs[coreContract][
             projectId
         ];
@@ -264,8 +266,7 @@ contract PMPV0 is
         returns (IWeb3Call.TokenParam[] memory tokenParams)
     {
         // TODO: only registered artblocks projects?
-        // TODO use util library for conversion
-        uint256 projectId = tokenId / 1_000_000;
+        uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
         ProjectConfig storage projectConfig = projectConfigs[coreContract][
             projectId
         ];
@@ -538,7 +539,7 @@ contract PMPV0 is
         PMPInput memory pmpInput,
         PMPConfigStorage storage pmpConfigStorage,
         uint8 projectConfigNonce
-    ) internal {
+    ) internal view {
         // check that the param is part of the project's most recently configured PMP params
         // @dev use config nonce to check if param is part of most recently configured PMP params
         require(
@@ -629,10 +630,9 @@ contract PMPV0 is
         }
 
         // ensure properly configured value
-        // range checks
-        {
-            // @dev block scope to reduce stack depth
-            ParamType paramType = pmpConfigStorage.paramType;
+        ParamType paramType = pmpConfigStorage.paramType;
+        // range checks for non-string params
+        if (paramType != ParamType.String) {
             if (paramType == ParamType.Select) {
                 require(
                     uint256(pmpInput.configuredValue) <
@@ -670,12 +670,12 @@ contract PMPV0 is
                 );
             } else if (paramType == ParamType.HexColor) {
                 require(
-                    // @dev minimum hex color of zero implicitly passed by using uint256
-                    uint256(pmpInput.configuredValue) < _HEX_COLOR_MAX,
+                    uint256(pmpInput.configuredValue) < _HEX_COLOR_MAX, // @dev minimum hex color of zero implicitly passed by using uint256
                     "PMP: invalid hex color"
                 );
             }
         }
+
         // string and non-string checks
         if (pmpConfigStorage.paramType == ParamType.String) {
             require(
@@ -700,7 +700,7 @@ contract PMPV0 is
                 bytes(pmpInput.configuredValueString).length == 0,
                 "PMP: non-string param must have empty string value"
             );
-            // non-string - ensure configuring artist string is false
+            // non-string - ensure configuring artist string is false, because it is not relevant for non-string params
             require(
                 !pmpInput.configuringArtistString,
                 "PMP: artist string cannot be configured for non-string params"
@@ -713,8 +713,10 @@ contract PMPV0 is
         address coreContract,
         address sender
     ) internal view returns (bool) {
-        // TODO implement
-        return true;
+        uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
+        return
+            IGenArt721CoreContractV3_Base(coreContract)
+                .projectIdToArtistAddress(projectId) == sender;
     }
 
     function _isTokenOwner(
@@ -722,8 +724,7 @@ contract PMPV0 is
         address coreContract,
         address sender
     ) internal view returns (bool) {
-        // TODO implement
-        return true;
+        return IERC721(coreContract).ownerOf(tokenId) == sender;
     }
 
     function _getStringHash(string memory str) internal pure returns (bytes32) {
