@@ -4,11 +4,15 @@
 pragma solidity 0.8.22;
 
 import {IWeb3Call} from "../interfaces/v0.8.x/IWeb3Call.sol";
+import {IPMPV0} from "../interfaces/v0.8.x/IPMPV0.sol";
+import {IPMPConfigureHook} from "../interfaces/v0.8.x/IPMPConfigureHook.sol";
+import {IPMPAugmentHook} from "../interfaces/v0.8.x/IPMPAugmentHook.sol";
 import {IGenArt721CoreContractV3_Base} from "../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import {IERC721} from "@openzeppelin-5.0/contracts/token/ERC721/IERC721.sol";
 
 import {ERC165} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165.sol";
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
+import {ReentrancyGuard} from "@openzeppelin-5.0/contracts/utils/ReentrancyGuard.sol";
 
 import {ImmutableStringArray} from "../libs/v0.8.x/ImmutableStringArray.sol";
 import {ABHelpers} from "../libs/v0.8.x/ABHelpers.sol";
@@ -18,10 +22,7 @@ import {ABHelpers} from "../libs/v0.8.x/ABHelpers.sol";
  * @author Art Blocks Inc.
  * @notice TBD
  */
-contract PMPV0 is
-    IWeb3Call,
-    ERC165 // TODO: add IPMPV0 interface
-{
+contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
     using Strings for string;
     using Strings for uint256;
     using Strings for int256;
@@ -39,30 +40,6 @@ contract PMPV0 is
     uint256 private constant _TIMESTAMP_MIN = 0; // @dev unix timestamp, 0 = 1970-01-01
     uint256 private constant _TIMESTAMP_MAX = type(uint64).max; // max guardrail, ~10 billion years
 
-    // @dev note: enum ordering relied on in _validatePMPConfig (relies on ArtistAndTokenOwnerAndAddress being last)
-    enum AuthOption {
-        Artist,
-        TokenOwner,
-        Address,
-        ArtistAndTokenOwner,
-        ArtistAndAddress,
-        TokenOwnerAndAddress,
-        ArtistAndTokenOwnerAndAddress
-    }
-
-    // @dev note: enum ordering relied on in _validatePMPConfig (relies on String being last)
-    enum ParamType {
-        Unconfigured, // @dev default value, used to check if PMP is configured
-        Select,
-        Bool,
-        Uint256Range,
-        Int256Range,
-        DecimalRange,
-        HexColor,
-        Timestamp,
-        String // utilizes string in PMP struct, all other param types utilize the generic bytes32 param
-    }
-
     // @dev core contract address and projectId are implicit based on mapping pointing to ProjectConfig struct
     struct ProjectConfig {
         // @dev array of pmpKeys for efficient enumeration, uses efficient SSTORE2 storage
@@ -72,29 +49,14 @@ contract PMPV0 is
         // config nonce that is incremented during each configureProject call
         uint8 configNonce; // slot 2: 1 byte
         // post-configuration hook to be called after a token's PMP is configured
-        address tokenPMPPostConfigHook; // slot 2: 20 bytes
+        IPMPConfigureHook tokenPMPPostConfigHook; // slot 2: 20 bytes
         // token pmp read augmentation hook to be called when reading a token's PMPs
-        address tokenPMPReadAugmentationHook; // slot 3: 20 bytes
-    }
-
-    struct PMPInputConfig {
-        string key; // slot 0: 32 bytes
-        PMPConfig pmpConfig; // slot 1: 32 bytes
-    }
-
-    // @dev struct for function input when configuring a project's PMP
-    struct PMPConfig {
-        AuthOption authOption; // slot 0: 1 byte
-        ParamType paramType; // slot 0: 1 byte
-        address authAddress; // slot 0: 20 bytes
-        string[] selectOptions; // slot 1: 32 bytes
-        // @dev use bytes32 for all range types for SSTORE efficiency
-        // @dev minRange and maxRange cast to defined numeric type when verifying assigned PMP values
-        bytes32 minRange; // slot 2: 32 bytes
-        bytes32 maxRange; // slot 3: 32 bytes
+        IPMPAugmentHook tokenPMPReadAugmentationHook; // slot 3: 20 bytes
     }
 
     // @dev storage struct for PMPConfig (same as PMPConfig, but includes highestConfigNonce)
+    // @dev highestConfigNonce is relative to projectConfig.configNonce
+    // @dev key is implicit based on mapping pointing to PMPConfigStorage struct
     struct PMPConfigStorage {
         // @dev highest config nonce for which this PMPConfig is valid (relative to projectConfig.configNonce)
         uint8 highestConfigNonce; // slot 0: 1 byte
@@ -104,16 +66,6 @@ contract PMPV0 is
         string[] selectOptions; // slot 1: 32 bytes
         bytes32 minRange; // slot 2: 32 bytes
         bytes32 maxRange; // slot 3: 32 bytes
-    }
-
-    // @dev struct for function input when configuring a token's PMP
-    struct PMPInput {
-        string key; // slot 0: 32 bytes
-        ParamType configuredParamType;
-        // @dev store values as bytes32 for efficiency, cast appropriately when reading
-        bytes32 configuredValue;
-        bool configuringArtistString;
-        string configuredValueString;
     }
 
     // @dev key is implicit based on mapping pointing to PMP struct
@@ -134,8 +86,8 @@ contract PMPV0 is
     function configureProjectHooks(
         address coreContract,
         uint256 projectId,
-        address tokenPMPPostConfigHook,
-        address tokenPMPReadAugmentationHook
+        IPMPConfigureHook tokenPMPPostConfigHook,
+        IPMPAugmentHook tokenPMPReadAugmentationHook
     ) external {
         // TODO: only registered artblocks projects?
         // TODO: only artists can configure projects
@@ -213,14 +165,14 @@ contract PMPV0 is
         address coreContract,
         uint256 tokenId,
         PMPInput[] calldata pmpInputs
-    ) external {
+    ) external nonReentrant {
         // TODO: only registered artblocks projects?
         uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
         ProjectConfig storage projectConfig = projectConfigs[coreContract][
             projectId
         ];
-        //  mapping(address coreContract => mapping(uint256 tokenId => mapping(bytes32 pmpKeyHash => PMPStorage pmp))) tokenPMPs;
         // assign each pmpInput to the token
+        // @dev pmpInputs processed sequentially in order of input
         for (uint256 i = 0; i < pmpInputs.length; i++) {
             bytes32 pmpKeyHash = _getStringHash(pmpInputs[i].key);
             PMPInput memory pmpInput = pmpInputs[i];
@@ -251,11 +203,18 @@ contract PMPV0 is
             } else {
                 tokenPMP.configuredValue = pmpInput.configuredValue;
             }
+
+            // call post-config hook if configured for the project
+            // @dev trusted interaction, but this function is nonreentrant for additional safety
+            if (address(projectConfig.tokenPMPPostConfigHook) != address(0)) {
+                projectConfig.tokenPMPPostConfigHook.onTokenPMPConfigure({
+                    coreContract: coreContract,
+                    tokenId: tokenId,
+                    pmpInput: pmpInput
+                });
+            }
+            // TODO: emit event (recommend emitting entire input calldata for indexing without web3 calls)
         }
-        // TODO: call post-config hook
-        // post config hook receives previous state and new state (commonly used for tallying configured options)
-        // TODO - fiture out this interface, etc.
-        // TODO: emit event (recommend emitting entire input calldata for indexing without web3 calls)
     }
 
     /**
@@ -309,9 +268,20 @@ contract PMPV0 is
             mstore(tokenParams, populatedParamsIndex)
         }
 
-        // TODO: call augmentation hook
+        // call augmentation hook if configured for the project
+        if (address(projectConfig.tokenPMPReadAugmentationHook) != address(0)) {
+            // assign return value to the augmented tokenParams
+            // @dev trusted interaction in read-only context
+            tokenParams = projectConfig
+                .tokenPMPReadAugmentationHook
+                .onTokenPMPReadAugmentation({
+                    coreContract: coreContract,
+                    tokenId: tokenId,
+                    tokenParams: tokenParams
+                });
+        }
 
-        // TODO: return tokenParams
+        // @dev implicitly returns tokenParams
     }
 
     function _getPMPValue(
