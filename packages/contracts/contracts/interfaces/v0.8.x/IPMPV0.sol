@@ -77,9 +77,4 @@ interface IPMPV0 {
         uint256 tokenId,
         PMPInput[] calldata pmpInputs
     ) external;
-
-    function readTokenParams(
-        address coreContract,
-        uint256 tokenId
-    ) external view returns (IWeb3Call.TokenParam[] memory tokenParams);
 }
