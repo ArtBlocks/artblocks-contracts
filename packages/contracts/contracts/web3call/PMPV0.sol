@@ -21,7 +21,7 @@ import {ABHelpers} from "../libs/v0.8.x/ABHelpers.sol";
 /**
  * @title PMPV0
  * @author Art Blocks Inc.
- * @notice TBD
+ * @notice TODO: add documentation
  */
 contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
     using Strings for string;
@@ -53,30 +53,6 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         IPMPConfigureHook tokenPMPPostConfigHook; // slot 2: 20 bytes
         // token pmp read augmentation hook to be called when reading a token's PMPs
         IPMPAugmentHook tokenPMPReadAugmentationHook; // slot 3: 20 bytes
-    }
-
-    // @dev storage struct for PMPConfig (same as PMPConfig, but includes highestConfigNonce)
-    // @dev highestConfigNonce is relative to projectConfig.configNonce
-    // @dev key is implicit based on mapping pointing to PMPConfigStorage struct
-    struct PMPConfigStorage {
-        // @dev highest config nonce for which this PMPConfig is valid (relative to projectConfig.configNonce)
-        uint8 highestConfigNonce; // slot 0: 1 byte
-        AuthOption authOption; // slot 0: 1 byte
-        ParamType paramType; // slot 0: 1 byte
-        uint48 pmpLockedAfterTimestamp; // slot 0: 6 bytes // @dev uint48 is sufficient to store ~2^48 seconds, ~8,900 years
-        address authAddress; // slot 0: 20 bytes
-        string[] selectOptions; // slot 1: 32 bytes
-        bytes32 minRange; // slot 2: 32 bytes
-        bytes32 maxRange; // slot 3: 32 bytes
-    }
-
-    // @dev key is implicit based on mapping pointing to PMP struct
-    struct PMPStorage {
-        ParamType configuredParamType; // slot 0: 1 byte
-        // @dev store values as bytes32 for efficiency, cast appropriately when reading
-        bytes32 configuredValue; // slot 1: 32 bytes
-        string artistConfiguredValueString; // slot 2: 32 bytes
-        string nonArtistConfiguredValueString; // slot 3: 32 bytes
     }
 
     // mapping of ProjectConfig structs for each project
@@ -150,7 +126,6 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         });
         // validate pmpInputConfigs
         uint256 pmpInputConfigsLength = pmpInputConfigs.length;
-        // TODO - handle empty pmpInputConfigs
         require(pmpInputConfigsLength <= 256, "PMP: Only <= 256 configs");
         for (uint256 i = 0; i < pmpInputConfigsLength; i++) {
             _validatePMPConfig(pmpInputConfigs[i].pmpConfig);
@@ -348,7 +323,78 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         // @dev implicitly returns tokenParams
     }
 
-    // TODO add introspection view functions
+    // ---- introspection view functions ----
+
+    /**
+     * @notice Get the project config for a given project.
+     * @param coreContract The address of the core contract to call.
+     * @param projectId The projectId of the project to get data for.
+     * @return pmpKeys The configured pmpKeys for the project.
+     * @return configNonce The config nonce for the project.
+     * @return tokenPMPPostConfigHook The tokenPMPPostConfigHook for the project.
+     * @return tokenPMPReadAugmentationHook The tokenPMPReadAugmentationHook for the project.
+     */
+    function getProjectConfig(
+        address coreContract,
+        uint256 projectId
+    )
+        external
+        view
+        returns (
+            string[] memory pmpKeys,
+            uint8 configNonce,
+            IPMPConfigureHook tokenPMPPostConfigHook,
+            IPMPAugmentHook tokenPMPReadAugmentationHook
+        )
+    {
+        ProjectConfig storage projectConfig = projectConfigs[coreContract][
+            projectId
+        ];
+        pmpKeys = projectConfig.pmpKeys.getAll();
+        configNonce = projectConfig.configNonce;
+        tokenPMPPostConfigHook = projectConfig.tokenPMPPostConfigHook;
+        tokenPMPReadAugmentationHook = projectConfig
+            .tokenPMPReadAugmentationHook;
+    }
+
+    /**
+     * @notice Get the PMP config for a given project and pmpKey.
+     * @param coreContract The address of the core contract to call.
+     * @param projectId The projectId of the project to get data for.
+     * @param pmpKey The pmpKey of the pmp to get data for.
+     * @return pmpConfigStorage The PMP config for the given project and pmpKey.
+     */
+    function getProjectPMPConfig(
+        address coreContract,
+        uint256 projectId,
+        string memory pmpKey
+    ) external view returns (PMPConfigStorage memory pmpConfigStorage) {
+        pmpConfigStorage = projectConfigs[coreContract][projectId]
+            .pmpConfigsStorage[_getStringHash(pmpKey)];
+    }
+
+    /**
+     * @notice Get the PMP storage for a given token and pmpKey.
+     * @param coreContract The address of the core contract to call.
+     * @param tokenId The tokenId of the token to get data for.
+     * @param pmpKey The pmpKey of the pmp to get data for.
+     * @return pmp The PMP storage for the given token and pmpKey.
+     */
+    function getTokenPMPStorage(
+        address coreContract,
+        uint256 tokenId,
+        string memory pmpKey
+    ) external view returns (PMPStorage memory pmp) {
+        pmp = tokenPMPs[coreContract][tokenId][_getStringHash(pmpKey)];
+    }
+
+    function getTokenPMP(
+        address coreContract,
+        uint256 tokenId,
+        string memory pmpKey
+    ) external view returns (PMPStorage memory pmp) {
+        pmp = tokenPMPs[coreContract][tokenId][_getStringHash(pmpKey)];
+    }
 
     function _getPMPValue(
         PMPConfigStorage storage pmpConfigStorage,
@@ -426,13 +472,6 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         // @dev should never reach
         // @dev no coverage, unreachable
         revert("PMP: Unhandled ParamType");
-    }
-
-    function _getDecimalString(
-        uint256 value
-    ) internal pure returns (string memory) {
-        // TODO: implement
-        return value.toString(); // bug - must insert appropriate decimal point
     }
 
     function _syncPMPKeys(

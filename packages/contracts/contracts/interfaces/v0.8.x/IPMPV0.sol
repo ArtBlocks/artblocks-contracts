@@ -69,6 +69,21 @@ interface IPMPV0 {
         bytes32 maxRange; // slot 3: 32 bytes
     }
 
+    // @dev storage struct for PMPConfig (same as PMPConfig, but includes highestConfigNonce)
+    // @dev highestConfigNonce is relative to projectConfig.configNonce
+    // @dev key is implicit based on mapping pointing to PMPConfigStorage struct
+    struct PMPConfigStorage {
+        // @dev highest config nonce for which this PMPConfig is valid (relative to projectConfig.configNonce)
+        uint8 highestConfigNonce; // slot 0: 1 byte
+        AuthOption authOption; // slot 0: 1 byte
+        ParamType paramType; // slot 0: 1 byte
+        uint48 pmpLockedAfterTimestamp; // slot 0: 6 bytes // @dev uint48 is sufficient to store ~2^48 seconds, ~8,900 years
+        address authAddress; // slot 0: 20 bytes
+        string[] selectOptions; // slot 1: 32 bytes
+        bytes32 minRange; // slot 2: 32 bytes
+        bytes32 maxRange; // slot 3: 32 bytes
+    }
+
     // @dev struct for function input when configuring a token's PMP
     struct PMPInput {
         string key; // slot 0: 32 bytes
@@ -77,6 +92,15 @@ interface IPMPV0 {
         bytes32 configuredValue;
         bool configuringArtistString;
         string configuredValueString;
+    }
+
+    // @dev key is implicit based on mapping pointing to PMP struct
+    struct PMPStorage {
+        ParamType configuredParamType; // slot 0: 1 byte
+        // @dev store values as bytes32 for efficiency, cast appropriately when reading
+        bytes32 configuredValue; // slot 1: 32 bytes
+        string artistConfiguredValueString; // slot 2: 32 bytes
+        string nonArtistConfiguredValueString; // slot 3: 32 bytes
     }
 
     function configureProjectHooks(
