@@ -19,9 +19,14 @@ import {ImmutableStringArray} from "../libs/v0.8.x/ImmutableStringArray.sol";
 import {ABHelpers} from "../libs/v0.8.x/ABHelpers.sol";
 
 /**
- * @title PMPV0
+ * @title Project Metadata Parameters (PMP) contract, V0
  * @author Art Blocks Inc.
- * @notice TODO: add documentation
+ * @notice This contract enables Artists to define and configure project parameters that token
+ * owners can set within constraints. This provides a standardized way for projects to expose
+ * configurable parameters that can be used by renderers and other contracts.
+ * @dev This contract implements the IWeb3Call and IPMPV0 interfaces, providing functionality
+ * for parameter configuration and retrieval. It includes support for various parameter types,
+ * authorization options, and hooks for extending functionality.
  */
 contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
     using Strings for string;
@@ -61,6 +66,15 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
     // mapping of PMP structs for each token
     mapping(address coreContract => mapping(uint256 tokenId => mapping(bytes32 pmpKeyHash => PMPStorage pmp))) tokenPMPs;
 
+    /**
+     * @notice Configure project hooks for post-configuration and read augmentation.
+     * @param coreContract The address of the core contract.
+     * @param projectId The project ID to configure hooks for.
+     * @param tokenPMPPostConfigHook The hook to call after a token's PMP is configured.
+     * @param tokenPMPReadAugmentationHook The hook to call when reading a token's PMPs.
+     * @dev Only the project artist can configure project hooks.
+     * @dev Both hooks are validated for ERC165 interface compatibility.
+     */
     function configureProjectHooks(
         address coreContract,
         uint256 projectId,
@@ -111,7 +125,13 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
     }
 
     /**
-     * @notice TBD
+     * @notice Configure the available parameters for a project and their constraints.
+     * @param coreContract The address of the core contract.
+     * @param projectId The project ID to configure parameters for.
+     * @param pmpInputConfigs Array of parameter configurations defining the available parameters.
+     * @dev Only the project artist can configure project parameters.
+     * @dev Each configuration is validated for proper parameter type and constraints.
+     * @dev The project's configuration nonce is incremented with each call.
      */
     function configureProject(
         address coreContract,
@@ -191,10 +211,14 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
     }
 
     /**
-     * @notice Configure the PMPs for a given token.
-     * @param coreContract The address of the core contract to call.
+     * @notice Configure the parameters for a specific token according to project constraints.
+     * @param coreContract The address of the core contract.
      * @param tokenId The tokenId of the token to configure.
-     * @param pmpInputs The PMP inputs to configure.
+     * @param pmpInputs The parameter inputs to configure for the token.
+     * @dev Validates each parameter input against the project's configuration.
+     * @dev Stores the configured parameters for the token.
+     * @dev Calls the post-configuration hook if one is configured for the project.
+     * @dev Uses nonReentrant modifier to prevent reentrancy attacks during hook calls.
      */
     function configureTokenParams(
         address coreContract,
@@ -375,6 +399,8 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
 
     /**
      * @notice Get the PMP storage for a given token and pmpKey.
+     * Returns the PMP storage struct for the queried token and pmpKey. The storage
+     * may be stale if the token has been reconfigured, or empty if never configured.
      * @param coreContract The address of the core contract to call.
      * @param tokenId The tokenId of the token to get data for.
      * @param pmpKey The pmpKey of the pmp to get data for.
@@ -388,14 +414,14 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         pmp = tokenPMPs[coreContract][tokenId][_getStringHash(pmpKey)];
     }
 
-    function getTokenPMP(
-        address coreContract,
-        uint256 tokenId,
-        string memory pmpKey
-    ) external view returns (PMPStorage memory pmp) {
-        pmp = tokenPMPs[coreContract][tokenId][_getStringHash(pmpKey)];
-    }
-
+    /**
+     * @notice Gets the value of a PMP as a formatted string.
+     * @dev Used internally to retrieve a PMP value in string format for external consumption.
+     * @param pmpConfigStorage The config storage for the PMP.
+     * @param pmp The PMP storage instance.
+     * @return isConfigured Whether the PMP has been configured for the token.
+     * @return value The string representation of the PMP value, or empty if not configured.
+     */
     function _getPMPValue(
         PMPConfigStorage storage pmpConfigStorage,
         PMPStorage storage pmp
@@ -474,6 +500,12 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         revert("PMP: Unhandled ParamType");
     }
 
+    /**
+     * @notice Synchronizes the project's parameter keys with the provided input keys.
+     * @dev Only updates the storage if the keys have changed to optimize gas usage.
+     * @param inputKeys The new parameter keys to store.
+     * @param projectConfig The project configuration storage reference.
+     */
     function _syncPMPKeys(
         string[] memory inputKeys,
         ProjectConfig storage projectConfig
@@ -500,6 +532,7 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
 
     /**
      * @notice Validates a PMP configuration. Ensures arbitrary input is valid and intentional.
+     * @dev Verifies parameter types, authorization options, and constraints.
      * @param pmpConfig The PMP configuration to validate.
      */
     function _validatePMPConfig(PMPConfig calldata pmpConfig) internal view {
@@ -617,11 +650,14 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
     }
 
     /**
-     * @notice Validates a PMP input. Ensures arbitrary input is valid and intentional.
-     * Checks that pmp param is included in most recently configured PMP config for token's project.
-     * @param pmpInput The PMP input to validate, for the token being configured.
-     * @param pmpConfigStorage The PMP configuration storage pointer, for the token's project.
-     * @param projectConfigNonce The project's config nonce.
+     * @notice Validates a PMP input against the project's configuration.
+     * @dev Checks authorization, parameter type consistency, and value constraints.
+     * @dev Checks that pmp param is included in most recently configured PMP config for token's project.
+     * @param tokenId The token ID for which the parameter is being configured.
+     * @param coreContract The address of the core contract.
+     * @param pmpInput The parameter input to validate.
+     * @param pmpConfigStorage The project's configuration storage for this parameter.
+     * @param projectConfigNonce The project's current configuration nonce.
      */
     function _validatePMPInput(
         uint256 tokenId,
@@ -798,6 +834,14 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         }
     }
 
+    /**
+     * @notice Enforces that the caller is the artist of the specified project.
+     * @dev Reverts if the caller is not the artist.
+     * @dev Assumes Art Blocks V3 Core Contract interface.
+     * @param coreContract The address of the core contract.
+     * @param projectId The project ID to check artist permissions for.
+     * @param sender The address to check if it's the artist.
+     */
     function _onlyArtist(
         address coreContract,
         uint256 projectId,
@@ -810,6 +854,14 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         );
     }
 
+    /**
+     * @notice Checks if an address is the artist of the project associated with a token.
+     * @dev Assumes Art Blocks V3 Core Contract interface.
+     * @param tokenId The token ID to get the project ID from.
+     * @param coreContract The address of the core contract.
+     * @param sender The address to check if it's the artist.
+     * @return Returns true if the sender is the artist, false otherwise.
+     */
     function _isArtist(
         uint256 tokenId,
         address coreContract,
@@ -821,6 +873,14 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
                 .projectIdToArtistAddress(projectId) == sender;
     }
 
+    /**
+     * @notice Checks if an address is the owner of a token.
+     * @dev Assumes Art Blocks V3 Core Contract interface.
+     * @param tokenId The token ID to check ownership for.
+     * @param coreContract The address of the core contract.
+     * @param sender The address to check if it's the token owner.
+     * @return Returns true if the sender is the token owner, false otherwise.
+     */
     function _isTokenOwner(
         uint256 tokenId,
         address coreContract,
@@ -829,10 +889,22 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         return IERC721(coreContract).ownerOf(tokenId) == sender;
     }
 
+    /**
+     * @notice Computes the keccak256 hash of a string.
+     * @dev Used to create mapping keys from string values.
+     * @param str The string to hash.
+     * @return The bytes32 hash of the input string.
+     */
     function _getStringHash(string memory str) internal pure returns (bytes32) {
         return keccak256(abi.encode(str));
     }
 
+    /**
+     * @notice Converts a uint256 to a decimal string representation.
+     * @dev Converts integer and fractional parts separately and combines them.
+     * @param number The uint256 value to convert to decimal string.
+     * @return A string representation of the decimal number.
+     */
     function _uintToDecimalString(
         uint256 number
     ) private pure returns (string memory) {
