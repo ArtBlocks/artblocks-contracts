@@ -108,9 +108,12 @@ export type UserPurchaseContext =
  * necessary data, such as the user's token balance and allowance.
  *
  * If the user is eligible for the purchase, the machine transitions to the
- * 'readyForPurchase' state, indicating that it is prepared to initiate the purchase
- * process. If the user is ineligible, the machine moves to the
- * 'userIneligibleForPurchase' state.
+ * 'waitingForStart' state, where it polls until the sale has officially started.
+ * Once the sale begins, it automatically transitions to 'readyForPurchase'. If the
+ * user is ineligible, the machine moves to the 'userIneligibleForPurchase' state.
+ * This approach prepares and makes available all necessary purchase context before
+ * the sale actually begins, allowing users to visit a sale page and see if they're
+ * eligible (for example, if they're on an allowlist) even before the sale starts.
  *
  * When the 'INITIATE_PURCHASE' event is received in the 'readyForPurchase' state, the
  * machine transitions to the 'initiatingPurchase' state. In this state, it invokes the
@@ -401,13 +404,13 @@ export const purchaseInitiationMachine = setup({
         context.projectSaleManagerMachine.getSnapshot().context.liveSaleData;
       const walletClient = context.artblocksClient.getWalletClient();
 
+      // TypeScript can't infer that this machine only runs when liveSaleData and walletClient
+      // are available (they're guaranteed by parent machine preconditions), so we need an explicit
+      // null check to satisfy the type checker
       if (!liveSaleData || !walletClient?.account) {
         return false;
       }
 
-      console.log(liveSaleData.paused);
-      console.log(project.artist_address);
-      console.log(walletClient.account.address.toLowerCase());
       if (
         liveSaleData.paused &&
         project.artist_address !== walletClient.account.address.toLowerCase()
