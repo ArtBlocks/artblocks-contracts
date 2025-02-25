@@ -124,7 +124,14 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         projectConfig.tokenPMPPostConfigHook = tokenPMPPostConfigHook;
         projectConfig
             .tokenPMPReadAugmentationHook = tokenPMPReadAugmentationHook;
-        // TODO: emit event
+
+        // emit event
+        emit ProjectHooksConfigured({
+            coreContract: coreContract,
+            projectId: projectId,
+            tokenPMPPostConfigHook: tokenPMPPostConfigHook,
+            tokenPMPReadAugmentationHook: tokenPMPReadAugmentationHook
+        });
     }
 
     /**
@@ -199,7 +206,13 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
             pmpConfigStorage.minRange = inputPMPConfig.minRange;
             pmpConfigStorage.maxRange = inputPMPConfig.maxRange;
         }
-        // TODO: emit event (recommend emitting entire input calldata for indexing without web3 calls)
+
+        // emit event
+        emit ProjectConfigured({
+            coreContract: coreContract,
+            projectId: projectId,
+            pmpInputConfigs: pmpInputConfigs
+        });
     }
 
     /**
@@ -259,8 +272,14 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
                     pmpInput: pmpInput
                 });
             }
-            // TODO: emit event (recommend emitting entire input calldata for indexing without web3 calls)
         }
+
+        // emit event
+        emit TokenParamsConfigured({
+            coreContract: coreContract,
+            tokenId: tokenId,
+            pmpInputs: pmpInputs
+        });
     }
 
     /**

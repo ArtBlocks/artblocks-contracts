@@ -8,6 +8,25 @@ import {IPMPAugmentHook} from "./IPMPAugmentHook.sol";
 import {IWeb3Call} from "./IWeb3Call.sol";
 
 interface IPMPV0 {
+    event ProjectHooksConfigured(
+        address coreContract,
+        uint256 projectId,
+        IPMPConfigureHook tokenPMPPostConfigHook,
+        IPMPAugmentHook tokenPMPReadAugmentationHook
+    );
+
+    event ProjectConfigured(
+        address coreContract,
+        uint256 projectId,
+        PMPInputConfig[] pmpInputConfigs
+    );
+
+    event TokenParamsConfigured(
+        address coreContract,
+        uint256 tokenId,
+        PMPInput[] pmpInputs
+    );
+
     // @dev note: enum ordering relied on in _validatePMPConfig (relies on ArtistAndTokenOwnerAndAddress being last)
     enum AuthOption {
         Artist,
