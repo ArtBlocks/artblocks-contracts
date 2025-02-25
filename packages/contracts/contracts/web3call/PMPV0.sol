@@ -63,6 +63,7 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         uint8 highestConfigNonce; // slot 0: 1 byte
         AuthOption authOption; // slot 0: 1 byte
         ParamType paramType; // slot 0: 1 byte
+        uint48 pmpLockedAfterTimestamp; // slot 0: 6 bytes // @dev uint48 is sufficient to store ~2^48 seconds, ~8,900 years
         address authAddress; // slot 0: 20 bytes
         string[] selectOptions; // slot 1: 32 bytes
         bytes32 minRange; // slot 2: 32 bytes
@@ -169,12 +170,30 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
             // store pmpConfigStorage in ProjectConfig struct's mapping
             PMPConfigStorage storage pmpConfigStorage = projectConfig
                 .pmpConfigsStorage[_getStringHash(pmpKeys[i])];
+            {
+                // validate current pmp is not locked
+                uint256 currentPPMLockedAfterTimestamp = pmpConfigStorage
+                    .pmpLockedAfterTimestamp;
+                require(
+                    currentPPMLockedAfterTimestamp == 0 ||
+                        currentPPMLockedAfterTimestamp > block.timestamp,
+                    "PMP: pmp is locked and cannot be updated"
+                );
+            }
+            require(
+                pmpInputConfigs[i].pmpConfig.pmpLockedAfterTimestamp == 0 ||
+                    pmpInputConfigs[i].pmpConfig.pmpLockedAfterTimestamp >
+                    block.timestamp,
+                "PMP: pmpLockedAfterTimestamp is in the past and not unlimited (zero)"
+            );
             // update highestConfigNonce
             pmpConfigStorage.highestConfigNonce = newConfigNonce;
             // copy function input pmpConfig data to pmpConfigStorage
             PMPConfig memory inputPMPConfig = pmpInputConfigs[i].pmpConfig;
             pmpConfigStorage.authOption = inputPMPConfig.authOption;
             pmpConfigStorage.paramType = inputPMPConfig.paramType;
+            pmpConfigStorage.pmpLockedAfterTimestamp = inputPMPConfig
+                .pmpLockedAfterTimestamp;
             pmpConfigStorage.authAddress = inputPMPConfig.authAddress;
             pmpConfigStorage.selectOptions = inputPMPConfig.selectOptions;
             pmpConfigStorage.minRange = inputPMPConfig.minRange;
@@ -310,6 +329,8 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         // @dev implicitly returns tokenParams
     }
 
+    // TODO add introspection view functions
+
     function _getPMPValue(
         PMPConfigStorage storage pmpConfigStorage,
         PMPStorage storage pmp
@@ -423,7 +444,7 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
      * @notice Validates a PMP configuration. Ensures arbitrary input is valid and intentional.
      * @param pmpConfig The PMP configuration to validate.
      */
-    function _validatePMPConfig(PMPConfig calldata pmpConfig) internal pure {
+    function _validatePMPConfig(PMPConfig calldata pmpConfig) internal view {
         // memoize paramType and authOption
         ParamType paramType = pmpConfig.paramType;
         AuthOption authOption = pmpConfig.authOption;
@@ -431,6 +452,12 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         require(
             paramType != ParamType.Unconfigured,
             "PMP: paramType is unconfigured"
+        );
+        // validate locked after timestamp is in the future, or is zero (unlimited)
+        require(
+            pmpConfig.pmpLockedAfterTimestamp == 0 ||
+                pmpConfig.pmpLockedAfterTimestamp > block.timestamp,
+            "PMP: pmpLockedAfterTimestamp is in the past and not unlimited (zero)"
         );
         // validate enums are within bounds
         require(

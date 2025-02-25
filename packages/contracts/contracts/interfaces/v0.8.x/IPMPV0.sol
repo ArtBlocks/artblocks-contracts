@@ -41,6 +41,7 @@ interface IPMPV0 {
     struct PMPConfig {
         AuthOption authOption; // slot 0: 1 byte
         ParamType paramType; // slot 0: 1 byte
+        uint48 pmpLockedAfterTimestamp; // slot 0: 6 bytes
         address authAddress; // slot 0: 20 bytes
         string[] selectOptions; // slot 1: 32 bytes
         // @dev use bytes32 for all range types for SSTORE efficiency
