@@ -19,6 +19,7 @@ const getTokenDetailsDocument = graphql(/* GraphQL */ `
       contract_address
       invocation
       live_view_url
+      owner_address
       project {
         name
       }
