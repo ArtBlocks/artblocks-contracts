@@ -146,8 +146,13 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         });
         // validate pmpInputConfigs
         uint256 pmpInputConfigsLength = pmpInputConfigs.length;
+        // @dev no coverage on else branch due to test complexity
         require(pmpInputConfigsLength <= 256, "PMP: Only <= 256 configs");
         for (uint256 i = 0; i < pmpInputConfigsLength; i++) {
+            require(
+                bytes(pmpInputConfigs[i].key).length > 0,
+                "PMP: pmpKey cannot be empty"
+            );
             _validatePMPConfig(pmpInputConfigs[i].pmpConfig);
         }
         // store pmpInputConfigs data in ProjectConfig struct
@@ -173,7 +178,7 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
             PMPConfigStorage storage pmpConfigStorage = projectConfig
                 .pmpConfigsStorage[_getStringHash(pmpKeys[i])];
             {
-                // validate current pmp is not locked
+                // validate that any current pmp at this key is not locked
                 uint256 currentPPMLockedAfterTimestamp = pmpConfigStorage
                     .pmpLockedAfterTimestamp;
                 require(
@@ -182,12 +187,6 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
                     "PMP: pmp is locked and cannot be updated"
                 );
             }
-            require(
-                pmpInputConfigs[i].pmpConfig.pmpLockedAfterTimestamp == 0 ||
-                    pmpInputConfigs[i].pmpConfig.pmpLockedAfterTimestamp >
-                    block.timestamp,
-                "PMP: pmpLockedAfterTimestamp is in the past and not unlimited (zero)"
-            );
             // update highestConfigNonce
             pmpConfigStorage.highestConfigNonce = newConfigNonce;
             // copy function input pmpConfig data to pmpConfigStorage
@@ -206,7 +205,8 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         emit ProjectConfigured({
             coreContract: coreContract,
             projectId: projectId,
-            pmpInputConfigs: pmpInputConfigs
+            pmpInputConfigs: pmpInputConfigs,
+            projectConfigNonce: newConfigNonce
         });
     }
 
@@ -374,6 +374,7 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         ProjectConfig storage projectConfig = projectConfigs[coreContract][
             projectId
         ];
+        // @dev edge case - uninitialized pmpKeys - empty array returned by getAll()
         pmpKeys = projectConfig.pmpKeys.getAll();
         configNonce = projectConfig.configNonce;
         tokenPMPPostConfigHook = projectConfig.tokenPMPPostConfigHook;
@@ -383,6 +384,9 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
 
     /**
      * @notice Get the PMP config for a given project and pmpKey.
+     * @dev Returns the storage values, even if unconfigured or not part of the
+     * active project config. Check latestConfigNonce to verify if the pmpKey
+     * is part of the active project config.
      * @param coreContract The address of the core contract to call.
      * @param projectId The projectId of the project to get data for.
      * @param pmpKey The pmpKey of the pmp to get data for.
@@ -430,7 +434,7 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         // unconfigured param for token
         if (
             configuredParamType == ParamType.Unconfigured || // unconfigured for token
-            configuredParamType == pmpConfigStorage.paramType // stale - token configured param type is different from project config
+            configuredParamType != pmpConfigStorage.paramType // stale - token configured param type is different from project config
         ) {
             return (false, "");
         }
@@ -471,9 +475,19 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         ) {
             // verify configured value is within bounds (obviously stale if not)
             uint256 configuredValue = uint256(pmp.configuredValue);
+            uint256 maxRange = configuredParamType == ParamType.HexColor
+                ? _HEX_COLOR_MAX
+                : configuredParamType == ParamType.Timestamp
+                    ? _TIMESTAMP_MAX
+                    : uint256(pmpConfigStorage.maxRange);
+            uint256 minRange = configuredParamType == ParamType.HexColor
+                ? 0
+                : configuredParamType == ParamType.Timestamp
+                    ? _TIMESTAMP_MIN
+                    : uint256(pmpConfigStorage.minRange);
             if (
-                configuredValue < uint256(pmpConfigStorage.minRange) ||
-                configuredValue > uint256(pmpConfigStorage.maxRange)
+                configuredValue < uint256(minRange) ||
+                configuredValue > uint256(maxRange)
             ) {
                 return (false, "");
             }
@@ -526,7 +540,7 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         }
         // if keys changed, update projectConfig's pmpKeys (expensive operation)
         if (keysChanged) {
-            projectConfig.pmpKeys.store(inputKeys);
+            ImmutableStringArray.store(projectConfig.pmpKeys, inputKeys);
         }
     }
 
@@ -551,10 +565,12 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
             "PMP: pmpLockedAfterTimestamp is in the past and not unlimited (zero)"
         );
         // validate enums are within bounds
+        // @dev no coverage else branch, this is redundant as used due to solidity compiler checks on function enum inputs
         require(
             authOption <= AuthOption.ArtistAndTokenOwnerAndAddress,
             "PMP: Invalid authOption"
         );
+        // @dev no coverage else branch, this is redundant as used due to solidity compiler checks on function enum inputs
         require(paramType <= ParamType.String, "PMP: Invalid paramType");
         // only artist+ authentication types are supported for string params
         if (paramType == ParamType.String) {
@@ -570,6 +586,7 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
         if (
             authOption == AuthOption.Address ||
             authOption == AuthOption.TokenOwnerAndAddress ||
+            authOption == AuthOption.ArtistAndAddress ||
             authOption == AuthOption.ArtistAndTokenOwnerAndAddress
         ) {
             require(
@@ -617,7 +634,7 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
             paramType == ParamType.DecimalRange ||
             paramType == ParamType.Timestamp
         ) {
-            // @dev range should have empty selectOptions
+            // @dev range params should have empty selectOptions
             require(
                 pmpConfig.selectOptions.length == 0,
                 "PMP: selectOptions is not empty"
@@ -644,7 +661,7 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
                 }
             }
         } else {
-            // @dev should never reach
+            // @dev should never reach, no coverage
             revert("PMP: Invalid paramType");
         }
     }
@@ -796,7 +813,7 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
                 );
             } else if (paramType == ParamType.HexColor) {
                 require(
-                    uint256(pmpInput.configuredValue) < _HEX_COLOR_MAX, // @dev minimum hex color of zero implicitly passed by using uint256
+                    uint256(pmpInput.configuredValue) <= _HEX_COLOR_MAX, // @dev minimum hex color of zero implicitly passed by using uint256
                     "PMP: invalid hex color"
                 );
             }

@@ -36,11 +36,13 @@ interface IPMPV0 is IWeb3Call {
      * @param coreContract The address of the core contract.
      * @param projectId The project ID for which parameters were configured.
      * @param pmpInputConfigs Array of parameter configurations defining the available parameters.
+     * @param projectConfigNonce The nonce of the project configuration.
      */
     event ProjectConfigured(
         address coreContract,
         uint256 projectId,
-        PMPInputConfig[] pmpInputConfigs
+        PMPInputConfig[] pmpInputConfigs,
+        uint8 projectConfigNonce
     );
 
     /**
