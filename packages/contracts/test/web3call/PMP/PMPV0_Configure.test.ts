@@ -117,6 +117,30 @@ describe("PMPV0_Configure", function () {
         revertMessages.invalidAugmentHook
       );
     });
+
+    it("accepts tokenPMPReadAugmentationHook of zero address", async function () {
+      const config = await loadFixture(_beforeEach);
+      // assign zero addresses to both hooks
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProjectHooks(
+          config.genArt721Core.address,
+          config.projectZero,
+          constants.AddressZero,
+          constants.AddressZero
+        );
+      // verify that the hooks are set to zero addresses
+      const projectConfig = await config.pmp.getProjectConfig(
+        config.genArt721Core.address,
+        config.projectZero
+      );
+      expect(projectConfig.tokenPMPReadAugmentationHook).to.equal(
+        constants.AddressZero
+      );
+      expect(projectConfig.tokenPMPPostConfigHook).to.equal(
+        constants.AddressZero
+      );
+    });
   });
 
   describe("configureProject", function () {
@@ -924,6 +948,6 @@ describe("PMPV0_Configure", function () {
   });
 
   describe("configureTokenParams", function () {
-    // TODO
+    // TODOff
   });
 });

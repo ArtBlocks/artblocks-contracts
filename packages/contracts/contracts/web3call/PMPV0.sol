@@ -10,11 +10,11 @@ import {IPMPAugmentHook} from "../interfaces/v0.8.x/IPMPAugmentHook.sol";
 import {IGenArt721CoreContractV3_Base} from "../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import {IERC721} from "@openzeppelin-5.0/contracts/token/ERC721/IERC721.sol";
 
-import {ERC165} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165.sol";
 import {ERC165Checker} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165Checker.sol";
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
 import {ReentrancyGuard} from "@openzeppelin-5.0/contracts/utils/ReentrancyGuard.sol";
 
+import {Web3Call} from "./Web3Call.sol";
 import {ImmutableStringArray} from "../libs/v0.8.x/ImmutableStringArray.sol";
 import {ABHelpers} from "../libs/v0.8.x/ABHelpers.sol";
 
@@ -28,7 +28,7 @@ import {ABHelpers} from "../libs/v0.8.x/ABHelpers.sol";
  * for parameter configuration and retrieval. It includes support for various parameter types,
  * authorization options, and hooks for extending functionality.
  */
-contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
+contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
     using Strings for string;
     using Strings for uint256;
     using Strings for int256;
@@ -196,6 +196,7 @@ contract PMPV0 is IWeb3Call, IPMPV0, ReentrancyGuard, ERC165 {
             pmpConfigStorage.pmpLockedAfterTimestamp = inputPMPConfig
                 .pmpLockedAfterTimestamp;
             pmpConfigStorage.authAddress = inputPMPConfig.authAddress;
+            // TODO - use immutableStringArray for selectOptions
             pmpConfigStorage.selectOptions = inputPMPConfig.selectOptions;
             pmpConfigStorage.minRange = inputPMPConfig.minRange;
             pmpConfigStorage.maxRange = inputPMPConfig.maxRange;
