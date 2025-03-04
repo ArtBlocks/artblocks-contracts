@@ -36,6 +36,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
 
     bytes32 private constant _TYPE = "PMPV0";
 
+    bytes16 private constant _HEX_DIGITS = "0123456789abcdef";
     uint256 private constant _DECIMAL_PRECISION_DIGITS = 10;
     uint256 private constant _DECIMAL_PRECISION =
         10 ** _DECIMAL_PRECISION_DIGITS;
@@ -262,9 +263,8 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
             } else {
                 tokenPMP.configuredValue = pmpInput.configuredValue;
             }
-
             // call post-config hook if configured for the project
-            // @dev trusted interaction, but this function is nonreentrant for additional safety
+            // @dev this function is nonreentrant for additional reentrancy protection
             if (address(projectConfig.tokenPMPPostConfigHook) != address(0)) {
                 projectConfig.tokenPMPPostConfigHook.onTokenPMPConfigure({
                     coreContract: coreContract,
@@ -496,6 +496,10 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
             if (configuredParamType == ParamType.DecimalRange) {
                 return (true, _uintToDecimalString(configuredValue));
             }
+            // handle hex color case
+            if (configuredParamType == ParamType.HexColor) {
+                return (true, _uintToHexColorString(configuredValue));
+            }
             // handle all other cases
             return (true, configuredValue.toString());
         }
@@ -690,10 +694,15 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
             pmpConfigStorage.highestConfigNonce == projectConfigNonce,
             "PMP: param not part of most recently configured PMP params"
         );
-        // check that the param type matches
+        // check that the param type matches and is not unconfigured
         require(
             pmpInput.configuredParamType == pmpConfigStorage.paramType,
             "PMP: paramType mismatch"
+        );
+        // @dev checking value in memory for lower gas cost
+        require(
+            pmpInput.configuredParamType != ParamType.Unconfigured,
+            "PMP: input paramType is unconfigured"
         );
 
         // ensure caller has appropriate auth
@@ -781,7 +790,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
                 require(
                     uint256(pmpInput.configuredValue) <
                         pmpConfigStorage.selectOptions.length,
-                    "PMP: param value out of bounds"
+                    "PMP: selectOptions index out of bounds"
                 );
             } else if (paramType == ParamType.Bool) {
                 require(
@@ -794,22 +803,22 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
                 paramType == ParamType.DecimalRange
             ) {
                 require(
-                    pmpInput.configuredValue > pmpConfigStorage.minRange &&
-                        pmpInput.configuredValue < pmpConfigStorage.maxRange,
+                    pmpInput.configuredValue >= pmpConfigStorage.minRange &&
+                        pmpInput.configuredValue <= pmpConfigStorage.maxRange,
                     "PMP: param value out of bounds"
                 );
             } else if (paramType == ParamType.Int256Range) {
                 require(
-                    int256(uint256(pmpInput.configuredValue)) > // @dev ensure this converts as expected
+                    int256(uint256(pmpInput.configuredValue)) >= // @dev ensure this converts as expected
                         int256(uint256(pmpConfigStorage.minRange)) &&
-                        int256(uint256(pmpInput.configuredValue)) <
+                        int256(uint256(pmpInput.configuredValue)) <=
                         int256(uint256(pmpConfigStorage.maxRange)),
                     "PMP: param value out of bounds"
                 );
             } else if (paramType == ParamType.Timestamp) {
                 require(
-                    uint256(pmpInput.configuredValue) < _TIMESTAMP_MAX &&
-                        uint256(pmpInput.configuredValue) > _TIMESTAMP_MIN,
+                    uint256(pmpInput.configuredValue) <= _TIMESTAMP_MAX &&
+                        uint256(pmpInput.configuredValue) >= _TIMESTAMP_MIN, // @dev no coverage, this is redundant due to being assigned zero
                     "PMP: param value out of bounds"
                 );
             } else if (paramType == ParamType.HexColor) {
@@ -940,5 +949,29 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
 
         // Combine integer and fractional parts with a decimal point
         return string(abi.encodePacked(intStr, ".", fracStr));
+    }
+
+    /**
+     * @notice Converts a uint256 to a hex color string.
+     * @dev forked from OpenZeppelin's Strings library to use # prefix
+     * @dev Assumes the value is a valid hex color.
+     * @param value The uint256 value to convert to hex color string.
+     * @return A string representation of the hex color.
+     */
+    function _uintToHexColorString(
+        uint256 value
+    ) private pure returns (string memory) {
+        uint256 localValue = value;
+        bytes memory buffer = new bytes(2 * 3 + 1);
+        buffer[0] = "#";
+        for (uint256 i = 2 * 3; i > 0; --i) {
+            buffer[i] = _HEX_DIGITS[localValue & 0xf];
+            localValue >>= 4;
+        }
+        if (localValue != 0) {
+            // @dev no coverage, this is redundant due to use of max hex color value
+            revert("PMP: invalid hex color");
+        }
+        return string(buffer);
     }
 }

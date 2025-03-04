@@ -24,4 +24,26 @@ export const revertMessages = {
   maxRangeGreaterThanTimestampMax: "PMP: maxRange > _TIMESTAMP_MAX",
   pmpLockedAfterTimestamp: "PMP: pmp is locked and cannot be updated",
   emptyPMPKey: "PMP: pmpKey cannot be empty",
+  paramNotPartOfMostRecentlyConfiguredPMPParams:
+    "PMP: param not part of most recently configured PMP params",
+  unconfiguredParamInput: "PMP: input paramType is unconfigured",
+  paramTypeMismatch: "PMP: paramType mismatch",
+  onlyArtistAuth: "PMP: artist auth required",
+  onlyTokenOwnerAuth: "PMP: token owner auth required",
+  onlyArtistAndTokenOwnerAuth: "PMP: artist and token owner auth required",
+  onlyAddressAuth: "PMP: address auth required",
+  onlyArtistAndTokenOwnerAndAddressAuth:
+    "PMP: artist and token owner and address auth required",
+  onlyArtistAndAddressAuth: "PMP: artist and address auth required",
+  onlyTokenOwnerAndAddressAuth: "PMP: token owner and address auth required",
+  selectOptionsIndexOutOfBounds: "PMP: selectOptions index out of bounds",
+  boolParamValueMustBe0Or1: "PMP: bool param value must be 0 or 1",
+  paramValueOutOfBounds: "PMP: param value out of bounds",
+  invalidHexColor: "PMP: invalid hex color",
+  artistAuthRequiredToConfigureArtistString:
+    "PMP: artist auth required to configure artist string",
+  nonStringParamHasNonEmptyStringInputParam:
+    "PMP: non-string param must have empty string value",
+  artistStringCannotBeConfiguredForNonStringParams:
+    "PMP: artist string cannot be configured for non-string params",
 };

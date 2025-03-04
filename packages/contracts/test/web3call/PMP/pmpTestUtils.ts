@@ -13,6 +13,14 @@ export type PMPConfig = {
   maxRange: string;
 };
 
+export type PMPInput = {
+  key: string;
+  configuredParamType: number;
+  configuredValue: string;
+  configuringArtistString: boolean;
+  configuredValueString: string;
+};
+
 export type PMPInputConfig = {
   key: string;
   pmpConfig: PMPConfig;
@@ -20,6 +28,8 @@ export type PMPInputConfig = {
 
 // @dev max timestamp value, as defined in the PMP contract
 export const PMP_TIMESTAMP_MAX = BigNumber.from(2).pow(64).sub(1);
+// @dev max hex color value, as defined in the PMP contract
+export const PMP_HEX_COLOR_MAX = BigNumber.from("16777215"); // 0xFFFFFF
 
 /**
  * Formats a token ID with project number for logs or test outputs
@@ -88,6 +98,22 @@ export function uint256ToBytes32(uint256Value: number): string {
 export function int256ToBytes32(int256Value: number): string {
   // return the abi-encoded int256 value
   return abiCoder.encode(["int256"], [int256Value]);
+}
+
+export function getPMPInput(
+  key: string,
+  configuredParamType: number,
+  configuredValue: string,
+  configuringArtistString: boolean,
+  configuredValueString: string
+): PMPInput {
+  return {
+    key: key,
+    configuredParamType: configuredParamType,
+    configuredValue: configuredValue,
+    configuringArtistString: configuringArtistString,
+    configuredValueString: configuredValueString,
+  };
 }
 
 export function getPMPInputConfig(
