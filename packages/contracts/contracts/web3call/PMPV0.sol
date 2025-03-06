@@ -335,7 +335,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
         // call augmentation hook if configured for the project
         if (address(projectConfig.tokenPMPReadAugmentationHook) != address(0)) {
             // assign return value to the augmented tokenParams
-            // @dev trusted interaction in read-only context
+            // @dev executed in read-only context, artist-configured hook contract (not entirely arbitrary)
             tokenParams = projectConfig
                 .tokenPMPReadAugmentationHook
                 .onTokenPMPReadAugmentation({
@@ -478,14 +478,10 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
             uint256 configuredValue = uint256(pmp.configuredValue);
             uint256 maxRange = configuredParamType == ParamType.HexColor
                 ? _HEX_COLOR_MAX
-                : configuredParamType == ParamType.Timestamp
-                    ? _TIMESTAMP_MAX
-                    : uint256(pmpConfigStorage.maxRange);
+                : uint256(pmpConfigStorage.maxRange);
             uint256 minRange = configuredParamType == ParamType.HexColor
                 ? 0
-                : configuredParamType == ParamType.Timestamp
-                    ? _TIMESTAMP_MIN
-                    : uint256(pmpConfigStorage.minRange);
+                : uint256(pmpConfigStorage.minRange);
             if (
                 configuredValue < uint256(minRange) ||
                 configuredValue > uint256(maxRange)
@@ -500,7 +496,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
             if (configuredParamType == ParamType.HexColor) {
                 return (true, _uintToHexColorString(configuredValue));
             }
-            // handle all other cases
+            // handle other cases - uint256 and timestamp
             return (true, configuredValue.toString());
         }
         if (configuredParamType == ParamType.Int256Range) {
@@ -826,6 +822,9 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
                     uint256(pmpInput.configuredValue) <= _HEX_COLOR_MAX, // @dev minimum hex color of zero implicitly passed by using uint256
                     "PMP: invalid hex color"
                 );
+            } else {
+                // @dev no coverage, this should never be reached
+                revert("PMP: invalid paramType");
             }
         }
 
