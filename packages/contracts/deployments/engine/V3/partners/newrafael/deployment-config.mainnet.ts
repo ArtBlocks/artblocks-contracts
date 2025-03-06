@@ -32,7 +32,7 @@ export const deployConfigDetailsArray = [
     // (can be the zero address if you have an existing Admin ACL Contract and are not transferring)
     newSuperAdminAddress: "0x0f441cfad93287109f5ef834bf52f4aaaa8d8ffa",
     // see /scripts/util/constants.ts::MAIN_CONFIG for the correct address if prod deployment
-    renderProviderAddress: "0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef",
+    renderProviderAddress: "0xa9F7C2b5Fd91C842B2E1b839A1Cf0f3DE2a24249",
     // platform provider address should be set to the zero address for Studio deployments
     platformProviderAddress: "0x0f441cfad93287109f5ef834bf52f4aaaa8d8ffa",
     startingProjectId: 32,
