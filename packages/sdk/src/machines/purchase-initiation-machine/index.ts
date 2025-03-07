@@ -16,7 +16,10 @@ import {
   isRAMMinterType,
   isUserRejectedError,
 } from "../utils";
-import { ProjectDetails } from "../project-sale-manager-machine/utils";
+import {
+  LiveSaleData,
+  ProjectDetails,
+} from "../project-sale-manager-machine/utils";
 import {
   checkERC20Allowance,
   getERC20Decimals,
@@ -29,6 +32,7 @@ import {
   initiateHolderMinterPurchase,
   initiateMerkleMinterPurchase,
   isERC20AllowanceSufficient,
+  UserIneligibilityReason,
 } from "./utils";
 import { ArtBlocksClient } from "../..";
 import { BidDetailsFragment } from "../../generated/graphql";
@@ -53,6 +57,7 @@ type AdditionalPurchaseData = {
   vaultAddress?: Hex;
   erc20Allowance?: bigint;
   userBids?: Array<BidDetailsFragment>;
+  remainingMints?: bigint | null;
 };
 
 export type PurchaseInitiationMachineContext = {
@@ -62,7 +67,7 @@ export type PurchaseInitiationMachineContext = {
   purchaseToAddress?: Hex;
   errorMessage?: string;
   additionalPurchaseData?: AdditionalPurchaseData;
-  userIneligibilityReason?: string;
+  userIneligibilityReason?: UserIneligibilityReason;
   initiatedTxHash?: Hex;
   erc20ApprovalAmount?: bigint;
   erc20ApprovalTxHash?: Hex;
@@ -86,7 +91,8 @@ export type UserPurchaseContext =
     }
   | {
       isEligible: false;
-      ineligibilityReason: string;
+      ineligibilityReason: UserIneligibilityReason;
+      additionalPurchaseData?: AdditionalPurchaseData;
     };
 
 /**
@@ -102,9 +108,12 @@ export type UserPurchaseContext =
  * necessary data, such as the user's token balance and allowance.
  *
  * If the user is eligible for the purchase, the machine transitions to the
- * 'readyForPurchase' state, indicating that it is prepared to initiate the purchase
- * process. If the user is ineligible, the machine moves to the
- * 'userIneligibleForPurchase' state.
+ * 'waitingForStart' state, where it polls until the sale has officially started.
+ * Once the sale begins, it automatically transitions to 'readyForPurchase'. If the
+ * user is ineligible, the machine moves to the 'userIneligibleForPurchase' state.
+ * This approach prepares and makes available all necessary purchase context before
+ * the sale actually begins, allowing users to visit a sale page and see if they're
+ * eligible (for example, if they're on an allowlist) even before the sale starts.
  *
  * When the 'INITIATE_PURCHASE' event is received in the 'readyForPurchase' state, the
  * machine transitions to the 'initiatingPurchase' state. In this state, it invokes the
@@ -344,7 +353,7 @@ export const purchaseInitiationMachine = setup({
     assignUserIneligibilityReason: assign({
       userIneligibilityReason: (
         _,
-        params: { userIneligibilityReason?: string }
+        params: { userIneligibilityReason?: UserIneligibilityReason }
       ) => params.userIneligibilityReason,
     }),
     assignInitiatedTxHash: assign({
@@ -389,6 +398,35 @@ export const purchaseInitiationMachine = setup({
     ) => {
       return !isERC20AllowanceSufficient(context.project, allowance);
     },
+    isSaleStarted: ({ context }) => {
+      const project = context.project;
+      const liveSaleData: LiveSaleData =
+        context.projectSaleManagerMachine.getSnapshot().context.liveSaleData;
+      const walletClient = context.artblocksClient.getWalletClient();
+
+      // TypeScript can't infer that this machine only runs when liveSaleData and walletClient
+      // are available (they're guaranteed by parent machine preconditions), so we need an explicit
+      // null check to satisfy the type checker
+      if (!liveSaleData || !walletClient?.account) {
+        return false;
+      }
+
+      if (
+        liveSaleData.paused &&
+        project.artist_address !== walletClient.account.address.toLowerCase()
+      ) {
+        return false;
+      }
+
+      if (project.auction_start_time) {
+        const startDate = new Date(project.auction_start_time);
+        if (startDate > new Date()) {
+          return false;
+        }
+      }
+
+      return true;
+    },
   },
 }).createMachine({
   /** @xstate-layout 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 */
@@ -410,7 +448,7 @@ export const purchaseInitiationMachine = setup({
         }),
         onDone: [
           {
-            target: "readyForPurchase",
+            target: "waitingForStart",
             actions: {
               type: "assignAdditionalPurchaseData",
               params: ({ event }) => {
@@ -448,6 +486,18 @@ export const purchaseInitiationMachine = setup({
               error: event.error,
             }),
           },
+        },
+      },
+    },
+    waitingForStart: {
+      always: {
+        target: "readyForPurchase",
+        guard: "isSaleStarted",
+      },
+      after: {
+        1000: {
+          target: "waitingForStart",
+          reenter: true,
         },
       },
     },

@@ -31,10 +31,14 @@ import {
   MinterDetailsFragment,
   ProjectDetailsFragment,
 } from "../../generated/graphql";
-import { LiveSaleData } from "../project-sale-manager-machine/utils";
+import {
+  LiveSaleData,
+  ProjectDetails,
+} from "../project-sale-manager-machine/utils";
 import { iDelegationRegistryAbi } from "../../../abis/iDelegationRegistryAbi";
 import { DELEGATION_REGISTRY_ADDRESS } from "../../utils/addresses";
 import { minterSetPriceERC20V5Abi } from "../../../abis/minterSetPriceERC20V5Abi";
+import { ArtBlocksClient } from "../..";
 
 /** Shared Helpers **/
 type WalletClientWithAccount = WalletClient & {
@@ -46,6 +50,35 @@ type ProjectWithValidMinterConfiguration = ProjectDetailsFragment & {
     minter: MinterDetailsFragment;
   };
 };
+
+type UserEligibilityCheckInput = {
+  project: NonNullable<ProjectDetails>;
+  artblocksClient: ArtBlocksClient;
+};
+
+export const USER_INELIGIBLE_REASONS = {
+  NOT_A_TOKEN_HOLDER: "NOT_A_TOKEN_HOLDER",
+  NOT_ALLOWLISTED: "NOT_ALLOWLISTED",
+  NO_MINTS_REMAINING: "MINT_LIMIT_REACHED",
+} as const;
+
+export type UserIneligibilityReason =
+  (typeof USER_INELIGIBLE_REASONS)[keyof typeof USER_INELIGIBLE_REASONS];
+
+export function getUserIneligibilityReasonMessage(
+  reason: UserIneligibilityReason
+) {
+  const reasonMap = {
+    [USER_INELIGIBLE_REASONS.NOT_A_TOKEN_HOLDER]:
+      "This project is currently available only to owners of specific tokens. If you believe you should have access to purchase this project, please double-check the wallet address you are using and ensure it holds a valid token.",
+    [USER_INELIGIBLE_REASONS.NOT_ALLOWLISTED]:
+      "This project is currently available only to users who have been pre-approved and added to the allowlist. If you believe you should have access to purchase this project, please double-check the wallet address you are using and ensure it matches the one expected for the allowlist.",
+    [USER_INELIGIBLE_REASONS.NO_MINTS_REMAINING]:
+      "You have no remaining mints available for this project.",
+  } as const;
+
+  return reasonMap[reason];
+}
 
 function assertPublicClientAvailable(
   publicClient?: PublicClient
@@ -98,7 +131,7 @@ const getUserTokensInAllowlistDocument = graphql(/* GraphQL */ `
 `);
 
 export async function getHolderMinterUserPurchaseContext(
-  input: Pick<PurchaseInitiationMachineContext, "project" | "artblocksClient">
+  input: UserEligibilityCheckInput
 ): Promise<UserPurchaseContext> {
   const { project, artblocksClient } = input;
   const walletClient = artblocksClient.getWalletClient();
@@ -142,8 +175,7 @@ export async function getHolderMinterUserPurchaseContext(
   if (userTokensRes.tokens_metadata.length === 0) {
     return {
       isEligible: false,
-      ineligibilityReason:
-        "This project is currently available only to owners of specific tokens. If you believe you should have access to purchase this project, please double-check the wallet address you are using and ensure it holds a valid token.",
+      ineligibilityReason: USER_INELIGIBLE_REASONS.NOT_A_TOKEN_HOLDER,
     };
   }
 
@@ -300,7 +332,7 @@ function generateUserMerkleProof(addresses: Hex[], userAddress: Hex): Hex[] {
 }
 
 export async function getMerkleMinterUserPurchaseContext(
-  input: Pick<PurchaseInitiationMachineContext, "project" | "artblocksClient">
+  input: UserEligibilityCheckInput
 ): Promise<UserPurchaseContext> {
   const { project, artblocksClient } = input;
   const walletClient = artblocksClient.getWalletClient();
@@ -354,8 +386,7 @@ export async function getMerkleMinterUserPurchaseContext(
     ) {
       return {
         isEligible: false,
-        ineligibilityReason:
-          "This project is currently available only to users who have been pre-approved and added to the allowlist. If you believe you should have access to purchase this project, please double-check the wallet address you are using and ensure it matches the one expected for the allowlist.",
+        ineligibilityReason: USER_INELIGIBLE_REASONS.NOT_ALLOWLISTED,
       };
     }
 
@@ -389,11 +420,27 @@ export async function getMerkleMinterUserPurchaseContext(
       ([, projectLimitsMintInvocationsPerAddress, remaining]) =>
         !projectLimitsMintInvocationsPerAddress || remaining > BigInt(0)
     );
+
+    const projectLimitsMintInvocationsPerAddress =
+      remainingInvocationsResults.some(
+        ([, projectLimitsMintInvocationsPerAddress]) =>
+          projectLimitsMintInvocationsPerAddress
+      );
+
+    const remainingMints = !projectLimitsMintInvocationsPerAddress
+      ? null
+      : remainingInvocationsResults.reduce((acc, [, , remaining]) => {
+          return acc + remaining;
+        }, BigInt(0));
+
     if (!hasRemainingMints) {
       return {
         isEligible: false,
-        ineligibilityReason:
-          "You have no remaining mints available for this project.",
+        ineligibilityReason: USER_INELIGIBLE_REASONS.NO_MINTS_REMAINING,
+        additionalPurchaseData: {
+          allowlist: allowlistedAddresses,
+          remainingMints,
+        },
       };
     }
 
@@ -408,11 +455,13 @@ export async function getMerkleMinterUserPurchaseContext(
         );
       }
     );
+
     if (userHasRemainingMints) {
       return {
         isEligible: true,
         additionalPurchaseData: {
           allowlist: allowlistedAddresses,
+          remainingMints,
         },
       };
     }
@@ -429,6 +478,7 @@ export async function getMerkleMinterUserPurchaseContext(
       additionalPurchaseData: {
         allowlist: allowlistedAddresses,
         vaultAddress: firstVaultWithRemainingMints,
+        remainingMints,
       },
     };
   } catch (e) {
