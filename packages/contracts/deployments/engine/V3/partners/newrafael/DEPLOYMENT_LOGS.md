@@ -44,3 +44,8 @@
       [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/newrafael/deployment-config.sepolia-staging.ts
 
     
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2025-03-07T18:51:50.153Z
+      [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/newrafael/deployment-config.mainnet.ts
+
+    
