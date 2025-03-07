@@ -145,6 +145,10 @@ library ImmutableStringArray {
         StringArray storage storageArray,
         uint256 index
     ) internal view returns (string memory result) {
+        // edge case - unassigned dataPointer
+        if (storageArray.dataPointer == address(0)) {
+            revert("Index out of bounds");
+        }
         bytes memory allData = SSTORE2.read(storageArray.dataPointer);
         uint256 offsetsStart;
         uint64 start;
@@ -209,6 +213,10 @@ library ImmutableStringArray {
     function getAll(
         StringArray storage storageArray
     ) internal view returns (string[] memory results) {
+        // edge case - unassigned dataPointer
+        if (storageArray.dataPointer == address(0)) {
+            return new string[](0);
+        }
         // load the packed data from the SSTORE2 contract
         bytes memory allData = SSTORE2.read(storageArray.dataPointer);
         // load the total length of the strings array from the first 8 bytes of the SSTORE2 contract
