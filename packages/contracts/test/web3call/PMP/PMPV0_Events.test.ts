@@ -1,22 +1,13 @@
-import { expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { ethers } from "hardhat";
 import { constants } from "ethers";
 import {
   PMP_AUTH_ENUM,
   PMP_PARAM_TYPE_ENUM,
   getPMPInput,
   getPMPInputConfig,
-  int256ToBytes32,
-  uint256ToBytes32,
-  BigNumberToBytes32,
-  PMP_TIMESTAMP_MAX,
-  PMP_HEX_COLOR_MAX,
 } from "./pmpTestUtils";
 import { setupPMPFixture } from "./pmpFixtures";
-import { revertMessages } from "./constants";
-import { advanceTimeAndBlock } from "../../util/common";
 import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
