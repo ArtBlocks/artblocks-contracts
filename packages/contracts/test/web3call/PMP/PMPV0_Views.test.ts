@@ -291,6 +291,55 @@ describe("PMPV0_Views", function () {
       expect(params2.length).to.equal(0);
     });
 
+    it("does not return a stale PMP with different configured param type", async function () {
+      const config = await loadFixture(_beforeEach);
+      // artist configures a token param for project zero
+      const pmpConfig1 = getPMPInputConfig(
+        "param1",
+        PMP_AUTH_ENUM.ArtistAndTokenOwner,
+        PMP_PARAM_TYPE_ENUM.Uint256Range,
+        0,
+        constants.AddressZero,
+        [],
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x0000000000000000000000000000000000000000000000000000000000000001"
+      );
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          pmpConfig1,
+        ]);
+      // token owner configures a param with appropriate type
+      const pmpInput1 = getPMPInput(
+        "param1",
+        PMP_PARAM_TYPE_ENUM.Uint256Range,
+        "0x0000000000000000000000000000000000000000000000000000000000000001",
+        false,
+        ""
+      );
+      await config.pmp
+        .connect(config.accounts.user)
+        .configureTokenParams(
+          config.genArt721Core.address,
+          config.projectZeroTokenZero,
+          [pmpInput1]
+        );
+      // artist then updates the param type
+      pmpConfig1.pmpConfig.paramType = PMP_PARAM_TYPE_ENUM.Bool;
+      pmpConfig1.pmpConfig.maxRange = uint256ToBytes32(0);
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          pmpConfig1,
+        ]);
+      // expect no params to be returned (obviously stale due to param type change)
+      const params2 = await config.pmp.getTokenParams(
+        config.genArt721Core.address,
+        config.projectZeroTokenZero
+      );
+      expect(params2.length).to.equal(0);
+    });
+
     it("returns false for false bool", async function () {
       const config = await loadFixture(_beforeEach);
       // artist configures a token param for project zero

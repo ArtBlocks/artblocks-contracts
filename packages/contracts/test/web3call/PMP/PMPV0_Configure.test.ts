@@ -310,6 +310,39 @@ describe("PMPV0_Configure", function () {
         );
       });
 
+      it("does not reverts when pmpInputConfig: string type and artist+ auth option", async function () {
+        const config = await loadFixture(_beforeEach);
+        for (const authOption of [
+          PMP_AUTH_ENUM.Artist,
+          PMP_AUTH_ENUM.ArtistAndTokenOwner,
+          PMP_AUTH_ENUM.ArtistAndTokenOwnerAndAddress,
+          PMP_AUTH_ENUM.ArtistAndAddress,
+        ]) {
+          // call with invalid input
+          const pmpConfig = getPMPInputConfig(
+            "invalid",
+            authOption,
+            PMP_PARAM_TYPE_ENUM.String,
+            0,
+            authOption === PMP_AUTH_ENUM.ArtistAndAddress ||
+              authOption === PMP_AUTH_ENUM.ArtistAndTokenOwnerAndAddress
+              ? config.accounts.deployer.address
+              : constants.AddressZero,
+            [],
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000"
+          );
+          // expect no revert
+          await config.pmp
+            .connect(config.accounts.artist)
+            .configureProject(
+              config.genArt721Core.address,
+              config.projectZero,
+              [pmpConfig]
+            );
+        }
+      });
+
       it("reverts when invalid pmpInputConfig: address auth option and auth address is zero", async function () {
         const config = await loadFixture(_beforeEach);
         // call with invalid input
@@ -742,6 +775,54 @@ describe("PMPV0_Configure", function () {
           );
         }
       });
+    });
+
+    it("handles pmpKeys changes without length changes", async function () {
+      const config = await loadFixture(_beforeEach);
+      // artist configures a two params
+      const pmpConfig1 = getPMPInputConfig(
+        "param1",
+        PMP_AUTH_ENUM.Artist,
+        PMP_PARAM_TYPE_ENUM.String,
+        0,
+        constants.AddressZero,
+        [],
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+      );
+      const pmpConfig2 = getPMPInputConfig(
+        "param2",
+        PMP_AUTH_ENUM.Artist,
+        PMP_PARAM_TYPE_ENUM.String,
+        0,
+        constants.AddressZero,
+        [],
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+      );
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          pmpConfig1,
+          pmpConfig2,
+        ]);
+      // artist updates the second param key string
+      pmpConfig2.key = "alternate key name";
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          pmpConfig1,
+          pmpConfig2,
+        ]);
+      // expect pmpKeys to be updated
+      const projectConfig = await config.pmp.getProjectConfig(
+        config.genArt721Core.address,
+        config.projectZero
+      );
+      expect(projectConfig.pmpKeys).to.deep.equal([
+        pmpConfig1.key,
+        "alternate key name",
+      ]);
     });
 
     it("reverts if current PMP is locked", async function () {
@@ -1201,6 +1282,41 @@ describe("PMPV0_Configure", function () {
         );
       });
 
+      it("allows artist to update param configured with artist auth", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure a PMP on a project
+        const pmpConfig = getPMPInputConfig(
+          "param1",
+          PMP_AUTH_ENUM.Artist,
+          PMP_PARAM_TYPE_ENUM.String,
+          0,
+          constants.AddressZero,
+          [],
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+        await config.pmp
+          .connect(config.accounts.artist)
+          .configureProject(config.genArt721Core.address, config.projectZero, [
+            pmpConfig,
+          ]);
+        // expect no revert when updating param1 with artist auth
+        const pmpInputValid = getPMPInput(
+          "param1",
+          PMP_PARAM_TYPE_ENUM.String,
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          false,
+          "world"
+        );
+        await config.pmp
+          .connect(config.accounts.artist)
+          .configureTokenParams(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            [pmpInputValid]
+          );
+      });
+
       it("reverts if configured with tokenOwner auth, but sent by unallowed", async function () {
         const config = await loadFixture(_beforeEach);
         // configure a PMP on a project
@@ -1237,6 +1353,41 @@ describe("PMPV0_Configure", function () {
             ),
           revertMessages.onlyTokenOwnerAuth
         );
+      });
+
+      it("does not revert if token owner updates param configured with token owner auth", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure a PMP on a project
+        const pmpConfig = getPMPInputConfig(
+          "param1",
+          PMP_AUTH_ENUM.TokenOwner,
+          PMP_PARAM_TYPE_ENUM.Bool,
+          0,
+          constants.AddressZero,
+          [],
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+        await config.pmp
+          .connect(config.accounts.artist)
+          .configureProject(config.genArt721Core.address, config.projectZero, [
+            pmpConfig,
+          ]);
+        // expect no revert when updating param1 with token owner auth
+        const pmpInputValid = getPMPInput(
+          "param1",
+          PMP_PARAM_TYPE_ENUM.Bool,
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          false,
+          ""
+        );
+        await config.pmp
+          .connect(config.accounts.user)
+          .configureTokenParams(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            [pmpInputValid]
+          );
       });
 
       it("reverts if configured with artist+tokenOwner auth, but sent by unallowed", async function () {
@@ -1315,6 +1466,41 @@ describe("PMPV0_Configure", function () {
         );
       });
 
+      it("does not revert if address updates param configured with address auth", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure a PMP on a project
+        const pmpConfig = getPMPInputConfig(
+          "param1",
+          PMP_AUTH_ENUM.Address,
+          PMP_PARAM_TYPE_ENUM.Uint256Range,
+          0,
+          config.accounts.deployer.address, // allow deployer
+          [],
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000001"
+        );
+        await config.pmp
+          .connect(config.accounts.artist)
+          .configureProject(config.genArt721Core.address, config.projectZero, [
+            pmpConfig,
+          ]);
+        // expect no revert when updating param1 with address auth
+        const pmpInputValid = getPMPInput(
+          "param1",
+          PMP_PARAM_TYPE_ENUM.Uint256Range,
+          "0x0000000000000000000000000000000000000000000000000000000000000001",
+          false,
+          ""
+        );
+        await config.pmp
+          .connect(config.accounts.deployer)
+          .configureTokenParams(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            [pmpInputValid]
+          );
+      });
+
       it("reverts if configured with artist+tokenOwner+address auth, but sent by unallowed", async function () {
         const config = await loadFixture(_beforeEach);
         // configure a PMP on a project
@@ -1351,6 +1537,41 @@ describe("PMPV0_Configure", function () {
             ),
           revertMessages.onlyArtistAndTokenOwnerAndAddressAuth
         );
+      });
+
+      it("does not revert if artist+tokenOwner+address updates param configured with artist+tokenOwner+address auth", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure a PMP on a project
+        const pmpConfig = getPMPInputConfig(
+          "param1",
+          PMP_AUTH_ENUM.ArtistAndTokenOwnerAndAddress,
+          PMP_PARAM_TYPE_ENUM.Uint256Range,
+          0,
+          config.accounts.deployer.address, // allow deployer
+          [],
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000001"
+        );
+        await config.pmp
+          .connect(config.accounts.artist)
+          .configureProject(config.genArt721Core.address, config.projectZero, [
+            pmpConfig,
+          ]);
+        // expect no revert when updating param1 with artist+tokenOwner+address auth
+        const pmpInputValid = getPMPInput(
+          "param1",
+          PMP_PARAM_TYPE_ENUM.Uint256Range,
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          false,
+          ""
+        );
+        await config.pmp
+          .connect(config.accounts.deployer)
+          .configureTokenParams(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            [pmpInputValid]
+          );
       });
 
       it("reverts if configured with artist+address auth, but sent by unallowed", async function () {
@@ -1391,6 +1612,41 @@ describe("PMPV0_Configure", function () {
         );
       });
 
+      it("does not revert if artist+address updates param configured with artist+address auth", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure a PMP on a project
+        const pmpConfig = getPMPInputConfig(
+          "param1",
+          PMP_AUTH_ENUM.ArtistAndAddress,
+          PMP_PARAM_TYPE_ENUM.Uint256Range,
+          0,
+          config.accounts.deployer.address, // allow deployer
+          [],
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000001"
+        );
+        await config.pmp
+          .connect(config.accounts.artist)
+          .configureProject(config.genArt721Core.address, config.projectZero, [
+            pmpConfig,
+          ]);
+        // expect no revert when updating param1 with artist+address auth by deployer
+        const pmpInputValid = getPMPInput(
+          "param1",
+          PMP_PARAM_TYPE_ENUM.Uint256Range,
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          false,
+          ""
+        );
+        await config.pmp
+          .connect(config.accounts.deployer)
+          .configureTokenParams(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            [pmpInputValid]
+          );
+      });
+
       it("reverts if configured with tokenOwner+address auth, but sent by unallowed", async function () {
         const config = await loadFixture(_beforeEach);
         // configure a PMP on a project
@@ -1427,6 +1683,41 @@ describe("PMPV0_Configure", function () {
             ),
           revertMessages.onlyTokenOwnerAndAddressAuth
         );
+      });
+
+      it("does not revert if tokenOwner+address updates param configured with tokenOwner+address auth", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure a PMP on a project
+        const pmpConfig = getPMPInputConfig(
+          "param1",
+          PMP_AUTH_ENUM.TokenOwnerAndAddress,
+          PMP_PARAM_TYPE_ENUM.Uint256Range,
+          0,
+          config.accounts.deployer.address, // allow deployer
+          [],
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000001"
+        );
+        await config.pmp
+          .connect(config.accounts.artist)
+          .configureProject(config.genArt721Core.address, config.projectZero, [
+            pmpConfig,
+          ]);
+        // expect no revert when updating param1 with tokenOwner+address auth by deployer
+        const pmpInputValid = getPMPInput(
+          "param1",
+          PMP_PARAM_TYPE_ENUM.Uint256Range,
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          false,
+          ""
+        );
+        await config.pmp
+          .connect(config.accounts.deployer)
+          .configureTokenParams(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            [pmpInputValid]
+          );
       });
 
       it("reverts if type Select and index is out of bounds", async function () {
@@ -1670,6 +1961,44 @@ describe("PMPV0_Configure", function () {
               [pmpInputInvalid]
             ),
           revertMessages.invalidHexColor
+        );
+      });
+
+      it("reverts if type String and value is not empty", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure a PMP on a project
+        const pmpConfig = getPMPInputConfig(
+          "param1",
+          PMP_AUTH_ENUM.ArtistAndTokenOwner,
+          PMP_PARAM_TYPE_ENUM.String,
+          0,
+          constants.AddressZero,
+          [],
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+        await config.pmp
+          .connect(config.accounts.artist)
+          .configureProject(config.genArt721Core.address, config.projectZero, [
+            pmpConfig,
+          ]);
+        // expect revert when configuring param1 with non-empty string value
+        const pmpInputInvalid = getPMPInput(
+          "param1",
+          PMP_PARAM_TYPE_ENUM.String,
+          "0x0000000000000000000000000000000000000000000000000000000000000001", // invalid
+          false,
+          "valid string"
+        );
+        await expectRevert(
+          config.pmp
+            .connect(config.accounts.artist)
+            .configureTokenParams(
+              config.genArt721Core.address,
+              config.projectZeroTokenZero.toNumber(),
+              [pmpInputInvalid]
+            ),
+          revertMessages.onlyNullValueForStringParam
         );
       });
 

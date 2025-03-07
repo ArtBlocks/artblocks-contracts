@@ -40,6 +40,7 @@ export const revertMessages = {
   boolParamValueMustBe0Or1: "PMP: bool param value must be 0 or 1",
   paramValueOutOfBounds: "PMP: param value out of bounds",
   invalidHexColor: "PMP: invalid hex color",
+  onlyNullValueForStringParam: "PMP: value must be empty for string params",
   artistAuthRequiredToConfigureArtistString:
     "PMP: artist auth required to configure artist string",
   nonStringParamHasNonEmptyStringInputParam:

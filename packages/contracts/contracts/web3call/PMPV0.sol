@@ -420,102 +420,6 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
     }
 
     /**
-     * @notice Gets the value of a PMP as a formatted string.
-     * @dev Used internally to retrieve a PMP value in string format for external consumption.
-     * @param pmpConfigStorage The config storage for the PMP.
-     * @param pmp The PMP storage instance.
-     * @return isConfigured Whether the PMP has been configured for the token.
-     * @return value The string representation of the PMP value, or empty if not configured.
-     */
-    function _getPMPValue(
-        PMPConfigStorage storage pmpConfigStorage,
-        PMPStorage storage pmp
-    ) internal view returns (bool isConfigured, string memory value) {
-        ParamType configuredParamType = pmp.configuredParamType;
-        // unconfigured param for token
-        if (
-            configuredParamType == ParamType.Unconfigured || // unconfigured for token
-            configuredParamType != pmpConfigStorage.paramType // stale - token configured param type is different from project config
-        ) {
-            return (false, "");
-        }
-        // if string, return value
-        if (pmpConfigStorage.paramType == ParamType.String) {
-            // return artist configured value if present
-            if (bytes(pmp.artistConfiguredValueString).length > 0) {
-                return (true, pmp.artistConfiguredValueString);
-            }
-            // return non-artist configured value if present
-            if (bytes(pmp.nonArtistConfiguredValueString).length > 0) {
-                return (true, pmp.nonArtistConfiguredValueString);
-            }
-            // empty string is considered not configured
-            return (false, "");
-        }
-        if (configuredParamType == ParamType.Select) {
-            // return unconfigured if index is out of bounds (obviously stale)
-            if (
-                uint256(pmp.configuredValue) >=
-                pmpConfigStorage.selectOptions.length
-            ) {
-                return (false, "");
-            }
-            return (
-                true,
-                pmpConfigStorage.selectOptions[uint256(pmp.configuredValue)]
-            );
-        }
-        if (configuredParamType == ParamType.Bool) {
-            return (true, pmp.configuredValue == bytes32(0) ? "false" : "true");
-        }
-        if (
-            configuredParamType == ParamType.Uint256Range ||
-            configuredParamType == ParamType.HexColor ||
-            configuredParamType == ParamType.Timestamp ||
-            configuredParamType == ParamType.DecimalRange
-        ) {
-            // verify configured value is within bounds (obviously stale if not)
-            uint256 configuredValue = uint256(pmp.configuredValue);
-            uint256 maxRange = configuredParamType == ParamType.HexColor
-                ? _HEX_COLOR_MAX
-                : uint256(pmpConfigStorage.maxRange);
-            uint256 minRange = configuredParamType == ParamType.HexColor
-                ? 0
-                : uint256(pmpConfigStorage.minRange);
-            if (
-                configuredValue < uint256(minRange) ||
-                configuredValue > uint256(maxRange)
-            ) {
-                return (false, "");
-            }
-            // handle decimal case
-            if (configuredParamType == ParamType.DecimalRange) {
-                return (true, _uintToDecimalString(configuredValue));
-            }
-            // handle hex color case
-            if (configuredParamType == ParamType.HexColor) {
-                return (true, _uintToHexColorString(configuredValue));
-            }
-            // handle other cases - uint256 and timestamp
-            return (true, configuredValue.toString());
-        }
-        if (configuredParamType == ParamType.Int256Range) {
-            // verify configured value is within bounds (obviously stale if not)
-            int256 configuredValue = int256(uint256(pmp.configuredValue));
-            if (
-                configuredValue < int256(uint256(pmpConfigStorage.minRange)) ||
-                configuredValue > int256(uint256(pmpConfigStorage.maxRange))
-            ) {
-                return (false, "");
-            }
-            return (true, configuredValue.toStringSigned());
-        }
-        // @dev should never reach
-        // @dev no coverage, unreachable
-        revert("PMP: Unhandled ParamType");
-    }
-
-    /**
      * @notice Synchronizes the project's parameter keys with the provided input keys.
      * @dev Only updates the storage if the keys have changed to optimize gas usage.
      * @param inputKeys The new parameter keys to store.
@@ -775,6 +679,9 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
                     }) || msg.sender == pmpConfigStorage.authAddress,
                     "PMP: token owner and address auth required"
                 );
+            } else {
+                // @dev no coverage, this should never be reached
+                revert("PMP: invalid authOption");
             }
         }
 
@@ -858,6 +765,102 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
                 "PMP: artist string cannot be configured for non-string params"
             );
         }
+    }
+
+    /**
+     * @notice Gets the value of a PMP as a formatted string.
+     * @dev Used internally to retrieve a PMP value in string format for external consumption.
+     * @param pmpConfigStorage The config storage for the PMP.
+     * @param pmp The PMP storage instance.
+     * @return isConfigured Whether the PMP has been configured for the token.
+     * @return value The string representation of the PMP value, or empty if not configured.
+     */
+    function _getPMPValue(
+        PMPConfigStorage storage pmpConfigStorage,
+        PMPStorage storage pmp
+    ) internal view returns (bool isConfigured, string memory value) {
+        ParamType configuredParamType = pmp.configuredParamType;
+        // unconfigured param for token
+        if (
+            configuredParamType == ParamType.Unconfigured || // unconfigured for token
+            configuredParamType != pmpConfigStorage.paramType // stale - token configured param type is different from project config
+        ) {
+            return (false, "");
+        }
+        // if string, return value
+        if (pmpConfigStorage.paramType == ParamType.String) {
+            // return artist configured value if present
+            if (bytes(pmp.artistConfiguredValueString).length > 0) {
+                return (true, pmp.artistConfiguredValueString);
+            }
+            // return non-artist configured value if present
+            if (bytes(pmp.nonArtistConfiguredValueString).length > 0) {
+                return (true, pmp.nonArtistConfiguredValueString);
+            }
+            // empty string is considered not configured
+            return (false, "");
+        }
+        if (configuredParamType == ParamType.Select) {
+            // return unconfigured if index is out of bounds (obviously stale)
+            if (
+                uint256(pmp.configuredValue) >=
+                pmpConfigStorage.selectOptions.length
+            ) {
+                return (false, "");
+            }
+            return (
+                true,
+                pmpConfigStorage.selectOptions[uint256(pmp.configuredValue)]
+            );
+        }
+        if (configuredParamType == ParamType.Bool) {
+            return (true, pmp.configuredValue == bytes32(0) ? "false" : "true");
+        }
+        if (
+            configuredParamType == ParamType.Uint256Range ||
+            configuredParamType == ParamType.HexColor ||
+            configuredParamType == ParamType.Timestamp ||
+            configuredParamType == ParamType.DecimalRange
+        ) {
+            // verify configured value is within bounds (obviously stale if not)
+            uint256 configuredValue = uint256(pmp.configuredValue);
+            uint256 maxRange = configuredParamType == ParamType.HexColor
+                ? _HEX_COLOR_MAX
+                : uint256(pmpConfigStorage.maxRange);
+            uint256 minRange = configuredParamType == ParamType.HexColor
+                ? 0
+                : uint256(pmpConfigStorage.minRange);
+            if (
+                configuredValue < uint256(minRange) ||
+                configuredValue > uint256(maxRange)
+            ) {
+                return (false, "");
+            }
+            // handle decimal case
+            if (configuredParamType == ParamType.DecimalRange) {
+                return (true, _uintToDecimalString(configuredValue));
+            }
+            // handle hex color case
+            if (configuredParamType == ParamType.HexColor) {
+                return (true, _uintToHexColorString(configuredValue));
+            }
+            // handle other cases - uint256 and timestamp
+            return (true, configuredValue.toString());
+        }
+        if (configuredParamType == ParamType.Int256Range) {
+            // verify configured value is within bounds (obviously stale if not)
+            int256 configuredValue = int256(uint256(pmp.configuredValue));
+            if (
+                configuredValue < int256(uint256(pmpConfigStorage.minRange)) ||
+                configuredValue > int256(uint256(pmpConfigStorage.maxRange))
+            ) {
+                return (false, "");
+            }
+            return (true, configuredValue.toStringSigned());
+        }
+        // @dev should never reach
+        // @dev no coverage, unreachable
+        revert("PMP: Unhandled ParamType");
     }
 
     /**
