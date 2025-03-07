@@ -1262,7 +1262,204 @@ describe("PMPV0_Views", function () {
         expect(params[1].value).to.equal("I'm augmented!");
       });
     });
-  });
 
-  // TODO - getProjectConfig, etc.
+    describe("getProjectConfig", function () {
+      it("returns uninitialized values and empty array for uninitialized projects", async function () {
+        const config = await loadFixture(_beforeEach);
+        const projectConfig = await config.pmp.getProjectConfig(
+          config.genArt721Core.address,
+          999
+        );
+        expect(projectConfig.pmpKeys.length).to.equal(0);
+        expect(projectConfig.configNonce).to.equal(0);
+        expect(projectConfig.tokenPMPPostConfigHook).to.equal(
+          constants.AddressZero
+        );
+        expect(projectConfig.tokenPMPReadAugmentationHook).to.equal(
+          constants.AddressZero
+        );
+      });
+
+      it("returns populated values for initialized projects", async function () {
+        const config = await loadFixture(_beforeEach);
+        // artist configures a project
+        const pmpConfig1 = getPMPInputConfig(
+          "param1",
+          PMP_AUTH_ENUM.ArtistAndTokenOwner,
+          PMP_PARAM_TYPE_ENUM.Uint256Range,
+          0,
+          constants.AddressZero,
+          [],
+          "0x0000000000000000000000000000000000000000000000000000000000000001",
+          "0x0000000000000000000000000000000000000000000000000000000000000010"
+        );
+        await config.pmp
+          .connect(config.accounts.artist)
+          .configureProject(config.genArt721Core.address, config.projectZero, [
+            pmpConfig1,
+          ]);
+        // artist configures hooks
+        await config.pmp
+          .connect(config.accounts.artist)
+          .configureProjectHooks(
+            config.genArt721Core.address,
+            config.projectZero,
+            config.configureHook.address,
+            config.augmentHook.address
+          );
+        const projectConfig = await config.pmp.getProjectConfig(
+          config.genArt721Core.address,
+          config.projectZero
+        );
+        expect(projectConfig.pmpKeys.length).to.equal(1);
+        expect(projectConfig.pmpKeys[0]).to.equal("param1");
+        expect(projectConfig.configNonce).to.equal(1);
+        expect(projectConfig.tokenPMPPostConfigHook).to.equal(
+          config.configureHook.address
+        );
+        expect(projectConfig.tokenPMPReadAugmentationHook).to.equal(
+          config.augmentHook.address
+        );
+      });
+    });
+
+    describe("getProjectPMPConfig", function () {
+      it("returns uninitialized values and empty array for uninitialized projects", async function () {
+        const config = await loadFixture(_beforeEach);
+        const pmpConfigStorage = await config.pmp.getProjectPMPConfig(
+          config.genArt721Core.address,
+          999,
+          "param1"
+        );
+        expect(pmpConfigStorage.highestConfigNonce).to.equal(0);
+        expect(pmpConfigStorage.authOption).to.equal(PMP_AUTH_ENUM.Artist); // default value at index 0
+        expect(pmpConfigStorage.paramType).to.equal(
+          PMP_PARAM_TYPE_ENUM.Unconfigured // default value at index 0
+        );
+        expect(pmpConfigStorage.pmpLockedAfterTimestamp).to.equal(0);
+        expect(pmpConfigStorage.authAddress).to.equal(constants.AddressZero);
+        expect(pmpConfigStorage.selectOptions).to.deep.equal([]);
+        expect(pmpConfigStorage.minRange).to.equal(
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+        expect(pmpConfigStorage.maxRange).to.equal(
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+      });
+
+      it("returns populated values for initialized projects", async function () {
+        const config = await loadFixture(_beforeEach);
+        // artist configures a project
+        const pmpConfig1 = getPMPInputConfig(
+          "param1",
+          PMP_AUTH_ENUM.ArtistAndTokenOwnerAndAddress,
+          PMP_PARAM_TYPE_ENUM.Uint256Range,
+          9991741376533, // far future timestamp
+          config.accounts.deployer.address,
+          [],
+          "0x0000000000000000000000000000000000000000000000000000000000000001",
+          "0x0000000000000000000000000000000000000000000000000000000000000010"
+        );
+        await config.pmp
+          .connect(config.accounts.artist)
+          .configureProject(config.genArt721Core.address, config.projectZero, [
+            pmpConfig1,
+          ]);
+        const pmpConfigStorage = await config.pmp.getProjectPMPConfig(
+          config.genArt721Core.address,
+          config.projectZero,
+          "param1"
+        );
+        expect(pmpConfigStorage.highestConfigNonce).to.equal(1);
+        expect(pmpConfigStorage.authOption).to.equal(
+          PMP_AUTH_ENUM.ArtistAndTokenOwnerAndAddress
+        );
+        expect(pmpConfigStorage.paramType).to.equal(
+          PMP_PARAM_TYPE_ENUM.Uint256Range
+        );
+        expect(pmpConfigStorage.pmpLockedAfterTimestamp).to.equal(
+          9991741376533
+        );
+        expect(pmpConfigStorage.authAddress).to.equal(
+          config.accounts.deployer.address
+        );
+        expect(pmpConfigStorage.selectOptions).to.deep.equal([]);
+        expect(pmpConfigStorage.minRange).to.equal(
+          "0x0000000000000000000000000000000000000000000000000000000000000001"
+        );
+        expect(pmpConfigStorage.maxRange).to.equal(
+          "0x0000000000000000000000000000000000000000000000000000000000000010"
+        );
+      });
+    });
+
+    describe("getTokenPMPStorage", function () {
+      it("returns uninitialized values for uninitialized tokens", async function () {
+        const config = await loadFixture(_beforeEach);
+        const pmpStorage = await config.pmp.getTokenPMPStorage(
+          config.genArt721Core.address,
+          config.projectZeroTokenZero,
+          "param1"
+        );
+        expect(pmpStorage.configuredParamType).to.equal(
+          PMP_PARAM_TYPE_ENUM.Unconfigured // default value at index 0
+        );
+        expect(pmpStorage.configuredValue).to.equal(
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+        expect(pmpStorage.artistConfiguredValueString).to.equal("");
+        expect(pmpStorage.nonArtistConfiguredValueString).to.equal("");
+      });
+
+      it("returns populated values for initialized tokens", async function () {
+        const config = await loadFixture(_beforeEach);
+        // artist configures a token
+        const pmpConfig1 = getPMPInputConfig(
+          "param1",
+          PMP_AUTH_ENUM.ArtistAndTokenOwner,
+          PMP_PARAM_TYPE_ENUM.Uint256Range,
+          0,
+          constants.AddressZero,
+          [],
+          "0x0000000000000000000000000000000000000000000000000000000000000001",
+          "0x0000000000000000000000000000000000000000000000000000000000000010"
+        );
+        await config.pmp
+          .connect(config.accounts.artist)
+          .configureProject(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero,
+            [pmpConfig1]
+          );
+        // token owner configures a param
+        const pmpInput1 = getPMPInput(
+          "param1",
+          PMP_PARAM_TYPE_ENUM.Uint256Range,
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          false,
+          ""
+        );
+        await config.pmp
+          .connect(config.accounts.user)
+          .configureTokenParams(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero,
+            [pmpInput1]
+          );
+        const pmpStorage = await config.pmp.getTokenPMPStorage(
+          config.genArt721Core.address,
+          config.projectZeroTokenZero,
+          "param1"
+        );
+        expect(pmpStorage.configuredParamType).to.equal(
+          PMP_PARAM_TYPE_ENUM.Uint256Range
+        );
+        expect(pmpStorage.configuredValue).to.equal(
+          "0x000000000000000000000000000000000000000000000000000000000000000a"
+        );
+        expect(pmpStorage.artistConfiguredValueString).to.equal("");
+        expect(pmpStorage.nonArtistConfiguredValueString).to.equal("");
+      });
+    });
+  });
 });
