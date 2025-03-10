@@ -1030,6 +1030,43 @@ for (const coreContractName of coreContractsToTest) {
         );
         expect(externalAssetDependency.data).to.equal(preDeployedAssetText);
       });
+
+      describe("Web3Call Integration", function () {
+        it('returns "#web3call_contract#" when ONCHAIN set to PMP web3call contract', async function () {
+          const config = await loadFixture(_beforeEach);
+          // deploy a PMP web3call contract
+          const pmp = await deployAndGet(config, "PMPV0", []);
+          // assign the PMP as an ONCHAIN dependency
+          await config.genArt721Core
+            .connect(config.accounts.artist)
+            .addProjectAssetDependencyOnChainAtAddress(
+              config.projectZero,
+              pmp.address
+            );
+          // get the ONCHAIN asset data, should be "#web3call_contract#"
+          const externalAssetDependency = await config.genArt721Core
+            .connect(config.accounts.artist)
+            .projectExternalAssetDependencyByIndex(config.projectZero, 0);
+          expect(externalAssetDependency.data).to.equal("#web3call_contract#");
+        });
+
+        it("reverts when called with a non-bytecodestorage, non-web3call contract", async function () {
+          const config = await loadFixture(_beforeEach);
+          await config.genArt721Core
+            .connect(config.accounts.artist)
+            .addProjectAssetDependencyOnChainAtAddress(
+              config.projectZero,
+              constants.ZERO_ADDRESS
+            );
+          // expect revert when reading asset data
+          await expectRevert(
+            config.genArt721Core
+              .connect(config.accounts.artist)
+              .projectExternalAssetDependencyByIndex(config.projectZero, 0),
+            "BytecodeStorageReaderContractV2_Web3Call: Failed to read from bytecode"
+          );
+        });
+      });
     });
 
     describe("dependency type ART_BLOCKS_DEPENDENCY_REGISTRY, updates state as intended", function () {

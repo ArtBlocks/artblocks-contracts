@@ -12,8 +12,8 @@ import {
 import { UniversalBytecodeStorageReader } from "../../scripts/contracts";
 import { GenArt721CoreV3_Engine } from "../../scripts/contracts";
 import { GenArt721CoreV3_Engine_Flex } from "../../scripts/contracts";
-import { BytecodeStorageReaderContractV2__factory } from "../../scripts/contracts/factories/contracts/BytecodeStorageReaders/BytecodeStorageReaderContractV2.sol";
-import { BytecodeStorageReaderContractV2 } from "../../scripts/contracts/contracts/BytecodeStorageReaders/BytecodeStorageReaderContractV2.sol";
+import { BytecodeStorageReaderContractV2_Web3Call__factory } from "../../scripts/contracts/factories/contracts/BytecodeStorageReaders/BytecodeStorageReaderContractV2_Web3Call.sol";
+import { BytecodeStorageReaderContractV2_Web3Call } from "../../scripts/contracts/contracts/BytecodeStorageReaders/BytecodeStorageReaderContractV2_Web3Call.sol";
 
 interface T_ReaderTest_Config extends T_Config {
   universalReader: UniversalBytecodeStorageReader;
@@ -112,12 +112,16 @@ for (const coreContractName of coreContractsToTest) {
         // reader address should be a versioned reader, ensuring the address was the expected value
         const versionedReaderContract = new ethers.Contract(
           versionedReaderAddress,
-          BytecodeStorageReaderContractV2__factory.abi,
+          BytecodeStorageReaderContractV2_Web3Call__factory.abi,
           config.accounts.deployer
-        ) as BytecodeStorageReaderContractV2;
+        ) as BytecodeStorageReaderContractV2_Web3Call;
         const readerVersion = await versionedReaderContract.VERSION();
-        expect(readerVersion).to.be.equal("BytecodeStorageReaderContractV2");
+        expect(readerVersion).to.be.equal(
+          "BytecodeStorageReaderContractV2_Web3Call"
+        );
       });
     });
+
+    // @dev testing of readFromBytecode function accomplished via core contract testing suite
   });
 }

@@ -140,7 +140,7 @@ export async function setupEngineFactory() {
   )) as UniversalBytecodeStorageReader;
   // deploy version-specific reader and configure universalReader
   const versionedReaderFactory = await ethers.getContractFactory(
-    "BytecodeStorageReaderContractV2",
+    "BytecodeStorageReaderContractV2_Web3Call",
     { libraries: { BytecodeStorageReader: library.address } }
   );
   const versionedReader = await versionedReaderFactory

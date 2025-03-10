@@ -32,7 +32,7 @@ import {ERC165Checker} from "@openzeppelin-5.0/contracts/utils/introspection/ERC
 contract BytecodeStorageReaderContractV2_Web3Call is IBytecodeStorageReaderV2 {
     using BytecodeStorageReader for address;
 
-    string public constant VERSION = "BytecodeStorageReaderContractV2";
+    string public constant VERSION = "BytecodeStorageReaderContractV2_Web3Call";
 
     /**
      * @notice Read a string from a data contract deployed via BytecodeStorage V2 or earlier.
