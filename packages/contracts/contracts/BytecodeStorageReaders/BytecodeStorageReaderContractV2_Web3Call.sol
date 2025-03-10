@@ -36,6 +36,10 @@ contract BytecodeStorageReaderContractV2_Web3Call is IBytecodeStorageReaderV2 {
 
     /**
      * @notice Read a string from a data contract deployed via BytecodeStorage V2 or earlier.
+     * Also supports returning "#web3call_contract#" when the contract is not a
+     * BytecodeStorage contract, but does support the IWeb3Call interface.
+     * Reverts if the contract is not a BytecodeStorage contract and does not indicate
+     * ERC165 support for the IWeb3Call interface.
      * @param address_ address of contract deployed via BytecodeStorage to be read
      * @return The string data stored at the specific address.
      */
