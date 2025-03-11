@@ -14,7 +14,16 @@ import {
   GenArt721,
   BytecodeStorageV2Writer,
   UniversalBytecodeStorageReader,
+  PMPV0,
 } from "../../scripts/contracts";
+
+import { constants } from "ethers";
+import {
+  getPMPInputConfig,
+  getPMPInput,
+  PMP_AUTH_ENUM,
+  PMP_PARAM_TYPE_ENUM,
+} from "../web3call/PMP/pmpTestUtils";
 
 import {
   T_Config,
@@ -290,7 +299,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = hashes[0];
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = JSON.parse(\`{"tokenId":"0","hashes":["${hash}"]}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
+          `let tokenData = JSON.parse(\`{"tokenId":"0","hashes":["${hash}"]}\`, (key, value) => key === "data" && value !== null ? value.startsWith("#web3call#") ? Object.entries(JSON.parse(atob(value.slice(10)))).reduce((acc, [k, v]) => ((acc[atob(k)] = atob(v)), acc), {}) : atob(value) : value);`
         )
       );
 
@@ -391,7 +400,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = await genArt721CoreV1.tokenIdToHash(tokenId);
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
+          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? value.startsWith("#web3call#") ? Object.entries(JSON.parse(atob(value.slice(10)))).reduce((acc, [k, v]) => ((acc[atob(k)] = atob(v)), acc), {}) : atob(value) : value);`
         )
       );
       // Project script
@@ -472,7 +481,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = await genArt721CoreV2.tokenIdToHash(tokenId);
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
+          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? value.startsWith("#web3call#") ? Object.entries(JSON.parse(atob(value.slice(10)))).reduce((acc, [k, v]) => ((acc[atob(k)] = atob(v)), acc), {}) : atob(value) : value);`
         )
       );
       // Project script
@@ -567,7 +576,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = await genArt721CoreV3.tokenIdToHash(tokenId);
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
+          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? value.startsWith("#web3call#") ? Object.entries(JSON.parse(atob(value.slice(10)))).reduce((acc, [k, v]) => ((acc[atob(k)] = atob(v)), acc), {}) : atob(value) : value);`
         )
       );
       // Project script
@@ -664,7 +673,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = await genArt721CoreV3.tokenIdToHash(tokenId);
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
+          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? value.startsWith("#web3call#") ? Object.entries(JSON.parse(atob(value.slice(10)))).reduce((acc, [k, v]) => ((acc[atob(k)] = atob(v)), acc), {}) : atob(value) : value);`
         )
       );
       // Project script
@@ -798,7 +807,7 @@ describe(`GenArt721GeneratorV0`, async function () {
         console.log("TOKEN_HTML", tokenHtml);
         expect(tokenHtml).to.include(
           getScriptTag(
-            `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}","preferredArweaveGateway":"${preferredArweaveGateway}","preferredIPFSGateway":"${preferredIpfsGateway}","externalAssetDependencies":[{"dependency_type":"IPFS","cid":"${ipfsCid}","data":""},{"dependency_type":"ARWEAVE","cid":"${arweaveCid}","data":""},{"dependency_type":"ONCHAIN","cid":"","data":"${btoa(onchainData)}"},{"dependency_type":"ART_BLOCKS_DEPENDENCY_REGISTRY","cid":"${onchainLibraryName}","data":""}]}\`, (key, value) => key === "data" && value !== null ? atob(value) : value);`
+            `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}","preferredArweaveGateway":"${preferredArweaveGateway}","preferredIPFSGateway":"${preferredIpfsGateway}","externalAssetDependencies":[{"dependency_type":"IPFS","cid":"${ipfsCid}","data":""},{"dependency_type":"ARWEAVE","cid":"${arweaveCid}","data":""},{"dependency_type":"ONCHAIN","cid":"","data":"${btoa(onchainData)}"},{"dependency_type":"ART_BLOCKS_DEPENDENCY_REGISTRY","cid":"${onchainLibraryName}","data":""}]}\`, (key, value) => key === "data" && value !== null ? value.startsWith("#web3call#") ? Object.entries(JSON.parse(atob(value.slice(10)))).reduce((acc, [k, v]) => ((acc[atob(k)] = atob(v)), acc), {}) : atob(value) : value);`
           )
         );
         // flex Dependency Registry injected script was injected in the head element (whereas the project script was injected in the body element)
@@ -826,6 +835,132 @@ describe(`GenArt721GeneratorV0`, async function () {
         // Base64 encoded data uri
         expect(encodedTokenHtml).to.equal(
           `data:text/html;base64,${Buffer.from(tokenHtml).toString("base64")}`
+        );
+      });
+
+      it("injects web3call parameters for a web3call flex dependency", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        const {
+          genArt721Core: genArt721CoreV3,
+          minterFilter,
+          randomizer,
+        } = await deployCoreWithMinterFilter(
+          config,
+          "GenArt721CoreV3_Engine_Flex",
+          "MinterFilterV1"
+        );
+
+        const minter = (await deployAndGet(config, "MinterSetPriceV2", [
+          genArt721CoreV3.address,
+          minterFilter.address,
+        ])) as MinterSetPriceV2;
+
+        await minterFilter
+          .connect(config.accounts.deployer)
+          .addApprovedMinter(minter.address);
+
+        const projectId = await genArt721CoreV3.nextProjectId();
+        // Add and configure project
+        await genArt721CoreV3
+          .connect(config.accounts.deployer)
+          .addProject("name", config.accounts.artist.address);
+
+        const projectScript =
+          "console.log(tokenData); console.log(blah); console.log(bleh);";
+        const projectScriptCompressed =
+          await genArt721CoreV3.getCompressed(projectScript);
+        await genArt721CoreV3
+          .connect(config.accounts.artist)
+          .addProjectScriptCompressed(projectId, projectScriptCompressed);
+        await genArt721CoreV3
+          .connect(config.accounts.artist)
+          .updateProjectScriptType(projectId, p5NameAndVersionBytes);
+
+        // Mint token 0
+        await minterFilter
+          .connect(config.accounts.artist)
+          .setMinterForProject(projectId, minter.address);
+        await minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(projectId, 0);
+        await minter.connect(config.accounts.artist).purchase(projectId);
+
+        const tokenId = projectId.mul(ONE_MILLION);
+
+        // Add contract to core registry
+        await config.coreRegistry
+          ?.connect(config.accounts.deployer)
+          .registerContract(
+            genArt721CoreV3.address,
+            ethers.utils.formatBytes32String("DUMMY_VERSION"),
+            ethers.utils.formatBytes32String("DUMMY_TYPE")
+          );
+
+        // deploy PMP contract as our web3call contract
+        const pmp = (await deployAndGet(config, "PMPV0", [])) as PMPV0;
+
+        // add PMP as a web3call contract
+        await genArt721CoreV3.addProjectAssetDependencyOnChainAtAddress(
+          projectId,
+          pmp.address
+        );
+
+        // get token html
+        const tokenHtml = await config.genArt721Generator.getTokenHtml(
+          genArt721CoreV3.address,
+          tokenId
+        );
+
+        // check that the token html includes empty web3call parameters, encoded as base64
+        // @dev "e30=" is the base64 encoded empty json object, "{}"
+        expect(tokenHtml).to.include('"data":"#web3call#e30="');
+
+        // artist configures project with PMP parameters
+        const pmpConfig1 = getPMPInputConfig(
+          "param1",
+          PMP_AUTH_ENUM.ArtistAndTokenOwner,
+          PMP_PARAM_TYPE_ENUM.String,
+          0,
+          constants.AddressZero,
+          [],
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+        await pmp
+          .connect(config.accounts.artist)
+          .configureProject(genArt721CoreV3.address, projectId, [pmpConfig1]);
+
+        // should still be empty object because unconfigured for tokens
+        // get token html
+        const tokenHtml2 = await config.genArt721Generator.getTokenHtml(
+          genArt721CoreV3.address,
+          tokenId
+        );
+        // check that the token html includes the web3call parameters
+        expect(tokenHtml2).to.include('"data":"#web3call#e30="');
+
+        // artist configures PMP for token 0
+        const pmpInput = getPMPInput(
+          "param1",
+          PMP_PARAM_TYPE_ENUM.String,
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          false,
+          `]Handle This {[,'"@#$@#%@#$%#%$%`
+        );
+        await pmp
+          .connect(config.accounts.artist)
+          .configureTokenParams(genArt721CoreV3.address, tokenId, [pmpInput]);
+
+        // get token html
+        const tokenHtml3 = await config.genArt721Generator.getTokenHtml(
+          genArt721CoreV3.address,
+          tokenId
+        );
+        // verify that the token html includes the web3call parameters
+        // @dev eyJjR0Z5WVcweCI6IlhVaGhibVJzWlNCVWFHbHpJSHRiTENjaVFDTWtRQ01sUUNNa0pTTWxKQ1U9In0= is base64 encoded json object of prescribed base64 encoded key/value pair
+        expect(tokenHtml3).to.include(
+          '"externalAssetDependencies":[{"dependency_type":"ONCHAIN","cid":"","data":"#web3call#eyJjR0Z5WVcweCI6IlhVaGhibVJzWlNCVWFHbHpJSHRiTENjaVFDTWtRQ01sUUNNa0pTTWxKQ1U9In0="}]'
         );
       });
     });

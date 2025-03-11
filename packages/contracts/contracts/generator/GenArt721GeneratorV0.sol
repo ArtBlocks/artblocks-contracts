@@ -635,7 +635,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                             tokenId: tokenId
                         })
                     ),
-                    stringEncodingFlag: JsonStatic.StringEncodingFlag.BASE64
+                    stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE // we base64 encode everything in the _getWeb3CallParameters function
                 });
             } else {
                 // @dev typical ONCHAIN dependency, assign data for ONCHAIN dependencies
@@ -1031,7 +1031,8 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
      * @param web3callContract The address of the contract to call.
      * @param coreContract The address of the core contract.
      * @param tokenId The ID of the token.
-     * @return The web3call parameters for the token.
+     * @return The web3call parameters for the token as a json string, keys and values encoded
+     * as base64 strings, then the entire json string is encoded as base64.
      */
     function _getWeb3CallParameters(
         address web3callContract,
@@ -1048,19 +1049,21 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             tokenParamsLength
         );
         for (uint256 i = 0; i < tokenParamsLength; i++) {
-            // @dev encode the key and value as base64 strings, to handle any special characters
+            // @dev encode the key here as base64 string, to handle any special characters
             IWeb3Call.TokenParam memory tokenParam = tokenParams[i];
             keys[i] = Base64.encode(bytes(tokenParam.key));
-            values[i].elementValueString = Base64.encode(
-                bytes(tokenParam.value)
-            ); // @dev encode base64 here instead of in the library, for clarity
+            values[i] = JsonStatic.newStringElement({
+                value: (tokenParam.value),
+                stringEncodingFlag: JsonStatic.StringEncodingFlag.BASE64
+            });
         }
         // use JsonStatic to build a printable json object from the key/value arrays
         JsonStatic.Json memory tokenParamsJson = JsonStatic.newObjectElement({
             keys: keys,
             values: values
         });
-        return tokenParamsJson.write();
+        // @dev base64 encode the entire json object for consistent encoding of data field
+        return Base64.encode(bytes(tokenParamsJson.write()));
     }
 
     /**
