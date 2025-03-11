@@ -42,6 +42,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
         10 ** _DECIMAL_PRECISION_DIGITS;
 
     // @dev min hex color assumed to be 0x000000
+    // @dev intentionally not including alpha channel, can be separate PMP if desired
     uint256 private constant _HEX_COLOR_MAX = 0xFFFFFF;
 
     uint256 private constant _TIMESTAMP_MIN = 0; // @dev unix timestamp, 0 = 1970-01-01
@@ -265,6 +266,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
             }
             // call post-config hook if configured for the project
             // @dev this function is nonreentrant for additional reentrancy protection
+            // @dev intentionally revert entire transaction if hook reverts to prevent latent failure
             if (address(projectConfig.tokenPMPPostConfigHook) != address(0)) {
                 projectConfig.tokenPMPPostConfigHook.onTokenPMPConfigure({
                     coreContract: coreContract,
