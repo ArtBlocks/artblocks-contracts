@@ -24,5 +24,5 @@ interface IWeb3Call {
     function getTokenParams(
         address coreContract,
         uint256 tokenId
-    ) external returns (TokenParam[] memory tokenParams);
+    ) external view returns (TokenParam[] memory tokenParams);
 }
