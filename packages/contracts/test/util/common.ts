@@ -427,7 +427,7 @@ export async function deployWithStorageLibraryAndGet(
     )) as UniversalBytecodeStorageReader;
     // deploy version-specific reader and configure universalReader
     const versionedReaderFactory = await ethers.getContractFactory(
-      "BytecodeStorageReaderContractV2",
+      "BytecodeStorageReaderContractV2_Web3Call",
       { libraries: { BytecodeStorageReader: library.address } }
     );
     const versionedReader = await versionedReaderFactory
@@ -530,7 +530,7 @@ export async function deployAndGetUniversalReader(
   )) as UniversalBytecodeStorageReader;
   // deploy version-specific reader and configure universalReader
   const versionedReaderFactory = await ethers.getContractFactory(
-    "BytecodeStorageReaderContractV2",
+    "BytecodeStorageReaderContractV2_Web3Call",
     { libraries: { BytecodeStorageReader: library.address } }
   );
   const versionedReader = await versionedReaderFactory
@@ -734,7 +734,7 @@ export async function deployCoreWithMinterFilter<
     )) as UniversalBytecodeStorageReader;
     // deploy version-specific reader and configure universalReader
     const versionedReaderFactory = await ethers.getContractFactory(
-      "BytecodeStorageReaderContractV2",
+      "BytecodeStorageReaderContractV2_Web3Call",
       { libraries: { BytecodeStorageReader: library.address } }
     );
     const versionedReader = await versionedReaderFactory
