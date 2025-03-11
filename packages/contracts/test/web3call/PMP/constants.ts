@@ -17,7 +17,7 @@ export const revertMessages = {
   minRangeNonZeroForNonRangeParamType: "PMP: minRange is not empty",
   maxRangeNonZeroForNonRangeParamType: "PMP: maxRange is not empty",
   selectOptionsEmptyForSelectParamType: "PMP: selectOptions is empty",
-  selectOptionsLengthGreaterThan256: "PMP: selectOptions length > 256",
+  selectOptionsLengthGreaterThan256: "PMP: selectOptions length > 255",
   minRangeNonZeroForSelectParamType: "PMP: minRange is not empty",
   maxRangeNonZeroForSelectParamType: "PMP: maxRange is not empty",
   minRangeGreaterThanMaxRange: "PMP: minRange >= maxRange",

@@ -7,6 +7,8 @@ import {IPMPConfigureHook} from "./IPMPConfigureHook.sol";
 import {IPMPAugmentHook} from "./IPMPAugmentHook.sol";
 import {IWeb3Call} from "./IWeb3Call.sol";
 
+import {ImmutableStringArray} from "../../libs/v0.8.x/ImmutableStringArray.sol";
+
 /**
  * @title Project Metadata Parameters (PMP) Interface, V0
  * @author Art Blocks Inc.
@@ -113,19 +115,21 @@ interface IPMPV0 is IWeb3Call {
     }
 
     /**
-     * @notice Storage structure for parameter configuration.
-     * @dev Includes additional field highestConfigNonce compared to PMPConfig.
+     * @notice View structure for a parameter configuration.
+     * @dev Used when reading a project's available parameters.
+     * @dev any populated select options are loaded and returned as a string array
+     * instead of remaining as a pointer to a data contract
      */
-    struct PMPConfigStorage {
-        // @dev highest config nonce for which this PMPConfig is valid (relative to projectConfig.configNonce)
-        uint8 highestConfigNonce; // slot 0: 1 byte
-        AuthOption authOption; // slot 0: 1 byte
-        ParamType paramType; // slot 0: 1 byte
-        uint48 pmpLockedAfterTimestamp; // slot 0: 6 bytes // @dev uint48 is sufficient to store ~2^48 seconds, ~8,900 years
-        address authAddress; // slot 0: 20 bytes
-        string[] selectOptions; // slot 1: 32 bytes
-        bytes32 minRange; // slot 2: 32 bytes
-        bytes32 maxRange; // slot 3: 32 bytes
+    struct PMPConfigView {
+        uint8 highestConfigNonce;
+        AuthOption authOption;
+        ParamType paramType;
+        uint48 pmpLockedAfterTimestamp;
+        address authAddress;
+        uint8 selectOptionsLength;
+        string[] selectOptions;
+        bytes32 minRange;
+        bytes32 maxRange;
     }
 
     /**

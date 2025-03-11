@@ -513,9 +513,9 @@ describe("PMPV0_Configure", function () {
         }
       });
 
-      it("reverts when invalid pmpInputConfig: selectOptions is > 256 length", async function () {
+      it("reverts when invalid pmpInputConfig: selectOptions is > 255 length", async function () {
         const config = await loadFixture(_beforeEach);
-        const selectOptions = Array.from({ length: 257 }, (_, i) => `${i}`);
+        const selectOptions = Array.from({ length: 256 }, (_, i) => `${i}`);
         for (const paramType of [PMP_PARAM_TYPE_ENUM.Select]) {
           // call with invalid input
           const pmpConfig = getPMPInputConfig(
@@ -524,7 +524,7 @@ describe("PMPV0_Configure", function () {
             paramType,
             0,
             constants.AddressZero,
-            selectOptions, // selectOptions is > 256 length
+            selectOptions, // selectOptions is > 255 length
             "0x0000000000000000000000000000000000000000000000000000000000000000",
             "0x0000000000000000000000000000000000000000000000000000000000000000"
           );
