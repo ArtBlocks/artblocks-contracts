@@ -2,7 +2,7 @@
  * This file contains common types and util functions for testing purposes
  */
 import { BN } from "@openzeppelin/test-helpers";
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract, BigNumber, constants } from "ethers";
 import { DEFAULT_BASE_URI, ONE_MINUTE } from "./constants";
@@ -1189,4 +1189,9 @@ export async function isERC20Minter(_contract: Contract) {
 export async function isDAMinter(_contract: Contract) {
   const minterType = await _contract.minterType();
   return minterType.includes("DA");
+}
+
+export async function advanceTimeAndBlock(timeInSeconds: number) {
+  await network.provider.send("evm_increaseTime", [timeInSeconds]); // Increase time
+  await network.provider.send("evm_mine"); // Mine a new block
 }

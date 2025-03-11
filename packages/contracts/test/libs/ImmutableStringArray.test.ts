@@ -68,6 +68,11 @@ describe("ImmutableStringArray", function () {
   });
 
   describe("Edge Cases", function () {
+    it("should return empty array when uninitialized", async function () {
+      const { mock } = await loadFixture(deployFixture);
+      expect(await mock.getAll()).to.deep.equal([]);
+    });
+
     it("should handle long strings", async function () {
       const { mock } = await loadFixture(deployFixture);
       const longString = "a".repeat(1000);
@@ -119,6 +124,11 @@ describe("ImmutableStringArray", function () {
 
       await expect(mock.get(1)).to.be.revertedWith("Index out of bounds");
       await expect(mock.get(999)).to.be.revertedWith("Index out of bounds");
+    });
+
+    it("should revert when accessing uninitialized storageArray", async function () {
+      const { mock } = await loadFixture(deployFixture);
+      await expect(mock.get(0)).to.be.revertedWith("Index out of bounds");
     });
 
     // @dev no test on overflow of uint64, as realistically impossible
