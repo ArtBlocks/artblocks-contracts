@@ -9,11 +9,14 @@ import "../interfaces/v0.8.x/IGenArt721CoreTokenHashProviderV1.sol";
 import "../interfaces/v0.8.x/IGenArt721GeneratorV0.sol";
 import {IGenArt721CoreContractV3_Engine_Flex} from "../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
 import {IUniversalBytecodeStorageReader} from "../interfaces/v0.8.x/IUniversalBytecodeStorageReader.sol";
+import {IWeb3Call} from "../interfaces/v0.8.x/IWeb3Call.sol";
+
 import "../libs/v0.8.x/Bytes32Strings.sol";
 import {JsonStatic} from "../libs/v0.8.x/JsonStatic.sol";
 import {ABHelpers} from "../libs/v0.8.x/ABHelpers.sol";
 import {AddressChunks} from "./AddressChunks.sol";
 
+import {Base64} from "@openzeppelin-5.0/contracts/utils/Base64.sol";
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.8/contracts-upgradeable/proxy/utils/Initializable.sol";
 
@@ -562,12 +565,12 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
      * as well as any dependency name and version if the dependency is an
      * ART_BLOCKS_DEPENDENCY_REGISTRY dependency.
      * @param coreContract The core contract address the project belongs to.
-     * @param projectId The ID of the project to retrieve the external asset dependency for.
+     * @param tokenId The ID of the token to retrieve the external asset dependency for.
      * @param index The index of the external asset dependency to retrieve.
      */
     function _getExternalAssetDependencyKeysAndValues(
         address coreContract,
-        uint256 projectId,
+        uint256 tokenId,
         uint256 index
     )
         internal
@@ -578,6 +581,8 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             bytes32 /*dependencyNameAndVersion*/
         )
     {
+        // get project id from token id
+        uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
         // default as not an art blocks dependency registry dependency
         bytes32 dependencyNameAndVersion; // default as not an art blocks dependency registry dependency
         // each external asset dependency has 3 fields, so pre-allocate array to avoid dynamic memory allocation
@@ -612,10 +617,33 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                 .ExternalAssetDependencyType
                 .ONCHAIN
         ) {
-            dependencyValues[2] = JsonStatic.newStringElement({
-                value: externalAssetDependencyWithData.data, // assign data for ONCHAIN dependencies
-                stringEncodingFlag: JsonStatic.StringEncodingFlag.BASE64
-            });
+            if (
+                keccak256(
+                    abi.encodePacked(externalAssetDependencyWithData.data)
+                ) == keccak256(abi.encodePacked("#web3call_contract#")) // @dev special string indicating a web3call contract
+            ) {
+                // treat as a web3call contract, inject token parameters based on the web3call contract
+                // @dev prepend with "#web3call#" to indicate that the data should be decoded as a web3call
+                // with base64 encoded key/value pairs
+                dependencyValues[2] = JsonStatic.newStringElement({
+                    value: string.concat(
+                        "#web3call#",
+                        _getWeb3CallParameters({
+                            web3callContract: externalAssetDependencyWithData
+                                .bytecodeAddress,
+                            coreContract: coreContract,
+                            tokenId: tokenId
+                        })
+                    ),
+                    stringEncodingFlag: JsonStatic.StringEncodingFlag.NONE // we base64 encode everything in the _getWeb3CallParameters function
+                });
+            } else {
+                // @dev typical ONCHAIN dependency, assign data for ONCHAIN dependencies
+                dependencyValues[2] = JsonStatic.newStringElement({
+                    value: externalAssetDependencyWithData.data,
+                    stringEncodingFlag: JsonStatic.StringEncodingFlag.BASE64
+                });
+            }
         } else {
             dependencyValues[2] = JsonStatic.newStringElement({
                 value: "", // empty string for non-ONCHAIN dependencies
@@ -744,7 +772,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                     bytes32 dependencyNameAndVersion
                 ) = _getExternalAssetDependencyKeysAndValues({
                         coreContract: coreContract,
-                        projectId: projectId,
+                        tokenId: tokenId,
                         index: i
                     });
                 // handle ART_BLOCKS_DEPENDENCY_REGISTRY dependency type
@@ -870,7 +898,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         headTags[1].tagContent = abi.encodePacked(
             "let tokenData = JSON.parse(`",
             tokenDataJson,
-            '`, (key, value) => key === "data" && value !== null ? atob(value) : value);'
+            '`, (key, value) => key === "data" && value !== null ? value.startsWith("#web3call#") ? Object.entries(JSON.parse(atob(value.slice(10)))).reduce((acc, [k, v]) => ((acc[atob(k)] = atob(v)), acc), {}) : atob(value) : value);'
         );
         headTags[1].tagType = HTMLTagType.script;
         for (
@@ -995,6 +1023,47 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         // query and return result of dependency registry for on-chain status
         (, , , , , , , availableOnChain, ) = dependencyRegistry
             .getDependencyDetails(dependencyNameAndVersion);
+    }
+
+    /**
+     * @dev Helper function to get the web3call parameters for a given token.
+     * Assumes the contract supports the IWeb3Call interface.
+     * @param web3callContract The address of the contract to call.
+     * @param coreContract The address of the core contract.
+     * @param tokenId The ID of the token.
+     * @return The web3call parameters for the token as a json string, keys and values encoded
+     * as base64 strings, then the entire json string is encoded as base64.
+     */
+    function _getWeb3CallParameters(
+        address web3callContract,
+        address coreContract,
+        uint256 tokenId
+    ) internal view returns (string memory) {
+        // get the onchain data for the contract
+        IWeb3Call.TokenParam[] memory tokenParams = IWeb3Call(web3callContract)
+            .getTokenParams({coreContract: coreContract, tokenId: tokenId});
+        uint256 tokenParamsLength = tokenParams.length;
+        // build key/value arrays for the token params
+        string[] memory keys = JsonStatic.newKeysArray(tokenParamsLength);
+        JsonStatic.Json[] memory values = JsonStatic.newValuesArray(
+            tokenParamsLength
+        );
+        for (uint256 i = 0; i < tokenParamsLength; i++) {
+            // @dev encode the key here as base64 string, to handle any special characters
+            IWeb3Call.TokenParam memory tokenParam = tokenParams[i];
+            keys[i] = Base64.encode(bytes(tokenParam.key));
+            values[i] = JsonStatic.newStringElement({
+                value: (tokenParam.value),
+                stringEncodingFlag: JsonStatic.StringEncodingFlag.BASE64
+            });
+        }
+        // use JsonStatic to build a printable json object from the key/value arrays
+        JsonStatic.Json memory tokenParamsJson = JsonStatic.newObjectElement({
+            keys: keys,
+            values: values
+        });
+        // @dev base64 encode the entire json object for consistent encoding of data field
+        return Base64.encode(bytes(tokenParamsJson.write()));
     }
 
     /**
