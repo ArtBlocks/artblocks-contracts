@@ -131,7 +131,6 @@ describe("PMPV0_Events", function () {
       const event = receipt.events?.find(
         (e) => e.event === "TokenParamsConfigured"
       );
-      console.log("event", event);
       expect(event?.args?.[0]).to.equal(config.genArt721Core.address); // genArt721Core address
       expect(event?.args?.[1]).to.equal(config.projectZeroTokenZero); // project id
       expect(event?.args?.[2][0][0]).to.equal("param1"); // pmpInput key

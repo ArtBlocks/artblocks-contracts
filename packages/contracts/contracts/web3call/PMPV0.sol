@@ -48,6 +48,25 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
     uint256 private constant _TIMESTAMP_MIN = 0; // @dev unix timestamp, 0 = 1970-01-01
     uint256 private constant _TIMESTAMP_MAX = type(uint64).max; // max guardrail, ~10 billion years
 
+    /**
+     * @notice Storage structure for parameter configuration.
+     * @dev Includes additional field highestConfigNonce compared to PMPConfig.
+     */
+    struct PMPConfigStorage {
+        // @dev highest config nonce for which this PMPConfig is valid (relative to projectConfig.configNonce)
+        uint8 highestConfigNonce; // slot 0: 1 byte
+        AuthOption authOption; // slot 0: 1 byte
+        ParamType paramType; // slot 0: 1 byte
+        uint48 pmpLockedAfterTimestamp; // slot 0: 6 bytes // @dev uint48 is sufficient to store ~2^48 seconds, ~8,900 years
+        address authAddress; // slot 0: 20 bytes
+        // @dev store array length as uint8 in slot 0 for SLOAD efficiency during token configuration
+        uint8 selectOptionsLength; // slot 0: 1 byte
+        // @dev use immutable string array for storage efficiency during project configuration
+        ImmutableStringArray.StringArray selectOptions; // slot 1: 32 bytes
+        bytes32 minRange; // slot 2: 32 bytes
+        bytes32 maxRange; // slot 3: 32 bytes
+    }
+
     // @dev core contract address and projectId are implicit based on mapping pointing to ProjectConfig struct
     struct ProjectConfig {
         // @dev array of pmpKeys for efficient enumeration, uses efficient SSTORE2 storage
@@ -198,8 +217,14 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
             pmpConfigStorage.pmpLockedAfterTimestamp = inputPMPConfig
                 .pmpLockedAfterTimestamp;
             pmpConfigStorage.authAddress = inputPMPConfig.authAddress;
-            // TODO - use immutableStringArray for selectOptions
-            pmpConfigStorage.selectOptions = inputPMPConfig.selectOptions;
+            // @dev length already validated <= 255 in _validatePMPConfig, safe to cast unchecked
+            pmpConfigStorage.selectOptionsLength = uint8(
+                inputPMPConfig.selectOptions.length
+            );
+            ImmutableStringArray.store(
+                pmpConfigStorage.selectOptions,
+                inputPMPConfig.selectOptions
+            );
             pmpConfigStorage.minRange = inputPMPConfig.minRange;
             pmpConfigStorage.maxRange = inputPMPConfig.maxRange;
         }
@@ -386,22 +411,36 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
     }
 
     /**
-     * @notice Get the PMP config for a given project and pmpKey.
+     * @notice Get the PMP config from storage for a given project and pmpKey.
      * @dev Returns the storage values, even if unconfigured or not part of the
      * active project config. Check latestConfigNonce to verify if the pmpKey
      * is part of the active project config.
+     * @dev any populated select options are loaded and returned as a string array
      * @param coreContract The address of the core contract to call.
      * @param projectId The projectId of the project to get data for.
      * @param pmpKey The pmpKey of the pmp to get data for.
-     * @return pmpConfigStorage The PMP config for the given project and pmpKey.
+     * @return pmpConfigView The PMP config for the given project and pmpKey.
      */
     function getProjectPMPConfig(
         address coreContract,
         uint256 projectId,
         string memory pmpKey
-    ) external view returns (PMPConfigStorage memory pmpConfigStorage) {
-        pmpConfigStorage = projectConfigs[coreContract][projectId]
-            .pmpConfigsStorage[_getStringHash(pmpKey)];
+    ) external view returns (PMPConfigView memory pmpConfigView) {
+        PMPConfigStorage storage pmpConfigStorage = projectConfigs[
+            coreContract
+        ][projectId].pmpConfigsStorage[_getStringHash(pmpKey)];
+        // load values from storage
+        pmpConfigView.highestConfigNonce = pmpConfigStorage.highestConfigNonce;
+        pmpConfigView.authOption = pmpConfigStorage.authOption;
+        pmpConfigView.paramType = pmpConfigStorage.paramType;
+        pmpConfigView.pmpLockedAfterTimestamp = pmpConfigStorage
+            .pmpLockedAfterTimestamp;
+        pmpConfigView.authAddress = pmpConfigStorage.authAddress;
+        pmpConfigView.selectOptionsLength = pmpConfigStorage
+            .selectOptionsLength;
+        pmpConfigView.selectOptions = pmpConfigStorage.selectOptions.getAll();
+        pmpConfigView.minRange = pmpConfigStorage.minRange;
+        pmpConfigView.maxRange = pmpConfigStorage.maxRange;
     }
 
     /**
@@ -528,8 +567,8 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
                 "PMP: selectOptions is empty"
             );
             require(
-                pmpConfig.selectOptions.length <= 256,
-                "PMP: selectOptions length > 256"
+                pmpConfig.selectOptions.length < 256,
+                "PMP: selectOptions length > 255"
             );
             // @dev do not check if options are unique on-chain
             // require min/max range values are empty
@@ -694,7 +733,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
             if (paramType == ParamType.Select) {
                 require(
                     uint256(pmpInput.configuredValue) <
-                        pmpConfigStorage.selectOptions.length,
+                        pmpConfigStorage.selectOptionsLength,
                     "PMP: selectOptions index out of bounds"
                 );
             } else if (paramType == ParamType.Bool) {
@@ -806,13 +845,13 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
             // return unconfigured if index is out of bounds (obviously stale)
             if (
                 uint256(pmp.configuredValue) >=
-                pmpConfigStorage.selectOptions.length
+                pmpConfigStorage.selectOptionsLength
             ) {
                 return (false, "");
             }
             return (
                 true,
-                pmpConfigStorage.selectOptions[uint256(pmp.configuredValue)]
+                pmpConfigStorage.selectOptions.get(uint256(pmp.configuredValue))
             );
         }
         if (configuredParamType == ParamType.Bool) {
