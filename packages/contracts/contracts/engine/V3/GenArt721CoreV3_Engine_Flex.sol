@@ -527,6 +527,8 @@ contract GenArt721CoreV3_Engine_Flex is
      * @notice Updates external asset dependency for project `_projectId` at
      * index `_index`, with data at BytecodeStorage-compatible address
      * `_assetAddress`.
+     * @dev This function may point to any BytecodeStorageReader-compatible
+     * on-chain asset, including a web3call contract.
      * @param _projectId Project to be updated.
      * @param _index Asset index.
      * @param _assetAddress Address of the on-chain asset.
@@ -624,6 +626,8 @@ contract GenArt721CoreV3_Engine_Flex is
      * @notice Adds an on-chain external asset dependency for project
      * `_projectId`, with data at BytecodeStorage-compatible address
      * `_assetAddress`.
+     * @dev This function may point to any BytecodeStorageReader-compatible
+     * on-chain asset, including a web3call contract.
      * @param _projectId Project to be updated.
      * @param _assetAddress Address of the BytecodeStorageReader-compatible on-chain asset.
      */
@@ -2289,9 +2293,11 @@ contract GenArt721CoreV3_Engine_Flex is
 
     /**
      * @notice Returns external asset dependency for project `_projectId` at index `_index`.
-     * If the dependencyType is ONCHAIN, the `data` field will contain the extrated bytecode data and `cid`
+     * If the dependencyType is ONCHAIN, the `data` field will contain the read BytecodeStorage data and `cid`
      * will be an empty string. Conversly, for any other dependencyType, the `data` field will be an empty string
      * and the `bytecodeAddress` will point to the zero address.
+     * @dev If an ONCHAIN dependency is a web3call, the `data` field will be returned per the BytecodeStorageReader
+     * contract's active spec, which at the time of this writing is the special string "#web3call_contract#".
      * If the dependencyType is ART_BLOCKS_DEPENDENCY_REGISTRY, the `cid` field will contain the string
      * representation of the dependencyNameAndVersion bytes32 value stored in the dependency registry (
      * at public address `artblocksDependencyRegistryAddress`)

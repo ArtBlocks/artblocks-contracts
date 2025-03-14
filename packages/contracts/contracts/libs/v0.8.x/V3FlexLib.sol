@@ -262,6 +262,8 @@ library V3FlexLib {
      * @notice Updates external asset dependency for project `_projectId` at
      * index `_index`, with data at BytecodeStorage-compatible address
      * `_assetAddress`.
+     * @dev This function may point to any BytecodeStorageReader-compatible
+     * on-chain asset, including a web3call contract.
      * @param _projectId Project to be updated.
      * @param _index Asset index.
      * @param _assetAddress Address of the on-chain asset.
@@ -447,6 +449,8 @@ library V3FlexLib {
      * @notice Adds an on-chain external asset dependency for project
      * `_projectId`, with data at BytecodeStorage-compatible address
      * `_assetAddress`.
+     * @dev This function may point to any BytecodeStorageReader-compatible
+     * on-chain asset, including a web3call contract.
      * @param _projectId Project to be updated.
      * @param _assetAddress  Address of the BytecodeStorageReader-compatible on-chain asset.
      */
@@ -500,9 +504,11 @@ library V3FlexLib {
 
     /**
      * @notice Returns external asset dependency for project `_projectId` at index `_index`.
-     * If the dependencyType is ONCHAIN, the `data` field will contain the extrated bytecode data and `cid`
+     * If the dependencyType is ONCHAIN, the `data` field will contain the read BytecodeStorage data and `cid`
      * will be an empty string. Conversly, for any other dependencyType, the `data` field will be an empty string
      * and the `bytecodeAddress` will point to the zero address.
+     * @dev If an ONCHAIN dependency is a web3call, the `data` field will be returned per the BytecodeStorageReader
+     * contract's active spec, which at the time of this writing is the special string "#web3call_contract#".
      * @param _projectId Project to get external asset dependency for.
      * @param _index Index of the external asset dependency.
      * @param _bytecodeStorageReaderContract The bytecode storage reader contract to use for reading on-chain
