@@ -79,6 +79,10 @@ interface GenArt721GeneratorV0TestConfig extends T_Config {
   universalReader: UniversalBytecodeStorageReader;
 }
 
+// the json parser's reviver script used when parsing the token data
+const REVIVER_SCRIPT =
+  '(key, value) => key === "data" && value !== null ? value.startsWith("#web3call#") ? Object.entries(JSON.parse(atob(value.slice(10)))).reduce((acc, [k, v]) => ((acc[atob(k)] = atob(v)), acc), {}) : atob(value) : value)';
+
 describe(`GenArt721GeneratorV0`, async function () {
   const p5NameAndVersion = "p5js@1.0.0";
   const p5NameAndVersionBytes =
@@ -299,7 +303,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = hashes[0];
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = JSON.parse(\`{"tokenId":"0","hashes":["${hash}"]}\`, (key, value) => key === "data" && value !== null ? value.startsWith("#web3call#") ? Object.entries(JSON.parse(atob(value.slice(10)))).reduce((acc, [k, v]) => ((acc[atob(k)] = atob(v)), acc), {}) : atob(value) : value);`
+          `let tokenData = JSON.parse(\`{"tokenId":"0","hashes":["${hash}"]}\`, ${REVIVER_SCRIPT};`
         )
       );
 
@@ -400,7 +404,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = await genArt721CoreV1.tokenIdToHash(tokenId);
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? value.startsWith("#web3call#") ? Object.entries(JSON.parse(atob(value.slice(10)))).reduce((acc, [k, v]) => ((acc[atob(k)] = atob(v)), acc), {}) : atob(value) : value);`
+          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, ${REVIVER_SCRIPT};`
         )
       );
       // Project script
@@ -481,7 +485,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = await genArt721CoreV2.tokenIdToHash(tokenId);
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? value.startsWith("#web3call#") ? Object.entries(JSON.parse(atob(value.slice(10)))).reduce((acc, [k, v]) => ((acc[atob(k)] = atob(v)), acc), {}) : atob(value) : value);`
+          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, ${REVIVER_SCRIPT};`
         )
       );
       // Project script
@@ -576,7 +580,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = await genArt721CoreV3.tokenIdToHash(tokenId);
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? value.startsWith("#web3call#") ? Object.entries(JSON.parse(atob(value.slice(10)))).reduce((acc, [k, v]) => ((acc[atob(k)] = atob(v)), acc), {}) : atob(value) : value);`
+          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, ${REVIVER_SCRIPT};`
         )
       );
       // Project script
@@ -673,7 +677,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       const hash = await genArt721CoreV3.tokenIdToHash(tokenId);
       expect(tokenHtml).to.include(
         getScriptTag(
-          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, (key, value) => key === "data" && value !== null ? value.startsWith("#web3call#") ? Object.entries(JSON.parse(atob(value.slice(10)))).reduce((acc, [k, v]) => ((acc[atob(k)] = atob(v)), acc), {}) : atob(value) : value);`
+          `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, ${REVIVER_SCRIPT};`
         )
       );
       // Project script
@@ -807,7 +811,7 @@ describe(`GenArt721GeneratorV0`, async function () {
         console.log("TOKEN_HTML", tokenHtml);
         expect(tokenHtml).to.include(
           getScriptTag(
-            `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}","preferredArweaveGateway":"${preferredArweaveGateway}","preferredIPFSGateway":"${preferredIpfsGateway}","externalAssetDependencies":[{"dependency_type":"IPFS","cid":"${ipfsCid}","data":""},{"dependency_type":"ARWEAVE","cid":"${arweaveCid}","data":""},{"dependency_type":"ONCHAIN","cid":"","data":"${btoa(onchainData)}"},{"dependency_type":"ART_BLOCKS_DEPENDENCY_REGISTRY","cid":"${onchainLibraryName}","data":""}]}\`, (key, value) => key === "data" && value !== null ? value.startsWith("#web3call#") ? Object.entries(JSON.parse(atob(value.slice(10)))).reduce((acc, [k, v]) => ((acc[atob(k)] = atob(v)), acc), {}) : atob(value) : value);`
+            `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}","preferredArweaveGateway":"${preferredArweaveGateway}","preferredIPFSGateway":"${preferredIpfsGateway}","externalAssetDependencies":[{"dependency_type":"IPFS","cid":"${ipfsCid}","data":""},{"dependency_type":"ARWEAVE","cid":"${arweaveCid}","data":""},{"dependency_type":"ONCHAIN","cid":"","data":"${btoa(onchainData)}"},{"dependency_type":"ART_BLOCKS_DEPENDENCY_REGISTRY","cid":"${onchainLibraryName}","data":""}]}\`, ${REVIVER_SCRIPT};`
           )
         );
         // flex Dependency Registry injected script was injected in the head element (whereas the project script was injected in the body element)
