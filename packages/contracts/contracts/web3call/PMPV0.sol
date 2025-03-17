@@ -206,7 +206,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
             projectId
         ];
         // increment config nonce
-        // @dev reverts on overflow (greater than 255 edits not supported)
+        // @dev solidity ^0.8 reverts on overflow (greater than 255 edits not supported)
         uint8 newConfigNonce = projectConfig.configNonce + 1;
         projectConfig.configNonce = newConfigNonce;
 
