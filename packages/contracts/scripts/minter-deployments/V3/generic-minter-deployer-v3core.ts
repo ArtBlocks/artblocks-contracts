@@ -15,7 +15,7 @@ import prompt from "prompt";
 // delay to avoid issues with reorgs and tx failures
 import { delay, getAppPath, getNetworkName } from "../../util/utils";
 import {
-  DELEGATION_REGISTRY_ADDRESSES,
+  DELEGATION_REGISTRY_V1_ADDRESSES,
   WETH_ADDRESSES,
   EXTRA_DELAY_BETWEEN_TX,
 } from "../../util/constants";
@@ -111,7 +111,7 @@ async function main() {
       minterName.startsWith("MinterMerkle") ||
       minterName.startsWith("MinterPolyptych")
     ) {
-      minterConstructorArgs.push(DELEGATION_REGISTRY_ADDRESSES[networkName]);
+      minterConstructorArgs.push(DELEGATION_REGISTRY_V1_ADDRESSES[networkName]);
     }
     console.log(
       `[INFO] Deploying ${minterName} with deploy args [${minterConstructorArgs}]...`
