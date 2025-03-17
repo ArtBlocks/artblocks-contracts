@@ -60,6 +60,14 @@ interface IPMPV0 is IWeb3Call {
     );
 
     /**
+     * @notice Emitted when the delegation registry is updated.
+     * @dev At the time of writing, the delegate.xyz v2 contract is the only
+     * delegate registry contract that is supported.
+     * @param delegationRegistry The address of the new delegation registry.
+     */
+    event DelegationRegistryUpdated(address delegationRegistry);
+
+    /**
      * @notice Defines who can configure a parameter for a token.
      * @dev Enum ordering is relied on (ArtistAndTokenOwnerAndAddress being last).
      */
