@@ -1110,7 +1110,7 @@ describe("PMPV0_Configure", function () {
   });
 
   describe("configureTokenParams", function () {
-    describe("_validatePMPInput", function () {
+    describe("_validatePMPInputAndAuth", function () {
       it("reverts if highest config nonce of PMP is int in latest project config nonce", async function () {
         const config = await loadFixture(_beforeEach);
         // configure a PMP on a project

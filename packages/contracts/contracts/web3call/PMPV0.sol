@@ -289,9 +289,8 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
         uint256 tokenId,
         PMPInput[] calldata pmpInputs
     ) external nonReentrant {
-        uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
         ProjectConfig storage projectConfig = projectConfigs[coreContract][
-            projectId
+            ABHelpers.tokenIdToProjectId(tokenId)
         ];
         // assign each pmpInput to the token
         // @dev pmpInputs processed sequentially in order of input
@@ -304,7 +303,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
             PMPConfigStorage storage pmpConfigStorage = projectConfig
                 .pmpConfigsStorage[pmpKeyHash];
             // validate pmpInput
-            _validatePMPInput({
+            _validatePMPInputAndAuth({
                 tokenId: tokenId,
                 coreContract: coreContract,
                 pmpInput: pmpInput,
@@ -654,6 +653,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
 
     /**
      * @notice Validates a PMP input against the project's configuration.
+     * Includes auth checks based on the pmpKey's current authOption.
      * @dev Checks authorization, parameter type consistency, and value constraints.
      * @dev Checks that pmp param is included in most recently configured PMP config for token's project.
      * @param tokenId The token ID for which the parameter is being configured.
@@ -662,7 +662,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
      * @param pmpConfigStorage The project's configuration storage for this parameter.
      * @param projectConfigNonce The project's current configuration nonce.
      */
-    function _validatePMPInput(
+    function _validatePMPInputAndAuth(
         uint256 tokenId,
         address coreContract,
         PMPInput memory pmpInput,
