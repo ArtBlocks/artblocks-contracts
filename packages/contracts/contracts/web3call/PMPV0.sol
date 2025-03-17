@@ -24,6 +24,23 @@ import {ABHelpers} from "../libs/v0.8.x/ABHelpers.sol";
  * @notice This contract enables Artists to define and configure project parameters that token
  * owners can set within constraints. This provides a standardized way for projects to expose
  * configurable parameters that can be used by renderers and other contracts.
+ * WARNING: This contract implements an open protocol for parameter configuration, and does not
+ * restrict usage to Art Blocks or its affiliates. Use with caution. The contract does assume
+ * that the core contract conforms to the IGenArt721CoreContractV3_Base interface for authentication,
+ * and that the core contract is using the ERC721 standard for token management. These assumptions
+ * may not hold for all core contracts, especially those outside of the Art Blocks ecosystem.
+ * @notice Artists may configure arbitrary external hooks for post-token-configuration and
+ * read-augmentation. These hooks are executed at the end of the token configuration process
+ * and when reading token PMPs, respectively. These hooks are validated for ERC165 interface
+ * compatibility, but have the ability to execute arbitrary code at the discretion of the artist.
+ * The contract implements reentrancy guards to protect against reentrancy attacks during hook calls,
+ * resulting in the subcall having a similar level as a minting contract sending funds to an artist's
+ * additional payee address during a token sale. Use appropriate discretion.
+ * WARNING: Hook calls are not validated, and may cause unexpected behavior. These include:
+ * - Hooks may revert the transaction, resulting in denial of service
+ * - Hooks may augment the token's returned parameters with unintended data, resulting in
+ *   unexpected behavior
+ * The artist is solely responsible for configuring hooks and validating their behavior.
  * @dev This contract implements the IWeb3Call and IPMPV0 interfaces, providing functionality
  * for parameter configuration and retrieval. It includes support for various parameter types,
  * authorization options, and hooks for extending functionality.
@@ -89,19 +106,24 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
 
     /**
      * @notice Configure project hooks for post-configuration and read augmentation.
+     * WARNING: Hook calls may revert the transaction, and may cause unexpected behavior.
+     * The artist is solely responsible for configuring hooks and validating their behavior.
+     * Improper configuration or hooks with unexpected behavior may result in denial of service,
+     * unexpected behavior, or other issues.
      * @param coreContract The address of the core contract.
      * @param projectId The project ID to configure hooks for.
      * @param tokenPMPPostConfigHook The hook to call after a token's PMP is configured.
      * @param tokenPMPReadAugmentationHook The hook to call when reading a token's PMPs.
      * @dev Only the project artist can configure project hooks.
      * @dev Both hooks are validated for ERC165 interface compatibility.
+     * @dev Uses nonReentrant modifier to prevent reentrancy attacks during hook calls or auth checks.
      */
     function configureProjectHooks(
         address coreContract,
         uint256 projectId,
         IPMPConfigureHook tokenPMPPostConfigHook,
         IPMPAugmentHook tokenPMPReadAugmentationHook
-    ) external {
+    ) external nonReentrant {
         // only artists may configure project hooks
         _onlyArtist({
             coreContract: coreContract,
@@ -153,12 +175,15 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
      * @dev Only the project artist can configure project parameters.
      * @dev Each configuration is validated for proper parameter type and constraints.
      * @dev The project's configuration nonce is incremented with each call.
+     * @dev Only <= 256 configs are supported.
+     * @dev Only <= 255 bytes are supported for pmpKeys.
+     * @dev nonReentrant due to auth check that requires interaction.
      */
     function configureProject(
         address coreContract,
         uint256 projectId,
         PMPInputConfig[] calldata pmpInputConfigs
-    ) external {
+    ) external nonReentrant {
         // only artists may configure projects
         _onlyArtist({
             coreContract: coreContract,
@@ -170,9 +195,11 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
         // @dev no coverage on else branch due to test complexity
         require(pmpInputConfigsLength <= 256, "PMP: Only <= 256 configs");
         for (uint256 i = 0; i < pmpInputConfigsLength; i++) {
+            uint256 keyLengthBytes = bytes(pmpInputConfigs[i].key).length;
+            // @dev max key length constraint is a reasonable gas guardrail
             require(
-                bytes(pmpInputConfigs[i].key).length > 0,
-                "PMP: pmpKey cannot be empty"
+                keyLengthBytes > 0 && keyLengthBytes < 256,
+                "PMP: pmpKey cannot be empty or exceed 255 bytes"
             );
             _validatePMPConfig(pmpInputConfigs[i].pmpConfig);
         }
@@ -182,7 +209,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
             projectId
         ];
         // increment config nonce
-        // @dev reverts on overflow (greater than 255 edits not supported)
+        // @dev solidity ^0.8 reverts on overflow (greater than 255 edits not supported)
         uint8 newConfigNonce = projectConfig.configNonce + 1;
         projectConfig.configNonce = newConfigNonce;
 
@@ -240,22 +267,30 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
 
     /**
      * @notice Configure the parameters for a specific token according to project constraints.
+     * WARNING: This contract represents an open protocol for parameter configuration, and does not
+     * restrict usage to Art Blocks or its affiliates. Use with caution. The contract does assume
+     * that the core contract conforms to the IGenArt721CoreContractV3_Base interface for authentication,
+     * and that the core contract is using the ERC721 standard for token management. These assumptions
+     * may not hold for all core contracts, especially those outside of the Art Blocks ecosystem.
+     * WARNING: Hook calls may revert the transaction, and may cause unexpected behavior.
+     * The artist is solely responsible for configuring hooks and validating their behavior.
+     * Improper configuration or hooks with unexpected behavior may result in denial of service,
+     * unexpected behavior, or other issues.
      * @param coreContract The address of the core contract.
      * @param tokenId The tokenId of the token to configure.
      * @param pmpInputs The parameter inputs to configure for the token.
      * @dev Validates each parameter input against the project's configuration.
      * @dev Stores the configured parameters for the token.
      * @dev Calls the post-configuration hook if one is configured for the project.
-     * @dev Uses nonReentrant modifier to prevent reentrancy attacks during hook calls.
+     * @dev Uses nonReentrant modifier to prevent reentrancy attacks during hook calls or auth checks.
      */
     function configureTokenParams(
         address coreContract,
         uint256 tokenId,
         PMPInput[] calldata pmpInputs
     ) external nonReentrant {
-        uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
         ProjectConfig storage projectConfig = projectConfigs[coreContract][
-            projectId
+            ABHelpers.tokenIdToProjectId(tokenId)
         ];
         // assign each pmpInput to the token
         // @dev pmpInputs processed sequentially in order of input
@@ -268,7 +303,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
             PMPConfigStorage storage pmpConfigStorage = projectConfig
                 .pmpConfigsStorage[pmpKeyHash];
             // validate pmpInput
-            _validatePMPInput({
+            _validatePMPInputAndAuth({
                 tokenId: tokenId,
                 coreContract: coreContract,
                 pmpInput: pmpInput,
@@ -312,6 +347,10 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
     /**
      * @notice Get the token parameters for a given token.
      * If none are configured, the tokenParams should be empty.
+     * WARNING: Hook calls may revert the transaction, and may cause unexpected behavior.
+     * The artist is solely responsible for configuring hooks and validating their behavior.
+     * Improper configuration or hooks with unexpected behavior may result in denial of service,
+     * unexpected behavior, or other issues.
      * @param coreContract The address of the core contract to call.
      * @param tokenId The tokenId of the token to get data for.
      * @return tokenParams An array of token parameters for the queried token.
@@ -614,6 +653,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
 
     /**
      * @notice Validates a PMP input against the project's configuration.
+     * Includes auth checks based on the pmpKey's current authOption.
      * @dev Checks authorization, parameter type consistency, and value constraints.
      * @dev Checks that pmp param is included in most recently configured PMP config for token's project.
      * @param tokenId The token ID for which the parameter is being configured.
@@ -622,7 +662,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
      * @param pmpConfigStorage The project's configuration storage for this parameter.
      * @param projectConfigNonce The project's current configuration nonce.
      */
-    function _validatePMPInput(
+    function _validatePMPInputAndAuth(
         uint256 tokenId,
         address coreContract,
         PMPInput memory pmpInput,
