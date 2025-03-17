@@ -127,7 +127,8 @@ export type T_Config = {
   invalidSplit?: T_Split;
   // minter test details
   isEngine?: boolean;
-  delegationRegistry?: Contract;
+  delegationRegistry?: Contract; // delegate.xyz v1
+  delegateRegistryV2?: Contract; // delegate.xyz v2
   // ref / mocks
   ERC20?: Contract;
   weth?: Contract;

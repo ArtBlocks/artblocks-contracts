@@ -902,7 +902,14 @@ describe(`GenArt721GeneratorV0`, async function () {
           );
 
         // deploy PMP contract as our web3call contract
-        const pmp = (await deployAndGet(config, "PMPV0", [])) as PMPV0;
+        const delegateRegistryV2 = await deployAndGet(
+          config,
+          "DelegateRegistry",
+          []
+        );
+        const pmp = (await deployAndGet(config, "PMPV0", [
+          delegateRegistryV2.address,
+        ])) as PMPV0;
 
         // add PMP as a web3call contract
         await genArt721CoreV3.addProjectAssetDependencyOnChainAtAddress(
