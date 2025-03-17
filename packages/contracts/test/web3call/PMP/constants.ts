@@ -23,7 +23,7 @@ export const revertMessages = {
   minRangeGreaterThanMaxRange: "PMP: minRange >= maxRange",
   maxRangeGreaterThanTimestampMax: "PMP: maxRange > _TIMESTAMP_MAX",
   pmpLockedAfterTimestamp: "PMP: pmp is locked and cannot be updated",
-  emptyPMPKey: "PMP: pmpKey cannot be empty",
+  emptyOrLongPMPKey: "PMP: pmpKey cannot be empty or exceed 255 bytes",
   paramNotPartOfMostRecentlyConfiguredPMPParams:
     "PMP: param not part of most recently configured PMP params",
   unconfiguredParamInput: "PMP: input paramType is unconfigured",

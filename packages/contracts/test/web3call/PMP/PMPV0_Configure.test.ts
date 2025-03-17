@@ -180,7 +180,29 @@ describe("PMPV0_Configure", function () {
           .configureProject(config.genArt721Core.address, config.projectZero, [
             pmpConfig,
           ]),
-        revertMessages.emptyPMPKey
+        revertMessages.emptyOrLongPMPKey
+      );
+    });
+
+    it("reverts if pmp key is >255 bytes", async function () {
+      const config = await loadFixture(_beforeEach);
+      const pmpConfig = getPMPInputConfig(
+        "a".repeat(256),
+        PMP_AUTH_ENUM.Artist,
+        PMP_PARAM_TYPE_ENUM.Bool,
+        0,
+        constants.AddressZero,
+        [],
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+      );
+      await expectRevert(
+        config.pmp
+          .connect(config.accounts.artist)
+          .configureProject(config.genArt721Core.address, config.projectZero, [
+            pmpConfig,
+          ]),
+        revertMessages.emptyOrLongPMPKey
       );
     });
 
