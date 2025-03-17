@@ -116,7 +116,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
      * @param tokenPMPReadAugmentationHook The hook to call when reading a token's PMPs.
      * @dev Only the project artist can configure project hooks.
      * @dev Both hooks are validated for ERC165 interface compatibility.
-     * @dev Uses nonReentrant modifier to prevent reentrancy attacks during hook calls.
+     * @dev Uses nonReentrant modifier to prevent reentrancy attacks during hook calls or auth checks.
      */
     function configureProjectHooks(
         address coreContract,
@@ -175,12 +175,15 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
      * @dev Only the project artist can configure project parameters.
      * @dev Each configuration is validated for proper parameter type and constraints.
      * @dev The project's configuration nonce is incremented with each call.
+     * @dev Only <= 256 configs are supported.
+     * @dev Only <= 255 bytes are supported for pmpKeys.
+     * @dev nonReentrant due to auth check that requires interaction.
      */
     function configureProject(
         address coreContract,
         uint256 projectId,
         PMPInputConfig[] calldata pmpInputConfigs
-    ) external {
+    ) external nonReentrant {
         // only artists may configure projects
         _onlyArtist({
             coreContract: coreContract,
@@ -279,7 +282,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
      * @dev Validates each parameter input against the project's configuration.
      * @dev Stores the configured parameters for the token.
      * @dev Calls the post-configuration hook if one is configured for the project.
-     * @dev Uses nonReentrant modifier to prevent reentrancy attacks during hook calls.
+     * @dev Uses nonReentrant modifier to prevent reentrancy attacks during hook calls or auth checks.
      */
     function configureTokenParams(
         address coreContract,
