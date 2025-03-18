@@ -202,4 +202,23 @@ interface IPMPV0 is IWeb3Call {
         uint256 tokenId,
         PMPInput[] calldata pmpInputs
     ) external;
+
+    /**
+     * @notice Checks if the given wallet has the owner role for the given token.
+     * It returns true if the wallet is the owner of the token or if the wallet
+     * is a delegate of the token owner; otherwise it returns false.
+     * Reverts if an invalid coreContract or tokenId is provided.
+     * Provided for convenience, as the same check is performed in the
+     * configureTokenParams function.
+     * @param wallet The wallet address to check.
+     * @param coreContract The address of the core contract to call.
+     * @param tokenId The tokenId of the token to check.
+     * @return isTokenOwnerOrDelegate True if the wallet is the owner or a delegate of the token,
+     * false otherwise.
+     */
+    function isTokenOwnerOrDelegate(
+        address wallet,
+        address coreContract,
+        uint256 tokenId
+    ) external view returns (bool);
 }

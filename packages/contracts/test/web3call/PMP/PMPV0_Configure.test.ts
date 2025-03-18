@@ -13,6 +13,7 @@ import {
   BigNumberToBytes32,
   PMP_TIMESTAMP_MAX,
   PMP_HEX_COLOR_MAX,
+  RIGHTS_POST_MINT_PARAMETERS,
   PMPInput,
 } from "./pmpTestUtils";
 import { PMPFixtureConfig, setupPMPFixture } from "./pmpFixtures";
@@ -25,9 +26,6 @@ Logger.setLogLevel(Logger.levels.ERROR);
 export interface PMPFixtureConfigWithPMPInput extends PMPFixtureConfig {
   pmpInput: PMPInput;
 }
-
-const RIGHTS_POST_MINT_PARAMETERS =
-  ethers.utils.formatBytes32String("postmintparameters");
 
 /**
  * Test suite for PMPV0 configuration functionality

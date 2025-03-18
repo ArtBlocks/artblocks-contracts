@@ -469,6 +469,32 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
     }
 
     /**
+     * @notice Checks if the given wallet has the owner role for the given token.
+     * It returns true if the wallet is the owner of the token or if the wallet
+     * is a delegate of the token owner; otherwise it returns false.
+     * Reverts if an invalid coreContract or tokenId is provided.
+     * Provided for convenience, as the same check is performed in the
+     * configureTokenParams function.
+     * @param wallet The wallet address to check.
+     * @param coreContract The address of the core contract to call.
+     * @param tokenId The tokenId of the token to check.
+     * @return isTokenOwnerOrDelegate True if the wallet is the owner or a delegate of the token,
+     * false otherwise.
+     */
+    function isTokenOwnerOrDelegate(
+        address wallet,
+        address coreContract,
+        uint256 tokenId
+    ) external view returns (bool) {
+        return
+            _isTokenOwnerOrDelegate({
+                tokenId: tokenId,
+                coreContract: coreContract,
+                sender: wallet
+            });
+    }
+
+    /**
      * @notice Get the PMP config from storage for a given project and pmpKey.
      * @dev Returns the storage values, even if unconfigured or not part of the
      * active project config. Check latestConfigNonce to verify if the pmpKey
@@ -720,7 +746,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
                 );
             } else if (authOption == AuthOption.TokenOwner) {
                 require(
-                    _isTokenOwner({
+                    _isTokenOwnerOrDelegate({
                         tokenId: tokenId,
                         coreContract: coreContract,
                         sender: msg.sender
@@ -729,7 +755,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
                 );
             } else if (authOption == AuthOption.ArtistAndTokenOwner) {
                 require(
-                    _isTokenOwner({
+                    _isTokenOwnerOrDelegate({
                         tokenId: tokenId,
                         coreContract: coreContract,
                         sender: msg.sender
@@ -748,7 +774,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
                 );
             } else if (authOption == AuthOption.ArtistAndTokenOwnerAndAddress) {
                 require(
-                    _isTokenOwner({
+                    _isTokenOwnerOrDelegate({
                         tokenId: tokenId,
                         coreContract: coreContract,
                         sender: msg.sender
@@ -772,7 +798,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
                 );
             } else if (authOption == AuthOption.TokenOwnerAndAddress) {
                 require(
-                    _isTokenOwner({
+                    _isTokenOwnerOrDelegate({
                         tokenId: tokenId,
                         coreContract: coreContract,
                         sender: msg.sender
@@ -1013,7 +1039,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
      * @return Returns true if the sender is the token owner, false otherwise.
      * @dev Always execute within a nonReentrant context.
      */
-    function _isTokenOwner(
+    function _isTokenOwnerOrDelegate(
         uint256 tokenId,
         address coreContract,
         address sender
