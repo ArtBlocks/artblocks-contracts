@@ -9,6 +9,7 @@ import {IPMPConfigureHook} from "../interfaces/v0.8.x/IPMPConfigureHook.sol";
 import {IPMPAugmentHook} from "../interfaces/v0.8.x/IPMPAugmentHook.sol";
 import {IGenArt721CoreContractV3_Base} from "../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import {IERC721} from "@openzeppelin-5.0/contracts/token/ERC721/IERC721.sol";
+import {IDelegateRegistry} from "../interfaces/v0.8.x/IDelegateRegistry.sol";
 
 import {ERC165Checker} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165Checker.sol";
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
@@ -50,6 +51,10 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
     using Strings for uint256;
     using Strings for int256;
     using ImmutableStringArray for ImmutableStringArray.StringArray;
+
+    IDelegateRegistry public immutable delegateRegistry;
+    bytes32 public constant DELEGATION_REGISTRY_TOKEN_OWNER_RIGHTS =
+        bytes32("postmintparameters");
 
     bytes32 private constant _TYPE = "PMPV0";
 
@@ -103,6 +108,16 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
 
     // mapping of PMP structs for each token
     mapping(address coreContract => mapping(uint256 tokenId => mapping(bytes32 pmpKeyHash => PMPStorage pmp))) tokenPMPs;
+
+    /**
+     * @notice Constructor for PMPV0 contract.
+     * @param delegateRegistry_ The address of the delegate registry contract. Intended to be
+     * the delegate.xyz v2 contract.
+     */
+    constructor(IDelegateRegistry delegateRegistry_) {
+        delegateRegistry = delegateRegistry_;
+        emit DelegationRegistryUpdated(address(delegateRegistry_));
+    }
 
     /**
      * @notice Configure project hooks for post-configuration and read augmentation.
@@ -276,6 +291,10 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
      * The artist is solely responsible for configuring hooks and validating their behavior.
      * Improper configuration or hooks with unexpected behavior may result in denial of service,
      * unexpected behavior, or other issues.
+     * ERC-721 Token-level wallet delegation for the TokenOwner role is supported via delegate.xyz v2.
+     * For opt-in granular control of rights specific to these operations, vault owners may define subdelegations
+     * with bytes32 rights "postmintparameters". Per the delegate.xyz v2 specification, delegations made with the
+     * empty string "" will be interpreted as a full delegation of all rights.
      * @param coreContract The address of the core contract.
      * @param tokenId The tokenId of the token to configure.
      * @param pmpInputs The parameter inputs to configure for the token.
@@ -447,6 +466,32 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
         tokenPMPPostConfigHook = projectConfig.tokenPMPPostConfigHook;
         tokenPMPReadAugmentationHook = projectConfig
             .tokenPMPReadAugmentationHook;
+    }
+
+    /**
+     * @notice Checks if the given wallet has the owner role for the given token.
+     * It returns true if the wallet is the owner of the token or if the wallet
+     * is a delegate of the token owner; otherwise it returns false.
+     * Reverts if an invalid coreContract or tokenId is provided.
+     * Provided for convenience, as the same check is performed in the
+     * configureTokenParams function.
+     * @param wallet The wallet address to check.
+     * @param coreContract The address of the core contract to call.
+     * @param tokenId The tokenId of the token to check.
+     * @return isTokenOwnerOrDelegate True if the wallet is the owner or a delegate of the token,
+     * false otherwise.
+     */
+    function isTokenOwnerOrDelegate(
+        address wallet,
+        address coreContract,
+        uint256 tokenId
+    ) external view returns (bool) {
+        return
+            _isTokenOwnerOrDelegate({
+                tokenId: tokenId,
+                coreContract: coreContract,
+                sender: wallet
+            });
     }
 
     /**
@@ -701,7 +746,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
                 );
             } else if (authOption == AuthOption.TokenOwner) {
                 require(
-                    _isTokenOwner({
+                    _isTokenOwnerOrDelegate({
                         tokenId: tokenId,
                         coreContract: coreContract,
                         sender: msg.sender
@@ -710,7 +755,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
                 );
             } else if (authOption == AuthOption.ArtistAndTokenOwner) {
                 require(
-                    _isTokenOwner({
+                    _isTokenOwnerOrDelegate({
                         tokenId: tokenId,
                         coreContract: coreContract,
                         sender: msg.sender
@@ -729,7 +774,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
                 );
             } else if (authOption == AuthOption.ArtistAndTokenOwnerAndAddress) {
                 require(
-                    _isTokenOwner({
+                    _isTokenOwnerOrDelegate({
                         tokenId: tokenId,
                         coreContract: coreContract,
                         sender: msg.sender
@@ -753,7 +798,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
                 );
             } else if (authOption == AuthOption.TokenOwnerAndAddress) {
                 require(
-                    _isTokenOwner({
+                    _isTokenOwnerOrDelegate({
                         tokenId: tokenId,
                         coreContract: coreContract,
                         sender: msg.sender
@@ -985,18 +1030,34 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
 
     /**
      * @notice Checks if an address is the owner of a token.
+     * Supports ERC-721 Token-level wallet delegation for the TokenOwner role via delegate.xyz v2,
+     * using the delegate.xyz v2 "postmintparameters" subdelegation rights.
      * @dev Assumes Art Blocks V3 Core Contract interface.
      * @param tokenId The token ID to check ownership for.
      * @param coreContract The address of the core contract.
      * @param sender The address to check if it's the token owner.
      * @return Returns true if the sender is the token owner, false otherwise.
+     * @dev Always execute within a nonReentrant context.
      */
-    function _isTokenOwner(
+    function _isTokenOwnerOrDelegate(
         uint256 tokenId,
         address coreContract,
         address sender
     ) internal view returns (bool) {
-        return IERC721(coreContract).ownerOf(tokenId) == sender;
+        // @dev leading interaction - only execute within a nonReentrant context
+        address tokenOwner = IERC721(coreContract).ownerOf(tokenId);
+        if (tokenOwner == sender) {
+            return true;
+        }
+        // @dev delegate.xyz v2 support
+        return
+            delegateRegistry.checkDelegateForERC721({
+                to: sender, // hot wallet
+                from: tokenOwner, // vault
+                contract_: coreContract, // ERC-721 contract
+                tokenId: tokenId, // tokenId
+                rights: bytes32(DELEGATION_REGISTRY_TOKEN_OWNER_RIGHTS) // opt-in granular control of rights
+            });
     }
 
     /**

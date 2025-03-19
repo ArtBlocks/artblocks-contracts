@@ -4,6 +4,7 @@ import { constants } from "ethers";
 import {
   PMP_AUTH_ENUM,
   PMP_PARAM_TYPE_ENUM,
+  RIGHTS_POST_MINT_PARAMETERS,
   getPMPInput,
   getPMPInputConfig,
   int256ToBytes32,
@@ -1501,6 +1502,51 @@ describe("PMPV0_Views", function () {
         );
         expect(pmpStorage.artistConfiguredValueString).to.equal("");
         expect(pmpStorage.nonArtistConfiguredValueString).to.equal("");
+      });
+    });
+
+    describe("isTokenOwnerOrDelegate", function () {
+      it("returns true if the wallet is the owner of the token", async function () {
+        const config = await loadFixture(_beforeEach);
+        // token owner should be owner
+        const isOwnerOrDelegate = await config.pmp.isTokenOwnerOrDelegate(
+          config.accounts.user.address,
+          config.genArt721Core.address,
+          config.projectZeroTokenZero.toNumber()
+        );
+        expect(isOwnerOrDelegate).to.equal(true);
+      });
+
+      it("returns true if the wallet is a delegate of the token owner", async function () {
+        const config = await loadFixture(_beforeEach);
+        // token owner delegates to user2
+        await config.delegateRegistry
+          .connect(config.accounts.user)
+          .delegateERC721(
+            config.accounts.user2.address,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            RIGHTS_POST_MINT_PARAMETERS,
+            true
+          );
+        // user2 should be owner or delegate
+        const isOwnerOrDelegate = await config.pmp.isTokenOwnerOrDelegate(
+          config.accounts.user2.address,
+          config.genArt721Core.address,
+          config.projectZeroTokenZero.toNumber()
+        );
+        expect(isOwnerOrDelegate).to.equal(true);
+      });
+
+      it("returns false if the wallet is not the owner or delegate of the token", async function () {
+        const config = await loadFixture(_beforeEach);
+        // user 2 does not own the token, and is not a delegate
+        const isOwnerOrDelegate = await config.pmp.isTokenOwnerOrDelegate(
+          config.accounts.user2.address,
+          config.genArt721Core.address,
+          config.projectZeroTokenZero.toNumber()
+        );
+        expect(isOwnerOrDelegate).to.equal(false);
       });
     });
   });

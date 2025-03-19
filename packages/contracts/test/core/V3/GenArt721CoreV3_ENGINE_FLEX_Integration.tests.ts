@@ -1035,7 +1035,14 @@ for (const coreContractName of coreContractsToTest) {
         it('returns "#web3call_contract#" when ONCHAIN set to PMP web3call contract', async function () {
           const config = await loadFixture(_beforeEach);
           // deploy a PMP web3call contract
-          const pmp = await deployAndGet(config, "PMPV0", []);
+          const delegateRegistryV2 = await deployAndGet(
+            config,
+            "DelegateRegistry",
+            []
+          );
+          const pmp = await deployAndGet(config, "PMPV0", [
+            delegateRegistryV2.address,
+          ]);
           // assign the PMP as an ONCHAIN dependency
           await config.genArt721Core
             .connect(config.accounts.artist)

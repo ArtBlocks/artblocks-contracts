@@ -1,4 +1,4 @@
-import { BigNumber, constants } from "ethers";
+import { BigNumber, constants, ethers } from "ethers";
 import { AbiCoder } from "ethers/lib/utils";
 
 const abiCoder = new AbiCoder();
@@ -30,6 +30,9 @@ export type PMPInputConfig = {
 export const PMP_TIMESTAMP_MAX = BigNumber.from(2).pow(64).sub(1);
 // @dev max hex color value, as defined in the PMP contract
 export const PMP_HEX_COLOR_MAX = BigNumber.from("16777215"); // 0xFFFFFF
+// delegation registry rights
+export const RIGHTS_POST_MINT_PARAMETERS =
+  ethers.utils.formatBytes32String("postmintparameters");
 
 /**
  * Formats a token ID with project number for logs or test outputs

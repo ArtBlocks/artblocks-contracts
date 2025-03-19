@@ -13,7 +13,7 @@ Logger.setLogLevel(Logger.levels.ERROR);
 // delay to avoid issues with reorgs and tx failures
 import { delay, getConfigInputs, getNetworkName } from "../util/utils";
 import {
-  DELEGATION_REGISTRY_ADDRESSES,
+  DELEGATION_REGISTRY_V1_ADDRESSES,
   EXTRA_DELAY_BETWEEN_TX,
 } from "../util/constants";
 
@@ -99,13 +99,13 @@ async function main() {
       minterName?.includes("Polyptych")
     ) {
       const delegationRegistryAddress =
-        DELEGATION_REGISTRY_ADDRESSES[networkName];
+        DELEGATION_REGISTRY_V1_ADDRESSES[networkName];
       if (!delegationRegistryAddress) {
         throw new Error(
           `[ERROR] delegationRegistryAddress must be defined on network ${networkName}, but is ${delegationRegistryAddress}`
         );
       }
-      minterConstructorArgs.push(DELEGATION_REGISTRY_ADDRESSES[networkName]);
+      minterConstructorArgs.push(DELEGATION_REGISTRY_V1_ADDRESSES[networkName]);
     }
     // push min mint fee on constructor args if a min price minter
     if (minterName?.includes("MinPrice")) {

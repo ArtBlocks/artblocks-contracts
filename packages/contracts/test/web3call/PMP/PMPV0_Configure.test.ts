@@ -13,13 +13,19 @@ import {
   BigNumberToBytes32,
   PMP_TIMESTAMP_MAX,
   PMP_HEX_COLOR_MAX,
+  RIGHTS_POST_MINT_PARAMETERS,
+  PMPInput,
 } from "./pmpTestUtils";
-import { setupPMPFixture } from "./pmpFixtures";
+import { PMPFixtureConfig, setupPMPFixture } from "./pmpFixtures";
 import { revertMessages } from "./constants";
 import { advanceTimeAndBlock } from "../../util/common";
 import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
+
+export interface PMPFixtureConfigWithPMPInput extends PMPFixtureConfig {
+  pmpInput: PMPInput;
+}
 
 /**
  * Test suite for PMPV0 configuration functionality
@@ -2480,6 +2486,209 @@ describe("PMPV0_Configure", function () {
           ),
         "MockPMPConfigureHook: Intentional revert"
       );
+    });
+
+    describe("Supports delegate.xyz v2 for token owner auth", function () {
+      // use before each to setup delegate.xyz v2
+      async function _beforeEachDelegation(): Promise<PMPFixtureConfigWithPMPInput> {
+        const config = await loadFixture(_beforeEach);
+        // artist configures project PMP
+        const pmpConfig = getPMPInputConfig(
+          "param1",
+          PMP_AUTH_ENUM.ArtistAndTokenOwner,
+          PMP_PARAM_TYPE_ENUM.Select,
+          0,
+          constants.AddressZero,
+          ["option1", "option2"],
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+        await config.pmp
+          .connect(config.accounts.artist)
+          .configureProject(config.genArt721Core.address, config.projectZero, [
+            pmpConfig,
+          ]);
+
+        const pmpInput = getPMPInput(
+          "param1",
+          PMP_PARAM_TYPE_ENUM.Select,
+          "0x0000000000000000000000000000000000000000000000000000000000000001",
+          false,
+          ""
+        );
+        return { ...config, pmpInput } as PMPFixtureConfigWithPMPInput;
+      }
+
+      it("allows delegation of: all", async function () {
+        const config = await loadFixture(_beforeEachDelegation);
+        // token owner delegates all permissions to user2
+        await config.delegateRegistry
+          .connect(config.accounts.user)
+          .delegateAll(config.accounts.user2.address, constants.HashZero, true);
+        // delegate configures PMP
+        await config.pmp
+          .connect(config.accounts.user2)
+          .configureTokenParams(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            [config.pmpInput]
+          );
+        // expect PMP to be configured as expected
+        const pmpStorage = await config.pmp.getTokenParams(
+          config.genArt721Core.address,
+          config.projectZeroTokenZero.toNumber()
+        );
+        expect(pmpStorage[0].value).to.equal("option2");
+      });
+
+      it("allows delegation revocation of: all", async function () {
+        const config = await loadFixture(_beforeEachDelegation);
+        // token owner delegates all permissions to user2
+        await config.delegateRegistry
+          .connect(config.accounts.user)
+          .delegateAll(config.accounts.user2.address, constants.HashZero, true);
+        // delegate configures PMP
+        await config.pmp
+          .connect(config.accounts.user2)
+          .configureTokenParams(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            [config.pmpInput]
+          );
+        // expect PMP to be configured as expected
+        const pmpStorage = await config.pmp.getTokenParams(
+          config.genArt721Core.address,
+          config.projectZeroTokenZero.toNumber()
+        );
+        expect(pmpStorage[0].value).to.equal("option2");
+        // token owner revokes all permissions from user2
+        await config.delegateRegistry
+          .connect(config.accounts.user)
+          .delegateAll(
+            config.accounts.user2.address,
+            constants.HashZero,
+            false
+          ); // false = revoke
+        // expect auth error to revert subsequent PMP configure call
+        await expectRevert(
+          config.pmp
+            .connect(config.accounts.user2)
+            .configureTokenParams(
+              config.genArt721Core.address,
+              config.projectZeroTokenZero.toNumber(),
+              [config.pmpInput]
+            ),
+          revertMessages.onlyArtistAndTokenOwnerAuth
+        );
+      });
+
+      it("allows delegation of: contract", async function () {
+        const config = await loadFixture(_beforeEachDelegation);
+        // token owner delegates all permissions to user2
+        await config.delegateRegistry
+          .connect(config.accounts.user)
+          .delegateContract(
+            config.accounts.user2.address,
+            config.genArt721Core.address,
+            constants.HashZero,
+            true
+          );
+        // delegate configures PMP
+        await config.pmp
+          .connect(config.accounts.user2)
+          .configureTokenParams(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            [config.pmpInput]
+          );
+        // expect PMP to be configured as expected
+        const pmpStorage = await config.pmp.getTokenParams(
+          config.genArt721Core.address,
+          config.projectZeroTokenZero.toNumber()
+        );
+        expect(pmpStorage[0].value).to.equal("option2");
+      });
+
+      it("allows delegation of: token", async function () {
+        const config = await loadFixture(_beforeEachDelegation);
+        // token owner delegates all permissions to user2
+        await config.delegateRegistry
+          .connect(config.accounts.user)
+          .delegateERC721(
+            config.accounts.user2.address,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            constants.HashZero,
+            true
+          );
+        // delegate configures PMP
+        await config.pmp
+          .connect(config.accounts.user2)
+          .configureTokenParams(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            [config.pmpInput]
+          );
+        // expect PMP to be configured as expected
+        const pmpStorage = await config.pmp.getTokenParams(
+          config.genArt721Core.address,
+          config.projectZeroTokenZero.toNumber()
+        );
+        expect(pmpStorage[0].value).to.equal("option2");
+      });
+
+      it("allows delegation of: token; with rights: 'postmintparameters'", async function () {
+        const config = await loadFixture(_beforeEachDelegation);
+        // token owner delegates all permissions to user2
+        await config.delegateRegistry
+          .connect(config.accounts.user)
+          .delegateERC721(
+            config.accounts.user2.address,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            RIGHTS_POST_MINT_PARAMETERS,
+            true
+          );
+        // delegate configures PMP
+        await config.pmp
+          .connect(config.accounts.user2)
+          .configureTokenParams(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            [config.pmpInput]
+          );
+        // expect PMP to be configured as expected
+        const pmpStorage = await config.pmp.getTokenParams(
+          config.genArt721Core.address,
+          config.projectZeroTokenZero.toNumber()
+        );
+        expect(pmpStorage[0].value).to.equal("option2");
+      });
+
+      it("rejects delegation of: token; with rights: 'invalidrights'", async function () {
+        const config = await loadFixture(_beforeEachDelegation);
+        // token owner delegates all permissions to user2
+        await config.delegateRegistry
+          .connect(config.accounts.user)
+          .delegateERC721(
+            config.accounts.user2.address,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            ethers.utils.formatBytes32String("invalidrights"),
+            true
+          );
+        // expect revert due to invalid rights
+        await expectRevert(
+          config.pmp
+            .connect(config.accounts.user2)
+            .configureTokenParams(
+              config.genArt721Core.address,
+              config.projectZeroTokenZero.toNumber(),
+              [config.pmpInput]
+            ),
+          revertMessages.onlyArtistAndTokenOwnerAuth
+        );
+      });
     });
   });
 });

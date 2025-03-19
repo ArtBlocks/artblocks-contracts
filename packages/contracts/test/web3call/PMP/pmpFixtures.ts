@@ -8,6 +8,7 @@ import {
 } from "../../util/common";
 import { setupConfig } from "../../util/fixtures";
 import {
+  DelegateRegistry,
   GenArt721CoreV3_Engine_Flex,
   MockPMPConfigureHook,
 } from "../../../scripts/contracts";
@@ -17,6 +18,7 @@ import { PMPV0 } from "../../../scripts/contracts";
 // Extend the T_Config type with PMP-specific properties
 export interface PMPFixtureConfig extends T_Config {
   genArt721Core: GenArt721CoreV3_Engine_Flex;
+  delegateRegistry: DelegateRegistry;
   pmp: PMPV0;
   configureHook: MockPMPConfigureHook;
   augmentHook: MockPMPAugmentHook;
@@ -51,7 +53,11 @@ export async function setupPMPFixture(): Promise<PMPFixtureConfig> {
   config.randomizer = randomizer;
 
   // Deploy PMPV0 contract
-  const pmp = (await deployAndGet(config, "PMPV0", [])) as PMPV0;
+  // @dev delegate.xyz v2
+  const delegateRegistry = await deployAndGet(config, "DelegateRegistry", []);
+  const pmp = (await deployAndGet(config, "PMPV0", [
+    delegateRegistry.address,
+  ])) as PMPV0;
   // also deploy hook contracts so they are available for testing
   const configureHook = await deployMockConfigureHook(config.accounts.deployer);
   const augmentHook = await deployMockAugmentHook(config.accounts.deployer);
@@ -148,6 +154,7 @@ export async function setupPMPFixture(): Promise<PMPFixtureConfig> {
   // Add PMP-specific properties to the config
   const pmpConfig: PMPFixtureConfig = {
     ...config,
+    delegateRegistry,
     pmp,
     configureHook,
     augmentHook,
