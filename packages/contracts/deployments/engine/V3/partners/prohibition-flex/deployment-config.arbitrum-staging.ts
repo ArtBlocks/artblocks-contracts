@@ -13,7 +13,7 @@ export const deployDetailsArray = [
     adminACLContractName: "AdminACLV0_PROHIBITION",
     // See the `KNOWN_ENGINE_REGISTRIES` object in `/scripts/engine/V3/constants.ts` for the correct registry address for
     // the intended network and the corresponding deployer wallet addresses
-    // @dev if you neeed a new engine registry, use the `/scripts/engine/V3/engine-registry-deployer.ts` script
+    // @dev if you need a new engine registry, use the `/scripts/engine/V3/engine-registry-deployer.ts` script
     engineRegistryAddress: "0x3b30d421a6dA95694EaaE09971424F15Eb375269",
     randomizerContractName: "BasicRandomizerV2",
     genArt721CoreContractName: "GenArt721CoreV3_Engine_Flex_PROHIBITION",
