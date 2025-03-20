@@ -754,13 +754,14 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
                     "PMP: token owner auth required"
                 );
             } else if (authOption == AuthOption.ArtistAndTokenOwner) {
+                // @dev check token owner or delegate last to enable pre-mint configuration by non-token-owner
                 require(
-                    _isTokenOwnerOrDelegate({
+                    _isArtist({
                         tokenId: tokenId,
                         coreContract: coreContract,
                         sender: msg.sender
                     }) ||
-                        _isArtist({
+                        _isTokenOwnerOrDelegate({
                             tokenId: tokenId,
                             coreContract: coreContract,
                             sender: msg.sender
@@ -773,18 +774,19 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
                     "PMP: address auth required"
                 );
             } else if (authOption == AuthOption.ArtistAndTokenOwnerAndAddress) {
+                // @dev check token owner or delegate last to enable pre-mint configuration by non-token-owner
                 require(
-                    _isTokenOwnerOrDelegate({
+                    _isArtist({
                         tokenId: tokenId,
                         coreContract: coreContract,
                         sender: msg.sender
                     }) ||
-                        _isArtist({
+                        msg.sender == pmpConfigStorage.authAddress ||
+                        _isTokenOwnerOrDelegate({
                             tokenId: tokenId,
                             coreContract: coreContract,
                             sender: msg.sender
-                        }) ||
-                        msg.sender == pmpConfigStorage.authAddress,
+                        }),
                     "PMP: artist and token owner and address auth required"
                 );
             } else if (authOption == AuthOption.ArtistAndAddress) {
@@ -797,12 +799,14 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
                     "PMP: artist and address auth required"
                 );
             } else if (authOption == AuthOption.TokenOwnerAndAddress) {
+                // @dev check token owner or delegate last to enable pre-mint configuration by non-token-owner
                 require(
-                    _isTokenOwnerOrDelegate({
-                        tokenId: tokenId,
-                        coreContract: coreContract,
-                        sender: msg.sender
-                    }) || msg.sender == pmpConfigStorage.authAddress,
+                    msg.sender == pmpConfigStorage.authAddress ||
+                        _isTokenOwnerOrDelegate({
+                            tokenId: tokenId,
+                            coreContract: coreContract,
+                            sender: msg.sender
+                        }),
                     "PMP: token owner and address auth required"
                 );
             } else {
