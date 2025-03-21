@@ -2488,6 +2488,143 @@ describe("PMPV0_Configure", function () {
       );
     });
 
+    it("does not revert when artist configured PMP of non-existent token", async function () {
+      for (const auth of [
+        PMP_AUTH_ENUM.ArtistAndTokenOwner,
+        PMP_AUTH_ENUM.Artist,
+        PMP_AUTH_ENUM.ArtistAndAddress,
+        PMP_AUTH_ENUM.ArtistAndTokenOwnerAndAddress,
+      ]) {
+        const config = await loadFixture(_beforeEach);
+        // configure a PMP on a project
+        const pmpConfig = getPMPInputConfig(
+          "param1",
+          auth,
+          PMP_PARAM_TYPE_ENUM.Bool,
+          0,
+          auth === PMP_AUTH_ENUM.ArtistAndTokenOwnerAndAddress ||
+            auth === PMP_AUTH_ENUM.ArtistAndAddress
+            ? config.accounts.user2.address
+            : constants.AddressZero,
+          [],
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+        await config.pmp
+          .connect(config.accounts.artist)
+          .configureProject(config.genArt721Core.address, config.projectZero, [
+            pmpConfig,
+          ]);
+        // configure token param on non-existent token
+        const pmpInput = getPMPInput(
+          "param1",
+          PMP_PARAM_TYPE_ENUM.Bool,
+          "0x0000000000000000000000000000000000000000000000000000000000000001",
+          false,
+          ""
+        );
+        // expect no revert
+        await config.pmp
+          .connect(config.accounts.artist) // call from artist
+          .configureTokenParams(
+            config.genArt721Core.address,
+            999999, // non-existent token
+            [pmpInput]
+          );
+      }
+    });
+
+    it("does not revert when address configured PMP of non-existent token", async function () {
+      for (const auth of [
+        PMP_AUTH_ENUM.Address,
+        PMP_AUTH_ENUM.TokenOwnerAndAddress,
+        PMP_AUTH_ENUM.ArtistAndAddress,
+        PMP_AUTH_ENUM.ArtistAndTokenOwnerAndAddress,
+      ]) {
+        const config = await loadFixture(_beforeEach);
+        // configure a PMP on a project
+        const pmpConfig = getPMPInputConfig(
+          "param1",
+          auth,
+          PMP_PARAM_TYPE_ENUM.Bool,
+          0,
+          config.accounts.user2.address,
+          [],
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+        await config.pmp
+          .connect(config.accounts.artist)
+          .configureProject(config.genArt721Core.address, config.projectZero, [
+            pmpConfig,
+          ]);
+        // configure token param on non-existent token
+        const pmpInput = getPMPInput(
+          "param1",
+          PMP_PARAM_TYPE_ENUM.Bool,
+          "0x0000000000000000000000000000000000000000000000000000000000000001",
+          false,
+          ""
+        );
+        // expect no revert
+        await config.pmp
+          .connect(config.accounts.user2) // call from specified address auth
+          .configureTokenParams(
+            config.genArt721Core.address,
+            999999, // non-existent token
+            [pmpInput]
+          );
+      }
+    });
+
+    it("does revert when calling as (nonsense) token owner on non-existent token", async function () {
+      for (const auth of [
+        PMP_AUTH_ENUM.TokenOwner,
+        PMP_AUTH_ENUM.TokenOwnerAndAddress,
+        PMP_AUTH_ENUM.ArtistAndTokenOwner,
+        PMP_AUTH_ENUM.ArtistAndTokenOwnerAndAddress,
+      ]) {
+        const config = await loadFixture(_beforeEach);
+        // configure a PMP on a project
+        const pmpConfig = getPMPInputConfig(
+          "param1",
+          auth,
+          PMP_PARAM_TYPE_ENUM.Bool,
+          0,
+          auth === PMP_AUTH_ENUM.TokenOwnerAndAddress ||
+            auth === PMP_AUTH_ENUM.ArtistAndTokenOwnerAndAddress
+            ? config.accounts.user2.address
+            : constants.AddressZero,
+          [],
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+        await config.pmp
+          .connect(config.accounts.artist)
+          .configureProject(config.genArt721Core.address, config.projectZero, [
+            pmpConfig,
+          ]);
+        // configure token param on non-existent token
+        const pmpInput = getPMPInput(
+          "param1",
+          PMP_PARAM_TYPE_ENUM.Bool,
+          "0x0000000000000000000000000000000000000000000000000000000000000001",
+          false,
+          ""
+        );
+        // expect revert
+        await expectRevert.unspecified(
+          config.pmp
+            .connect(config.accounts.deployer) // call from non-artist or authorized address
+            .configureTokenParams(
+              config.genArt721Core.address,
+              999999, // non-existent token
+              [pmpInput]
+            )
+        );
+      }
+    });
+
     describe("Supports delegate.xyz v2 for token owner auth", function () {
       // use before each to setup delegate.xyz v2
       async function _beforeEachDelegation(): Promise<PMPFixtureConfigWithPMPInput> {
