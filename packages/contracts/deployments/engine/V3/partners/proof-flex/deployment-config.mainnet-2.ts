@@ -13,7 +13,7 @@ export const deployDetailsArray = [
     adminACLContractName: "AdminACLV0",
     // See the `KNOWN_ENGINE_REGISTRIES` object in `/scripts/engine/V3/constants.ts` for the correct registry address for
     // the intended network and the corresponding deployer wallet addresses
-    // @dev if you neeed a new engine registry, use the `/scripts/engine/V3/engine-registry-deployer.ts` script
+    // @dev if you need a new engine registry, use the `/scripts/engine/V3/engine-registry-deployer.ts` script
     engineRegistryAddress: "0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2",
     randomizerContractName: "BasicRandomizerV2",
     // @dev this is a forked version of the V3 Engine Flex contract
@@ -44,7 +44,7 @@ export const deployDetailsArray = [
     // optionally define this to set default vertical name for the contract after deployment.
     // if not defined, the default vertical name will be "unassigned".
     // common values include `fullyonchain`, `flex`, or partnerships like `artblocksxpace`.
-    // also note that if you desire to create a new veritcal, you will need to add the vertical name to the
+    // also note that if you desire to create a new vertical, you will need to add the vertical name to the
     // `project_verticals` table in the database before running this deploy script.
     defaultVerticalName: "flex",
   },
