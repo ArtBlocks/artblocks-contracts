@@ -37,6 +37,10 @@ import {
 } from "../util/common";
 import { StorageContractCreatedEvent } from "../../scripts/contracts/BytecodeStorageV2Writer";
 import { GUNZIP_SCRIPT_BASE64 } from "../../scripts/util/constants";
+import {
+  CONTRACT_SIZE_LIMIT_SCRIPT,
+  SQUIGGLE_SCRIPT,
+} from "../util/example-scripts";
 
 const NO_OVERRIDE_ERROR =
   "Contract does not implement projectScriptDetails and has no override set.";
@@ -592,6 +596,221 @@ describe(`GenArt721GeneratorV0`, async function () {
       );
     });
 
+    describe("gas as f(script size)", function () {
+      it("measures gas for one max size script chunk when getting html for a given V3 core contract token with dependency on chain", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        const {
+          genArt721Core: genArt721CoreV3,
+          minterFilter,
+          randomizer,
+        } = await deployCoreWithMinterFilter(
+          config,
+          "GenArt721CoreV3",
+          "MinterFilterV1"
+        );
+
+        const minter = (await deployAndGet(config, "MinterSetPriceV2", [
+          genArt721CoreV3.address,
+          minterFilter.address,
+        ])) as MinterSetPriceV2;
+
+        await minterFilter
+          .connect(config.accounts.deployer)
+          .addApprovedMinter(minter.address);
+
+        const projectId = await genArt721CoreV3.nextProjectId();
+        // Add and configure project
+        await genArt721CoreV3
+          .connect(config.accounts.deployer)
+          .addProject("name", config.accounts.artist.address);
+
+        // apply one max size script chunk
+        await genArt721CoreV3
+          .connect(config.accounts.artist)
+          .addProjectScript(projectId, CONTRACT_SIZE_LIMIT_SCRIPT, {
+            gasLimit: 30_000_000,
+          });
+        await genArt721CoreV3
+          .connect(config.accounts.artist)
+          .updateProjectScriptType(projectId, p5NameAndVersionBytes);
+
+        // Mint token 0
+        await minterFilter
+          .connect(config.accounts.artist)
+          .setMinterForProject(projectId, minter.address);
+        await minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(projectId, 0);
+        await minter.connect(config.accounts.artist).purchase(projectId);
+
+        const tokenId = projectId.mul(ONE_MILLION);
+
+        // Add contract to core registry
+        await config.coreRegistry
+          ?.connect(config.accounts.deployer)
+          .registerContract(
+            genArt721CoreV3.address,
+            ethers.utils.formatBytes32String("DUMMY_VERSION"),
+            ethers.utils.formatBytes32String("DUMMY_TYPE")
+          );
+
+        // Get token html
+        console.log("GETTING TOKEN HTML");
+        const gasUsed = await config.genArt721Generator.provider.estimateGas({
+          to: config.genArt721Generator.address,
+          data: config.genArt721Generator.interface.encodeFunctionData(
+            "getTokenHtml",
+            [genArt721CoreV3.address, tokenId]
+          ),
+          gasLimit: 30_000_000,
+        });
+        console.log("GAS USED", gasUsed);
+      });
+
+      it("measures gas for 10 max size script chunk when getting html for a given V3 core contract token with dependency on chain", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        const {
+          genArt721Core: genArt721CoreV3,
+          minterFilter,
+          randomizer,
+        } = await deployCoreWithMinterFilter(
+          config,
+          "GenArt721CoreV3",
+          "MinterFilterV1"
+        );
+
+        const minter = (await deployAndGet(config, "MinterSetPriceV2", [
+          genArt721CoreV3.address,
+          minterFilter.address,
+        ])) as MinterSetPriceV2;
+
+        await minterFilter
+          .connect(config.accounts.deployer)
+          .addApprovedMinter(minter.address);
+
+        const projectId = await genArt721CoreV3.nextProjectId();
+        // Add and configure project
+        await genArt721CoreV3
+          .connect(config.accounts.deployer)
+          .addProject("name", config.accounts.artist.address);
+
+        // apply one max size script chunk
+        for (let i = 0; i < 10; i++) {
+          await genArt721CoreV3
+            .connect(config.accounts.artist)
+            .addProjectScript(projectId, CONTRACT_SIZE_LIMIT_SCRIPT, {
+              gasLimit: 30_000_000,
+            });
+        }
+        await genArt721CoreV3
+          .connect(config.accounts.artist)
+          .updateProjectScriptType(projectId, p5NameAndVersionBytes);
+
+        // Mint token 0
+        await minterFilter
+          .connect(config.accounts.artist)
+          .setMinterForProject(projectId, minter.address);
+        await minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(projectId, 0);
+        await minter.connect(config.accounts.artist).purchase(projectId);
+
+        const tokenId = projectId.mul(ONE_MILLION);
+
+        // Add contract to core registry
+        await config.coreRegistry
+          ?.connect(config.accounts.deployer)
+          .registerContract(
+            genArt721CoreV3.address,
+            ethers.utils.formatBytes32String("DUMMY_VERSION"),
+            ethers.utils.formatBytes32String("DUMMY_TYPE")
+          );
+
+        // Get token html
+        const gasUsed = await config.genArt721Generator.provider.estimateGas({
+          to: config.genArt721Generator.address,
+          data: config.genArt721Generator.interface.encodeFunctionData(
+            "getTokenHtml",
+            [genArt721CoreV3.address, tokenId]
+          ),
+        });
+        console.log("GAS USED", gasUsed);
+      });
+
+      it("measures gas for 20 max size script chunk when getting html for a given V3 core contract token with dependency on chain", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        const {
+          genArt721Core: genArt721CoreV3,
+          minterFilter,
+          randomizer,
+        } = await deployCoreWithMinterFilter(
+          config,
+          "GenArt721CoreV3",
+          "MinterFilterV1"
+        );
+
+        const minter = (await deployAndGet(config, "MinterSetPriceV2", [
+          genArt721CoreV3.address,
+          minterFilter.address,
+        ])) as MinterSetPriceV2;
+
+        await minterFilter
+          .connect(config.accounts.deployer)
+          .addApprovedMinter(minter.address);
+
+        const projectId = await genArt721CoreV3.nextProjectId();
+        // Add and configure project
+        await genArt721CoreV3
+          .connect(config.accounts.deployer)
+          .addProject("name", config.accounts.artist.address);
+
+        // apply one max size script chunk
+        for (let i = 0; i < 20; i++) {
+          await genArt721CoreV3
+            .connect(config.accounts.artist)
+            .addProjectScript(projectId, CONTRACT_SIZE_LIMIT_SCRIPT, {
+              gasLimit: 30_000_000,
+            });
+        }
+        await genArt721CoreV3
+          .connect(config.accounts.artist)
+          .updateProjectScriptType(projectId, p5NameAndVersionBytes);
+
+        // Mint token 0
+        await minterFilter
+          .connect(config.accounts.artist)
+          .setMinterForProject(projectId, minter.address);
+        await minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(projectId, 0);
+        await minter.connect(config.accounts.artist).purchase(projectId);
+
+        const tokenId = projectId.mul(ONE_MILLION);
+
+        // Add contract to core registry
+        await config.coreRegistry
+          ?.connect(config.accounts.deployer)
+          .registerContract(
+            genArt721CoreV3.address,
+            ethers.utils.formatBytes32String("DUMMY_VERSION"),
+            ethers.utils.formatBytes32String("DUMMY_TYPE")
+          );
+
+        // Get token html
+        const gasUsed = await config.genArt721Generator.provider.estimateGas({
+          to: config.genArt721Generator.address,
+          data: config.genArt721Generator.interface.encodeFunctionData(
+            "getTokenHtml",
+            [genArt721CoreV3.address, tokenId]
+          ),
+        });
+        console.log("GAS USED", gasUsed);
+      });
+    });
+
     it("gets html for a given V3 core contract using script compression", async function () {
       const config = await loadFixture(_beforeEach);
 
@@ -808,7 +1027,6 @@ describe(`GenArt721GeneratorV0`, async function () {
         );
         // Token data
         const hash = await genArt721CoreV3.tokenIdToHash(tokenId);
-        console.log("TOKEN_HTML", tokenHtml);
         expect(tokenHtml).to.include(
           getScriptTag(
             `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}","preferredArweaveGateway":"${preferredArweaveGateway}","preferredIPFSGateway":"${preferredIpfsGateway}","externalAssetDependencies":[{"dependency_type":"IPFS","cid":"${ipfsCid}","data":""},{"dependency_type":"ARWEAVE","cid":"${arweaveCid}","data":""},{"dependency_type":"ONCHAIN","cid":"","data":"${btoa(onchainData)}"},{"dependency_type":"ART_BLOCKS_DEPENDENCY_REGISTRY","cid":"${onchainLibraryName}","data":""}]}\`, ${REVIVER_SCRIPT};`
