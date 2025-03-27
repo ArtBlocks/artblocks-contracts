@@ -572,6 +572,91 @@
         },
         "namespaces": {}
       }
+    },
+    "2edab7fd00882451ce04f40fbb7193b8e256f5a924969afcc467ba284ec27284": {
+      "address": "0xcD1Ba8a8733c6d5004629aEA6fe9faDEb1457CcA",
+      "txHash": "0xe280347073e2defd3cd298ff95afcc4bd01aa8cde3508dacd729a77150c9d077",
+      "layout": {
+        "solcVersion": "0.8.22",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin-4.8/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin-4.8/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "dependencyRegistry",
+            "offset": 2,
+            "slot": "0",
+            "type": "t_contract(IDependencyRegistryV0)34550",
+            "contract": "GenArt721GeneratorV0",
+            "src": "contracts/generator/GenArt721GeneratorV0.sol:58"
+          },
+          {
+            "label": "scriptyBuilder",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_contract(IScriptyBuilderV2)67166",
+            "contract": "GenArt721GeneratorV0",
+            "src": "contracts/generator/GenArt721GeneratorV0.sol:59"
+          },
+          {
+            "label": "gunzipScriptBytecodeAddress",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_address",
+            "contract": "GenArt721GeneratorV0",
+            "src": "contracts/generator/GenArt721GeneratorV0.sol:60"
+          },
+          {
+            "label": "universalBytecodeStorageReader",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_contract(IUniversalBytecodeStorageReader)38157",
+            "contract": "GenArt721GeneratorV0",
+            "src": "contracts/generator/GenArt721GeneratorV0.sol:61"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_contract(IDependencyRegistryV0)34550": {
+            "label": "contract IDependencyRegistryV0",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IScriptyBuilderV2)67166": {
+            "label": "contract IScriptyBuilderV2",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IUniversalBytecodeStorageReader)38157": {
+            "label": "contract IUniversalBytecodeStorageReader",
+            "numberOfBytes": "20"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        },
+        "namespaces": {}
+      }
     }
   }
 }
