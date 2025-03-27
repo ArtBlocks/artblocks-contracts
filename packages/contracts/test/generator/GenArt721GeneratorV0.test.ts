@@ -37,10 +37,7 @@ import {
 } from "../util/common";
 import { StorageContractCreatedEvent } from "../../scripts/contracts/BytecodeStorageV2Writer";
 import { GUNZIP_SCRIPT_BASE64 } from "../../scripts/util/constants";
-import {
-  CONTRACT_SIZE_LIMIT_SCRIPT,
-  SQUIGGLE_SCRIPT,
-} from "../util/example-scripts";
+import { CONTRACT_SIZE_LIMIT_SCRIPT } from "../util/example-scripts";
 
 const NO_OVERRIDE_ERROR =
   "Contract does not implement projectScriptDetails and has no override set.";
