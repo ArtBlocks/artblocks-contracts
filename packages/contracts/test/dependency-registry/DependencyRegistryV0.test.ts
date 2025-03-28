@@ -114,13 +114,42 @@ describe(`DependencyRegistryV0`, async function () {
       config.minterFilter.address,
     ]);
 
-    config.dependencyRegistry = await deployWithStorageLibraryAndGet(
+    config.dependencyRegistry = await deployAndGet(
       config,
       "DependencyRegistryV0"
     );
     await config.dependencyRegistry
       .connect(config.accounts.deployer)
       .initialize(config.adminACL.address);
+
+    // assign universal reader
+    const bytecodeStorageLibFactory = await ethers.getContractFactory(
+      "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+    );
+    const library = await bytecodeStorageLibFactory
+      .connect(config.accounts.deployer)
+      .deploy(/* no args for library ever */);
+    const versionedReaderFactory = await ethers.getContractFactory(
+      "BytecodeStorageReaderContractV2_Web3Call",
+      { libraries: { BytecodeStorageReader: library.address } }
+    );
+    const versionedReader = await versionedReaderFactory
+      .connect(config.accounts.deployer)
+      .deploy();
+
+    config.universalReader = await deployAndGet(
+      config,
+      "UniversalBytecodeStorageReader",
+      [config.accounts.deployer.address]
+    );
+    await config.universalReader
+      .connect(config.accounts.deployer)
+      .updateBytecodeStorageReaderContract(versionedReader.address);
+
+    // assign universal reader
+    await config.dependencyRegistry
+      .connect(config.accounts.deployer)
+      .updateUniversalBytecodeStorageReader(config.universalReader?.address);
 
     // add project zero
     await config.genArt721Core
