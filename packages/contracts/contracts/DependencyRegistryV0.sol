@@ -7,6 +7,8 @@ import "./interfaces/v0.8.x/IAdminACLV0.sol";
 import "./interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
 import "./interfaces/v0.8.x/IDependencyRegistryV0.sol";
 import "./interfaces/v0.8.x/ICoreRegistryV1.sol";
+import "./interfaces/v0.8.x/IBytecodeStorageReaderV2.sol";
+import "./interfaces/v0.8.x/IUniversalBytecodeStorageReader.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
@@ -15,7 +17,7 @@ import "@openzeppelin-4.8/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
 
 import "./libs/v0.8.x/DependencyRegistryStorageLib.sol";
-import "./libs/v0.8.x/BytecodeStorageV1.sol";
+import "./libs/v0.8.x/BytecodeStorageV2.sol";
 import "./libs/v0.8.x/Bytes32Strings.sol";
 
 /**
@@ -110,6 +112,15 @@ contract DependencyRegistryV0 is
 
         // set AdminACL management contract as owner
         _transferOwnership(adminACLContract_);
+    }
+
+    function updateUniversalBytecodeStorageReader(address newReader) external {
+        _onlyAdminACL(this.updateUniversalBytecodeStorageReader.selector);
+        _onlyNonZeroAddress(newReader);
+        DependencyRegistryStorageLib
+            .s()
+            .universalReader = IUniversalBytecodeStorageReader(newReader);
+        emit UniversalBytecodeStorageReaderUpdated(newReader);
     }
 
     /**
@@ -969,18 +980,7 @@ contract DependencyRegistryV0 is
         });
 
         address licenseAddress = licenseEntry.licenseBytecodeAddresses[index];
-        bytes32 storageVersion = BytecodeStorageReader
-            .getLibraryVersionForBytecode(licenseAddress);
-        if (storageVersion == BytecodeStorageReader.UNKNOWN_VERSION_STRING) {
-            return
-                string(
-                    BytecodeStorageReader.readBytesFromSSTORE2Bytecode(
-                        licenseAddress
-                    )
-                );
-        } else {
-            return BytecodeStorageReader.readFromBytecode(licenseAddress);
-        }
+        return _readFromBytecodeWithSSTORE2Fallback(licenseAddress);
     }
 
     /**
@@ -1250,9 +1250,10 @@ contract DependencyRegistryV0 is
                 .dependencyRecords[dependencyNameAndVersion];
         _onlyInRangeIndex({index: index, length: dependency.scriptCount});
         return
-            BytecodeStorageReader.getLibraryVersionForBytecode(
-                dependency.scriptBytecodeAddresses[index]
-            );
+            _getActiveBytecodeStorageReaderContract()
+                .getLibraryVersionForBytecode(
+                    dependency.scriptBytecodeAddresses[index]
+                );
     }
 
     /**
@@ -1279,19 +1280,8 @@ contract DependencyRegistryV0 is
         _onlyInRangeIndex({index: index, length: dependency.scriptCount});
 
         address scriptAddress = dependency.scriptBytecodeAddresses[index];
-        bytes32 storageVersion = BytecodeStorageReader
-            .getLibraryVersionForBytecode(scriptAddress);
 
-        if (storageVersion == BytecodeStorageReader.UNKNOWN_VERSION_STRING) {
-            return
-                string(
-                    BytecodeStorageReader.readBytesFromSSTORE2Bytecode(
-                        scriptAddress
-                    )
-                );
-        } else {
-            return BytecodeStorageReader.readFromBytecode(scriptAddress);
-        }
+        return _readFromBytecodeWithSSTORE2Fallback(scriptAddress);
     }
 
     /**
@@ -1470,5 +1460,46 @@ contract DependencyRegistryV0 is
         DependencyRegistryStorageLib.s().adminACLContract = IAdminACLV0(
             newOwner
         );
+    }
+
+    /**
+     * @notice Reads data from bytecode with SSTORE2 fallback.
+     * @param dataAddress Address of the data to read.
+     * @return data String representation of the data.
+     */
+    function _readFromBytecodeWithSSTORE2Fallback(
+        address dataAddress
+    ) internal view returns (string memory) {
+        IBytecodeStorageReaderV2 activeReader = _getActiveBytecodeStorageReaderContract();
+        bytes32 storageVersion = activeReader.getLibraryVersionForBytecode(
+            dataAddress
+        );
+        if (storageVersion == BytecodeStorageReader.UNKNOWN_VERSION_STRING) {
+            return
+                string(activeReader.readBytesFromSSTORE2Bytecode(dataAddress));
+        } else {
+            return activeReader.readFromBytecode(dataAddress);
+        }
+    }
+
+    /**
+     * @notice Returns the active bytecode storage reader contract, being used by the universal reader contract.
+     * @dev assumes the versioned reader is IBytecodeStorageReaderV2 or higher.
+     * @return IBytecodeStorageReaderV2 The active bytecode storage reader contract.
+     */
+    function _getActiveBytecodeStorageReaderContract()
+        internal
+        view
+        returns (IBytecodeStorageReaderV2)
+    {
+        return
+            IBytecodeStorageReaderV2(
+                address(
+                    DependencyRegistryStorageLib
+                        .s()
+                        .universalReader
+                        .activeBytecodeStorageReaderContract()
+                )
+            );
     }
 }

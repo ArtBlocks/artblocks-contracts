@@ -114,13 +114,42 @@ describe(`DependencyRegistryV0`, async function () {
       config.minterFilter.address,
     ]);
 
-    config.dependencyRegistry = await deployWithStorageLibraryAndGet(
+    config.dependencyRegistry = await deployAndGet(
       config,
       "DependencyRegistryV0"
     );
     await config.dependencyRegistry
       .connect(config.accounts.deployer)
       .initialize(config.adminACL.address);
+
+    // assign universal reader
+    const bytecodeStorageLibFactory = await ethers.getContractFactory(
+      "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+    );
+    const library = await bytecodeStorageLibFactory
+      .connect(config.accounts.deployer)
+      .deploy(/* no args for library ever */);
+    const versionedReaderFactory = await ethers.getContractFactory(
+      "BytecodeStorageReaderContractV2_Web3Call",
+      { libraries: { BytecodeStorageReader: library.address } }
+    );
+    const versionedReader = await versionedReaderFactory
+      .connect(config.accounts.deployer)
+      .deploy();
+
+    config.universalReader = await deployAndGet(
+      config,
+      "UniversalBytecodeStorageReader",
+      [config.accounts.deployer.address]
+    );
+    await config.universalReader
+      .connect(config.accounts.deployer)
+      .updateBytecodeStorageReaderContract(versionedReader.address);
+
+    // assign universal reader
+    await config.dependencyRegistry
+      .connect(config.accounts.deployer)
+      .updateUniversalBytecodeStorageReader(config.universalReader?.address);
 
     // add project zero
     await config.genArt721Core
@@ -2854,6 +2883,43 @@ describe(`DependencyRegistryV0`, async function () {
           ),
         "Only Admin ACL allowed"
       );
+    });
+  });
+
+  describe("updateUniversalBytecodeStorageReader", function () {
+    it("does not allow non-admins to update universal reader", async function () {
+      const config = await loadFixture(_beforeEach);
+      const dummyAddress = ethers.Wallet.createRandom().address;
+      await expectRevert(
+        config.dependencyRegistry
+          .connect(config.accounts.artist)
+          .updateUniversalBytecodeStorageReader(dummyAddress),
+        ONLY_ADMIN_ACL_ERROR
+      );
+    });
+
+    it("does not allow updating to zero address", async function () {
+      const config = await loadFixture(_beforeEach);
+      await expectRevert(
+        config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateUniversalBytecodeStorageReader(constants.ZERO_ADDRESS),
+        ONLY_NON_ZERO_ADDRESS_ERROR
+      );
+    });
+
+    it("allows admin to update universal reader", async function () {
+      const config = await loadFixture(_beforeEach);
+      await expect(
+        config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateUniversalBytecodeStorageReader(config.universalReader.address)
+      )
+        .to.emit(
+          config.dependencyRegistry,
+          "UniversalBytecodeStorageReaderUpdated"
+        )
+        .withArgs(config.universalReader.address);
     });
   });
 });

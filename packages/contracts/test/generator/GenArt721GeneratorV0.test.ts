@@ -115,13 +115,42 @@ describe(`GenArt721GeneratorV0`, async function () {
     config.adminACL = (await deployAndGet(config, "AdminACLV0")) as AdminACLV0;
 
     // Deploy and initialize dependency registry
-    config.dependencyRegistry = (await deployWithStorageLibraryAndGet(
+    config.dependencyRegistry = (await deployAndGet(
       config,
       "DependencyRegistryV0"
     )) as DependencyRegistryV0;
     await config.dependencyRegistry
       .connect(config.accounts.deployer)
       .initialize(config.adminACL!.address);
+
+    // assign universal reader
+    const bytecodeStorageLibFactory = await ethers.getContractFactory(
+      "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+    );
+    const library = await bytecodeStorageLibFactory
+      .connect(config.accounts.deployer)
+      .deploy(/* no args for library ever */);
+    const versionedReaderFactory = await ethers.getContractFactory(
+      "BytecodeStorageReaderContractV2_Web3Call",
+      { libraries: { BytecodeStorageReader: library.address } }
+    );
+    const versionedReader = await versionedReaderFactory
+      .connect(config.accounts.deployer)
+      .deploy();
+
+    config.universalReader = await deployAndGet(
+      config,
+      "UniversalBytecodeStorageReader",
+      [config.accounts.deployer.address]
+    );
+    await config.universalReader
+      .connect(config.accounts.deployer)
+      .updateBytecodeStorageReaderContract(versionedReader.address);
+
+    // assign universal reader
+    await config.dependencyRegistry
+      .connect(config.accounts.deployer)
+      .updateUniversalBytecodeStorageReader(config.universalReader?.address);
 
     // Add MIT license type to registry
     await config.dependencyRegistry
@@ -1333,7 +1362,7 @@ describe(`GenArt721GeneratorV0`, async function () {
     it("updates dependencyRegistry", async function () {
       const config = await loadFixture(_beforeEach);
 
-      const newDependencyRegistry = (await deployWithStorageLibraryAndGet(
+      const newDependencyRegistry = (await deployAndGet(
         config,
         "DependencyRegistryV0"
       )) as DependencyRegistryV0;
@@ -1357,7 +1386,7 @@ describe(`GenArt721GeneratorV0`, async function () {
     it("reverts if not called by admin", async function () {
       const config = await loadFixture(_beforeEach);
 
-      const newDependencyRegistry = (await deployWithStorageLibraryAndGet(
+      const newDependencyRegistry = (await deployAndGet(
         config,
         "DependencyRegistryV0"
       )) as DependencyRegistryV0;
