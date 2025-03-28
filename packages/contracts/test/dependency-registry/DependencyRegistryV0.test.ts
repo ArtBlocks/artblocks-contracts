@@ -2885,4 +2885,41 @@ describe(`DependencyRegistryV0`, async function () {
       );
     });
   });
+
+  describe("updateUniversalBytecodeStorageReader", function () {
+    it("does not allow non-admins to update universal reader", async function () {
+      const config = await loadFixture(_beforeEach);
+      const dummyAddress = ethers.Wallet.createRandom().address;
+      await expectRevert(
+        config.dependencyRegistry
+          .connect(config.accounts.artist)
+          .updateUniversalBytecodeStorageReader(dummyAddress),
+        ONLY_ADMIN_ACL_ERROR
+      );
+    });
+
+    it("does not allow updating to zero address", async function () {
+      const config = await loadFixture(_beforeEach);
+      await expectRevert(
+        config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateUniversalBytecodeStorageReader(constants.ZERO_ADDRESS),
+        ONLY_NON_ZERO_ADDRESS_ERROR
+      );
+    });
+
+    it("allows admin to update universal reader", async function () {
+      const config = await loadFixture(_beforeEach);
+      await expect(
+        config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateUniversalBytecodeStorageReader(config.universalReader.address)
+      )
+        .to.emit(
+          config.dependencyRegistry,
+          "UniversalBytecodeStorageReaderUpdated"
+        )
+        .withArgs(config.universalReader.address);
+    });
+  });
 });
