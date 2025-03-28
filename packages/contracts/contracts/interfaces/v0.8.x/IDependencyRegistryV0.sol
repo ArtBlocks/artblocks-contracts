@@ -85,6 +85,8 @@ interface IDependencyRegistryV0 {
 
     event CoreRegistryAddressUpdated(address indexed coreRegistryAddress);
 
+    event UniversalBytecodeStorageReaderUpdated(address indexed newReader);
+
     /**
      * @notice Returns the count of scripts for dependency `dependencyNameAndVersion`.
      * @param dependencyNameAndVersion Dependency type to be queried.

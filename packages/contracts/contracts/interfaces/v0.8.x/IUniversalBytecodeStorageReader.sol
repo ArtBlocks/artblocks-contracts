@@ -25,4 +25,9 @@ interface IUniversalBytecodeStorageReader is IBytecodeStorageReader_Base {
     function updateBytecodeStorageReaderContract(
         IBytecodeStorageReader_Base newBytecodeStorageReaderContract
     ) external;
+
+    function activeBytecodeStorageReaderContract()
+        external
+        view
+        returns (IBytecodeStorageReader_Base);
 }

@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import "../../interfaces/v0.8.x/IAdminACLV0.sol";
 import "../../interfaces/v0.8.x/ICoreRegistryV1.sol";
+import "../../interfaces/v0.8.x/IUniversalBytecodeStorageReader.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
 
 /**
@@ -82,6 +83,8 @@ library DependencyRegistryStorageLib {
         // that are supported by the CoreRegistry contract
         // @dev possible there is overlap between the two sets, but not intentionally configured by admin.
         EnumerableSet.AddressSet supportedCoreContractsOverride;
+        // address of the UniversalBytecodeStorageReader contract
+        IUniversalBytecodeStorageReader universalReader;
     }
 
     /**
