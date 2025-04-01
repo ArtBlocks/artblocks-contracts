@@ -84,7 +84,7 @@ erDiagram
     EngineFactory ||--|| CoreRegistry : owns
     EngineFactory ||--|| UniversalBytecodeStorageReader : initializes-cores-with
     DeployerMultisig {
-        addr _base:0x62F8fa18C079C20743F45E74925F80658c68f7b3
+        addr _0x62F8fa18C079C20743F45E74925F80658c68f7b3
     }
     EngineFactory {
         addr _0x00000BA55cae9d000000b156875D91854124fd7e
