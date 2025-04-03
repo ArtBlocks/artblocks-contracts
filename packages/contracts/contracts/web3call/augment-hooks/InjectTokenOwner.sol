@@ -3,11 +3,9 @@
 
 pragma solidity ^0.8.0;
 
-import {IPMPAugmentHook} from "../../interfaces/v0.8.x/IPMPAugmentHook.sol";
-import {IWeb3Call} from "../../interfaces/v0.8.x/IWeb3Call.sol";
+import {AbstractPMPAugmentHook} from "./AbstractPMPAugmentHook.sol";
 
-import {ERC165} from "@openzeppelin-5.0/contracts/utils/introspection/ERC165.sol";
-import {IERC165} from "@openzeppelin-5.0/contracts/interfaces/IERC165.sol";
+import {IWeb3Call} from "../../interfaces/v0.8.x/IWeb3Call.sol";
 
 /**
  * @title Abstract Web3Call contract
@@ -16,7 +14,7 @@ import {IERC165} from "@openzeppelin-5.0/contracts/interfaces/IERC165.sol";
  * It indicates support for the IWeb3Call interface via ERC165 interface detection, and ensures that all
  * child contracts implement the required IWeb3Call functions.
  */
-abstract contract AbstractPMPAugmentHook is IPMPAugmentHook, ERC165 {
+abstract contract InjectTokenOwner is AbstractPMPAugmentHook {
     /**
      * @notice Augment the token parameters for a given token.
      * @dev This hook is called when a token's PMPs are read.
@@ -33,14 +31,10 @@ abstract contract AbstractPMPAugmentHook is IPMPAugmentHook, ERC165 {
     )
         external
         view
-        virtual
-        returns (IWeb3Call.TokenParam[] memory augmentedTokenParams);
-
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override(ERC165, IERC165) returns (bool) {
-        return
-            interfaceId == type(IPMPAugmentHook).interfaceId ||
-            super.supportsInterface(interfaceId);
+        override
+        returns (IWeb3Call.TokenParam[] memory augmentedTokenParams)
+    {
+        // TODO: inject token owner into tokenParams
+        return tokenParams;
     }
 }

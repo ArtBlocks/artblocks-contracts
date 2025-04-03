@@ -17,7 +17,7 @@ import {IERC165} from "@openzeppelin-5.0/contracts/interfaces/IERC165.sol";
  * It indicates support for the IWeb3Call interface via ERC165 interface detection, and ensures that all
  * child contracts implement the required IWeb3Call functions.
  */
-abstract contract abstractPMPAugmentHook is IPMPConfigureHook, ERC165 {
+abstract contract AbstractPMPConfigureHook is IPMPConfigureHook, ERC165 {
     /**
      * @notice Execution logic to be executed when a token's PMP is configured.
      * @dev This hook is executed after the PMP is configured.
