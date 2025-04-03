@@ -5,8 +5,6 @@ pragma solidity ^0.8.0;
 
 import {AbstractPMPAugmentHook} from "./AbstractPMPAugmentHook.sol";
 
-import {ABHelpers} from "../../libs/v0.8.x/ABHelpers.sol";
-
 import {IWeb3Call} from "../../interfaces/v0.8.x/IWeb3Call.sol";
 import {IGenArt721CoreContractExposesHashSeed} from "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
@@ -21,7 +19,7 @@ contract InjectTokenHashSeed is AbstractPMPAugmentHook {
 
     /**
      * @notice Augment the token parameters for a given token.
-     * Appends if a project is fully minted into a tokens PMPs.
+     * Appends a token's hash seed into a tokens PMPs.
      * @dev This hook is called when a token's PMPs are read.
      * @dev This must return all desired tokenParams, not just additional data.
      * @param coreContract The address of the core contract to call.
