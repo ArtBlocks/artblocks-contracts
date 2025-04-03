@@ -22,6 +22,10 @@ type LiveSaleDataPollingMachineContext = {
   liveSaleData?: LiveSaleData;
 };
 
+type LiveSaleDataPollingMachineEvents = {
+  type: "FORCE_POLLL";
+};
+
 /**
  * TODO
  * - Potentially remove liveSaleData from context and instead only send it to parent
@@ -61,6 +65,7 @@ export const liveSaleDataPollingMachine = setup({
       "project" | "artblocksClient"
     >,
     context: {} as LiveSaleDataPollingMachineContext,
+    events: {} as LiveSaleDataPollingMachineEvents,
   },
   actors: {
     fetchLiveSaleData: fromPromise(
@@ -271,6 +276,11 @@ export const liveSaleDataPollingMachine = setup({
       },
     },
     waiting: {
+      on: {
+        FORCE_POLLL: {
+          target: "fetchingLiveSaleData",
+        },
+      },
       after: {
         [POLLING_DELAY]: {
           target: "fetchingLiveSaleData",
