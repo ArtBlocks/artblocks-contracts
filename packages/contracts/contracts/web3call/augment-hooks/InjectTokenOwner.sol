@@ -6,6 +6,8 @@ pragma solidity ^0.8.0;
 import {AbstractPMPAugmentHook} from "./AbstractPMPAugmentHook.sol";
 
 import {IWeb3Call} from "../../interfaces/v0.8.x/IWeb3Call.sol";
+import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
+import {IERC721} from "@openzeppelin-5.0/contracts/token/ERC721/IERC721.sol";
 
 /**
  * @title Abstract Web3Call contract
@@ -34,7 +36,26 @@ abstract contract InjectTokenOwner is AbstractPMPAugmentHook {
         override
         returns (IWeb3Call.TokenParam[] memory augmentedTokenParams)
     {
-        // TODO: inject token owner into tokenParams
-        return tokenParams;
+        augmentedTokenParams = new IWeb3Call.TokenParam[](tokenParams.length);
+
+        address owner = IERC721(coreContract).ownerOf(tokenId);
+        string memory ownerAddress = Strings.toHexString(owner);
+        for (uint256 i = 0; i < tokenParams.length; i++) {
+            string memory key = tokenParams[i].key;
+            string memory value = tokenParams[i].value;
+
+            bytes32 keyHash = keccak256(bytes(key));
+
+            // check if this parameter should be augmented with owner info
+            if (keyHash == keccak256(bytes("token_owner"))) {
+                value = ownerAddress;
+            }
+
+            augmentedTokenParams[i] = IWeb3Call.TokenParam({
+                key: key,
+                value: value
+            });
+        }
+        return augmentedTokenParams;
     }
 }
