@@ -31,9 +31,6 @@ interface AggregatorV3Interface {
  */
 abstract contract InjectEthPrice is AbstractPMPAugmentHook {
     AggregatorV3Interface internal dataFeed;
-    /// @dev Constant for the applicable token param
-    bytes32 internal constant ETH_PRICE_KEY = keccak256(bytes("eth_price_usd"));
-
     /**
      * @notice From the Chainlink documentation:
      * Network: Mainnet
@@ -63,7 +60,15 @@ abstract contract InjectEthPrice is AbstractPMPAugmentHook {
         override
         returns (IWeb3Call.TokenParam[] memory augmentedTokenParams)
     {
-        augmentedTokenParams = new IWeb3Call.TokenParam[](tokenParams.length);
+        // create a new tokenParam array with one extra element
+        uint256 originalLength = tokenParams.length;
+        uint256 newLength = originalLength + 1;
+        augmentedTokenParams = new IWeb3Call.TokenParam[](newLength);
+
+        // copy the original tokenParams into the new array
+        for (uint256 i = 0; i < originalLength; i++) {
+            augmentedTokenParams[i] = tokenParams[i];
+        }
 
         // Get the latest ETH price in USD from Chainlink
         (
@@ -74,24 +79,11 @@ abstract contract InjectEthPrice is AbstractPMPAugmentHook {
 
         ) = dataFeed.latestRoundData();
 
-        // Inject the ETH price into the tokenParams
-        for (uint256 i = 0; i < tokenParams.length; i++) {
-            string memory key = tokenParams[i].key;
-            string memory value = tokenParams[i].value;
-
-            bytes32 keyHash = keccak256(bytes(key));
-
-            // check if this parameter should be augmented with eth price info
-            if (keyHash == ETH_PRICE_KEY) {
-                // format the price data to 2 decimal places
-                value = _formatPriceData(answer);
-            }
-
-            augmentedTokenParams[i] = IWeb3Call.TokenParam({
-                key: key,
-                value: value
-            });
-        }
+        // Add the ETH price as a new parameter
+        augmentedTokenParams[originalLength] = IWeb3Call.TokenParam({
+            key: "ethPriceUSD",
+            value: _formatPriceData(answer)
+        });
         return augmentedTokenParams;
     }
 
