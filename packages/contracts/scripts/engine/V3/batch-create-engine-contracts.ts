@@ -378,6 +378,7 @@ async function main() {
     const nonce = await gnosisSetup.protocolKit.getNonce();
     const safeTransaction = await gnosisSetup.protocolKit.createTransaction({
       safeTransactionData: txData,
+      onlyCalls: true,
       options: {
         nonce,
       },

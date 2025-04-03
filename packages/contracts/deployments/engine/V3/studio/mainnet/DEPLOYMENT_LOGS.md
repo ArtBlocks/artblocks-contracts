@@ -139,3 +139,28 @@
       [INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/studio/mainnet/2025-02-20-deployment-config.ts
 
     
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2025-04-03T18:49:20.698Z
+      [INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/studio/mainnet/2025-04-03-deployment-config.ts
+
+    
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2025-04-03T18:50:51.952Z
+      [INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/studio/mainnet/2025-04-03-deployment-config.ts
+
+    
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2025-04-03T18:58:10.211Z
+      [INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/studio/mainnet/2025-04-03-deployment-config.ts
+
+    
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2025-04-03T19:04:43.308Z
+      [INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/studio/mainnet/2025-04-03-deployment-config.ts
+
+    
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2025-04-03T19:05:47.631Z
+      [INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/studio/mainnet/2025-04-03-deployment-config.ts
+
+    
