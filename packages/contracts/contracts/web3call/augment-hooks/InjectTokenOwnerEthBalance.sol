@@ -10,16 +10,16 @@ import {IERC721} from "@openzeppelin-5.0/contracts/interfaces/IERC721.sol";
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
 
 /**
- * @title InjectTokenOwner
+ * @title InjectTokenOwnerEthBalance
  * @author Art Blocks Inc.
- * @notice This hook injects the token owner's address into a tokens PMPs.
+ * @notice This hook appends the token owner's ETH balance, in wei, to a tokens PMPs.
  */
-contract InjectTokenOwner is AbstractPMPAugmentHook {
-    using Strings for address;
+contract InjectTokenOwnerEthBalance is AbstractPMPAugmentHook {
+    using Strings for uint256;
 
     /**
      * @notice Augment the token parameters for a given token.
-     * Appends the token owner's address into a tokens PMPs.
+     * Appends the token owner's ETH balance into a tokens PMPs.
      * @dev This hook is called when a token's PMPs are read.
      * @dev This must return all desired tokenParams, not just additional data.
      * @param coreContract The address of the core contract to call.
@@ -49,9 +49,10 @@ contract InjectTokenOwner is AbstractPMPAugmentHook {
 
         // get + inject the token owner into the new array
         address tokenOwner = IERC721(coreContract).ownerOf(tokenId);
+        uint256 tokenOwnerEthBalanceInWei = address(tokenOwner).balance;
         augmentedTokenParams[originalLength] = IWeb3Call.TokenParam({
-            key: "tokenOwner",
-            value: tokenOwner.toHexString()
+            key: "tokenOwnerEthBalance",
+            value: tokenOwnerEthBalanceInWei.toString()
         });
 
         // return the augmented tokenParams

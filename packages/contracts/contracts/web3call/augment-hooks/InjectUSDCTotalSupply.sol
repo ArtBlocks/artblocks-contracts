@@ -6,30 +6,39 @@ pragma solidity ^0.8.0;
 import {AbstractPMPAugmentHook} from "./AbstractPMPAugmentHook.sol";
 
 import {IWeb3Call} from "../../interfaces/v0.8.x/IWeb3Call.sol";
-import {IERC721} from "@openzeppelin-5.0/contracts/interfaces/IERC721.sol";
+import {IERC20} from "@openzeppelin-5.0/contracts/interfaces/IERC20.sol";
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
 
 /**
- * @title InjectTokenOwner
+ * @title InjectUSDCTotalSupply
  * @author Art Blocks Inc.
- * @notice This hook injects the token owner's address into a tokens PMPs.
+ * @notice This hook appends the total supply of USDC, in wei, to a tokens PMPs.
  */
-contract InjectTokenOwner is AbstractPMPAugmentHook {
-    using Strings for address;
+contract InjectUSDCTotalSupply is AbstractPMPAugmentHook {
+    using Strings for uint256;
+
+    address public immutable usdcAddress;
+
+    /**
+     * @notice Constructor.
+     * @param _usdcAddress The address of the USDC contract.
+     * For mainnet, this is 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
+     */
+    constructor(address _usdcAddress) {
+        usdcAddress = _usdcAddress;
+    }
 
     /**
      * @notice Augment the token parameters for a given token.
-     * Appends the token owner's address into a tokens PMPs.
+     * Appends the token owner's ETH balance into a tokens PMPs.
      * @dev This hook is called when a token's PMPs are read.
      * @dev This must return all desired tokenParams, not just additional data.
-     * @param coreContract The address of the core contract to call.
-     * @param tokenId The tokenId of the token to get data for.
      * @param tokenParams The token parameters for the queried token.
      * @return augmentedTokenParams The augmented token parameters.
      */
     function onTokenPMPReadAugmentation(
-        address coreContract,
-        uint256 tokenId,
+        address /* coreContract */,
+        uint256 /* tokenId */,
         IWeb3Call.TokenParam[] calldata tokenParams
     )
         external
@@ -47,11 +56,11 @@ contract InjectTokenOwner is AbstractPMPAugmentHook {
             augmentedTokenParams[i] = tokenParams[i];
         }
 
-        // get + inject the token owner into the new array
-        address tokenOwner = IERC721(coreContract).ownerOf(tokenId);
+        // get + inject the total supply of USDC
+        uint256 totalSupplyUSDC = IERC20(usdcAddress).totalSupply();
         augmentedTokenParams[originalLength] = IWeb3Call.TokenParam({
-            key: "tokenOwner",
-            value: tokenOwner.toHexString()
+            key: "totalSupplyUSDC",
+            value: totalSupplyUSDC.toString()
         });
 
         // return the augmented tokenParams
