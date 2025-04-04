@@ -6,20 +6,20 @@ pragma solidity ^0.8.0;
 import {AbstractPMPAugmentHook} from "./AbstractPMPAugmentHook.sol";
 
 import {IWeb3Call} from "../../interfaces/v0.8.x/IWeb3Call.sol";
-import {IERC721} from "@openzeppelin-5.0/contracts/interfaces/IERC721.sol";
+import {IGenArt721CoreContractExposesHashSeed} from "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
 
 /**
- * @title InjectTokenOwner
+ * @title InjectTokenHashSeed
  * @author Art Blocks Inc.
- * @notice This hook injects the token owner's address into a tokens PMPs.
+ * @notice This hook injects the token hash seed into a tokens PMPs.
  */
-contract InjectTokenOwner is AbstractPMPAugmentHook {
-    using Strings for address;
+contract InjectTokenHashSeed is AbstractPMPAugmentHook {
+    using Strings for uint256;
 
     /**
      * @notice Augment the token parameters for a given token.
-     * Appends the token owner's address into a tokens PMPs.
+     * Appends a token's hash seed into a tokens PMPs.
      * @dev This hook is called when a token's PMPs are read.
      * @dev This must return all desired tokenParams, not just additional data.
      * @param coreContract The address of the core contract to call.
@@ -48,10 +48,12 @@ contract InjectTokenOwner is AbstractPMPAugmentHook {
         }
 
         // get + inject the token owner into the new array
-        address tokenOwner = IERC721(coreContract).ownerOf(tokenId);
+        bytes12 tokenHashSeed = IGenArt721CoreContractExposesHashSeed(
+            coreContract
+        ).tokenIdToHashSeed(tokenId);
         augmentedTokenParams[originalLength] = IWeb3Call.TokenParam({
-            key: "tokenOwner",
-            value: tokenOwner.toHexString()
+            key: "tokenHashSeed",
+            value: uint256(bytes32(tokenHashSeed)).toHexString()
         });
 
         // return the augmented tokenParams

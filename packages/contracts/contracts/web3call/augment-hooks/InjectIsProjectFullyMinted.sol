@@ -5,21 +5,24 @@ pragma solidity ^0.8.0;
 
 import {AbstractPMPAugmentHook} from "./AbstractPMPAugmentHook.sol";
 
+import {ABHelpers} from "../../libs/v0.8.x/ABHelpers.sol";
+
 import {IWeb3Call} from "../../interfaces/v0.8.x/IWeb3Call.sol";
 import {IERC721} from "@openzeppelin-5.0/contracts/interfaces/IERC721.sol";
+import {IGenArt721CoreContractV3_Base} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
 
 /**
- * @title InjectTokenOwner
+ * @title InjectIsProjectFullyMinted
  * @author Art Blocks Inc.
- * @notice This hook injects the token owner's address into a tokens PMPs.
+ * @notice This hook injects if a project is fully minted.
  */
-contract InjectTokenOwner is AbstractPMPAugmentHook {
+contract InjectIsProjectFullyMinted is AbstractPMPAugmentHook {
     using Strings for address;
 
     /**
      * @notice Augment the token parameters for a given token.
-     * Appends the token owner's address into a tokens PMPs.
+     * Appends if a project is fully minted into a tokens PMPs.
      * @dev This hook is called when a token's PMPs are read.
      * @dev This must return all desired tokenParams, not just additional data.
      * @param coreContract The address of the core contract to call.
@@ -48,10 +51,20 @@ contract InjectTokenOwner is AbstractPMPAugmentHook {
         }
 
         // get + inject the token owner into the new array
-        address tokenOwner = IERC721(coreContract).ownerOf(tokenId);
+        uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
+        (
+            uint256 invocations,
+            uint256 maxInvocations,
+            ,
+            ,
+            ,
+
+        ) = IGenArt721CoreContractV3_Base(coreContract).projectStateData(
+                projectId
+            );
         augmentedTokenParams[originalLength] = IWeb3Call.TokenParam({
-            key: "tokenOwner",
-            value: tokenOwner.toHexString()
+            key: "isProjectFullyMinted",
+            value: invocations == maxInvocations ? "true" : "false"
         });
 
         // return the augmented tokenParams

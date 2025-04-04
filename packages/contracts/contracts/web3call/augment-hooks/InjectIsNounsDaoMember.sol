@@ -7,19 +7,22 @@ import {AbstractPMPAugmentHook} from "./AbstractPMPAugmentHook.sol";
 
 import {IWeb3Call} from "../../interfaces/v0.8.x/IWeb3Call.sol";
 import {IERC721} from "@openzeppelin-5.0/contracts/interfaces/IERC721.sol";
+import {IERC20} from "@openzeppelin-5.0/contracts/interfaces/IERC20.sol";
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
 
 /**
- * @title InjectTokenOwner
+ * @title InjectIsNounsDaoMember
  * @author Art Blocks Inc.
- * @notice This hook injects the token owner's address into a tokens PMPs.
+ * @notice This hook injects if the token's owner is a member of the Nouns DAO.
  */
-contract InjectTokenOwner is AbstractPMPAugmentHook {
-    using Strings for address;
+contract InjectIsNounsDaoMember is AbstractPMPAugmentHook {
+    address public constant nounsTokenAddress =
+        0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03;
 
     /**
      * @notice Augment the token parameters for a given token.
-     * Appends the token owner's address into a tokens PMPs.
+     * Appends if the token's owner is a member of the Nouns DAO into a tokens PMPs,
+     * i.e. if the token's owner has a Noun in their wallet.
      * @dev This hook is called when a token's PMPs are read.
      * @dev This must return all desired tokenParams, not just additional data.
      * @param coreContract The address of the core contract to call.
@@ -47,11 +50,14 @@ contract InjectTokenOwner is AbstractPMPAugmentHook {
             augmentedTokenParams[i] = tokenParams[i];
         }
 
-        // get + inject the token owner into the new array
+        // get + inject the token owner's nouns dao membership status
         address tokenOwner = IERC721(coreContract).ownerOf(tokenId);
+        bool isNounsDaoMember = IERC20(nounsTokenAddress).balanceOf(
+            tokenOwner
+        ) > 0;
         augmentedTokenParams[originalLength] = IWeb3Call.TokenParam({
-            key: "tokenOwner",
-            value: tokenOwner.toHexString()
+            key: "isNounsDaoMember",
+            value: isNounsDaoMember ? "true" : "false"
         });
 
         // return the augmented tokenParams

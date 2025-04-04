@@ -4,22 +4,43 @@
 pragma solidity ^0.8.0;
 
 import {AbstractPMPAugmentHook} from "./AbstractPMPAugmentHook.sol";
+import {ABHelpers} from "../../libs/v0.8.x/ABHelpers.sol";
 
 import {IWeb3Call} from "../../interfaces/v0.8.x/IWeb3Call.sol";
-import {IERC721} from "@openzeppelin-5.0/contracts/interfaces/IERC721.sol";
+import {IGenArt721CoreContractV3_Base} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
 
 /**
- * @title InjectTokenOwner
+ * @title InjectPolyptychTokenHash
  * @author Art Blocks Inc.
- * @notice This hook injects the token owner's address into a tokens PMPs.
+ * @notice This hook injects the hash of a token on a different project into a tokens PMPs.
  */
-contract InjectTokenOwner is AbstractPMPAugmentHook {
-    using Strings for address;
+contract InjectPolyptychTokenHash is AbstractPMPAugmentHook {
+    using Strings for uint256;
+
+    /**
+     * @notice The projectId of the project to inject the hash from.
+     */
+    uint256 public immutable sourceProjectId;
+    /**
+     * @notice the core contract address of the project to inject the hash from.
+     */
+    address public immutable sourceCoreContract;
+
+    /**
+     * @notice Constructor.
+     * @param _sourceCoreContract The address of the core contract to inject the hash from.
+     * @param _sourceProjectId The projectId of the project to inject the hash from.
+     */
+    constructor(address _sourceCoreContract, uint256 _sourceProjectId) {
+        sourceCoreContract = _sourceCoreContract;
+        sourceProjectId = _sourceProjectId;
+    }
 
     /**
      * @notice Augment the token parameters for a given token.
-     * Appends the token owner's address into a tokens PMPs.
+     * Appends the hash of a token on a different project into a tokens PMPs.
      * @dev This hook is called when a token's PMPs are read.
      * @dev This must return all desired tokenParams, not just additional data.
      * @param coreContract The address of the core contract to call.
@@ -47,11 +68,19 @@ contract InjectTokenOwner is AbstractPMPAugmentHook {
             augmentedTokenParams[i] = tokenParams[i];
         }
 
-        // get + inject the token owner into the new array
-        address tokenOwner = IERC721(coreContract).ownerOf(tokenId);
+        // get + inject the source token hash into the new array
+        uint256 tokenNumber = ABHelpers.tokenIdToTokenNumber(tokenId);
+        uint256 sourceTokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
+            projectId: sourceProjectId,
+            tokenNumber: tokenNumber
+        });
+        bytes32 sourceTokenHash = IGenArt721CoreContractV3_Base(
+            sourceCoreContract
+        ).tokenIdToHash(sourceTokenId);
+
         augmentedTokenParams[originalLength] = IWeb3Call.TokenParam({
-            key: "tokenOwner",
-            value: tokenOwner.toHexString()
+            key: "sourceTokenHash",
+            value: uint256(sourceTokenHash).toHexString()
         });
 
         // return the augmented tokenParams

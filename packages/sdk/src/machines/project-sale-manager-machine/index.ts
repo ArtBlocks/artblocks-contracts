@@ -46,6 +46,9 @@ type ProjectSaleManagerMachineEvents =
     }
   | {
       type: "COMPLETE";
+    }
+  | {
+      type: "FORCE_LIVE_SALE_DATA_POLL";
     };
 
 export type ProjectSaleManagerMachineContext = {
@@ -339,6 +342,19 @@ export const projectSaleManagerMachine = setup({
         });
       },
     }),
+    forceLiveSaleDataPoll: enqueueActions(({ system }) => {
+      const liveSaleDataPollingMachineRef = system.get(
+        "liveSaleDataPollingMachine"
+      );
+      if (!liveSaleDataPollingMachineRef) {
+        return;
+      }
+      (
+        liveSaleDataPollingMachineRef as ActorRefFrom<
+          typeof liveSaleDataPollingMachine
+        >
+      ).send({ type: "FORCE_POLLL" });
+    }),
   },
   guards: {
     isNotPurchasable: ({ context }) => {
@@ -426,6 +442,11 @@ export const projectSaleManagerMachine = setup({
         params: ({ event }) => ({
           liveSaleData: event.data,
         }),
+      },
+    },
+    FORCE_LIVE_SALE_DATA_POLL: {
+      actions: {
+        type: "forceLiveSaleDataPoll",
       },
     },
   },
