@@ -47,7 +47,7 @@ contract InjectTokenHashSeed is AbstractPMPAugmentHook {
             augmentedTokenParams[i] = tokenParams[i];
         }
 
-        // get + inject the token owner into the new array
+        // get + inject the token hash seed into the new array
         bytes12 tokenHashSeed = IGenArt721CoreContractExposesHashSeed(
             coreContract
         ).tokenIdToHashSeed(tokenId);
