@@ -21,10 +21,7 @@ async function main() {
   console.log("Preparing upgrade...");
   const newImplementationAddress = await upgrades.prepareUpgrade(
     proxyAddress,
-    newImplementationFactory,
-    {
-      unsafeAllowRenames: true, // updated variable names on the new implementation
-    }
+    newImplementationFactory
   );
   console.log("Deployed new implementation:", newImplementationAddress);
 
