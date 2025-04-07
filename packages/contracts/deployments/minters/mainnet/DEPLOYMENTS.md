@@ -264,3 +264,22 @@ Date: 2024-09-30T21:47:55.737Z
 
 ---
 
+
+# Shared Minter Deployment
+
+Date: 2025-04-07T23:31:18.000Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/minters/mainnet/shared-minter-deploy-config-03.mainnet.ts`
+
+**MinterSEAV1:** https://etherscan.io/address/0xE56087D37973F49fE3C154272cFD3041d7539c52#code
+
+**Associated Minter Filter:** 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+
+**Deployment Args:** 0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b
+
+---
+
