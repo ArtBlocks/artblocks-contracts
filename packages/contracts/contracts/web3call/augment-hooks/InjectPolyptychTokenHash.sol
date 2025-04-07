@@ -43,13 +43,12 @@ contract InjectPolyptychTokenHash is AbstractPMPAugmentHook {
      * Appends the hash of a token on a different project into a tokens PMPs.
      * @dev This hook is called when a token's PMPs are read.
      * @dev This must return all desired tokenParams, not just additional data.
-     * @param coreContract The address of the core contract to call.
      * @param tokenId The tokenId of the token to get data for.
      * @param tokenParams The token parameters for the queried token.
      * @return augmentedTokenParams The augmented token parameters.
      */
     function onTokenPMPReadAugmentation(
-        address coreContract,
+        address /* coreContract */,
         uint256 tokenId,
         IWeb3Call.TokenParam[] calldata tokenParams
     )
