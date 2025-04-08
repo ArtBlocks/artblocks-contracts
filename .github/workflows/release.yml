@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -19,6 +20,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ">=18.12.0"
+
+      - name: Install native build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential python3
 
       - name: Install Dependencies
         run: |
