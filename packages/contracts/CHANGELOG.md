@@ -1,5 +1,11 @@
 # @artblocks/contracts
 
+## 1.3.0
+
+### Minor Changes
+
+- bc4019a: post mint parameters and associated contracts
+
 ## 1.2.1
 
 ### Patch Changes
