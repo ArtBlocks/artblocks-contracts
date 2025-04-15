@@ -263,6 +263,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
             pmpConfigStorage.selectOptionsLength = uint8(
                 inputPMPConfig.selectOptions.length
             );
+            // @dev ImmutableStringArray is optimized for the case where the array is empty.
             ImmutableStringArray.store(
                 pmpConfigStorage.selectOptions,
                 inputPMPConfig.selectOptions
