@@ -15,7 +15,7 @@ import {SSTORE2} from "./SSTORE2.sol"; // Import SSTORE2 library
 library ImmutableStringArray {
     /**
      * @notice Struct to store the SSTORE2 pointer to the packed string array.
-     * @dev dataPointer is the SSTORE2 pointer to the packed string array.
+     * @dev dataPointer is the SSTORE2 pointer to the packed string array. Assigned to address(0) if the array is empty.
      */
     struct StringArray {
         address dataPointer; // SSTORE2 pointer storing length + packed offsets + packed string data
@@ -24,6 +24,7 @@ library ImmutableStringArray {
     /**
      * @notice Stores a packed immutable string array using a single SSTORE2 contract.
      * Allows overwriting the pointer to point to a new immutable array.
+     * @dev Optimized for the case where the array is empty by assigning the dataPointer to address(0).
      * @param storageArray The storage reference to store the packed array.
      * @param strings The array of strings to pack.
      */
@@ -32,6 +33,12 @@ library ImmutableStringArray {
         string[] memory strings
     ) internal {
         uint256 arrayLength = strings.length;
+        // edge case - empty array
+        if (arrayLength == 0) {
+            storageArray.dataPointer = address(0);
+            return;
+        }
+
         uint64[] memory offsets = new uint64[](arrayLength);
 
         // compute total bytes length and offsets (ensuring no overflow)
@@ -126,6 +133,11 @@ library ImmutableStringArray {
     function length(
         StringArray storage storageArray
     ) internal view returns (uint256 count) {
+        // edge case - unassigned dataPointer or empty array
+        if (storageArray.dataPointer == address(0)) {
+            return 0;
+        }
+
         // @dev this could be more efficient by only reading the first 8 bytes of the SSTORE2 contract
         // but prefer to keep simple
         bytes memory allData = SSTORE2.read(storageArray.dataPointer);
@@ -145,7 +157,7 @@ library ImmutableStringArray {
         StringArray storage storageArray,
         uint256 index
     ) internal view returns (string memory result) {
-        // edge case - unassigned dataPointer
+        // edge case - unassigned dataPointer or empty array
         if (storageArray.dataPointer == address(0)) {
             revert("Index out of bounds");
         }
@@ -213,7 +225,7 @@ library ImmutableStringArray {
     function getAll(
         StringArray storage storageArray
     ) internal view returns (string[] memory results) {
-        // edge case - unassigned dataPointer
+        // edge case - unassigned dataPointer or empty array
         if (storageArray.dataPointer == address(0)) {
             return new string[](0);
         }
