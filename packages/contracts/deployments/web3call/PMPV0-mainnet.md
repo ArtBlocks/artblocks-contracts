@@ -16,9 +16,9 @@ const inputs: T_Inputs = {
 
 ## Results:
 
-salt: `0x00000000000000000000000000000000000000008214b0affa812076ab2000e0`
-Deploys to address: `0x000000001AC1998e4A97d207915889f2B9Ced8e2`
+salt: `0x0000000000000000000000000000000000000000272b21ae06bf831a5a1d0040`
+Deploys to address: `0x00000000b1A9D462777c9Ef2a700476069AfF57A`
 
 ### Deployment transactions:
 
-- mainnet: https://etherscan.io/tx/0xb3cf3fc508a840f3d55c57c7e62cd6a42d40b8ce9cb76d70e469275ae6b61323
+- mainnet: https://etherscan.io/tx/0x9dc34c82f610a244c0032a64b3a27ac11fd547e473d39ffcd37acedbf7555bf9
