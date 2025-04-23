@@ -85,6 +85,115 @@ describe("PMPV0_Gas", function () {
         gasUsed.toString()
       );
     });
+
+    it("reports gas when configuring project with 7 parameters", async function () {
+      const config = await loadFixture(_beforeEach);
+      const pmpConfig1 = getPMPInputConfig(
+        "Colors",
+        PMP_AUTH_ENUM.TokenOwner,
+        PMP_PARAM_TYPE_ENUM.Select,
+        0,
+        constants.AddressZero,
+        [
+          "Dark Lifestyle",
+          "Party Time",
+          "White on Cream",
+          "Luxe-Derived",
+          "Cool",
+          "Rose",
+          "Black",
+          "AM",
+          "White Mono",
+          "Baked",
+          "Politique",
+          "Rad",
+          "Golf Socks",
+          "Luxe",
+        ],
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+      );
+      const pmpConfig2 = getPMPInputConfig(
+        "Spiral",
+        PMP_AUTH_ENUM.TokenOwner,
+        PMP_PARAM_TYPE_ENUM.Bool,
+        0,
+        constants.AddressZero,
+        [],
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+      );
+      const pmpConfig3 = getPMPInputConfig(
+        "Param3",
+        PMP_AUTH_ENUM.TokenOwner,
+        PMP_PARAM_TYPE_ENUM.Uint256Range,
+        0,
+        constants.AddressZero,
+        [],
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x000000000000000000000000000000000000ffffffffffffffffffffffffffff"
+      );
+      const pmpConfig4 = getPMPInputConfig(
+        "Param4",
+        PMP_AUTH_ENUM.TokenOwner,
+        PMP_PARAM_TYPE_ENUM.Uint256Range,
+        0,
+        constants.AddressZero,
+        [],
+        "0x00000000000000000000000000000000000000000000000000000000000000ff",
+        "0x0000000000000000000000000000000000000000ffffffffffffffffffffffff"
+      );
+      const pmpConfig5 = getPMPInputConfig(
+        "Param5",
+        PMP_AUTH_ENUM.TokenOwner,
+        PMP_PARAM_TYPE_ENUM.Uint256Range,
+        0,
+        constants.AddressZero,
+        [],
+        "0x00000000000000000000000000000000000000000000000000000000000000ff",
+        "0x0000000000000000000000000000000000000000ffffffffffffffffffffffff"
+      );
+      const pmpConfig6 = getPMPInputConfig(
+        "Param6",
+        PMP_AUTH_ENUM.TokenOwner,
+        PMP_PARAM_TYPE_ENUM.Uint256Range,
+        0,
+        constants.AddressZero,
+        [],
+        "0x00000000000000000000000000000000000000000000000000000000000000ff",
+        "0x0000000000000000000000000000000000000000ffffffffffffffffffffffff"
+      );
+      const pmpConfig7 = getPMPInputConfig(
+        "Param7",
+        PMP_AUTH_ENUM.TokenOwner,
+        PMP_PARAM_TYPE_ENUM.Uint256Range,
+        0,
+        constants.AddressZero,
+        [],
+        "0x00000000000000000000000000000000000000000000000000000000000000ff",
+        "0x0000000000000000000000000000000000000000ffffffffffffffffffffffff"
+      );
+
+      // measure gas to configure project
+      const tx = await config.pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          pmpConfig1,
+          pmpConfig2,
+          pmpConfig3,
+          pmpConfig4,
+          pmpConfig5,
+          pmpConfig6,
+          pmpConfig7,
+        ]);
+
+      const receipt = await tx.wait();
+      const gasUsed = receipt.gasUsed;
+      console.log(
+        "gasUsed in initial project 7x PMP config:",
+        gasUsed.toString()
+      );
+    });
   });
 
   describe("configureTokenParams", function () {

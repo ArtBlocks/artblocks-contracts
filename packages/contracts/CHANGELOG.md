@@ -1,5 +1,11 @@
 # @artblocks/contracts
 
+## 1.3.1
+
+### Patch Changes
+
+- e03afaf: gas efficiency updates to PMPV0
+
 ## 1.3.0
 
 ### Minor Changes
