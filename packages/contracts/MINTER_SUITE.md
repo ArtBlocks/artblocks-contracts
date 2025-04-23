@@ -33,13 +33,12 @@ The following table shows which Minters and MinterFilters are compatible with di
 
 Below is a table of the shared minter filter contracts that are deployed on mainnet and testnets. Note that each of these contracts has a function available to enumerate all globally approved minter contracts, `getAllGloballyApprovedMinters()`
 
-| Network                         | Shared Minter Filter Contract Address        |
-| ------------------------------- | -------------------------------------------- |
-| Mainnet (Ethereum)              | `0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b` |
-| Artist Staging Goerli           | `0xD1d9aD8B1B520F19DFE43Cc975b9470840e8b824` |
-| Base                            | `0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5` |
-| Arbitrum One                    | `0x94560abECb897f359ee1A6Ed0E922315Da11752d` |
-| Artist Staging Arbitrum-Sepolia | `0xa07f47c30C262adcC263A4D44595972c50e04db7` |
+| Network                | Shared Minter Filter Contract Address        |
+| ---------------------- | -------------------------------------------- |
+| Mainnet (Ethereum)     | `0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b` |
+| Artist Staging Sepolia | `0xa07f47c30C262adcC263A4D44595972c50e04db7` |
+| Base                   | `0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5` |
+| Arbitrum One           | `0x94560abECb897f359ee1A6Ed0E922315Da11752d` |
 
 ## Flagship
 
