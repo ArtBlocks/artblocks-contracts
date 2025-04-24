@@ -4,6 +4,8 @@ pragma solidity ^0.8.19;
 import "../../interfaces/v0.8.x/IAdminACLV0.sol";
 import "../../interfaces/v0.8.x/ICoreRegistryV1.sol";
 import "../../interfaces/v0.8.x/IUniversalBytecodeStorageReader.sol";
+import {IDependencyRegistryV0} from "../../interfaces/v0.8.x/IDependencyRegistryV0.sol";
+
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
 
 /**
@@ -51,6 +53,12 @@ library DependencyRegistryStorageLib {
         uint24 additionalRepositoryCount;
         // count of scripts that make up the dependency, if the dependency is available on-chain
         uint24 scriptCount;
+        // canvas tag for the dependency
+        IDependencyRegistryV0.CanvasTag canvasTag;
+        // whether the dependency should be loaded as a module
+        bool loadAsModule;
+        // project script special type for the dependency
+        string projectScriptSpecialType;
     }
 
     /**
