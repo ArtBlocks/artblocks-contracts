@@ -52,11 +52,13 @@ interface IPMPV0 is IWeb3Call {
      * @param coreContract The address of the core contract.
      * @param tokenId The token ID for which parameters were configured.
      * @param pmpInputs Array of parameter inputs that were configured.
+     * @param authAddresses Array of addresses that authenticated the parameters. Aligned by index with pmpInputs.
      */
     event TokenParamsConfigured(
         address coreContract,
         uint256 tokenId,
-        PMPInput[] pmpInputs
+        PMPInput[] pmpInputs,
+        address[] authAddresses
     );
 
     /**
@@ -213,12 +215,12 @@ interface IPMPV0 is IWeb3Call {
      * @param wallet The wallet address to check.
      * @param coreContract The address of the core contract to call.
      * @param tokenId The tokenId of the token to check.
-     * @return isTokenOwnerOrDelegate True if the wallet is the owner or a delegate of the token,
+     * @return isTokenOwnerOrDelegate_ True if the wallet is the owner or a delegate of the token,
      * false otherwise.
      */
     function isTokenOwnerOrDelegate(
         address wallet,
         address coreContract,
         uint256 tokenId
-    ) external view returns (bool);
+    ) external view returns (bool isTokenOwnerOrDelegate_);
 }

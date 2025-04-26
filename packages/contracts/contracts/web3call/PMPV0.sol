@@ -312,6 +312,8 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
         ProjectConfig storage projectConfig = projectConfigs[coreContract][
             ABHelpers.tokenIdToProjectId(tokenId)
         ];
+        // preallocate memory for auth addresses of each pmpInput
+        address[] memory authAddresses = new address[](pmpInputs.length);
         // assign each pmpInput to the token
         // @dev pmpInputs processed sequentially in order of input
         for (uint256 i = 0; i < pmpInputs.length; i++) {
@@ -322,8 +324,8 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
             ];
             PMPConfigStorage storage pmpConfigStorage = projectConfig
                 .pmpConfigsStorage[pmpKeyHash];
-            // validate pmpInput
-            _validatePMPInputAndAuth({
+            // validate pmpInput + record the authenticated address used to configure the pmpInput
+            authAddresses[i] = _validatePMPInputAndAuth({
                 tokenId: tokenId,
                 coreContract: coreContract,
                 pmpInput: pmpInput,
@@ -360,7 +362,8 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
         emit TokenParamsConfigured({
             coreContract: coreContract,
             tokenId: tokenId,
-            pmpInputs: pmpInputs
+            pmpInputs: pmpInputs,
+            authAddresses: authAddresses
         });
     }
 
@@ -479,20 +482,19 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
      * @param wallet The wallet address to check.
      * @param coreContract The address of the core contract to call.
      * @param tokenId The tokenId of the token to check.
-     * @return isTokenOwnerOrDelegate True if the wallet is the owner or a delegate of the token,
+     * @return isTokenOwnerOrDelegate_ True if the wallet is the owner or a delegate of the token,
      * false otherwise.
      */
     function isTokenOwnerOrDelegate(
         address wallet,
         address coreContract,
         uint256 tokenId
-    ) external view returns (bool) {
-        return
-            _isTokenOwnerOrDelegate({
-                tokenId: tokenId,
-                coreContract: coreContract,
-                sender: wallet
-            });
+    ) external view returns (bool isTokenOwnerOrDelegate_) {
+        (isTokenOwnerOrDelegate_, ) = _isTokenOwnerOrDelegate({
+            tokenId: tokenId,
+            coreContract: coreContract,
+            sender: wallet
+        });
     }
 
     /**
@@ -707,6 +709,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
      * @param pmpInput The parameter input to validate.
      * @param pmpConfigStorage The project's configuration storage for this parameter.
      * @param projectConfigNonce The project's current configuration nonce.
+     * @return permissionedAddress the address used to make the update, accounting for delegation.
      */
     function _validatePMPInputAndAuth(
         uint256 tokenId,
@@ -714,7 +717,7 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
         PMPInput memory pmpInput,
         PMPConfigStorage storage pmpConfigStorage,
         uint8 projectConfigNonce
-    ) internal view {
+    ) internal view returns (address permissionedAddress) {
         // check that the param is part of the project's most recently configured PMP params
         // @dev use config nonce to check if param is part of most recently configured PMP params
         require(
@@ -733,88 +736,79 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
         );
 
         // ensure caller has appropriate auth
+        bool isAuthenticated;
         {
-            // @dev block scope to reduce stack depth
+            AuthOption authOption = pmpConfigStorage.authOption;
+            // if artist may configure, check and authenticate if not already authenticated
+            if (
+                authOption == AuthOption.Artist ||
+                authOption == AuthOption.ArtistAndAddress ||
+                authOption == AuthOption.ArtistAndTokenOwner ||
+                authOption == AuthOption.ArtistAndTokenOwnerAndAddress
+            ) {
+                bool isArtist;
+                (isArtist, permissionedAddress) = _isArtist({
+                    tokenId: tokenId,
+                    coreContract: coreContract,
+                    sender: msg.sender
+                });
+                isAuthenticated = isArtist;
+            }
+            // if address may configure, check and authenticate if not already authenticated
+            if (
+                !isAuthenticated &&
+                (authOption == AuthOption.Address ||
+                    authOption == AuthOption.TokenOwnerAndAddress ||
+                    authOption == AuthOption.ArtistAndAddress ||
+                    authOption == AuthOption.ArtistAndTokenOwnerAndAddress)
+            ) {
+                permissionedAddress = pmpConfigStorage.authAddress;
+                isAuthenticated = permissionedAddress == msg.sender;
+            }
+            // if token owner or delegate may configure, check and authenticate
+            // @dev check token ownerlast to enable pre-mint PMP configuration by non-token-owner
+            if (
+                !isAuthenticated &&
+                (authOption == AuthOption.TokenOwner ||
+                    authOption == AuthOption.ArtistAndTokenOwner ||
+                    authOption == AuthOption.TokenOwnerAndAddress ||
+                    authOption == AuthOption.ArtistAndTokenOwnerAndAddress)
+            ) {
+                bool isTokenOwnerOrDelegate_;
+                (
+                    isTokenOwnerOrDelegate_,
+                    permissionedAddress
+                ) = _isTokenOwnerOrDelegate({
+                    tokenId: tokenId,
+                    coreContract: coreContract,
+                    sender: msg.sender
+                });
+                isAuthenticated = isTokenOwnerOrDelegate_;
+            }
+        }
+        // if not authenticated, revert with appropriate auth error
+        if (!isAuthenticated) {
             AuthOption authOption = pmpConfigStorage.authOption;
             if (authOption == AuthOption.Artist) {
-                require(
-                    _isArtist({
-                        tokenId: tokenId,
-                        coreContract: coreContract,
-                        sender: msg.sender
-                    }),
-                    "PMP: artist auth required"
-                );
+                revert("PMP: artist auth required");
             } else if (authOption == AuthOption.TokenOwner) {
-                require(
-                    _isTokenOwnerOrDelegate({
-                        tokenId: tokenId,
-                        coreContract: coreContract,
-                        sender: msg.sender
-                    }),
-                    "PMP: token owner auth required"
-                );
+                revert("PMP: token owner auth required");
             } else if (authOption == AuthOption.ArtistAndTokenOwner) {
-                // @dev check token owner or delegate last to enable pre-mint configuration by non-token-owner
-                require(
-                    _isArtist({
-                        tokenId: tokenId,
-                        coreContract: coreContract,
-                        sender: msg.sender
-                    }) ||
-                        _isTokenOwnerOrDelegate({
-                            tokenId: tokenId,
-                            coreContract: coreContract,
-                            sender: msg.sender
-                        }),
-                    "PMP: artist and token owner auth required"
-                );
+                revert("PMP: artist and token owner auth required");
             } else if (authOption == AuthOption.Address) {
-                require(
-                    msg.sender == pmpConfigStorage.authAddress,
-                    "PMP: address auth required"
-                );
+                revert("PMP: address auth required");
             } else if (authOption == AuthOption.ArtistAndTokenOwnerAndAddress) {
-                // @dev check token owner or delegate last to enable pre-mint configuration by non-token-owner
-                require(
-                    _isArtist({
-                        tokenId: tokenId,
-                        coreContract: coreContract,
-                        sender: msg.sender
-                    }) ||
-                        msg.sender == pmpConfigStorage.authAddress ||
-                        _isTokenOwnerOrDelegate({
-                            tokenId: tokenId,
-                            coreContract: coreContract,
-                            sender: msg.sender
-                        }),
-                    "PMP: artist and token owner and address auth required"
-                );
+                revert("PMP: artist and token owner and address auth required");
             } else if (authOption == AuthOption.ArtistAndAddress) {
-                require(
-                    _isArtist({
-                        tokenId: tokenId,
-                        coreContract: coreContract,
-                        sender: msg.sender
-                    }) || msg.sender == pmpConfigStorage.authAddress,
-                    "PMP: artist and address auth required"
-                );
+                revert("PMP: artist and address auth required");
             } else if (authOption == AuthOption.TokenOwnerAndAddress) {
-                // @dev check token owner or delegate last to enable pre-mint configuration by non-token-owner
-                require(
-                    msg.sender == pmpConfigStorage.authAddress ||
-                        _isTokenOwnerOrDelegate({
-                            tokenId: tokenId,
-                            coreContract: coreContract,
-                            sender: msg.sender
-                        }),
-                    "PMP: token owner and address auth required"
-                );
+                revert("PMP: token owner and address auth required");
             } else {
                 // @dev no coverage, this should never be reached
                 revert("PMP: invalid authOption");
             }
         }
+        // @dev auth check is complete
 
         // ensure properly configured value
         ParamType paramType = pmpConfigStorage.paramType;
@@ -875,12 +869,13 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
             // require artist is caller if configuring artist string
             if (pmpInput.configuringArtistString) {
                 // require artist is caller
+                (bool isArtist, ) = _isArtist({
+                    tokenId: tokenId,
+                    coreContract: coreContract,
+                    sender: msg.sender
+                });
                 require(
-                    _isArtist({
-                        tokenId: tokenId,
-                        coreContract: coreContract,
-                        sender: msg.sender
-                    }),
+                    isArtist,
                     "PMP: artist auth required to configure artist string"
                 );
             }
@@ -1020,17 +1015,18 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
      * @param tokenId The token ID to get the project ID from.
      * @param coreContract The address of the core contract.
      * @param sender The address to check if it's the artist.
-     * @return Returns true if the sender is the artist, false otherwise.
+     * @return isArtist true if the sender is the artist, false otherwise.
+     * @return artistAddress the address of the artist.
      */
     function _isArtist(
         uint256 tokenId,
         address coreContract,
         address sender
-    ) internal view returns (bool) {
+    ) internal view returns (bool isArtist, address artistAddress) {
         uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
-        return
-            IGenArt721CoreContractV3_Base(coreContract)
-                .projectIdToArtistAddress(projectId) == sender;
+        artistAddress = IGenArt721CoreContractV3_Base(coreContract)
+            .projectIdToArtistAddress(projectId);
+        isArtist = artistAddress == sender;
     }
 
     /**
@@ -1041,21 +1037,19 @@ contract PMPV0 is IPMPV0, Web3Call, ReentrancyGuard {
      * @param tokenId The token ID to check ownership for.
      * @param coreContract The address of the core contract.
      * @param sender The address to check if it's the token owner.
-     * @return Returns true if the sender is the token owner, false otherwise.
+     * @return isTokenOwnerOrDelegate_ true if the sender is the token owner or delegate of the token owner, false otherwise.
+     * @return tokenOwner the address of the token owner.
      * @dev Always execute within a nonReentrant context.
      */
     function _isTokenOwnerOrDelegate(
         uint256 tokenId,
         address coreContract,
         address sender
-    ) internal view returns (bool) {
+    ) internal view returns (bool isTokenOwnerOrDelegate_, address tokenOwner) {
         // @dev leading interaction - only execute within a nonReentrant context
-        address tokenOwner = IERC721(coreContract).ownerOf(tokenId);
-        if (tokenOwner == sender) {
-            return true;
-        }
-        // @dev delegate.xyz v2 support
-        return
+        tokenOwner = IERC721(coreContract).ownerOf(tokenId);
+        isTokenOwnerOrDelegate_ =
+            (tokenOwner == sender) ||
             delegateRegistry.checkDelegateForERC721({
                 to: sender, // hot wallet
                 from: tokenOwner, // vault
