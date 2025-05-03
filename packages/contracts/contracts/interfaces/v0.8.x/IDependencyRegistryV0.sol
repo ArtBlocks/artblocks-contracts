@@ -87,6 +87,61 @@ interface IDependencyRegistryV0 {
 
     event UniversalBytecodeStorageReaderUpdated(address indexed newReader);
 
+    event DependencyCanvasTagUpdated(
+        bytes32 indexed dependencyNameAndVersion,
+        CanvasTag canvasTag
+    );
+
+    event DependencyLoadAsModuleUpdated(
+        bytes32 indexed dependencyNameAndVersion,
+        bool loadAsModule
+    );
+
+    event DependencyProjectScriptSpecialTypeUpdated(
+        bytes32 indexed dependencyNameAndVersion,
+        string projectScriptSpecialType
+    );
+
+    /**
+     * @notice Enum representing the canvas tag requirements for a dependency.
+     * @dev This enum is used to convey the canvas tag for a dependency.
+     * @dev NoCanvasTag is the default value. No canvas tag is required to be added to the html when generating the project outputs.
+     * @dev CanvasBeforeProjectScript is used for dependencies that require a canvas tag to be added before the project script.
+     * @dev CanvasAfterProjectScript is used for dependencies that require a canvas tag to be added after the project script.
+     */
+    enum CanvasTag {
+        NoCanvasTag, // default
+        CanvasBeforeProjectScript,
+        CanvasAfterProjectScript
+    }
+
+    struct DependencyDetails {
+        // name and version of dependency (i.e. "name@version") used to identify dependency
+        string nameAndVersion;
+        // type of license, MIT, GPL, etc.
+        string licenseType;
+        // preferred CDN URL for dependency
+        string preferredCDN;
+        // count of additional CDN URLs for dependency
+        uint24 additionalCDNCount;
+        // preferred code repository URL for dependency
+        string preferredRepository;
+        // count of additional repository URLs for dependency
+        uint24 additionalRepositoryCount;
+        // project website URL for dependency
+        string dependencyWebsite;
+        // whether the dependency is available on chain
+        bool availableOnChain;
+        // count of on-chain scripts for dependency
+        uint24 scriptCount;
+        // canvas tag for the dependency
+        CanvasTag canvasTag;
+        // whether the dependency should be loaded as a module
+        bool loadAsModule;
+        // project script special type for the dependency
+        string projectScriptSpecialType;
+    }
+
     /**
      * @notice Returns the count of scripts for dependency `dependencyNameAndVersion`.
      * @param dependencyNameAndVersion Dependency type to be queried.
@@ -117,33 +172,11 @@ interface IDependencyRegistryV0 {
     /**
      * @notice Returns details for a given dependency type `dependencyNameAndVersion`.
      * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
-     * @return nameAndVersion String representation of `dependencyNameAndVersion`.
-     *                        (e.g. "p5js(atSymbol)1.0.0")
-     * @return licenseType License type for dependency
-     * @return preferredCDN Preferred CDN URL for dependency
-     * @return additionalCDNCount Count of additional CDN URLs for dependency
-     * @return preferredRepository Preferred repository URL for dependency
-     * @return additionalRepositoryCount Count of additional repository URLs for dependency
-     * @return dependencyWebsite Project website URL for dependency
-     * @return availableOnChain Whether dependency is available on chain
-     * @return scriptCount Count of on-chain scripts for dependency
+     * @return dependencyDetails Details for a given dependency type.
      */
     function getDependencyDetails(
         bytes32 dependencyNameAndVersion
-    )
-        external
-        view
-        returns (
-            string memory nameAndVersion,
-            string memory licenseType,
-            string memory preferredCDN,
-            uint24 additionalCDNCount,
-            string memory preferredRepository,
-            uint24 additionalRepositoryCount,
-            string memory dependencyWebsite,
-            bool availableOnChain,
-            uint24 scriptCount
-        );
+    ) external view returns (DependencyDetails memory dependencyDetails);
 
     /**
      * @notice Returns the dependency name and version for a given project (`projectId`)
