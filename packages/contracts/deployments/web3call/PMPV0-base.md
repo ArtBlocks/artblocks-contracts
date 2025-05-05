@@ -16,9 +16,9 @@ const inputs: T_Inputs = {
 
 ## Results:
 
-salt: `0x0000000000000000000000000000000000000000272b21ae06bf831a5a1d0040`
-Deploys to address: `0x00000000b1A9D462777c9Ef2a700476069AfF57A`
+salt: `0x00000000000000000000000000000000000000005dc61737e34615adc10a0070`
+Deploys to address: `0x00000000A78E278b2d2e2935FaeBe19ee9F1FF14`
 
 ### Deployment transactions:
 
-- base: https://basescan.org/tx/0x28a89b04e6e9ec223cf22b4990e3073df084ffb7430464f87c20ac70f3fafc60
+- base: https://basescan.org/tx/0x10f14557609490dfe974b923f38dbe2c52fb86e63b857f630e12e182addceaeb

@@ -16,9 +16,9 @@ const inputs: T_Inputs = {
 
 ## Results:
 
-salt: `0x0000000000000000000000000000000000000000272b21ae06bf831a5a1d0040`
-Deploys to address: `0x00000000b1A9D462777c9Ef2a700476069AfF57A`
+salt: `0x00000000000000000000000000000000000000005dc61737e34615adc10a0070`
+Deploys to address: `0x00000000A78E278b2d2e2935FaeBe19ee9F1FF14`
 
 ### Deployment transactions:
 
-- arbitrum: https://arbiscan.io/tx/0x86c7162cef0588c99c3fa6dd8663f8327de3f7450dfebed10b044e4746ac9804
+- arbitrum: https://arbiscan.io/tx/0xafa2cc069bc7cbab7d96709c220bfdee5125c6f603e2fff89a6554638f139165
