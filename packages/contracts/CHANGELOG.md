@@ -1,5 +1,11 @@
 # @artblocks/contracts
 
+## 1.3.2
+
+### Patch Changes
+
+- 713e914: Updated PMPV0 with improved provenance event data
+
 ## 1.3.1
 
 ### Patch Changes
