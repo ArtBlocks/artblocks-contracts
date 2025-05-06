@@ -12,7 +12,8 @@ export const deployNetworkConfiguration = {
   safeAddress: "0x62DC3F6C7Bf5FA8A834E6B97dee3daB082873600",
   transactionServiceUrl: "https://safe-transaction-sepolia.safe.global",
   // set the transaction hash after successful execution of the batch creation
-  transactionHash: "",
+  transactionHash:
+    "0x2513b2fe6fbac9df0bd4d63e587375122082e847ffbe7b4b958e744a5b6ec27e",
 };
 
 export const deployConfigDetailsArray = [
