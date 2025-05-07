@@ -9,11 +9,11 @@ import {IWeb3Call} from "../../interfaces/v0.8.x/IWeb3Call.sol";
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
 
 /**
- * @title InjectBaseGasFee
+ * @title InjectBlockHeight
  * @author Art Blocks Inc.
  * @notice This hook injects the current block height into a token's PMPs.
  */
-contract InjectBaseGasFee is AbstractPMPAugmentHook {
+contract InjectBlockHeight is AbstractPMPAugmentHook {
     using Strings for uint256;
 
     /**
