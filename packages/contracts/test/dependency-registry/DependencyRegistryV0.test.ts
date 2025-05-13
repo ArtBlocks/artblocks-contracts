@@ -374,6 +374,9 @@ describe(`DependencyRegistryV0`, async function () {
           dependencyWebsite, // dependencyWebsite
           false, // availableOnChain
           0, // scriptCount
+          0, // canvas tag enum
+          false, // loadAsModule
+          "", // projectScriptSpecialType
         ]);
       });
     });
