@@ -16,6 +16,7 @@ import {EnumerableMap} from "@openzeppelin-5.0/contracts/utils/structs/Enumerabl
  * @title InjectBlockHeightAndArtistProjectPaletteOverride
  * @author Art Blocks Inc.
  * @notice This hook injects the current block height into a token's PMPs.
+ * It also allows the artist to set and clear project overrides.
  */
 contract InjectBlockHeightAndArtistProjectPaletteOverride is
     AbstractPMPAugmentHook
