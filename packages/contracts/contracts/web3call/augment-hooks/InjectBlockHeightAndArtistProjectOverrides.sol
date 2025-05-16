@@ -13,14 +13,17 @@ import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
 import {EnumerableMap} from "@openzeppelin-5.0/contracts/utils/structs/EnumerableMap.sol";
 
 /**
- * @title InjectBlockHeightAndArtistProjectPaletteOverride
+ * @title InjectBlockHeightAndArtistProjectOverrides
  * @author Art Blocks Inc.
- * @notice This hook injects the current block height into a token's PMPs.
- * It also allows the artist to set and clear project overrides.
+ * @notice This hook appends the current block height and artist project overrides into a token's PMPs.
+ * If an input PMP has a key that matches an artist project override, the artist project override value will be used.
+ * If an override value is not in the input PMPs, it will be appended to the output, ensuring that the output always contains all override values.
+ * @dev This contract is developed open-source, is lightly tested, and should be used at your own risk.
+ * The artist can set and clear overrides for a project via the `artistSetProjectOverride` and `artistClearProjectOverride` functions.
+ * The artist can only set and clear overrides for their own projects.
+ * This contract is not owned, and intended to integrate with Art Blocks core contracts that conform to IGenArt721CoreContractV3_Base.
  */
-contract InjectBlockHeightAndArtistProjectPaletteOverride is
-    AbstractPMPAugmentHook
-{
+contract InjectBlockHeightAndArtistProjectOverrides is AbstractPMPAugmentHook {
     using Strings for uint256;
     using EnumerableMap for EnumerableMap.Bytes32ToBytes32Map;
 
@@ -137,7 +140,10 @@ contract InjectBlockHeightAndArtistProjectPaletteOverride is
 
     /**
      * @notice Augment the token parameters for a given token.
-     * Appends the block height into a tokens PMPs.
+     * Appends the block height into a tokens PMPs, and injects artist project overrides.
+     * If an input PMP has a key that matches an artist project override, the artist project override value will be used.
+     * If an input PMP has a key that does not match an artist project override, the input PMP will be unaffected in the output.
+     * All overrides are appended to the output, ensuring that the output always contains all override values.
      * @dev This hook is called when a token's PMPs are read.
      * @dev This must return all desired tokenParams, not just additional data.
      * @param tokenParams The token parameters for the queried token.
