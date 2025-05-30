@@ -51,7 +51,7 @@ jobs:
       - name: build docs
         run: yarn workspace @artblocks/contracts run docgen
       - name: upload docs artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3
         with:
           path: ./packages/contracts/docs
 
