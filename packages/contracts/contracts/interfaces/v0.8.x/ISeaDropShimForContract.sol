@@ -10,10 +10,4 @@ interface ISeaDropShimForContract {
      * @param nftContract The address of the NFT contract that this shim contract is compatible with
      */
     event SeaDropShimForContract(address nftContract);
-
-    /**
-     * @dev Emit event when the local max supply is updated
-     * @param newLocalMaxSupply The new local max supply
-     */
-    event LocalMaxSupplyUpdated(uint256 newLocalMaxSupply);
 }
