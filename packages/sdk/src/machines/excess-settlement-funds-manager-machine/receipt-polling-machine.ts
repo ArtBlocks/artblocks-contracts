@@ -23,6 +23,14 @@ export const receiptSettlementDataFragment = graphql(/* GraphQL */ `
       featured_token {
         media_url
       }
+      vertical_name
+      vertical {
+        display_name
+        category_name
+      }
+      contract {
+        name
+      }
     }
 
     minter {
