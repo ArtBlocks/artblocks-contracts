@@ -206,8 +206,11 @@ export const excessSettlementFundsManagerMachine = setup({
               );
 
               // Remove claim machines that are not in the new receipts list
-              claimMachines.forEach((_, id) => {
-                if (!receiptsMap.has(id)) {
+              // and are in the idle state. The machine will send a message
+              // to the parent machine when it is done, so we can remove it.
+              claimMachines.forEach((claimMachine, id) => {
+                const snapshot = claimMachine.getSnapshot();
+                if (!receiptsMap.has(id) && snapshot.matches("idle")) {
                   enqueue.stopChild(id);
                   updatedClaimMachines.delete(id);
                 }
