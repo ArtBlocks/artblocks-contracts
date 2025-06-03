@@ -124,14 +124,14 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("LocalMaxSupplyUpdated", async function () {
-      it("emits LocalMaxSupplyUpdated when local max supply is updated", async function () {
+    describe("MaxSupplyUpdated", async function () {
+      it("emits MaxSupplyUpdated when local max supply is updated", async function () {
         const config = await _beforeEach();
         const newSupply = 10;
         await expect(
           config.minter.connect(config.accounts.artist).setMaxSupply(newSupply)
         )
-          .to.emit(config.minter, "LocalMaxSupplyUpdated")
+          .to.emit(config.minter, "MaxSupplyUpdated")
           .withArgs(newSupply);
       });
     });

@@ -459,7 +459,7 @@ contract SeaDropXArtBlocksShim is
         // EFFECTS
         // set the local max supply
         localMaxSupply = newMaxSupply;
-        emit LocalMaxSupplyUpdated(newMaxSupply);
+        emit MaxSupplyUpdated(newMaxSupply);
     }
 
     /**
