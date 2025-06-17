@@ -17,8 +17,8 @@ import {
   PMPInput,
 } from "../../pmpTestUtils";
 import { PMPFixtureConfig, setupPMPFixture } from "../../pmpFixtures";
-import { InjectBlockHeightAndArtistProjectOverrides__factory } from "../../../../../scripts/contracts/factories/contracts/web3call/augment-hooks/InjectBlockHeightAndArtistProjectOverrides.sol/InjectBlockHeightAndArtistProjectOverrides__factory";
-import { InjectBlockHeightAndArtistProjectOverrides } from "../../../../../scripts/contracts/contracts/web3call/augment-hooks/InjectBlockHeightAndArtistProjectOverrides.sol/InjectBlockHeightAndArtistProjectOverrides";
+import { InjectBlockHeightProjectInvocationsAndArtistProjectOverrides__factory } from "../../../../../scripts/contracts/factories/contracts/web3call/augment-hooks/InjectBlockHeightProjectInvocationsAndArtistProjectOverrides.sol/InjectBlockHeightProjectInvocationsAndArtistProjectOverrides__factory";
+import { InjectBlockHeightProjectInvocationsAndArtistProjectOverrides } from "../../../../../scripts/contracts/contracts/web3call/augment-hooks/InjectBlockHeightProjectInvocationsAndArtistProjectOverrides.sol/InjectBlockHeightProjectInvocationsAndArtistProjectOverrides";
 import { revertMessages } from "./constants";
 import { advanceTimeAndBlock } from "../../../../util/common";
 import { Logger } from "@ethersproject/logger";
@@ -30,20 +30,21 @@ export interface PMPFixtureConfigWithPMPInput extends PMPFixtureConfig {
 }
 
 interface T_ConfigWithHook extends PMPFixtureConfig {
-  hook: InjectBlockHeightAndArtistProjectOverrides;
+  hook: InjectBlockHeightProjectInvocationsAndArtistProjectOverrides;
 }
 
 /**
- * Test suite for InjectBlockHeightAndArtistProjectOverrides
+ * Test suite for InjectBlockHeightProjectInvocationsAndArtistProjectOverrides
  */
-describe("InjectBlockHeightAndArtistProjectOverrides", function () {
+describe("InjectBlockHeightProjectInvocationsAndArtistProjectOverrides", function () {
   // Test fixture with projects, tokens, and PMP contract setup
   async function _beforeEach() {
     const config = await loadFixture(setupPMPFixture);
     // deploy the hook
-    const hookFactory = new InjectBlockHeightAndArtistProjectOverrides__factory(
-      config.accounts.deployer
-    );
+    const hookFactory =
+      new InjectBlockHeightProjectInvocationsAndArtistProjectOverrides__factory(
+        config.accounts.deployer
+      );
     const hook = await hookFactory.deploy();
     // configure the hook
     await config.pmp.connect(config.accounts.artist).configureProjectHooks(
@@ -271,40 +272,17 @@ describe("InjectBlockHeightAndArtistProjectOverrides", function () {
   });
 
   describe("onTokenPMPReadAugmentation", function () {
-    it("appends only block height when no overrides exist", async function () {
+    it("appends only block height and project invocations when no overrides exist", async function () {
       const config = await loadFixture(_beforeEach);
       // record block number of the read call
       const blockNumber = await ethers.provider.getBlockNumber();
-      const augmentedTokenParams = await config.hook.onTokenPMPReadAugmentation(
-        config.genArt721Core.address,
-        config.projectZero,
-        [
-          { key: "testKey1", value: "testValue1" },
-          { key: "testKey2", value: "testValue2" },
-        ]
+      // get project state data
+      const projectStateData = await config.genArt721Core.projectStateData(
+        config.projectZero
       );
-      expect(augmentedTokenParams.length).to.equal(3);
-      expect(augmentedTokenParams[0].key).to.equal("testKey1");
-      expect(augmentedTokenParams[0].value).to.equal("testValue1");
-      expect(augmentedTokenParams[1].key).to.equal("testKey2");
-      expect(augmentedTokenParams[1].value).to.equal("testValue2");
-      expect(augmentedTokenParams[2].key).to.equal("blockHeight");
-      expect(augmentedTokenParams[2].value).to.equal(blockNumber.toString());
-    });
+      const invocations = projectStateData[0];
+      expect(invocations).to.equal(2);
 
-    it("appends block height and overrides when overrides exist (non-conflicting keys)", async function () {
-      const config = await loadFixture(_beforeEach);
-      // call from artist
-      await config.hook
-        .connect(config.accounts.artist)
-        .artistSetProjectOverride(
-          config.genArt721Core.address,
-          config.projectZero,
-          "testKey",
-          "testValue"
-        );
-      // record block number of the read call
-      const blockNumber = await ethers.provider.getBlockNumber();
       const augmentedTokenParams = await config.hook.onTokenPMPReadAugmentation(
         config.genArt721Core.address,
         config.projectZero,
@@ -320,8 +298,49 @@ describe("InjectBlockHeightAndArtistProjectOverrides", function () {
       expect(augmentedTokenParams[1].value).to.equal("testValue2");
       expect(augmentedTokenParams[2].key).to.equal("blockHeight");
       expect(augmentedTokenParams[2].value).to.equal(blockNumber.toString());
-      expect(augmentedTokenParams[3].key).to.equal("testKey");
-      expect(augmentedTokenParams[3].value).to.equal("testValue");
+      expect(augmentedTokenParams[3].key).to.equal("projectInvocations");
+      expect(augmentedTokenParams[3].value).to.equal(invocations.toString());
+    });
+
+    it("appends block height and overrides when overrides exist (non-conflicting keys)", async function () {
+      const config = await loadFixture(_beforeEach);
+      // call from artist
+      await config.hook
+        .connect(config.accounts.artist)
+        .artistSetProjectOverride(
+          config.genArt721Core.address,
+          config.projectZero,
+          "testKey",
+          "testValue"
+        );
+      // record block number of the read call
+      const blockNumber = await ethers.provider.getBlockNumber();
+      // get project state data
+      const projectStateData = await config.genArt721Core.projectStateData(
+        config.projectZero
+      );
+      const invocations = projectStateData[0];
+      expect(invocations).to.equal(2);
+
+      const augmentedTokenParams = await config.hook.onTokenPMPReadAugmentation(
+        config.genArt721Core.address,
+        config.projectZero,
+        [
+          { key: "testKey1", value: "testValue1" },
+          { key: "testKey2", value: "testValue2" },
+        ]
+      );
+      expect(augmentedTokenParams.length).to.equal(5);
+      expect(augmentedTokenParams[0].key).to.equal("testKey1");
+      expect(augmentedTokenParams[0].value).to.equal("testValue1");
+      expect(augmentedTokenParams[1].key).to.equal("testKey2");
+      expect(augmentedTokenParams[1].value).to.equal("testValue2");
+      expect(augmentedTokenParams[2].key).to.equal("blockHeight");
+      expect(augmentedTokenParams[2].value).to.equal(blockNumber.toString());
+      expect(augmentedTokenParams[3].key).to.equal("projectInvocations");
+      expect(augmentedTokenParams[3].value).to.equal(invocations.toString());
+      expect(augmentedTokenParams[4].key).to.equal("testKey");
+      expect(augmentedTokenParams[4].value).to.equal("testValue");
     });
 
     it("replaces conflicting override values with new values", async function () {
@@ -337,16 +356,25 @@ describe("InjectBlockHeightAndArtistProjectOverrides", function () {
         );
       // record block number of the read call
       const blockNumber = await ethers.provider.getBlockNumber();
+      // get project state data
+      const projectStateData = await config.genArt721Core.projectStateData(
+        config.projectZero
+      );
+      const invocations = projectStateData[0];
+      expect(invocations).to.equal(2);
+
       const augmentedTokenParams = await config.hook.onTokenPMPReadAugmentation(
         config.genArt721Core.address,
         config.projectZero,
         [{ key: "testKey", value: "testValue" }]
       );
-      expect(augmentedTokenParams.length).to.equal(2);
+      expect(augmentedTokenParams.length).to.equal(3);
       expect(augmentedTokenParams[0].key).to.equal("testKey");
       expect(augmentedTokenParams[0].value).to.equal("testValueOverride");
       expect(augmentedTokenParams[1].key).to.equal("blockHeight");
       expect(augmentedTokenParams[1].value).to.equal(blockNumber.toString());
+      expect(augmentedTokenParams[2].key).to.equal("projectInvocations");
+      expect(augmentedTokenParams[2].value).to.equal(invocations.toString());
     });
 
     it("replaces conflicting override values with new values (multiple overrides)", async function () {
@@ -370,6 +398,13 @@ describe("InjectBlockHeightAndArtistProjectOverrides", function () {
         );
       // record block number of the read call
       const blockNumber = await ethers.provider.getBlockNumber();
+      // get project state data
+      const projectStateData = await config.genArt721Core.projectStateData(
+        config.projectZero
+      );
+      const invocations = projectStateData[0];
+      expect(invocations).to.equal(2);
+
       const augmentedTokenParams = await config.hook.onTokenPMPReadAugmentation(
         config.genArt721Core.address,
         config.projectZero,
@@ -378,15 +413,17 @@ describe("InjectBlockHeightAndArtistProjectOverrides", function () {
           { key: "testNonDuplicateKey", value: "testNonDuplicateValue" },
         ]
       );
-      expect(augmentedTokenParams.length).to.equal(4);
+      expect(augmentedTokenParams.length).to.equal(5);
       expect(augmentedTokenParams[0].key).to.equal("testKey");
       expect(augmentedTokenParams[0].value).to.equal("testValueOverride");
       expect(augmentedTokenParams[1].key).to.equal("testNonDuplicateKey");
       expect(augmentedTokenParams[1].value).to.equal("testNonDuplicateValue");
       expect(augmentedTokenParams[2].key).to.equal("blockHeight");
       expect(augmentedTokenParams[2].value).to.equal(blockNumber.toString());
-      expect(augmentedTokenParams[3].key).to.equal("testKey2");
-      expect(augmentedTokenParams[3].value).to.equal("testValue2Override");
+      expect(augmentedTokenParams[3].key).to.equal("projectInvocations");
+      expect(augmentedTokenParams[3].value).to.equal(invocations.toString());
+      expect(augmentedTokenParams[4].key).to.equal("testKey2");
+      expect(augmentedTokenParams[4].value).to.equal("testValue2Override");
     });
   });
 });
