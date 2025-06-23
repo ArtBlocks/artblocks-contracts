@@ -107,7 +107,7 @@
     "dotenv": "^16.4.5",
     "eslint": "^8.57.0",
     "eslint-config-custom": "*",
-    "eslint-plugin-mocha": "^10.4.3",
+    "eslint-plugin-mocha": "^11.1.0",
     "ethers": "^5.7.2",
     "hardhat": "^2.22.14",
     "hardhat-contract-sizer": "^2.10.0",
