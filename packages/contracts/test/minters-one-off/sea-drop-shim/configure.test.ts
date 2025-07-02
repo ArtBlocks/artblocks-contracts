@@ -459,22 +459,20 @@ runForEach.forEach((params) => {
     });
 
     describe("setBaseURI", async function () {
-      it("reverts as not supported", async function () {
+      it("executes as no-op", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.minter.setBaseURI(""),
-          revertMessages.setBaseURINotSupported
-        );
+        await config.minter
+          .connect(config.accounts.artist)
+          .setBaseURI("asfdsfsadf");
       });
     });
 
     describe("setContractURI", async function () {
-      it("reverts as not supported", async function () {
+      it("executes as no-op", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.minter.setContractURI(""),
-          revertMessages.setContractURINotSupported
-        );
+        await config.minter
+          .connect(config.accounts.artist)
+          .setContractURI("asfdsfsadf");
       });
     });
 
@@ -517,12 +515,11 @@ runForEach.forEach((params) => {
     });
 
     describe("setProvenanceHash", async function () {
-      it("reverts as not supported", async function () {
+      it("is a no-op", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.minter.setProvenanceHash(ethers.constants.HashZero),
-          revertMessages.setProvenanceHashNotSupported
-        );
+        await config.minter
+          .connect(config.accounts.artist)
+          .setProvenanceHash(ethers.constants.HashZero);
       });
     });
 
@@ -535,7 +532,7 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         await expectRevert(
           config.minter.setRoyaltyInfo(royaltyInfo),
-          revertMessages.setRoyaltyInfoNotSupported
+          revertMessages.onlyArtistOrSelf
         );
       });
     });
@@ -598,37 +595,28 @@ runForEach.forEach((params) => {
         expect(maxSupply).to.equal(1);
       });
 
-      it("reverts when baseURI is not empty", async function () {
+      it("no-op when baseURI is not empty", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.minter.connect(config.accounts.artist).multiConfigure({
-            ...multiConfigureStruct,
-            baseURI: "test",
-          }),
-          revertMessages.setBaseURINotSupported
-        );
+        await config.minter.connect(config.accounts.artist).multiConfigure({
+          ...multiConfigureStruct,
+          baseURI: "test",
+        });
       });
 
-      it("reverts when contractURI is not empty", async function () {
+      it("no-op when contractURI is not empty", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.minter.connect(config.accounts.artist).multiConfigure({
-            ...multiConfigureStruct,
-            contractURI: "test",
-          }),
-          revertMessages.setContractURINotSupported
-        );
+        await config.minter.connect(config.accounts.artist).multiConfigure({
+          ...multiConfigureStruct,
+          contractURI: "test",
+        });
       });
 
-      it("reverts when provenanceHash is not empty", async function () {
+      it("no-op when provenanceHash is not empty", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.minter.connect(config.accounts.artist).multiConfigure({
-            ...multiConfigureStruct,
-            provenanceHash: ethers.constants.HashZero.replace("0x0", "0x1"),
-          }),
-          revertMessages.setProvenanceHashNotSupported
-        );
+        await config.minter.connect(config.accounts.artist).multiConfigure({
+          ...multiConfigureStruct,
+          provenanceHash: ethers.constants.HashZero.replace("0x0", "0x1"),
+        });
       });
 
       it("does nothing when all fields are empty", async function () {
