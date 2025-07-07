@@ -416,23 +416,33 @@ contract SeaDropXArtBlocksShim is
     // --- external functions from ISeaDropTokenContractMetadata ---
 
     /**
-     * @notice Sets the base URI for the token metadata and emits an event.
-     * Reverts - baseURI must be configured on the Art Blocks core contract.
+     * @notice Sets the base URI for the token metadata.
+     * Warning - baseURI is a no-op on this shim contract, and the baseURI must be configured
+     * on the Art Blocks core contract. This function is included for compatibility with the
+     * SeaDropTokenContractMetadata interface to prevent unnecessary reverts. No-op is preferred
+     * over reverting.
      */
-    function setBaseURI(string calldata /*tokenURI*/) external pure {
-        revert(
-            "SeaDropXArtBlocksShim: baseURI must be configured on the Art Blocks core contract"
-        );
+    function setBaseURI(string calldata /*tokenURI*/) external view {
+        // CHECKS
+        _onlyArtistOrSelf(msg.sender);
+
+        // EFFECTS
+        // no-op
     }
 
     /**
      * @notice Sets the contract URI for contract metadata.
-     * Reverts - contractURI is not supported on the Art Blocks core contract.
+     * Warning - contractURI is a no-op on this shim contract, and the contractURI must be configured
+     * on the Art Blocks core contract. This function is included for compatibility with the
+     * SeaDropTokenContractMetadata interface to prevent unnecessary reverts. No-op is preferred
+     * over reverting.
      */
-    function setContractURI(string calldata /*newContractURI*/) external pure {
-        revert(
-            "SeaDropXArtBlocksShim: contractURI not supported on the Art Blocks core contract"
-        );
+    function setContractURI(string calldata /*newContractURI*/) external view {
+        // CHECKS
+        _onlyArtistOrSelf(msg.sender);
+
+        // EFFECTS
+        // no-op
     }
 
     /**
@@ -463,23 +473,33 @@ contract SeaDropXArtBlocksShim is
     }
 
     /**
-     * @notice Sets the provenance hash and emits an event.
-     * Reverts - provenanceHash is not supported on the Art Blocks core contract.
+     * @notice Sets the provenance hash.
+     * Warning - provenanceHash is a no-op on this shim contract, and the provenanceHash is not supported
+     * on the Art Blocks core contract. This function is included for compatibility with the
+     * SeaDropTokenContractMetadata interface to prevent unnecessary reverts. No-op is preferred
+     * over reverting.
      */
-    function setProvenanceHash(bytes32 /*newProvenanceHash*/) external pure {
-        revert(
-            "SeaDropXArtBlocksShim: provenance hash not supported on Art Blocks contracts"
-        );
+    function setProvenanceHash(bytes32 /*newProvenanceHash*/) external view {
+        // CHECKS
+        _onlyArtistOrSelf(msg.sender);
+
+        // EFFECTS
+        // no-op
     }
 
     /**
      * @notice Sets the address and basis points for royalties.
-     * Reverts - royalties must be configured on the Art Blocks core contract.
+     * Warning - royalties are a no-op on this shim contract, and the royalties must be configured
+     * on the Art Blocks core contract. This function is included for compatibility with the
+     * SeaDropTokenContractMetadata interface to prevent unnecessary reverts. No-op is preferred
+     * over reverting.
      */
-    function setRoyaltyInfo(RoyaltyInfo calldata /*newInfo*/) external pure {
-        revert(
-            "SeaDropXArtBlocksShim: royalties must be configured on the Art Blocks core contract"
-        );
+    function setRoyaltyInfo(RoyaltyInfo calldata /*newInfo*/) external view {
+        // CHECKS
+        _onlyArtistOrSelf(msg.sender);
+
+        // EFFECTS
+        // no-op
     }
 
     // --- external functions from https://github.com/ProjectOpenSea/seadrop/blob/main/src/ERC721SeaDrop.sol ---
@@ -488,13 +508,8 @@ contract SeaDropXArtBlocksShim is
      * @notice Configure multiple properties at a time.
      * Note: The individual configure methods should be used to unset or reset any properties to zero, as this method
      * will ignore zero-value properties in the config struct.
-     * The following parameters are not supported in this function, will cause revert, and should be configured on the
-     * Art Blocks core contract directly:
-     * - maxSupply
+     * The following parameters are not supported in this function, and will be ignored/no-op:
      * - baseURI
-     * - allowedFeeRecipients
-     * - disallowedFeeRecipients
-     * The following parameters are not supported by Art Blocks contracts and will cause revert:
      * - contractURI
      * - provenanceHash
      * @dev logic for supported operations is taken from example SeaDrop implementation, and was tested end-to-end, and
@@ -510,14 +525,12 @@ contract SeaDropXArtBlocksShim is
             this.setMaxSupply(config.maxSupply);
         }
         if (bytes(config.baseURI).length != 0) {
-            revert(
-                "SeaDropXArtBlocksShim: baseURI must be configured on the Art Blocks core contract"
-            );
+            // @dev this is a no-op on this shim contract
+            this.setBaseURI(config.baseURI);
         }
         if (bytes(config.contractURI).length != 0) {
-            revert(
-                "SeaDropXArtBlocksShim: contractURI not supported on the Art Blocks core contract"
-            );
+            // @dev this is a no-op on this shim contract
+            this.setContractURI(config.contractURI);
         }
         if (
             config.publicDrop.startTime != 0 || config.publicDrop.endTime != 0
@@ -537,9 +550,8 @@ contract SeaDropXArtBlocksShim is
             );
         }
         if (config.provenanceHash != bytes32(0)) {
-            revert(
-                "SeaDropXArtBlocksShim: provenance hash not supported on Art Blocks contracts"
-            );
+            // @dev this is a no-op on this shim contract
+            this.setProvenanceHash(config.provenanceHash);
         }
         if (config.allowedFeeRecipients.length > 0) {
             for (uint256 i = 0; i < config.allowedFeeRecipients.length; ) {
