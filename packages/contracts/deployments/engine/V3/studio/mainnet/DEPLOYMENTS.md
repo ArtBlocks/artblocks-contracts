@@ -2222,3 +2222,47 @@ Date: 2024-10-03T20:31:48.898Z
         ---
       
         
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2025-07-09T19:34:07.413Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** mainnet
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000559cA3F3f1279C0ec121c302ed010457#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x000000008DD9A7CD3f4A267A88082d4a1E2f6553#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x000000004058B5159ABB5a3Dd8cf775A7519E75F#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine Flex | 0x000000DAb303a194b3F55d4702B24740ad5a2F00
+  
+        **Engine Contract:** https://etherscan.io/address/0x000000DAb303a194b3F55d4702B24740ad5a2F00#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Mitchell Chan (OpenSea Minting)
+        - **Token Name:** Art Blocks Studio | 79
+        - **Token Ticker:** ABSTUDIO_79
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x2d0e325B8f492709e22FB20FecDc3b79E0Ee769A
+        - **Super Admin Address:** 0x4BF3805B23c99f8E0a5797E86fd0232A04a2a629        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-79-mainnet
+        
+        ---
+      
+        

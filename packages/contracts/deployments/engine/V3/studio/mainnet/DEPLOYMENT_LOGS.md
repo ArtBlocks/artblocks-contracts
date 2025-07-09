@@ -184,3 +184,13 @@
       [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/studio/mainnet/2025-06-16-deployment-config.ts
 
     
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2025-07-09T17:24:58.668Z
+      [INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/studio/mainnet/2025-07-08-deployment-config.ts
+
+    
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2025-07-09T19:34:06.844Z
+      [INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/studio/mainnet/2025-07-08-deployment-config.ts
+
+    
