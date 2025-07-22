@@ -66,7 +66,7 @@ export function getActiveSharedRandomizer(
 }
 
 export function getActiveSharedSplitProvider(): string {
-  return "0x000000000ef75C77F6bd0b2Ee166501FbBDb40c8";
+  return "0x00000000CE5EEBAB4B5C2d6Cc5E73eaafA634DB3";
 }
 
 export async function getActiveEngineImplementations(
