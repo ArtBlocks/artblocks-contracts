@@ -15,7 +15,7 @@ The following contracts are deployed to all Art Blocks supported networks and ar
 | Library: BytecodeStorageV2:BytecodeStorageReader     | `0x000000000016A5A5ff2FA7799C4BEe89bA59B74e` |
 | BytecodeStorageReaderContractV2_Web3Call             | `0x000000000005e4192e8789423aEC2FA32E4D52a0` |
 | V3FlexLib (used v3.2.5 - current)                    | `0x00000000Db6f2EBe627260e411E6c973B7c48A62` |
-| SplitProviderV0                                      | `0x000000000ef75C77F6bd0b2Ee166501FbBDb40c8` |
+| SplitProviderV0                                      | `0x00000000CE5EEBAB4B5C2d6Cc5E73eaafA634DB3` |
 | Implementation: GenArt721CoreV3_Engine (v3.2.4)      | `0x00000000559cA3F3f1279C0ec121c302ed010457` |
 | Implementation: GenArt721CoreV3_Engine_Flex (v3.2.5) | `0x000000008DD9A7CD3f4A267A88082d4a1E2f6553` |
 
@@ -160,6 +160,7 @@ They are included here for reference purposes.
 | Implementation: GenArt721CoreV3_Engine (v3.2.0)      | `0x00000000AEf91971cc6251936Ec6568B23b55342` |
 | Implementation: GenArt721CoreV3_Engine_Flex (v3.2.1) | `0x00000000af817dFBc2b3006E365D2eFef1953334` |
 | SplitProviderV0 (0xSplits v2 issue)                  | `0x0000000004B100B47f061968a387c82702AFe946` |
+| SplitProviderV0 (0xSplits v2.1 issue)                | `0x000000000ef75C77F6bd0b2Ee166501FbBDb40c8` |
 
 ## Permissioned deployments, deprecated (all networks)
 
