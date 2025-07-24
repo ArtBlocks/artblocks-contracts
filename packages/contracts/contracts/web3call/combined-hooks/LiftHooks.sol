@@ -4,7 +4,7 @@
 pragma solidity 0.8.22;
 
 import {AbstractPMPAugmentHook} from "../augment-hooks/AbstractPMPAugmentHook.sol";
-import {AbstractPMPConfigureHook} from "../configure-hooks/AbstractPMPConfigureHook_temp.sol";
+import {AbstractPMPConfigureHook} from "../configure-hooks/AbstractPMPConfigureHook.sol";
 
 import {IWeb3Call} from "../../interfaces/v0.8.x/IWeb3Call.sol";
 import {IPMPV0} from "../../interfaces/v0.8.x/IPMPV0.sol";
@@ -54,8 +54,7 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
         bytes32("postmintparameters");
 
     uint256 public constant FINAL_SQUIGGLE_TOKEN_ID = 9999;
-    uint256 private constant _OOB_SQUIGGLE_TOKEN_ID = 10000;
-
+    uint256 internal constant _OOB_SQUIGGLE_TOKEN_ID = 10000;
     bytes32 internal constant _HASHED_KEY_FEATURED_SQUIGGLE =
         keccak256("Featured_Squiggle");
 
