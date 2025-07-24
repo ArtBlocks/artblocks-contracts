@@ -1,4 +1,4 @@
 // expected revert messages
 export const revertMessages = {
-  failAuth: "Not owner or delegate",
+  failAuth: "Failed squiggle access check",
 };

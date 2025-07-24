@@ -35,9 +35,10 @@ interface IRelic {
  * @notice This hook verifies ownership of any custom squiggle PostParam setting,
  * and injects the squiggle's token hash into the token's PMPs if ownership is passed.
  * It supports delegate.xyz V1 and V2, and also allows squiggle 9999 for any address that
- * signed the squiggle Relic contract on eth mainnet: 0x9b917686DD68B68A780cB8Bf70aF46617A7b3f80
- * This hook is a combination of the AugmentHookLIFT and ConfigureHookLIFT hooks.
+ * inscribed the squiggle Relic contract on eth mainnet.
+ * This hook has logic for both the augment and configure hooks.
  * It reverts if the squiggle token id doesn't pass relic or ownership checks during configuring.
+ * It also removes the squiggle token id from the token's PMPs if it no longer passes ownership checks.
  */
 contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
     using Strings for uint256;
@@ -52,7 +53,7 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
     bytes32 public constant DELEGATION_REGISTRY_TOKEN_OWNER_RIGHTS =
         bytes32("postmintparameters");
 
-    uint256 private constant FINAL_SQUIGGLE_TOKEN_ID = 9999;
+    uint256 public constant FINAL_SQUIGGLE_TOKEN_ID = 9999;
     uint256 private constant _OOB_SQUIGGLE_TOKEN_ID = 10000;
 
     /**
@@ -99,16 +100,13 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
 
             address liftOwner = IERC721(coreContract).ownerOf(tokenId);
 
-            bool passesOwnershipCheck = passesRelicCheck({
-                squiggleTokenId: squiggleTokenId,
-                liftOwner: liftOwner
-            }) ||
-                isOwnerOrDelegate({
+            require(
+                passesSquiggleAccessCheck({
                     squiggleTokenId: squiggleTokenId,
                     liftOwner: liftOwner
-                });
-
-            require(passesOwnershipCheck, "Not owner or delegate");
+                }),
+                "Failed squiggle access check"
+            );
         }
     }
 
@@ -164,16 +162,13 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
         // verify ownership of the squiggle token id, and return the new array, but shortened to length of j
         {
             address liftOwner = IERC721(coreContract).ownerOf(tokenId);
-            bool passesOwnershipCheck = passesRelicCheck({
-                squiggleTokenId: squiggleTokenId,
-                liftOwner: liftOwner
-            }) ||
-                isOwnerOrDelegate({
+
+            if (
+                !passesSquiggleAccessCheck({
                     squiggleTokenId: squiggleTokenId,
                     liftOwner: liftOwner
-                });
-
-            if (!passesOwnershipCheck) {
+                })
+            ) {
                 // stale squiggle token no longer passes ownership checks, so remove it from post params
                 // shorten the new array to length of j
                 assembly {
@@ -184,6 +179,7 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
         }
 
         // ownership was passed, so we can inject the squiggle's token hash into the new array
+        // @dev okay to assume squiggle exists since all squiggles are minted, passed previous checks
         bytes32 squiggleTokenHash = IGenArt721V0_Minimal(
             SQUIGGLE_GENART_V0_ADDRESS
         ).showTokenHashes(squiggleTokenId)[0];
@@ -218,6 +214,30 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
             super.supportsInterface(interfaceId);
     }
 
+    /**
+     * @notice Checks if the liftOwner has access to the squiggle token id.
+     * @dev This function is used to check if the liftOwner has access to the squiggle token id.
+     * @param squiggleTokenId The token id of the squiggle to check access for.
+     * @param liftOwner The address of the lift owner to check access for.
+     * @return bool True if the liftOwner has access to the squiggle token id, false otherwise.
+     */
+    function passesSquiggleAccessCheck(
+        uint256 squiggleTokenId,
+        address liftOwner
+    ) internal view returns (bool) {
+        return
+            passesRelicCheck(squiggleTokenId, liftOwner) ||
+            isOwnerOrDelegate(squiggleTokenId, liftOwner);
+    }
+
+    /**
+     * @notice Checks if the liftOwner is configuring squiggle 9999.
+     * If so, it verifies that the liftOwner is inscribed in the relic contract.
+     * @param squiggleTokenId The token id of the squiggle to check access for.
+     * @param liftOwner The address of the lift owner to check access for.
+     * @return bool True if the liftOwner is configuring squiggle 9999 and is
+     * inscribed in the relic contract, false otherwise.
+     */
     function passesRelicCheck(
         uint256 squiggleTokenId,
         address liftOwner
@@ -231,6 +251,15 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
         return false;
     }
 
+    /**
+     * @notice Checks if the liftOwner is the owner of the squiggle token id or
+     * a delegate of the vault that owns the squiggle token id.
+     * Supports delegate.xyz V1 and V2.
+     * @param squiggleTokenId The token id of the squiggle to check access for.
+     * @param liftOwner The address of the lift owner to check access for.
+     * @return bool True if the liftOwner is the owner of the squiggle token id or
+     * a delegate of the squiggle token id, false otherwise.
+     */
     function isOwnerOrDelegate(
         uint256 squiggleTokenId,
         address liftOwner
@@ -262,6 +291,12 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
             });
     }
 
+    /**
+     * @notice Parses a string into a uint256.
+     * @dev This function is used to parse a string into a uint256.
+     * @param s The string to parse.
+     * @return result The parsed uint256.
+     */
     function parseUint(string memory s) internal pure returns (uint256 result) {
         bytes memory b = bytes(s);
         for (uint i = 0; i < b.length; i++) {
