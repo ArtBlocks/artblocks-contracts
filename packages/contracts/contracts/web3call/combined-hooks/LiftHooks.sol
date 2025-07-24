@@ -4,7 +4,7 @@
 pragma solidity 0.8.22;
 
 import {AbstractPMPAugmentHook} from "../augment-hooks/AbstractPMPAugmentHook.sol";
-import {AbstractPMPConfigureHook} from "../configure-hooks/AbstractPMPConfigureHook.sol";
+import {AbstractPMPConfigureHook} from "../configure-hooks/AbstractPMPConfigureHook_temp.sol";
 
 import {IWeb3Call} from "../../interfaces/v0.8.x/IWeb3Call.sol";
 import {IPMPV0} from "../../interfaces/v0.8.x/IPMPV0.sol";
@@ -56,6 +56,9 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
     uint256 public constant FINAL_SQUIGGLE_TOKEN_ID = 9999;
     uint256 private constant _OOB_SQUIGGLE_TOKEN_ID = 10000;
 
+    bytes32 internal constant _HASHED_KEY_FEATURED_SQUIGGLE =
+        keccak256("Featured_Squiggle");
+
     /**
      * @notice Constructor
      * @param _squiggleGenArtV0Address The address of the squiggle GenArt V0 contract.
@@ -84,10 +87,7 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
         IPMPV0.PMPInput calldata pmpInput
     ) external view override {
         // only verify ownership if the squiggle token id is being configured
-        if (
-            keccak256(bytes(pmpInput.key)) ==
-            keccak256(bytes("Featured_Squiggle"))
-        ) {
+        if (keccak256(bytes(pmpInput.key)) == _HASHED_KEY_FEATURED_SQUIGGLE) {
             // @dev can assume squiggle token id is configured as a uint256, so will show up as configuredValue
             uint256 squiggleTokenId = uint256(pmpInput.configuredValue);
 
@@ -144,7 +144,7 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
         for (uint256 i = 0; i < originalLength; i++) {
             if (
                 keccak256(bytes(tokenParams[i].key)) ==
-                keccak256(bytes("Featured_Squiggle"))
+                _HASHED_KEY_FEATURED_SQUIGGLE
             ) {
                 squiggleTokenId = parseUint(tokenParams[i].value);
                 // skip the squiggle token id

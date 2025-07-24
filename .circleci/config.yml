@@ -47,10 +47,6 @@ jobs:
           command: |
             ls ./packages/contracts/contracts
       - run:
-          name: clean hardhat cache for test robustness
-          command: |
-            yarn workspace @artblocks/contracts run hardhat clean
-      - run:
           name: compile contracts & generate typechain
           command: |
             yarn workspace @artblocks/contracts run hardhat compile
