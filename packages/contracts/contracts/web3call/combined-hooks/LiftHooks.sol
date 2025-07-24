@@ -3,18 +3,30 @@
 
 pragma solidity 0.8.22;
 
-import {AbstractPMPAugmentHook} from "./AbstractPMPAugmentHook.sol";
+import {AbstractPMPAugmentHook} from "../augment-hooks/AbstractPMPAugmentHook.sol";
+import {AbstractPMPConfigureHook} from "../configure-hooks/AbstractPMPConfigureHook.sol";
 
 import {IWeb3Call} from "../../interfaces/v0.8.x/IWeb3Call.sol";
+import {IPMPV0} from "../../interfaces/v0.8.x/IPMPV0.sol";
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
 import {IERC721} from "@openzeppelin-5.0/contracts/interfaces/IERC721.sol";
 import {IDelegationRegistry as IDelegationRegistryV1} from "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import {IDelegateRegistry as IDelegationRegistryV2} from "../../interfaces/v0.8.x/IDelegateRegistry.sol";
+import {IPMPConfigureHook} from "../../interfaces/v0.8.x/IPMPConfigureHook.sol";
+import {IPMPAugmentHook} from "../../interfaces/v0.8.x/IPMPAugmentHook.sol";
 
 interface IGenArt721V0_Minimal {
     function showTokenHashes(
         uint256 _tokenId
     ) external view returns (bytes32[] memory);
+}
+
+interface IRelic {
+    // Query the inscription list by address; returning true/false for whether that address has inscribed,
+    // and the number of squiggles under ownership (directly or through delegation)
+    function inscriptionByAddress(
+        address a
+    ) external view returns (bool inscribed, uint256 squiggle_count);
 }
 
 /**
@@ -24,19 +36,80 @@ interface IGenArt721V0_Minimal {
  * and injects the squiggle's token hash into the token's PMPs if ownership is passed.
  * It supports delegate.xyz V1 and V2, and also allows squiggle 9999 for any address that
  * signed the squiggle Relic contract on eth mainnet: 0x9b917686DD68B68A780cB8Bf70aF46617A7b3f80
+ * This hook is a combination of the AugmentHookLIFT and ConfigureHookLIFT hooks.
+ * It reverts if the squiggle token id doesn't pass relic or ownership checks during configuring.
  */
-contract AugmentHookLIFT is AbstractPMPAugmentHook {
+contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
     using Strings for uint256;
 
-    address public constant SQUIGGLE_GENART_V0_ADDRESS =
-        0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a;
+    address public immutable SQUIGGLE_GENART_V0_ADDRESS;
+    address public immutable RELIC_CONTRACT_ADDRESS;
+
     IDelegationRegistryV1 public constant DELEGATE_V1 =
         IDelegationRegistryV1(0x00000000000076A84feF008CDAbe6409d2FE638B);
     IDelegationRegistryV2 public constant DELEGATE_V2 =
         IDelegationRegistryV2(0x00000000000000447e69651d841bD8D104Bed493);
     bytes32 public constant DELEGATION_REGISTRY_TOKEN_OWNER_RIGHTS =
         bytes32("postmintparameters");
+
+    uint256 private constant FINAL_SQUIGGLE_TOKEN_ID = 999999;
     uint256 private constant _OOB_SQUIGGLE_TOKEN_ID = 1000000;
+
+    /**
+     * @notice Constructor
+     * @param _squiggleGenArtV0Address The address of the squiggle GenArt V0 contract.
+     * For mainnet, use 0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a.
+     * @param _relicContractAddress The address of the relic contract.
+     * For mainnet, use 0x9b917686DD68B68A780cB8Bf70aF46617A7b3f80.
+     */
+    constructor(
+        address _squiggleGenArtV0Address,
+        address _relicContractAddress
+    ) {
+        SQUIGGLE_GENART_V0_ADDRESS = _squiggleGenArtV0Address;
+        RELIC_CONTRACT_ADDRESS = _relicContractAddress;
+    }
+
+    /**
+     * @notice Execution logic to be executed when a token's PMP is configured.
+     * @dev This hook is executed after the PMP is configured.
+     * @param coreContract The address of the core contract that was configured.
+     * @param tokenId The tokenId of the token that was configured.
+     * @param pmpInput The PMP input that was used to successfully configure the token.
+     */
+    function onTokenPMPConfigure(
+        address coreContract,
+        uint256 tokenId,
+        IPMPV0.PMPInput calldata pmpInput
+    ) external view override {
+        // only verify ownership if the squiggle token id is being configured
+        if (
+            keccak256(bytes(pmpInput.key)) ==
+            keccak256(bytes("squiggleTokenId"))
+        ) {
+            // @dev can assume squiggle token id is configured as a uint256, so will show up as configuredValue
+            uint256 squiggleTokenId = uint256(pmpInput.configuredValue);
+
+            // @dev only allow squiggle token ids up to FINAL_SQUIGGLE_TOKEN_ID
+            require(
+                squiggleTokenId <= FINAL_SQUIGGLE_TOKEN_ID,
+                "Invalid squiggle token id"
+            );
+
+            address liftOwner = IERC721(coreContract).ownerOf(tokenId);
+
+            bool passesOwnershipCheck = passesRelicCheck({
+                squiggleTokenId: squiggleTokenId,
+                liftOwner: liftOwner
+            }) ||
+                isOwnerOrDelegate({
+                    squiggleTokenId: squiggleTokenId,
+                    liftOwner: liftOwner
+                });
+
+            require(passesOwnershipCheck, "Not owner or delegate");
+        }
+    }
 
     /**
      * @notice Augment the token parameters for a given token.
@@ -90,12 +163,17 @@ contract AugmentHookLIFT is AbstractPMPAugmentHook {
         // verify ownership of the squiggle token id, and return the new array, but shortened to length of j
         {
             address liftOwner = IERC721(coreContract).ownerOf(tokenId);
-            if (
-                !isOwnerOrDelegate({
+            bool passesOwnershipCheck = passesRelicCheck({
+                squiggleTokenId: squiggleTokenId,
+                liftOwner: liftOwner
+            }) ||
+                isOwnerOrDelegate({
                     squiggleTokenId: squiggleTokenId,
                     liftOwner: liftOwner
-                })
-            ) {
+                });
+
+            if (!passesOwnershipCheck) {
+                // stale squiggle token no longer passes ownership checks, so remove it from post params
                 // shorten the new array to length of j
                 assembly {
                     mstore(augmentedTokenParams, j)
@@ -104,7 +182,7 @@ contract AugmentHookLIFT is AbstractPMPAugmentHook {
             }
         }
 
-        // ownership is passed, so we can inject the squiggle's token hash into the new array
+        // ownership was passed, so we can inject the squiggle's token hash into the new array
         bytes32 squiggleTokenHash = IGenArt721V0_Minimal(
             SQUIGGLE_GENART_V0_ADDRESS
         ).showTokenHashes(squiggleTokenId)[0];
@@ -123,6 +201,33 @@ contract AugmentHookLIFT is AbstractPMPAugmentHook {
 
         // return the augmented tokenParams
         return augmentedTokenParams;
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    )
+        public
+        view
+        override(AbstractPMPAugmentHook, AbstractPMPConfigureHook)
+        returns (bool)
+    {
+        return
+            interfaceId == type(IPMPAugmentHook).interfaceId ||
+            interfaceId == type(IPMPConfigureHook).interfaceId ||
+            super.supportsInterface(interfaceId);
+    }
+
+    function passesRelicCheck(
+        uint256 squiggleTokenId,
+        address liftOwner
+    ) internal view returns (bool) {
+        if (squiggleTokenId == FINAL_SQUIGGLE_TOKEN_ID) {
+            // verify token owner inscribed relic contract
+            (bool inscribed, ) = IRelic(RELIC_CONTRACT_ADDRESS)
+                .inscriptionByAddress(liftOwner);
+            return inscribed;
+        }
+        return false;
     }
 
     function isOwnerOrDelegate(
