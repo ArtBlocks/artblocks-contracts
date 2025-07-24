@@ -52,8 +52,8 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
     bytes32 public constant DELEGATION_REGISTRY_TOKEN_OWNER_RIGHTS =
         bytes32("postmintparameters");
 
-    uint256 private constant FINAL_SQUIGGLE_TOKEN_ID = 999999;
-    uint256 private constant _OOB_SQUIGGLE_TOKEN_ID = 1000000;
+    uint256 private constant FINAL_SQUIGGLE_TOKEN_ID = 9999;
+    uint256 private constant _OOB_SQUIGGLE_TOKEN_ID = 10000;
 
     /**
      * @notice Constructor
@@ -85,12 +85,13 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
         // only verify ownership if the squiggle token id is being configured
         if (
             keccak256(bytes(pmpInput.key)) ==
-            keccak256(bytes("squiggleTokenId"))
+            keccak256(bytes("Featured_Squiggle"))
         ) {
             // @dev can assume squiggle token id is configured as a uint256, so will show up as configuredValue
             uint256 squiggleTokenId = uint256(pmpInput.configuredValue);
 
             // @dev only allow squiggle token ids up to FINAL_SQUIGGLE_TOKEN_ID
+            // @dev no coverage - redundant check due to operationally enforced range check in PMPV0.sol
             require(
                 squiggleTokenId <= FINAL_SQUIGGLE_TOKEN_ID,
                 "Invalid squiggle token id"
@@ -145,7 +146,7 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
         for (uint256 i = 0; i < originalLength; i++) {
             if (
                 keccak256(bytes(tokenParams[i].key)) ==
-                keccak256(bytes("squiggleTokenId"))
+                keccak256(bytes("Featured_Squiggle"))
             ) {
                 squiggleTokenId = parseUint(tokenParams[i].value);
                 // skip the squiggle token id
@@ -189,11 +190,11 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
 
         // inject the squiggles ID and hash into the new array
         augmentedTokenParams[j++] = IWeb3Call.TokenParam({
-            key: "squiggleTokenId",
+            key: "Featured_Squiggle",
             value: squiggleTokenId.toString()
         });
         augmentedTokenParams[j] = IWeb3Call.TokenParam({
-            key: "squiggleTokenHash",
+            key: "Featured_Squiggle_Hash",
             value: uint256(squiggleTokenHash).toHexString()
         });
 
@@ -265,6 +266,7 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
         bytes memory b = bytes(s);
         for (uint i = 0; i < b.length; i++) {
             // Require each character to be 0-9
+            // @dev no coverage - operationally redundant check due to operationally enforced range check in PMPV0.sol
             require(b[i] >= 0x30 && b[i] <= 0x39, "Invalid character");
             result = result * 10 + (uint8(b[i]) - 48);
         }
