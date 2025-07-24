@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.22;
 
 import {AbstractPMPAugmentHook} from "./AbstractPMPAugmentHook.sol";
 
 import {IWeb3Call} from "../../interfaces/v0.8.x/IWeb3Call.sol";
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
 import {IERC721} from "@openzeppelin-5.0/contracts/interfaces/IERC721.sol";
+import {IDelegationRegistry as IDelegationRegistryV1} from "../../interfaces/v0.8.x/IDelegationRegistry.sol";
+import {IDelegateRegistry as IDelegationRegistryV2} from "../../interfaces/v0.8.x/IDelegateRegistry.sol";
 
 interface IGenArt721V0_Minimal {
     function showTokenHashes(
@@ -28,7 +30,13 @@ contract AugmentHookLIFT is AbstractPMPAugmentHook {
 
     address public constant SQUIGGLE_GENART_V0_ADDRESS =
         0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a;
-    uint256 private constant OOB_SQUIGGLE_TOKEN_ID = 1000000;
+    IDelegationRegistryV1 public constant DELEGATE_V1 =
+        IDelegationRegistryV1(0x00000000000076A84feF008CDAbe6409d2FE638B);
+    IDelegationRegistryV2 public constant DELEGATE_V2 =
+        IDelegationRegistryV2(0x00000000000000447e69651d841bD8D104Bed493);
+    bytes32 public constant DELEGATION_REGISTRY_TOKEN_OWNER_RIGHTS =
+        bytes32("postmintparameters");
+    uint256 private constant _OOB_SQUIGGLE_TOKEN_ID = 1000000;
 
     /**
      * @notice Augment the token parameters for a given token.
@@ -57,7 +65,7 @@ contract AugmentHookLIFT is AbstractPMPAugmentHook {
         augmentedTokenParams = new IWeb3Call.TokenParam[](augmentedMaxLength);
 
         // allocate squiggle token id to a variable (may or may not be configured)
-        uint256 squiggleTokenId = OOB_SQUIGGLE_TOKEN_ID; // default to out of bounds if not configured
+        uint256 squiggleTokenId = _OOB_SQUIGGLE_TOKEN_ID; // default to out of bounds if not configured
 
         // copy the original tokenParams into the new array, skipping the squiggle token id
         uint256 j = 0;
@@ -75,7 +83,7 @@ contract AugmentHookLIFT is AbstractPMPAugmentHook {
         }
 
         // if the squiggle token id is out of bounds, return the original tokenParams (no augmentation)
-        if (squiggleTokenId == OOB_SQUIGGLE_TOKEN_ID) {
+        if (squiggleTokenId == _OOB_SQUIGGLE_TOKEN_ID) {
             return tokenParams;
         }
 
@@ -131,10 +139,21 @@ contract AugmentHookLIFT is AbstractPMPAugmentHook {
         }
 
         // if the liftOwner is delegate of vault that owns squiggle(delegate.xyz V1 or V2), return true
-        // TODO: implement this
-
-        // otherwise, return false
-        return false;
+        // @dev on v2, allow subdelegation rights consistent with PMPV0.sol
+        return
+            DELEGATE_V1.checkDelegateForToken({
+                delegate: liftOwner,
+                vault: squiggleOwner,
+                contract_: SQUIGGLE_GENART_V0_ADDRESS,
+                tokenId: squiggleTokenId
+            }) ||
+            DELEGATE_V2.checkDelegateForERC721({
+                to: liftOwner,
+                from: squiggleOwner,
+                contract_: SQUIGGLE_GENART_V0_ADDRESS,
+                tokenId: squiggleTokenId,
+                rights: DELEGATION_REGISTRY_TOKEN_OWNER_RIGHTS
+            });
     }
 
     function parseUint(string memory s) internal pure returns (uint256 result) {

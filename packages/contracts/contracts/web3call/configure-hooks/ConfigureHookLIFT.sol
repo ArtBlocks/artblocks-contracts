@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.22;
 
 import {AbstractPMPConfigureHook} from "./AbstractPMPConfigureHook.sol";
 
 import {IERC721} from "@openzeppelin-5.0/contracts/interfaces/IERC721.sol";
 import {IPMPV0} from "../../interfaces/v0.8.x/IPMPV0.sol";
+import {IDelegationRegistry as IDelegationRegistryV1} from "../../interfaces/v0.8.x/IDelegationRegistry.sol";
+import {IDelegateRegistry as IDelegationRegistryV2} from "../../interfaces/v0.8.x/IDelegateRegistry.sol";
 
 interface IGenArt721V0_Minimal {
     function showTokenHashes(
@@ -34,6 +36,12 @@ contract ConfigureHookLIFT is AbstractPMPConfigureHook {
         0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a;
     address public constant RELIC_CONTRACT_ADDRESS =
         0x9b917686DD68B68A780cB8Bf70aF46617A7b3f80;
+    IDelegationRegistryV1 public constant DELEGATE_V1 =
+        IDelegationRegistryV1(0x00000000000076A84feF008CDAbe6409d2FE638B);
+    IDelegationRegistryV2 public constant DELEGATE_V2 =
+        IDelegationRegistryV2(0x00000000000000447e69651d841bD8D104Bed493);
+    bytes32 public constant DELEGATION_REGISTRY_TOKEN_OWNER_RIGHTS =
+        bytes32("postmintparameters");
     uint256 private constant FINAL_SQUIGGLE_TOKEN_ID = 999999;
 
     /**
@@ -55,6 +63,12 @@ contract ConfigureHookLIFT is AbstractPMPConfigureHook {
         ) {
             // @dev can assume squiggle token id is configured as a uint256, so will show up as configuredValue
             uint256 squiggleTokenId = uint256(pmpInput.configuredValue);
+
+            // @dev only allow squiggle token ids up to FINAL_SQUIGGLE_TOKEN_ID
+            require(
+                squiggleTokenId <= FINAL_SQUIGGLE_TOKEN_ID,
+                "Invalid squiggle token id"
+            );
 
             address liftOwner = IERC721(coreContract).ownerOf(tokenId);
 
@@ -89,9 +103,20 @@ contract ConfigureHookLIFT is AbstractPMPConfigureHook {
         }
 
         // if the liftOwner is delegate of vault that owns squiggle(delegate.xyz V1 or V2), return true
-        // TODO: implement this
-
-        // otherwise, return false
-        return false;
+        // @dev on v2, allow subdelegation rights consistent with PMPV0.sol
+        return
+            DELEGATE_V1.checkDelegateForToken({
+                delegate: liftOwner,
+                vault: squiggleOwner,
+                contract_: SQUIGGLE_GENART_V0_ADDRESS,
+                tokenId: squiggleTokenId
+            }) ||
+            DELEGATE_V2.checkDelegateForERC721({
+                to: liftOwner,
+                from: squiggleOwner,
+                contract_: SQUIGGLE_GENART_V0_ADDRESS,
+                tokenId: squiggleTokenId,
+                rights: DELEGATION_REGISTRY_TOKEN_OWNER_RIGHTS
+            });
     }
 }
