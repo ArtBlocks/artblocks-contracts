@@ -38,7 +38,7 @@ abstract contract AbstractPMPAugmentHook is IPMPAugmentHook, ERC165 {
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(ERC165, IERC165) returns (bool) {
+    ) public view virtual override(ERC165, IERC165) returns (bool) {
         return
             interfaceId == type(IPMPAugmentHook).interfaceId ||
             super.supportsInterface(interfaceId);
