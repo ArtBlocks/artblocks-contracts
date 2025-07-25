@@ -30,15 +30,19 @@ interface IRelic {
 }
 
 /**
- * @title AugmentHookLIFT
+ * @title LiftHooks
  * @author Art Blocks Inc.
  * @notice This hook verifies ownership of any custom squiggle PostParam setting,
- * and injects the squiggle's token hash into the token's PMPs if ownership is passed.
- * It supports delegate.xyz V1 and V2, and also allows squiggle 9999 for any address that
+ * and injects the squiggle's token hash into the token's PMPs if configured.
+ * It supports delegate.xyz V1 and V2, and also allows squiggle #9999 for any address that
  * inscribed the squiggle Relic contract on eth mainnet.
- * This hook has logic for both the augment and configure hooks.
+ * It also allows resetting the squiggle token back to default #1981.
+ * This hook contract has logic for both the augment and configure hooks.
  * It reverts if the squiggle token id doesn't pass relic or ownership checks during configuring.
- * It also removes the squiggle token id from the token's PMPs if it no longer passes ownership checks.
+ * Ownership checks are performed during configuring, keeping provenance history indexable and preventing
+ * effects intuitive during transfers and delegation revocations.
+ * If the squiggle token id is configured to be default #1981, the squiggle PostParams will
+ * be stripped, allowing the owner to effectively "clear" the squiggle-related PostParams back to default.
  */
 contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
     using Strings for uint256;
@@ -54,7 +58,7 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
         bytes32("postmintparameters");
 
     uint256 public constant FINAL_SQUIGGLE_TOKEN_ID = 9999;
-    uint256 internal constant _OOB_SQUIGGLE_TOKEN_ID = 10000;
+    uint256 public constant DEFAULT_SQUIGGLE_TOKEN_ID = 1981;
     bytes32 internal constant _HASHED_KEY_FEATURED_SQUIGGLE =
         keccak256("Featured_Squiggle");
 
@@ -75,6 +79,7 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
 
     /**
      * @notice Execution logic to be executed when a token's PMP is configured.
+     * Reverts if the squiggle token id is invalid or the liftOwner does not have access to the squiggle token id.
      * @dev This hook is executed after the PMP is configured.
      * @param coreContract The address of the core contract that was configured.
      * @param tokenId The tokenId of the token that was configured.
@@ -97,15 +102,18 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
                 "Invalid squiggle token id"
             );
 
-            address liftOwner = IERC721(coreContract).ownerOf(tokenId);
+            // perform ownership checks if not default squiggle
+            if (squiggleTokenId != DEFAULT_SQUIGGLE_TOKEN_ID) {
+                address liftOwner = IERC721(coreContract).ownerOf(tokenId);
 
-            require(
-                passesSquiggleAccessCheck({
-                    squiggleTokenId: squiggleTokenId,
-                    liftOwner: liftOwner
-                }),
-                "Failed squiggle access check"
-            );
+                require(
+                    passesSquiggleAccessCheck({
+                        squiggleTokenId: squiggleTokenId,
+                        liftOwner: liftOwner
+                    }),
+                    "Failed squiggle access check"
+                );
+            }
         }
     }
 
@@ -114,14 +122,12 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
      * Augments the token parameters as described in the contract natspec doc.
      * @dev This hook is called when a token's PMPs are read.
      * @dev This must return all desired tokenParams, not just additional data.
-     * @param coreContract The address of the core contract to call.
-     * @param tokenId The tokenId of the token to get data for.
      * @param tokenParams The token parameters for the queried token.
      * @return augmentedTokenParams The augmented token parameters.
      */
     function onTokenPMPReadAugmentation(
-        address coreContract,
-        uint256 tokenId,
+        address /* coreContract */,
+        uint256 /* tokenId */,
         IWeb3Call.TokenParam[] calldata tokenParams
     )
         external
@@ -136,7 +142,7 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
         augmentedTokenParams = new IWeb3Call.TokenParam[](augmentedMaxLength);
 
         // allocate squiggle token id to a variable (may or may not be configured)
-        uint256 squiggleTokenId = _OOB_SQUIGGLE_TOKEN_ID; // default to out of bounds if not configured
+        uint256 squiggleTokenId = DEFAULT_SQUIGGLE_TOKEN_ID; // default squiggle
 
         // copy the original tokenParams into the new array, skipping the squiggle token id
         uint256 j = 0;
@@ -146,36 +152,24 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
                 _HASHED_KEY_FEATURED_SQUIGGLE
             ) {
                 squiggleTokenId = parseUint(tokenParams[i].value);
-                // skip the squiggle token id
+                // skip the squiggle token id and assign later if appropriate
                 continue;
             } else {
                 augmentedTokenParams[j++] = tokenParams[i];
             }
         }
 
-        // if the squiggle token id is out of bounds, return the original tokenParams (no augmentation)
-        if (squiggleTokenId == _OOB_SQUIGGLE_TOKEN_ID) {
-            return tokenParams;
-        }
-
-        // verify ownership of the squiggle token id, and return the new array, but shortened to length of j
-        {
-            address liftOwner = IERC721(coreContract).ownerOf(tokenId);
-
-            if (
-                !passesSquiggleAccessCheck({
-                    squiggleTokenId: squiggleTokenId,
-                    liftOwner: liftOwner
-                })
-            ) {
-                // stale squiggle token no longer passes ownership checks, so remove it from post params
-                // shorten the new array to length of j
-                assembly {
-                    mstore(augmentedTokenParams, j)
-                }
-                return augmentedTokenParams;
+        // if the squiggle token id is default squiggle token id, return the stripped tokenParams
+        if (squiggleTokenId == DEFAULT_SQUIGGLE_TOKEN_ID) {
+            // shorten the new array to length of j
+            assembly {
+                mstore(augmentedTokenParams, j)
             }
+            return augmentedTokenParams;
         }
+
+        // @dev intentionally do not perform ownership checks during read augmentation
+        // this keeps provenance history indexable, and prevents effects intuitive during transfers and delegation revocations
 
         // ownership was passed, so we can inject the squiggle's token hash into the new array
         // @dev okay to assume squiggle exists since all squiggles are minted, passed previous checks

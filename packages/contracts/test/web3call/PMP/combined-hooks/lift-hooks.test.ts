@@ -66,6 +66,13 @@ const pmpInputSquiggle9999 = getPMPInput(
   false,
   ""
 );
+const pmpInputSquiggle1981 = getPMPInput(
+  "Featured_Squiggle",
+  PMP_PARAM_TYPE_ENUM.Uint256Range,
+  "0x00000000000000000000000000000000000000000000000000000000000007BD",
+  false,
+  ""
+);
 
 describe("test forking mainnet - LiftHooks", async function () {
   before(async function () {
@@ -140,7 +147,6 @@ describe("test forking mainnet - LiftHooks", async function () {
       // get token params - confirm no postparams returned prior to configure
       const postParams0 = await pmpV0.getTokenParams(coreAddress, token0);
       expect(postParams0.length).to.equal(0);
-      console.log("postParams0", postParams0);
 
       // assign only non-squiggle pmp - confirm only non-squiggle pmp params returned
       await pmpV0
@@ -265,7 +271,7 @@ describe("test forking mainnet - LiftHooks", async function () {
         "0x56461a01b69faeffeaa342cd081d753c0b98f9863f60600541a391a093a17275"
       );
 
-      // revoke delegation v1, removes postparams, fails auth check while assigning squiggle 9209
+      // revoke delegation v1, fails auth check while assigning squiggle 9209, but retains squiggle post params
       await delegateV1
         .connect(impersonatedSquiggleOwner)
         .delegateForToken(
@@ -275,9 +281,15 @@ describe("test forking mainnet - LiftHooks", async function () {
           false
         );
       const postParams8 = await pmpV0.getTokenParams(coreAddress, token0);
-      expect(postParams8.length).to.equal(1);
+      expect(postParams8.length).to.equal(3);
       expect(postParams8[0].key).to.equal("PFP_Mode");
       expect(postParams8[0].value).to.equal("true");
+      expect(postParams8[1].key).to.equal("Featured_Squiggle");
+      expect(postParams8[1].value).to.equal(squiggleTokenId.toString());
+      expect(postParams8[2].key).to.equal("Featured_Squiggle_Hash");
+      expect(postParams8[2].value).to.equal(
+        "0x56461a01b69faeffeaa342cd081d753c0b98f9863f60600541a391a093a17275"
+      );
 
       await expectRevert(
         pmpV0
@@ -316,7 +328,7 @@ describe("test forking mainnet - LiftHooks", async function () {
         "0x56461a01b69faeffeaa342cd081d753c0b98f9863f60600541a391a093a17275"
       );
 
-      // revoke delegation v2, confirm token params do not include squiggle details
+      // revoke delegation v2, confirm token params still include squiggle details
       await delegateV2
         .connect(impersonatedSquiggleOwner)
         .delegateERC721(
@@ -327,11 +339,17 @@ describe("test forking mainnet - LiftHooks", async function () {
           false
         );
       const postParams10 = await pmpV0.getTokenParams(coreAddress, token0);
-      expect(postParams10.length).to.equal(1);
+      expect(postParams10.length).to.equal(3);
       expect(postParams10[0].key).to.equal("PFP_Mode");
       expect(postParams10[0].value).to.equal("true");
+      expect(postParams10[1].key).to.equal("Featured_Squiggle");
+      expect(postParams10[1].value).to.equal(squiggleTokenId.toString());
+      expect(postParams10[2].key).to.equal("Featured_Squiggle_Hash");
+      expect(postParams10[2].value).to.equal(
+        "0x56461a01b69faeffeaa342cd081d753c0b98f9863f60600541a391a093a17275"
+      );
 
-      // re-enable delegation v2, delegate for all, use subdelegations, squiggle should come back
+      // re-enable delegation v2, delegate for all, use subdelegations, squiggle should be assignable
       const rights = ethers.utils.formatBytes32String("postmintparameters");
       await delegateV2
         .connect(impersonatedSquiggleOwner)
@@ -339,6 +357,7 @@ describe("test forking mainnet - LiftHooks", async function () {
       await pmpV0
         .connect(impersonatedArtist)
         .configureTokenParams(coreAddress, token0, [pmpInputSquiggle9209]);
+      // verify all postparams are still present
       const postParams11 = await pmpV0.getTokenParams(coreAddress, token0);
       expect(postParams11.length).to.equal(3);
       expect(postParams11[0].key).to.equal("PFP_Mode");
@@ -348,6 +367,15 @@ describe("test forking mainnet - LiftHooks", async function () {
       expect(postParams11[2].value).to.equal(
         "0x56461a01b69faeffeaa342cd081d753c0b98f9863f60600541a391a093a17275"
       );
+
+      // set squiggle to 1981, confirm squiggle-related postparams are stripped
+      await pmpV0
+        .connect(impersonatedArtist)
+        .configureTokenParams(coreAddress, token0, [pmpInputSquiggle1981]);
+      const postParams12 = await pmpV0.getTokenParams(coreAddress, token0);
+      expect(postParams12.length).to.equal(1);
+      expect(postParams12[0].key).to.equal("PFP_Mode");
+      expect(postParams12[0].value).to.equal("true");
     });
   });
 });
