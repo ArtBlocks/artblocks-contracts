@@ -76,3 +76,48 @@ Date: 2024-03-08T17:44:10.149Z
 
 ---
 
+
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2025-08-05T21:43:03.408Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** mainnet
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000559cA3F3f1279C0ec121c302ed010457#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x000000008DD9A7CD3f4A267A88082d4a1E2f6553#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x000000004058B5159ABB5a3Dd8cf775A7519E75F#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine Flex | 0x0000000222D40f1aE80791fdC42fa6eb5dA6f80B
+  
+        **Engine Contract:** https://etherscan.io/address/0x0000000222D40f1aE80791fdC42fa6eb5dA6f80B#code
+        
+        **Metadata**
+        - **Starting Project Id:** 2
+        - **Artist Name:** glitch Gallery
+        - **Token Name:** glitch Gallery
+        - **Token Ticker:** glitch
+        - **Auto Approve Artist Split Proposals:** false
+        - **Render Provider Address, Primary Sales:** 0x3c53D7bAdfAFB74D1C7c2b5ce9828C2bB023156F
+        - **Platform Provider Address, Primary Sales:** 0x6e2F6130B31df274283fb21744Ad18836aBCaceE
+        - **Null Platform Provider:** false
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x99d0F4501f5E3bE63E7989fAb68b90064868aF32
+        - **Super Admin Address:** 0x6e2F6130B31df274283fb21744Ad18836aBCaceE        
+
+      **Other**
+
+      - **Starting project ID:** 2
+      - **Image Bucket:** glitch-gallery-mainnet
+        
+        ---
+      
+        
