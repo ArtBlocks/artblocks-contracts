@@ -19,6 +19,7 @@ import {
   PMP_AUTH_ENUM,
   PMP_PARAM_TYPE_ENUM,
 } from "../../web3call/PMP/pmpTestUtils";
+import { ONE_MINUTE } from "../../util/constants";
 
 interface T_ClaimMinterTestConfig extends T_Config {
   genArt721Core: GenArt721CoreV3_Engine;
@@ -215,9 +216,12 @@ runForEach.forEach((params) => {
             testValues.basePriceInWei,
             testValues.priceIncrementInWei
           );
+        const blockNumber = await ethers.provider.getBlockNumber();
+        const block = await ethers.provider.getBlock(blockNumber);
+        const startTime = block.timestamp + ONE_MINUTE;
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampStart);
+          .configureTimestampStart(startTime);
 
         // Try to claim before timestamp start
         await expectRevert(
