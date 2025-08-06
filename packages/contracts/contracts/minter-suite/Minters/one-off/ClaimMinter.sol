@@ -223,7 +223,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
      * distribution of tokens with arbitrary claiming order.
      * @param amount Number of tokens to pre-mint.
      */
-    function preMint(uint256 amount) external {
+    function preMint(uint256 amount) external nonReentrant {
         // CHECKS
         AuthLib.onlyCoreAdminACL({
             coreContract: coreContractAddress,
@@ -268,7 +268,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
      * claim any available token ID in any sequence.
      * @param tokenId Token ID to claim.
      */
-    function claimToken(uint256 tokenId) external payable {
+    function claimToken(uint256 tokenId) external payable nonReentrant {
         // check that token id is unclaimed
         require(!isTokenClaimed(tokenId), "Token already claimed");
         // check that claiming has started
