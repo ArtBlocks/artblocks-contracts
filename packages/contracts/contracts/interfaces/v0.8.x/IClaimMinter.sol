@@ -11,17 +11,17 @@ pragma solidity ^0.8.0;
  * configurable pricing.
  */
 interface IClaimMinter {
+    // Events
+    event PriceConfigured(uint256 basePriceInWei, uint256 priceIncrementInWei);
+    event TimestampStartConfigured(uint256 timestampStart);
+    event TokensPreMinted(uint256 amount);
+    event TokenClaimed(uint256 tokenId, address claimant, uint256 price);
+
     /**
      * @notice Returns all claimed bitmaps
      * @return An array of all claimed bitmaps
      */
-    function getAllClaimedBitmaps() external view returns (uint256[] memory);
-
-    /**
-     * @notice Returns all pre-minted bitmaps
-     * @return An array of all pre-minted bitmaps
-     */
-    function getAllPreMintedBitmaps() external view returns (uint256[] memory);
+    function getAllClaimedBitmaps() external view returns (string memory);
 
     /**
      * @notice Sets the base price in wei for token 0 and the price increment in wei.
@@ -52,11 +52,6 @@ interface IClaimMinter {
      * @param tokenId Token ID to claim.
      */
     function claimToken(uint256 tokenId) external payable;
-
-    /**
-     * @notice Syncs project's max invocations to core contract value.
-     */
-    function syncProjectMaxInvocationsToCore() external;
 
     /**
      * @notice Checks if a token is claimed using bitmap storage

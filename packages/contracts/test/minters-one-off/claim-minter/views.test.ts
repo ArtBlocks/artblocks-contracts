@@ -80,6 +80,7 @@ runForEach.forEach((params) => {
         config.pmpContract.address,
         config.pseudorandomContract.address,
         testValues.projectZero,
+        testValues.maxInvocations,
       ]);
 
       // approve and set minter for project
@@ -137,10 +138,6 @@ runForEach.forEach((params) => {
       it("returns true for claimed tokens", async function () {
         const config = await loadFixture(_beforeEach);
         // Pre-mint and configure
-        await config.minter
-          .connect(config.accounts.deployer)
-          .syncProjectMaxInvocationsToCore();
-
         await config.minter.connect(config.accounts.deployer).preMint(1);
         await config.minter
           .connect(config.accounts.deployer)
@@ -221,6 +218,125 @@ runForEach.forEach((params) => {
         const priceIncrement =
           await config.minter.DEFAULT_PRICE_INCREMENT_IN_WEI();
         expect(priceIncrement).to.equal(testValues.priceIncrementInWei);
+      });
+    });
+
+    describe("getAllClaimedBitmaps", async function () {
+      it("returns empty binary string when no tokens claimed", async function () {
+        const config = await loadFixture(_beforeEach);
+        const bitmaps = await config.minter.getAllClaimedBitmaps();
+        // Should return 512-character string of all zeros
+        expect(bitmaps).to.equal("0".repeat(512));
+      });
+
+      it("returns correct binary string when tokens are claimed", async function () {
+        const config = await loadFixture(_beforeEach);
+        // Pre-mint and claim tokens
+        await config.minter.connect(config.accounts.deployer).preMint(3);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configurePricePerTokenInWei(
+            testValues.basePriceInWei,
+            testValues.priceIncrementInWei
+          );
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(testValues.timestampPast);
+
+        // Claim tokens 0 and 2
+        await config.minter
+          .connect(config.accounts.user)
+          .claimToken(testValues.tokenIdZero, {
+            value: testValues.basePriceInWei,
+          });
+        await config.minter
+          .connect(config.accounts.user2)
+          .claimToken(testValues.tokenIdTwo, {
+            value: testValues.basePriceInWei.add(
+              testValues.priceIncrementInWei.mul(2)
+            ),
+          });
+
+        const bitmaps = await config.minter.getAllClaimedBitmaps();
+        // Should have "1" at positions 0 and 2, "0" elsewhere
+        expect(bitmaps[0]).to.equal("1"); // token 0 claimed
+        expect(bitmaps[1]).to.equal("0"); // token 1 not claimed
+        expect(bitmaps[2]).to.equal("1"); // token 2 claimed
+      });
+    });
+
+    describe("Immutable state variables", async function () {
+      it("returns correct project ID", async function () {
+        const config = await loadFixture(_beforeEach);
+        const projectId = await config.minter.projectId();
+        expect(projectId).to.equal(testValues.projectZero);
+      });
+
+      it("returns correct max invocations", async function () {
+        const config = await loadFixture(_beforeEach);
+        const maxInvocations = await config.minter.maxInvocations();
+        expect(maxInvocations).to.equal(testValues.maxInvocations);
+      });
+
+      it("returns correct core contract address", async function () {
+        const config = await loadFixture(_beforeEach);
+        const coreAddress = await config.minter.coreContractAddress();
+        expect(coreAddress).to.equal(config.genArt721Core.address);
+      });
+
+      it("returns correct minter filter address", async function () {
+        const config = await loadFixture(_beforeEach);
+        const filterAddress = await config.minter.minterFilterAddress();
+        expect(filterAddress).to.equal(config.minterFilter.address);
+      });
+
+      it("returns correct PMP contract address", async function () {
+        const config = await loadFixture(_beforeEach);
+        const pmpAddress = await config.minter.pmpContract();
+        expect(pmpAddress).to.equal(config.pmpContract.address);
+      });
+
+      it("returns correct pseudorandom contract address", async function () {
+        const config = await loadFixture(_beforeEach);
+        const pseudorandomAddress =
+          await config.minter.pseudorandomAtomicContract();
+        expect(pseudorandomAddress).to.equal(
+          config.pseudorandomContract.address
+        );
+      });
+    });
+
+    describe("Bitmap storage", async function () {
+      it("returns correct bitmap values", async function () {
+        const config = await loadFixture(_beforeEach);
+        // Claim some tokens and check bitmap storage
+        await config.minter.connect(config.accounts.deployer).preMint(3);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configurePricePerTokenInWei(
+            testValues.basePriceInWei,
+            testValues.priceIncrementInWei
+          );
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(testValues.timestampPast);
+
+        await config.minter
+          .connect(config.accounts.user)
+          .claimToken(testValues.tokenIdZero, {
+            value: testValues.basePriceInWei,
+          });
+
+        const bitmap0 = await config.minter.claimedBitmaps(0);
+        // Should have bit 0 set (token 0 claimed)
+        expect(bitmap0).to.not.equal(0);
+      });
+
+      it("returns zero for unclaimed token bitmaps", async function () {
+        const config = await loadFixture(_beforeEach);
+        const bitmap0 = await config.minter.claimedBitmaps(0);
+        // Should be zero when no tokens are claimed
+        expect(bitmap0).to.equal(0);
       });
     });
   });

@@ -55,6 +55,12 @@ runForEach.forEach((params) => {
         config.accounts.artist.address
       );
 
+      await safeAddProject(
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
+      );
+
       const delegateRegistry = await deployAndGet(
         config,
         "DelegateRegistry",
@@ -77,7 +83,8 @@ runForEach.forEach((params) => {
         config.genArt721Core.address,
         config.pmpContract.address,
         config.pseudorandomContract.address,
-        config.projectZero,
+        config.projectOne,
+        testValues.maxInvocations,
       ]);
 
       // approve and set minter for project
@@ -88,52 +95,33 @@ runForEach.forEach((params) => {
           config.minter.address
         );
       await config.minterFilter.setMinterForProject(
-        config.projectZero,
+        config.projectOne,
         config.genArt721Core.address,
         config.minter.address
       );
 
-      // set up project 0
+      // set up project 1
       await config.genArt721Core
         .connect(config.accounts.deployer)
-        .toggleProjectIsActive(config.projectZero);
+        .toggleProjectIsActive(config.projectOne);
       await config.genArt721Core
         .connect(config.accounts.artist)
-        .toggleProjectIsPaused(config.projectZero);
-      await config.genArt721Core
-        .connect(config.accounts.artist)
-        .updateProjectMaxInvocations(config.projectZero, 15);
+        .toggleProjectIsPaused(config.projectOne);
 
       return config as T_ClaimMinterTestConfig;
     }
 
     describe("Deployment", async function () {
-      it("set minter filter address in constructor", async function () {
+      it("set project id in constructor", async function () {
         const config = await loadFixture(_beforeEach);
-        const actualMinterFilterAddress =
-          await config.minter.minterFilterAddress();
-        expect(actualMinterFilterAddress).to.equal(config.minterFilter.address);
+        const actualProjectId = await config.minter.projectId();
+        expect(actualProjectId).to.equal(config.projectOne);
       });
 
-      it("set core contract address in constructor", async function () {
+      it("set max invocations in constructor", async function () {
         const config = await loadFixture(_beforeEach);
-        const actualCoreAddress = await config.minter.coreContractAddress();
-        expect(actualCoreAddress).to.equal(config.genArt721Core.address);
-      });
-
-      it("set PMP contract address in constructor", async function () {
-        const config = await loadFixture(_beforeEach);
-        const actualPMPAddress = await config.minter.pmpContractAddress();
-        expect(actualPMPAddress).to.equal(config.pmpContract.address);
-      });
-
-      it("set pseudorandom atomic contract address in constructor", async function () {
-        const config = await loadFixture(_beforeEach);
-        const actualPseudorandomAddress =
-          await config.minter.pseudorandomAtomicContractAddress();
-        expect(actualPseudorandomAddress).to.equal(
-          config.pseudorandomContract.address
-        );
+        const actualMaxInvocations = await config.minter.maxInvocations();
+        expect(actualMaxInvocations).to.equal(testValues.maxInvocations);
       });
     });
 
@@ -143,8 +131,19 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.artist)
-            .preMint(testValues.amountToPreMint),
+            .preMint(testValues.maxInvocations),
           "Only Core AdminACL allowed"
+        );
+      });
+
+      it("reverts when amount to premint > max invocations reached", async function () {
+        const config = await loadFixture(_beforeEach);
+        const amountToPreMint = testValues.maxInvocations + 1;
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .preMint(amountToPreMint),
+          "Amount exceeds maximum invocations"
         );
       });
 
@@ -156,39 +155,13 @@ runForEach.forEach((params) => {
 
         await config.minter
           .connect(config.accounts.deployer)
-          .syncProjectMaxInvocationsToCore();
-
-        await config.minter
-          .connect(config.accounts.deployer)
-          .preMint(testValues.amountToPreMint);
+          .preMint(testValues.maxInvocations);
 
         const finalBalance = await config.genArt721Core.balanceOf(
           config.minter.address
         );
         expect(finalBalance).to.equal(
-          initialBalance.add(testValues.amountToPreMint)
-        );
-      });
-
-      it("reverts when max invocations reached", async function () {
-        const config = await loadFixture(_beforeEach);
-        // Set max invocations to 1
-        await config.genArt721Core
-          .connect(config.accounts.artist)
-          .updateProjectMaxInvocations(testValues.projectZero, 1);
-
-        // Sync max invocations first
-        await config.minter
-          .connect(config.accounts.deployer)
-          .syncProjectMaxInvocationsToCore();
-
-        // Pre-mint 1 token
-        await config.minter.connect(config.accounts.deployer).preMint(1);
-
-        // Try to pre-mint another token
-        await expectRevert(
-          config.minter.connect(config.accounts.deployer).preMint(1),
-          "Max invocations reached"
+          initialBalance.add(testValues.maxInvocations)
         );
       });
     });

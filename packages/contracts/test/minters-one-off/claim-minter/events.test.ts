@@ -84,6 +84,7 @@ runForEach.forEach((params) => {
         config.pmpContract.address,
         config.pseudorandomContract.address,
         testValues.projectZero,
+        500, // maxInvocations
       ]);
 
       // approve and set minter for project
@@ -136,10 +137,6 @@ runForEach.forEach((params) => {
       it("emits Mint event when pre-minting tokens", async function () {
         const config = await loadFixture(_beforeEach);
 
-        await config.minter
-          .connect(config.accounts.deployer)
-          .syncProjectMaxInvocationsToCore();
-
         await expect(config.minter.connect(config.accounts.deployer).preMint(1))
           .to.emit(config.genArt721Core, "Mint")
           .withArgs(config.minter.address, testValues.tokenIdZero);
@@ -149,9 +146,6 @@ runForEach.forEach((params) => {
     describe("Transfer events", async function () {
       it("emits Transfer event when claiming tokens", async function () {
         const config = await loadFixture(_beforeEach);
-        await config.minter
-          .connect(config.accounts.deployer)
-          .syncProjectMaxInvocationsToCore();
 
         // Pre-mint and configure
         await config.minter.connect(config.accounts.deployer).preMint(1);
@@ -182,9 +176,6 @@ runForEach.forEach((params) => {
 
       it("emits Transfer events for multiple claims", async function () {
         const config = await loadFixture(_beforeEach);
-        await config.minter
-          .connect(config.accounts.deployer)
-          .syncProjectMaxInvocationsToCore();
 
         // Pre-mint and configure
         await config.minter.connect(config.accounts.deployer).preMint(2);
@@ -244,6 +235,167 @@ runForEach.forEach((params) => {
 
         // Should have at least one PlatformUpdated event from setting the minter
         expect(events.length).to.be.greaterThan(0);
+      });
+    });
+
+    describe("ClaimMinter events", async function () {
+      it("emits PriceConfigured event when configuring price", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .configurePricePerTokenInWei(
+              testValues.basePriceInWei,
+              testValues.priceIncrementInWei
+            )
+        )
+          .to.emit(config.minter, "PriceConfigured")
+          .withArgs(testValues.basePriceInWei, testValues.priceIncrementInWei);
+      });
+
+      it("emits TimestampStartConfigured event when configuring timestamp", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .configureTimestampStart(testValues.timestampStart)
+        )
+          .to.emit(config.minter, "TimestampStartConfigured")
+          .withArgs(testValues.timestampStart);
+      });
+
+      it("emits TokensPreMinted event when pre-minting tokens", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        await expect(config.minter.connect(config.accounts.deployer).preMint(3))
+          .to.emit(config.minter, "TokensPreMinted")
+          .withArgs(3);
+      });
+
+      it("emits TokenClaimed event when claiming a token", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        // Pre-mint and configure
+        await config.minter.connect(config.accounts.deployer).preMint(1);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configurePricePerTokenInWei(
+            testValues.basePriceInWei,
+            testValues.priceIncrementInWei
+          );
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(testValues.timestampPast);
+
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .claimToken(testValues.tokenIdZero, {
+              value: testValues.basePriceInWei,
+            })
+        )
+          .to.emit(config.minter, "TokenClaimed")
+          .withArgs(
+            testValues.tokenIdZero,
+            config.accounts.user.address,
+            testValues.basePriceInWei
+          );
+      });
+
+      it("emits TokenClaimed events for multiple claims with different prices", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        // Pre-mint and configure
+        await config.minter.connect(config.accounts.deployer).preMint(2);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configurePricePerTokenInWei(
+            testValues.basePriceInWei,
+            testValues.priceIncrementInWei
+          );
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(testValues.timestampPast);
+
+        // Claim first token (base price)
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .claimToken(testValues.tokenIdZero, {
+              value: testValues.basePriceInWei,
+            })
+        )
+          .to.emit(config.minter, "TokenClaimed")
+          .withArgs(
+            testValues.tokenIdZero,
+            config.accounts.user.address,
+            testValues.basePriceInWei
+          );
+
+        // Claim second token (base price + increment)
+        const token1Price = testValues.basePriceInWei.add(
+          testValues.priceIncrementInWei
+        );
+        await expect(
+          config.minter
+            .connect(config.accounts.user2)
+            .claimToken(testValues.tokenIdOne, {
+              value: token1Price,
+            })
+        )
+          .to.emit(config.minter, "TokenClaimed")
+          .withArgs(
+            testValues.tokenIdOne,
+            config.accounts.user2.address,
+            token1Price
+          );
+      });
+
+      it("emits all expected events in correct order during full workflow", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        // Configure price
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .configurePricePerTokenInWei(
+              testValues.basePriceInWei,
+              testValues.priceIncrementInWei
+            )
+        )
+          .to.emit(config.minter, "PriceConfigured")
+          .withArgs(testValues.basePriceInWei, testValues.priceIncrementInWei);
+
+        // Configure timestamp
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .configureTimestampStart(testValues.timestampPast)
+        )
+          .to.emit(config.minter, "TimestampStartConfigured")
+          .withArgs(testValues.timestampPast);
+
+        // Pre-mint tokens
+        await expect(config.minter.connect(config.accounts.deployer).preMint(1))
+          .to.emit(config.minter, "TokensPreMinted")
+          .withArgs(1);
+
+        // Claim token
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .claimToken(testValues.tokenIdZero, {
+              value: testValues.basePriceInWei,
+            })
+        )
+          .to.emit(config.minter, "TokenClaimed")
+          .withArgs(
+            testValues.tokenIdZero,
+            config.accounts.user.address,
+            testValues.basePriceInWei
+          );
       });
     });
   });

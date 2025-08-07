@@ -27,6 +27,7 @@ export const testValues = {
   tokenIdTwo: 2,
   tokenIdThree: 3,
   tokenIdFour: 4,
+  maxInvocations: 500,
 };
 
 export const events = {

@@ -85,6 +85,7 @@ runForEach.forEach((params) => {
         config.pmpContract.address,
         config.pseudorandomContract.address,
         testValues.projectZero,
+        testValues.maxInvocations,
       ]);
 
       // approve and set minter for project
@@ -95,7 +96,7 @@ runForEach.forEach((params) => {
           config.minter.address
         );
       await config.minterFilter.setMinterForProject(
-        config.projectZero,
+        testValues.projectZero,
         config.genArt721Core.address,
         config.minter.address
       );
@@ -103,14 +104,10 @@ runForEach.forEach((params) => {
       // set up project 0
       await config.genArt721Core
         .connect(config.accounts.deployer)
-        .toggleProjectIsActive(config.projectZero);
+        .toggleProjectIsActive(testValues.projectZero);
       await config.genArt721Core
         .connect(config.accounts.artist)
         .toggleProjectIsPaused(testValues.projectZero);
-      await config.genArt721Core
-        .connect(config.accounts.artist)
-        .updateProjectMaxInvocations(testValues.projectZero, 15);
-
       // configure PMP
       const pmpConfig1 = getPMPInputConfig(
         "claimHash",
@@ -136,12 +133,10 @@ runForEach.forEach((params) => {
     describe("Complete claiming workflow", async function () {
       it("allows claiming tokens in arbitrary order", async function () {
         const config = await loadFixture(_beforeEach);
+        // Pre-mint tokens
         await config.minter
           .connect(config.accounts.deployer)
-          .syncProjectMaxInvocationsToCore();
-
-        // Pre-mint tokens
-        await config.minter.connect(config.accounts.deployer).preMint(3);
+          .preMint(testValues.maxInvocations);
 
         // Configure pricing and timestamp
         await config.minter
@@ -202,12 +197,10 @@ runForEach.forEach((params) => {
 
       it("reverts when claiming before timestamp start", async function () {
         const config = await loadFixture(_beforeEach);
+        // Pre-mint tokens
         await config.minter
           .connect(config.accounts.deployer)
-          .syncProjectMaxInvocationsToCore();
-
-        // Pre-mint tokens
-        await config.minter.connect(config.accounts.deployer).preMint(1);
+          .preMint(testValues.maxInvocations);
 
         // Configure pricing and future timestamp
         await config.minter
@@ -236,12 +229,10 @@ runForEach.forEach((params) => {
 
       it("reverts when claiming already claimed token", async function () {
         const config = await loadFixture(_beforeEach);
+        // Pre-mint tokens
         await config.minter
           .connect(config.accounts.deployer)
-          .syncProjectMaxInvocationsToCore();
-
-        // Pre-mint tokens
-        await config.minter.connect(config.accounts.deployer).preMint(1);
+          .preMint(testValues.maxInvocations);
 
         // Configure pricing and timestamp
         await config.minter
@@ -274,12 +265,10 @@ runForEach.forEach((params) => {
 
       it("reverts when sending incorrect payment amount", async function () {
         const config = await loadFixture(_beforeEach);
+        // Pre-mint tokens
         await config.minter
           .connect(config.accounts.deployer)
-          .syncProjectMaxInvocationsToCore();
-
-        // Pre-mint tokens
-        await config.minter.connect(config.accounts.deployer).preMint(1);
+          .preMint(testValues.maxInvocations);
 
         // Configure pricing and timestamp
         await config.minter
@@ -308,10 +297,6 @@ runForEach.forEach((params) => {
 
       it("reverts when claiming token that wasn't pre-minted", async function () {
         const config = await loadFixture(_beforeEach);
-        await config.minter
-          .connect(config.accounts.deployer)
-          .syncProjectMaxInvocationsToCore();
-
         // Configure pricing and timestamp
         await config.minter
           .connect(config.accounts.deployer)
@@ -339,12 +324,10 @@ runForEach.forEach((params) => {
 
       it("correctly calculates incremental pricing", async function () {
         const config = await loadFixture(_beforeEach);
+        // Pre-mint tokens
         await config.minter
           .connect(config.accounts.deployer)
-          .syncProjectMaxInvocationsToCore();
-
-        // Pre-mint tokens
-        await config.minter.connect(config.accounts.deployer).preMint(3);
+          .preMint(testValues.maxInvocations);
 
         // Configure pricing and timestamp
         await config.minter
@@ -393,35 +376,28 @@ runForEach.forEach((params) => {
           .true;
       });
 
-      it("allows claiming when timestamp is 0", async function () {
+      it("reverts claiming when timestamp is 0 (unconfigured)", async function () {
         const config = await loadFixture(_beforeEach);
-        await config.minter
-          .connect(config.accounts.deployer)
-          .syncProjectMaxInvocationsToCore();
 
         // Pre-mint tokens
         await config.minter.connect(config.accounts.deployer).preMint(1);
 
-        // Configure pricing and timestamp to 0
+        // Configure pricing but leave timestamp unconfigured (0)
         await config.minter
           .connect(config.accounts.deployer)
           .configurePricePerTokenInWei(
             testValues.basePriceInWei,
             testValues.priceIncrementInWei
           );
-        await config.minter
-          .connect(config.accounts.deployer)
-          .configureTimestampStart(0);
 
-        // Claim token should succeed
-        await config.minter
-          .connect(config.accounts.user)
-          .claimToken(testValues.tokenIdZero, {
-            value: testValues.basePriceInWei,
-          });
-
-        expect(await config.minter.isTokenClaimed(testValues.tokenIdZero)).to.be
-          .true;
+        // Claim token should revert with "Claiming not configured"
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .claimToken(testValues.tokenIdZero, {
+              value: testValues.basePriceInWei,
+            })
+        ).to.be.revertedWith("Claiming not configured");
       });
     });
   });

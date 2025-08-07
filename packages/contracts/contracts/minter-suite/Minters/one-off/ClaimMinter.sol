@@ -12,13 +12,14 @@ import {IGenArt721CoreContractV3} from "../../../interfaces/v0.8.x/IGenArt721Cor
 import {IPseudorandomAtomic} from "../../../interfaces/v0.8.x/IPseudorandomAtomic.sol";
 import {IClaimMinter} from "../../../interfaces/v0.8.x/IClaimMinter.sol";
 
+import "@openzeppelin-5.0/contracts/utils/Strings.sol";
 import {ReentrancyGuard} from "@openzeppelin-5.0/contracts/utils/ReentrancyGuard.sol";
 import {IERC721} from "@openzeppelin-5.0/contracts/token/ERC721/IERC721.sol";
 
 import {AuthLib} from "../../../libs/v0.8.x/AuthLib.sol";
-import {MaxInvocationsLib} from "../../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 import {SplitFundsLib} from "../../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import {BitMaps256} from "../../../libs/v0.8.x/BitMap.sol";
+import {ABHelpers} from "../../../libs/v0.8.x/ABHelpers.sol";
 
 /**
  * @title ClaimMinter contract that enables admin to pre-mint tokens for a project
@@ -79,17 +80,11 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     /// The project ID for the Art Blocks project.
     uint256 public immutable projectId;
 
+    /// The maximum number of invocations for this project (e.g., 500)
+    uint256 public immutable maxInvocations;
+
     /// Core contract address for this minter.
     address public immutable coreContractAddress;
-
-    /// Minter filter address this minter interacts with
-    address public immutable minterFilterAddress;
-
-    /// PMP contract address this minter interacts with
-    address public immutable pmpContractAddress;
-
-    /// Pseudorandom atomic contract address this minter interacts with
-    address public immutable pseudorandomAtomicContractAddress;
 
     /// Minter filter this minter may interact with.
     IMinterFilterV1 public immutable minterFilter;
@@ -102,9 +97,6 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
 
     // claimed tokens using bitmaps (bitmapIndex => bitmap)
     mapping(uint256 => uint256) public claimedBitmaps;
-
-    // pre-minted tokens using bitmaps (bitmapIndex => bitmap)
-    mapping(uint256 => uint256) public preMintedBitmaps;
 
     uint256 public timestampStart;
 
@@ -127,48 +119,24 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
      * @param pseudorandomAtomicContract_ The pseudorandom atomic contract address this minter will
      * interact with.
      * @param projectId_ The project ID for the Art Blocks project.
+     * @param maxInvocations_ The maximum number of invocations allowed for this project (e.g., 500).
      */
     constructor(
         address minterFilter_,
         address coreContract_,
         address pmpContract_,
         address pseudorandomAtomicContract_,
-        uint256 projectId_
+        uint256 projectId_,
+        uint256 maxInvocations_
     ) ReentrancyGuard() {
-        minterFilterAddress = minterFilter_;
         minterFilter = IMinterFilterV1(minterFilter_);
         coreContractAddress = coreContract_;
-        pmpContractAddress = pmpContract_;
         pmpContract = IPMPV0(pmpContract_);
-        pseudorandomAtomicContractAddress = pseudorandomAtomicContract_;
         pseudorandomAtomicContract = IPseudorandomAtomic(
             pseudorandomAtomicContract_
         );
         projectId = projectId_;
-    }
-
-    /**
-     * @notice Returns all claimed bitmaps
-     * @return An array of all claimed bitmaps
-     */
-    function getAllClaimedBitmaps() external view returns (uint256[] memory) {
-        // For 500 tokens, we need 2 bitmap indices (0 and 1)
-        uint256[] memory bitmaps = new uint256[](2);
-        bitmaps[0] = claimedBitmaps[0];
-        bitmaps[1] = claimedBitmaps[1];
-        return bitmaps;
-    }
-
-    /**
-     * @notice Returns all pre-minted bitmaps
-     * @return An array of all pre-minted bitmaps
-     */
-    function getAllPreMintedBitmaps() external view returns (uint256[] memory) {
-        // For 500 tokens, we need 2 bitmap indices (0 and 1)
-        uint256[] memory bitmaps = new uint256[](2);
-        bitmaps[0] = preMintedBitmaps[0];
-        bitmaps[1] = preMintedBitmaps[1];
-        return bitmaps;
+        maxInvocations = maxInvocations_;
     }
 
     /**
@@ -196,6 +164,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
         // EFFECTS
         basePriceInWei = basePriceInWei_;
         priceIncrementInWei = priceIncrementInWei_;
+        emit PriceConfigured(basePriceInWei_, priceIncrementInWei_);
     }
 
     /**
@@ -216,6 +185,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
 
         // EFFECTS
         timestampStart = timestampStart_;
+        emit TimestampStartConfigured(timestampStart_);
     }
 
     /**
@@ -236,28 +206,19 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             selector: this.preMint.selector
         });
 
-        MaxInvocationsLib.preMintChecks({
-            projectId: projectId,
-            coreContract: coreContractAddress
-        });
+        require(amount <= maxInvocations, "Amount exceeds maximum invocations");
 
         // EFFECTS
         // Mint tokens to this contract
         for (uint256 i = 0; i < amount; i++) {
-            uint256 tokenId = minterFilter.mint_joo({
+            minterFilter.mint_joo({
                 to: address(this),
                 projectId: projectId,
                 coreContract: coreContractAddress,
                 sender: msg.sender
             });
-
-            MaxInvocationsLib.validateMintEffectsInvocations({
-                tokenId: tokenId,
-                coreContract: coreContractAddress
-            });
-            // Mark token as pre-minted
-            _markTokenPreMinted(tokenId);
         }
+        emit TokensPreMinted(amount);
     }
 
     /**
@@ -273,19 +234,26 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
      * @param tokenId Token ID to claim.
      */
     function claimToken(uint256 tokenId) external payable nonReentrant {
-        // check that token id is unclaimed
+        // check that token number is within allowed range
+        uint256 tokenNumber = ABHelpers.tokenIdToTokenNumber(tokenId);
+        require(
+            tokenNumber <= maxInvocations,
+            "Token number exceeds maximum invocations"
+        );
+        // check that token is unclaimed
         // @dev Valid token IDs are operationally handled by frontend and admin pre-minting.
         // Admin validates token ID ranges and pre-mints tokens to this contract before claiming is enabled.
-        require(!isTokenClaimed(tokenId), "Token already claimed");
+        require(!isTokenClaimed(tokenNumber), "Token already claimed");
         // check that claiming has started
+        require(timestampStart != 0, "Claiming not configured");
         require(block.timestamp >= timestampStart, "Claiming not yet started");
         // check value of msg.value
-        uint256 requiredPrice = _priceByTokenIdInWei(tokenId);
+        uint256 requiredPrice = _priceByTokenInvocationInWei(tokenNumber);
         require(msg.value == requiredPrice, "Only send price per token");
 
         // EFFECTS
         // mark token as claimed
-        _markTokenClaimed(tokenId);
+        _markTokenClaimed(tokenNumber);
 
         bytes32 hashSeed = _getPseudorandomAtomic(coreContractAddress, tokenId);
 
@@ -299,7 +267,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             configuredParamType: IPMPV0.ParamType.String,
             configuredValue: bytes32(0),
             configuringArtistString: false,
-            configuredValueString: _bytes32ToString(hashSeed)
+            configuredValueString: Strings.toHexString(uint256(hashSeed))
         });
         // this contract must be configured to be permitted to configure token params
         pmpContract.configureTokenParams(
@@ -326,26 +294,70 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             msg.sender,
             tokenId
         );
+        emit TokenClaimed(tokenId, msg.sender, requiredPrice);
+    }
+
+    /**
+     * @notice Returns all claimed bitmaps as a binary string.
+     * @dev Returns a 512-character binary string representing the claimed status of tokens.
+     * Each character represents one token: "1" = claimed, "0" = not claimed.
+     * @return A binary string where each character represents the claimed status of a token.
+     */
+    function getAllClaimedBitmaps() external view returns (string memory) {
+        uint256 bitmap0 = claimedBitmaps[0];
+        uint256 bitmap1 = claimedBitmaps[1];
+
+        // Convert to binary string (512 bits total for 2 uint256s)
+        bytes memory binaryString = new bytes(512);
+
+        for (uint256 i = 0; i < 256; i++) {
+            binaryString[i] = (bitmap0 & (1 << i)) != 0
+                ? bytes1("1")
+                : bytes1("0");
+        }
+        for (uint256 i = 0; i < 256; i++) {
+            binaryString[i + 256] = (bitmap1 & (1 << i)) != 0
+                ? bytes1("1")
+                : bytes1("0");
+        }
+
+        return string(binaryString);
+    }
+
+    // -- required shared minter view functions for minter suite compatibility (ISharedMinterRequired) --
+    // @dev minterType requirement satisfied by public constant minterType
+
+    /**
+     * @notice Returns the minter's associated shared minter filter address.
+     * @dev used by subgraph indexing service for entity relation purposes.
+     * @return The minter filter address.
+     */
+    function minterFilterAddress() external view returns (address) {
+        return address(minterFilter);
     }
 
     /**
      * @notice Checks if a token is claimed using bitmap storage
-     * @param tokenId The token ID
+     * @param tokenInvocation The token invocation number
      * @return True if the token is claimed
      */
-    function isTokenClaimed(uint256 tokenId) public view returns (bool) {
-        (uint256 bitmapIndex, uint8 bitPosition) = _getBitmapPosition(tokenId);
+    function isTokenClaimed(
+        uint256 tokenInvocation
+    ) public view returns (bool) {
+        (uint256 bitmapIndex, uint8 bitPosition) = _getBitmapPosition(
+            tokenInvocation
+        );
         uint256 bitmap = claimedBitmaps[bitmapIndex];
         return BitMaps256.get(bitmap, bitPosition);
     }
 
     /**
-     * @notice Internal function to calculate the price in wei for token `tokenId`.
-     * @param tokenId Token ID to get the price for.
+     * @notice Internal function to calculate the price in wei for token number `tokenInvocation`.
+     * @param tokenInvocation Token number to get the price for.
      * @return Price in wei for the specified token.
      */
-    function _priceByTokenIdInWei(
-        uint256 tokenId
+    function _priceByTokenInvocationInWei(
+        uint256 tokenInvocation
     ) internal view returns (uint256) {
         uint256 basePrice = basePriceInWei;
         uint256 priceIncrement = priceIncrementInWei;
@@ -355,55 +367,20 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             priceIncrement = DEFAULT_PRICE_INCREMENT_IN_WEI;
         }
 
-        return basePrice + (tokenId * priceIncrement);
+        return basePrice + (tokenInvocation * priceIncrement);
     }
 
     /**
-     * @notice Syncs project's max invocations to core contract value.
-     * Only callable by the core contract's Admin ACL.
+     * @notice Internal function that gets the bitmap index and bit position for a token invocation
+     * @param tokenInvocation The token invocation number
+     * @return bitmapIndex The index in the bitmap array (0, 1, 2, etc.)
+     * @return bitPosition The position within that bitmap (0-255)
      */
-    function syncProjectMaxInvocationsToCore() external {
-        // CHECKS
-        AuthLib.onlyCoreAdminACL({
-            coreContract: coreContractAddress,
-            sender: msg.sender,
-            contract_: address(this),
-            selector: this.syncProjectMaxInvocationsToCore.selector
-        });
-
-        // EFFECTS
-        MaxInvocationsLib.syncProjectMaxInvocationsToCore({
-            projectId: projectId,
-            coreContract: coreContractAddress
-        });
-    }
-
-    /**
-     * @notice Converts a bytes32 value to a string.
-     * @dev This function converts a bytes32 value to a string representation.
-     * @param _bytes32 The bytes32 value to convert.
-     * @return The string representation of the bytes32 value.
-     */
-    function _bytes32ToString(
-        bytes32 _bytes32
-    ) internal pure returns (string memory) {
-        bytes memory bytesArray = new bytes(66); // 0x + 64 hex chars
-        bytesArray[0] = "0";
-        bytesArray[1] = "x";
-
-        for (uint256 i = 0; i < 32; i++) {
-            bytes1 b = bytes1(uint8(uint256(_bytes32) / (2 ** (8 * (31 - i)))));
-            bytes1 hi = bytes1(uint8(b) / 16);
-            bytes1 lo = bytes1(uint8(b) - 16 * uint8(hi));
-            bytesArray[2 + 2 * i] = _char(hi);
-            bytesArray[2 + 2 * i + 1] = _char(lo);
-        }
-        return string(bytesArray);
-    }
-
-    function _char(bytes1 b) internal pure returns (bytes1 c) {
-        if (uint8(b) < 10) return bytes1(uint8(b) + 0x30);
-        else return bytes1(uint8(b) + 0x57);
+    function _getBitmapPosition(
+        uint256 tokenInvocation
+    ) internal pure returns (uint256 bitmapIndex, uint8 bitPosition) {
+        bitmapIndex = tokenInvocation / 256;
+        bitPosition = uint8(tokenInvocation % 256);
     }
 
     /**
@@ -423,41 +400,16 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
                 keccak256(abi.encodePacked(coreContract, tokenId))
             );
     }
-
-    /**
-     * @notice Internal function that gets the bitmap index and bit position for a token ID
-     * @param tokenId The token ID
-     * @return bitmapIndex The index in the bitmap array (0, 1, 2, etc.)
-     * @return bitPosition The position within that bitmap (0-255)
-     */
-    function _getBitmapPosition(
-        uint256 tokenId
-    ) internal pure returns (uint256 bitmapIndex, uint8 bitPosition) {
-        bitmapIndex = tokenId / 256;
-        bitPosition = uint8(tokenId % 256);
-    }
-
     /**
      * @notice Internal function that marks a token as claimed using bitmap storage
-     * @param tokenId The token ID
+     * @param tokenInvocation The token invocation number
      */
-    function _markTokenClaimed(uint256 tokenId) internal {
-        (uint256 bitmapIndex, uint8 bitPosition) = _getBitmapPosition(tokenId);
+    function _markTokenClaimed(uint256 tokenInvocation) internal {
+        (uint256 bitmapIndex, uint8 bitPosition) = _getBitmapPosition(
+            tokenInvocation
+        );
         uint256 currentBitmap = claimedBitmaps[bitmapIndex];
         claimedBitmaps[bitmapIndex] = BitMaps256.set(
-            currentBitmap,
-            bitPosition
-        );
-    }
-
-    /**
-     * @notice Marks a token as pre-minted using bitmap storage
-     * @param tokenId The token ID
-     */
-    function _markTokenPreMinted(uint256 tokenId) internal {
-        (uint256 bitmapIndex, uint8 bitPosition) = _getBitmapPosition(tokenId);
-        uint256 currentBitmap = preMintedBitmaps[bitmapIndex];
-        preMintedBitmaps[bitmapIndex] = BitMaps256.set(
             currentBitmap,
             bitPosition
         );
