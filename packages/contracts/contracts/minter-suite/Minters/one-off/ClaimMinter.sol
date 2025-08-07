@@ -39,7 +39,7 @@ import {BitMaps256} from "../../../libs/v0.8.x/BitMap.sol";
  * ----------------------------------------------------------------------------
  * The following functions are restricted to the core contract's Admin ACL:
  * - preMint: Allows admin to pre-mint tokens to this contract for later claiming
- * - configurePricePerTokenInWei: Sets the base price for token 0 of a project
+ * - configurePricePerTokenInWei: Sets the base price for token 0 of a project as well as incremental pricing
  * - configureTimestampStart: Sets when claiming can begin for a project
  * ----------------------------------------------------------------------------
  * The following functions are available to any user:
@@ -63,11 +63,15 @@ import {BitMaps256} from "../../../libs/v0.8.x/BitMap.sol";
  * Core Registry to assign this minter, this minter does not enforce that a
  * project is registered when configured or queried. This is primarily for gas
  * optimization purposes. It is, therefore, possible that fake projects may be
- * configured on this minter, but they will not be able to mint tokens due to
- * checks performed by this minter's Minter Filter.
+ * configured on this minter.
  */
 
 contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
+    /// @dev This contract is specifically not an IERC721Receiver - it does not handle
+    /// owning arbitrary NFTs, but handles a specific project. Art Blocks core contracts
+    /// use transfer, not safeTransfer, during mint, so this contract is compatible
+    /// with Art Blocks core contracts.
+
     /// minterType for this minter
     // @dev no version due to no plan of indexing the minter in AB subgraph
     string public constant minterType = "ClaimMinter";
@@ -108,7 +112,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     uint256 public basePriceInWei;
     uint256 public priceIncrementInWei;
 
-    // default price increment in wei for each token
+    // default price increment in wei for each token (0.0005 ETH)
     uint256 public constant DEFAULT_PRICE_INCREMENT_IN_WEI = 500000000000000;
 
     /**
@@ -270,6 +274,8 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
      */
     function claimToken(uint256 tokenId) external payable nonReentrant {
         // check that token id is unclaimed
+        // @dev Valid token IDs are operationally handled by frontend and admin pre-minting.
+        // Admin validates token ID ranges and pre-mints tokens to this contract before claiming is enabled.
         require(!isTokenClaimed(tokenId), "Token already claimed");
         // check that claiming has started
         require(block.timestamp >= timestampStart, "Claiming not yet started");
@@ -283,7 +289,11 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
 
         bytes32 hashSeed = _getPseudorandomAtomic(coreContractAddress, tokenId);
 
+        // INTERACTIONS
         IPMPV0.PMPInput[] memory pmpInputs = new IPMPV0.PMPInput[](1);
+
+        // @dev Using String instead of Uint for claimHash to maintain consistency with tokenData
+        // hash format, which stores hashes as hex strings.
         pmpInputs[0] = IPMPV0.PMPInput({
             key: "claimHash",
             configuredParamType: IPMPV0.ParamType.String,
@@ -308,6 +318,9 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
         });
 
         // transfer token id to collector
+        // @dev ERC721 transfer event is sufficient for indexing, no additional
+        // events needed as the transfer event captures the
+        // claim action from this contract to the collector.
         IERC721(coreContractAddress).safeTransferFrom(
             address(this),
             msg.sender,
