@@ -59,10 +59,10 @@ const pmpInputSquiggle9209 = getPMPInput(
   false,
   ""
 );
-const pmpInputSquiggle9999 = getPMPInput(
+const pmpInputSquiggle9998 = getPMPInput(
   "Featured_Squiggle",
   PMP_PARAM_TYPE_ENUM.Uint256Range,
-  "0x000000000000000000000000000000000000000000000000000000000000270F",
+  "0x000000000000000000000000000000000000000000000000000000000000270E",
   false,
   ""
 );
@@ -205,11 +205,11 @@ describe("test forking mainnet - LiftHooks", async function () {
         "0x56461a01b69faeffeaa342cd081d753c0b98f9863f60600541a391a093a17275"
       );
 
-      // fail auth check while assigning squiggle 9999 (relic) from unsigned address
+      // fail auth check while assigning squiggle 9998 (relic) from unsigned address
       await expectRevert(
         pmpV0
           .connect(impersonatedArtist)
-          .configureTokenParams(coreAddress, token0, [pmpInputSquiggle9999]),
+          .configureTokenParams(coreAddress, token0, [pmpInputSquiggle9998]),
         revertMessages.failAuth
       );
       const postParams5 = await pmpV0.getTokenParams(coreAddress, token0);
@@ -217,7 +217,7 @@ describe("test forking mainnet - LiftHooks", async function () {
       expect(postParams5[0].key).to.equal("PFP_Mode");
       expect(postParams5[0].value).to.equal("true");
 
-      // pass auth check while assigning squiggle 9999 (relic) from signed address
+      // pass auth check while assigning squiggle 9998 (relic) from signed address
       const relicSignerAddress = "0x816B2D8daD051716A58271d484e5cC12fBf5096A";
       const impersonatedRelicSigner =
         await ethers.getImpersonatedSigner(relicSignerAddress);
@@ -232,14 +232,14 @@ describe("test forking mainnet - LiftHooks", async function () {
       const token2 = projectId.mul(1_000_000).add(2);
       await pmpV0
         .connect(impersonatedRelicSigner)
-        .configureTokenParams(coreAddress, token2, [pmpInputSquiggle9999]);
+        .configureTokenParams(coreAddress, token2, [pmpInputSquiggle9998]);
       const postParams6 = await pmpV0.getTokenParams(coreAddress, token2);
       expect(postParams6.length).to.equal(2);
       expect(postParams6[0].key).to.equal("Featured_Squiggle");
-      expect(postParams6[0].value).to.equal("9999");
+      expect(postParams6[0].value).to.equal("9998");
       expect(postParams6[1].key).to.equal("Featured_Squiggle_Hash");
       expect(postParams6[1].value).to.equal(
-        "0x0eefe6dcaed22a8dce481c38a11308682fd61b79463878f74f3144015316dcca"
+        "0x1bb4bf64d751340b093e83816c1044ff0534e6fec12f36e6b64a1494741ea815"
       );
 
       // delegate from squiggle 9209 owner to relic 0 owner, delegate v1

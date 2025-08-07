@@ -34,7 +34,7 @@ interface IRelic {
  * @author Art Blocks Inc.
  * @notice This hook verifies ownership of any custom squiggle PostParam setting,
  * and injects the squiggle's token hash into the token's PMPs if configured.
- * It supports delegate.xyz V1 and V2, and also allows squiggle #9999 for any address that
+ * It supports delegate.xyz V1 and V2, and also allows squiggle #9998 for any address that
  * inscribed the squiggle Relic contract on eth mainnet.
  * It also allows resetting the squiggle token back to default #1981.
  * This hook contract has logic for both the augment and configure hooks.
@@ -57,7 +57,7 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
     bytes32 public constant DELEGATION_REGISTRY_TOKEN_OWNER_RIGHTS =
         bytes32("postmintparameters");
 
-    uint256 public constant FINAL_SQUIGGLE_TOKEN_ID = 9999;
+    uint256 public constant FINAL_SQUIGGLE_TOKEN_ID = 9998;
     uint256 public constant DEFAULT_SQUIGGLE_TOKEN_ID = 1981;
     bytes32 internal constant _HASHED_KEY_FEATURED_SQUIGGLE =
         keccak256("Featured_Squiggle");
@@ -224,11 +224,11 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
     }
 
     /**
-     * @notice Checks if the liftOwner is configuring squiggle 9999.
+     * @notice Checks if the liftOwner is configuring squiggle 9998.
      * If so, it verifies that the liftOwner is inscribed in the relic contract.
      * @param squiggleTokenId The token id of the squiggle to check access for.
      * @param liftOwner The address of the lift owner to check access for.
-     * @return bool True if the liftOwner is configuring squiggle 9999 and is
+     * @return bool True if the liftOwner is configuring squiggle 9998 and is
      * inscribed in the relic contract, false otherwise.
      */
     function passesRelicCheck(
