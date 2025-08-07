@@ -15,7 +15,6 @@ export const revertMessages = {
 };
 
 export const testValues = {
-  projectZero: 0,
   projectOne: 1,
   basePriceInWei: ethers.utils.parseEther("0.1"),
   priceIncrementInWei: ethers.utils.parseEther("0.0005"),
@@ -23,10 +22,10 @@ export const testValues = {
   timestampPast: Math.floor(Date.now() / 1000) - 3600, // 1 hour ago
   amountToPreMint: 15,
   tokenIdZero: 0,
-  tokenIdOne: 1,
-  tokenIdTwo: 2,
-  tokenIdThree: 3,
-  tokenIdFour: 4,
+  tokenIdOne: 1000000,
+  tokenIdTwo: 2000000,
+  tokenIdThree: 3000000,
+  tokenIdFour: 4000000,
   maxInvocations: 500,
 };
 

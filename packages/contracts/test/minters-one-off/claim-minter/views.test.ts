@@ -25,7 +25,7 @@ interface T_ClaimMinterTestConfig extends T_Config {
   minter: ClaimMinter;
   pmpContract: PMPV0;
   pseudorandomContract: PseudorandomAtomic;
-  projectZero: number;
+  projectOne: number;
 }
 
 // @dev testing with V3 engine sufficient - no different logic is tested with flex, etc.
@@ -79,7 +79,7 @@ runForEach.forEach((params) => {
         config.genArt721Core.address,
         config.pmpContract.address,
         config.pseudorandomContract.address,
-        testValues.projectZero,
+        testValues.projectOne,
         testValues.maxInvocations,
       ]);
 
@@ -91,7 +91,7 @@ runForEach.forEach((params) => {
           config.minter.address
         );
       await config.minterFilter.setMinterForProject(
-        config.projectZero,
+        config.projectOne,
         config.genArt721Core.address,
         config.minter.address
       );
@@ -99,13 +99,16 @@ runForEach.forEach((params) => {
       // set up project 0
       await config.genArt721Core
         .connect(config.accounts.deployer)
-        .toggleProjectIsActive(config.projectZero);
+        .toggleProjectIsActive(testValues.projectOne);
       await config.genArt721Core
         .connect(config.accounts.artist)
-        .toggleProjectIsPaused(testValues.projectZero);
+        .toggleProjectIsPaused(testValues.projectOne);
       await config.genArt721Core
         .connect(config.accounts.artist)
-        .updateProjectMaxInvocations(testValues.projectZero, 15);
+        .updateProjectMaxInvocations(
+          testValues.projectOne,
+          testValues.maxInvocations
+        );
       const pmpConfig1 = getPMPInputConfig(
         "claimHash",
         PMP_AUTH_ENUM.ArtistAndAddress,
@@ -118,11 +121,9 @@ runForEach.forEach((params) => {
       );
       await config.pmpContract
         .connect(config.accounts.artist)
-        .configureProject(
-          config.genArt721Core.address,
-          testValues.projectZero,
-          [pmpConfig1]
-        );
+        .configureProject(config.genArt721Core.address, testValues.projectOne, [
+          pmpConfig1,
+        ]);
       return config as T_ClaimMinterTestConfig;
     }
 
@@ -269,7 +270,7 @@ runForEach.forEach((params) => {
       it("returns correct project ID", async function () {
         const config = await loadFixture(_beforeEach);
         const projectId = await config.minter.projectId();
-        expect(projectId).to.equal(testValues.projectZero);
+        expect(projectId).to.equal(testValues.projectOne);
       });
 
       it("returns correct max invocations", async function () {

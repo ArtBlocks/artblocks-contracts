@@ -27,7 +27,7 @@ interface T_ClaimMinterTestConfig extends T_Config {
   minter: ClaimMinter;
   pmpContract: PMPV0;
   pseudorandomContract: PseudorandomAtomic;
-  projectZero: number;
+  projectOne: number;
 }
 
 // @dev testing with V3 engine sufficient - no different logic is tested with flex, etc.
@@ -84,7 +84,7 @@ runForEach.forEach((params) => {
         config.genArt721Core.address,
         config.pmpContract.address,
         config.pseudorandomContract.address,
-        testValues.projectZero,
+        testValues.projectOne,
         testValues.maxInvocations,
       ]);
 
@@ -96,7 +96,7 @@ runForEach.forEach((params) => {
           config.minter.address
         );
       await config.minterFilter.setMinterForProject(
-        testValues.projectZero,
+        testValues.projectOne,
         config.genArt721Core.address,
         config.minter.address
       );
@@ -104,10 +104,10 @@ runForEach.forEach((params) => {
       // set up project 0
       await config.genArt721Core
         .connect(config.accounts.deployer)
-        .toggleProjectIsActive(testValues.projectZero);
+        .toggleProjectIsActive(testValues.projectOne);
       await config.genArt721Core
         .connect(config.accounts.artist)
-        .toggleProjectIsPaused(testValues.projectZero);
+        .toggleProjectIsPaused(testValues.projectOne);
       // configure PMP
       const pmpConfig1 = getPMPInputConfig(
         "claimHash",
@@ -121,11 +121,9 @@ runForEach.forEach((params) => {
       );
       await config.pmpContract
         .connect(config.accounts.artist)
-        .configureProject(
-          config.genArt721Core.address,
-          testValues.projectZero,
-          [pmpConfig1]
-        );
+        .configureProject(config.genArt721Core.address, testValues.projectOne, [
+          pmpConfig1,
+        ]);
 
       return config as T_ClaimMinterTestConfig;
     }

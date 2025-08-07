@@ -26,7 +26,7 @@ interface T_ClaimMinterTestConfig extends T_Config {
   minter: ClaimMinter;
   pmpContract: PMPV0;
   pseudorandomContract: PseudorandomAtomic;
-  projectZero: number;
+  projectOne: number;
 }
 
 // @dev testing with V3 engine sufficient - no different logic is tested with flex, etc.
@@ -60,6 +60,12 @@ runForEach.forEach((params) => {
         config.accounts.artist.address
       );
 
+      await safeAddProject(
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
+      );
+
       const delegateRegistry = await deployAndGet(
         config,
         "DelegateRegistry",
@@ -83,7 +89,7 @@ runForEach.forEach((params) => {
         config.genArt721Core.address,
         config.pmpContract.address,
         config.pseudorandomContract.address,
-        testValues.projectZero,
+        testValues.projectOne,
         500, // maxInvocations
       ]);
 
@@ -95,21 +101,24 @@ runForEach.forEach((params) => {
           config.minter.address
         );
       await config.minterFilter.setMinterForProject(
-        config.projectZero,
+        testValues.projectOne,
         config.genArt721Core.address,
         config.minter.address
       );
 
-      // set up project 0
+      // set up project
       await config.genArt721Core
         .connect(config.accounts.deployer)
-        .toggleProjectIsActive(config.projectZero);
+        .toggleProjectIsActive(testValues.projectOne);
       await config.genArt721Core
         .connect(config.accounts.artist)
-        .toggleProjectIsPaused(testValues.projectZero);
+        .toggleProjectIsPaused(testValues.projectOne);
       await config.genArt721Core
         .connect(config.accounts.artist)
-        .updateProjectMaxInvocations(testValues.projectZero, 15);
+        .updateProjectMaxInvocations(
+          testValues.projectOne,
+          testValues.maxInvocations
+        );
 
       // configure PMP
       const pmpConfig1 = getPMPInputConfig(
@@ -124,11 +133,9 @@ runForEach.forEach((params) => {
       );
       await config.pmpContract
         .connect(config.accounts.artist)
-        .configureProject(
-          config.genArt721Core.address,
-          testValues.projectZero,
-          [pmpConfig1]
-        );
+        .configureProject(config.genArt721Core.address, testValues.projectOne, [
+          pmpConfig1,
+        ]);
 
       return config as T_ClaimMinterTestConfig;
     }
@@ -139,7 +146,7 @@ runForEach.forEach((params) => {
 
         await expect(config.minter.connect(config.accounts.deployer).preMint(1))
           .to.emit(config.genArt721Core, "Mint")
-          .withArgs(config.minter.address, testValues.tokenIdZero);
+          .withArgs(config.minter.address, testValues.tokenIdOne);
       });
     });
 

@@ -21,7 +21,7 @@ interface T_ClaimMinterTestConfig extends T_Config {
   minter: ClaimMinter;
   pmpContract: PMPV0;
   pseudorandomContract: PseudorandomAtomic;
-  projectZero: number;
+  projectOne: number;
 }
 
 // @dev testing with V3 engine sufficient - no different logic is tested with flex, etc.
