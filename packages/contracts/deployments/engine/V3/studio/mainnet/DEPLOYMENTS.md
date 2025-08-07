@@ -2266,3 +2266,222 @@ Date: 2024-10-03T20:31:48.898Z
         ---
       
         
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2025-08-07T22:10:36.395Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** mainnet
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000559cA3F3f1279C0ec121c302ed010457#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x000000008DD9A7CD3f4A267A88082d4a1E2f6553#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x000000004058B5159ABB5a3Dd8cf775A7519E75F#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine | 0x000056C200618b979900c3F1eF9Aef86f4C47eaa
+  
+        **Engine Contract:** https://etherscan.io/address/0x000056C200618b979900c3F1eF9Aef86f4C47eaa#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Gossamer Rozen
+        - **Token Name:** Art Blocks Studio | 80
+        - **Token Ticker:** ABSTUDIO_80
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x2E1fEe9e5BE006d0B1fB341B2ef34Fc90A526906
+        - **Super Admin Address:** 0xc4Baf9b4Ce2AE850a7e1fF2A0B796242d0bE405d        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-80-mainnet
+        
+        ---
+      
+        
+        ## Deployment: Engine | 0x000000c9572b8a9A638f238510aF4E90a4E365ee
+  
+        **Engine Contract:** https://etherscan.io/address/0x000000c9572b8a9A638f238510aF4E90a4E365ee#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Frederik Vanhoutte
+        - **Token Name:** Art Blocks Studio | 81
+        - **Token Ticker:** ABSTUDIO_81
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0xBc52Ba97d7EB5d5302FA549cB3FE7b419aef6FAD
+        - **Super Admin Address:** 0x69e2aDf92dd9E69400D6a7ad6247A3d60BBEc3AF        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-81-mainnet
+        
+        ---
+      
+        
+        ## Deployment: Engine Flex | 0x0000EDe7875F9Ef0AaE96100ceEB0040b85274e6
+  
+        **Engine Contract:** https://etherscan.io/address/0x0000EDe7875F9Ef0AaE96100ceEB0040b85274e6#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Paolo Curtoni
+        - **Token Name:** Art Blocks Studio | 82
+        - **Token Ticker:** ABSTUDIO_82
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0xb5e86eD9d84583675ea88A772Adb6b08c05CFe9c
+        - **Super Admin Address:** 0xD32894CA871155b46d7704081c6b851A8bE45967        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-82-mainnet
+        
+        ---
+      
+        
+        ## Deployment: Engine | 0x000004c65Ceb3182BE720037fb001a6E1962acB4
+  
+        **Engine Contract:** https://etherscan.io/address/0x000004c65Ceb3182BE720037fb001a6E1962acB4#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Aleksandra Jovanic
+        - **Token Name:** Art Blocks Studio | 83
+        - **Token Ticker:** ABSTUDIO_83
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x3A2F6962b56b2F5179aE2A38e5D41ae9C7310ac0
+        - **Super Admin Address:** 0xDE6C922021e77D7E3E615331000370d9153dA9AB        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-83-mainnet
+        
+        ---
+      
+        
+        ## Deployment: Engine | 0x0000528A4A3859020A7970110c16941a00FADf00
+  
+        **Engine Contract:** https://etherscan.io/address/0x0000528A4A3859020A7970110c16941a00FADf00#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Julian-Anthony Hespenheide
+        - **Token Name:** Art Blocks Studio | 84
+        - **Token Ticker:** ABSTUDIO_84
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0xDA1441d7bE555B4151e6d05D1A86fC5dd0639d46
+        - **Super Admin Address:** 0x20c485b466b233f5a54DBC2804fff8ad8c4c5384        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-84-mainnet
+        
+        ---
+      
+        
+        ## Deployment: Engine Flex | 0x00000041a2980e05cB4FBBBC735F17EfF443b592
+  
+        **Engine Contract:** https://etherscan.io/address/0x00000041a2980e05cB4FBBBC735F17EfF443b592#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Amy Goodchild
+        - **Token Name:** Art Blocks Studio | 85
+        - **Token Ticker:** ABSTUDIO_85
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0xFDB4092BB65c35280f735AEA2f31F443FE9C9123
+        - **Super Admin Address:** 0x66a3716a8aedc2aF71b3599251a89d7829c1508B        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-85-mainnet
+        
+        ---
+      
+        
+        ## Deployment: Engine | 0x00000024CA7F3Cfba7084e3289a9048D79261B29
+  
+        **Engine Contract:** https://etherscan.io/address/0x00000024CA7F3Cfba7084e3289a9048D79261B29#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Gustavo Munoz
+        - **Token Name:** Art Blocks Studio | 86
+        - **Token Ticker:** ABSTUDIO_86
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0xd8DAF11bDaCa83D0D6a34B603187B3AdD082F64A
+        - **Super Admin Address:** 0x1e9a926493fdc4A4B2Aef98fb9FF8D90C27527D1        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-86-mainnet
+        
+        ---
+      
+        
+        ## Deployment: Engine Flex | 0x000000B394cac6057D87Df835bea27844b3E2828
+  
+        **Engine Contract:** https://etherscan.io/address/0x000000B394cac6057D87Df835bea27844b3E2828#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** HAL09999
+        - **Token Name:** Art Blocks Studio | 87
+        - **Token Ticker:** ABSTUDIO_87
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0xEc001e3f95A0cA7cA8F8e12DeE7a8663732A4584
+        - **Super Admin Address:** 0xE4d9C51F0fd017A3CFD31c1674f5C44864877f19        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-87-mainnet
+        
+        ---
+      
+        
