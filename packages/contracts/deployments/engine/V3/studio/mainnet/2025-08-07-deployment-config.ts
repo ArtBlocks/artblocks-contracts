@@ -127,7 +127,7 @@ export const deployConfigDetailsArray = [
     // 0 for Engine, 1 for Engine Flex
     engineCoreContractType: 0,
     // prod-only: see efficient_addresses...txt in network directories for a list of efficient salts
-    salt: "0x0000000000000000000000000000000000000000f7634f1ab331e118b00100e0",
+    salt: "0x0000000000000000000000000000000000000000f7634f1ab3310225e60100e0",
     // INCREMENT THESE NUMBERS FOR EACH NEW STUDIO DEPLOYMENT
     tokenName: "Art Blocks Studio | 83",
     tokenTicker: "ABSTUDIO_83",
