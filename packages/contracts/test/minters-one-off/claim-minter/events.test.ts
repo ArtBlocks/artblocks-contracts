@@ -18,7 +18,6 @@ import {
   PMP_AUTH_ENUM,
   PMP_PARAM_TYPE_ENUM,
 } from "../../web3call/PMP/pmpTestUtils";
-import { constants } from "ethers";
 
 interface T_ClaimMinterTestConfig extends T_Config {
   genArt721Core: GenArt721CoreV3_Engine;
@@ -146,7 +145,7 @@ runForEach.forEach((params) => {
 
         await expect(config.minter.connect(config.accounts.deployer).preMint(1))
           .to.emit(config.genArt721Core, "Mint")
-          .withArgs(config.minter.address, testValues.tokenIdOne);
+          .withArgs(config.minter.address, testValues.tokenIdZero);
       });
     });
 
