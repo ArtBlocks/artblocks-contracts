@@ -34,7 +34,7 @@ interface IRelic {
  * @author Art Blocks Inc.
  * @notice This hook verifies ownership of any custom squiggle PostParam setting,
  * and injects the squiggle's token hash into the token's PMPs if configured.
- * It supports delegate.xyz V1 and V2, and also allows squiggle #9999 for any address that
+ * It supports delegate.xyz V1 and V2, and also allows squiggle #9998 for any address that
  * inscribed the squiggle Relic contract on eth mainnet.
  * It also allows resetting the squiggle token back to default #1981.
  * This hook contract has logic for both the augment and configure hooks.
@@ -57,10 +57,10 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
     bytes32 public constant DELEGATION_REGISTRY_TOKEN_OWNER_RIGHTS =
         bytes32("postmintparameters");
 
-    uint256 public constant FINAL_SQUIGGLE_TOKEN_ID = 9999;
+    uint256 public constant FINAL_SQUIGGLE_TOKEN_ID = 9998;
     uint256 public constant DEFAULT_SQUIGGLE_TOKEN_ID = 1981;
-    bytes32 internal constant _HASHED_KEY_FEATURED_SQUIGGLE =
-        keccak256("Featured_Squiggle");
+    bytes32 internal constant _HASHED_KEY_SPLASH_SCREEN_SQUIGGLE =
+        keccak256("Splash Screen Squiggle (ROM)");
 
     /**
      * @notice Constructor
@@ -91,7 +91,9 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
         IPMPV0.PMPInput calldata pmpInput
     ) external view override {
         // only verify ownership if the squiggle token id is being configured
-        if (keccak256(bytes(pmpInput.key)) == _HASHED_KEY_FEATURED_SQUIGGLE) {
+        if (
+            keccak256(bytes(pmpInput.key)) == _HASHED_KEY_SPLASH_SCREEN_SQUIGGLE
+        ) {
             // @dev can assume squiggle token id is configured as a uint256, so will show up as configuredValue
             uint256 squiggleTokenId = uint256(pmpInput.configuredValue);
 
@@ -149,7 +151,7 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
         for (uint256 i = 0; i < originalLength; i++) {
             if (
                 keccak256(bytes(tokenParams[i].key)) ==
-                _HASHED_KEY_FEATURED_SQUIGGLE
+                _HASHED_KEY_SPLASH_SCREEN_SQUIGGLE
             ) {
                 squiggleTokenId = parseUint(tokenParams[i].value);
                 // skip the squiggle token id and assign later if appropriate
@@ -179,11 +181,11 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
 
         // inject the squiggles ID and hash into the new array
         augmentedTokenParams[j++] = IWeb3Call.TokenParam({
-            key: "Featured_Squiggle",
+            key: "Splash Screen Squiggle (ROM)",
             value: squiggleTokenId.toString()
         });
         augmentedTokenParams[j] = IWeb3Call.TokenParam({
-            key: "Featured_Squiggle_Hash",
+            key: "Splash Screen Squiggle Hash",
             value: uint256(squiggleTokenHash).toHexString()
         });
 
@@ -224,11 +226,11 @@ contract LiftHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
     }
 
     /**
-     * @notice Checks if the liftOwner is configuring squiggle 9999.
+     * @notice Checks if the liftOwner is configuring squiggle 9998.
      * If so, it verifies that the liftOwner is inscribed in the relic contract.
      * @param squiggleTokenId The token id of the squiggle to check access for.
      * @param liftOwner The address of the lift owner to check access for.
-     * @return bool True if the liftOwner is configuring squiggle 9999 and is
+     * @return bool True if the liftOwner is configuring squiggle 9998 and is
      * inscribed in the relic contract, false otherwise.
      */
     function passesRelicCheck(
