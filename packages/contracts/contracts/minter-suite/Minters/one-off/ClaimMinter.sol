@@ -240,10 +240,10 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             tokenNumber <= maxInvocations,
             "Token number exceeds maximum invocations"
         );
-        // check that token is unclaimed
+        // check that token ID is unclaimed
         // @dev Valid token IDs are operationally handled by frontend and admin pre-minting.
         // Admin validates token ID ranges and pre-mints tokens to this contract before claiming is enabled.
-        require(!isTokenClaimed(tokenNumber), "Token already claimed");
+        require(!isTokenClaimed(tokenId), "Token already claimed");
         // check that claiming has started
         require(timestampStart != 0, "Claiming not configured");
         require(block.timestamp >= timestampStart, "Claiming not yet started");
@@ -338,12 +338,11 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
 
     /**
      * @notice Checks if a token is claimed using bitmap storage
-     * @param tokenInvocation The token invocation number
+     * @param tokenId The token ID to check
      * @return True if the token is claimed
      */
-    function isTokenClaimed(
-        uint256 tokenInvocation
-    ) public view returns (bool) {
+    function isTokenClaimed(uint256 tokenId) public view returns (bool) {
+        uint256 tokenInvocation = ABHelpers.tokenIdToTokenNumber(tokenId);
         (uint256 bitmapIndex, uint8 bitPosition) = _getBitmapPosition(
             tokenInvocation
         );

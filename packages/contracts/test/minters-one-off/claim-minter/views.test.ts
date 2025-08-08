@@ -58,6 +58,11 @@ runForEach.forEach((params) => {
         config.accounts.deployer,
         config.accounts.artist.address
       );
+      await safeAddProject(
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
+      );
       const delegateRegistry = await deployAndGet(
         config,
         "DelegateRegistry",

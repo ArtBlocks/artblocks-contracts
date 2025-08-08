@@ -61,6 +61,12 @@ runForEach.forEach((params) => {
         config.accounts.artist.address
       );
 
+      await safeAddProject(
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
+      );
+
       const delegateRegistry = await deployAndGet(
         config,
         "DelegateRegistry",
@@ -158,7 +164,7 @@ runForEach.forEach((params) => {
           });
 
         const token0Price = testValues.basePriceInWei;
-        await config.minter
+        const tx = await config.minter
           .connect(config.accounts.user2)
           .claimToken(testValues.tokenIdZero, {
             value: token0Price,
@@ -172,7 +178,6 @@ runForEach.forEach((params) => {
           .claimToken(testValues.tokenIdOne, {
             value: token1Price,
           });
-
         // Verify tokens are claimed
         expect(await config.minter.isTokenClaimed(testValues.tokenIdZero)).to.be
           .true;
@@ -317,7 +322,7 @@ runForEach.forEach((params) => {
             config.genArt721Core,
             "ERC721NonexistentToken"
           )
-          .withArgs(0);
+          .withArgs(testValues.tokenIdZero);
       });
 
       it("correctly calculates incremental pricing", async function () {

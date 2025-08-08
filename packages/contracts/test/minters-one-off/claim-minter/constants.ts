@@ -21,11 +21,11 @@ export const testValues = {
   timestampStart: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
   timestampPast: Math.floor(Date.now() / 1000) - 3600, // 1 hour ago
   amountToPreMint: 15,
-  tokenIdZero: 0,
-  tokenIdOne: 1000000,
-  tokenIdTwo: 2000000,
-  tokenIdThree: 3000000,
-  tokenIdFour: 4000000,
+  tokenIdZero: 1000000,
+  tokenIdOne: 1000001,
+  tokenIdTwo: 1000002,
+  tokenIdThree: 1000003,
+  tokenIdFour: 1000004,
   maxInvocations: 500,
 };
 
