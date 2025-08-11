@@ -129,9 +129,7 @@ runForEach.forEach((params) => {
       it("reverts when not core admin ACL", async function () {
         const config = await loadFixture(_beforeEach);
         await expectRevert(
-          config.minter
-            .connect(config.accounts.artist)
-            .preMint(testValues.maxInvocations),
+          config.minter.connect(config.accounts.artist).preMint(1),
           "Only Core AdminACL allowed"
         );
       });
@@ -153,16 +151,12 @@ runForEach.forEach((params) => {
           config.minter.address
         );
 
-        await config.minter
-          .connect(config.accounts.deployer)
-          .preMint(testValues.maxInvocations);
+        await config.minter.connect(config.accounts.deployer).preMint(1);
 
         const finalBalance = await config.genArt721Core.balanceOf(
           config.minter.address
         );
-        expect(finalBalance).to.equal(
-          initialBalance.add(testValues.maxInvocations)
-        );
+        expect(finalBalance).to.equal(initialBalance.add(1));
       });
     });
 

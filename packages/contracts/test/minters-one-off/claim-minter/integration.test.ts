@@ -138,9 +138,7 @@ runForEach.forEach((params) => {
       it("allows claiming tokens in arbitrary order", async function () {
         const config = await loadFixture(_beforeEach);
         // Pre-mint tokens
-        await config.minter
-          .connect(config.accounts.deployer)
-          .preMint(testValues.maxInvocations);
+        await config.minter.connect(config.accounts.deployer).preMint(3);
 
         // Configure pricing and timestamp
         await config.minter
@@ -198,12 +196,63 @@ runForEach.forEach((params) => {
         ).to.equal(config.accounts.user.address);
       });
 
+      // @dev this test is too memory intensive for coverage tests, succeeds locally
+      // it("allows claiming tokens of 500 tokens in arbitrary order", async function () {
+      //   const config = await loadFixture(_beforeEach);
+      //   // Pre-mint tokens
+      //   await config.minter
+      //     .connect(config.accounts.deployer)
+      //     .preMint(testValues.maxInvocations);
+
+      //   // Configure pricing and timestamp
+      //   await config.minter
+      //     .connect(config.accounts.deployer)
+      //     .configurePricePerTokenInWei(
+      //       testValues.basePriceInWei,
+      //       testValues.priceIncrementInWei
+      //     );
+      //   await config.minter
+      //     .connect(config.accounts.deployer)
+      //     .configureTimestampStart(testValues.timestampPast);
+
+      //   // Claim all 500 tokens
+      //   for (let i = 0; i < testValues.maxInvocations; i++) {
+      //     const tokenId = testValues.projectOne * 1000000 + i;
+      //     const tokenPrice = testValues.basePriceInWei.add(
+      //       testValues.priceIncrementInWei.mul(i)
+      //     );
+
+      //     await config.minter
+      //       .connect(config.accounts.user)
+      //       .claimToken(tokenId, {
+      //         value: tokenPrice,
+      //       });
+      //   }
+
+      //   // Verify all tokens are claimed
+      //   for (let i = 0; i < testValues.maxInvocations; i++) {
+      //     expect(await config.minter.isTokenClaimed(i)).to.be.true;
+      //   }
+
+      //   // Test that claiming token number 500 reverts
+      //   const token501Id =
+      //     testValues.projectOne * 1000000 + testValues.maxInvocations;
+      //   const token501Price = testValues.basePriceInWei.add(
+      //     testValues.priceIncrementInWei.mul(testValues.maxInvocations)
+      //   );
+
+      //   await expectRevert(
+      //     config.minter.connect(config.accounts.user).claimToken(token501Id, {
+      //       value: token501Price,
+      //     }),
+      //     "ERC721NonexistentToken(1000500)"
+      //   );
+      // });
+
       it("reverts when claiming before timestamp start", async function () {
         const config = await loadFixture(_beforeEach);
         // Pre-mint tokens
-        await config.minter
-          .connect(config.accounts.deployer)
-          .preMint(testValues.maxInvocations);
+        await config.minter.connect(config.accounts.deployer).preMint(1);
 
         // Configure pricing and future timestamp
         await config.minter
@@ -233,9 +282,7 @@ runForEach.forEach((params) => {
       it("reverts when claiming already claimed token", async function () {
         const config = await loadFixture(_beforeEach);
         // Pre-mint tokens
-        await config.minter
-          .connect(config.accounts.deployer)
-          .preMint(testValues.maxInvocations);
+        await config.minter.connect(config.accounts.deployer).preMint(2);
 
         // Configure pricing and timestamp
         await config.minter
@@ -269,9 +316,7 @@ runForEach.forEach((params) => {
       it("reverts when sending incorrect payment amount", async function () {
         const config = await loadFixture(_beforeEach);
         // Pre-mint tokens
-        await config.minter
-          .connect(config.accounts.deployer)
-          .preMint(testValues.maxInvocations);
+        await config.minter.connect(config.accounts.deployer).preMint(1);
 
         // Configure pricing and timestamp
         await config.minter
@@ -328,9 +373,7 @@ runForEach.forEach((params) => {
       it("correctly calculates incremental pricing", async function () {
         const config = await loadFixture(_beforeEach);
         // Pre-mint tokens
-        await config.minter
-          .connect(config.accounts.deployer)
-          .preMint(testValues.maxInvocations);
+        await config.minter.connect(config.accounts.deployer).preMint(3);
 
         // Configure pricing and timestamp
         await config.minter
