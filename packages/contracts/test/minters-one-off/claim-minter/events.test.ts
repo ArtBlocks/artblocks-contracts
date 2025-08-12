@@ -139,18 +139,6 @@ runForEach.forEach((params) => {
       return config as T_ClaimMinterTestConfig;
     }
 
-    // Fixture that pre-mints tokens and caches the result
-    async function _beforeEachWithPreMint() {
-      const config = await loadFixture(_beforeEach);
-
-      // Pre-mint tokens once and cache the result
-      await config.minter
-        .connect(config.accounts.deployer)
-        .preMint(testValues.maxInvocations);
-
-      return config as T_ClaimMinterTestConfig;
-    }
-
     describe("Mint events", async function () {
       it("emits Mint event when pre-minting tokens", async function () {
         const config = await loadFixture(_beforeEach);
@@ -163,9 +151,10 @@ runForEach.forEach((params) => {
 
     describe("Transfer events", async function () {
       it("emits Transfer event when claiming tokens", async function () {
-        const config = await loadFixture(_beforeEachWithPreMint);
+        const config = await loadFixture(_beforeEach);
 
-        // Configure
+        // Pre-mint and configure
+        await config.minter.connect(config.accounts.deployer).preMint(1);
         await config.minter
           .connect(config.accounts.deployer)
           .configurePricePerTokenInWei(
@@ -192,9 +181,10 @@ runForEach.forEach((params) => {
       });
 
       it("emits Transfer events for multiple claims", async function () {
-        const config = await loadFixture(_beforeEachWithPreMint);
+        const config = await loadFixture(_beforeEach);
 
-        // Configure
+        // Pre-mint and configure
+        await config.minter.connect(config.accounts.deployer).preMint(2);
         await config.minter
           .connect(config.accounts.deployer)
           .configurePricePerTokenInWei(
@@ -291,9 +281,10 @@ runForEach.forEach((params) => {
       });
 
       it("emits TokenClaimed event when claiming a token", async function () {
-        const config = await loadFixture(_beforeEachWithPreMint);
+        const config = await loadFixture(_beforeEach);
 
-        // Configure
+        // Pre-mint and configure
+        await config.minter.connect(config.accounts.deployer).preMint(1);
         await config.minter
           .connect(config.accounts.deployer)
           .configurePricePerTokenInWei(
@@ -320,9 +311,10 @@ runForEach.forEach((params) => {
       });
 
       it("emits TokenClaimed events for multiple claims with different prices", async function () {
-        const config = await loadFixture(_beforeEachWithPreMint);
+        const config = await loadFixture(_beforeEach);
 
-        // Configure
+        // Pre-mint and configure
+        await config.minter.connect(config.accounts.deployer).preMint(2);
         await config.minter
           .connect(config.accounts.deployer)
           .configurePricePerTokenInWei(
@@ -391,7 +383,7 @@ runForEach.forEach((params) => {
           .to.emit(config.minter, "TimestampStartConfigured")
           .withArgs(testValues.timestampPast);
 
-        // Pre-mint tokens (this test specifically tests the preMint event, so we keep it)
+        // Pre-mint tokens
         await expect(config.minter.connect(config.accounts.deployer).preMint(1))
           .to.emit(config.minter, "TokensPreMinted")
           .withArgs(1);
