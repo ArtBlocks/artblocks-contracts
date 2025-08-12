@@ -313,6 +313,31 @@ runForEach.forEach((params) => {
         );
       });
 
+      it("reverts when claiming a token on a different project", async function () {
+        const config = await loadFixture(_beforeEach);
+        // Pre-mint tokens
+        await config.minter.connect(config.accounts.deployer).preMint(2);
+
+        // Configure pricing and timestamp
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configurePricePerTokenInWei(
+            testValues.basePriceInWei,
+            testValues.priceIncrementInWei
+          );
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(testValues.timestampPast);
+
+        // Try to claim a token on a different project
+        await expectRevert(
+          config.minter.connect(config.accounts.user2).claimToken(3000000, {
+            value: testValues.basePriceInWei,
+          }),
+          "Only tokens on configured project can be claimed"
+        );
+      });
+
       it("reverts when sending incorrect payment amount", async function () {
         const config = await loadFixture(_beforeEach);
         // Pre-mint tokens

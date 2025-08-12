@@ -123,6 +123,23 @@ runForEach.forEach((params) => {
         const actualMaxInvocations = await config.minter.maxInvocations();
         expect(actualMaxInvocations).to.equal(testValues.maxInvocations);
       });
+
+      it("reverts when maxInvocations is 512 or greater", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        // Test with maxInvocations = 512 (should revert)
+        await expectRevert(
+          deployAndGet(config, "ClaimMinter", [
+            config.minterFilter.address,
+            config.genArt721Core.address,
+            config.pmpContract.address,
+            config.pseudorandomContract.address,
+            config.projectOne,
+            512, // maxInvocations = 512
+          ]),
+          "Max invocations must be less than 512 for bitmap support"
+        );
+      });
     });
 
     describe("preMint", async function () {

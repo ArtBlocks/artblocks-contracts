@@ -129,6 +129,10 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
         uint256 projectId_,
         uint256 maxInvocations_
     ) ReentrancyGuard() {
+        require(
+            maxInvocations_ < 512,
+            "Max invocations must be less than 512 for bitmap support"
+        );
         minterFilter = IMinterFilterV1(minterFilter_);
         coreContractAddress = coreContract_;
         pmpContract = IPMPV0(pmpContract_);
@@ -140,10 +144,10 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     }
 
     /**
-     * @notice Sets the base price in wei for token 0 and the price increment in wei.
+     * @notice Sets the base price in wei for token number 0 and the price increment in wei.
      * Only callable by the core contract's Admin ACL.
      * @dev This function sets the base price for the first token (token 0).
-     * The price for subsequent tokens is calculated as base price + (tokenId * priceIncrementInWei).
+     * The price for subsequent tokens is calculated as base price + (token number * priceIncrementInWei).
      * This allows for incremental pricing.
      * The base price must be set before users can claim tokens.
      * @param basePriceInWei_ Base price in wei for token 0.
@@ -164,7 +168,10 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
         // EFFECTS
         basePriceInWei = basePriceInWei_;
         priceIncrementInWei = priceIncrementInWei_;
-        emit PriceConfigured(basePriceInWei_, priceIncrementInWei_);
+        emit PriceConfigured({
+            basePriceInWei: basePriceInWei_,
+            priceIncrementInWei: priceIncrementInWei_
+        });
     }
 
     /**
@@ -234,6 +241,13 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
      * @param tokenId Token ID to claim.
      */
     function claimToken(uint256 tokenId) external payable nonReentrant {
+        // check that token belongs to the configured project
+        uint256 tokenProjectId = ABHelpers.tokenIdToProjectId(tokenId);
+        require(
+            tokenProjectId == projectId,
+            "Only tokens on configured project can be claimed"
+        );
+
         // check that token number is within allowed range
         uint256 tokenNumber = ABHelpers.tokenIdToTokenNumber(tokenId);
         require(
@@ -255,7 +269,10 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
         // mark token as claimed
         _markTokenClaimed(tokenNumber);
 
-        bytes32 hashSeed = _getPseudorandomAtomic(coreContractAddress, tokenId);
+        bytes32 hashSeed = _getPseudorandomAtomic({
+            coreContract: coreContractAddress,
+            tokenId: tokenId
+        });
 
         // INTERACTIONS
         IPMPV0.PMPInput[] memory pmpInputs = new IPMPV0.PMPInput[](1);
@@ -270,11 +287,11 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             configuredValueString: Strings.toHexString(uint256(hashSeed))
         });
         // this contract must be configured to be permitted to configure token params
-        pmpContract.configureTokenParams(
-            coreContractAddress,
-            tokenId,
-            pmpInputs
-        );
+        pmpContract.configureTokenParams({
+            coreContract: coreContractAddress,
+            tokenId: tokenId,
+            pmpInputs: pmpInputs
+        });
 
         // split revenue from sale
         // @dev no refund because previously verified msg.value == pricePerTokenInWei
@@ -289,12 +306,16 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
         // @dev ERC721 transfer event is sufficient for indexing, no additional
         // events needed as the transfer event captures the
         // claim action from this contract to the collector.
-        IERC721(coreContractAddress).safeTransferFrom(
-            address(this),
-            msg.sender,
-            tokenId
-        );
-        emit TokenClaimed(tokenId, msg.sender, requiredPrice);
+        IERC721(coreContractAddress).safeTransferFrom({
+            from: address(this),
+            to: msg.sender,
+            tokenId: tokenId
+        });
+        emit TokenClaimed({
+            tokenId: tokenId,
+            claimant: msg.sender,
+            price: requiredPrice
+        });
     }
 
     /**
