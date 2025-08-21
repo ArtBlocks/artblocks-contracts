@@ -24,7 +24,8 @@ import {ABHelpers} from "../../../libs/v0.8.x/ABHelpers.sol";
 /**
  * @title ClaimMinter contract that enables admin to pre-mint tokens for a project
  * and allows collectors to claim tokens in an arbitrary order with configurable
- * pricing. Compatible with shared minter suite, but only allows minting with
+ * pricing. Admin and artist are allowed to claim tokens before configured start time.
+ * Compatible with shared minter suite, but only allows minting with
  * a single core contract. This is designed to be used with a GenArt721CoreContractV3
  * flagship contract.
  * This is a one-off contract that has not been audited, but follows established
@@ -53,9 +54,10 @@ import {ABHelpers} from "../../../libs/v0.8.x/ABHelpers.sol";
  * Workflow:
  * 1. Admin pre-mints tokens using preMint function
  * 2. Admin configures pricing and timestamp start for the project
- * 3. Users can claim tokens once timestamp start is reached, in any order
- * 4. Each claim requires exact payment amount and marks token as claimed
- * 5. Token is transferred to claimant and revenue is split automatically
+ * 3. Artist and admin can claim tokens before timestamp start is reached
+ * 4. Users can claim tokens once timestamp start is reached, in any order
+ * 5. Each claim requires exact payment amount and marks token as claimed
+ * 6. Token is transferred to claimant and revenue is split automatically
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
@@ -230,11 +232,12 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
 
     /**
      * @notice Claims token `tokenId` by paying the required price.
-     * Available once claiming has started.
+     * Available once claiming has started, unless sender is artist or admin.
      * @dev This function allows users to claim pre-minted tokens by paying the exact price
      * calculated by priceByTokenIdInWei. The function checks that the token is not already
      * claimed, that claiming has started, and that the exact payment
-     * amount is provided. Upon successful claim, the token is marked as claimed, configured
+     * amount is provided. Only artist or admin are allowed to claim before configured start time.
+     * Upon successful claim, the token is marked as claimed, configured
      * with a pseudorandom hash seed via PMP, revenue is split automatically, and the token
      * is transferred to the claimant. This enables arbitrary claiming order where users can
      * claim any available token ID in any sequence.
@@ -258,9 +261,16 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
         // @dev Valid token IDs are operationally handled by frontend and admin pre-minting.
         // Admin validates token ID ranges and pre-mints tokens to this contract before claiming is enabled.
         require(!isTokenClaimed(tokenId), "Token already claimed");
-        // check that claiming has started
-        require(timestampStart != 0, "Claiming not configured");
-        require(block.timestamp >= timestampStart, "Claiming not yet started");
+        // check that claiming has started (unless sender is artist or admin)
+        if (timestampStart == 0 || block.timestamp < timestampStart) {
+            AuthLib.onlyCoreAdminACLOrArtist({
+                projectId: projectId,
+                coreContract: coreContractAddress,
+                sender: msg.sender,
+                contract_: address(this),
+                selector: this.claimToken.selector
+            });
+        }
         // check value of msg.value
         uint256 requiredPrice = _priceByTokenInvocationInWei(tokenNumber);
         require(msg.value == requiredPrice, "Only send price per token");

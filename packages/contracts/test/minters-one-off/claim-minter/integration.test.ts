@@ -20,6 +20,7 @@ import {
   PMP_PARAM_TYPE_ENUM,
 } from "../../web3call/PMP/pmpTestUtils";
 import { ONE_MINUTE } from "../../util/constants";
+import { BigNumber } from "ethers";
 
 interface T_ClaimMinterTestConfig extends T_Config {
   genArt721Core: GenArt721CoreV3_Engine;
@@ -135,6 +136,60 @@ runForEach.forEach((params) => {
     }
 
     describe("Complete claiming workflow", async function () {
+      it("allows artist to claim token before claiming is configured", async function () {
+        const config = await loadFixture(_beforeEach);
+        // Pre-mint tokens
+        await config.minter.connect(config.accounts.deployer).preMint(3);
+
+        // Configure pricing and timestamp
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configurePricePerTokenInWei(
+            testValues.basePriceInWei,
+            testValues.priceIncrementInWei
+          );
+        const token0Price = testValues.basePriceInWei;
+        await config.minter
+          .connect(config.accounts.artist)
+          .claimToken(testValues.tokenIdZero, {
+            value: token0Price,
+          });
+        // Verify tokens are claimed
+        expect(await config.minter.isTokenClaimed(testValues.tokenIdZero)).to.be
+          .true;
+
+        // Verify tokens are transferred to claimer (artist)
+        expect(
+          await config.genArt721Core.ownerOf(testValues.tokenIdZero)
+        ).to.equal(config.accounts.artist.address);
+      });
+      it("allows artist to claim token before claiming is configured", async function () {
+        const config = await loadFixture(_beforeEach);
+        // Pre-mint tokens
+        await config.minter.connect(config.accounts.deployer).preMint(3);
+
+        // Configure pricing and timestamp
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configurePricePerTokenInWei(
+            testValues.basePriceInWei,
+            testValues.priceIncrementInWei
+          );
+        const token0Price = testValues.basePriceInWei;
+        await config.minter
+          .connect(config.accounts.deployer)
+          .claimToken(testValues.tokenIdZero, {
+            value: token0Price,
+          });
+        // Verify tokens are claimed
+        expect(await config.minter.isTokenClaimed(testValues.tokenIdZero)).to.be
+          .true;
+
+        // Verify tokens are transferred to claimer (admin)
+        expect(
+          await config.genArt721Core.ownerOf(testValues.tokenIdZero)
+        ).to.equal(config.accounts.deployer.address);
+      });
       it("allows claiming tokens in arbitrary order", async function () {
         const config = await loadFixture(_beforeEach);
         // Pre-mint tokens
@@ -196,7 +251,7 @@ runForEach.forEach((params) => {
         ).to.equal(config.accounts.user.address);
       });
 
-      // @dev this test is too memory intensive for coverage tests, succeeds locally
+      // @dev these tests are too memory intensive for coverage tests, succeeds locally
       // it("allows claiming tokens of 500 tokens in arbitrary order", async function () {
       //   const config = await loadFixture(_beforeEach);
       //   // Pre-mint tokens
@@ -217,6 +272,66 @@ runForEach.forEach((params) => {
 
       //   // Claim all 500 tokens
       //   for (let i = 0; i < testValues.maxInvocations; i++) {
+      //     const tokenId = testValues.projectOne * 1000000 + i;
+      //     const tokenPrice = testValues.basePriceInWei.add(
+      //       testValues.priceIncrementInWei.mul(i)
+      //     );
+
+      //     await config.minter
+      //       .connect(config.accounts.user)
+      //       .claimToken(tokenId, {
+      //         value: tokenPrice,
+      //       });
+      //   }
+
+      //   // Verify all tokens are claimed
+      //   for (let i = 0; i < testValues.maxInvocations; i++) {
+      //     expect(await config.minter.isTokenClaimed(i)).to.be.true;
+      //   }
+
+      //   // Test that claiming token number 500 reverts
+      //   const token501Id =
+      //     testValues.projectOne * 1000000 + testValues.maxInvocations;
+      //   const token501Price = testValues.basePriceInWei.add(
+      //     testValues.priceIncrementInWei.mul(testValues.maxInvocations)
+      //   );
+
+      //   await expectRevert(
+      //     config.minter.connect(config.accounts.user).claimToken(token501Id, {
+      //       value: token501Price,
+      //     }),
+      //     "ERC721NonexistentToken(1000500)"
+      //   );
+      // });
+
+      // it("allows claiming tokens of 500 tokens in arbitrary order, after artist mints token 0", async function () {
+      //   const config = await loadFixture(_beforeEach);
+      //   // Pre-mint tokens
+      //   await config.minter
+      //     .connect(config.accounts.deployer)
+      //     .preMint(testValues.maxInvocations);
+
+      //   // Configure pricing and timestamp
+      //   await config.minter
+      //     .connect(config.accounts.deployer)
+      //     .configurePricePerTokenInWei(
+      //       testValues.basePriceInWei,
+      //       testValues.priceIncrementInWei
+      //     );
+      //   // artist claims token 0
+      //   await config.minter
+      //     .connect(config.accounts.artist)
+      //     .claimToken(testValues.tokenIdZero, {
+      //       value: testValues.basePriceInWei,
+      //     });
+
+      //   // configure timestamp start
+      //   await config.minter
+      //     .connect(config.accounts.deployer)
+      //     .configureTimestampStart(testValues.timestampPast);
+
+      //   // Claim remaining 499 tokens
+      //   for (let i = 1; i < testValues.maxInvocations; i++) {
       //     const tokenId = testValues.projectOne * 1000000 + i;
       //     const tokenPrice = testValues.basePriceInWei.add(
       //       testValues.priceIncrementInWei.mul(i)
@@ -275,7 +390,7 @@ runForEach.forEach((params) => {
             .claimToken(testValues.tokenIdZero, {
               value: testValues.basePriceInWei,
             }),
-          revertMessages.claimingNotYetStarted
+          "Only Artist or Core Admin ACL"
         );
       });
 
@@ -447,6 +562,53 @@ runForEach.forEach((params) => {
           .true;
       });
 
+      it("correctly calculates incremental pricing with a base price of 0", async function () {
+        const config = await loadFixture(_beforeEach);
+        // Pre-mint tokens
+        await config.minter.connect(config.accounts.deployer).preMint(3);
+
+        // Configure pricing and timestamp
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configurePricePerTokenInWei(0, testValues.priceIncrementInWei);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(testValues.timestampPast);
+
+        // Claim tokens and verify pricing
+        const token0Price = BigNumber.from(0);
+        const token1Price = token0Price.add(testValues.priceIncrementInWei);
+        const token2Price = token0Price.add(
+          testValues.priceIncrementInWei.mul(2)
+        );
+
+        await config.minter
+          .connect(config.accounts.user)
+          .claimToken(testValues.tokenIdZero, {
+            value: token0Price,
+          });
+
+        await config.minter
+          .connect(config.accounts.user2)
+          .claimToken(testValues.tokenIdOne, {
+            value: token1Price,
+          });
+
+        await config.minter
+          .connect(config.accounts.user2)
+          .claimToken(testValues.tokenIdTwo, {
+            value: token2Price,
+          });
+
+        // Verify all tokens are claimed
+        expect(await config.minter.isTokenClaimed(testValues.tokenIdZero)).to.be
+          .true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenIdOne)).to.be
+          .true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenIdTwo)).to.be
+          .true;
+      });
+
       it("reverts claiming when timestamp is 0 (unconfigured)", async function () {
         const config = await loadFixture(_beforeEach);
 
@@ -468,7 +630,7 @@ runForEach.forEach((params) => {
             .claimToken(testValues.tokenIdZero, {
               value: testValues.basePriceInWei,
             })
-        ).to.be.revertedWith("Claiming not configured");
+        ).to.be.revertedWith("Only Artist or Core Admin ACL");
       });
     });
   });
