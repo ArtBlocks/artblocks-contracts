@@ -25,7 +25,7 @@ const SQUIGGLE_GENART_V0_ADDRESS = "0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a";
 const RELIC_CONTRACT_ADDRESS = "0x9b917686DD68B68A780cB8Bf70aF46617A7b3f80";
 
 const liftPmp0 = getPMPInputConfig(
-  "Featured_Squiggle",
+  "Splash Screen Squiggle (ROM)",
   PMP_AUTH_ENUM.TokenOwner,
   PMP_PARAM_TYPE_ENUM.Uint256Range,
   0,
@@ -35,7 +35,7 @@ const liftPmp0 = getPMPInputConfig(
   "0x000000000000000000000000000000000000000000000000000000000000270F"
 );
 const liftPmp1 = getPMPInputConfig(
-  "PFP_Mode",
+  "Portrait Mode",
   PMP_AUTH_ENUM.TokenOwner,
   PMP_PARAM_TYPE_ENUM.Bool,
   0,
@@ -46,28 +46,28 @@ const liftPmp1 = getPMPInputConfig(
 );
 
 const pmpInputPFPModeTrue = getPMPInput(
-  "PFP_Mode",
+  "Portrait Mode",
   PMP_PARAM_TYPE_ENUM.Bool,
   "0x0000000000000000000000000000000000000000000000000000000000000001",
   false,
   ""
 );
 const pmpInputSquiggle9209 = getPMPInput(
-  "Featured_Squiggle",
+  "Splash Screen Squiggle (ROM)",
   PMP_PARAM_TYPE_ENUM.Uint256Range,
   "0x00000000000000000000000000000000000000000000000000000000000023F9",
   false,
   ""
 );
-const pmpInputSquiggle9999 = getPMPInput(
-  "Featured_Squiggle",
+const pmpInputSquiggle9998 = getPMPInput(
+  "Splash Screen Squiggle (ROM)",
   PMP_PARAM_TYPE_ENUM.Uint256Range,
-  "0x000000000000000000000000000000000000000000000000000000000000270F",
+  "0x000000000000000000000000000000000000000000000000000000000000270E",
   false,
   ""
 );
 const pmpInputSquiggle1981 = getPMPInput(
-  "Featured_Squiggle",
+  "Splash Screen Squiggle (ROM)",
   PMP_PARAM_TYPE_ENUM.Uint256Range,
   "0x00000000000000000000000000000000000000000000000000000000000007BD",
   false,
@@ -154,7 +154,7 @@ describe("test forking mainnet - LiftHooks", async function () {
         .configureTokenParams(coreAddress, token0, [pmpInputPFPModeTrue]);
       const postParams1 = await pmpV0.getTokenParams(coreAddress, token0);
       expect(postParams1.length).to.equal(1);
-      expect(postParams1[0].key).to.equal("PFP_Mode");
+      expect(postParams1[0].key).to.equal("Portrait Mode");
       expect(postParams1[0].value).to.equal("true");
 
       // fail auth check while assigning unowned squiggle token id
@@ -166,7 +166,7 @@ describe("test forking mainnet - LiftHooks", async function () {
       );
       const postParams2 = await pmpV0.getTokenParams(coreAddress, token0);
       expect(postParams2.length).to.equal(1);
-      expect(postParams2[0].key).to.equal("PFP_Mode");
+      expect(postParams2[0].key).to.equal("Portrait Mode");
       expect(postParams2[0].value).to.equal("true");
 
       // pass auth check while assigning owned squiggle token id - confirm all pmp params returned (squiggle + hash)
@@ -183,9 +183,9 @@ describe("test forking mainnet - LiftHooks", async function () {
         .configureTokenParams(coreAddress, token1, [pmpInputSquiggle9209]);
       const postParams3 = await pmpV0.getTokenParams(coreAddress, token1);
       expect(postParams3.length).to.equal(2);
-      expect(postParams3[0].key).to.equal("Featured_Squiggle");
+      expect(postParams3[0].key).to.equal("Splash Screen Squiggle (ROM)");
       expect(postParams3[0].value).to.equal(squiggleTokenId.toString());
-      expect(postParams3[1].key).to.equal("Featured_Squiggle_Hash");
+      expect(postParams3[1].key).to.equal("Splash Screen Squiggle Hash");
       expect(postParams3[1].value).to.equal(
         "0x56461a01b69faeffeaa342cd081d753c0b98f9863f60600541a391a093a17275"
       );
@@ -196,28 +196,28 @@ describe("test forking mainnet - LiftHooks", async function () {
         .configureTokenParams(coreAddress, token1, [pmpInputPFPModeTrue]);
       const postParams4 = await pmpV0.getTokenParams(coreAddress, token1);
       expect(postParams4.length).to.equal(3);
-      expect(postParams4[0].key).to.equal("PFP_Mode");
+      expect(postParams4[0].key).to.equal("Portrait Mode");
       expect(postParams4[0].value).to.equal("true");
-      expect(postParams4[1].key).to.equal("Featured_Squiggle");
+      expect(postParams4[1].key).to.equal("Splash Screen Squiggle (ROM)");
       expect(postParams4[1].value).to.equal(squiggleTokenId.toString());
-      expect(postParams4[2].key).to.equal("Featured_Squiggle_Hash");
+      expect(postParams4[2].key).to.equal("Splash Screen Squiggle Hash");
       expect(postParams4[2].value).to.equal(
         "0x56461a01b69faeffeaa342cd081d753c0b98f9863f60600541a391a093a17275"
       );
 
-      // fail auth check while assigning squiggle 9999 (relic) from unsigned address
+      // fail auth check while assigning squiggle 9998 (relic) from unsigned address
       await expectRevert(
         pmpV0
           .connect(impersonatedArtist)
-          .configureTokenParams(coreAddress, token0, [pmpInputSquiggle9999]),
+          .configureTokenParams(coreAddress, token0, [pmpInputSquiggle9998]),
         revertMessages.failAuth
       );
       const postParams5 = await pmpV0.getTokenParams(coreAddress, token0);
       expect(postParams5.length).to.equal(1);
-      expect(postParams5[0].key).to.equal("PFP_Mode");
+      expect(postParams5[0].key).to.equal("Portrait Mode");
       expect(postParams5[0].value).to.equal("true");
 
-      // pass auth check while assigning squiggle 9999 (relic) from signed address
+      // pass auth check while assigning squiggle 9998 (relic) from signed address
       const relicSignerAddress = "0x816B2D8daD051716A58271d484e5cC12fBf5096A";
       const impersonatedRelicSigner =
         await ethers.getImpersonatedSigner(relicSignerAddress);
@@ -232,14 +232,14 @@ describe("test forking mainnet - LiftHooks", async function () {
       const token2 = projectId.mul(1_000_000).add(2);
       await pmpV0
         .connect(impersonatedRelicSigner)
-        .configureTokenParams(coreAddress, token2, [pmpInputSquiggle9999]);
+        .configureTokenParams(coreAddress, token2, [pmpInputSquiggle9998]);
       const postParams6 = await pmpV0.getTokenParams(coreAddress, token2);
       expect(postParams6.length).to.equal(2);
-      expect(postParams6[0].key).to.equal("Featured_Squiggle");
-      expect(postParams6[0].value).to.equal("9999");
-      expect(postParams6[1].key).to.equal("Featured_Squiggle_Hash");
+      expect(postParams6[0].key).to.equal("Splash Screen Squiggle (ROM)");
+      expect(postParams6[0].value).to.equal("9998");
+      expect(postParams6[1].key).to.equal("Splash Screen Squiggle Hash");
       expect(postParams6[1].value).to.equal(
-        "0x0eefe6dcaed22a8dce481c38a11308682fd61b79463878f74f3144015316dcca"
+        "0x1bb4bf64d751340b093e83816c1044ff0534e6fec12f36e6b64a1494741ea815"
       );
 
       // delegate from squiggle 9209 owner to relic 0 owner, delegate v1
@@ -262,11 +262,11 @@ describe("test forking mainnet - LiftHooks", async function () {
         .configureTokenParams(coreAddress, token0, [pmpInputSquiggle9209]);
       const postParams7 = await pmpV0.getTokenParams(coreAddress, token0);
       expect(postParams7.length).to.equal(3);
-      expect(postParams7[0].key).to.equal("PFP_Mode");
+      expect(postParams7[0].key).to.equal("Portrait Mode");
       expect(postParams7[0].value).to.equal("true");
-      expect(postParams7[1].key).to.equal("Featured_Squiggle");
+      expect(postParams7[1].key).to.equal("Splash Screen Squiggle (ROM)");
       expect(postParams7[1].value).to.equal(squiggleTokenId.toString());
-      expect(postParams7[2].key).to.equal("Featured_Squiggle_Hash");
+      expect(postParams7[2].key).to.equal("Splash Screen Squiggle Hash");
       expect(postParams7[2].value).to.equal(
         "0x56461a01b69faeffeaa342cd081d753c0b98f9863f60600541a391a093a17275"
       );
@@ -282,11 +282,11 @@ describe("test forking mainnet - LiftHooks", async function () {
         );
       const postParams8 = await pmpV0.getTokenParams(coreAddress, token0);
       expect(postParams8.length).to.equal(3);
-      expect(postParams8[0].key).to.equal("PFP_Mode");
+      expect(postParams8[0].key).to.equal("Portrait Mode");
       expect(postParams8[0].value).to.equal("true");
-      expect(postParams8[1].key).to.equal("Featured_Squiggle");
+      expect(postParams8[1].key).to.equal("Splash Screen Squiggle (ROM)");
       expect(postParams8[1].value).to.equal(squiggleTokenId.toString());
-      expect(postParams8[2].key).to.equal("Featured_Squiggle_Hash");
+      expect(postParams8[2].key).to.equal("Splash Screen Squiggle Hash");
       expect(postParams8[2].value).to.equal(
         "0x56461a01b69faeffeaa342cd081d753c0b98f9863f60600541a391a093a17275"
       );
@@ -319,11 +319,11 @@ describe("test forking mainnet - LiftHooks", async function () {
         .configureTokenParams(coreAddress, token0, [pmpInputSquiggle9209]);
       const postParams9 = await pmpV0.getTokenParams(coreAddress, token0);
       expect(postParams9.length).to.equal(3);
-      expect(postParams9[0].key).to.equal("PFP_Mode");
+      expect(postParams9[0].key).to.equal("Portrait Mode");
       expect(postParams9[0].value).to.equal("true");
-      expect(postParams9[1].key).to.equal("Featured_Squiggle");
+      expect(postParams9[1].key).to.equal("Splash Screen Squiggle (ROM)");
       expect(postParams9[1].value).to.equal(squiggleTokenId.toString());
-      expect(postParams9[2].key).to.equal("Featured_Squiggle_Hash");
+      expect(postParams9[2].key).to.equal("Splash Screen Squiggle Hash");
       expect(postParams9[2].value).to.equal(
         "0x56461a01b69faeffeaa342cd081d753c0b98f9863f60600541a391a093a17275"
       );
@@ -340,11 +340,11 @@ describe("test forking mainnet - LiftHooks", async function () {
         );
       const postParams10 = await pmpV0.getTokenParams(coreAddress, token0);
       expect(postParams10.length).to.equal(3);
-      expect(postParams10[0].key).to.equal("PFP_Mode");
+      expect(postParams10[0].key).to.equal("Portrait Mode");
       expect(postParams10[0].value).to.equal("true");
-      expect(postParams10[1].key).to.equal("Featured_Squiggle");
+      expect(postParams10[1].key).to.equal("Splash Screen Squiggle (ROM)");
       expect(postParams10[1].value).to.equal(squiggleTokenId.toString());
-      expect(postParams10[2].key).to.equal("Featured_Squiggle_Hash");
+      expect(postParams10[2].key).to.equal("Splash Screen Squiggle Hash");
       expect(postParams10[2].value).to.equal(
         "0x56461a01b69faeffeaa342cd081d753c0b98f9863f60600541a391a093a17275"
       );
@@ -360,10 +360,10 @@ describe("test forking mainnet - LiftHooks", async function () {
       // verify all postparams are still present
       const postParams11 = await pmpV0.getTokenParams(coreAddress, token0);
       expect(postParams11.length).to.equal(3);
-      expect(postParams11[0].key).to.equal("PFP_Mode");
-      expect(postParams11[1].key).to.equal("Featured_Squiggle");
+      expect(postParams11[0].key).to.equal("Portrait Mode");
+      expect(postParams11[1].key).to.equal("Splash Screen Squiggle (ROM)");
       expect(postParams11[1].value).to.equal(squiggleTokenId.toString());
-      expect(postParams11[2].key).to.equal("Featured_Squiggle_Hash");
+      expect(postParams11[2].key).to.equal("Splash Screen Squiggle Hash");
       expect(postParams11[2].value).to.equal(
         "0x56461a01b69faeffeaa342cd081d753c0b98f9863f60600541a391a093a17275"
       );
@@ -374,7 +374,7 @@ describe("test forking mainnet - LiftHooks", async function () {
         .configureTokenParams(coreAddress, token0, [pmpInputSquiggle1981]);
       const postParams12 = await pmpV0.getTokenParams(coreAddress, token0);
       expect(postParams12.length).to.equal(1);
-      expect(postParams12[0].key).to.equal("PFP_Mode");
+      expect(postParams12[0].key).to.equal("Portrait Mode");
       expect(postParams12[0].value).to.equal("true");
     });
   });
