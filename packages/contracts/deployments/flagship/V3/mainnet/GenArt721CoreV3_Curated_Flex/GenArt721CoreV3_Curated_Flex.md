@@ -12,7 +12,7 @@ The following were the inputs used to get initcode for deployment, via `scripts/
 
 ```typescript
 const engineConfiguration = {
-  tokenName: "Art Blocks", // TODO - may want to update this to be unique...
+  tokenName: "Art Blocks",
   tokenSymbol: "BLOCKS",
   renderProviderAddress: "0x21A89ef8c577ebaCfe8198644222B49DFD9284F9", // for primary sales - after deployment, update secondary sales address
   platformProviderAddress: "0x0000000000000000000000000000000000000000",
@@ -89,6 +89,6 @@ III. Follow-on configuring:
 ## Off-chain steps:
 
 - hasura metadata update to contracts_metadata:
-  - `bucket_name` = `artblocks-mainnet` // TODO - we may need to update this to `artblocks-flex-onchain-mainnet`
-  - `name` = "artblocks" // TODO - we may need to update this to `artblocks-flex-onchain`
+  - `bucket_name` = `artblocks-mainnet` // use same bucket as previous curated core contract
+  - `name` = "artblocks-curated-flex-onchain" // use different name from previous curated core contract due to db constraint
   - `default_vertical_name` = "curated"
