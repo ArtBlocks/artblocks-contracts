@@ -151,12 +151,12 @@ runForEach.forEach((params) => {
         const token0Price = testValues.basePriceInWei;
         await config.minter
           .connect(config.accounts.artist)
-          .claimToken(testValues.tokenIdZero, {
+          .claimToken(testValues.tokenNumberZero, {
             value: token0Price,
           });
         // Verify tokens are claimed
-        expect(await config.minter.isTokenClaimed(testValues.tokenIdZero)).to.be
-          .true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenNumberZero))
+          .to.be.true;
 
         // verify wallet has claimed
         expect(
@@ -183,12 +183,12 @@ runForEach.forEach((params) => {
         const token0Price = testValues.basePriceInWei;
         await config.minter
           .connect(config.accounts.deployer)
-          .claimToken(testValues.tokenIdZero, {
+          .claimToken(testValues.tokenNumberZero, {
             value: token0Price,
           });
         // Verify tokens are claimed
-        expect(await config.minter.isTokenClaimed(testValues.tokenIdZero)).to.be
-          .true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenNumberZero))
+          .to.be.true;
 
         // verify wallet has claimed
         expect(
@@ -222,14 +222,14 @@ runForEach.forEach((params) => {
         );
         await config.minter
           .connect(config.accounts.user)
-          .claimToken(testValues.tokenIdTwo, {
+          .claimToken(testValues.tokenNumberTwo, {
             value: token2Price,
           });
 
         const token0Price = testValues.basePriceInWei;
         const tx = await config.minter
           .connect(config.accounts.user2)
-          .claimToken(testValues.tokenIdZero, {
+          .claimToken(testValues.tokenNumberZero, {
             value: token0Price,
           });
 
@@ -238,7 +238,7 @@ runForEach.forEach((params) => {
         );
         await config.minter
           .connect(config.accounts.deployer)
-          .claimToken(testValues.tokenIdOne, {
+          .claimToken(testValues.tokenNumberOne, {
             value: token1Price,
           });
 
@@ -249,18 +249,18 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.user2)
-            .claimToken(testValues.tokenIdThree, {
+            .claimToken(testValues.tokenNumberThree, {
               value: token3Price,
             }),
           "Wallet has already claimed"
         );
         // Verify tokens are claimed
-        expect(await config.minter.isTokenClaimed(testValues.tokenIdZero)).to.be
-          .true;
-        expect(await config.minter.isTokenClaimed(testValues.tokenIdOne)).to.be
-          .true;
-        expect(await config.minter.isTokenClaimed(testValues.tokenIdTwo)).to.be
-          .true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenNumberZero))
+          .to.be.true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenNumberOne)).to
+          .be.true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenNumberTwo)).to
+          .be.true;
 
         // verify wallets have claimed
         expect(
@@ -306,14 +306,14 @@ runForEach.forEach((params) => {
         );
         await config.minter
           .connect(config.accounts.user)
-          .claimToken(testValues.tokenIdTwo, {
+          .claimToken(testValues.tokenNumberTwo, {
             value: token2Price,
           });
 
         const token0Price = testValues.basePriceInWei;
         const tx = await config.minter
           .connect(config.accounts.user2)
-          .claimToken(testValues.tokenIdZero, {
+          .claimToken(testValues.tokenNumberZero, {
             value: token0Price,
           });
 
@@ -322,16 +322,16 @@ runForEach.forEach((params) => {
         );
         await config.minter
           .connect(config.accounts.deployer)
-          .claimToken(testValues.tokenIdOne, {
+          .claimToken(testValues.tokenNumberOne, {
             value: token1Price,
           });
         // Verify tokens are claimed
-        expect(await config.minter.isTokenClaimed(testValues.tokenIdZero)).to.be
-          .true;
-        expect(await config.minter.isTokenClaimed(testValues.tokenIdOne)).to.be
-          .true;
-        expect(await config.minter.isTokenClaimed(testValues.tokenIdTwo)).to.be
-          .true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenNumberZero))
+          .to.be.true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenNumberOne)).to
+          .be.true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenNumberTwo)).to
+          .be.true;
 
         // verify wallets have claimed
         expect(
@@ -387,12 +387,11 @@ runForEach.forEach((params) => {
       //       "0x8AC7230489E80000", // 10 ETH
       //     ]);
 
-      //     const tokenId = testValues.projectOne * 1000000 + i;
       //     const tokenPrice = testValues.basePriceInWei.add(
       //       testValues.priceIncrementInWei.mul(i)
       //     );
 
-      //     await config.minter.connect(userWallet).claimToken(tokenId, {
+      //     await config.minter.connect(userWallet).claimToken(i, {
       //       value: tokenPrice,
       //     });
 
@@ -407,16 +406,16 @@ runForEach.forEach((params) => {
       //   }
 
       //   // Test that claiming token number 500 reverts
-      //   const token501Id =
-      //     testValues.projectOne * 1000000 + testValues.maxInvocations;
       //   const token501Price = testValues.basePriceInWei.add(
       //     testValues.priceIncrementInWei.mul(testValues.maxInvocations)
       //   );
 
       //   await expectRevert(
-      //     config.minter.connect(config.accounts.user).claimToken(token501Id, {
-      //       value: token501Price,
-      //     }),
+      //     config.minter
+      //       .connect(config.accounts.user)
+      //       .claimToken(testValues.maxInvocations, {
+      //         value: token501Price,
+      //       }),
       //     "ERC721NonexistentToken(1000500)"
       //   );
       // });
@@ -438,7 +437,7 @@ runForEach.forEach((params) => {
       //   // artist claims token 0
       //   await config.minter
       //     .connect(config.accounts.artist)
-      //     .claimToken(testValues.tokenIdZero, {
+      //     .claimToken(testValues.tokenNumberZero, {
       //       value: testValues.basePriceInWei,
       //     });
 
@@ -460,12 +459,11 @@ runForEach.forEach((params) => {
       //       "0x8AC7230489E80000", // 10 ETH
       //     ]);
 
-      //     const tokenId = testValues.projectOne * 1000000 + i;
       //     const tokenPrice = testValues.basePriceInWei.add(
       //       testValues.priceIncrementInWei.mul(i)
       //     );
 
-      //     await config.minter.connect(userWallet).claimToken(tokenId, {
+      //     await config.minter.connect(userWallet).claimToken(i, {
       //       value: tokenPrice,
       //     });
 
@@ -480,16 +478,16 @@ runForEach.forEach((params) => {
       //   }
 
       //   // Test that claiming token number 500 reverts
-      //   const token501Id =
-      //     testValues.projectOne * 1000000 + testValues.maxInvocations;
       //   const token501Price = testValues.basePriceInWei.add(
       //     testValues.priceIncrementInWei.mul(testValues.maxInvocations)
       //   );
 
       //   await expectRevert(
-      //     config.minter.connect(config.accounts.user).claimToken(token501Id, {
-      //       value: token501Price,
-      //     }),
+      //     config.minter
+      //       .connect(config.accounts.user)
+      //       .claimToken(testValues.maxInvocations, {
+      //         value: token501Price,
+      //       }),
       //     "ERC721NonexistentToken(1000500)"
       //   );
       // });
@@ -517,7 +515,7 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .claimToken(testValues.tokenIdZero, {
+            .claimToken(testValues.tokenNumberZero, {
               value: testValues.basePriceInWei,
             }),
           "Only Artist or Core Admin ACL"
@@ -543,7 +541,7 @@ runForEach.forEach((params) => {
         // Claim token
         await config.minter
           .connect(config.accounts.user)
-          .claimToken(testValues.tokenIdZero, {
+          .claimToken(testValues.tokenNumberZero, {
             value: testValues.basePriceInWei,
           });
 
@@ -551,35 +549,10 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.user2)
-            .claimToken(testValues.tokenIdZero, {
+            .claimToken(testValues.tokenNumberZero, {
               value: testValues.basePriceInWei,
             }),
           revertMessages.tokenAlreadyClaimed
-        );
-      });
-
-      it("reverts when claiming a token on a different project", async function () {
-        const config = await loadFixture(_beforeEach);
-        // Pre-mint tokens
-        await config.minter.connect(config.accounts.deployer).preMint(2);
-
-        // Configure pricing and timestamp
-        await config.minter
-          .connect(config.accounts.deployer)
-          .configurePricePerTokenInWei(
-            testValues.basePriceInWei,
-            testValues.priceIncrementInWei
-          );
-        await config.minter
-          .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampPast);
-
-        // Try to claim a token on a different project
-        await expectRevert(
-          config.minter.connect(config.accounts.user2).claimToken(3000000, {
-            value: testValues.basePriceInWei,
-          }),
-          "Only tokens on configured project can be claimed"
         );
       });
 
@@ -606,7 +579,7 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .claimToken(testValues.tokenIdZero, {
+            .claimToken(testValues.tokenNumberZero, {
               value: incorrectPayment,
             }),
           revertMessages.onlySendPricePerToken
@@ -629,7 +602,7 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.user)
-            .claimToken(testValues.tokenIdZero, {
+            .claimToken(testValues.tokenNumberZero, {
               value: testValues.basePriceInWei,
             })
         )
@@ -667,29 +640,29 @@ runForEach.forEach((params) => {
 
         await config.minter
           .connect(config.accounts.user)
-          .claimToken(testValues.tokenIdZero, {
+          .claimToken(testValues.tokenNumberZero, {
             value: token0Price,
           });
 
         await config.minter
           .connect(config.accounts.artist)
-          .claimToken(testValues.tokenIdOne, {
+          .claimToken(testValues.tokenNumberOne, {
             value: token1Price,
           });
 
         await config.minter
           .connect(config.accounts.user2)
-          .claimToken(testValues.tokenIdTwo, {
+          .claimToken(testValues.tokenNumberTwo, {
             value: token2Price,
           });
 
         // Verify all tokens are claimed
-        expect(await config.minter.isTokenClaimed(testValues.tokenIdZero)).to.be
-          .true;
-        expect(await config.minter.isTokenClaimed(testValues.tokenIdOne)).to.be
-          .true;
-        expect(await config.minter.isTokenClaimed(testValues.tokenIdTwo)).to.be
-          .true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenNumberZero))
+          .to.be.true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenNumberOne)).to
+          .be.true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenNumberTwo)).to
+          .be.true;
 
         // verify wallets have claimed
         expect(
@@ -725,29 +698,29 @@ runForEach.forEach((params) => {
 
         await config.minter
           .connect(config.accounts.user)
-          .claimToken(testValues.tokenIdZero, {
+          .claimToken(testValues.tokenNumberZero, {
             value: token0Price,
           });
 
         await config.minter
           .connect(config.accounts.artist)
-          .claimToken(testValues.tokenIdOne, {
+          .claimToken(testValues.tokenNumberOne, {
             value: token1Price,
           });
 
         await config.minter
           .connect(config.accounts.user2)
-          .claimToken(testValues.tokenIdTwo, {
+          .claimToken(testValues.tokenNumberTwo, {
             value: token2Price,
           });
 
         // Verify all tokens are claimed
-        expect(await config.minter.isTokenClaimed(testValues.tokenIdZero)).to.be
-          .true;
-        expect(await config.minter.isTokenClaimed(testValues.tokenIdOne)).to.be
-          .true;
-        expect(await config.minter.isTokenClaimed(testValues.tokenIdTwo)).to.be
-          .true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenNumberZero))
+          .to.be.true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenNumberOne)).to
+          .be.true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenNumberTwo)).to
+          .be.true;
 
         // verify wallets have claimed
         expect(
@@ -779,7 +752,7 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.user)
-            .claimToken(testValues.tokenIdZero, {
+            .claimToken(testValues.tokenNumberZero, {
               value: testValues.basePriceInWei,
             })
         ).to.be.revertedWith("Only Artist or Core Admin ACL");

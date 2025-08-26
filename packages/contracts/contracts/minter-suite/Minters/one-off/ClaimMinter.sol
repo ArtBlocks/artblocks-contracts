@@ -49,7 +49,7 @@ import {ABHelpers} from "../../../libs/v0.8.x/ABHelpers.sol";
  * ----------------------------------------------------------------------------
  * Pricing Model:
  * - Base price is set per project for token 0
- * - Each subsequent token costs base price + (tokenId * PRICE_INCREMENT_IN_WEI)
+ * - Each subsequent token costs base price + (tokenNumber * PRICE_INCREMENT_IN_WEI)
  * ----------------------------------------------------------------------------
  * Workflow:
  * 1. Admin pre-mints tokens using preMint function
@@ -234,37 +234,28 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     }
 
     /**
-     * @notice Claims token `tokenId` by paying the required price.
+     * @notice Claims token `tokenNumber` by paying the required price.
      * Available once claiming has started, unless sender is artist or admin.
      * @dev This function allows users to claim one pre-minted token per wallet by paying the exact price
-     * calculated by priceByTokenIdInWei. The function checks that the token is not already
+     * calculated by _priceByTokenInvocationInWei. The function checks that the token is not already
      * claimed, that the wallet has not claimed a token yet, that claiming has started, and that the exact payment
      * amount is provided. Only artist or admin are allowed to claim before configured start time.
      * If a wallet has already claimed a token, the function will revert.
      * Upon successful claim, the token is marked as claimed, configured
      * with a pseudorandom hash seed via PMP, revenue is split automatically, and the token
      * is transferred to the claimant. This enables arbitrary claiming order where users can
-     * claim any available token ID in any sequence.
-     * @param tokenId Token ID to claim.
+     * claim any available token in any sequence.
+     * @param tokenNumber Token number to claim.
      */
-    function claimToken(uint256 tokenId) external payable nonReentrant {
-        // check that token belongs to the configured project
-        uint256 tokenProjectId = ABHelpers.tokenIdToProjectId(tokenId);
-        require(
-            tokenProjectId == projectId,
-            "Only tokens on configured project can be claimed"
-        );
-
+    function claimToken(uint256 tokenNumber) external payable nonReentrant {
         // check that token number is within allowed range
-        uint256 tokenNumber = ABHelpers.tokenIdToTokenNumber(tokenId);
         require(
             tokenNumber <= maxInvocations,
             "Token number exceeds maximum invocations"
         );
-        // check that token ID is unclaimed
-        // @dev Valid token IDs are operationally handled by frontend and admin pre-minting.
-        // Admin validates token ID ranges and pre-mints tokens to this contract before claiming is enabled.
-        require(!isTokenClaimed(tokenId), "Token already claimed");
+        // check that token number is unclaimed
+        // Admin validates token number ranges and pre-mints tokens to this contract before claiming is enabled.
+        require(!isTokenClaimed(tokenNumber), "Token already claimed");
         // check that wallet has not claimed a token yet
         require(!walletHasClaimed[msg.sender], "Wallet has already claimed");
         // check that claiming has started (unless sender is artist or admin)
@@ -280,13 +271,16 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
         // check value of msg.value
         uint256 requiredPrice = _priceByTokenInvocationInWei(tokenNumber);
         require(msg.value == requiredPrice, "Only send price per token");
-
         // EFFECTS
         // mark token as claimed
         _markTokenClaimed(tokenNumber);
         // mark wallet has claimed token
         walletHasClaimed[msg.sender] = true;
 
+        uint256 tokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber(
+            projectId,
+            tokenNumber
+        );
         bytes32 hashSeed = _getPseudorandomAtomic({
             coreContract: coreContractAddress,
             tokenId: tokenId
@@ -377,13 +371,12 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
 
     /**
      * @notice Checks if a token is claimed using bitmap storage
-     * @param tokenId The token ID to check
+     * @param tokenNumber The token number to check
      * @return True if the token is claimed
      */
-    function isTokenClaimed(uint256 tokenId) public view returns (bool) {
-        uint256 tokenInvocation = ABHelpers.tokenIdToTokenNumber(tokenId);
+    function isTokenClaimed(uint256 tokenNumber) public view returns (bool) {
         (uint256 bitmapIndex, uint8 bitPosition) = _getBitmapPosition(
-            tokenInvocation
+            tokenNumber
         );
         uint256 bitmap = claimedBitmaps[bitmapIndex];
         return BitMaps256.get(bitmap, bitPosition);

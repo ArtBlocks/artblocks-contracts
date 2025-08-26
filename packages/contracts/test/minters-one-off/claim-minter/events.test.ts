@@ -168,7 +168,7 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.user)
-            .claimToken(testValues.tokenIdZero, {
+            .claimToken(testValues.tokenNumberZero, {
               value: testValues.basePriceInWei,
             })
         )
@@ -199,7 +199,7 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.user)
-            .claimToken(testValues.tokenIdZero, {
+            .claimToken(testValues.tokenNumberZero, {
               value: testValues.basePriceInWei,
             })
         )
@@ -217,7 +217,7 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.user2)
-            .claimToken(testValues.tokenIdOne, {
+            .claimToken(testValues.tokenNumberOne, {
               value: token1Price,
             })
         )
@@ -298,7 +298,7 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.user)
-            .claimToken(testValues.tokenIdZero, {
+            .claimToken(testValues.tokenNumberZero, {
               value: testValues.basePriceInWei,
             })
         )
@@ -329,7 +329,7 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.user)
-            .claimToken(testValues.tokenIdZero, {
+            .claimToken(testValues.tokenNumberZero, {
               value: testValues.basePriceInWei,
             })
         )
@@ -347,7 +347,7 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.user2)
-            .claimToken(testValues.tokenIdOne, {
+            .claimToken(testValues.tokenNumberOne, {
               value: token1Price,
             })
         )
@@ -392,7 +392,7 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.user)
-            .claimToken(testValues.tokenIdZero, {
+            .claimToken(testValues.tokenNumberZero, {
               value: testValues.basePriceInWei,
             })
         )

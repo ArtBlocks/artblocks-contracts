@@ -49,14 +49,14 @@ interface IClaimMinter {
 
     /**
      * @notice Claims token `tokenId` by paying the required price.
-     * @param tokenId Token ID to claim.
+     * @param tokenNumber Token invocation number to claim.
      */
-    function claimToken(uint256 tokenId) external payable;
+    function claimToken(uint256 tokenNumber) external payable;
 
     /**
      * @notice Checks if a token is claimed using bitmap storage
-     * @param tokenId The token ID
+     * @param tokenNumber The token invocation number
      * @return True if the token is claimed
      */
-    function isTokenClaimed(uint256 tokenId) external view returns (bool);
+    function isTokenClaimed(uint256 tokenNumber) external view returns (bool);
 }

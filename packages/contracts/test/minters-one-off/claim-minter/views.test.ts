@@ -136,7 +136,7 @@ runForEach.forEach((params) => {
       it("returns false for unclaimed tokens", async function () {
         const config = await loadFixture(_beforeEach);
         const isClaimed = await config.minter.isTokenClaimed(
-          testValues.tokenIdZero
+          testValues.tokenNumberZero
         );
         expect(isClaimed).to.be.false;
       });
@@ -158,12 +158,12 @@ runForEach.forEach((params) => {
         // Claim token
         await config.minter
           .connect(config.accounts.user)
-          .claimToken(testValues.tokenIdZero, {
+          .claimToken(testValues.tokenNumberZero, {
             value: testValues.basePriceInWei,
           });
 
         const isClaimed = await config.minter.isTokenClaimed(
-          testValues.tokenIdZero
+          testValues.tokenNumberZero
         );
         expect(isClaimed).to.be.true;
       });
@@ -251,12 +251,12 @@ runForEach.forEach((params) => {
         // Claim tokens 0 and 2
         await config.minter
           .connect(config.accounts.user)
-          .claimToken(testValues.tokenIdZero, {
+          .claimToken(testValues.tokenNumberZero, {
             value: testValues.basePriceInWei,
           });
         await config.minter
           .connect(config.accounts.user2)
-          .claimToken(testValues.tokenIdTwo, {
+          .claimToken(testValues.tokenNumberTwo, {
             value: testValues.basePriceInWei.add(
               testValues.priceIncrementInWei.mul(2)
             ),
@@ -328,7 +328,7 @@ runForEach.forEach((params) => {
 
         await config.minter
           .connect(config.accounts.user)
-          .claimToken(testValues.tokenIdZero, {
+          .claimToken(testValues.tokenNumberZero, {
             value: testValues.basePriceInWei,
           });
 
