@@ -14,6 +14,7 @@ import {
   GenArt721CoreV2_PBAB,
   GenArt721CoreV2_PRTNR,
   GenArt721CoreV3,
+  GenArt721CoreV3_Curated_Flex__factory,
   GenArt721CoreV3_Curated__factory,
   GenArt721CoreV3_Engine,
   GenArt721CoreV3_Engine_Flex,
@@ -674,7 +675,10 @@ export async function deployCoreWithMinterFilter<
     await genArt721Core
       .connect(config.accounts.deployer)
       .updateMinterContract(minterFilter.address);
-  } else if (coreContractName.endsWith("V3_Curated")) {
+  } else if (
+    coreContractName.endsWith("V3_Curated") ||
+    coreContractName.endsWith("V3_Curated_Flex")
+  ) {
     randomizer = await deployAndGet(config, _randomizerName, []);
     const minterFilterSuite = await deploySharedMinterFilter(
       config,
@@ -720,13 +724,28 @@ export async function deployCoreWithMinterFilter<
     const library = await bytecodeStorageLibFactory
       .connect(config.accounts.deployer)
       .deploy(/* no args for library ever */);
-    const curatedFactory = new GenArt721CoreV3_Curated__factory(
-      {
-        "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
-          library.address,
-      },
-      config.accounts.deployer
+    const v3flexlibFactory = await ethers.getContractFactory(
+      "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib"
     );
+    const v3flexlib = await v3flexlibFactory
+      .connect(config.accounts.deployer)
+      .deploy(/* no args for library ever */);
+    const curatedFactory = coreContractName.endsWith("V3_Curated_Flex")
+      ? new GenArt721CoreV3_Curated_Flex__factory(
+          {
+            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+              library.address,
+            "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
+          },
+          config.accounts.deployer
+        )
+      : new GenArt721CoreV3_Curated__factory(
+          {
+            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+              library.address,
+          },
+          config.accounts.deployer
+        );
     // deploy UniversalReader
     config.universalReader = (await deployAndGet(
       config,

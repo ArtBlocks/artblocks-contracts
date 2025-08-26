@@ -1,7 +1,7 @@
 import { constants } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { GenArt721CoreV3_Curated } from "../../../../scripts/contracts";
+import { GenArt721CoreV3_Curated_Flex } from "../../../../scripts/contracts";
 
 import {
   T_Config,
@@ -11,12 +11,12 @@ import {
 } from "../../../util/common";
 
 interface T_CuratedTestConfig extends T_Config {
-  genArt721Core: GenArt721CoreV3_Curated;
+  genArt721Core: GenArt721CoreV3_Curated_Flex;
 }
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
-  "GenArt721CoreV3_Curated", // V3.2 core Curated contract
+  "GenArt721CoreV3_Curated_Flex", // V3.2 core Curated Flex contract
 ];
 
 /**
