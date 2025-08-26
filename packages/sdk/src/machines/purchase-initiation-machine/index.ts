@@ -320,11 +320,20 @@ export const purchaseInitiationMachine = setup({
       errorMessage: (_, params: { errorMessage?: string }) =>
         params.errorMessage,
     }),
-    resetPurchaseContext: assign({
-      additionalPurchaseData: undefined,
-      purchaseToAddress: undefined,
-      errorMessage: undefined,
-      initiatedTxHash: undefined,
+    resetPurchaseContext: assign(({ context }) => {
+      const updatedArtblocksClient =
+        context.projectSaleManagerMachine.getSnapshot().context.artblocksClient;
+
+      return {
+        artblocksClient: updatedArtblocksClient ?? context.artblocksClient,
+        additionalPurchaseData: undefined,
+        purchaseToAddress: undefined,
+        errorMessage: undefined,
+        initiatedTxHash: undefined,
+        erc20ApprovalAmount: undefined,
+        erc20ApprovalTxHash: undefined,
+        userIneligibilityReason: undefined,
+      };
     }),
     sendTransactionHashToPurchaseTrackingManagerMachine: (
       { context },
@@ -501,6 +510,14 @@ export const purchaseInitiationMachine = setup({
           reenter: true,
         },
       },
+      on: {
+        RESET: {
+          target: "gettingUserPurchaseEligibilityAndContext",
+          actions: {
+            type: "resetPurchaseContext",
+          },
+        },
+      },
     },
     readyForPurchase: {
       on: {
@@ -530,6 +547,12 @@ export const purchaseInitiationMachine = setup({
             },
           },
         ],
+        RESET: {
+          target: "gettingUserPurchaseEligibilityAndContext",
+          actions: {
+            type: "resetPurchaseContext",
+          },
+        },
       },
     },
     awaitingERC20AllowanceApprovalAmount: {
