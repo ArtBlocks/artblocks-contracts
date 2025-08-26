@@ -23,7 +23,7 @@ import {ABHelpers} from "../../../libs/v0.8.x/ABHelpers.sol";
 
 /**
  * @title ClaimMinter contract that enables admin to pre-mint tokens for a project
- * and allows collectors to claim tokens in an arbitrary order with configurable
+ * and allows collectors to claim one token per wallet in an arbitrary order with configurable
  * pricing. Admin and artist are allowed to claim tokens before configured start time.
  * Compatible with shared minter suite, but only allows minting with
  * a single core contract. This is designed to be used with a GenArt721CoreContractV3
@@ -55,7 +55,7 @@ import {ABHelpers} from "../../../libs/v0.8.x/ABHelpers.sol";
  * 1. Admin pre-mints tokens using preMint function
  * 2. Admin configures pricing and timestamp start for the project
  * 3. Artist and admin can claim tokens before timestamp start is reached
- * 4. Users can claim tokens once timestamp start is reached, in any order
+ * 4. Users can claim one token per wallet once timestamp start is reached, in any order
  * 5. Each claim requires exact payment amount and marks token as claimed
  * 6. Token is transferred to claimant and revenue is split automatically
  * ----------------------------------------------------------------------------
@@ -99,6 +99,9 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
 
     // claimed tokens using bitmaps (bitmapIndex => bitmap)
     mapping(uint256 => uint256) public claimedBitmaps;
+
+    // wallets that have claimed tokens
+    mapping(address => bool) public walletHasClaimed;
 
     uint256 public timestampStart;
 
@@ -233,10 +236,11 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     /**
      * @notice Claims token `tokenId` by paying the required price.
      * Available once claiming has started, unless sender is artist or admin.
-     * @dev This function allows users to claim pre-minted tokens by paying the exact price
+     * @dev This function allows users to claim one pre-minted token per wallet by paying the exact price
      * calculated by priceByTokenIdInWei. The function checks that the token is not already
-     * claimed, that claiming has started, and that the exact payment
+     * claimed, that the wallet has not claimed a token yet, that claiming has started, and that the exact payment
      * amount is provided. Only artist or admin are allowed to claim before configured start time.
+     * If a wallet has already claimed a token, the function will revert.
      * Upon successful claim, the token is marked as claimed, configured
      * with a pseudorandom hash seed via PMP, revenue is split automatically, and the token
      * is transferred to the claimant. This enables arbitrary claiming order where users can
@@ -261,6 +265,8 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
         // @dev Valid token IDs are operationally handled by frontend and admin pre-minting.
         // Admin validates token ID ranges and pre-mints tokens to this contract before claiming is enabled.
         require(!isTokenClaimed(tokenId), "Token already claimed");
+        // check that wallet has not claimed a token yet
+        require(!walletHasClaimed[msg.sender], "Wallet has already claimed");
         // check that claiming has started (unless sender is artist or admin)
         if (timestampStart == 0 || block.timestamp < timestampStart) {
             AuthLib.onlyCoreAdminACLOrArtist({
@@ -278,6 +284,8 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
         // EFFECTS
         // mark token as claimed
         _markTokenClaimed(tokenNumber);
+        // mark wallet has claimed token
+        walletHasClaimed[msg.sender] = true;
 
         bytes32 hashSeed = _getPseudorandomAtomic({
             coreContract: coreContractAddress,
@@ -379,6 +387,15 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
         );
         uint256 bitmap = claimedBitmaps[bitmapIndex];
         return BitMaps256.get(bitmap, bitPosition);
+    }
+
+    /**
+     * @notice Checks if a wallet has claimed a token
+     * @param wallet The wallet to check
+     * @return True if the wallet has claimed a token
+     */
+    function hasWalletClaimed(address wallet) external view returns (bool) {
+        return walletHasClaimed[wallet];
     }
 
     /**

@@ -158,6 +158,11 @@ runForEach.forEach((params) => {
         expect(await config.minter.isTokenClaimed(testValues.tokenIdZero)).to.be
           .true;
 
+        // verify wallet has claimed
+        expect(
+          await config.minter.hasWalletClaimed(config.accounts.artist.address)
+        ).to.be.true;
+
         // Verify tokens are transferred to claimer (artist)
         expect(
           await config.genArt721Core.ownerOf(testValues.tokenIdZero)
@@ -185,10 +190,99 @@ runForEach.forEach((params) => {
         expect(await config.minter.isTokenClaimed(testValues.tokenIdZero)).to.be
           .true;
 
+        // verify wallet has claimed
+        expect(
+          await config.minter.hasWalletClaimed(config.accounts.deployer.address)
+        ).to.be.true;
+
         // Verify tokens are transferred to claimer (admin)
         expect(
           await config.genArt721Core.ownerOf(testValues.tokenIdZero)
         ).to.equal(config.accounts.deployer.address);
+      });
+      it("allows does not allow one wallet to claim multiple tokens", async function () {
+        const config = await loadFixture(_beforeEach);
+        // Pre-mint tokens
+        await config.minter.connect(config.accounts.deployer).preMint(3);
+
+        // Configure pricing and timestamp
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configurePricePerTokenInWei(
+            testValues.basePriceInWei,
+            testValues.priceIncrementInWei
+          );
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(testValues.timestampPast);
+
+        // Claim tokens in arbitrary order: 2, 0, 1
+        const token2Price = testValues.basePriceInWei.add(
+          testValues.priceIncrementInWei.mul(2)
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .claimToken(testValues.tokenIdTwo, {
+            value: token2Price,
+          });
+
+        const token0Price = testValues.basePriceInWei;
+        const tx = await config.minter
+          .connect(config.accounts.user2)
+          .claimToken(testValues.tokenIdZero, {
+            value: token0Price,
+          });
+
+        const token1Price = testValues.basePriceInWei.add(
+          testValues.priceIncrementInWei
+        );
+        await config.minter
+          .connect(config.accounts.deployer)
+          .claimToken(testValues.tokenIdOne, {
+            value: token1Price,
+          });
+
+        const token3Price = testValues.basePriceInWei.add(
+          testValues.priceIncrementInWei.mul(3)
+        );
+        // wallet has already claimed token 0
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user2)
+            .claimToken(testValues.tokenIdThree, {
+              value: token3Price,
+            }),
+          "Wallet has already claimed"
+        );
+        // Verify tokens are claimed
+        expect(await config.minter.isTokenClaimed(testValues.tokenIdZero)).to.be
+          .true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenIdOne)).to.be
+          .true;
+        expect(await config.minter.isTokenClaimed(testValues.tokenIdTwo)).to.be
+          .true;
+
+        // verify wallets have claimed
+        expect(
+          await config.minter.hasWalletClaimed(config.accounts.user2.address)
+        ).to.be.true;
+        expect(
+          await config.minter.hasWalletClaimed(config.accounts.deployer.address)
+        ).to.be.true;
+        expect(
+          await config.minter.hasWalletClaimed(config.accounts.user.address)
+        ).to.be.true;
+
+        // Verify tokens are transferred to claimants
+        expect(
+          await config.genArt721Core.ownerOf(testValues.tokenIdZero)
+        ).to.equal(config.accounts.user2.address);
+        expect(
+          await config.genArt721Core.ownerOf(testValues.tokenIdOne)
+        ).to.equal(config.accounts.deployer.address);
+        expect(
+          await config.genArt721Core.ownerOf(testValues.tokenIdTwo)
+        ).to.equal(config.accounts.user.address);
       });
       it("allows claiming tokens in arbitrary order", async function () {
         const config = await loadFixture(_beforeEach);
@@ -239,6 +333,17 @@ runForEach.forEach((params) => {
         expect(await config.minter.isTokenClaimed(testValues.tokenIdTwo)).to.be
           .true;
 
+        // verify wallets have claimed
+        expect(
+          await config.minter.hasWalletClaimed(config.accounts.user2.address)
+        ).to.be.true;
+        expect(
+          await config.minter.hasWalletClaimed(config.accounts.deployer.address)
+        ).to.be.true;
+        expect(
+          await config.minter.hasWalletClaimed(config.accounts.user.address)
+        ).to.be.true;
+
         // Verify tokens are transferred to claimants
         expect(
           await config.genArt721Core.ownerOf(testValues.tokenIdZero)
@@ -272,16 +377,28 @@ runForEach.forEach((params) => {
 
       //   // Claim all 500 tokens
       //   for (let i = 0; i < testValues.maxInvocations; i++) {
+      //     // Create a unique wallet for each iteration
+      //     const userWallet = ethers.Wallet.createRandom().connect(
+      //       ethers.provider
+      //     );
+      //     // Fund the wallet with ETH
+      //     await ethers.provider.send("hardhat_setBalance", [
+      //       userWallet.address,
+      //       "0x8AC7230489E80000", // 10 ETH
+      //     ]);
+
       //     const tokenId = testValues.projectOne * 1000000 + i;
       //     const tokenPrice = testValues.basePriceInWei.add(
       //       testValues.priceIncrementInWei.mul(i)
       //     );
 
-      //     await config.minter
-      //       .connect(config.accounts.user)
-      //       .claimToken(tokenId, {
-      //         value: tokenPrice,
-      //       });
+      //     await config.minter.connect(userWallet).claimToken(tokenId, {
+      //       value: tokenPrice,
+      //     });
+
+      //     // verify wallet has claimed
+      //     expect(await config.minter.hasWalletClaimed(userWallet.address)).to.be
+      //       .true;
       //   }
 
       //   // Verify all tokens are claimed
@@ -332,16 +449,29 @@ runForEach.forEach((params) => {
 
       //   // Claim remaining 499 tokens
       //   for (let i = 1; i < testValues.maxInvocations; i++) {
+      //     // Create a unique wallet for each iteration
+      //     const userWallet = ethers.Wallet.createRandom().connect(
+      //       ethers.provider
+      //     );
+
+      //     // Fund the wallet with ETH
+      //     await ethers.provider.send("hardhat_setBalance", [
+      //       userWallet.address,
+      //       "0x8AC7230489E80000", // 10 ETH
+      //     ]);
+
       //     const tokenId = testValues.projectOne * 1000000 + i;
       //     const tokenPrice = testValues.basePriceInWei.add(
       //       testValues.priceIncrementInWei.mul(i)
       //     );
 
-      //     await config.minter
-      //       .connect(config.accounts.user)
-      //       .claimToken(tokenId, {
-      //         value: tokenPrice,
-      //       });
+      //     await config.minter.connect(userWallet).claimToken(tokenId, {
+      //       value: tokenPrice,
+      //     });
+
+      //     // verify wallet has claimed
+      //     expect(await config.minter.hasWalletClaimed(userWallet.address)).to.be
+      //       .true;
       //   }
 
       //   // Verify all tokens are claimed
@@ -542,7 +672,7 @@ runForEach.forEach((params) => {
           });
 
         await config.minter
-          .connect(config.accounts.user2)
+          .connect(config.accounts.artist)
           .claimToken(testValues.tokenIdOne, {
             value: token1Price,
           });
@@ -560,6 +690,17 @@ runForEach.forEach((params) => {
           .true;
         expect(await config.minter.isTokenClaimed(testValues.tokenIdTwo)).to.be
           .true;
+
+        // verify wallets have claimed
+        expect(
+          await config.minter.hasWalletClaimed(config.accounts.user.address)
+        ).to.be.true;
+        expect(
+          await config.minter.hasWalletClaimed(config.accounts.artist.address)
+        ).to.be.true;
+        expect(
+          await config.minter.hasWalletClaimed(config.accounts.user2.address)
+        ).to.be.true;
       });
 
       it("correctly calculates incremental pricing with a base price of 0", async function () {
@@ -589,7 +730,7 @@ runForEach.forEach((params) => {
           });
 
         await config.minter
-          .connect(config.accounts.user2)
+          .connect(config.accounts.artist)
           .claimToken(testValues.tokenIdOne, {
             value: token1Price,
           });
@@ -607,6 +748,17 @@ runForEach.forEach((params) => {
           .true;
         expect(await config.minter.isTokenClaimed(testValues.tokenIdTwo)).to.be
           .true;
+
+        // verify wallets have claimed
+        expect(
+          await config.minter.hasWalletClaimed(config.accounts.user.address)
+        ).to.be.true;
+        expect(
+          await config.minter.hasWalletClaimed(config.accounts.artist.address)
+        ).to.be.true;
+        expect(
+          await config.minter.hasWalletClaimed(config.accounts.user2.address)
+        ).to.be.true;
       });
 
       it("reverts claiming when timestamp is 0 (unconfigured)", async function () {
