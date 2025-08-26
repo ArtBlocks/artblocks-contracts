@@ -160,7 +160,7 @@ runForEach.forEach((params) => {
 
         // verify wallet has claimed
         expect(
-          await config.minter.hasWalletClaimed(config.accounts.artist.address)
+          await config.minter.walletHasClaimed(config.accounts.artist.address)
         ).to.be.true;
 
         // Verify tokens are transferred to claimer (artist)
@@ -192,7 +192,7 @@ runForEach.forEach((params) => {
 
         // verify wallet has claimed
         expect(
-          await config.minter.hasWalletClaimed(config.accounts.deployer.address)
+          await config.minter.walletHasClaimed(config.accounts.deployer.address)
         ).to.be.true;
 
         // Verify tokens are transferred to claimer (admin)
@@ -264,13 +264,13 @@ runForEach.forEach((params) => {
 
         // verify wallets have claimed
         expect(
-          await config.minter.hasWalletClaimed(config.accounts.user2.address)
+          await config.minter.walletHasClaimed(config.accounts.user2.address)
         ).to.be.true;
         expect(
-          await config.minter.hasWalletClaimed(config.accounts.deployer.address)
+          await config.minter.walletHasClaimed(config.accounts.deployer.address)
         ).to.be.true;
         expect(
-          await config.minter.hasWalletClaimed(config.accounts.user.address)
+          await config.minter.walletHasClaimed(config.accounts.user.address)
         ).to.be.true;
 
         // Verify tokens are transferred to claimants
@@ -335,13 +335,13 @@ runForEach.forEach((params) => {
 
         // verify wallets have claimed
         expect(
-          await config.minter.hasWalletClaimed(config.accounts.user2.address)
+          await config.minter.walletHasClaimed(config.accounts.user2.address)
         ).to.be.true;
         expect(
-          await config.minter.hasWalletClaimed(config.accounts.deployer.address)
+          await config.minter.walletHasClaimed(config.accounts.deployer.address)
         ).to.be.true;
         expect(
-          await config.minter.hasWalletClaimed(config.accounts.user.address)
+          await config.minter.walletHasClaimed(config.accounts.user.address)
         ).to.be.true;
 
         // Verify tokens are transferred to claimants
@@ -397,7 +397,7 @@ runForEach.forEach((params) => {
       //     });
 
       //     // verify wallet has claimed
-      //     expect(await config.minter.hasWalletClaimed(userWallet.address)).to.be
+      //     expect(await config.minter.walletHasClaimed(userWallet.address)).to.be
       //       .true;
       //   }
 
@@ -470,7 +470,7 @@ runForEach.forEach((params) => {
       //     });
 
       //     // verify wallet has claimed
-      //     expect(await config.minter.hasWalletClaimed(userWallet.address)).to.be
+      //     expect(await config.minter.walletHasClaimed(userWallet.address)).to.be
       //       .true;
       //   }
 
@@ -693,13 +693,13 @@ runForEach.forEach((params) => {
 
         // verify wallets have claimed
         expect(
-          await config.minter.hasWalletClaimed(config.accounts.user.address)
+          await config.minter.walletHasClaimed(config.accounts.user.address)
         ).to.be.true;
         expect(
-          await config.minter.hasWalletClaimed(config.accounts.artist.address)
+          await config.minter.walletHasClaimed(config.accounts.artist.address)
         ).to.be.true;
         expect(
-          await config.minter.hasWalletClaimed(config.accounts.user2.address)
+          await config.minter.walletHasClaimed(config.accounts.user2.address)
         ).to.be.true;
       });
 
@@ -751,13 +751,13 @@ runForEach.forEach((params) => {
 
         // verify wallets have claimed
         expect(
-          await config.minter.hasWalletClaimed(config.accounts.user.address)
+          await config.minter.walletHasClaimed(config.accounts.user.address)
         ).to.be.true;
         expect(
-          await config.minter.hasWalletClaimed(config.accounts.artist.address)
+          await config.minter.walletHasClaimed(config.accounts.artist.address)
         ).to.be.true;
         expect(
-          await config.minter.hasWalletClaimed(config.accounts.user2.address)
+          await config.minter.walletHasClaimed(config.accounts.user2.address)
         ).to.be.true;
       });
 

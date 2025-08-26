@@ -390,15 +390,6 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     }
 
     /**
-     * @notice Checks if a wallet has claimed a token
-     * @param wallet The wallet to check
-     * @return True if the wallet has claimed a token
-     */
-    function hasWalletClaimed(address wallet) external view returns (bool) {
-        return walletHasClaimed[wallet];
-    }
-
-    /**
      * @notice Internal function to calculate the price in wei for token number `tokenInvocation`.
      * @param tokenInvocation Token number to get the price for.
      * @return Price in wei for the specified token.

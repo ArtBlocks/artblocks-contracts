@@ -168,44 +168,6 @@ runForEach.forEach((params) => {
         expect(isClaimed).to.be.true;
       });
     });
-
-    describe("hasWalletClaimed", async function () {
-      it("returns false for wallets that have not claimed", async function () {
-        const config = await loadFixture(_beforeEach);
-        const hasWalletClaimed = await config.minter.hasWalletClaimed(
-          config.accounts.user.address
-        );
-        expect(hasWalletClaimed).to.be.false;
-      });
-
-      it("returns true for wallets that have claimed", async function () {
-        const config = await loadFixture(_beforeEach);
-        // Pre-mint and configure
-        await config.minter.connect(config.accounts.deployer).preMint(1);
-        await config.minter
-          .connect(config.accounts.deployer)
-          .configurePricePerTokenInWei(
-            testValues.basePriceInWei,
-            testValues.priceIncrementInWei
-          );
-        await config.minter
-          .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampPast);
-
-        // Claim token
-        await config.minter
-          .connect(config.accounts.user)
-          .claimToken(testValues.tokenIdZero, {
-            value: testValues.basePriceInWei,
-          });
-
-        const hasWalletClaimed = await config.minter.hasWalletClaimed(
-          config.accounts.user.address
-        );
-        expect(hasWalletClaimed).to.be.true;
-      });
-    });
-
     describe("projectBasePriceInWei", async function () {
       it("returns 0 when not configured", async function () {
         const config = await loadFixture(_beforeEach);
