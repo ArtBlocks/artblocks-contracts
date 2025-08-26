@@ -9,7 +9,7 @@ import {EngineConfiguration} from "./interfaces/v0.8.x/IGenArt721CoreContractV3_
 import "./libs/v0.8.x/Bytes32Strings.sol";
 
 /**
- * @title Art Blocks Curated ERC-721 core contract, V3.2 Flex
+ * @title Art Blocks Curated ERC-721 core contract, V3.2 Flex (ONCHAIN only)
  * @author Art Blocks Inc.
  * @notice This contract derives from the Art Blocks Engine Flex contract and adds
  * some functionality to support curation of projects by Art Blocks.
