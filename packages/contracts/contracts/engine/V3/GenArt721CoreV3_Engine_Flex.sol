@@ -466,6 +466,7 @@ contract GenArt721CoreV3_Engine_Flex is
 
     /**
      * @notice Updates external asset dependency for project `_projectId`.
+     * @dev public virtual to allow for derived contracts to override this function
      * @param _projectId Project to be updated.
      * @param _index Asset index.
      * @param _cidOrData Field that contains the CID of the dependency if IPFS or ARWEAVE,
@@ -482,7 +483,7 @@ contract GenArt721CoreV3_Engine_Flex is
         uint256 _index,
         string memory _cidOrData,
         ExternalAssetDependencyType _dependencyType
-    ) external {
+    ) public virtual {
         _onlyArtistOrAdminACL(
             _projectId,
             this.updateProjectExternalAssetDependency.selector
@@ -571,6 +572,7 @@ contract GenArt721CoreV3_Engine_Flex is
 
     /**
      * @notice Adds external asset dependency for project `_projectId`.
+     * @dev public virtual to allow for derived contracts to override this function
      * @param _projectId Project to be updated.
      * @param _cidOrData Field that contains the CID of the dependency if IPFS or ARWEAVE,
      * empty string of ONCHAIN, or a string representation of the Art Blocks Dependency
@@ -585,7 +587,7 @@ contract GenArt721CoreV3_Engine_Flex is
         uint256 _projectId,
         string memory _cidOrData,
         ExternalAssetDependencyType _dependencyType
-    ) external {
+    ) public virtual {
         _onlyArtistOrAdminACL(
             _projectId,
             this.addProjectExternalAssetDependency.selector
