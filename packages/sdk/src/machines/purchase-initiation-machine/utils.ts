@@ -439,6 +439,7 @@ export async function getMerkleMinterUserPurchaseContext(
         ineligibilityReason: USER_INELIGIBLE_REASONS.NO_MINTS_REMAINING,
         additionalPurchaseData: {
           allowlist: allowlistedAddresses,
+          userAllowlistAddresses: allowlistedUserAddressAndVaults,
           remainingMints,
         },
       };
@@ -461,6 +462,7 @@ export async function getMerkleMinterUserPurchaseContext(
         isEligible: true,
         additionalPurchaseData: {
           allowlist: allowlistedAddresses,
+          userAllowlistAddresses: allowlistedUserAddressAndVaults,
           remainingMints,
         },
       };
@@ -477,6 +479,7 @@ export async function getMerkleMinterUserPurchaseContext(
       isEligible: true,
       additionalPurchaseData: {
         allowlist: allowlistedAddresses,
+        userAllowlistAddresses: allowlistedUserAddressAndVaults,
         vaultAddress: firstVaultWithRemainingMints,
         remainingMints,
       },

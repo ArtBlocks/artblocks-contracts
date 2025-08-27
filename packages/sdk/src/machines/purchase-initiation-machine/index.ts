@@ -52,6 +52,7 @@ export type PurchaseInitiationMachineEvents =
 
 type AdditionalPurchaseData = {
   allowlist?: Hex[];
+  userAllowlistAddresses?: Hex[];
   decimals?: number;
   allowedTokenId?: string;
   vaultAddress?: Hex;
