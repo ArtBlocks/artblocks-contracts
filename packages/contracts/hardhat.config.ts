@@ -173,6 +173,7 @@ module.exports = {
     disambiguatePaths: false,
     only: [
       "GenArt721CoreV3_Curated$",
+      "GenArt721CoreV3_Curated_Flex$",
       "GenArt721CoreV3_Engine$",
       "GenArt721CoreV3_Engine_Flex$",
       "MinterRAM.*",
