@@ -2,11 +2,12 @@ import helpers = require("@nomicfoundation/hardhat-network-helpers");
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-import { InjectBlockHeightAndOwnedForecast__factory } from "../../../../../scripts/contracts/factories/contracts/web3call/augment-hooks/InjectBlockHeightAndOwnedForecast.sol/InjectBlockHeightAndOwnedForecast__factory";
+import { InjectBlockHeightAndNumOwnedProjectTokens__factory } from "../../../../../scripts/contracts/factories/contracts/web3call/augment-hooks/InjectBlockHeightAndNumOwnedProjectTokens.sol/InjectBlockHeightAndNumOwnedProjectTokens__factory";
 
 import { constants } from "ethers";
 
-// @dev using fork testing for LIFT hooks
+// @dev using fork testing for InjectBlockHeightAndNumOwnedProjectTokens hook
+// checking ownership on reference project Forecast
 // may remove/archive in the future to avoid long term maintenance of temporary hook contract
 
 const FORK_URL = process.env.MAINNET_JSON_RPC_PROVIDER_URL;
@@ -14,11 +15,12 @@ const FORK_BLOCK_NUMBER = 23275000;
 
 const PMPV0_ADDRESS = "0x00000000A78E278b2d2e2935FaeBe19ee9F1FF14";
 
+// reference project is Forecast
 const FORECAST_CONTRACT_ADDRESS = "0x99a9b7c1116f9ceeb1652de04d5969cce509b069";
 const FORECAST_PROJECT_ID = 470;
 const NUM_FORECAST_TOKENS = 365;
 
-describe("test forking mainnet - InjectBlockHeightAndOwnedForecast", async function () {
+describe("test forking mainnet - InjectBlockHeightAndNumOwnedProjectTokens", async function () {
   before(async function () {
     // fork mainnet
     await resetFork();
@@ -35,7 +37,7 @@ describe("test forking mainnet - InjectBlockHeightAndOwnedForecast", async funct
   }
 
   // public variable Views
-  describe("fork tests - InjectBlockHeightAndOwnedForecast", async function () {
+  describe("fork tests - InjectBlockHeightAndNumOwnedProjectTokens", async function () {
     it("passes all tested behaviors", async function () {
       // impersonate account (fork block admin of AB Studio 76)
       const artistAddress = "0x2574c77a694700b7baB562fefeB9Ce93DB5A097A";
@@ -46,9 +48,10 @@ describe("test forking mainnet - InjectBlockHeightAndOwnedForecast", async funct
         "0x8AC7230489E80000", // 10 ETH
       ]);
       // deploy hook
-      const hookFactory = new InjectBlockHeightAndOwnedForecast__factory(
-        impersonatedArtist
-      );
+      const hookFactory =
+        new InjectBlockHeightAndNumOwnedProjectTokens__factory(
+          impersonatedArtist
+        );
       const hook = await hookFactory.deploy(
         FORECAST_CONTRACT_ADDRESS,
         FORECAST_PROJECT_ID,
@@ -97,7 +100,7 @@ describe("test forking mainnet - InjectBlockHeightAndOwnedForecast", async funct
       expect(parseInt(postParams0[0].value, 10)).to.be.greaterThan(
         FORK_BLOCK_NUMBER
       );
-      expect(postParams0[1].key).to.equal("NumOwnedForecast");
+      expect(postParams0[1].key).to.equal("NumOwnedReferenceTokens");
       expect(postParams0[1].value).to.equal("0"); // this wallet owns no forecast tokens
 
       const gasUsed = await pmpV0.estimateGas.getTokenParams(
@@ -123,7 +126,7 @@ describe("test forking mainnet - InjectBlockHeightAndOwnedForecast", async funct
       expect(parseInt(postParams1[0].value, 10)).to.be.greaterThan(
         FORK_BLOCK_NUMBER
       );
-      expect(postParams1[1].key).to.equal("NumOwnedForecast");
+      expect(postParams1[1].key).to.equal("NumOwnedReferenceTokens");
       expect(postParams1[1].value).to.equal("2"); // this wallet owns 2 forecast tokens
 
       const gasUsed1 = await pmpV0.estimateGas.getTokenParams(
