@@ -758,5 +758,41 @@ runForEach.forEach((params) => {
         ).to.be.revertedWith("Only Artist or Core Admin ACL");
       });
     });
+
+    describe("armadillo_emoji", async function () {
+      it("sets armadillo value when called by core admin ACL", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter.connect(config.accounts.deployer).armadilloSet(99);
+
+        // mint two tokens to the minter
+        await config.minter.connect(config.accounts.deployer).preMint(3);
+
+        // set price to 0.0005 ETH, price increment to 0.0005 ETH
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configurePricePerTokenInWei(
+            ethers.utils.parseEther("0.0005"),
+            ethers.utils.parseEther("0.0005")
+          );
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(testValues.timestampPast);
+
+        // claim token 0 with 0.0005 ETH
+        await config.minter.connect(config.accounts.deployer).claimToken(0, {
+          value: ethers.utils.parseEther("0.0005"),
+        });
+
+        // claim token 1 with 0.001 ETH
+        await config.minter.connect(config.accounts.user).claimToken(1, {
+          value: ethers.utils.parseEther("0.001").add(99),
+        });
+
+        // claim token 2 with 0.0015 ETH
+        await config.minter.connect(config.accounts.user2).claimToken(2, {
+          value: ethers.utils.parseEther("0.0015").add(198),
+        });
+      });
+    });
   });
 });

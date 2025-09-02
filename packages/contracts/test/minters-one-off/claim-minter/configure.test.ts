@@ -280,5 +280,28 @@ runForEach.forEach((params) => {
         expect(actualTimestamp).to.equal(0);
       });
     });
+
+    describe("armadillo_emoji", async function () {
+      it("reverts when not core admin ACL", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter.connect(config.accounts.artist).armadilloSet(99),
+          "Only Core AdminACL allowed"
+        );
+      });
+
+      it("reverts when value is gte 100", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter.connect(config.accounts.deployer).armadilloSet(100),
+          "smoller"
+        );
+      });
+
+      it("sets armadillo value when called by core admin ACL", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter.connect(config.accounts.deployer).armadilloSet(99);
+      });
+    });
   });
 });
