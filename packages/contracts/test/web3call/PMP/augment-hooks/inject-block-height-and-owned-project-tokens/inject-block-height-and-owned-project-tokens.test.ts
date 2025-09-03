@@ -134,7 +134,7 @@ describe("test forking mainnet - InjectBlockHeightAndNumOwnedProjectTokens", asy
         token1
       );
       console.log(
-        "gas used to get token params with 1 owned forecast:",
+        "gas used to get token params with 2 owned forecast:",
         gasUsed1.toString()
       );
     });
