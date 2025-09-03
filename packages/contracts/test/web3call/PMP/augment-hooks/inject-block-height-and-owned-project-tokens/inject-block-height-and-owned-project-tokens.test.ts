@@ -20,7 +20,7 @@ const FORECAST_CONTRACT_ADDRESS = "0x99a9b7c1116f9ceeb1652de04d5969cce509b069";
 const FORECAST_PROJECT_ID = 470;
 const NUM_FORECAST_TOKENS = 365;
 
-describe("test forking mainnet - InjectBlockHeightAndNumOwnedProjectTokens", async function () {
+describe("test forking mainnet - InjectBlockHeightAndNumOwnedProjectTokens [ @skip-on-coverage ]", async function () {
   before(async function () {
     // fork mainnet
     await resetFork();
