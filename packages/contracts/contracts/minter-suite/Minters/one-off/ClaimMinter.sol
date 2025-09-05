@@ -226,6 +226,18 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
 
         require(amount <= maxInvocations, "Amount exceeds maximum invocations");
 
+        // require zero mints on the project before this to support claim logic
+        {
+            // parse invocations from core contract projectStateData
+            (uint256 invocations, , , , , ) = IGenArt721CoreContractV3(
+                coreContractAddress
+            ).projectStateData(projectId);
+            require(
+                invocations == 0,
+                "Only zero mints on the project before this"
+            );
+        }
+
         // EFFECTS
         // Mint tokens to this contract
         for (uint256 i = 0; i < amount; i++) {
