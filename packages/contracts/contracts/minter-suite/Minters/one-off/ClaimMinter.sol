@@ -288,10 +288,12 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             projectId,
             tokenNumber
         );
-        bytes32 hashSeed = _getPseudorandomAtomic({
+        bytes32 claimHash = _getPseudorandomAtomic({
             coreContract: coreContractAddress,
             tokenId: tokenId
         });
+        // require non-zero hash seed
+        require(claimHash != 0, "Only non-zero hash seed");
 
         // INTERACTIONS
         IPMPV0.PMPInput[] memory pmpInputs = new IPMPV0.PMPInput[](1);
@@ -303,7 +305,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             configuredParamType: IPMPV0.ParamType.String,
             configuredValue: bytes32(0),
             configuringArtistString: false,
-            configuredValueString: Strings.toHexString(uint256(hashSeed))
+            configuredValueString: Strings.toHexString(uint256(claimHash))
         });
         // this contract must be configured to be permitted to configure token params
         pmpContract.configureTokenParams({
