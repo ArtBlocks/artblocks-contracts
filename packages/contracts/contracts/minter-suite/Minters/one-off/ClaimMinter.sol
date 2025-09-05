@@ -243,7 +243,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
      * @notice Claims token `tokenNumber` by paying the required price.
      * Available once claiming has started, unless sender is artist or admin.
      * @dev This function allows users to claim one pre-minted token per wallet by paying the exact price
-     * calculated by _priceByTokenInvocationInWei. The function checks that the token is not already
+     * calculated by _priceByTokenNumberInWei. The function checks that the token is not already
      * claimed, that the wallet has not claimed a token yet, that claiming has started, and that the exact payment
      * amount is provided. Only artist or admin are allowed to claim before configured start time.
      * If a wallet has already claimed a token, the function will revert.
@@ -255,8 +255,9 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
      */
     function claimToken(uint256 tokenNumber) external payable nonReentrant {
         // check that token number is within allowed range
+        // @dev use lt because e.g. 500 max invocations has max token number of 499
         require(
-            tokenNumber <= maxInvocations,
+            tokenNumber < maxInvocations,
             "Token number exceeds maximum invocations"
         );
         // check that token number is unclaimed
@@ -275,7 +276,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             });
         }
         // check value of msg.value
-        uint256 requiredPrice = _priceByTokenInvocationInWei(tokenNumber);
+        uint256 requiredPrice = _priceByTokenNumberInWei(tokenNumber);
         require(msg.value == requiredPrice, "Only send price per token");
         // EFFECTS
         // mark token as claimed
@@ -337,6 +338,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     }
 
     function armadilloSet(uint256 val) external {
+        // CHECKS
         // only core admin acl
         AuthLib.onlyCoreAdminACL({
             coreContract: coreContractAddress,
@@ -344,8 +346,15 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             contract_: address(this),
             selector: this.armadilloSet.selector
         });
-        require(val < 100, "smoller");
 
+        require(val < 100, "smoller");
+        // only before timestamp start
+        require(
+            block.timestamp < timestampStart,
+            "Only before timestamp start"
+        );
+
+        // EFFECTS
         uint256 sltt = uint256(_ARMADILLO_SLOT);
         bytes32 amdk = _ARMADILLO_KEY;
         assembly {
@@ -408,12 +417,12 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     }
 
     /**
-     * @notice Internal function to calculate the price in wei for token number `tokenInvocation`.
-     * @param tokenInvocation Token number to get the price for.
+     * @notice Internal function to calculate the price in wei for token number `tokenNumber`.
+     * @param tokenNumber Token number to get the price for.
      * @return Price in wei for the specified token.
      */
-    function _priceByTokenInvocationInWei(
-        uint256 tokenInvocation
+    function _priceByTokenNumberInWei(
+        uint256 tokenNumber
     ) internal view returns (uint256) {
         uint256 basePrice = basePriceInWei;
         uint256 priceIncrement = priceIncrementInWei;
@@ -423,8 +432,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             priceIncrement = DEFAULT_PRICE_INCREMENT_IN_WEI;
         }
 
-        return
-            basePrice + (tokenInvocation * (priceIncrement + _armadilloGet()));
+        return basePrice + (tokenNumber * (priceIncrement + _armadilloGet()));
     }
 
     function _armadilloGet() internal view returns (uint256 val) {
@@ -447,16 +455,16 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     }
 
     /**
-     * @notice Internal function that gets the bitmap index and bit position for a token invocation
-     * @param tokenInvocation The token invocation number
+     * @notice Internal function that gets the bitmap index and bit position for a token number
+     * @param tokenNumber The token number
      * @return bitmapIndex The index in the bitmap array (0, 1, 2, etc.)
      * @return bitPosition The position within that bitmap (0-255)
      */
     function _getBitmapPosition(
-        uint256 tokenInvocation
+        uint256 tokenNumber
     ) internal pure returns (uint256 bitmapIndex, uint8 bitPosition) {
-        bitmapIndex = tokenInvocation / 256;
-        bitPosition = uint8(tokenInvocation % 256);
+        bitmapIndex = tokenNumber / 256;
+        bitPosition = uint8(tokenNumber % 256);
     }
 
     /**
@@ -479,11 +487,11 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
 
     /**
      * @notice Internal function that marks a token as claimed using bitmap storage
-     * @param tokenInvocation The token invocation number
+     * @param tokenNumber The token number
      */
-    function _markTokenClaimed(uint256 tokenInvocation) internal {
+    function _markTokenClaimed(uint256 tokenNumber) internal {
         (uint256 bitmapIndex, uint8 bitPosition) = _getBitmapPosition(
-            tokenInvocation
+            tokenNumber
         );
         uint256 currentBitmap = claimedBitmaps[bitmapIndex];
         claimedBitmaps[bitmapIndex] = BitMaps256.set(
