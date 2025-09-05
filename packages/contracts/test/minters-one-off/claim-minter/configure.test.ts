@@ -300,6 +300,10 @@ runForEach.forEach((params) => {
 
       it("sets armadillo value when called by core admin ACL", async function () {
         const config = await loadFixture(_beforeEach);
+        // configure start timestamp
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(testValues.timestampStart);
         await config.minter.connect(config.accounts.deployer).armadilloSet(99);
       });
     });
