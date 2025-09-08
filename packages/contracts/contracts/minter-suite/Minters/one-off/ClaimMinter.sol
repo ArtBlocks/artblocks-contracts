@@ -104,6 +104,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     mapping(address => bool) public walletHasClaimed;
 
     uint256 public timestampStart;
+    uint256 public immutable auctionLengthInSeconds = 500;
 
     // price configuration
     uint256 public basePriceInWei;
@@ -131,6 +132,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
      * interact with.
      * @param projectId_ The project ID for the Art Blocks project.
      * @param maxInvocations_ The maximum number of invocations allowed for this project (e.g., 500).
+     * @param auctionLengthInSeconds_ The length of the auction in seconds.
      */
     constructor(
         address minterFilter_,
@@ -138,7 +140,8 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
         address pmpContract_,
         address pseudorandomAtomicContract_,
         uint256 projectId_,
-        uint256 maxInvocations_
+        uint256 maxInvocations_,
+        uint256 auctionLengthInSeconds_
     ) ReentrancyGuard() {
         require(
             maxInvocations_ < 512,
@@ -152,6 +155,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
         );
         projectId = projectId_;
         maxInvocations = maxInvocations_;
+        auctionLengthInSeconds = auctionLengthInSeconds_;
     }
 
     /**
@@ -188,6 +192,8 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     /**
      * @notice Sets the timestamp when claiming can begin.
      * Only callable by the core contract's Admin ACL.
+     * @dev Intentionally allows admin to update start timestamp at any time, to allow
+     * for flexibility, emergency operational reasons, etc.
      * @dev This function sets the earliest time when users can claim tokens.
      * The timestamp should be provided in Unix timestamp format (seconds since epoch).
      * @param timestampStart_ Unix timestamp when claiming can begin.
@@ -252,6 +258,54 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     }
 
     /**
+     * Allow admin to withdraw tokens from this contract AFTER auction has ended.
+     * Input verification is handled by reverting on transfer - verify inputs before
+     * calling to avoid gas costs in reverted transactions.
+     * @dev No per-wallet mint limits - all are sent to the same address.
+     * @dev Only callable by the core contract's Admin ACL.
+     * @dev Operationally rely on admin to verifiably withdraw tokens to burn after auction has ended,
+     * in the case where auction is not sold out. In failure scenarios, auction may be re-ran by admin
+     * updating start timestamp instead of withdrawing tokens.
+     * @param tokenNumbers Token numbers to withdraw, array.
+     * @param toAddress Address to withdraw tokens to.
+     */
+    function withdrawTokensAfterAuction(
+        uint256[] memory tokenNumbers,
+        address toAddress
+    ) external {
+        // CHECKS
+        AuthLib.onlyCoreAdminACL({
+            coreContract: coreContractAddress,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.withdrawTokensAfterAuction.selector
+        });
+        // check that was configured andauction has ended
+        require(
+            timestampStart > 0 &&
+                block.timestamp >= timestampStart + auctionLengthInSeconds,
+            "Auction has not ended"
+        );
+
+        // EFFECTS
+        uint256 tokenNumbersLength = tokenNumbers.length;
+        for (uint256 i = 0; i < tokenNumbersLength; i++) {
+            uint256 tokenNumber = tokenNumbers[i];
+            require(isTokenClaimed(tokenNumber), "Token not claimed");
+            // transfer token to toAddress
+            IERC721(coreContractAddress).safeTransferFrom({
+                from: address(this),
+                to: toAddress,
+                tokenId: tokenNumber
+            });
+            emit TokenWithdrawnAfterAuction({
+                tokenNumber: tokenNumber,
+                toAddress: toAddress
+            });
+        }
+    }
+
+    /**
      * @notice Claims token `tokenNumber` by paying the required price.
      * Available once claiming has started, unless sender is artist or admin.
      * @dev This function allows users to claim one pre-minted token per wallet by paying the exact price
@@ -286,6 +340,12 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
                 contract_: address(this),
                 selector: this.claimToken.selector
             });
+        } else {
+            // auction is gte start time, check that it has not ended
+            require(
+                block.timestamp < timestampStart + auctionLengthInSeconds,
+                "Auction has ended"
+            );
         }
         // check value of msg.value
         uint256 requiredPrice = _priceByTokenNumberInWei(tokenNumber);

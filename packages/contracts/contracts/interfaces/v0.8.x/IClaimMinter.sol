@@ -15,7 +15,15 @@ interface IClaimMinter {
     event PriceConfigured(uint256 basePriceInWei, uint256 priceIncrementInWei);
     event TimestampStartConfigured(uint256 timestampStart);
     event TokensPreMinted(uint256 amount);
-    event TokenClaimed(uint256 tokenId, address claimant, uint256 price);
+    event TokenClaimed(
+        uint256 indexed tokenId,
+        address indexed claimant,
+        uint256 price
+    );
+    event TokenWithdrawnAfterAuction(
+        uint256 indexed tokenNumber,
+        address indexed toAddress
+    );
 
     /**
      * @notice Returns all claimed bitmaps
