@@ -178,7 +178,7 @@ runForEach.forEach((params) => {
         expect(finalBalance).to.equal(initialBalance.add(1));
       });
 
-      it("supports scrolled batch pre-minting, enforces max invocations through scroll", async function () {
+      it("supports scrolled batch pre-minting, enforces max invocations through scroll [@skip-on-coverage]", async function () {
         const config = await loadFixture(_beforeEach);
         await config.minter.connect(config.accounts.deployer).preMint(10);
         // verify last token number pre-minted is 9
