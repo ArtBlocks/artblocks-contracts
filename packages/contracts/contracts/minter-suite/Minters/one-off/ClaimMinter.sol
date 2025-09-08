@@ -291,7 +291,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
         uint256 tokenNumbersLength = tokenNumbers.length;
         for (uint256 i = 0; i < tokenNumbersLength; i++) {
             uint256 tokenNumber = tokenNumbers[i];
-            require(isTokenClaimed(tokenNumber), "Token not claimed");
+            require(!isTokenClaimed(tokenNumber), "Token already claimed");
             // transfer token to toAddress
             IERC721(coreContractAddress).safeTransferFrom({
                 from: address(this),
