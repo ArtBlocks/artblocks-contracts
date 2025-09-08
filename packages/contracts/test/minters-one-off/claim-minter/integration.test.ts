@@ -762,6 +762,9 @@ runForEach.forEach((params) => {
     describe("armadillo_emoji", async function () {
       it("sets armadillo value when called by core admin ACL", async function () {
         const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(testValues.timestampStart);
         await config.minter.connect(config.accounts.deployer).armadilloSet(99);
 
         // mint two tokens to the minter
