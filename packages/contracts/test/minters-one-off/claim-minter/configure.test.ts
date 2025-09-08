@@ -303,7 +303,7 @@ runForEach.forEach((params) => {
         // configure start timestamp
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampStart);
+          .configureTimestampStart(testValues.timestampStart + 99999999999);
         await config.minter.connect(config.accounts.deployer).armadilloSet(99);
       });
     });
