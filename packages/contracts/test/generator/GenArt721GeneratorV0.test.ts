@@ -526,7 +526,7 @@ describe(`GenArt721GeneratorV0`, async function () {
       );
     });
 
-    it("gets html for a given V3 core contract token with dependency on chain", async function () {
+    it("gets html for a given V3 core contract token with dependency on chain [ @skip-on-coverage ]", async function () {
       const config = await loadFixture(_beforeEach);
 
       const {
