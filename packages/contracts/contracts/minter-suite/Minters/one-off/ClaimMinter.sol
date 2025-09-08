@@ -291,12 +291,17 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
         uint256 tokenNumbersLength = tokenNumbers.length;
         for (uint256 i = 0; i < tokenNumbersLength; i++) {
             uint256 tokenNumber = tokenNumbers[i];
+            // use helpers to convert from token number to token id
+            uint256 tokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
+                projectId: projectId,
+                tokenNumber: tokenNumber
+            });
             require(!isTokenClaimed(tokenNumber), "Token already claimed");
             // transfer token to toAddress
             IERC721(coreContractAddress).safeTransferFrom({
                 from: address(this),
                 to: toAddress,
-                tokenId: tokenNumber
+                tokenId: tokenId
             });
             emit TokenWithdrawnAfterAuction({
                 tokenNumber: tokenNumber,

@@ -762,6 +762,35 @@ runForEach.forEach((params) => {
             })
         ).to.be.revertedWith("Only Artist or Core Admin ACL");
       });
+
+      it("reverts when claiming after auction has ended", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(testValues.timestampStart);
+        await config.minter.connect(config.accounts.deployer).preMint(3);
+        // configure price per token
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configurePricePerTokenInWei(
+            testValues.basePriceInWei,
+            testValues.priceIncrementInWei
+          );
+        // advance to auction start
+        await ethers.provider.send("evm_mine", [
+          testValues.timestampStart + 10,
+        ]);
+        // advance past auction end
+        await ethers.provider.send("evm_mine", [
+          testValues.timestampStart + testValues.auctionLengthInSeconds + 10,
+        ]);
+        await expectRevert(
+          config.minter.connect(config.accounts.user).claimToken(0, {
+            value: testValues.basePriceInWei,
+          }),
+          "Auction has ended"
+        );
+      });
     });
 
     describe("armadillo_emoji", async function () {
@@ -800,6 +829,40 @@ runForEach.forEach((params) => {
         await config.minter.connect(config.accounts.user2).claimToken(2, {
           value: ethers.utils.parseEther("0.0015").add(198),
         });
+      });
+    });
+
+    describe("withdrawTokensAfterAuction", async function () {
+      it("reverts when token is already claimed", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(testValues.timestampStart);
+        await config.minter.connect(config.accounts.deployer).preMint(3);
+        // configure price per token
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configurePricePerTokenInWei(
+            testValues.basePriceInWei,
+            testValues.priceIncrementInWei
+          );
+        // advance to auction start and claim token
+        await ethers.provider.send("evm_mine", [
+          testValues.timestampStart + 10,
+        ]);
+        await config.minter.connect(config.accounts.user).claimToken(0, {
+          value: testValues.basePriceInWei,
+        });
+        // advance to auction end
+        await ethers.provider.send("evm_mine", [
+          testValues.timestampStart + testValues.auctionLengthInSeconds + 999,
+        ]);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .withdrawTokensAfterAuction([0], config.accounts.deployer.address),
+          "Token already claimed"
+        );
       });
     });
   });

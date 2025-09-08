@@ -281,6 +281,32 @@ runForEach.forEach((params) => {
         const actualTimestamp = await config.minter.timestampStart();
         expect(actualTimestamp).to.equal(0);
       });
+
+      it("allows setting timestamp in future after auction has ended (e.g. failure scenario)", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(testValues.timestampStart);
+        // advance time to auction end
+        await ethers.provider.send("evm_mine", [
+          testValues.timestampStart + testValues.auctionLengthInSeconds + 999,
+        ]);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(
+            testValues.timestampStart +
+              testValues.auctionLengthInSeconds +
+              999 +
+              3600
+          );
+        const actualTimestamp = await config.minter.timestampStart();
+        expect(actualTimestamp).to.equal(
+          testValues.timestampStart +
+            testValues.auctionLengthInSeconds +
+            999 +
+            3600
+        );
+      });
     });
 
     describe("armadillo_emoji", async function () {
@@ -307,6 +333,56 @@ runForEach.forEach((params) => {
           .connect(config.accounts.deployer)
           .configureTimestampStart(testValues.timestampStart + 99999999999);
         await config.minter.connect(config.accounts.deployer).armadilloSet(99);
+      });
+    });
+
+    describe("withdrawTokensAfterAuction", async function () {
+      it("reverts when not core admin ACL", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .withdrawTokensAfterAuction([0], config.accounts.deployer.address),
+          "Only Core AdminACL allowed"
+        );
+      });
+
+      it("reverts when auction has not ended", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .withdrawTokensAfterAuction([0], config.accounts.deployer.address),
+          "Auction has not ended"
+        );
+      });
+
+      it("withdraws tokens when called by core admin ACL", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure start timestamp
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(testValues.timestampStart);
+        // pre-mint tokens
+        await config.minter.connect(config.accounts.deployer).preMint(10);
+        // advance time to auction end
+        await ethers.provider.send("evm_mine", [
+          testValues.timestampStart + testValues.auctionLengthInSeconds + 999,
+        ]);
+        // withdraw tokens
+        await config.minter
+          .connect(config.accounts.deployer)
+          .withdrawTokensAfterAuction([0, 1, 3], config.accounts.user2.address);
+        // verify tokens are withdrawn
+        expect(
+          await config.genArt721Core.ownerOf(testValues.tokenIdZero)
+        ).to.equal(config.accounts.user2.address);
+        expect(
+          await config.genArt721Core.ownerOf(testValues.tokenIdOne)
+        ).to.equal(config.accounts.user2.address);
+        expect(
+          await config.genArt721Core.ownerOf(testValues.tokenIdThree)
+        ).to.equal(config.accounts.user2.address);
       });
     });
   });

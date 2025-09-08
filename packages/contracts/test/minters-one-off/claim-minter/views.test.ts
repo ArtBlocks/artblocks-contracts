@@ -345,5 +345,13 @@ runForEach.forEach((params) => {
         expect(bitmap0).to.equal(0);
       });
     });
+
+    describe("auctionLengthInSeconds", async function () {
+      it("returns correct auction length", async function () {
+        const config = await loadFixture(_beforeEach);
+        const auctionLength = await config.minter.auctionLengthInSeconds();
+        expect(auctionLength).to.equal(testValues.auctionLengthInSeconds);
+      });
+    });
   });
 });
