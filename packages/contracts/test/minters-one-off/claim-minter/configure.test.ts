@@ -13,7 +13,7 @@ import {
   PMPV0,
   PseudorandomAtomic,
 } from "../../../scripts/contracts";
-import { testValues } from "./constants";
+import { getTimestampOnePastSecond, testValues } from "./constants";
 
 interface T_ClaimMinterTestConfig extends T_Config {
   genArt721Core: GenArt721CoreV3_Engine;
@@ -284,27 +284,22 @@ runForEach.forEach((params) => {
 
       it("allows setting timestamp in future after auction has ended (e.g. failure scenario)", async function () {
         const config = await loadFixture(_beforeEach);
+        const timestampStart = await getTimestampOnePastSecond();
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampStart);
+          .configureTimestampStart(timestampStart);
         // advance time to auction end
         await ethers.provider.send("evm_mine", [
-          testValues.timestampStart + testValues.auctionLengthInSeconds + 999,
+          timestampStart + testValues.auctionLengthInSeconds + 999,
         ]);
         await config.minter
           .connect(config.accounts.deployer)
           .configureTimestampStart(
-            testValues.timestampStart +
-              testValues.auctionLengthInSeconds +
-              999 +
-              3600
+            timestampStart + testValues.auctionLengthInSeconds + 999 + 3600
           );
         const actualTimestamp = await config.minter.timestampStart();
         expect(actualTimestamp).to.equal(
-          testValues.timestampStart +
-            testValues.auctionLengthInSeconds +
-            999 +
-            3600
+          timestampStart + testValues.auctionLengthInSeconds + 999 + 3600
         );
       });
     });
@@ -360,14 +355,15 @@ runForEach.forEach((params) => {
       it("withdraws tokens when called by core admin ACL", async function () {
         const config = await loadFixture(_beforeEach);
         // configure start timestamp
+        const timestampStart = await getTimestampOnePastSecond();
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampStart);
+          .configureTimestampStart(timestampStart);
         // pre-mint tokens
         await config.minter.connect(config.accounts.deployer).preMint(10);
         // advance time to auction end
         await ethers.provider.send("evm_mine", [
-          testValues.timestampStart + testValues.auctionLengthInSeconds + 999,
+          timestampStart + testValues.auctionLengthInSeconds + 999,
         ]);
         // withdraw tokens
         await config.minter
