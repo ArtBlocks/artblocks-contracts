@@ -297,6 +297,8 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
                 tokenNumber: tokenNumber
             });
             require(!isTokenClaimed(tokenNumber), "Token already claimed");
+            // mark as claimed
+            _markTokenClaimed(tokenNumber);
             // transfer token to toAddress
             IERC721(coreContractAddress).safeTransferFrom({
                 from: address(this),
