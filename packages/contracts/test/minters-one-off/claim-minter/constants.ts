@@ -32,6 +32,7 @@ export const testValues = {
   tokenNumberFour: 4,
   tokenIdFour: 1000004,
   maxInvocations: 500,
+  auctionLengthInSeconds: 500,
 };
 
 export const events = {
@@ -41,3 +42,9 @@ export const events = {
   PriceConfigured: "PriceConfigured",
   TimestampStartConfigured: "TimestampStartConfigured",
 };
+
+export async function getTimestampOnePastSecond() {
+  const blockNumber = await ethers.provider.getBlockNumber();
+  const block = await ethers.provider.getBlock(blockNumber);
+  return block.timestamp - 1;
+}

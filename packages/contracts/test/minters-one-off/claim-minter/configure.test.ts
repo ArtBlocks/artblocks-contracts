@@ -85,6 +85,7 @@ runForEach.forEach((params) => {
         config.pseudorandomContract.address,
         config.projectOne,
         testValues.maxInvocations,
+        testValues.auctionLengthInSeconds,
       ]);
 
       // approve and set minter for project
@@ -136,6 +137,7 @@ runForEach.forEach((params) => {
             config.pseudorandomContract.address,
             config.projectOne,
             512, // maxInvocations = 512
+            testValues.auctionLengthInSeconds,
           ]),
           "Max invocations must be less than 512 for bitmap support"
         );
