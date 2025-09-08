@@ -14,7 +14,7 @@ const inputs: T_Inputs = {
     "0x4a6d2e4a18e194317025d7a995c705aab58d3485",
     "0x62ADA51D5B4b3fc90d9B20904521e7Ef6690b189",
     "0x410084bbEefF6f34D20e2067A453f6e673De720E",
-    8,
+    12,
     500,
   ],
   libraries: {},
@@ -24,9 +24,9 @@ const inputs: T_Inputs = {
 ## Results:
 
 salt: `0x0000000000000000000000000000000000000000000000000000000000000000`
-Deploys to address: `0x7f3c2f345ac47a337a02c318c76d9d6f5b983f46`
+Deploys to address: `0xcfd951EcDa71F18890C9c07e76ada0079269a048`
 
-### Deployment transactions: `0xa5be774e531404a37e150f8337dfe2c6784e84442c49f19244e97fc44a219abe`
+### Deployment transactions: `0x4852fb7c612b243a90a617643f4db8b0ba6c4e674bb4de58c4d97a05a755e0eb`
 
 - sepolia dev:
-  https://sepolia.etherscan.io/address/0x7f3c2f345ac47a337a02c318c76d9d6f5b983f46#code
+  https://sepolia.etherscan.io/address/0xcfd951EcDa71F18890C9c07e76ada0079269a048#code
