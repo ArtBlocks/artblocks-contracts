@@ -177,6 +177,27 @@ runForEach.forEach((params) => {
         );
         expect(finalBalance).to.equal(initialBalance.add(1));
       });
+
+      it("supports scrolled batch pre-minting, enforces max invocations through scroll", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter.connect(config.accounts.deployer).preMint(10);
+        // verify last token number pre-minted is 9
+        const lastTokenInvocationPreMinted =
+          await config.minter.lastTokenInvocationPreMinted();
+        expect(lastTokenInvocationPreMinted).to.equal(10);
+
+        // mint 490 more tokens
+        await config.minter.connect(config.accounts.deployer).preMint(490);
+        // verify last token number pre-minted is 500
+        const lastTokenInvocationPreMinted2 =
+          await config.minter.lastTokenInvocationPreMinted();
+        expect(lastTokenInvocationPreMinted2).to.equal(500);
+        // verify no more tokens can be pre-minted
+        await expectRevert(
+          config.minter.connect(config.accounts.deployer).preMint(1),
+          "Amount exceeds maximum invocations"
+        );
+      });
     });
 
     describe("configurePricePerTokenInWei", async function () {

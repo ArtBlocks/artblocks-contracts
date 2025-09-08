@@ -110,6 +110,9 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     uint256 public basePriceInWei;
     uint256 public priceIncrementInWei;
 
+    // last token number pre-minted - used to ensure pre-minted tokens have no gaps
+    uint256 public lastTokenInvocationPreMinted = 0;
+
     // default price increment in wei for each token (0.0005 ETH)
     uint256 public constant DEFAULT_PRICE_INCREMENT_IN_WEI = 500000000000000;
 
@@ -230,7 +233,10 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             selector: this.preMint.selector
         });
 
-        require(amount <= maxInvocations, "Amount exceeds maximum invocations");
+        require(
+            amount + lastTokenInvocationPreMinted <= maxInvocations,
+            "Amount exceeds maximum invocations"
+        );
 
         // require zero mints on the project before this to support claim logic
         {
@@ -238,9 +244,11 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             (uint256 invocations, , , , , ) = IGenArt721CoreContractV3(
                 coreContractAddress
             ).projectStateData(projectId);
+
+            // require lastTokenInvocationPreMinted is equal to project invocations
             require(
-                invocations == 0,
-                "Only zero mints on the project before this"
+                lastTokenInvocationPreMinted == invocations,
+                "Last minter token invocation is equal to core invocations"
             );
         }
 
@@ -254,6 +262,10 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
                 sender: msg.sender
             });
         }
+
+        // update last token invocation pre-minted
+        lastTokenInvocationPreMinted += amount;
+
         emit TokensPreMinted(amount);
     }
 
