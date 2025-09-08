@@ -104,7 +104,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     mapping(address => bool) public walletHasClaimed;
 
     uint256 public timestampStart;
-    uint256 public immutable auctionLengthInSeconds = 500;
+    uint256 public immutable auctionLengthInSeconds;
 
     // price configuration
     uint256 public basePriceInWei;
