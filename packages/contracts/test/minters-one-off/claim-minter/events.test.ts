@@ -12,7 +12,7 @@ import {
   PMPV0,
   PseudorandomAtomic,
 } from "../../../scripts/contracts";
-import { testValues } from "./constants";
+import { testValues, getTimestampOnePastSecond } from "./constants";
 import {
   getPMPInputConfig,
   PMP_AUTH_ENUM,
@@ -90,6 +90,7 @@ runForEach.forEach((params) => {
         config.pseudorandomContract.address,
         testValues.projectOne,
         500, // maxInvocations
+        testValues.auctionLengthInSeconds,
       ]);
 
       // approve and set minter for project
@@ -163,7 +164,7 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampPast);
+          .configureTimestampStart(await getTimestampOnePastSecond());
 
         await expect(
           config.minter
@@ -193,7 +194,7 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampPast);
+          .configureTimestampStart(await getTimestampOnePastSecond());
 
         // Claim first token
         await expect(
@@ -293,7 +294,7 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampPast);
+          .configureTimestampStart(await getTimestampOnePastSecond());
 
         await expect(
           config.minter
@@ -323,7 +324,7 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampPast);
+          .configureTimestampStart(await getTimestampOnePastSecond());
 
         // Claim first token (base price)
         await expect(
@@ -375,13 +376,14 @@ runForEach.forEach((params) => {
           .withArgs(testValues.basePriceInWei, testValues.priceIncrementInWei);
 
         // Configure timestamp
+        const timestampOnePastSecond = await getTimestampOnePastSecond();
         await expect(
           config.minter
             .connect(config.accounts.deployer)
-            .configureTimestampStart(testValues.timestampPast)
+            .configureTimestampStart(timestampOnePastSecond)
         )
           .to.emit(config.minter, "TimestampStartConfigured")
-          .withArgs(testValues.timestampPast);
+          .withArgs(timestampOnePastSecond);
 
         // Pre-mint tokens
         await expect(config.minter.connect(config.accounts.deployer).preMint(1))

@@ -12,7 +12,7 @@ import {
   PMPV0,
   PseudorandomAtomic,
 } from "../../../scripts/contracts";
-import { testValues } from "./constants";
+import { testValues, getTimestampOnePastSecond } from "./constants";
 import {
   getPMPInputConfig,
   PMP_AUTH_ENUM,
@@ -86,6 +86,7 @@ runForEach.forEach((params) => {
         config.pseudorandomContract.address,
         testValues.projectOne,
         testValues.maxInvocations,
+        testValues.auctionLengthInSeconds,
       ]);
 
       // approve and set minter for project
@@ -153,7 +154,7 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampPast);
+          .configureTimestampStart(await getTimestampOnePastSecond());
 
         // Claim token
         await config.minter
@@ -246,7 +247,7 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampPast);
+          .configureTimestampStart(await getTimestampOnePastSecond());
 
         // Claim tokens 0 and 2
         await config.minter
@@ -324,7 +325,7 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampPast);
+          .configureTimestampStart(await getTimestampOnePastSecond());
 
         await config.minter
           .connect(config.accounts.user)
@@ -342,6 +343,14 @@ runForEach.forEach((params) => {
         const bitmap0 = await config.minter.claimedBitmaps(0);
         // Should be zero when no tokens are claimed
         expect(bitmap0).to.equal(0);
+      });
+    });
+
+    describe("auctionLengthInSeconds", async function () {
+      it("returns correct auction length", async function () {
+        const config = await loadFixture(_beforeEach);
+        const auctionLength = await config.minter.auctionLengthInSeconds();
+        expect(auctionLength).to.equal(testValues.auctionLengthInSeconds);
       });
     });
   });

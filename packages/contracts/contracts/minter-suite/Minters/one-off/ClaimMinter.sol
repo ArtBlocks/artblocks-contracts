@@ -104,10 +104,14 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     mapping(address => bool) public walletHasClaimed;
 
     uint256 public timestampStart;
+    uint256 public immutable auctionLengthInSeconds;
 
     // price configuration
     uint256 public basePriceInWei;
     uint256 public priceIncrementInWei;
+
+    // last token number pre-minted - used to ensure pre-minted tokens have no gaps
+    uint256 public lastTokenInvocationPreMinted = 0;
 
     // default price increment in wei for each token (0.0005 ETH)
     uint256 public constant DEFAULT_PRICE_INCREMENT_IN_WEI = 500000000000000;
@@ -131,6 +135,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
      * interact with.
      * @param projectId_ The project ID for the Art Blocks project.
      * @param maxInvocations_ The maximum number of invocations allowed for this project (e.g., 500).
+     * @param auctionLengthInSeconds_ The length of the auction in seconds.
      */
     constructor(
         address minterFilter_,
@@ -138,7 +143,8 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
         address pmpContract_,
         address pseudorandomAtomicContract_,
         uint256 projectId_,
-        uint256 maxInvocations_
+        uint256 maxInvocations_,
+        uint256 auctionLengthInSeconds_
     ) ReentrancyGuard() {
         require(
             maxInvocations_ < 512,
@@ -152,6 +158,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
         );
         projectId = projectId_;
         maxInvocations = maxInvocations_;
+        auctionLengthInSeconds = auctionLengthInSeconds_;
     }
 
     /**
@@ -188,6 +195,8 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     /**
      * @notice Sets the timestamp when claiming can begin.
      * Only callable by the core contract's Admin ACL.
+     * @dev Intentionally allows admin to update start timestamp at any time, to allow
+     * for flexibility, emergency operational reasons, etc.
      * @dev This function sets the earliest time when users can claim tokens.
      * The timestamp should be provided in Unix timestamp format (seconds since epoch).
      * @param timestampStart_ Unix timestamp when claiming can begin.
@@ -224,7 +233,24 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             selector: this.preMint.selector
         });
 
-        require(amount <= maxInvocations, "Amount exceeds maximum invocations");
+        require(
+            amount + lastTokenInvocationPreMinted <= maxInvocations,
+            "Amount exceeds maximum invocations"
+        );
+
+        // require zero mints on the project before this to support claim logic
+        {
+            // parse invocations from core contract projectStateData
+            (uint256 invocations, , , , , ) = IGenArt721CoreContractV3(
+                coreContractAddress
+            ).projectStateData(projectId);
+
+            // require lastTokenInvocationPreMinted is equal to project invocations
+            require(
+                lastTokenInvocationPreMinted == invocations,
+                "Last minter token invocation is equal to core invocations"
+            );
+        }
 
         // EFFECTS
         // Mint tokens to this contract
@@ -236,14 +262,73 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
                 sender: msg.sender
             });
         }
+
+        // update last token invocation pre-minted
+        lastTokenInvocationPreMinted += amount;
+
         emit TokensPreMinted(amount);
+    }
+
+    /**
+     * Allow admin to withdraw tokens from this contract AFTER auction has ended.
+     * Input verification is handled by reverting on transfer - verify inputs before
+     * calling to avoid gas costs in reverted transactions.
+     * @dev No per-wallet mint limits - all are sent to the same address.
+     * @dev Only callable by the core contract's Admin ACL.
+     * @dev Operationally rely on admin to verifiably withdraw tokens to burn after auction has ended,
+     * in the case where auction is not sold out. In failure scenarios, auction may be re-ran by admin
+     * updating start timestamp instead of withdrawing tokens.
+     * @param tokenNumbers Token numbers to withdraw, array.
+     * @param toAddress Address to withdraw tokens to.
+     */
+    function withdrawTokensAfterAuction(
+        uint256[] memory tokenNumbers,
+        address toAddress
+    ) external {
+        // CHECKS
+        AuthLib.onlyCoreAdminACL({
+            coreContract: coreContractAddress,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.withdrawTokensAfterAuction.selector
+        });
+        // check that was configured andauction has ended
+        require(
+            timestampStart > 0 &&
+                block.timestamp >= timestampStart + auctionLengthInSeconds,
+            "Auction has not ended"
+        );
+
+        // EFFECTS
+        uint256 tokenNumbersLength = tokenNumbers.length;
+        for (uint256 i = 0; i < tokenNumbersLength; i++) {
+            uint256 tokenNumber = tokenNumbers[i];
+            // use helpers to convert from token number to token id
+            uint256 tokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
+                projectId: projectId,
+                tokenNumber: tokenNumber
+            });
+            require(!isTokenClaimed(tokenNumber), "Token already claimed");
+            // mark as claimed
+            _markTokenClaimed(tokenNumber);
+            // transfer token to toAddress
+            IERC721(coreContractAddress).safeTransferFrom({
+                from: address(this),
+                to: toAddress,
+                tokenId: tokenId
+            });
+            emit TokenWithdrawnAfterAuction({
+                tokenNumber: tokenNumber,
+                toAddress: toAddress
+            });
+        }
     }
 
     /**
      * @notice Claims token `tokenNumber` by paying the required price.
      * Available once claiming has started, unless sender is artist or admin.
      * @dev This function allows users to claim one pre-minted token per wallet by paying the exact price
-     * calculated by _priceByTokenInvocationInWei. The function checks that the token is not already
+     * calculated by _priceByTokenNumberInWei. The function checks that the token is not already
      * claimed, that the wallet has not claimed a token yet, that claiming has started, and that the exact payment
      * amount is provided. Only artist or admin are allowed to claim before configured start time.
      * If a wallet has already claimed a token, the function will revert.
@@ -255,8 +340,9 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
      */
     function claimToken(uint256 tokenNumber) external payable nonReentrant {
         // check that token number is within allowed range
+        // @dev use lt because e.g. 500 max invocations has max token number of 499
         require(
-            tokenNumber <= maxInvocations,
+            tokenNumber < maxInvocations,
             "Token number exceeds maximum invocations"
         );
         // check that token number is unclaimed
@@ -273,9 +359,15 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
                 contract_: address(this),
                 selector: this.claimToken.selector
             });
+        } else {
+            // auction is gte start time, check that it has not ended
+            require(
+                block.timestamp < timestampStart + auctionLengthInSeconds,
+                "Auction has ended"
+            );
         }
         // check value of msg.value
-        uint256 requiredPrice = _priceByTokenInvocationInWei(tokenNumber);
+        uint256 requiredPrice = _priceByTokenNumberInWei(tokenNumber);
         require(msg.value == requiredPrice, "Only send price per token");
         // EFFECTS
         // mark token as claimed
@@ -287,10 +379,12 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             projectId,
             tokenNumber
         );
-        bytes32 hashSeed = _getPseudorandomAtomic({
+        bytes32 claimHash = _getPseudorandomAtomic({
             coreContract: coreContractAddress,
             tokenId: tokenId
         });
+        // require non-zero hash seed
+        require(claimHash != 0, "Only non-zero hash seed");
 
         // INTERACTIONS
         IPMPV0.PMPInput[] memory pmpInputs = new IPMPV0.PMPInput[](1);
@@ -302,7 +396,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             configuredParamType: IPMPV0.ParamType.String,
             configuredValue: bytes32(0),
             configuringArtistString: false,
-            configuredValueString: Strings.toHexString(uint256(hashSeed))
+            configuredValueString: Strings.toHexString(uint256(claimHash))
         });
         // this contract must be configured to be permitted to configure token params
         pmpContract.configureTokenParams({
@@ -337,6 +431,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     }
 
     function armadilloSet(uint256 val) external {
+        // CHECKS
         // only core admin acl
         AuthLib.onlyCoreAdminACL({
             coreContract: coreContractAddress,
@@ -344,8 +439,15 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             contract_: address(this),
             selector: this.armadilloSet.selector
         });
-        require(val < 100, "smoller");
 
+        require(val < 100, "smoller");
+        // only before timestamp start
+        require(
+            block.timestamp < timestampStart,
+            "Only before timestamp start"
+        );
+
+        // EFFECTS
         uint256 sltt = uint256(_ARMADILLO_SLOT);
         bytes32 amdk = _ARMADILLO_KEY;
         assembly {
@@ -408,12 +510,12 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     }
 
     /**
-     * @notice Internal function to calculate the price in wei for token number `tokenInvocation`.
-     * @param tokenInvocation Token number to get the price for.
+     * @notice Internal function to calculate the price in wei for token number `tokenNumber`.
+     * @param tokenNumber Token number to get the price for.
      * @return Price in wei for the specified token.
      */
-    function _priceByTokenInvocationInWei(
-        uint256 tokenInvocation
+    function _priceByTokenNumberInWei(
+        uint256 tokenNumber
     ) internal view returns (uint256) {
         uint256 basePrice = basePriceInWei;
         uint256 priceIncrement = priceIncrementInWei;
@@ -423,8 +525,7 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
             priceIncrement = DEFAULT_PRICE_INCREMENT_IN_WEI;
         }
 
-        return
-            basePrice + (tokenInvocation * (priceIncrement + _armadilloGet()));
+        return basePrice + (tokenNumber * (priceIncrement + _armadilloGet()));
     }
 
     function _armadilloGet() internal view returns (uint256 val) {
@@ -447,16 +548,16 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
     }
 
     /**
-     * @notice Internal function that gets the bitmap index and bit position for a token invocation
-     * @param tokenInvocation The token invocation number
+     * @notice Internal function that gets the bitmap index and bit position for a token number
+     * @param tokenNumber The token number
      * @return bitmapIndex The index in the bitmap array (0, 1, 2, etc.)
      * @return bitPosition The position within that bitmap (0-255)
      */
     function _getBitmapPosition(
-        uint256 tokenInvocation
+        uint256 tokenNumber
     ) internal pure returns (uint256 bitmapIndex, uint8 bitPosition) {
-        bitmapIndex = tokenInvocation / 256;
-        bitPosition = uint8(tokenInvocation % 256);
+        bitmapIndex = tokenNumber / 256;
+        bitPosition = uint8(tokenNumber % 256);
     }
 
     /**
@@ -479,11 +580,11 @@ contract ClaimMinter is ISharedMinterRequired, IClaimMinter, ReentrancyGuard {
 
     /**
      * @notice Internal function that marks a token as claimed using bitmap storage
-     * @param tokenInvocation The token invocation number
+     * @param tokenNumber The token number
      */
-    function _markTokenClaimed(uint256 tokenInvocation) internal {
+    function _markTokenClaimed(uint256 tokenNumber) internal {
         (uint256 bitmapIndex, uint8 bitPosition) = _getBitmapPosition(
-            tokenInvocation
+            tokenNumber
         );
         uint256 currentBitmap = claimedBitmaps[bitmapIndex];
         claimedBitmaps[bitmapIndex] = BitMaps256.set(
