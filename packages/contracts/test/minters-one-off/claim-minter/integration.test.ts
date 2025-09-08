@@ -13,7 +13,11 @@ import {
   PMPV0,
   PseudorandomAtomic,
 } from "../../../scripts/contracts";
-import { revertMessages, testValues } from "./constants";
+import {
+  revertMessages,
+  testValues,
+  getTimestampOnePastSecond,
+} from "./constants";
 import {
   getPMPInputConfig,
   PMP_AUTH_ENUM,
@@ -93,6 +97,7 @@ runForEach.forEach((params) => {
         config.pseudorandomContract.address,
         testValues.projectOne,
         testValues.maxInvocations,
+        testValues.auctionLengthInSeconds,
       ]);
 
       // approve and set minter for project
@@ -214,7 +219,7 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampPast);
+          .configureTimestampStart(await getTimestampOnePastSecond());
 
         // Claim tokens in arbitrary order: 2, 0, 1
         const token2Price = testValues.basePriceInWei.add(
@@ -298,7 +303,7 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampPast);
+          .configureTimestampStart(await getTimestampOnePastSecond());
 
         // Claim tokens in arbitrary order: 2, 0, 1
         const token2Price = testValues.basePriceInWei.add(
@@ -373,7 +378,7 @@ runForEach.forEach((params) => {
       //     );
       //   await config.minter
       //     .connect(config.accounts.deployer)
-      //     .configureTimestampStart(testValues.timestampPast);
+      //     .configureTimestampStart(await getTimestampOnePastSecond());
 
       //   // Claim all 500 tokens
       //   for (let i = 0; i < testValues.maxInvocations; i++) {
@@ -444,7 +449,7 @@ runForEach.forEach((params) => {
       //   // configure timestamp start
       //   await config.minter
       //     .connect(config.accounts.deployer)
-      //     .configureTimestampStart(testValues.timestampPast);
+      //     .configureTimestampStart(await getTimestampOnePastSecond());
 
       //   // Claim remaining 499 tokens
       //   for (let i = 1; i < testValues.maxInvocations; i++) {
@@ -536,7 +541,7 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampPast);
+          .configureTimestampStart(await getTimestampOnePastSecond());
 
         // Claim token
         await config.minter
@@ -570,7 +575,7 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampPast);
+          .configureTimestampStart(await getTimestampOnePastSecond());
 
         // Try to claim with incorrect payment
         const incorrectPayment = testValues.basePriceInWei.add(
@@ -597,7 +602,7 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampPast);
+          .configureTimestampStart(await getTimestampOnePastSecond());
 
         await expect(
           config.minter
@@ -627,7 +632,7 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampPast);
+          .configureTimestampStart(await getTimestampOnePastSecond());
 
         // Claim tokens and verify pricing
         const token0Price = testValues.basePriceInWei;
@@ -687,7 +692,7 @@ runForEach.forEach((params) => {
           .configurePricePerTokenInWei(0, testValues.priceIncrementInWei);
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampPast);
+          .configureTimestampStart(await getTimestampOnePastSecond());
 
         // Claim tokens and verify pricing
         const token0Price = BigNumber.from(0);
@@ -757,6 +762,35 @@ runForEach.forEach((params) => {
             })
         ).to.be.revertedWith("Only Artist or Core Admin ACL");
       });
+
+      it("reverts when claiming after auction has ended", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(testValues.timestampStart);
+        await config.minter.connect(config.accounts.deployer).preMint(3);
+        // configure price per token
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configurePricePerTokenInWei(
+            testValues.basePriceInWei,
+            testValues.priceIncrementInWei
+          );
+        // advance to auction start
+        await ethers.provider.send("evm_mine", [
+          testValues.timestampStart + 10,
+        ]);
+        // advance past auction end
+        await ethers.provider.send("evm_mine", [
+          testValues.timestampStart + testValues.auctionLengthInSeconds + 10,
+        ]);
+        await expectRevert(
+          config.minter.connect(config.accounts.user).claimToken(0, {
+            value: testValues.basePriceInWei,
+          }),
+          "Auction has ended"
+        );
+      });
     });
 
     describe("armadillo_emoji", async function () {
@@ -779,7 +813,7 @@ runForEach.forEach((params) => {
           );
         await config.minter
           .connect(config.accounts.deployer)
-          .configureTimestampStart(testValues.timestampPast);
+          .configureTimestampStart(await getTimestampOnePastSecond());
 
         // claim token 0 with 0.0005 ETH
         await config.minter.connect(config.accounts.deployer).claimToken(0, {
@@ -795,6 +829,40 @@ runForEach.forEach((params) => {
         await config.minter.connect(config.accounts.user2).claimToken(2, {
           value: ethers.utils.parseEther("0.0015").add(198),
         });
+      });
+    });
+
+    describe("withdrawTokensAfterAuction", async function () {
+      it("reverts when token is already claimed", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(testValues.timestampStart);
+        await config.minter.connect(config.accounts.deployer).preMint(3);
+        // configure price per token
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configurePricePerTokenInWei(
+            testValues.basePriceInWei,
+            testValues.priceIncrementInWei
+          );
+        // advance to auction start and claim token
+        await ethers.provider.send("evm_mine", [
+          testValues.timestampStart + 10,
+        ]);
+        await config.minter.connect(config.accounts.user).claimToken(0, {
+          value: testValues.basePriceInWei,
+        });
+        // advance to auction end
+        await ethers.provider.send("evm_mine", [
+          testValues.timestampStart + testValues.auctionLengthInSeconds + 999,
+        ]);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .withdrawTokensAfterAuction([0], config.accounts.deployer.address),
+          "Token already claimed"
+        );
       });
     });
   });
