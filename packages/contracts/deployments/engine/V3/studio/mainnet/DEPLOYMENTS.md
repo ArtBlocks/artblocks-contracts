@@ -2485,3 +2485,47 @@ Date: 2024-10-03T20:31:48.898Z
         ---
       
         
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2025-09-11T20:31:17.359Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** mainnet
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000559cA3F3f1279C0ec121c302ed010457#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x000000008DD9A7CD3f4A267A88082d4a1E2f6553#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x000000004058B5159ABB5a3Dd8cf775A7519E75F#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine Flex | 0x000000DC68934eD27Fd11E32491cdF6717ACAF21
+  
+        **Engine Contract:** https://etherscan.io/address/0x000000DC68934eD27Fd11E32491cdF6717ACAF21#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Manuel Larino
+        - **Token Name:** Art Blocks Studio | 88
+        - **Token Ticker:** ABSTUDIO_88
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x05f06480b46AE8020694fF3E6D94B0C1e74Be92d
+        - **Super Admin Address:** 0x0a48cf89cd63bb24459a990d5a89d31b6a92d0dd        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-88-mainnet
+        
+        ---
+      
+        
