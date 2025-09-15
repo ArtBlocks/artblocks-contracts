@@ -77,7 +77,7 @@ class WalletClientUnavailableError extends Error {
   }
 }
 
-const POLL_INTERVAL = 10000;
+const POLL_INTERVAL = 60000;
 const MAX_ERROR_COUNT = 5;
 
 export const receiptPollingMachine = setup({
