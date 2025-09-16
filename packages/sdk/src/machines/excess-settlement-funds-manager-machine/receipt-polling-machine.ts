@@ -77,16 +77,16 @@ class WalletClientUnavailableError extends Error {
   }
 }
 
-const POLL_INTERVAL = 60000;
 const MAX_ERROR_COUNT = 5;
 
 export const receiptPollingMachine = setup({
   types: {
-    input: {} as { artblocksClient: ArtBlocksClient },
+    input: {} as { artblocksClient: ArtBlocksClient; pollingInterval: number },
     context: {} as {
       artblocksClient: ArtBlocksClient;
       receipts?: ReceiptSettlementDataFragment[];
       errorMessageCounts: Record<string, number>;
+      pollingInterval: number;
     },
   },
   actors: {
@@ -94,7 +94,7 @@ export const receiptPollingMachine = setup({
       async ({
         input,
       }: {
-        input: { artblocksClient: ArtBlocksClient };
+        input: { artblocksClient: ArtBlocksClient; pollingInterval?: number };
       }): Promise<ReceiptSettlementDataFragment[]> => {
         const { artblocksClient } = input;
         const walletClient = artblocksClient.getWalletClient();
@@ -151,6 +151,9 @@ export const receiptPollingMachine = setup({
       return context.errorMessageCounts[errorMessage] + 1 >= MAX_ERROR_COUNT;
     },
   },
+  delays: {
+    pollingInterval: ({ context }) => context.pollingInterval,
+  },
 }).createMachine({
   /** @xstate-layout N4IgpgJg5mDOIC5QCcwGMwEsAOAXACgPYA2xmAdlALICGaAFhWAHQBmYuDFUASulnlgBiCIXIsKAN0IBrFqgw4CJMpVpdxbDht78lsBFMJoauTGIDaABgC61m4lDZCsTGbGOQAD0QAWAOy+zABMwQBsAKz+AIz+cQDM8QAcEQA0IACeiPEAnPHMEQG+YcG+0Vahgf4AvtXpCgLKpNzqjJrsnG26ioJCYMjIhMjM2MSmrEMAtswNSkTNanRtLB06fD24BkYm7uT29p7OrruePghFIeFRsQnJaZmISdHMvjlvb-HRKfH+OWG19T0eHmqmoSyYWk63HWjWE-UGw1G4ymMyBTVBrQhqy6MP0hnI0h25j2tgs0QcSBARzcxNOfkCl0iMTi-kSKXSWQQwSsVmYSTC0V8SSS8SscWiwQBIFmwJULXBmgA7jQaZQhF5YLhTCwaKxcP0ABTlHlWACUQhl6PlGhYytVUAOlOpJ0pZxyEV5vmC0S+VjCb2iESeHMQJTCzDeVkFwTe4Wi-yl5EIEDgnktIOty0OLhpHldiAAtNFEsx-VZkv4RULvb4QwgC+GTTzRfEAmF-UKpem5YsbZC1mj4E6cy7QGcCylSzly0lK62kjW658gu7csa-RFRTU6tK0Rne8tmHazJRs8dafmEO6cswrHkrBF20G7zl-HXSv4+ck-WFil9K2E26Ahs+5gn28JDGeubkHSV7RDeVgpH8OS+FG8QRG8dYLi87z+OWuSVjkpS1LUQA */
   id: "receiptPollingMachine",
@@ -158,6 +161,7 @@ export const receiptPollingMachine = setup({
   context: ({ input }) => ({
     artblocksClient: input.artblocksClient,
     errorMessageCounts: {},
+    pollingInterval: input.pollingInterval,
   }),
   input: {},
   states: {
@@ -223,7 +227,7 @@ export const receiptPollingMachine = setup({
     },
     waiting: {
       after: {
-        [POLL_INTERVAL]: "fetchingReceipts",
+        pollingInterval: "fetchingReceipts",
       },
     },
     error: {
