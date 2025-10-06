@@ -72,7 +72,8 @@ const getProjectDetailsFragmentsDocument = graphql(/* GraphQL */ `
 `);
 
 export const getProjectDetailsDocument = graphql(/* GraphQL */ `
-  query GetProjectDetails($projectId: String!) {
+  query GetProjectDetails($projectId: String!, $ttl: Int = 15)
+  @cached(ttl: $ttl) {
     projects_metadata_by_pk(id: $projectId) {
       ...ProjectDetails
     }
