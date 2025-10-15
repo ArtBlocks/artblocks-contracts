@@ -173,7 +173,7 @@ __metadata:
     encoding: "npm:^0.1.13"
     eslint-config-custom: "npm:*"
     graphql: "npm:^16.8.2"
-    graphql-request: "npm:^6.1.0"
+    graphql-request: "npm:^7.3.0"
     jest: "npm:^29.7.0"
     jest-environment-jsdom: "npm:^29.7.0"
     jsdoc: "npm:^4.0.3"
@@ -14798,7 +14798,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql-request@npm:^6.0.0, graphql-request@npm:^6.1.0":
+"graphql-request@npm:^6.0.0":
   version: 6.1.0
   resolution: "graphql-request@npm:6.1.0"
   dependencies:
@@ -14807,6 +14807,17 @@ __metadata:
   peerDependencies:
     graphql: 14 - 16
   checksum: 10c0/f8167925a110e8e1de93d56c14245e7e64391dc8dce5002dd01bf24a3059f345d4ca1bb6ce2040e2ec78264211b0704e75da3e63984f0f74d2042f697a4e8cc6
+  languageName: node
+  linkType: hard
+
+"graphql-request@npm:^7.3.0":
+  version: 7.3.0
+  resolution: "graphql-request@npm:7.3.0"
+  dependencies:
+    "@graphql-typed-document-node/core": "npm:^3.2.0"
+  peerDependencies:
+    graphql: 14 - 16
+  checksum: 10c0/fc8734e1b9d8255b4d6dcd5eb2702409384600e3af55597335660c531864c784731442f427096f6bc52f0ce28cd8b6985e4c4c16ad0194efd3909d30f6f37420
   languageName: node
   linkType: hard
 
