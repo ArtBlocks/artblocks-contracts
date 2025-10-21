@@ -13,7 +13,7 @@ import {
   PMPV0,
   PseudorandomAtomic,
 } from "../../../scripts/contracts";
-import { testValues } from "./constants";
+import { getTimestampOnePastSecond, testValues } from "./constants";
 
 interface T_ClaimMinterTestConfig extends T_Config {
   genArt721Core: GenArt721CoreV3_Engine;
@@ -85,6 +85,7 @@ runForEach.forEach((params) => {
         config.pseudorandomContract.address,
         config.projectOne,
         testValues.maxInvocations,
+        testValues.auctionLengthInSeconds,
       ]);
 
       // approve and set minter for project
@@ -136,6 +137,7 @@ runForEach.forEach((params) => {
             config.pseudorandomContract.address,
             config.projectOne,
             512, // maxInvocations = 512
+            testValues.auctionLengthInSeconds,
           ]),
           "Max invocations must be less than 512 for bitmap support"
         );
@@ -174,6 +176,27 @@ runForEach.forEach((params) => {
           config.minter.address
         );
         expect(finalBalance).to.equal(initialBalance.add(1));
+      });
+
+      it("supports scrolled batch pre-minting, enforces max invocations through scroll [@skip-on-coverage]", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter.connect(config.accounts.deployer).preMint(10);
+        // verify last token number pre-minted is 9
+        const lastTokenInvocationPreMinted =
+          await config.minter.lastTokenInvocationPreMinted();
+        expect(lastTokenInvocationPreMinted).to.equal(10);
+
+        // mint 490 more tokens
+        await config.minter.connect(config.accounts.deployer).preMint(490);
+        // verify last token number pre-minted is 500
+        const lastTokenInvocationPreMinted2 =
+          await config.minter.lastTokenInvocationPreMinted();
+        expect(lastTokenInvocationPreMinted2).to.equal(500);
+        // verify no more tokens can be pre-minted
+        await expectRevert(
+          config.minter.connect(config.accounts.deployer).preMint(1),
+          "Amount exceeds maximum invocations"
+        );
       });
     });
 
@@ -278,6 +301,105 @@ runForEach.forEach((params) => {
 
         const actualTimestamp = await config.minter.timestampStart();
         expect(actualTimestamp).to.equal(0);
+      });
+
+      it("allows setting timestamp in future after auction has ended (e.g. failure scenario)", async function () {
+        const config = await loadFixture(_beforeEach);
+        const timestampStart = await getTimestampOnePastSecond();
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(timestampStart);
+        // advance time to auction end
+        await ethers.provider.send("evm_mine", [
+          timestampStart + testValues.auctionLengthInSeconds + 999,
+        ]);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(
+            timestampStart + testValues.auctionLengthInSeconds + 999 + 3600
+          );
+        const actualTimestamp = await config.minter.timestampStart();
+        expect(actualTimestamp).to.equal(
+          timestampStart + testValues.auctionLengthInSeconds + 999 + 3600
+        );
+      });
+    });
+
+    describe("armadillo_emoji", async function () {
+      it("reverts when not core admin ACL", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter.connect(config.accounts.artist).armadilloSet(99),
+          "Only Core AdminACL allowed"
+        );
+      });
+
+      it("reverts when value is gte 100", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter.connect(config.accounts.deployer).armadilloSet(100),
+          "smoller"
+        );
+      });
+
+      it("sets armadillo value when called by core admin ACL", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure start timestamp
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(testValues.timestampStart + 99999999999);
+        await config.minter.connect(config.accounts.deployer).armadilloSet(99);
+      });
+    });
+
+    describe("withdrawTokensAfterAuction", async function () {
+      it("reverts when not core admin ACL", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .withdrawTokensAfterAuction([0], config.accounts.deployer.address),
+          "Only Core AdminACL allowed"
+        );
+      });
+
+      it("reverts when auction has not ended", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .withdrawTokensAfterAuction([0], config.accounts.deployer.address),
+          "Auction has not ended"
+        );
+      });
+
+      it("withdraws tokens when called by core admin ACL", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure start timestamp
+        const timestampStart = await getTimestampOnePastSecond();
+        await config.minter
+          .connect(config.accounts.deployer)
+          .configureTimestampStart(timestampStart);
+        // pre-mint tokens
+        await config.minter.connect(config.accounts.deployer).preMint(10);
+        // advance time to auction end
+        await ethers.provider.send("evm_mine", [
+          timestampStart + testValues.auctionLengthInSeconds + 999,
+        ]);
+        // withdraw tokens
+        await config.minter
+          .connect(config.accounts.deployer)
+          .withdrawTokensAfterAuction([0, 1, 3], config.accounts.user2.address);
+        // verify tokens are withdrawn
+        expect(
+          await config.genArt721Core.ownerOf(testValues.tokenIdZero)
+        ).to.equal(config.accounts.user2.address);
+        expect(
+          await config.genArt721Core.ownerOf(testValues.tokenIdOne)
+        ).to.equal(config.accounts.user2.address);
+        expect(
+          await config.genArt721Core.ownerOf(testValues.tokenIdThree)
+        ).to.equal(config.accounts.user2.address);
       });
     });
   });

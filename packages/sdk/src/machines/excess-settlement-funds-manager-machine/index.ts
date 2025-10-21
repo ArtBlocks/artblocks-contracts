@@ -11,6 +11,8 @@ import { ArtBlocksClient } from "../..";
  * - Use shared web3 events type
  */
 
+const DEFAULT_RECEIPT_POLLING_INTERVAL = 60000;
+
 export type ExcessSettlementFundsManagerMachineEvent =
   | {
       type: "ART_BLOCKS_CLIENT_UPDATED";
@@ -31,6 +33,7 @@ export type ExcessSettlementFundsManagerMachineContext = {
     string,
     ActorRefFrom<typeof excessSettlementFundsClaimMachine>
   >;
+  receiptPollingInterval: number;
 };
 
 export const excessSettlementFundsManagerMachine = setup({
@@ -38,7 +41,7 @@ export const excessSettlementFundsManagerMachine = setup({
     input: {} as Pick<
       ExcessSettlementFundsManagerMachineContext,
       "artblocksClient"
-    >,
+    > & { receiptPollingInterval?: number },
     context: {} as ExcessSettlementFundsManagerMachineContext,
     events: {} as ExcessSettlementFundsManagerMachineEvent,
   },
@@ -78,6 +81,8 @@ export const excessSettlementFundsManagerMachine = setup({
   initial: "accountUnavailable",
   context: ({ input }) => ({
     artblocksClient: input.artblocksClient,
+    receiptPollingInterval:
+      input.receiptPollingInterval ?? DEFAULT_RECEIPT_POLLING_INTERVAL,
   }),
   on: {
     EXCESS_SETTLEMENT_FUNDS_CLAIMED: {
@@ -126,7 +131,7 @@ export const excessSettlementFundsManagerMachine = setup({
     },
     listeningForReceipts: {
       entry: enqueueActions(({ context, enqueue }) => {
-        const { artblocksClient } = context;
+        const { artblocksClient, receiptPollingInterval } = context;
 
         const walletClient = artblocksClient.getWalletClient();
         const publicClient = artblocksClient.getPublicClient();
@@ -140,6 +145,7 @@ export const excessSettlementFundsManagerMachine = setup({
           systemId: "receiptPollingMachine",
           input: {
             artblocksClient,
+            pollingInterval: receiptPollingInterval,
           },
         });
       }),

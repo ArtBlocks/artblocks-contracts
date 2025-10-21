@@ -32,7 +32,7 @@ const bytecodeStorageReaderContract =
   "0x000000000000A791ABed33872C44a3D215a3743B";
 
 const inputs: T_Inputs = {
-  contractName: "GenArt721CoreV3_Curated",
+  contractName: "GenArt721CoreV3_Curated_Flex",
   args: [
     engineConfiguration,
     adminACLContractAddress,
@@ -50,13 +50,13 @@ const inputs: T_Inputs = {
 
 ## Results:
 
-Deploys to address: `0xAB000TBD`
+Deploys to address: `0xAB00000000002ADE39f58F9D8278a31574fFBe77`
 
 ### Deployment transactions:
 
-- TBD
+- https://etherscan.io/tx/0x5c95b77aa37a8a26c496cc989f7cd37ca0be96b25dd4a0764375a3a4fa1d78a9
 
-## Follow-on transactions:
+## Follow-on transactions: UP NEXT
 
 I. Add `GenArt721CoreV3_Curated` to `CoreRegistry` through `EngineFactory` call to `registerMultipleContracts`:
 
@@ -64,27 +64,28 @@ I. Add `GenArt721CoreV3_Curated` to `CoreRegistry` through `EngineFactory` call 
 
 args:
 
-- `0xAB000TBD` // core address
+- `0xAB00000000002ADE39f58F9D8278a31574fFBe77` // core address
 - `0x76332e322e370000000000000000000000000000000000000000000000000000` // core version = "v3.2.7"
 - `0x47656e417274373231436f726556335f456e67696e655f466c657800000000` // core type = "GenArt721CoreV3_Engine_Flex"
 
 Registration tx:
 
-- TBD
+- https://etherscan.io/tx/0xa89054cdefb1799515af3f9caefbdaa06cb6180fde22ddb6658432221ed227fb
 
-II. Re-Call `updateMinterContract` on `GenArt721CoreV3_Curated` to set `MinterFilter` contract:
+II. Re-Call `updateMinterContract` on `GenArt721CoreV3_Curated_Flex` to set `MinterFilter` contract:
 
 > Note: This fixes an indexing quirk associated with not approving the core in same block as deployment. It does not alter on-chain state.
 
-- TBD
+- https://etherscan.io/tx/0x7e4f07444243ca16b2c5eeb1936715a58463f46b4f3f409b23a31cc04a6666ef
 
 III. Follow-on configuring:
 
 - update dependency registry
+- update on-chain generator
 - set render provider primary and secondary sales addresses (secondary sales address is different than primary sales address)
 - update render provider primary sales percentage
 
-- TBD
+- https://etherscan.io/tx/0x7e4f07444243ca16b2c5eeb1936715a58463f46b4f3f409b23a31cc04a6666ef
 
 ## Off-chain steps:
 
