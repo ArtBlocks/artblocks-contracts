@@ -50,29 +50,57 @@ contract SRHooks is
 
     address public PMPV0_ADDRESS;
 
-    // @dev Set of token ids that are currently in state SEND
-    EnumerableSet.UintSet private _sendingTokens;
+    // ------ TOKEN METADATA STATE VARIABLES ------
 
-    // @dev per-token Set of token ids that are currently receiving via SEND_TO's receiving token
-    mapping(uint256 => EnumerableSet.UintSet) private _receivingTokensTo;
+    enum TokenMetadataType {
+        NORMAL, // hand-drawn, ai-generated, etc. - not authentically tied to any specific asset
+        ERC721_TOKEN // authentically tied to a specific ERC721 token (signed off-chain by artist-approved system)
+    }
+
+    struct TokenMetadata {
+        address bitmapImageAddress; // 20 bytes
+        TokenMetadataType metadataType; // 1 byte
+        address soundDataAddress; // 20 bytes
+        address thoughtBubbleTextAddress; // 20 bytes
+        bytes auxData; // uncapped bytes, may be used in conjunction with metadataType to store auxiliary, relevant signed data.
+    }
+
+    /// @notice mapping of token ids to their metadata
+    mapping(uint256 tokenId => TokenMetadata) private tokensMetadata;
+
+    // ------ SEND/RECEIVE STATE (GLOBAL) ------
 
     // enum for the different possible states of a token's SR configuration
-    enum SRState {
-        SEND,
-        RECEIVE,
-        SEND_TO
+    enum SendStates {
+        SendGeneral,
+        SendTo,
+        Neutral
     }
 
-    struct SRConfiguration {
-        // @dev packed storage
-        SRState state; // 1 byte
-        address receiver; // 20 bytes
+    enum ReceiveStates {
+        ReceiveGeneral,
+        ReceiveFrom,
+        Neutral
     }
 
-    mapping(uint256 => SRConfiguration) private _srConfigurations;
+    /// @notice Set of token ids that are currently in state SendGeneral
+    // @dev need O(1) access and O(1) insertion/removal for both sending and receiving tokens, so use an EnumerableSet
+    EnumerableSet.UintSet private _sendGeneralTokens;
 
-    // key values for SR PMP Keys
-    bytes32 public constant SR_PMP_KEY_STATE = keccak256("State");
+    /// @notice Set of token ids that are currently in state ReceiveGeneral
+    // @dev need O(1) access and O(1) insertion/removal for both sending and receiving tokens, so use an EnumerableSet
+    EnumerableSet.UintSet private _receiveGeneralTokens;
+
+    // ------ SEND/RECEIVE STATE (PER TOKEN) ------
+
+    /// @notice Set of token ids that are sending to a specific token
+    // @dev need O(1) access and O(1) insertion/removal for both sending and receiving tokens, so use an EnumerableSet
+    mapping(uint256 receivingTokenId => EnumerableSet.UintSet) private _tokensSendingToMe;
+
+    /// @notice Array of token ids that a given token is sending to (when in state SendTo)
+    // TODO - use an immutable string array here for storage efficiency!
+    // @dev need only O(1) access (not insertion/removal) for sending tokens, so use an array
+    mapping(uint256 sendingTokenId => uint256[] receivingTokenIds) private _tokensSendingTo;
 
     /// disable initialization in deployed implementation contract for clarity
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -102,13 +130,11 @@ contract SRHooks is
      * @notice Execution logic to be executed when a token's PMP is configured.
      * Reverts if the squiggle token id is invalid or the liftOwner does not have access to the squiggle token id.
      * @dev This hook is executed after the PMP is configured.
-     * @param coreContract The address of the core contract that was configured.
-     * @param tokenId The tokenId of the token that was configured.
      * @param pmpInput The PMP input that was used to successfully configure the token.
      */
     function onTokenPMPConfigure(
-        address coreContract,
-        uint256 tokenId,
+        address /*coreContract*/,
+        uint256 /*tokenId*/,
         IPMPV0.PMPInput calldata pmpInput
     ) external view override {
         // only allow PMPV0 to call this hook
@@ -137,10 +163,16 @@ contract SRHooks is
         // create a new augmentedTokenParams array with maximum length of
         // input tokenParams + 1 extra element for the squiggle's token hash
         uint256 originalLength = tokenParams.length;
-        uint256 augmentedMaxLength = originalLength + 1;
+        uint256 augmentedMaxLength = originalLength + 5; // 5 extra elements for the token metadata fields
         augmentedTokenParams = new IWeb3Call.TokenParam[](augmentedMaxLength);
 
-        // TODO - implement logic
+        // copy original tokenParams to augmentedTokenParams
+        for (uint256 i = 0; i < originalLength; i++) {
+            augmentedTokenParams[i] = tokenParams[i];
+        }
+
+        // append each token metadata field to the augmentedTokenParams array
+        // TODO - implement logic (will require SSTORE2 loading from the token metadata stored addresses)
 
         // return the augmented tokenParams
         return augmentedTokenParams;
