@@ -22,7 +22,7 @@ const inputs: T_Inputs = {
 
 ## Results:
 
-Deploys to address: `0xbe64e7da669064dee3c1519f2ef8982e34e47dbb`
+Deploys to address: `0x964f1f1a75ee4e836244dc24482b45e7ba5de198`
 
 ### Deployment transactions:
 
