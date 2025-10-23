@@ -16,6 +16,9 @@ import {IPMPConfigureHook} from "../../interfaces/v0.8.x/IPMPConfigureHook.sol";
 import {IPMPAugmentHook} from "../../interfaces/v0.8.x/IPMPAugmentHook.sol";
 
 import {EnumerableSet} from "@openzeppelin-5.0/contracts/utils/structs/EnumerableSet.sol";
+import {Initializable} from "@openzeppelin-5.0/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "@openzeppelin-5.0/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin-5.0/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
  * @title SRHooks
@@ -31,11 +34,21 @@ import {EnumerableSet} from "@openzeppelin-5.0/contracts/utils/structs/Enumerabl
  * effects intuitive during transfers and delegation revocations.
  * If the squiggle token id is configured to be default #1981, the squiggle PostParams will
  * be stripped, allowing the owner to effectively "clear" the squiggle-related PostParams back to default.
+ * @dev This contract follows the UUPS (Universal Upgradeable Proxy Standard) pattern.
+ * It uses OpenZeppelin's upgradeable contracts and must be deployed behind a proxy.
+ * Only the owner can authorize upgrades via the _authorizeUpgrade function, which may 
+ * be eventually disabled in future versions after to lock project functionality.
  */
-contract SRHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
+contract SRHooks is 
+    Initializable,
+    AbstractPMPAugmentHook, 
+    AbstractPMPConfigureHook,
+    OwnableUpgradeable,
+    UUPSUpgradeable 
+{
     using Strings for uint256;
 
-    address public immutable PMPV0_ADDRESS;
+    address public PMPV0_ADDRESS;
 
     // @dev Set of token ids that are currently in state SEND
     EnumerableSet.UintSet private _sendingTokens;
@@ -61,11 +74,26 @@ contract SRHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
     // key values for SR PMP Keys
     bytes32 public constant SR_PMP_KEY_STATE = keccak256("State");
 
+    /// disable initialization in deployed implementation contract for clarity
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     /**
-     * @notice Constructor
+     * @notice Initializes the contract with the PMPV0 address and sets the owner.
+     * @dev This function replaces the constructor for upgradeable contracts.
+     * Can only be called once due to the initializer modifier.
      * @param _pmpV0Address The address of the PMPV0 contract.
+     * @param _owner The address that will own this contract and authorize upgrades.
      */
-    constructor(address _pmpV0Address) {
+    function initialize(
+        address _pmpV0Address,
+        address _owner
+    ) public initializer {
+        __Ownable_init(_owner);
+        __UUPSUpgradeable_init();
+        
         PMPV0_ADDRESS = _pmpV0Address;
         // TODO - emit event with relevant state changes
     }
@@ -85,51 +113,7 @@ contract SRHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
     ) external view override {
         // only allow PMPV0 to call this hook
         require(msg.sender == PMPV0_ADDRESS, "Only PMPV0 allowed");
-
-        // EXTREMELY MINIMAL AND INCOMPLETE IMPLEMENTATION
-        // (just checking proof of concept)
-
-        // check if input key is SR_PMP_KEY_STATE
-        if (keccak256(bytes(pmpInput.key)) == SR_PMP_KEY_STATE) {
-            // manage state changes
-            // load previous state from this hook's storage
-            SRConfiguration memory previousState = _srConfigurations[tokenId];
-            // load new state from PMP input
-            SRState newState = SRState(pmpInput.configuredValue);
-            // if new state is different from previous state, update sets and update storage
-            if (newState != previousState.state) {
-                // @def flawed comparison logic i think
-                // REVERT PREVIOUS STATE ENUMERABLE MAPPINGS
-                // remove token from sending set if it was in it
-                if (previousState.state == SRState.SEND) {
-                    _sendingTokens.remove(tokenId);
-                }
-                // remove token from token's receiving set if it was in send to state
-                if (previousState.state == SRState.SEND_TO) {
-                    _receivingTokensTo[previousState.receiver].remove(tokenId);
-                }
-
-                // POPULATE NEW STATE ENUMERABLE MAPPINGS
-                // add token to sending set if it is now in send state
-                if (newState == SRState.SEND) {
-                    _sendingTokens.add(tokenId);
-                }
-                // add token to token's receiving set if it is now in send to state
-                // @dev TODO - need a better way to get new receiver address from PMP input
-                if (newState == SRState.SEND_TO) {
-                    _receivingTokensTo[pmpInput.configuredValue].add(tokenId);
-                }
-
-                // UPDATE STORAGE
-                _srConfigurations[tokenId] = SRConfiguration({
-                    state: newState,
-                    receiver: pmpInput.configuredValue // same as above, need better way to get new receiver address from PMP input
-                });
-            }
-        }
-
-        // other PMP keys:
-        // - pfp_image
+        // TODO - only keep this function if we need it for something like locking an image.
     }
 
     /**
@@ -161,6 +145,15 @@ contract SRHooks is AbstractPMPAugmentHook, AbstractPMPConfigureHook {
         // return the augmented tokenParams
         return augmentedTokenParams;
     }
+
+    /**
+     * @notice Authorizes an upgrade to a new implementation.
+     * @dev This function is required by the UUPS pattern and can only be called by the owner.
+     * @param newImplementation The address of the new implementation contract.
+     */
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyOwner {}
 
     function supportsInterface(
         bytes4 interfaceId

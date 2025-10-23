@@ -112,6 +112,8 @@ __metadata:
     "@openzeppelin-4.7/contracts": "npm:@openzeppelin/contracts@4.7.1"
     "@openzeppelin-4.8/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@4.8.0"
     "@openzeppelin-5.0/contracts": "npm:@openzeppelin/contracts@5.0.1"
+    "@openzeppelin-5.0/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@5.0.1"
+    "@openzeppelin/contracts": "npm:5.0.1"
     "@openzeppelin/hardhat-upgrades": "npm:^1.28.0"
     "@openzeppelin/test-helpers": "npm:^0.5.16"
     "@remix-project/remixd": "npm:^0.6.46"
@@ -6123,7 +6125,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openzeppelin-5.0/contracts@npm:@openzeppelin/contracts@5.0.1":
+"@openzeppelin-5.0/contracts-upgradeable@npm:@openzeppelin/contracts-upgradeable@5.0.1":
+  version: 5.0.1
+  resolution: "@openzeppelin/contracts-upgradeable@npm:5.0.1"
+  peerDependencies:
+    "@openzeppelin/contracts": 5.0.1
+  checksum: 10c0/49869321b1e6bd664d33c143c3be54e9205c7f53eb768e4375728401931d5f4d6c4144e4265d75fbdb8a7acfdd939d9726bd964d97b028484150dfa6497719c1
+  languageName: node
+  linkType: hard
+
+"@openzeppelin-5.0/contracts@npm:@openzeppelin/contracts@5.0.1, @openzeppelin/contracts@npm:5.0.1":
   version: 5.0.1
   resolution: "@openzeppelin/contracts@npm:5.0.1"
   checksum: 10c0/f3fcd60c851421d22b94e89850b1de5bb423c7caa77b570a458c3f918da8aca639ce9cf1f789eb91e0301c8a042e10d0e6215c346f66e29a2063e04787efca6b
