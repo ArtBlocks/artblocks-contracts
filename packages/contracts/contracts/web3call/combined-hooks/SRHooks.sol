@@ -52,6 +52,8 @@ contract SRHooks is
 
     // ------ TOKEN METADATA STATE VARIABLES ------
 
+    public constant NUM_METADATA_SLOTS = 5;
+
     enum TokenMetadataType {
         NORMAL, // hand-drawn, ai-generated, etc. - not authentically tied to any specific asset
         ERC721_TOKEN // authentically tied to a specific ERC721 token (signed off-chain by artist-approved system)
@@ -65,8 +67,11 @@ contract SRHooks is
         bytes auxData; // uncapped bytes, may be used in conjunction with metadataType to store auxiliary, relevant signed data.
     }
 
-    /// @notice mapping of token ids to their metadata
-    mapping(uint256 tokenId => TokenMetadata) private tokensMetadata;
+    /// @notice mapping of token ids to slot to metadata
+    mapping(uint256 tokenId => mapping(uint256 slot => TokenMetadata slotMetadata)) private tokensMetadata;
+
+    /// @notice mapping of token ids to the active slot
+    mapping(uint256 tokenId => uint256 activeSlot) private tokensActiveSlot;
 
     // ------ SEND/RECEIVE STATE (GLOBAL) ------
 
@@ -101,6 +106,11 @@ contract SRHooks is
     // TODO - use an immutable string array here for storage efficiency!
     // @dev need only O(1) access (not insertion/removal) for sending tokens, so use an array
     mapping(uint256 sendingTokenId => uint256[] receivingTokenIds) private _tokensSendingTo;
+
+    /// @notice Array of token ids that a token is open to receiving from (when in state ReceiveFrom)
+    // TODO - use an immutable string array here for storage efficiency!
+    // @dev need only O(1) access (not insertion/removal) for receiving tokens, so use an array
+    mapping(uint256 receivingTokenId => uint256[] sendingTokenIds) private _tokensReceivingFrom;
 
     /// disable initialization in deployed implementation contract for clarity
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -185,8 +195,18 @@ contract SRHooks is
      */
     function _authorizeUpgrade(
         address newImplementation
-    ) internal override onlyOwner {}
+    ) internal override onlyOwner {
+        // this version allows the owner to upgrade the contract to a new implementation
+        // in future versions, we may disable this functionality to lock project functionality
+        // to prevent any further upgrades
+    }
 
+    /**
+     * @notice Checks if the contract supports an interface.
+     * @dev This function is required by the ERC165 interface detection pattern.
+     * @param interfaceId The interface identifier to check.
+     * @return bool True if the contract supports the interface, false otherwise.
+     */
     function supportsInterface(
         bytes4 interfaceId
     )
