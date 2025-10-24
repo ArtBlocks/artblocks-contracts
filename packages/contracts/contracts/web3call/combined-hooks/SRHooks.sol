@@ -52,7 +52,7 @@ contract SRHooks is
 
     // ------ TOKEN METADATA STATE VARIABLES ------
 
-    public constant NUM_METADATA_SLOTS = 5;
+    uint256 public constant NUM_METADATA_SLOTS = 5;
 
     enum TokenMetadataType {
         NORMAL, // hand-drawn, ai-generated, etc. - not authentically tied to any specific asset
