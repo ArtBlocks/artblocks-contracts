@@ -20,6 +20,9 @@ import {Initializable} from "@openzeppelin-5.0/contracts-upgradeable/proxy/utils
 import {UUPSUpgradeable} from "@openzeppelin-5.0/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin-5.0/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
+import {ImmutableUint16Array} from "../../libs/v0.8.x/ImmutableUint16Array.sol";
+import {SSTORE2} from "../../libs/v0.8.x/SSTORE2.sol";
+
 /**
  * @title SRHooks
  * @author Art Blocks Inc.
@@ -54,17 +57,16 @@ contract SRHooks is
 
     uint256 public constant NUM_METADATA_SLOTS = 5;
 
-    enum TokenMetadataType {
-        NORMAL, // hand-drawn, ai-generated, etc. - not authentically tied to any specific asset
-        ERC721_TOKEN // authentically tied to a specific ERC721 token (signed off-chain by artist-approved system)
-    }
-
     struct TokenMetadata {
         address bitmapImageAddress; // 20 bytes
-        TokenMetadataType metadataType; // 1 byte
         address soundDataAddress; // 20 bytes
         address thoughtBubbleTextAddress; // 20 bytes
-        bytes auxData; // uncapped bytes, may be used in conjunction with metadataType to store auxiliary, relevant signed data.
+    }
+
+    struct TokenMetadataCalldata {
+        bytes bitmapImageCompressed;
+        bytes soundDataCompressed;
+        bytes thoughtBubbleText;
     }
 
     /// @notice mapping of token ids to slot to metadata
@@ -99,18 +101,17 @@ contract SRHooks is
     // ------ SEND/RECEIVE STATE (PER TOKEN) ------
 
     /// @notice Set of token ids that are sending to a specific token
+    // @dev TODO - could develop a custom packed array + index mapping uint16EnumerableSet to improve efficiency vs. OpenZeppelin's EnumerableSet
     // @dev need O(1) access and O(1) insertion/removal for both sending and receiving tokens, so use an EnumerableSet
     mapping(uint256 receivingTokenId => EnumerableSet.UintSet) private _tokensSendingToMe;
 
     /// @notice Array of token ids that a given token is sending to (when in state SendTo)
-    // TODO - use an immutable string array here for storage efficiency!
-    // @dev need only O(1) access (not insertion/removal) for sending tokens, so use an array
-    mapping(uint256 sendingTokenId => uint256[] receivingTokenIds) private _tokensSendingTo;
+    // @dev need only O(1) access (not insertion/removal) for sending tokens, so use an ImmutableUint16Array
+    mapping(uint256 sendingTokenId => ImmutableUint16Array.Uint16Array receivingTokenIds) private _tokensSendingTo;
 
     /// @notice Array of token ids that a token is open to receiving from (when in state ReceiveFrom)
-    // TODO - use an immutable string array here for storage efficiency!
-    // @dev need only O(1) access (not insertion/removal) for receiving tokens, so use an array
-    mapping(uint256 receivingTokenId => uint256[] sendingTokenIds) private _tokensReceivingFrom;
+    // @dev need only O(1) access (not insertion/removal) for receiving tokens, so use an ImmutableUint16Array
+    mapping(uint256 receivingTokenId => ImmutableUint16Array.Uint16Array sendingTokenIds) private _tokensReceivingFrom;
 
     /// disable initialization in deployed implementation contract for clarity
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -186,6 +187,44 @@ contract SRHooks is
 
         // return the augmented tokenParams
         return augmentedTokenParams;
+    }
+
+    /**
+     * @notice Updates the state and metadata for a given token.
+     * Reverts if the token number is invalid or the msg.sender is not owner or valid delegate.xyz V2 of token owner.
+     * Reverts if invalid configuration is provided.
+     * Includes two boolean flags to update the send and receive states and token metadata separately, in a single function call.
+     * @dev This function is used to update the state and metadata for a given token.
+     * @param tokenNumber The token number to update.
+     * @param updateSendReceiveStates Whether to update the send and receive states.
+     * @param sendState The new send state. Valid values are SendGeneral, SendTo, Neutral.
+     * @param receiveState The new receive state. Valid values are ReceiveGeneral, ReceiveFrom, Neutral.
+     * @param receivingTokenIds The new receiving token ids. If updating send state to SendTo, these are the token ids being sent to.
+     * @param sendingTokenIds The new sending token ids. If updating receive state to ReceiveFrom, these are the token ids being sent from.
+     * @param updateTokenMetadata Whether to update the token metadata.
+     * @param updatedActiveSlot The new active slot. If updating token metadata, this is the new active slot.
+     * @param tokenMetadataCalldata The new token metadata. If updating token metadata, this is the new token metadata at the updated active slot.
+     */
+    function updateTokenStateAndMetadata(
+        uint256 tokenNumber,
+        bool updateSendReceiveStates,
+        SendStates sendState,
+        ReceiveStates receiveState,
+        uint16[] memory receivingTokenIds,
+        uint16[] memory sendingTokenIds,
+        bool updateTokenMetadata,
+        uint256 updatedActiveSlot,
+        TokenMetadataCalldata memory tokenMetadataCalldata
+    ) external {
+        // TODO - next step - checks, logic, updates, etc.
+
+        // TODO - sooner than later, add token metadata updates for gas measurement purposes during initial project development
+        if (updateTokenMetadata) {
+            TokenMetadata storage tokenMetadataStorage = tokensMetadata[tokenNumber][updatedActiveSlot];
+            tokenMetadataStorage.bitmapImageAddress = SSTORE2.write(tokenMetadataCalldata.bitmapImageCompressed);
+            // ...
+        }
+
     }
 
     /**
