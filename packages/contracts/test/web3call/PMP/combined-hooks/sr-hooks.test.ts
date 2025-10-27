@@ -2,6 +2,18 @@ import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { Contract, BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import {
+  lowEntropy64x64Raw,
+  lowEntropy64x64Gzip,
+  highEntropy64x64Raw,
+  highEntropy64x64Gzip,
+  typical64x64Raw,
+  typical64x64Gzip,
+  typical64x64Raw2,
+  typical64x64Gzip2,
+  typical64x64Raw3,
+  typical64x64Gzip3,
+} from "./resources/sr-images";
 
 /**
  * Test suite for SRHooks UUPS upgradeable contract
@@ -324,6 +336,201 @@ describe("SRHooks - UUPS Upgradeable", function () {
 
       // Expect reasonable gas usage
       expect(receipt.gasUsed).to.be.gt(0);
+    });
+
+    it("should test all sr-images test cases (raw vs gzip) and compare gas", async function () {
+      console.log("\n=== Comprehensive Gas Analysis: All SR Images ===\n");
+
+      // Helper function to convert Uint8Array or string to hex string
+      const toHexString = (data: Uint8Array | string): string => {
+        if (typeof data === "string") {
+          return data.startsWith("0x") ? data : "0x" + data;
+        }
+        return (
+          "0x" +
+          Array.from(data)
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("")
+        );
+      };
+
+      // Test cases with descriptive names
+      const testCases = [
+        {
+          name: "Low Entropy 64x64",
+          raw: toHexString(lowEntropy64x64Raw),
+          gzip: toHexString(lowEntropy64x64Gzip),
+        },
+        {
+          name: "High Entropy 64x64",
+          raw: toHexString(highEntropy64x64Raw),
+          gzip: toHexString(highEntropy64x64Gzip),
+        },
+        {
+          name: "Typical 64x64 #1",
+          raw: toHexString(typical64x64Raw),
+          gzip: toHexString(typical64x64Gzip),
+        },
+        {
+          name: "Typical 64x64 #2",
+          raw: toHexString(typical64x64Raw2),
+          gzip: toHexString(typical64x64Gzip2),
+        },
+        {
+          name: "Typical 64x64 #3",
+          raw: toHexString(typical64x64Raw3),
+          gzip: toHexString(typical64x64Gzip3),
+        },
+      ];
+
+      const results: any[] = [];
+      let tokenNumber = 100; // Start from token 100 to avoid conflicts
+
+      for (const testCase of testCases) {
+        console.log(`\n📊 Testing: ${testCase.name}`);
+        console.log("─".repeat(60));
+
+        // Test RAW version
+        const rawSize = (testCase.raw.length - 2) / 2; // Remove '0x' and divide by 2
+        const rawMetadata = {
+          bitmapImageCompressed: testCase.raw,
+          soundDataCompressed: "0x",
+          thoughtBubbleText: "0x",
+        };
+
+        const rawTx = await srHooksProxy
+          .connect(user)
+          .updateTokenStateAndMetadata(
+            tokenNumber,
+            false,
+            0,
+            2,
+            [],
+            [],
+            true,
+            0,
+            rawMetadata,
+            { gasLimit: 30000000 }
+          );
+        const rawReceipt = await rawTx.wait();
+        const rawGas = rawReceipt.gasUsed.toNumber();
+
+        console.log(
+          `  RAW:  ${rawSize.toLocaleString()} bytes → ${rawGas.toLocaleString()} gas`
+        );
+
+        tokenNumber++;
+
+        // Test GZIP version
+        const gzipSize = (testCase.gzip.length - 2) / 2;
+        const gzipMetadata = {
+          bitmapImageCompressed: testCase.gzip,
+          soundDataCompressed: "0x",
+          thoughtBubbleText: "0x",
+        };
+
+        const gzipTx = await srHooksProxy
+          .connect(user)
+          .updateTokenStateAndMetadata(
+            tokenNumber,
+            false,
+            0,
+            2,
+            [],
+            [],
+            true,
+            0,
+            gzipMetadata,
+            { gasLimit: 30000000 }
+          );
+        const gzipReceipt = await gzipTx.wait();
+        const gzipGas = gzipReceipt.gasUsed.toNumber();
+
+        console.log(
+          `  GZIP: ${gzipSize.toLocaleString()} bytes → ${gzipGas.toLocaleString()} gas`
+        );
+
+        // Calculate savings
+        const gasSavings = rawGas - gzipGas;
+        const gasSavingsPercent = ((gasSavings / rawGas) * 100).toFixed(2);
+        const compressionRatio = ((rawSize / gzipSize) * 100).toFixed(2);
+
+        console.log(
+          `  📉 Compression: ${compressionRatio}% (${rawSize} → ${gzipSize} bytes)`
+        );
+        console.log(
+          `  💰 Gas Savings: ${gasSavings.toLocaleString()} gas (${gasSavingsPercent}%)`
+        );
+
+        results.push({
+          name: testCase.name,
+          rawSize,
+          gzipSize,
+          rawGas,
+          gzipGas,
+          gasSavings,
+          gasSavingsPercent: parseFloat(gasSavingsPercent),
+          compressionRatio: parseFloat(compressionRatio),
+        });
+
+        tokenNumber++;
+      }
+
+      // Summary table
+      console.log("\n" + "=".repeat(80));
+      console.log("📊 SUMMARY TABLE");
+      console.log("=".repeat(80));
+      console.log(
+        "Name".padEnd(20) +
+          "| Raw Gas".padEnd(15) +
+          "| Gzip Gas".padEnd(15) +
+          "| Savings".padEnd(15) +
+          "| Compress%"
+      );
+      console.log("-".repeat(80));
+
+      results.forEach((r) => {
+        console.log(
+          r.name.padEnd(20) +
+            `| ${r.rawGas.toLocaleString()}`.padEnd(15) +
+            `| ${r.gzipGas.toLocaleString()}`.padEnd(15) +
+            `| ${r.gasSavingsPercent}%`.padEnd(15) +
+            `| ${r.compressionRatio}%`
+        );
+      });
+
+      console.log("=".repeat(80) + "\n");
+
+      // Calculate averages
+      const avgGasSavings =
+        results.reduce((sum, r) => sum + r.gasSavingsPercent, 0) /
+        results.length;
+      const avgCompressionRatio =
+        results.reduce((sum, r) => sum + r.compressionRatio, 0) /
+        results.length;
+
+      console.log(`📈 Average Gas Savings: ${avgGasSavings.toFixed(2)}%`);
+      console.log(
+        `📈 Average Compression Ratio: ${avgCompressionRatio.toFixed(2)}%`
+      );
+      console.log("\n=== Test Completed Successfully ===\n");
+
+      // Verify all transactions were successful (gas > 0)
+      results.forEach((r) => {
+        expect(r.gzipGas).to.be.gt(
+          0,
+          `${r.name}: gzip gas should be greater than 0`
+        );
+        expect(r.rawGas).to.be.gt(
+          0,
+          `${r.name}: raw gas should be greater than 0`
+        );
+      });
+
+      // Note: High entropy data may not compress well and could use MORE gas when gzipped
+      console.log(
+        "✅ Note: High entropy data may not benefit from compression"
+      );
     });
   });
 
