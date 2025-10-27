@@ -459,9 +459,9 @@ contract SeaDropXArtBlocksShim is
         _onlyArtistOrSelf(msg.sender);
 
         // ensure maxSupply lte project's max invocations on core contract
-        (, uint256 maxInvocations) = _getInvocationsDataFromCore();
-        if (newMaxSupply > maxInvocations) {
-            revert(
+        (, uint256 maxInvocationsOnCoreContract) = _getInvocationsDataFromCore();
+        if (newMaxSupply > maxInvocationsOnCoreContract) {
+            require(newMaxSupply == 200_000_000 && maxInvocationsOnCoreContract == 1_000_000,
                 "SeaDropXArtBlocksShim: Only newMaxSupply lte max invocations on the Art Blocks core contract"
             );
         }
