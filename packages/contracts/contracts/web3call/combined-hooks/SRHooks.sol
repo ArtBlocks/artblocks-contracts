@@ -22,6 +22,7 @@ import {OwnableUpgradeable} from "@openzeppelin-5.0/contracts-upgradeable/access
 
 import {ImmutableUint16Array} from "../../libs/v0.8.x/ImmutableUint16Array.sol";
 import {SSTORE2} from "../../libs/v0.8.x/SSTORE2.sol";
+import {ABHelpers} from "../../libs/v0.8.x/ABHelpers.sol";
 
 /**
  * @title SRHooks
@@ -39,19 +40,29 @@ import {SSTORE2} from "../../libs/v0.8.x/SSTORE2.sol";
  * be stripped, allowing the owner to effectively "clear" the squiggle-related PostParams back to default.
  * @dev This contract follows the UUPS (Universal Upgradeable Proxy Standard) pattern.
  * It uses OpenZeppelin's upgradeable contracts and must be deployed behind a proxy.
- * Only the owner can authorize upgrades via the _authorizeUpgrade function, which may 
+ * Only the owner can authorize upgrades via the _authorizeUpgrade function, which may
  * be eventually disabled in future versions after to lock project functionality.
  */
-contract SRHooks is 
+contract SRHooks is
     Initializable,
-    AbstractPMPAugmentHook, 
+    AbstractPMPAugmentHook,
     AbstractPMPConfigureHook,
     OwnableUpgradeable,
-    UUPSUpgradeable 
+    UUPSUpgradeable
 {
     using Strings for uint256;
 
     address public PMPV0_ADDRESS;
+
+    address public CORE_CONTRACT_ADDRESS;
+
+    uint256 public CORE_PROJECT_ID;
+
+    // constant delegation registry pointers and rights
+    IDelegationRegistryV2 public constant DELEGATE_V2 =
+        IDelegationRegistryV2(0x00000000000000447e69651d841bD8D104Bed493);
+    bytes32 public constant DELEGATION_REGISTRY_TOKEN_OWNER_RIGHTS =
+        bytes32("postmintparameters");
 
     // ------ TOKEN METADATA STATE VARIABLES ------
 
@@ -60,17 +71,16 @@ contract SRHooks is
     struct TokenMetadata {
         address bitmapImageAddress; // 20 bytes
         address soundDataAddress; // 20 bytes
-        address thoughtBubbleTextAddress; // 20 bytes
     }
 
     struct TokenMetadataCalldata {
         bytes bitmapImageCompressed;
         bytes soundDataCompressed;
-        bytes thoughtBubbleText;
     }
 
     /// @notice mapping of token ids to slot to metadata
-    mapping(uint256 tokenId => mapping(uint256 slot => TokenMetadata slotMetadata)) private tokensMetadata;
+    mapping(uint256 tokenId => mapping(uint256 slot => TokenMetadata slotMetadata))
+        private tokensMetadata;
 
     /// @notice mapping of token ids to the active slot
     mapping(uint256 tokenId => uint256 activeSlot) private tokensActiveSlot;
@@ -103,15 +113,43 @@ contract SRHooks is
     /// @notice Set of token ids that are sending to a specific token
     // @dev TODO - could develop a custom packed array + index mapping uint16EnumerableSet to improve efficiency vs. OpenZeppelin's EnumerableSet
     // @dev need O(1) access and O(1) insertion/removal for both sending and receiving tokens, so use an EnumerableSet
-    mapping(uint256 receivingTokenId => EnumerableSet.UintSet) private _tokensSendingToMe;
+    mapping(uint256 receivingTokenId => EnumerableSet.UintSet tokensSendingToMe)
+        private _tokensSendingToMe;
 
     /// @notice Array of token ids that a given token is sending to (when in state SendTo)
     // @dev need only O(1) access (not insertion/removal) for sending tokens, so use an ImmutableUint16Array
-    mapping(uint256 sendingTokenId => ImmutableUint16Array.Uint16Array receivingTokenIds) private _tokensSendingTo;
+    mapping(uint256 sendingTokenId => ImmutableUint16Array.Uint16Array tokensSendingTo)
+        private _tokensSendingTo;
 
     /// @notice Array of token ids that a token is open to receiving from (when in state ReceiveFrom)
     // @dev need only O(1) access (not insertion/removal) for receiving tokens, so use an ImmutableUint16Array
-    mapping(uint256 receivingTokenId => ImmutableUint16Array.Uint16Array sendingTokenIds) private _tokensReceivingFrom;
+    mapping(uint256 receivingTokenId => ImmutableUint16Array.Uint16Array tokensReceivingFrom)
+        private _tokensReceivingFrom;
+
+    /**
+     * @notice modifier-like internal function to check if an address is the owner or a valid delegate.xyz V2 of the token owner
+     */
+    function _isOwnerOrDelegate(
+        uint256 tokenNumber,
+        address addressToCheck
+    ) internal view returns (bool) {
+        address tokenOwner = IERC721(CORE_CONTRACT_ADDRESS).ownerOf(
+            tokenNumber
+        );
+        uint256 tokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
+            projectId: CORE_PROJECT_ID,
+            tokenNumber: tokenNumber
+        });
+        return
+            addressToCheck == tokenOwner ||
+            DELEGATE_V2.checkDelegateForERC721({
+                to: addressToCheck,
+                from: tokenOwner,
+                contract_: CORE_CONTRACT_ADDRESS,
+                tokenId: tokenId,
+                rights: DELEGATION_REGISTRY_TOKEN_OWNER_RIGHTS
+            });
+    }
 
     /// disable initialization in deployed implementation contract for clarity
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -125,15 +163,21 @@ contract SRHooks is
      * Can only be called once due to the initializer modifier.
      * @param _pmpV0Address The address of the PMPV0 contract.
      * @param _owner The address that will own this contract and authorize upgrades.
+     * @param _coreContractAddress The address of the core contract.
+     * @param _coreProjectId The project ID of the core contract.
      */
     function initialize(
         address _pmpV0Address,
-        address _owner
+        address _owner,
+        address _coreContractAddress,
+        uint256 _coreProjectId
     ) public initializer {
         __Ownable_init(_owner);
         __UUPSUpgradeable_init();
-        
+
         PMPV0_ADDRESS = _pmpV0Address;
+        CORE_CONTRACT_ADDRESS = _coreContractAddress;
+        CORE_PROJECT_ID = _coreProjectId;
         // TODO - emit event with relevant state changes
     }
 
@@ -199,8 +243,8 @@ contract SRHooks is
      * @param updateSendReceiveStates Whether to update the send and receive states.
      * @param sendState The new send state. Valid values are SendGeneral, SendTo, Neutral.
      * @param receiveState The new receive state. Valid values are ReceiveGeneral, ReceiveFrom, Neutral.
-     * @param receivingTokenIds The new receiving token ids. If updating send state to SendTo, these are the token ids being sent to.
-     * @param sendingTokenIds The new sending token ids. If updating receive state to ReceiveFrom, these are the token ids being sent from.
+     * @param tokensSendingTo Tokens to send this token to. Only non-empty iff sendState is SendTo.
+     * @param tokensReceivingFrom Tokens this token is open to receive from. Only non-empty iff receiveState is ReceiveFrom.
      * @param updateTokenMetadata Whether to update the token metadata.
      * @param updatedActiveSlot The new active slot. If updating token metadata, this is the new active slot.
      * @param tokenMetadataCalldata The new token metadata. If updating token metadata, this is the new token metadata at the updated active slot.
@@ -210,21 +254,129 @@ contract SRHooks is
         bool updateSendReceiveStates,
         SendStates sendState,
         ReceiveStates receiveState,
-        uint16[] memory receivingTokenIds,
-        uint16[] memory sendingTokenIds,
+        uint16[] memory tokensSendingTo,
+        uint16[] memory tokensReceivingFrom,
         bool updateTokenMetadata,
         uint256 updatedActiveSlot,
         TokenMetadataCalldata memory tokenMetadataCalldata
     ) external {
-        // TODO - next step - checks, logic, updates, etc.
+        // CHECKS
+        // msg.sender must be owner or valid delegate.xyz V2 of token owner
+        // @dev this also checks that the token number is valid (exists and has valid owner)
+        require(
+            _isOwnerOrDelegate(tokenNumber, msg.sender),
+            "Only owner or valid delegate.xyz V2 of token owner allowed"
+        );
 
-        // TODO - sooner than later, add token metadata updates for gas measurement purposes during initial project development
-        if (updateTokenMetadata) {
-            TokenMetadata storage tokenMetadataStorage = tokensMetadata[tokenNumber][updatedActiveSlot];
-            tokenMetadataStorage.bitmapImageAddress = SSTORE2.write(tokenMetadataCalldata.bitmapImageCompressed);
-            // ...
+        // CHECKS-AND-EFFECTS (BRANCHED LOGIC)
+        if (updateSendReceiveStates) {
+            // CHECKS
+            // TODO - add any required checks here (that aren't covered by the internal function)
+
+            // EFFECTS
+            // update the token state
+            _updateTokenState({
+                tokenNumber: tokenNumber,
+                sendState: sendState,
+                receiveState: receiveState,
+                tokensSendingTo: tokensSendingTo,
+                tokensReceivingFrom: tokensReceivingFrom
+            });
         }
+        // CHECKS-AND-EFFECTS (BRANCHED LOGIC)
+        if (updateTokenMetadata) {
+            // CHECKS
+            // @dev internal function validates updated active slot, we already validated token number above
 
+            // EFFECTS
+            // update the token metadata
+            _updateTokenMetadata({
+                tokenNumber: tokenNumber,
+                updatedActiveSlot: updatedActiveSlot,
+                tokenMetadataCalldata: tokenMetadataCalldata
+            });
+        }
+    }
+
+    /**
+     * @notice Updates the token state for a given token.
+     * Internal function - assumes token is valid
+     * @param tokenNumber The token number to update.
+     * @param sendState The new send state. Valid values are SendGeneral, SendTo, Neutral.
+     * @param receiveState The new receive state. Valid values are ReceiveGeneral, ReceiveFrom, Neutral.
+     * @param tokensSendingTo Tokens to send this token to. Only non-empty iff sendState is SendTo.
+     * @param tokensReceivingFrom Tokens this token is open to receive from. Only non-empty iff receiveState is ReceiveFrom.
+     */
+    function _updateTokenState(
+        uint256 tokenNumber,
+        SendStates sendState,
+        ReceiveStates receiveState,
+        uint16[] memory tokensSendingTo,
+        uint16[] memory tokensReceivingFrom
+    ) internal {
+        // CHECKS
+        // enforce SendTo arrays
+        (sendState == SendStates.SendTo)
+            ? require(
+                tokensSendingTo.length > 0,
+                "Tokens sending to must be non-empty"
+            )
+            : require(
+                tokensSendingTo.length == 0,
+                "tokensSendingTo must be empty"
+            );
+        // enforce ReceiveFrom arrays
+        (receiveState == ReceiveStates.ReceiveFrom)
+            ? require(
+                tokensReceivingFrom.length > 0,
+                "Tokens receiving from must be non-empty"
+            )
+            : require(
+                tokensReceivingFrom.length == 0,
+                "tokensReceivingFrom must be empty"
+            );
+
+        // EFFECTS
+        // clear previous send/receive state, based on storage's send/receive state
+        // TODO - implement logic
+        // populate the new send/receive state
+        // TODO - implement logic
+        // Call the PMPV0 to update the token state PostParams
+        // TODO - emit events for subgraph indexing of any relevant array data
+    }
+
+    /**
+     * @notice Updates the token metadata for a given token.
+     * Internal function - assumes token is valid
+     * @param tokenNumber The token number to update.
+     * @param updatedActiveSlot The new active slot.
+     * @param tokenMetadataCalldata The new token metadata.
+     */
+    function _updateTokenMetadata(
+        uint256 tokenNumber,
+        uint256 updatedActiveSlot,
+        TokenMetadataCalldata memory tokenMetadataCalldata
+    ) internal {
+        // CHECKS
+        // updatedActiveSlot must be valid
+        require(updatedActiveSlot < NUM_METADATA_SLOTS, "Invalid active slot");
+        // check that slot is not banned
+        // TODO - implement logic (need takedown system to be implemented first)
+
+        // EFFECTS
+        // update the token metadata
+        TokenMetadata storage tokenMetadataStorage = tokensMetadata[
+            tokenNumber
+        ][updatedActiveSlot];
+        // image, compressed + use sstore2 for efficient
+        tokenMetadataStorage.bitmapImageAddress = SSTORE2.write(
+            tokenMetadataCalldata.bitmapImageCompressed
+        );
+        // sound data, compressed + use sstore2 for efficient
+        tokenMetadataStorage.soundDataAddress = SSTORE2.write(
+            tokenMetadataCalldata.soundDataCompressed
+        );
+        // TODO - event
     }
 
     /**

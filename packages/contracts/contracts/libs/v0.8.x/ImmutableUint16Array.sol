@@ -65,7 +65,8 @@ library ImmutableUint16Array {
         }
 
         // pack the values efficiently, using assembly to compile 32 bytes at a time
-        for (uint i = 0; i < arrayLength; i+=16) { // 16 indices per loop, 2 bytes per index, 32 bytes per loop
+        for (uint i = 0; i < arrayLength; i += 16) {
+            // 16 indices per loop, 2 bytes per index, 32 bytes per loop
             // build the 32 bytes of the current value, 16 uint16 values per loop, left to right
             // handle end of array case
             uint256 maxIndex = i + 16 < arrayLength ? i + 16 : arrayLength;
@@ -169,9 +170,16 @@ library ImmutableUint16Array {
         // loop in assembly to access the packed data directly
         assembly ("memory-safe") {
             let ptr := add(allData, 40) // skip first 8 bytes + 32 bytes for bytes array length (length of the actual bytes array we stored)
-            for { let i := 0 } lt(i, arrayLength) { i := add(i, 1) } {
+            for {
+                let i := 0
+            } lt(i, arrayLength) {
+                i := add(i, 1)
+            } {
                 // @dev in memory, uint16 values are not packed, but are abi-encoded, so we add mul i * 0x20 to get the offset of the value in the results array
-                mstore(add(results, add(mul(i, 0x20), 0x20)), shr(192, mload(ptr))) // store the 2 bytes of the value from the packed data into the results array
+                mstore(
+                    add(results, add(mul(i, 0x20), 0x20)),
+                    shr(192, mload(ptr))
+                ) // store the 2 bytes of the value from the packed data into the results array
                 ptr := add(ptr, 0x20) // move the pointer forward by 32 bytes for next iteration
             }
         }
