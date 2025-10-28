@@ -51,6 +51,7 @@ contract SRHooks is
     UUPSUpgradeable
 {
     using EnumerableSet for EnumerableSet.UintSet;
+    using ImmutableUint16Array for ImmutableUint16Array.Uint16Array;
 
     address public PMPV0_ADDRESS;
 
@@ -270,6 +271,7 @@ contract SRHooks is
             !tokensMetadata[tokenNumber][slot].isTakedown,
             "Slot already takedown"
         );
+
         // EFFECTS
         // takedown the token metadata slot, wiping image and sound data addresses, marking as takedown
         TokenMetadata storage tokenMetadataStorage = tokensMetadata[
@@ -297,23 +299,26 @@ contract SRHooks is
      * Reverts if the token number is invalid or the msg.sender is not owner or valid delegate.xyz V2 of token owner.
      * Reverts if invalid configuration is provided.
      * Includes two boolean flags to update the send and receive states and token metadata separately, in a single function call.
-     * @dev This function is used to update the state and metadata for a given token.
+     * Never allows updating to a slot that has been taken down by the moderator or is invalid.
+     * Never allows updating the send or receive state while still in a slot that has been taken down by the moderator.
      * @param tokenNumber The token number to update.
-     * @param updateSendReceiveStates Whether to update the send and receive states.
+     * @param updateSendState Whether to update the send state.
      * @param sendState The new send state. Valid values are SendGeneral, SendTo, Neutral.
+     * @param tokensSendingTo Tokens to send this token to. Only non-empty iff updateSendState is true and sendState is SendTo.
+     * @param updateReceiveState Whether to update the receive state.
      * @param receiveState The new receive state. Valid values are ReceiveGeneral, ReceiveFrom, Neutral.
-     * @param tokensSendingTo Tokens to send this token to. Only non-empty iff sendState is SendTo.
-     * @param tokensReceivingFrom Tokens this token is open to receive from. Only non-empty iff receiveState is ReceiveFrom.
+     * @param tokensReceivingFrom Tokens this token is open to receive from. Only non-empty iff updateReceiveState is true and receiveState is ReceiveFrom.
      * @param updateTokenMetadata Whether to update the token metadata.
      * @param updatedActiveSlot The new active slot. If updating token metadata, this is the new active slot.
-     * @param tokenMetadataCalldata The new token metadata. If updating token metadata, this is the new token metadata at the updated active slot.
+     * @param tokenMetadataCalldata The new token metadata. If updating token metadata, this is the new token metadata at the updated active slot. Only non-empty iff updateTokenMetadata is true.
      */
     function updateTokenStateAndMetadata(
         uint256 tokenNumber,
-        bool updateSendReceiveStates,
+        bool updateSendState,
         SendStates sendState,
-        ReceiveStates receiveState,
         uint16[] memory tokensSendingTo,
+        bool updateReceiveState,
+        ReceiveStates receiveState,
         uint16[] memory tokensReceivingFrom,
         bool updateTokenMetadata,
         uint256 updatedActiveSlot,
@@ -330,25 +335,8 @@ contract SRHooks is
         );
 
         // CHECKS-AND-EFFECTS (BRANCHED LOGIC)
-        if (updateSendReceiveStates) {
-            // CHECKS
-            // TODO - add any required checks here (that aren't covered by the internal function)
-
-            // EFFECTS
-            // update the token state
-            _updateTokenState({
-                tokenNumber: tokenNumber,
-                sendState: sendState,
-                receiveState: receiveState,
-                tokensSendingTo: tokensSendingTo,
-                tokensReceivingFrom: tokensReceivingFrom
-            });
-        }
-        // CHECKS-AND-EFFECTS (BRANCHED LOGIC)
+        // update token metadata FIRST, to lock in slot's takedown state prior to any S/R state updates (dependent on takedown state)
         if (updateTokenMetadata) {
-            // CHECKS
-            // @dev internal function validates updated active slot, we already validated token number above
-
             // EFFECTS
             // update the token metadata
             _updateTokenMetadata({
@@ -357,53 +345,22 @@ contract SRHooks is
                 tokenMetadataCalldata: tokenMetadataCalldata
             });
         }
-    }
 
-    /**
-     * @notice Updates the token state for a given token.
-     * Internal function - assumes token is valid
-     * @param tokenNumber The token number to update.
-     * @param sendState The new send state. Valid values are SendGeneral, SendTo, Neutral.
-     * @param receiveState The new receive state. Valid values are ReceiveGeneral, ReceiveFrom, Neutral.
-     * @param tokensSendingTo Tokens to send this token to. Only non-empty iff sendState is SendTo.
-     * @param tokensReceivingFrom Tokens this token is open to receive from. Only non-empty iff receiveState is ReceiveFrom.
-     */
-    function _updateTokenState(
-        uint256 tokenNumber,
-        SendStates sendState,
-        ReceiveStates receiveState,
-        uint16[] memory tokensSendingTo,
-        uint16[] memory tokensReceivingFrom
-    ) internal {
-        // CHECKS
-        // enforce SendTo arrays
-        (sendState == SendStates.SendTo)
-            ? require(
-                tokensSendingTo.length > 0,
-                "Tokens sending to must be non-empty"
-            )
-            : require(
-                tokensSendingTo.length == 0,
-                "tokensSendingTo must be empty"
-            );
-        // enforce ReceiveFrom arrays
-        (receiveState == ReceiveStates.ReceiveFrom)
-            ? require(
-                tokensReceivingFrom.length > 0,
-                "Tokens receiving from must be non-empty"
-            )
-            : require(
-                tokensReceivingFrom.length == 0,
-                "tokensReceivingFrom must be empty"
-            );
-
-        // EFFECTS
-        // clear previous send/receive state, based on storage's send/receive state
-        // TODO - implement logic
-        // populate the new send/receive state
-        // TODO - implement logic
-        // Call the PMPV0 to update the token state PostParams
-        // TODO - emit events for subgraph indexing of any relevant array data
+        // update send/receive states SECOND, based on any updated takedown state from token metadata update
+        if (updateSendState) {
+            _updateSendState({
+                tokenNumber: tokenNumber,
+                sendState: sendState,
+                tokensSendingTo: tokensSendingTo
+            });
+        }
+        if (updateReceiveState) {
+            _updateReceiveState({
+                tokenNumber: tokenNumber,
+                receiveState: receiveState,
+                tokensReceivingFrom: tokensReceivingFrom
+            });
+        }
     }
 
     /**
@@ -421,7 +378,7 @@ contract SRHooks is
         // CHECKS
         // updatedActiveSlot must be valid
         require(updatedActiveSlot < NUM_METADATA_SLOTS, "Invalid active slot");
-        // check that slot is not banned
+        // never allow updating to a takedown slot
         TokenMetadata storage tokenMetadataStorage = tokensMetadata[
             tokenNumber
         ][updatedActiveSlot];
@@ -464,8 +421,140 @@ contract SRHooks is
                 "Sound data must be empty when not updating"
             );
         }
+        // update the token's active slot
+        tokensActiveSlot[tokenNumber] = updatedActiveSlot;
 
         // TODO - event
+    }
+
+    /**
+     * @notice Updates the send state for a given token.
+     * Internal function - assumes token is valid
+     * Assumes any interactions with send state and receive state are handled by the parent function.
+     * @param tokenNumber The token number to update.
+     * @param sendState The new send state. Valid values are SendGeneral, SendTo, Neutral.
+     * @param tokensSendingTo Tokens to send this token to. Only non-empty iff sendState is SendTo.
+     */
+    function _updateSendState(
+        uint256 tokenNumber,
+        SendStates sendState,
+        uint16[] memory tokensSendingTo
+    ) internal {
+        // CHECKS
+        // enforce SendTo arrays length
+        (sendState == SendStates.SendTo)
+            ? require(
+                tokensSendingTo.length > 0,
+                "tokensSendingTo must be non-empty"
+            )
+            : require(
+                tokensSendingTo.length == 0,
+                "tokensSendingTo must be empty"
+            );
+        // never allow updating a takedown slot
+        // @dev load active slot from storage
+        uint256 activeSlot = tokensActiveSlot[tokenNumber];
+        require(
+            !tokensMetadata[tokenNumber][activeSlot].isTakedown,
+            "Slot is takedown - cannot update send state while in takedown slot"
+        );
+
+        // EFFECTS
+        // Step 1. clear previous send state, based on storage's send state
+        // @dev use raw variant to avoid expense of double checking takedown state, since we already checked it above
+        SendStates previousSendState = _getSendStateRaw(tokenNumber);
+        if (previousSendState == SendStates.SendGeneral) {
+            // simply remove the token from the send general set
+            _sendGeneralTokens.remove(tokenNumber);
+        } else if (previousSendState == SendStates.SendTo) {
+            // pop from every previous token's "sending to me" set, which is a O(n) operation for n tokens previously sent to
+            // @dev pull into memory for efficient sload minimization
+            uint16[] memory previousTokensSendingTo = _tokensSendingTo[
+                tokenNumber
+            ].getAll();
+            uint256 previousTokensSendingToLength = previousTokensSendingTo
+                .length;
+            for (uint256 i = 0; i < previousTokensSendingToLength; i++) {
+                uint256 sendingToTokenNumber = previousTokensSendingTo[i];
+                _tokensSendingToMe[sendingToTokenNumber].remove(tokenNumber);
+            }
+            // clear my previous send to array
+            _tokensSendingTo[tokenNumber].clear();
+        }
+        // case: neutral state - no-op
+
+        // Step 2. populate the new send state
+        if (sendState == SendStates.SendGeneral) {
+            _sendGeneralTokens.add(tokenNumber);
+        } else if (sendState == SendStates.SendTo) {
+            // push the tokens to my send to array
+            _tokensSendingTo[tokenNumber].store(tokensSendingTo);
+            // push me into every token's "sending to me" set
+            uint256 tokensSendingToLength = tokensSendingTo.length;
+            for (uint256 i = 0; i < tokensSendingToLength; i++) {
+                uint256 sendingToTokenNumber = tokensSendingTo[i];
+                _tokensSendingToMe[sendingToTokenNumber].add(tokenNumber);
+            }
+        }
+        // case: neutral state - no-op
+
+        // TODO - emit event
+    }
+
+    /**
+     * @notice Updates the receive state for a given token.
+     * Internal function - assumes token is valid
+     * Assumes any interactions with send state and receive state are handled by the parent function.
+     * @param tokenNumber The token number to update.
+     * @param receiveState The new receive state. Valid values are ReceiveGeneral, ReceiveFrom, Neutral.
+     * @param tokensReceivingFrom Tokens this token is open to receive from. Only non-empty iff receiveState is ReceiveFrom.
+     */
+    function _updateReceiveState(
+        uint256 tokenNumber,
+        ReceiveStates receiveState,
+        uint16[] memory tokensReceivingFrom
+    ) internal {
+        // CHECKS
+        // enforce ReceiveFrom arrays length
+        (receiveState == ReceiveStates.ReceiveFrom)
+            ? require(
+                tokensReceivingFrom.length > 0,
+                "tokensReceivingFrom must be non-empty"
+            )
+            : require(
+                tokensReceivingFrom.length == 0,
+                "tokensReceivingFrom must be empty"
+            );
+        // never allow updating a takedown slot
+        // @dev load active slot from storage
+        uint256 activeSlot = tokensActiveSlot[tokenNumber];
+        require(
+            !tokensMetadata[tokenNumber][activeSlot].isTakedown,
+            "Slot is takedown - cannot update receive state while in takedown slot"
+        );
+
+        // EFFECTS
+        // Step 1. clear previous receive state, based on storage's receive state
+        // @dev use raw variant to avoid expense of double checking takedown state, since we already checked it above
+        ReceiveStates previousReceiveState = _getReceiveStateRaw(tokenNumber);
+        if (previousReceiveState == ReceiveStates.ReceiveGeneral) {
+            // simply remove the token from the receive general set
+            _receiveGeneralTokens.remove(tokenNumber);
+        } else if (previousReceiveState == ReceiveStates.ReceiveFrom) {
+            // simple removal of my receive from array - we don't have a reverse mapping of the array across other tokens
+            _tokensReceivingFrom[tokenNumber].clear();
+        }
+        // case: neutral state - no-op
+
+        // Step 2. populate the new receive state
+        if (receiveState == ReceiveStates.ReceiveGeneral) {
+            _receiveGeneralTokens.add(tokenNumber);
+        } else if (receiveState == ReceiveStates.ReceiveFrom) {
+            _tokensReceivingFrom[tokenNumber].store(tokensReceivingFrom);
+        }
+        // case: neutral state - no-op
+
+        // TODO - emit event
     }
 
     /**
@@ -477,18 +566,36 @@ contract SRHooks is
         address newImplementation
     ) internal override onlyOwner {
         // this version allows the owner to upgrade the contract to a new implementation
-        // in future versions, we may disable this functionality to lock project functionality
-        // to prevent any further upgrades
+        // in future versions, we may choose to disable this functionality and lock project functionality permanently
     }
 
     /**
-     * @notice Gets the send state for a given token.
+     * @notice Gets the send state for a given token, accounting for takedown state.
+     * Internal function - assumes token is valid
+     * @param tokenNumber The token number to get the send state for.
+     * @return sendState The send state.
+     */
+    function _getSendState(
+        uint256 tokenNumber
+    ) internal view returns (SendStates) {
+        // @dev load active slot from storage
+        uint256 activeSlot = tokensActiveSlot[tokenNumber];
+        // if slot is takedown, return neutral state
+        if (tokensMetadata[tokenNumber][activeSlot].isTakedown) {
+            return SendStates.Neutral;
+        }
+        return _getSendStateRaw(tokenNumber);
+    }
+
+    /**
+     * @notice Gets the send state for a given token, not accounting for takedown state.
+     * Provides cheaper access to derived send state if takedown state was already checked.
      * Internal function - assumes token is valid
      * @dev uses derived state to prefer SLOAD over SSTORE for efficiency
      * @param tokenNumber The token number to get the send state for.
      * @return sendState The send state.
      */
-    function _getSendState(
+    function _getSendStateRaw(
         uint256 tokenNumber
     ) internal view returns (SendStates) {
         // check for existence in send general set
@@ -504,13 +611,32 @@ contract SRHooks is
     }
 
     /**
-     * @notice Gets the receive state for a given token.
+     * @notice Gets the receive state for a given token, accounting for takedown state.
+     * Internal function - assumes token is valid
+     * @param tokenNumber The token number to get the receive state for.
+     * @return receiveState The receive state.
+     */
+    function _getReceiveState(
+        uint256 tokenNumber
+    ) internal view returns (ReceiveStates) {
+        // @dev load active slot from storage
+        uint256 activeSlot = tokensActiveSlot[tokenNumber];
+        // if slot is takedown, return neutral state
+        if (tokensMetadata[tokenNumber][activeSlot].isTakedown) {
+            return ReceiveStates.Neutral;
+        }
+        return _getReceiveStateRaw(tokenNumber);
+    }
+
+    /**
+     * @notice Gets the receive state for a given token, not accounting for takedown state.
+     * Provides cheaper access to derived receive state if takedown state was already checked.
      * Internal function - assumes token is valid
      * @dev uses derived state to prefer SLOAD over SSTORE for efficiency
      * @param tokenNumber The token number to get the receive state for.
      * @return receiveState The receive state.
      */
-    function _getReceiveState(
+    function _getReceiveStateRaw(
         uint256 tokenNumber
     ) internal view returns (ReceiveStates) {
         // check for existence in receive general set
