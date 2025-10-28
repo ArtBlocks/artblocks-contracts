@@ -61,6 +61,9 @@ contract SRHooks is
 
     address public MODERATOR_ADDRESS;
 
+    uint256 public constant MAX_IMAGE_DATA_LENGTH = 1024 * 15; // 15 KB, beyond which is unlikely to represent a 64x64 image
+    uint256 public constant MAX_SOUND_DATA_LENGTH = 1024 * 10; // 10 KB, beyond which is unlikely to represent a sound
+
     // constant delegation registry pointers and rights
     IDelegationRegistryV2 public constant DELEGATE_V2 =
         IDelegationRegistryV2(0x00000000000000447e69651d841bD8D104Bed493);
@@ -222,7 +225,7 @@ contract SRHooks is
      */
     function onTokenPMPReadAugmentation(
         address /* coreContract */,
-        uint256 /* tokenId */,
+        uint256 tokenId,
         IWeb3Call.TokenParam[] calldata tokenParams
     )
         external
@@ -241,8 +244,55 @@ contract SRHooks is
             augmentedTokenParams[i] = tokenParams[i];
         }
 
-        // append each token metadata field to the augmentedTokenParams array
-        // TODO - implement logic (will require SSTORE2 loading from the token metadata stored addresses)
+        // append each token metadata fields (image and sound data addresses) to the augmentedTokenParams array
+        // @dev load active slot from storage
+        uint256 tokenNumber = ABHelpers.tokenIdToTokenNumber(tokenId);
+        uint256 activeSlot = tokensActiveSlot[tokenNumber];
+        TokenMetadata storage tokenMetadataStorage = tokensMetadata[
+            tokenNumber
+        ][activeSlot];
+        if (tokenMetadataStorage.isTakedown) {
+            // if metadata is takedown, return empty strings for both image and sound data
+            augmentedTokenParams[originalLength] = IWeb3Call.TokenParam({
+                key: "imageData",
+                value: ""
+            });
+            augmentedTokenParams[originalLength + 1] = IWeb3Call.TokenParam({
+                key: "soundData",
+                value: ""
+            });
+        } else {
+            // if metadata is not takedown, return the image and sound data as hex strings
+            augmentedTokenParams[originalLength] = IWeb3Call.TokenParam({
+                key: "imageData",
+                value: _getHexStringFromSSTORE2(
+                    tokenMetadataStorage.imageDataAddress
+                )
+            });
+            augmentedTokenParams[originalLength + 1] = IWeb3Call.TokenParam({
+                key: "soundData",
+                value: _getHexStringFromSSTORE2(
+                    tokenMetadataStorage.soundDataAddress
+                )
+            });
+        }
+
+        // include takedown state
+        augmentedTokenParams[originalLength + 2] = IWeb3Call.TokenParam({
+            key: "isTakedown",
+            value: tokenMetadataStorage.isTakedown ? "true" : "false"
+        });
+
+        // include send and receive states
+        // @dev do not use raw variants here, we want to be neutral if in takedown slot
+        augmentedTokenParams[originalLength + 3] = IWeb3Call.TokenParam({
+            key: "sendState",
+            value: _sendStateToString(_getSendState(tokenNumber))
+        });
+        augmentedTokenParams[originalLength + 4] = IWeb3Call.TokenParam({
+            key: "receiveState",
+            value: _receiveStateToString(_getReceiveState(tokenNumber))
+        });
 
         // return the augmented tokenParams
         return augmentedTokenParams;
@@ -392,6 +442,11 @@ contract SRHooks is
                 tokenMetadataCalldata.bitmapImageCompressed.length > 0,
                 "Image data must be provided when updating"
             );
+            require(
+                tokenMetadataCalldata.bitmapImageCompressed.length <=
+                    MAX_IMAGE_DATA_LENGTH,
+                "Image data must be less than or equal to MAX_IMAGE_DATA_LENGTH"
+            );
             // @dev image data, compressed + use sstore2 for efficient
             tokenMetadataStorage.imageDataAddress = SSTORE2.write(
                 tokenMetadataCalldata.bitmapImageCompressed
@@ -407,9 +462,12 @@ contract SRHooks is
             // allow "clearing" the sound data by providing an empty bytes array
             if (tokenMetadataCalldata.soundDataCompressed.length == 0) {
                 tokenMetadataStorage.soundDataAddress = address(0);
-                // TODO - emit event
-                return;
             } else {
+                require(
+                    tokenMetadataCalldata.soundDataCompressed.length <=
+                        MAX_SOUND_DATA_LENGTH,
+                    "Sound data must be less than or equal to MAX_SOUND_DATA_LENGTH"
+                );
                 // @dev sound data, compressed + use sstore2 for efficient
                 tokenMetadataStorage.soundDataAddress = SSTORE2.write(
                     tokenMetadataCalldata.soundDataCompressed
@@ -558,18 +616,6 @@ contract SRHooks is
     }
 
     /**
-     * @notice Authorizes an upgrade to a new implementation.
-     * @dev This function is required by the UUPS pattern and can only be called by the owner.
-     * @param newImplementation The address of the new implementation contract.
-     */
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override onlyOwner {
-        // this version allows the owner to upgrade the contract to a new implementation
-        // in future versions, we may choose to disable this functionality and lock project functionality permanently
-    }
-
-    /**
      * @notice Gets the send state for a given token, accounting for takedown state.
      * Internal function - assumes token is valid
      * @param tokenNumber The token number to get the send state for.
@@ -608,6 +654,40 @@ contract SRHooks is
         }
         // must be in neutral state
         return SendStates.Neutral;
+    }
+
+    /**
+     * @notice Converts a send state to a string.
+     * Internal function - assumes send state is valid
+     * @param sendState The send state to convert to a string.
+     * @return string The string representation of the send state.
+     */
+    function _sendStateToString(
+        SendStates sendState
+    ) internal pure returns (string memory) {
+        return
+            sendState == SendStates.SendGeneral
+                ? "SendGeneral"
+                : sendState == SendStates.SendTo
+                ? "SendTo"
+                : "Neutral";
+    }
+
+    /**
+     * @notice Converts a receive state to a string.
+     * Internal function - assumes receive state is valid
+     * @param receiveState The receive state to convert to a string.
+     * @return string The string representation of the receive state.
+     */
+    function _receiveStateToString(
+        ReceiveStates receiveState
+    ) internal pure returns (string memory) {
+        return
+            receiveState == ReceiveStates.ReceiveGeneral
+                ? "ReceiveGeneral"
+                : receiveState == ReceiveStates.ReceiveFrom
+                ? "ReceiveFrom"
+                : "Neutral";
     }
 
     /**
@@ -651,6 +731,19 @@ contract SRHooks is
         return ReceiveStates.Neutral;
     }
 
+    function _getHexStringFromSSTORE2(
+        address sstore2Address
+    ) internal view returns (string memory) {
+        // case: empty sstore2 address
+        if (sstore2Address == address(0)) {
+            return "";
+        }
+        // case: non-empty sstore2 address
+        bytes memory data = SSTORE2.read(sstore2Address);
+        // return the hex string of the data
+        return string(abi.encodePacked("0x", data));
+    }
+
     /**
      * @notice Checks if the contract supports an interface.
      * @dev This function is required by the ERC165 interface detection pattern.
@@ -669,5 +762,17 @@ contract SRHooks is
             interfaceId == type(IPMPAugmentHook).interfaceId ||
             interfaceId == type(IPMPConfigureHook).interfaceId ||
             super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @notice Authorizes an upgrade to a new implementation.
+     * @dev This function is required by the UUPS pattern and can only be called by the owner.
+     * @param newImplementation The address of the new implementation contract.
+     */
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyOwner {
+        // this version allows the owner to upgrade the contract to a new implementation
+        // in future versions, we may choose to disable this functionality and lock project functionality permanently
     }
 }
