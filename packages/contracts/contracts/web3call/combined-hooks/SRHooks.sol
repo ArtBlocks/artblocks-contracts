@@ -70,15 +70,19 @@ contract SRHooks is
 
     uint256 public constant NUM_METADATA_SLOTS = 5;
 
+    // struct for the token metadata in storage
     struct TokenMetadata {
         address imageDataAddress; // 20 bytes
         bool isTakedown; // 1 byte, true if moderator took down the slot's metadata
         address soundDataAddress; // 20 bytes
     }
 
+    // struct for the token metadata calldata
     struct TokenMetadataCalldata {
-        bytes bitmapImageCompressed;
-        bytes soundDataCompressed;
+        bool updateImage; // true if updating the image data
+        bytes bitmapImageCompressed; // non-empty if updating the image data
+        bool updateSound; // true if updating the sound data
+        bytes soundDataCompressed; // may be empty to clear the sound data, non-empty if setting the sound data
     }
 
     /// @notice mapping of token numbers to slot to metadata
@@ -425,14 +429,42 @@ contract SRHooks is
 
         // EFFECTS
         // update the token metadata
-        // image, compressed + use sstore2 for efficient
-        tokenMetadataStorage.imageDataAddress = SSTORE2.write(
-            tokenMetadataCalldata.bitmapImageCompressed
-        );
-        // sound data, compressed + use sstore2 for efficient
-        tokenMetadataStorage.soundDataAddress = SSTORE2.write(
-            tokenMetadataCalldata.soundDataCompressed
-        );
+        // image data
+        if (tokenMetadataCalldata.updateImage) {
+            require(
+                tokenMetadataCalldata.bitmapImageCompressed.length > 0,
+                "Image data must be provided when updating"
+            );
+            // @dev image data, compressed + use sstore2 for efficient
+            tokenMetadataStorage.imageDataAddress = SSTORE2.write(
+                tokenMetadataCalldata.bitmapImageCompressed
+            );
+        } else {
+            require(
+                tokenMetadataCalldata.bitmapImageCompressed.length == 0,
+                "Image data must be empty when not updating"
+            );
+        }
+        // sound data
+        if (tokenMetadataCalldata.updateSound) {
+            // allow "clearing" the sound data by providing an empty bytes array
+            if (tokenMetadataCalldata.soundDataCompressed.length == 0) {
+                tokenMetadataStorage.soundDataAddress = address(0);
+                // TODO - emit event
+                return;
+            } else {
+                // @dev sound data, compressed + use sstore2 for efficient
+                tokenMetadataStorage.soundDataAddress = SSTORE2.write(
+                    tokenMetadataCalldata.soundDataCompressed
+                );
+            }
+        } else {
+            require(
+                tokenMetadataCalldata.soundDataCompressed.length == 0,
+                "Sound data must be empty when not updating"
+            );
+        }
+
         // TODO - event
     }
 
