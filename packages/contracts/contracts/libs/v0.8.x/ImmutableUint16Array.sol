@@ -93,6 +93,20 @@ library ImmutableUint16Array {
     }
 
     /**
+     * @notice Clears the storage array by setting the dataPointer to address(0).
+     * @param storageArray The storage reference to clear.
+     */
+    function clear(Uint16Array storage storageArray) internal {
+        storageArray.dataPointer = address(0);
+    }
+
+    function isEmpty(
+        Uint16Array storage storageArray
+    ) internal view returns (bool) {
+        return storageArray.dataPointer == address(0);
+    }
+
+    /**
      * @notice Retrieves the total number of stored uint16 values from SSTORE2.
      * @param storageArray The storage reference containing packed values.
      * @return count The count of stored values.

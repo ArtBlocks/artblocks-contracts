@@ -50,13 +50,15 @@ contract SRHooks is
     OwnableUpgradeable,
     UUPSUpgradeable
 {
-    using Strings for uint256;
+    using EnumerableSet for EnumerableSet.UintSet;
 
     address public PMPV0_ADDRESS;
 
     address public CORE_CONTRACT_ADDRESS;
 
     uint256 public CORE_PROJECT_ID;
+
+    address public MODERATOR_ADDRESS;
 
     // constant delegation registry pointers and rights
     IDelegationRegistryV2 public constant DELEGATE_V2 =
@@ -69,7 +71,8 @@ contract SRHooks is
     uint256 public constant NUM_METADATA_SLOTS = 5;
 
     struct TokenMetadata {
-        address bitmapImageAddress; // 20 bytes
+        address imageDataAddress; // 20 bytes
+        bool isTakedown; // 1 byte, true if moderator took down the slot's metadata
         address soundDataAddress; // 20 bytes
     }
 
@@ -78,52 +81,52 @@ contract SRHooks is
         bytes soundDataCompressed;
     }
 
-    /// @notice mapping of token ids to slot to metadata
-    mapping(uint256 tokenId => mapping(uint256 slot => TokenMetadata slotMetadata))
+    /// @notice mapping of token numbers to slot to metadata
+    mapping(uint256 tokenNumber => mapping(uint256 slot => TokenMetadata slotMetadata))
         private tokensMetadata;
 
-    /// @notice mapping of token ids to the active slot
-    mapping(uint256 tokenId => uint256 activeSlot) private tokensActiveSlot;
+    /// @notice mapping of token numbers to the active slot
+    mapping(uint256 tokenNumber => uint256 activeSlot) private tokensActiveSlot;
 
     // ------ SEND/RECEIVE STATE (GLOBAL) ------
 
     // enum for the different possible states of a token's SR configuration
     enum SendStates {
+        Neutral,
         SendGeneral,
-        SendTo,
-        Neutral
+        SendTo
     }
 
     enum ReceiveStates {
+        Neutral,
         ReceiveGeneral,
-        ReceiveFrom,
-        Neutral
+        ReceiveFrom
     }
 
-    /// @notice Set of token ids that are currently in state SendGeneral
+    /// @notice Set of token numbers that are currently in state SendGeneral
     // @dev need O(1) access and O(1) insertion/removal for both sending and receiving tokens, so use an EnumerableSet
     EnumerableSet.UintSet private _sendGeneralTokens;
 
-    /// @notice Set of token ids that are currently in state ReceiveGeneral
+    /// @notice Set of token numbers that are currently in state ReceiveGeneral
     // @dev need O(1) access and O(1) insertion/removal for both sending and receiving tokens, so use an EnumerableSet
     EnumerableSet.UintSet private _receiveGeneralTokens;
 
     // ------ SEND/RECEIVE STATE (PER TOKEN) ------
 
-    /// @notice Set of token ids that are sending to a specific token
+    /// @notice Set of token numbers that are sending to a specific token
     // @dev TODO - could develop a custom packed array + index mapping uint16EnumerableSet to improve efficiency vs. OpenZeppelin's EnumerableSet
     // @dev need O(1) access and O(1) insertion/removal for both sending and receiving tokens, so use an EnumerableSet
-    mapping(uint256 receivingTokenId => EnumerableSet.UintSet tokensSendingToMe)
+    mapping(uint256 receivingTokenNumber => EnumerableSet.UintSet tokensSendingToMe)
         private _tokensSendingToMe;
 
-    /// @notice Array of token ids that a given token is sending to (when in state SendTo)
+    /// @notice Array of token numbers that a given token is sending to (when in state SendTo)
     // @dev need only O(1) access (not insertion/removal) for sending tokens, so use an ImmutableUint16Array
-    mapping(uint256 sendingTokenId => ImmutableUint16Array.Uint16Array tokensSendingTo)
+    mapping(uint256 sendingTokenNumber => ImmutableUint16Array.Uint16Array tokensSendingTo)
         private _tokensSendingTo;
 
-    /// @notice Array of token ids that a token is open to receiving from (when in state ReceiveFrom)
+    /// @notice Array of token numbers that a token is open to receiving from (when in state ReceiveFrom)
     // @dev need only O(1) access (not insertion/removal) for receiving tokens, so use an ImmutableUint16Array
-    mapping(uint256 receivingTokenId => ImmutableUint16Array.Uint16Array tokensReceivingFrom)
+    mapping(uint256 receivingTokenNumber => ImmutableUint16Array.Uint16Array tokensReceivingFrom)
         private _tokensReceivingFrom;
 
     /**
@@ -151,6 +154,10 @@ contract SRHooks is
             });
     }
 
+    function _isModerator(address addressToCheck) internal view returns (bool) {
+        return addressToCheck == MODERATOR_ADDRESS;
+    }
+
     /// disable initialization in deployed implementation contract for clarity
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -165,12 +172,14 @@ contract SRHooks is
      * @param _owner The address that will own this contract and authorize upgrades.
      * @param _coreContractAddress The address of the core contract.
      * @param _coreProjectId The project ID of the core contract.
+     * @param _moderatorAddress The address of the content moderator.
      */
     function initialize(
         address _pmpV0Address,
         address _owner,
         address _coreContractAddress,
-        uint256 _coreProjectId
+        uint256 _coreProjectId,
+        address _moderatorAddress
     ) public initializer {
         __Ownable_init(_owner);
         __UUPSUpgradeable_init();
@@ -178,6 +187,7 @@ contract SRHooks is
         PMPV0_ADDRESS = _pmpV0Address;
         CORE_CONTRACT_ADDRESS = _coreContractAddress;
         CORE_PROJECT_ID = _coreProjectId;
+        MODERATOR_ADDRESS = _moderatorAddress;
         // TODO - emit event with relevant state changes
     }
 
@@ -233,6 +243,51 @@ contract SRHooks is
         return augmentedTokenParams;
     }
 
+    function updateModeratorAddress(
+        address newModeratorAddress
+    ) external onlyOwner {
+        // @dev allow setting to zero address to disable moderator functionality
+        // EFFECTS
+        MODERATOR_ADDRESS = newModeratorAddress;
+        // TODO - emit event
+    }
+
+    function takedownTokenMetadataSlot(
+        uint256 tokenNumber,
+        uint256 slot
+    ) external {
+        // CHECKS
+        // msg.sender must be moderator
+        require(_isModerator(msg.sender), "Only moderator allowed");
+        // slot must be valid
+        require(slot < NUM_METADATA_SLOTS, "Invalid slot");
+        // slot must not be already takedown
+        require(
+            !tokensMetadata[tokenNumber][slot].isTakedown,
+            "Slot already takedown"
+        );
+        // EFFECTS
+        // takedown the token metadata slot, wiping image and sound data addresses, marking as takedown
+        TokenMetadata storage tokenMetadataStorage = tokensMetadata[
+            tokenNumber
+        ][slot];
+        tokenMetadataStorage.isTakedown = true;
+        tokenMetadataStorage.imageDataAddress = address(0); // clear the image data address
+        tokenMetadataStorage.soundDataAddress = address(0); // clear the sound data address
+        // clear the token's send/receive states, only if token is not in SendTo or ReceiveFrom state
+        // @dev SendTo and ReceiveFrom states may be expensive for owner to re-build, so we don not clear them,
+        // and instead filter on live data viewing accordingly.
+        // @dev also mitigates potential moderator abuse by removing potentially large gas usage during SendTo unwinding.
+        // send state clearing
+        // @dev effectively, this is achieved by removing the token from the general send and receive sets if it is in them
+        // and not in SendTo or ReceiveFrom state.
+        // @dev okay to optimisitically call remove - it will be a no-op if the token is not in the set
+        _sendGeneralTokens.remove(tokenNumber);
+        _receiveGeneralTokens.remove(tokenNumber);
+
+        // TODO - emit event
+    }
+
     /**
      * @notice Updates the state and metadata for a given token.
      * Reverts if the token number is invalid or the msg.sender is not owner or valid delegate.xyz V2 of token owner.
@@ -261,6 +316,8 @@ contract SRHooks is
         TokenMetadataCalldata memory tokenMetadataCalldata
     ) external {
         // CHECKS
+        // require token number is valid uint16
+        require(tokenNumber < type(uint16).max, "Invalid token number");
         // msg.sender must be owner or valid delegate.xyz V2 of token owner
         // @dev this also checks that the token number is valid (exists and has valid owner)
         require(
@@ -361,15 +418,15 @@ contract SRHooks is
         // updatedActiveSlot must be valid
         require(updatedActiveSlot < NUM_METADATA_SLOTS, "Invalid active slot");
         // check that slot is not banned
-        // TODO - implement logic (need takedown system to be implemented first)
-
-        // EFFECTS
-        // update the token metadata
         TokenMetadata storage tokenMetadataStorage = tokensMetadata[
             tokenNumber
         ][updatedActiveSlot];
+        require(!tokenMetadataStorage.isTakedown, "Slot is takedown");
+
+        // EFFECTS
+        // update the token metadata
         // image, compressed + use sstore2 for efficient
-        tokenMetadataStorage.bitmapImageAddress = SSTORE2.write(
+        tokenMetadataStorage.imageDataAddress = SSTORE2.write(
             tokenMetadataCalldata.bitmapImageCompressed
         );
         // sound data, compressed + use sstore2 for efficient
@@ -390,6 +447,50 @@ contract SRHooks is
         // this version allows the owner to upgrade the contract to a new implementation
         // in future versions, we may disable this functionality to lock project functionality
         // to prevent any further upgrades
+    }
+
+    /**
+     * @notice Gets the send state for a given token.
+     * Internal function - assumes token is valid
+     * @dev uses derived state to prefer SLOAD over SSTORE for efficiency
+     * @param tokenNumber The token number to get the send state for.
+     * @return sendState The send state.
+     */
+    function _getSendState(
+        uint256 tokenNumber
+    ) internal view returns (SendStates) {
+        // check for existence in send general set
+        if (_sendGeneralTokens.contains(tokenNumber)) {
+            return SendStates.SendGeneral;
+        }
+        // check for non-empty send to array
+        if (!ImmutableUint16Array.isEmpty(_tokensSendingTo[tokenNumber])) {
+            return SendStates.SendTo;
+        }
+        // must be in neutral state
+        return SendStates.Neutral;
+    }
+
+    /**
+     * @notice Gets the receive state for a given token.
+     * Internal function - assumes token is valid
+     * @dev uses derived state to prefer SLOAD over SSTORE for efficiency
+     * @param tokenNumber The token number to get the receive state for.
+     * @return receiveState The receive state.
+     */
+    function _getReceiveState(
+        uint256 tokenNumber
+    ) internal view returns (ReceiveStates) {
+        // check for existence in receive general set
+        if (_receiveGeneralTokens.contains(tokenNumber)) {
+            return ReceiveStates.ReceiveGeneral;
+        }
+        // check for non-empty receive from array
+        if (!ImmutableUint16Array.isEmpty(_tokensReceivingFrom[tokenNumber])) {
+            return ReceiveStates.ReceiveFrom;
+        }
+        // must be in neutral state
+        return ReceiveStates.Neutral;
     }
 
     /**
