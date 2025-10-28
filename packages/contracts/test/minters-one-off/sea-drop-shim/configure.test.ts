@@ -86,9 +86,6 @@ runForEach.forEach((params) => {
       await config.genArt721Core
         .connect(config.accounts.artist)
         .toggleProjectIsPaused(config.projectZero);
-      await config.genArt721Core
-        .connect(config.accounts.artist)
-        .updateProjectMaxInvocations(config.projectZero, 15);
 
       return config as T_SeaDropShimTestConfig;
     }
@@ -487,10 +484,22 @@ runForEach.forEach((params) => {
 
       it("reverts when maxSupply > core max invocations", async function () {
         const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 15);
         await expectRevert(
           config.minter.connect(config.accounts.artist).setMaxSupply(16),
           revertMessages.maxSupplyExceedsMaxInvocations
         );
+      });
+
+      it("does not revert special case when maxSupply is 200,000,000 and core max invocations is 1,000,000", async function () {
+        const config = await loadFixture(_beforeEach);
+        // core max invocations is already 1M
+        // expect no revert
+        await config.minter
+          .connect(config.accounts.artist)
+          .setMaxSupply(200000000);
       });
 
       it("updates maxSupply when less than core max invocations", async function () {
@@ -505,6 +514,9 @@ runForEach.forEach((params) => {
 
       it("updates maxSupply when equal to core max invocations", async function () {
         const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 15);
         const configuredValue = 15;
         await config.minter
           .connect(config.accounts.artist)
