@@ -146,17 +146,18 @@ module.exports = {
     },
   },
   etherscan: {
-    apiKey: {
-      mainnet: ETHERSCAN_API_KEY,
-      goerli: ETHERSCAN_API_KEY,
-      sepolia: ETHERSCAN_API_KEY,
-      arbitrum: ARBISCAN_API_KEY, // This is unused but here in case hardhat changes
-      arbitrumOne: ARBISCAN_API_KEY,
-      "arbitrum-sepolia": ARBISCAN_API_KEY,
-      "arbitrum-goerli": ARBISCAN_API_KEY,
-      base: BASESCAN_API_KEY,
-    },
+    // V2 API migration: use single Etherscan API key for all Etherscan networks
+    // See: https://docs.etherscan.io/contract-verification/verify-with-hardhat
+    apiKey: ETHERSCAN_API_KEY,
     customChains: [
+      {
+        network: "sepolia",
+        chainId: 11155111,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api",
+          browserURL: "https://sepolia.etherscan.io",
+        },
+      },
       {
         network: "arbitrum-sepolia",
         chainId: 421614,
