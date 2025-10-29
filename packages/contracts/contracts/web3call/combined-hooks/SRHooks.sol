@@ -27,17 +27,13 @@ import {ABHelpers} from "../../libs/v0.8.x/ABHelpers.sol";
 /**
  * @title SRHooks
  * @author Art Blocks Inc.
- * @notice This hook verifies ownership of any custom squiggle PostParam setting,
- * and injects the squiggle's token hash into the token's PMPs if configured.
- * It supports delegate.xyz V1 and V2, and also allows squiggle #9998 for any address that
- * inscribed the squiggle Relic contract on eth mainnet.
- * It also allows resetting the squiggle token back to default #1981.
- * This hook contract has logic for both the augment and configure hooks.
- * It reverts if the squiggle token id doesn't pass relic or ownership checks during configuring.
- * Ownership checks are performed during configuring, keeping provenance history indexable and preventing
- * effects intuitive during transfers and delegation revocations.
- * If the squiggle token id is configured to be default #1981, the squiggle PostParams will
- * be stripped, allowing the owner to effectively "clear" the squiggle-related PostParams back to default.
+ * @notice This hook tracks the send and receive states of a token, and the metadata for a token.
+ * It implements the primary functionality of the SR project, and accepts most calls directly.
+ * It acts as a PMPV0 hook, and therefore derives from AbstractPMPAugmentHook.
+ * For clear off-chain provenance indexing and efficiency purposes, it emits events as if it were a
+ * PMPV0 contract, so it may be indexed directly by off-chain tools, including the Art Blocks subgraph.
+ * Some state emit events that may be custom, or may not be directly related to PMPV0, but may still be useful
+ * for off-chain indexing and analysis and frontend development.
  * @dev This contract follows the UUPS (Universal Upgradeable Proxy Standard) pattern.
  * It uses OpenZeppelin's upgradeable contracts and must be deployed behind a proxy.
  * Only the owner can authorize upgrades via the _authorizeUpgrade function, which may
@@ -52,6 +48,14 @@ contract SRHooks is
 {
     using EnumerableSet for EnumerableSet.UintSet;
     using ImmutableUint16Array for ImmutableUint16Array.Uint16Array;
+
+    // custom events not necessarily to be indexed
+    event Initialized(
+        address pmpV0Address,
+        address coreContractAddress,
+        uint256 coreProjectId,
+        address moderatorAddress
+    );
 
     address public PMPV0_ADDRESS;
 
@@ -196,19 +200,38 @@ contract SRHooks is
         CORE_CONTRACT_ADDRESS = _coreContractAddress;
         CORE_PROJECT_ID = _coreProjectId;
         MODERATOR_ADDRESS = _moderatorAddress;
-        // TODO - emit event with relevant state changes
+
+        emit Initialized({
+            pmpV0Address: _pmpV0Address,
+            coreContractAddress: _coreContractAddress,
+            coreProjectId: _coreProjectId,
+            moderatorAddress: _moderatorAddress
+        });
+        // emit fake PMPV0 events to be indexed by off-chain tools
+        // @dev this allows the contract to be indexed directly by off-chain tools, including the Art Blocks subgraph.
+        emit IPMPV0.ProjectHooksConfigured({
+            coreContract: _coreContractAddress,
+            projectId: _coreProjectId,
+            tokenPMPPostConfigHook: IPMPConfigureHook(address(this)),
+            tokenPMPReadAugmentationHook: IPMPAugmentHook(address(this))
+        });
+        emit IPMPV0.ProjectConfigured({
+            coreContract: _coreContractAddress,
+            projectId: _coreProjectId,
+            pmpInputConfigs: _getPMPInputConfigs(),
+            projectConfigNonce: 1
+        });
     }
 
     /**
      * @notice Execution logic to be executed when a token's PMP is configured.
      * Reverts if the squiggle token id is invalid or the liftOwner does not have access to the squiggle token id.
      * @dev This hook is executed after the PMP is configured.
-     * @param pmpInput The PMP input that was used to successfully configure the token.
      */
     function onTokenPMPConfigure(
         address /*coreContract*/,
         uint256 /*tokenId*/,
-        IPMPV0.PMPInput calldata pmpInput
+        IPMPV0.PMPInput calldata /*pmpInput*/
     ) external view override {
         // only allow PMPV0 to call this hook
         require(msg.sender == PMPV0_ADDRESS, "Only PMPV0 allowed");
@@ -762,6 +785,176 @@ contract SRHooks is
             interfaceId == type(IPMPAugmentHook).interfaceId ||
             interfaceId == type(IPMPConfigureHook).interfaceId ||
             super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @notice Gets the PMP input configs for the project.
+     * @return pmpInputConfigs The PMP input configs for the project.
+     * @dev This function is used to get the PMP input configs for the project, based on what this hook uses.
+     */
+    function _getPMPInputConfigs()
+        internal
+        pure
+        returns (IPMPV0.PMPInputConfig[] memory)
+    {
+        // build PMPInputConfigs for the project, based on what this hook uses
+        string[] memory sendStateSelectOptions = new string[](3);
+        sendStateSelectOptions[0] = "Neutral";
+        sendStateSelectOptions[1] = "SendGeneral";
+        sendStateSelectOptions[2] = "SendTo";
+        string[] memory receiveStateSelectOptions = new string[](3);
+        receiveStateSelectOptions[0] = "Neutral";
+        receiveStateSelectOptions[1] = "ReceiveGeneral";
+        receiveStateSelectOptions[2] = "ReceiveFrom";
+
+        IPMPV0.PMPInputConfig[]
+            memory pmpInputConfigs = new IPMPV0.PMPInputConfig[](12); // 12 slots (2 for s/r state, 5 for image, 5 for sound)
+        pmpInputConfigs[0] = IPMPV0.PMPInputConfig({
+            key: "SendState",
+            pmpConfig: IPMPV0.PMPConfig({
+                authOption: IPMPV0.AuthOption.TokenOwner,
+                paramType: IPMPV0.ParamType.Select,
+                pmpLockedAfterTimestamp: 0,
+                authAddress: address(0),
+                selectOptions: sendStateSelectOptions,
+                minRange: 0,
+                maxRange: 0
+            })
+        });
+        pmpInputConfigs[1] = IPMPV0.PMPInputConfig({
+            key: "ReceiveState",
+            pmpConfig: IPMPV0.PMPConfig({
+                authOption: IPMPV0.AuthOption.TokenOwner,
+                paramType: IPMPV0.ParamType.Select,
+                pmpLockedAfterTimestamp: 0,
+                authAddress: address(0),
+                selectOptions: receiveStateSelectOptions,
+                minRange: 0,
+                maxRange: 0
+            })
+        });
+        pmpInputConfigs[2] = IPMPV0.PMPInputConfig({
+            key: "ImageVersionSlot0",
+            pmpConfig: IPMPV0.PMPConfig({
+                authOption: IPMPV0.AuthOption.TokenOwner,
+                paramType: IPMPV0.ParamType.Uint256Range,
+                pmpLockedAfterTimestamp: 0,
+                authAddress: address(0),
+                selectOptions: new string[](0),
+                minRange: 0,
+                maxRange: bytes32(uint256(99999999))
+            })
+        });
+        pmpInputConfigs[3] = IPMPV0.PMPInputConfig({
+            key: "ImageVersionSlot1",
+            pmpConfig: IPMPV0.PMPConfig({
+                authOption: IPMPV0.AuthOption.TokenOwner,
+                paramType: IPMPV0.ParamType.Uint256Range,
+                pmpLockedAfterTimestamp: 0,
+                authAddress: address(0),
+                selectOptions: new string[](0),
+                minRange: 0,
+                maxRange: bytes32(uint256(99999999))
+            })
+        });
+        pmpInputConfigs[4] = IPMPV0.PMPInputConfig({
+            key: "ImageVersionSlot2",
+            pmpConfig: IPMPV0.PMPConfig({
+                authOption: IPMPV0.AuthOption.TokenOwner,
+                paramType: IPMPV0.ParamType.Uint256Range,
+                pmpLockedAfterTimestamp: 0,
+                authAddress: address(0),
+                selectOptions: new string[](0),
+                minRange: 0,
+                maxRange: bytes32(uint256(99999999))
+            })
+        });
+        pmpInputConfigs[5] = IPMPV0.PMPInputConfig({
+            key: "ImageVersionSlot3",
+            pmpConfig: IPMPV0.PMPConfig({
+                authOption: IPMPV0.AuthOption.TokenOwner,
+                paramType: IPMPV0.ParamType.Uint256Range,
+                pmpLockedAfterTimestamp: 0,
+                authAddress: address(0),
+                selectOptions: new string[](0),
+                minRange: 0,
+                maxRange: bytes32(uint256(99999999))
+            })
+        });
+        pmpInputConfigs[6] = IPMPV0.PMPInputConfig({
+            key: "ImageVersionSlot4",
+            pmpConfig: IPMPV0.PMPConfig({
+                authOption: IPMPV0.AuthOption.TokenOwner,
+                paramType: IPMPV0.ParamType.Uint256Range,
+                pmpLockedAfterTimestamp: 0,
+                authAddress: address(0),
+                selectOptions: new string[](0),
+                minRange: 0,
+                maxRange: bytes32(uint256(99999999))
+            })
+        });
+        pmpInputConfigs[7] = IPMPV0.PMPInputConfig({
+            key: "SoundVersionSlot0",
+            pmpConfig: IPMPV0.PMPConfig({
+                authOption: IPMPV0.AuthOption.TokenOwner,
+                paramType: IPMPV0.ParamType.Uint256Range,
+                pmpLockedAfterTimestamp: 0,
+                authAddress: address(0),
+                selectOptions: new string[](0),
+                minRange: 0,
+                maxRange: bytes32(uint256(99999999))
+            })
+        });
+        pmpInputConfigs[8] = IPMPV0.PMPInputConfig({
+            key: "SoundVersionSlot1",
+            pmpConfig: IPMPV0.PMPConfig({
+                authOption: IPMPV0.AuthOption.TokenOwner,
+                paramType: IPMPV0.ParamType.Uint256Range,
+                pmpLockedAfterTimestamp: 0,
+                authAddress: address(0),
+                selectOptions: new string[](0),
+                minRange: 0,
+                maxRange: bytes32(uint256(99999999))
+            })
+        });
+        pmpInputConfigs[9] = IPMPV0.PMPInputConfig({
+            key: "SoundVersionSlot2",
+            pmpConfig: IPMPV0.PMPConfig({
+                authOption: IPMPV0.AuthOption.TokenOwner,
+                paramType: IPMPV0.ParamType.Uint256Range,
+                pmpLockedAfterTimestamp: 0,
+                authAddress: address(0),
+                selectOptions: new string[](0),
+                minRange: 0,
+                maxRange: bytes32(uint256(99999999))
+            })
+        });
+        pmpInputConfigs[10] = IPMPV0.PMPInputConfig({
+            key: "SoundVersionSlot3",
+            pmpConfig: IPMPV0.PMPConfig({
+                authOption: IPMPV0.AuthOption.TokenOwner,
+                paramType: IPMPV0.ParamType.Uint256Range,
+                pmpLockedAfterTimestamp: 0,
+                authAddress: address(0),
+                selectOptions: new string[](0),
+                minRange: 0,
+                maxRange: bytes32(uint256(99999999))
+            })
+        });
+        pmpInputConfigs[11] = IPMPV0.PMPInputConfig({
+            key: "SoundVersionSlot4",
+            pmpConfig: IPMPV0.PMPConfig({
+                authOption: IPMPV0.AuthOption.TokenOwner,
+                paramType: IPMPV0.ParamType.Uint256Range,
+                pmpLockedAfterTimestamp: 0,
+                authAddress: address(0),
+                selectOptions: new string[](0),
+                minRange: 0,
+                maxRange: bytes32(uint256(99999999))
+            })
+        });
+
+        return pmpInputConfigs;
     }
 
     /**
