@@ -4,7 +4,6 @@
 pragma solidity 0.8.22;
 
 import {AbstractPMPAugmentHook} from "../augment-hooks/AbstractPMPAugmentHook.sol";
-import {AbstractPMPConfigureHook} from "../configure-hooks/AbstractPMPConfigureHook.sol";
 
 import {IWeb3Call} from "../../interfaces/v0.8.x/IWeb3Call.sol";
 import {IPMPV0} from "../../interfaces/v0.8.x/IPMPV0.sol";
@@ -42,7 +41,6 @@ import {ABHelpers} from "../../libs/v0.8.x/ABHelpers.sol";
 contract SRHooks is
     Initializable,
     AbstractPMPAugmentHook,
-    AbstractPMPConfigureHook,
     OwnableUpgradeable,
     UUPSUpgradeable
 {
@@ -230,23 +228,15 @@ contract SRHooks is
     }
 
     /**
-     * @notice Execution logic to be executed when a token's PMP is configured.
-     * Reverts if the squiggle token id is invalid or the liftOwner does not have access to the squiggle token id.
-     * @dev This hook is executed after the PMP is configured.
-     */
-    function onTokenPMPConfigure(
-        address /*coreContract*/,
-        uint256 /*tokenId*/,
-        IPMPV0.PMPInput calldata /*pmpInput*/
-    ) external view override {
-        // only allow PMPV0 to call this hook
-        require(msg.sender == PMPV0_ADDRESS, "Only PMPV0 allowed");
-        // TODO - only keep this function if we need it for something like locking an image.
-    }
-
-    /**
      * @notice Augment the token parameters for a given token.
-     * Augments the token parameters as described in the contract natspec doc.
+     * Augments the token parameters by appending the token's active slot's metadata and send/receive states,
+     * as well as the token's takedown state.
+     * The following fields are appended:
+     * - imageData: the hex string of the compressed image data of the token's active slot
+     * - soundData: the hex string of the compressed sound data of the token's active slot
+     * - isTakedown: the boolean string of the takedown state of the token's active slot
+     * - sendState: the string of the send state of the token (SendGeneral, SendTo, Neutral)
+     * - receiveState: the string of the receive state of the token (ReceiveGeneral, ReceiveFrom, Neutral)
      * @dev This hook is called when a token's PMPs are read.
      * @dev This must return all desired tokenParams, not just additional data.
      * @param tokenParams The token parameters for the queried token.
@@ -847,15 +837,9 @@ contract SRHooks is
      */
     function supportsInterface(
         bytes4 interfaceId
-    )
-        public
-        view
-        override(AbstractPMPAugmentHook, AbstractPMPConfigureHook)
-        returns (bool)
-    {
+    ) public view override(AbstractPMPAugmentHook) returns (bool) {
         return
             interfaceId == type(IPMPAugmentHook).interfaceId ||
-            interfaceId == type(IPMPConfigureHook).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 
