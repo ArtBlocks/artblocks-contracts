@@ -60,6 +60,9 @@ contract SRHooks is
     uint256 public constant MAX_IMAGE_DATA_LENGTH = 1024 * 15; // 15 KB, beyond which is unlikely to represent a 64x64 image
     uint256 public constant MAX_SOUND_DATA_LENGTH = 1024 * 10; // 10 KB, beyond which is unlikely to represent a sound
 
+    uint256 internal constant MAX_RECEIVE_RATE_PER_BLOCK = 3 * 12; // 3 tokens per 12s block
+    uint256 internal constant BASE_SEND_TO_RATE_PER_MINUTE = 1; // send once per minute, may be diluted by sending to multiple tokens
+
     // constant delegation registry pointers and rights
     IDelegationRegistryV2 public constant DELEGATE_V2 =
         IDelegationRegistryV2(0x00000000000000447e69651d841bD8D104Bed493);
@@ -415,6 +418,10 @@ contract SRHooks is
             isOwnerOrDelegate,
             "Only owner or valid delegate.xyz V2 of token owner allowed"
         );
+        require(
+            updateSendState || updateReceiveState || updateTokenMetadata,
+            "At least one update must be provided"
+        );
 
         // CHECKS-AND-EFFECTS (BRANCHED LOGIC)
         // update token metadata FIRST, to lock in slot's takedown state prior to any S/R state updates (dependent on takedown state)
@@ -449,6 +456,72 @@ contract SRHooks is
     }
 
     /**
+     * @notice Gets the live data for a given token.
+     * @param tokenNumber The token number to get the live data for.
+     * @param blockNumber The block number to get the live data for.
+     * @return sendState The send state of the token.
+     * @return receiveState The receive state of the token.
+     * @return receivedTokensGeneral The received tokens general of the token.
+     * @return receivedTokensTo The received tokens to of the token.
+     */
+    function getLiveData(
+        uint256 tokenNumber,
+        uint256 blockNumber
+    )
+        external
+        view
+        returns (
+            SendStates sendState,
+            ReceiveStates receiveState,
+            TokenLiveData[] memory receivedTokensGeneral,
+            TokenLiveData[] memory receivedTokensTo
+        )
+    {
+        // CHECKS
+        // treat block number of 0 as current block
+        if (blockNumber == 0) {
+            blockNumber = block.number;
+        }
+        // ensure we get a valid block hash (must be in latest 256 blocks)
+        bytes32 blockhash_ = blockhash(blockNumber); // returns zero if not in latest 256 blocks
+        require(
+            blockhash_ != bytes32(0),
+            "Invalid block hash - must be in latest 256 blocks"
+        );
+
+        // populate send and receive states (use functions that account for takedown state)
+        sendState = _getSendState(tokenNumber);
+        receiveState = _getReceiveState(tokenNumber);
+
+        // populate received tokens general
+        receivedTokensGeneral = _getReceivedTokensGeneral({
+            tokenNumber: tokenNumber,
+            blockhash_: blockhash_
+        });
+        // populate received tokens to
+        receivedTokensTo = _getReceivedTokensTo({
+            tokenNumber: tokenNumber,
+            blockhash_: blockhash_
+        });
+    }
+
+    function _getReceivedTokensGeneral(
+        uint256 tokenNumber,
+        bytes32 blockhash_
+    ) internal view returns (TokenLiveData[] memory) {
+        // TODO: Implement
+        return new TokenLiveData[](0);
+    }
+
+    function _getReceivedTokensTo(
+        uint256 tokenNumber,
+        bytes32 blockhash_
+    ) internal view returns (TokenLiveData[] memory) {
+        // TODO: Implement
+        return new TokenLiveData[](0);
+    }
+
+    /**
      * @notice Updates the token metadata for a given token.
      * Internal function - assumes token is valid
      * @param tokenNumber The token number to update.
@@ -480,17 +553,17 @@ contract SRHooks is
         // image data
         if (tokenMetadataCalldata.updateImage) {
             require(
-                tokenMetadataCalldata.bitmapImageCompressed.length > 0,
+                tokenMetadataCalldata.imageDataCompressed.length > 0,
                 "Image data must be provided when updating"
             );
             require(
-                tokenMetadataCalldata.bitmapImageCompressed.length <=
+                tokenMetadataCalldata.imageDataCompressed.length <=
                     MAX_IMAGE_DATA_LENGTH,
                 "Image data must be less than or equal to MAX_IMAGE_DATA_LENGTH"
             );
             // @dev image data, compressed + use sstore2 for efficient
             tokenMetadataStorage.imageDataAddress = SSTORE2.write(
-                tokenMetadataCalldata.bitmapImageCompressed
+                tokenMetadataCalldata.imageDataCompressed
             );
             tokenMetadataStorage.imageVersion += 1;
             // emit PMPV0-indexable event for image data update
@@ -505,7 +578,7 @@ contract SRHooks is
             });
         } else {
             require(
-                tokenMetadataCalldata.bitmapImageCompressed.length == 0,
+                tokenMetadataCalldata.imageDataCompressed.length == 0,
                 "Image data must be empty when not updating"
             );
         }
