@@ -67,6 +67,8 @@ contract SRHooks is
     uint256 internal constant BASE_SEND_TO_RATE_PER_MINUTE = 1; // send once per minute, may be diluted by sending to multiple tokens
 
     uint256 internal constant MAX_SENDING_TO_LENGTH = 25; // 25 tokens, beyond which dilution rate is too low and can inflate live data iteration time
+    uint256 internal constant MAX_ITERATIONS_SENDING_TO_ME =
+        MAX_RECEIVE_RATE_PER_BLOCK * MAX_SENDING_TO_LENGTH; // cap iterations at dilution rate (25x the receive rate per block) to not meaningfully impact results, but provide a backstop/bounded worst case
 
     // constant delegation registry pointers and rights
     IDelegationRegistryV2 public constant DELEGATE_V2 =
@@ -695,7 +697,10 @@ contract SRHooks is
             MAX_RECEIVE_RATE_PER_BLOCK
         );
         uint256 selectedTokenNumbersLength = 0;
-        for (uint256 i = 0; i < sendingToMeLength; i++) {
+        uint256 maxIterations = sendingToMeLength > MAX_ITERATIONS_SENDING_TO_ME
+            ? MAX_ITERATIONS_SENDING_TO_ME
+            : sendingToMeLength;
+        for (uint256 i = 0; i < maxIterations; i++) {
             uint256 sampledTokenIndex = FeistelWalkLib.index(plan, i);
             uint256 sampledTokenNumber = _tokensSendingToMe[tokenNumber].at(
                 sampledTokenIndex
