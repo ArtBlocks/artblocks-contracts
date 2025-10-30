@@ -36,6 +36,8 @@ import {FeistelWalkLib} from "../../libs/v0.8.x/FeistelWalkLib.sol";
  * PMPV0 contract, so it may be indexed directly by off-chain tools, including the Art Blocks subgraph.
  * Some state emit events that may be custom, or may not be directly related to PMPV0, but may still be useful
  * for off-chain indexing and analysis and frontend development.
+ * Implements a Feistel walk for efficient pseudo-random sampling at each block over large sets and arrays. This
+ * sampling is considered efficient and effective enough for our use case of streaming pseudorandom live data at each block.
  * @dev This contract follows the UUPS (Universal Upgradeable Proxy Standard) pattern.
  * It uses OpenZeppelin's upgradeable contracts and must be deployed behind a proxy.
  * Only the owner can authorize upgrades via the _authorizeUpgrade function, which may
@@ -595,8 +597,8 @@ contract SRHooks is
     }
 
     /**
-     * @notice Samples tokens from the general sending pool using an affine walk.
-     * @dev Uses AffineWalkLib for efficient pseudo-random sampling over the EnumerableSet.
+     * @notice Samples tokens from the general sending pool using an Feistel walk.
+     * @dev Uses FeistelWalkLib for efficient pseudo-random sampling over the EnumerableSet.
      * @param seed The seed for pseudo-randomness.
      * @param quantity The number of tokens to sample.
      * @return result Array of TokenLiveData for sampled tokens.
@@ -678,7 +680,7 @@ contract SRHooks is
     }
 
     /**
-     * @notice Gets the received tokens to for a given token.
+     * @notice Gets the received tokens to for a given token, via a Feistel walk over the tokens sending to me.
      * Assumes token is receiving generally.
      * @param tokenNumber The token number to get the received tokens to for.
      * @param blockhash_ The block hash to get the received tokens to for.
@@ -789,7 +791,7 @@ contract SRHooks is
     }
 
     /**
-     * @notice Gets the tokens received from a given token.
+     * @notice Gets the tokens received from a given token, via a Feistel walk over the tokens receiving from me.
      * @param tokenNumber The token number to get the tokens received from.
      * @param blockhash_ The blockhash to use for pseudo-randomness.
      * @return tokensReceivedFromGeneral The tokens received from the general pool.
@@ -849,14 +851,9 @@ contract SRHooks is
             ) {
                 continue;
             }
-            // if sending generally, include it for sure
-            if (_sendGeneralTokens.contains(sampledTokenNumber)) {
-                // send general tokens are handled in the general token iteration
-                continue;
-            } else if (
-                _tokensSendingToMe[tokenNumber].contains(sampledTokenNumber)
-            ) {
-                // statistically include it based on dilution rate
+            // if sending generally, skip - handled in the general token iteration
+            // if sending to me, statistically include it based on dilution rate
+            if (_tokensSendingToMe[tokenNumber].contains(sampledTokenNumber)) {
                 uint256 bpsChanceOfInclusion = _tokenAuxStateData[
                     sampledTokenNumber
                 ].sendingToLength > 0
@@ -877,10 +874,7 @@ contract SRHooks is
                 }
             }
             // if we have selected the maximum number of tokens, break
-            if (
-                // selectedTokenNumbersGeneralLength +
-                selectedTokenNumbersToLength >= MAX_RECEIVE_RATE_PER_BLOCK
-            ) {
+            if (selectedTokenNumbersToLength >= MAX_RECEIVE_RATE_PER_BLOCK) {
                 break;
             }
         }
