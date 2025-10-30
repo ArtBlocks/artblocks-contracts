@@ -23,6 +23,7 @@ import {OwnableUpgradeable} from "@openzeppelin-5.0/contracts-upgradeable/access
 import {ImmutableUint16Array} from "../../libs/v0.8.x/ImmutableUint16Array.sol";
 import {SSTORE2} from "../../libs/v0.8.x/SSTORE2.sol";
 import {ABHelpers} from "../../libs/v0.8.x/ABHelpers.sol";
+import {FeistelWalkLib} from "../../libs/v0.8.x/FeistelWalkLib.sol";
 
 /**
  * @title SRHooks
@@ -458,7 +459,9 @@ contract SRHooks is
     /**
      * @notice Gets the live data for a given token.
      * @param tokenNumber The token number to get the live data for.
-     * @param blockNumber The block number to get the live data for.
+     * @param blockNumber The block number to get the live data for. Must be in latest 256 blocks.
+     * Treats block number of 0 as latest completed block.
+     * Reverts if block number is in future - need block hash to be defined.
      * @return sendState The send state of the token.
      * @return receiveState The receive state of the token.
      * @return receivedTokensGeneral The received tokens general of the token.
@@ -478,41 +481,183 @@ contract SRHooks is
         )
     {
         // CHECKS
-        // treat block number of 0 as current block
+        // treat block number of 0 as latest completed block
         if (blockNumber == 0) {
-            blockNumber = block.number;
+            blockNumber = block.number - 1; // get previous block hash (latest possible block hash)
+        }
+        if (blockNumber > block.number - 1) {
+            revert("Block number in future - need block hash to be defined");
         }
         // ensure we get a valid block hash (must be in latest 256 blocks)
         bytes32 blockhash_ = blockhash(blockNumber); // returns zero if not in latest 256 blocks
         require(
             blockhash_ != bytes32(0),
-            "Invalid block hash - must be in latest 256 blocks"
+            "block hash not available - must be in lastest 256 blocks"
         );
 
         // populate send and receive states (use functions that account for takedown state)
         sendState = _getSendState(tokenNumber);
         receiveState = _getReceiveState(tokenNumber);
 
-        // populate received tokens general
-        receivedTokensGeneral = _getReceivedTokensGeneral({
-            tokenNumber: tokenNumber,
-            blockhash_: blockhash_
-        });
-        // populate received tokens to
-        receivedTokensTo = _getReceivedTokensTo({
-            tokenNumber: tokenNumber,
-            blockhash_: blockhash_
-        });
+        // case: neutral receiving state - no tokens received
+        if (receiveState == ReceiveStates.Neutral) {
+            return (
+                sendState,
+                receiveState,
+                new TokenLiveData[](0),
+                new TokenLiveData[](0)
+            );
+        }
+
+        // case: receiveGeneral state - all tokens received - sample from general pool
+        if (receiveState == ReceiveStates.ReceiveGeneral) {
+            receivedTokensGeneral = _getReceivedTokensGeneral({
+                tokenNumber: tokenNumber,
+                blockhash_: blockhash_
+            });
+            receivedTokensTo = _getReceivedTokensTo({
+                tokenNumber: tokenNumber,
+                blockhash_: blockhash_
+            });
+            return (
+                sendState,
+                receiveState,
+                receivedTokensGeneral,
+                receivedTokensTo
+            );
+        }
+
+        // case: receiveFrom state - only tokens received from specific tokens
+        if (receiveState == ReceiveStates.ReceiveFrom) {
+            // TODO - sample from receiveFrom pool and return results
+            return (
+                sendState,
+                receiveState,
+                new TokenLiveData[](0), // placeholder
+                new TokenLiveData[](0) // placeholder
+            );
+        }
     }
 
+    /**
+     * @notice Gets the received tokens general for a given token.
+     * Assumes token is receiving generally.
+     * @param tokenNumber The token number to get the received tokens general for.
+     * @param blockhash_ The block hash to get the received tokens general for.
+     * @return receivedTokensGeneral The received tokens general.
+     */
     function _getReceivedTokensGeneral(
         uint256 tokenNumber,
         bytes32 blockhash_
     ) internal view returns (TokenLiveData[] memory) {
-        // TODO: Implement
-        return new TokenLiveData[](0);
+        // calculate the general pool's send rate, based on general ratio of sending and receiving tokens
+        uint256 generalPoolLength = _sendGeneralTokens.length();
+        uint256 receiveRatePerBlock = (generalPoolLength * 12) /
+            _receiveGeneralTokens.length(); // 1 per second if equal send/receive rates
+        if (receiveRatePerBlock == 0 && generalPoolLength > 0) {
+            receiveRatePerBlock = 1; // don't round down to 0
+        }
+        // sample from general pool, based on send rate
+        bytes32 seed = keccak256(abi.encodePacked(blockhash_, tokenNumber));
+        uint256 quantity = receiveRatePerBlock;
+        return
+            _sampleFromGeneralPool({
+                seed: seed,
+                quantity: quantity,
+                generalPoolLength: generalPoolLength
+            });
     }
 
+    /**
+     * @notice Samples tokens from the general sending pool using an affine walk.
+     * @dev Uses AffineWalkLib for efficient pseudo-random sampling over the EnumerableSet.
+     * @param seed The seed for pseudo-randomness.
+     * @param quantity The number of tokens to sample.
+     * @return result Array of TokenLiveData for sampled tokens.
+     */
+    function _sampleFromGeneralPool(
+        bytes32 seed,
+        uint256 quantity,
+        uint256 generalPoolLength
+    ) internal view returns (TokenLiveData[] memory) {
+        // perform Feistel walk to sample token numbers from the set
+        FeistelWalkLib.Plan memory plan = FeistelWalkLib.makePlan({
+            seed: seed,
+            N: generalPoolLength
+        });
+        uint256[] memory sampledTokenIndices = FeistelWalkLib.sample(
+            plan,
+            quantity
+        );
+        // populate TokenLiveData for each sampled token
+        uint256 sampledCount = sampledTokenIndices.length;
+        TokenLiveData[] memory result = new TokenLiveData[](sampledCount);
+        // @dev pull project id and core contract address into memory for efficient sload minimization
+        uint256 _projectId = CORE_PROJECT_ID;
+        address _coreContractAddress = CORE_CONTRACT_ADDRESS;
+        for (uint256 i = 0; i < sampledCount; i++) {
+            uint256 tokenNumber = _sendGeneralTokens.at(sampledTokenIndices[i]);
+            uint256 tokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
+                projectId: _projectId,
+                tokenNumber: tokenNumber
+            });
+            result[i] = _getTokenLiveDataForToken({
+                tokenNumber: tokenNumber,
+                tokenId: tokenId,
+                coreContractAddress: _coreContractAddress
+            });
+        }
+        return result;
+    }
+
+    /**
+     * @notice Gets the live data for a specific token.
+     * @dev Fetches token owner and metadata from storage.
+     * @param tokenNumber The token number to get live data for.
+     * @return liveData The TokenLiveData struct for the token.
+     */
+    function _getTokenLiveDataForToken(
+        uint256 tokenNumber,
+        uint256 tokenId,
+        address coreContractAddress
+    ) internal view returns (TokenLiveData memory liveData) {
+        // get owner address
+        address ownerAddress = IERC721(coreContractAddress).ownerOf(tokenId);
+
+        // get active slot and metadata
+        uint256 activeSlot = tokensActiveSlot[tokenNumber];
+        TokenMetadata storage metadata = tokensMetadata[tokenNumber][
+            activeSlot
+        ];
+
+        // populate live data
+        liveData.tokenNumber = tokenNumber;
+        liveData.ownerAddress = ownerAddress;
+
+        // get image and sound data if not taken down
+        if (!metadata.isTakedown) {
+            if (metadata.imageDataAddress != address(0)) {
+                liveData.imageDataCompressed = SSTORE2.read(
+                    metadata.imageDataAddress
+                );
+            }
+            if (metadata.soundDataAddress != address(0)) {
+                liveData.soundDataCompressed = SSTORE2.read(
+                    metadata.soundDataAddress
+                );
+            }
+        }
+
+        return liveData;
+    }
+
+    /**
+     * @notice Gets the received tokens to for a given token.
+     * Assumes token is receiving generally.
+     * @param tokenNumber The token number to get the received tokens to for.
+     * @param blockhash_ The block hash to get the received tokens to for.
+     * @return receivedTokensTo The received tokens to.
+     */
     function _getReceivedTokensTo(
         uint256 tokenNumber,
         bytes32 blockhash_
