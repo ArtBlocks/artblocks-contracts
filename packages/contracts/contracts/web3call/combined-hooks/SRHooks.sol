@@ -16,6 +16,7 @@ import {IPMPConfigureHook} from "../../interfaces/v0.8.x/IPMPConfigureHook.sol";
 import {IPMPAugmentHook} from "../../interfaces/v0.8.x/IPMPAugmentHook.sol";
 
 import {EnumerableSet} from "@openzeppelin-5.0/contracts/utils/structs/EnumerableSet.sol";
+import {SafeCast} from "@openzeppelin-5.0/contracts/utils/math/SafeCast.sol";
 import {Initializable} from "@openzeppelin-5.0/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin-5.0/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin-5.0/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -49,6 +50,7 @@ contract SRHooks is
 {
     using EnumerableSet for EnumerableSet.UintSet;
     using ImmutableUint16Array for ImmutableUint16Array.Uint16Array;
+    using SafeCast for uint256;
 
     address public PMPV0_ADDRESS;
 
@@ -63,6 +65,8 @@ contract SRHooks is
 
     uint256 internal constant MAX_RECEIVE_RATE_PER_BLOCK = 3 * 12; // 3 tokens per 12s block
     uint256 internal constant BASE_SEND_TO_RATE_PER_MINUTE = 1; // send once per minute, may be diluted by sending to multiple tokens
+
+    uint256 internal constant MAX_SENDING_TO_LENGTH = 25; // 25 tokens, beyond which dilution rate is too low and can inflate live data iteration time
 
     // constant delegation registry pointers and rights
     IDelegationRegistryV2 public constant DELEGATE_V2 =
@@ -87,16 +91,24 @@ contract SRHooks is
     mapping(uint256 tokenNumber => mapping(uint256 slot => TokenMetadata slotMetadata))
         private tokensMetadata;
 
-    /// @notice mapping of token numbers to the active slot
-    mapping(uint256 tokenNumber => uint256 activeSlot) private tokensActiveSlot;
+    struct TokenAuxStateData {
+        uint8 activeSlot;
+        uint16 sendingToLength; // used to calculate dilution rate when sending to multiple tokens
+    }
+
+    /// @notice mapping of token numbers to aux state data
+    mapping(uint256 tokenNumber => TokenAuxStateData auxStateData)
+        private _tokenAuxStateData;
 
     // ------ SEND/RECEIVE STATE (GLOBAL) ------
 
     /// @notice Set of token numbers that are currently in state SendGeneral
+    // @dev TODO - could develop a custom packed array + index mapping uint16EnumerableSet to improve efficiency vs. OpenZeppelin's EnumerableSet
     // @dev need O(1) access and O(1) insertion/removal for both sending and receiving tokens, so use an EnumerableSet
     EnumerableSet.UintSet private _sendGeneralTokens;
 
     /// @notice Set of token numbers that are currently in state ReceiveGeneral
+    // @dev TODO - could develop a custom packed array + index mapping uint16EnumerableSet to improve efficiency vs. OpenZeppelin's EnumerableSet
     // @dev need O(1) access and O(1) insertion/removal for both sending and receiving tokens, so use an EnumerableSet
     EnumerableSet.UintSet private _receiveGeneralTokens;
 
@@ -243,7 +255,7 @@ contract SRHooks is
         // append each token metadata fields (image and sound data addresses) to the augmentedTokenParams array
         // @dev load active slot from storage
         uint256 tokenNumber = ABHelpers.tokenIdToTokenNumber(tokenId);
-        uint256 activeSlot = tokensActiveSlot[tokenNumber];
+        uint256 activeSlot = _tokenAuxStateData[tokenNumber].activeSlot;
         TokenMetadata storage tokenMetadataStorage = tokensMetadata[
             tokenNumber
         ][activeSlot];
@@ -625,7 +637,7 @@ contract SRHooks is
         address ownerAddress = IERC721(coreContractAddress).ownerOf(tokenId);
 
         // get active slot and metadata
-        uint256 activeSlot = tokensActiveSlot[tokenNumber];
+        uint256 activeSlot = _tokenAuxStateData[tokenNumber].activeSlot;
         TokenMetadata storage metadata = tokensMetadata[tokenNumber][
             activeSlot
         ];
@@ -662,8 +674,101 @@ contract SRHooks is
         uint256 tokenNumber,
         bytes32 blockhash_
     ) internal view returns (TokenLiveData[] memory) {
-        // TODO: Implement
-        return new TokenLiveData[](0);
+        // we will iterate continuously over the tokens sending to me, and statistically include it
+        // based on dilution rate, as well as if it has been taken down.
+        // we do not sample from the general pool, since we are already sampling from it for the general tokens.
+        // we perform a Feistel walk to sample token numbers from the set, and then get the live data for each token.
+        uint256 sendingToMeLength = _tokensSendingToMe[tokenNumber].length();
+        if (sendingToMeLength == 0) {
+            return new TokenLiveData[](0); // no tokens sending to me, return empty array
+        }
+        // iterate over the tokens sending to me, and statistically include it based on dilution rate, as well as if it has been taken down.
+        // perform Feistel walk to sample token numbers from the set
+        bytes32 seed = keccak256(abi.encodePacked(blockhash_, tokenNumber));
+        FeistelWalkLib.Plan memory plan = FeistelWalkLib.makePlan({
+            seed: seed,
+            N: sendingToMeLength
+        });
+        // iterate and live pull each next index, since indeterministically sampled from the set
+        // optimistically create array of max length of token numbers sending to me, since we don't know the exact length until the end
+        uint256[] memory selectedTokenNumbers = new uint256[](
+            MAX_RECEIVE_RATE_PER_BLOCK
+        );
+        uint256 selectedTokenNumbersLength = 0;
+        for (uint256 i = 0; i < sendingToMeLength; i++) {
+            uint256 sampledTokenIndex = FeistelWalkLib.index(plan, i);
+            uint256 sampledTokenNumber = _tokensSendingToMe[tokenNumber].at(
+                sampledTokenIndex
+            );
+            // check if token has been taken down, and if so, skip
+            TokenAuxStateData storage tokenAuxStateData_ = _tokenAuxStateData[
+                sampledTokenNumber
+            ];
+            if (
+                tokensMetadata[sampledTokenNumber][
+                    tokenAuxStateData_.activeSlot
+                ].isTakedown
+            ) {
+                continue;
+            }
+            // statistically include it based on dilution rate
+            uint256 bpsChanceOfInclusion = tokenAuxStateData_.sendingToLength >
+                0
+                ? (((10_000 * (BASE_SEND_TO_RATE_PER_MINUTE * 12)) /
+                    tokenAuxStateData_.sendingToLength) * 60) // 10_000 bps, 12s per block, 60s per minute
+                : 0;
+            if (
+                _randomBps(
+                    bpsChanceOfInclusion,
+                    keccak256(abi.encodePacked(seed, sampledTokenNumber, i))
+                )
+            ) {
+                // statistically include it
+                selectedTokenNumbers[
+                    selectedTokenNumbersLength
+                ] = sampledTokenNumber;
+                selectedTokenNumbersLength++;
+            }
+            // if we have selected the maximum number of tokens, break
+            if (selectedTokenNumbersLength >= MAX_RECEIVE_RATE_PER_BLOCK) {
+                break;
+            }
+        }
+        // allocate array of TokenLiveData for the selected token numbers
+        TokenLiveData[] memory selectedTokenLiveData = new TokenLiveData[](
+            selectedTokenNumbersLength
+        );
+        // @dev pull project id and core contract address into memory for efficient sload minimization
+        uint256 _projectId = CORE_PROJECT_ID;
+        address _coreContractAddress = CORE_CONTRACT_ADDRESS;
+        // for each selected token number, get the live data
+        for (uint256 i = 0; i < selectedTokenNumbersLength; i++) {
+            uint256 selectedTokenNumber = selectedTokenNumbers[i];
+            uint256 selectedTokenId = ABHelpers
+                .tokenIdFromProjectIdAndTokenNumber({
+                    projectId: _projectId,
+                    tokenNumber: selectedTokenNumber
+                });
+            selectedTokenLiveData[i] = _getTokenLiveDataForToken({
+                tokenNumber: selectedTokenNumber,
+                tokenId: selectedTokenId,
+                coreContractAddress: _coreContractAddress
+            });
+        }
+        return selectedTokenLiveData;
+    }
+
+    /**
+     * @notice Randomly determines if an event should occur based on a given BPS chance.
+     * @param bps The BPS chance of the event occurring.
+     * @param prng prng
+     * @return true if the event should occur, false otherwise.
+     */
+    function _randomBps(
+        uint256 bps,
+        bytes32 prng
+    ) internal pure returns (bool) {
+        return uint256(prng) % 10_000 < bps;
     }
 
     /**
@@ -772,9 +877,10 @@ contract SRHooks is
             );
         }
         // update the token's active slot if it has changed
-        if (tokensActiveSlot[tokenNumber] != updatedActiveSlot) {
+        if (_tokenAuxStateData[tokenNumber].activeSlot != updatedActiveSlot) {
             // update value and emit PMPV0-indexable event for active slot update
-            tokensActiveSlot[tokenNumber] = updatedActiveSlot;
+            _tokenAuxStateData[tokenNumber].activeSlot = updatedActiveSlot
+                .toUint8();
             emit IPMPV0.TokenParamsConfigured({
                 coreContract: CORE_CONTRACT_ADDRESS,
                 tokenId: tokenId,
@@ -810,9 +916,14 @@ contract SRHooks is
                 tokensSendingTo.length == 0,
                 "tokensSendingTo must be empty"
             );
+        // enforce tokensSendingTo length is not too long
+        require(
+            tokensSendingTo.length <= MAX_SENDING_TO_LENGTH,
+            "tokensSendingTo must be less than or equal to MAX_SENDING_TO_LENGTH"
+        );
         // never allow updating a takedown slot
         // @dev load active slot from storage
-        uint256 activeSlot = tokensActiveSlot[tokenNumber];
+        uint256 activeSlot = _tokenAuxStateData[tokenNumber].activeSlot;
         require(
             !tokensMetadata[tokenNumber][activeSlot].isTakedown,
             "Slot is takedown - cannot update send state while in takedown slot"
@@ -839,6 +950,7 @@ contract SRHooks is
             }
             // clear my previous send to array
             _tokensSendingTo[tokenNumber].clear();
+            _tokenAuxStateData[tokenNumber].sendingToLength = 0; // wipe the sending to length to 0
         }
         // case: neutral state - no-op
 
@@ -854,8 +966,11 @@ contract SRHooks is
                 uint256 sendingToTokenNumber = tokensSendingTo[i];
                 _tokensSendingToMe[sendingToTokenNumber].add(tokenNumber);
             }
+            _tokenAuxStateData[tokenNumber]
+                .sendingToLength = tokensSendingToLength.toUint16(); // update the sending to length for dilution rate calculations
         }
         // case: neutral state - no-op
+
         // emit PMPV0-indexable event for send state update
         uint256 tokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
             projectId: CORE_PROJECT_ID,
@@ -897,7 +1012,7 @@ contract SRHooks is
             );
         // never allow updating a takedown slot
         // @dev load active slot from storage
-        uint256 activeSlot = tokensActiveSlot[tokenNumber];
+        uint256 activeSlot = _tokenAuxStateData[tokenNumber].activeSlot;
         require(
             !tokensMetadata[tokenNumber][activeSlot].isTakedown,
             "Slot is takedown - cannot update receive state while in takedown slot"
@@ -947,7 +1062,7 @@ contract SRHooks is
         uint256 tokenNumber
     ) internal view returns (SendStates) {
         // @dev load active slot from storage
-        uint256 activeSlot = tokensActiveSlot[tokenNumber];
+        uint256 activeSlot = _tokenAuxStateData[tokenNumber].activeSlot;
         // if slot is takedown, return neutral state
         if (tokensMetadata[tokenNumber][activeSlot].isTakedown) {
             return SendStates.Neutral;
@@ -1022,7 +1137,7 @@ contract SRHooks is
         uint256 tokenNumber
     ) internal view returns (ReceiveStates) {
         // @dev load active slot from storage
-        uint256 activeSlot = tokensActiveSlot[tokenNumber];
+        uint256 activeSlot = _tokenAuxStateData[tokenNumber].activeSlot;
         // if slot is takedown, return neutral state
         if (tokensMetadata[tokenNumber][activeSlot].isTakedown) {
             return ReceiveStates.Neutral;
