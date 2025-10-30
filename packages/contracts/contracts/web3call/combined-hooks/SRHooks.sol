@@ -7,6 +7,7 @@ import {AbstractPMPAugmentHook} from "../augment-hooks/AbstractPMPAugmentHook.so
 
 import {IWeb3Call} from "../../interfaces/v0.8.x/IWeb3Call.sol";
 import {IPMPV0} from "../../interfaces/v0.8.x/IPMPV0.sol";
+import {ISRHooks} from "../../interfaces/v0.8.x/ISRHooks.sol";
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
 import {IERC721} from "@openzeppelin-5.0/contracts/interfaces/IERC721.sol";
 import {IDelegationRegistry as IDelegationRegistryV1} from "../../interfaces/v0.8.x/IDelegationRegistry.sol";
@@ -42,18 +43,11 @@ contract SRHooks is
     Initializable,
     AbstractPMPAugmentHook,
     OwnableUpgradeable,
-    UUPSUpgradeable
+    UUPSUpgradeable,
+    ISRHooks
 {
     using EnumerableSet for EnumerableSet.UintSet;
     using ImmutableUint16Array for ImmutableUint16Array.Uint16Array;
-
-    // custom events not necessarily to be indexed
-    event Initialized(
-        address pmpV0Address,
-        address coreContractAddress,
-        uint256 coreProjectId,
-        address moderatorAddress
-    );
 
     address public PMPV0_ADDRESS;
 
@@ -85,14 +79,6 @@ contract SRHooks is
         uint16 soundVersion; // 2 bytes
     }
 
-    // struct for the token metadata calldata
-    struct TokenMetadataCalldata {
-        bool updateImage; // true if updating the image data
-        bytes bitmapImageCompressed; // non-empty if updating the image data
-        bool updateSound; // true if updating the sound data
-        bytes soundDataCompressed; // may be empty to clear the sound data, non-empty if setting the sound data
-    }
-
     /// @notice mapping of token numbers to slot to metadata
     mapping(uint256 tokenNumber => mapping(uint256 slot => TokenMetadata slotMetadata))
         private tokensMetadata;
@@ -101,19 +87,6 @@ contract SRHooks is
     mapping(uint256 tokenNumber => uint256 activeSlot) private tokensActiveSlot;
 
     // ------ SEND/RECEIVE STATE (GLOBAL) ------
-
-    // enum for the different possible states of a token's SR configuration
-    enum SendStates {
-        Neutral,
-        SendGeneral,
-        SendTo
-    }
-
-    enum ReceiveStates {
-        Neutral,
-        ReceiveGeneral,
-        ReceiveFrom
-    }
 
     /// @notice Set of token numbers that are currently in state SendGeneral
     // @dev need O(1) access and O(1) insertion/removal for both sending and receiving tokens, so use an EnumerableSet
@@ -323,9 +296,14 @@ contract SRHooks is
         // @dev allow setting to zero address to disable moderator functionality
         // EFFECTS
         MODERATOR_ADDRESS = newModeratorAddress;
-        // TODO - emit event
+        emit ModeratorAddressUpdated(newModeratorAddress);
     }
 
+    /**
+     * @notice Takedowns a token metadata slot by a moderator.
+     * @param tokenNumber The token number to takedown the metadata slot for.
+     * @param slot The slot number to takedown the metadata slot for.
+     */
     function takedownTokenMetadataSlot(
         uint256 tokenNumber,
         uint256 slot
@@ -360,7 +338,38 @@ contract SRHooks is
         _sendGeneralTokens.remove(tokenNumber);
         _receiveGeneralTokens.remove(tokenNumber);
 
-        // TODO - emit event
+        // emit event indicating takedown of token metadata slot by moderator
+        emit ISRHooks.TokenMetadataSlotTakedown({
+            tokenNumber: tokenNumber,
+            slot: slot,
+            moderatorAddress: msg.sender
+        });
+        // emit PMPV0-indexable event for token metadata slot takedown - treat as version bump to sound and image data
+        // increment image and sound versions by 1, since takedown is a version bump
+        uint256 tokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
+            projectId: CORE_PROJECT_ID,
+            tokenNumber: tokenNumber
+        });
+        tokenMetadataStorage.imageVersion += 1;
+        tokenMetadataStorage.soundVersion += 1;
+        emit IPMPV0.TokenParamsConfigured({
+            coreContract: CORE_CONTRACT_ADDRESS,
+            tokenId: tokenId,
+            pmpInputs: _getPmpInputsForImageDataUpdate({
+                slot: slot,
+                imageVersion: tokenMetadataStorage.imageVersion
+            }),
+            authAddresses: _getSingleElementAddressArray(msg.sender)
+        });
+        emit IPMPV0.TokenParamsConfigured({
+            coreContract: CORE_CONTRACT_ADDRESS,
+            tokenId: tokenId,
+            pmpInputs: _getPmpInputsForSoundDataUpdate({
+                slot: slot,
+                soundVersion: tokenMetadataStorage.soundVersion
+            }),
+            authAddresses: _getSingleElementAddressArray(msg.sender)
+        });
     }
 
     /**
@@ -485,16 +494,14 @@ contract SRHooks is
             );
             tokenMetadataStorage.imageVersion += 1;
             // emit PMPV0-indexable event for image data update
-            address[] memory authAddresses = new address[](1);
-            authAddresses[0] = ownerAddress;
             emit IPMPV0.TokenParamsConfigured({
                 coreContract: CORE_CONTRACT_ADDRESS,
                 tokenId: tokenId,
                 pmpInputs: _getPmpInputsForImageDataUpdate({
-                    activeSlot: updatedActiveSlot,
+                    slot: updatedActiveSlot,
                     imageVersion: tokenMetadataStorage.imageVersion
                 }),
-                authAddresses: authAddresses
+                authAddresses: _getSingleElementAddressArray(ownerAddress)
             });
         } else {
             require(
@@ -507,6 +514,17 @@ contract SRHooks is
             // allow "clearing" the sound data by providing an empty bytes array
             if (tokenMetadataCalldata.soundDataCompressed.length == 0) {
                 tokenMetadataStorage.soundDataAddress = address(0);
+                tokenMetadataStorage.soundVersion += 1;
+                // emit PMPV0-indexable event for sound data update
+                emit IPMPV0.TokenParamsConfigured({
+                    coreContract: CORE_CONTRACT_ADDRESS,
+                    tokenId: tokenId,
+                    pmpInputs: _getPmpInputsForSoundDataUpdate({
+                        slot: updatedActiveSlot,
+                        soundVersion: tokenMetadataStorage.soundVersion
+                    }),
+                    authAddresses: _getSingleElementAddressArray(ownerAddress)
+                });
             } else {
                 require(
                     tokenMetadataCalldata.soundDataCompressed.length <=
@@ -519,16 +537,14 @@ contract SRHooks is
                 );
                 tokenMetadataStorage.soundVersion += 1;
                 // emit PMPV0-indexable event for sound data update
-                address[] memory authAddresses = new address[](1);
-                authAddresses[0] = ownerAddress;
                 emit IPMPV0.TokenParamsConfigured({
                     coreContract: CORE_CONTRACT_ADDRESS,
                     tokenId: tokenId,
                     pmpInputs: _getPmpInputsForSoundDataUpdate({
-                        activeSlot: updatedActiveSlot,
+                        slot: updatedActiveSlot,
                         soundVersion: tokenMetadataStorage.soundVersion
                     }),
-                    authAddresses: new address[](1)
+                    authAddresses: _getSingleElementAddressArray(ownerAddress)
                 });
             }
         } else {
@@ -537,10 +553,17 @@ contract SRHooks is
                 "Sound data must be empty when not updating"
             );
         }
-        // update the token's active slot
-        tokensActiveSlot[tokenNumber] = updatedActiveSlot;
-
-        // TODO - event
+        // update the token's active slot if it has changed
+        if (tokensActiveSlot[tokenNumber] != updatedActiveSlot) {
+            // update value and emit PMPV0-indexable event for active slot update
+            tokensActiveSlot[tokenNumber] = updatedActiveSlot;
+            emit IPMPV0.TokenParamsConfigured({
+                coreContract: CORE_CONTRACT_ADDRESS,
+                tokenId: tokenId,
+                pmpInputs: _getPmpInputsForActiveSlotUpdate(updatedActiveSlot),
+                authAddresses: _getSingleElementAddressArray(ownerAddress)
+            });
+        }
     }
 
     /**
@@ -620,13 +643,11 @@ contract SRHooks is
             projectId: CORE_PROJECT_ID,
             tokenNumber: tokenNumber
         });
-        address[] memory authAddresses = new address[](1);
-        authAddresses[0] = ownerAddress;
         emit IPMPV0.TokenParamsConfigured({
             coreContract: CORE_CONTRACT_ADDRESS,
             tokenId: tokenId,
             pmpInputs: _getPmpInputsForSendStateUpdate(sendState),
-            authAddresses: authAddresses
+            authAddresses: _getSingleElementAddressArray(ownerAddress)
         });
     }
 
@@ -690,13 +711,11 @@ contract SRHooks is
             projectId: CORE_PROJECT_ID,
             tokenNumber: tokenNumber
         });
-        address[] memory authAddresses = new address[](1);
-        authAddresses[0] = ownerAddress;
         emit IPMPV0.TokenParamsConfigured({
             coreContract: CORE_CONTRACT_ADDRESS,
             tokenId: tokenId,
             pmpInputs: _getPmpInputsForReceiveStateUpdate(receiveState),
-            authAddresses: authAddresses
+            authAddresses: _getSingleElementAddressArray(ownerAddress)
         });
     }
 
@@ -862,7 +881,7 @@ contract SRHooks is
         receiveStateSelectOptions[2] = "ReceiveFrom";
 
         IPMPV0.PMPInputConfig[]
-            memory pmpInputConfigs = new IPMPV0.PMPInputConfig[](12); // 12 slots (2 for s/r state, 5 for image, 5 for sound)
+            memory pmpInputConfigs = new IPMPV0.PMPInputConfig[](13); // 13 slots (2 for s/r state, 1 for active slot, 5 for image, 5 for sound)
 
         // SendState config
         pmpInputConfigs[0] = IPMPV0.PMPInputConfig({
@@ -892,6 +911,20 @@ contract SRHooks is
             })
         });
 
+        // ActiveSlot config
+        pmpInputConfigs[2] = IPMPV0.PMPInputConfig({
+            key: "ActiveSlot",
+            pmpConfig: IPMPV0.PMPConfig({
+                authOption: IPMPV0.AuthOption.TokenOwner,
+                paramType: IPMPV0.ParamType.Uint256Range,
+                pmpLockedAfterTimestamp: 0,
+                authAddress: address(0),
+                selectOptions: new string[](0),
+                minRange: 0,
+                maxRange: bytes32(uint256(NUM_METADATA_SLOTS - 1))
+            })
+        });
+
         // Iteratively build ImageVersionSlot[0-4] configs
         for (uint256 i = 0; i < NUM_METADATA_SLOTS; i++) {
             string memory imageKey = string(
@@ -900,7 +933,7 @@ contract SRHooks is
                     bytes(Strings.toString(i))
                 )
             );
-            pmpInputConfigs[2 + i] = IPMPV0.PMPInputConfig({
+            pmpInputConfigs[3 + i] = IPMPV0.PMPInputConfig({
                 key: imageKey,
                 pmpConfig: IPMPV0.PMPConfig({
                     authOption: IPMPV0.AuthOption.TokenOwner,
@@ -922,7 +955,7 @@ contract SRHooks is
                     bytes(Strings.toString(i))
                 )
             );
-            pmpInputConfigs[7 + i] = IPMPV0.PMPInputConfig({
+            pmpInputConfigs[8 + i] = IPMPV0.PMPInputConfig({
                 key: soundKey,
                 pmpConfig: IPMPV0.PMPConfig({
                     authOption: IPMPV0.AuthOption.TokenOwner,
@@ -982,20 +1015,40 @@ contract SRHooks is
     }
 
     /**
-     * @notice Gets the PMP inputs for the image data update.
+     * @notice Gets the PMP inputs for the active slot update.
      * @param activeSlot The active slot to update.
+     * @return pmpInputs The PMP inputs for the active slot update.
+     * @dev This function is used to get the PMP inputs for the active slot update, based on what this hook uses.
+     */
+    function _getPmpInputsForActiveSlotUpdate(
+        uint256 activeSlot
+    ) internal pure returns (IPMPV0.PMPInput[] memory) {
+        IPMPV0.PMPInput[] memory pmpInputs = new IPMPV0.PMPInput[](1);
+        pmpInputs[0] = IPMPV0.PMPInput({
+            key: "ActiveSlot",
+            configuredParamType: IPMPV0.ParamType.Uint256Range,
+            configuredValue: bytes32(uint256(activeSlot)),
+            configuringArtistString: false,
+            configuredValueString: ""
+        });
+        return pmpInputs;
+    }
+
+    /**
+     * @notice Gets the PMP inputs for the image data update.
+     * @param slot The slot to update.
      * @param imageVersion The image version to update.
      * @return pmpInputs The PMP inputs for the image data update.
      * @dev This function is used to get the PMP inputs for the image data update, based on what this hook uses.
      */
     function _getPmpInputsForImageDataUpdate(
-        uint256 activeSlot,
+        uint256 slot,
         uint16 imageVersion
     ) internal pure returns (IPMPV0.PMPInput[] memory) {
         string memory key = string(
             bytes.concat(
                 bytes("ImageVersionSlot"),
-                bytes(Strings.toString(activeSlot))
+                bytes(Strings.toString(slot))
             )
         );
         // build PMPInputs for the image data update, based on what this hook uses
@@ -1012,19 +1065,19 @@ contract SRHooks is
 
     /**
      * @notice Gets the PMP inputs for the sound data update.
-     * @param activeSlot The active slot to update.
+     * @param slot The slot to update.
      * @param soundVersion The sound version to update.
      * @return pmpInputs The PMP inputs for the sound data update.
      * @dev This function is used to get the PMP inputs for the sound data update, based on what this hook uses.
      */
     function _getPmpInputsForSoundDataUpdate(
-        uint256 activeSlot,
+        uint256 slot,
         uint16 soundVersion
     ) internal pure returns (IPMPV0.PMPInput[] memory) {
         string memory key = string(
             bytes.concat(
                 bytes("SoundVersionSlot"),
-                bytes(Strings.toString(activeSlot))
+                bytes(Strings.toString(slot))
             )
         );
         // build PMPInputs for the sound data update, based on what this hook uses
@@ -1037,6 +1090,19 @@ contract SRHooks is
             configuredValueString: ""
         });
         return pmpInputs;
+    }
+
+    /**
+     * @notice Gets a single element address array.
+     * @param address_ The address to include in the array.
+     * @return addressArray The single element address array containing the address.
+     */
+    function _getSingleElementAddressArray(
+        address address_
+    ) internal pure returns (address[] memory) {
+        address[] memory addressArray = new address[](1);
+        addressArray[0] = address_;
+        return addressArray;
     }
 
     /**
