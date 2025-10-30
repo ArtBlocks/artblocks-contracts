@@ -477,6 +477,9 @@ contract SRHooks is
      * @param blockNumber The block number to get the live data for. Must be in latest 256 blocks.
      * Treats block number of 0 as latest completed block.
      * Reverts if block number is in future - need block hash to be defined.
+     * NOTE: Each array of receivedTokensGeneral and receivedTokensTo has a maximum length of MAX_RECEIVE_RATE_PER_BLOCK,
+     * but their combined length may be greater than MAX_RECEIVE_RATE_PER_BLOCK. The art script should handle this by
+     * deterministically shuffling/sampling from the arrays if desired.
      * @return sendState The send state of the token.
      * @return receiveState The receive state of the token.
      * @return receivedTokensGeneral The received tokens general of the token.
@@ -577,7 +580,12 @@ contract SRHooks is
         }
         // sample from general pool, based on send rate
         bytes32 seed = keccak256(abi.encodePacked(blockhash_, tokenNumber));
-        uint256 quantity = receiveRatePerBlock;
+        uint256 quantity = receiveRatePerBlock > MAX_RECEIVE_RATE_PER_BLOCK
+            ? MAX_RECEIVE_RATE_PER_BLOCK
+            : receiveRatePerBlock;
+        if (quantity == 0) {
+            return new TokenLiveData[](0); // no tokens to sample, return empty array
+        }
         return
             _sampleFromGeneralPool({
                 seed: seed,
