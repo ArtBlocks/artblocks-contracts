@@ -22,18 +22,6 @@ interface ISRHooks {
         uint256 coreProjectId
     );
 
-    /**
-     * @notice Emitted when a token slot is takedown by a moderator
-     * @param tokenNumber The token number.
-     * @param slot The slot number.
-     * @param moderatorAddress The address of the moderator who takedown the slot.
-     */
-    event TokenMetadataSlotTakedown(
-        uint256 indexed tokenNumber,
-        uint256 slot,
-        address moderatorAddress
-    );
-
     // struct for the token metadata calldata
     struct TokenMetadataCalldata {
         bool updateImage; // true if updating the image data
@@ -67,8 +55,7 @@ interface ISRHooks {
      * Reverts if the token number is invalid or the msg.sender is not owner or valid delegate.xyz V2 of token owner.
      * Reverts if invalid configuration is provided.
      * Includes two boolean flags to update the send and receive states and token metadata separately, in a single function call.
-     * Never allows updating to a slot that has been taken down by the moderator or is invalid.
-     * Never allows updating the send or receive state while still in a slot that has been taken down by the moderator.
+     * Never allows updating to a slot that is invalid.
      * @param tokenNumber The token number to update.
      * @param updateSendState Whether to update the send state.
      * @param sendState The new send state. Valid values are SendGeneral, SendTo, Neutral.
