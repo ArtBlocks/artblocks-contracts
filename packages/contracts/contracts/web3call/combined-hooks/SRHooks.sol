@@ -60,8 +60,6 @@ contract SRHooks is
 
     uint256 public CORE_PROJECT_ID;
 
-    address public MODERATOR_ADDRESS;
-
     uint256 public constant MAX_IMAGE_DATA_LENGTH = 1024 * 15; // 15 KB, beyond which is unlikely to represent a 64x64 image
     uint256 public constant MAX_SOUND_DATA_LENGTH = 1024 * 10; // 10 KB, beyond which is unlikely to represent a sound
 
@@ -87,7 +85,6 @@ contract SRHooks is
     struct TokenMetadata {
         address imageDataAddress; // 20 bytes
         uint16 imageVersion; // 2 bytes
-        bool isTakedown; // 1 byte, true if moderator took down the slot's metadata
         address soundDataAddress; // 20 bytes
         uint16 soundVersion; // 2 bytes
     }
@@ -164,10 +161,6 @@ contract SRHooks is
             });
     }
 
-    function _isModerator(address addressToCheck) internal view returns (bool) {
-        return addressToCheck == MODERATOR_ADDRESS;
-    }
-
     /// disable initialization in deployed implementation contract for clarity
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -182,14 +175,12 @@ contract SRHooks is
      * @param _owner The address that will own this contract and authorize upgrades.
      * @param _coreContractAddress The address of the core contract.
      * @param _coreProjectId The project ID of the core contract.
-     * @param _moderatorAddress The address of the content moderator.
      */
     function initialize(
         address _pmpV0Address,
         address _owner,
         address _coreContractAddress,
-        uint256 _coreProjectId,
-        address _moderatorAddress
+        uint256 _coreProjectId
     ) public initializer {
         __Ownable_init(_owner);
         __UUPSUpgradeable_init();
@@ -197,13 +188,11 @@ contract SRHooks is
         PMPV0_ADDRESS = _pmpV0Address;
         CORE_CONTRACT_ADDRESS = _coreContractAddress;
         CORE_PROJECT_ID = _coreProjectId;
-        MODERATOR_ADDRESS = _moderatorAddress;
 
         emit Initialized({
             pmpV0Address: _pmpV0Address,
             coreContractAddress: _coreContractAddress,
-            coreProjectId: _coreProjectId,
-            moderatorAddress: _moderatorAddress
+            coreProjectId: _coreProjectId
         });
         // emit fake PMPV0 events to be indexed by off-chain tools
         // @dev this allows the contract to be indexed directly by off-chain tools, including the Art Blocks subgraph.
@@ -223,12 +212,10 @@ contract SRHooks is
 
     /**
      * @notice Augment the token parameters for a given token.
-     * Augments the token parameters by appending the token's active slot's metadata and send/receive states,
-     * as well as the token's takedown state.
+     * Augments the token parameters by appending the token's active slot's metadata and send/receive states.
      * The following fields are appended:
      * - imageData: the hex string of the compressed image data of the token's active slot
      * - soundData: the hex string of the compressed sound data of the token's active slot
-     * - isTakedown: the boolean string of the takedown state of the token's active slot
      * - sendState: the string of the send state of the token (SendGeneral, SendTo, Neutral)
      * - receiveState: the string of the receive state of the token (ReceiveGeneral, ReceiveFrom, Neutral)
      * @dev This hook is called when a token's PMPs are read.
@@ -249,7 +236,7 @@ contract SRHooks is
         // create a new augmentedTokenParams array with maximum length of
         // input tokenParams + 1 extra element for the squiggle's token hash
         uint256 originalLength = tokenParams.length;
-        uint256 augmentedMaxLength = originalLength + 5; // 5 extra elements for the token metadata fields
+        uint256 augmentedMaxLength = originalLength + 4; // 4 extra elements for the token metadata fields
         augmentedTokenParams = new IWeb3Call.TokenParam[](augmentedMaxLength);
 
         // copy original tokenParams to augmentedTokenParams
@@ -264,45 +251,26 @@ contract SRHooks is
         TokenMetadata storage tokenMetadataStorage = tokensMetadata[
             tokenNumber
         ][activeSlot];
-        if (tokenMetadataStorage.isTakedown) {
-            // if metadata is takedown, return empty strings for both image and sound data
-            augmentedTokenParams[originalLength] = IWeb3Call.TokenParam({
-                key: "imageData",
-                value: ""
-            });
-            augmentedTokenParams[originalLength + 1] = IWeb3Call.TokenParam({
-                key: "soundData",
-                value: ""
-            });
-        } else {
-            // if metadata is not takedown, return the image and sound data as hex strings
-            augmentedTokenParams[originalLength] = IWeb3Call.TokenParam({
-                key: "imageData",
-                value: _getHexStringFromSSTORE2(
-                    tokenMetadataStorage.imageDataAddress
-                )
-            });
-            augmentedTokenParams[originalLength + 1] = IWeb3Call.TokenParam({
-                key: "soundData",
-                value: _getHexStringFromSSTORE2(
-                    tokenMetadataStorage.soundDataAddress
-                )
-            });
-        }
-
-        // include takedown state
-        augmentedTokenParams[originalLength + 2] = IWeb3Call.TokenParam({
-            key: "isTakedown",
-            value: tokenMetadataStorage.isTakedown ? "true" : "false"
+        // return the image and sound data as hex strings
+        augmentedTokenParams[originalLength] = IWeb3Call.TokenParam({
+            key: "imageData",
+            value: _getHexStringFromSSTORE2(
+                tokenMetadataStorage.imageDataAddress
+            )
+        });
+        augmentedTokenParams[originalLength + 1] = IWeb3Call.TokenParam({
+            key: "soundData",
+            value: _getHexStringFromSSTORE2(
+                tokenMetadataStorage.soundDataAddress
+            )
         });
 
         // include send and receive states
-        // @dev do not use raw variants here, we want to be neutral if in takedown slot
-        augmentedTokenParams[originalLength + 3] = IWeb3Call.TokenParam({
+        augmentedTokenParams[originalLength + 2] = IWeb3Call.TokenParam({
             key: "sendState",
             value: _sendStateToString(_getSendState(tokenNumber))
         });
-        augmentedTokenParams[originalLength + 4] = IWeb3Call.TokenParam({
+        augmentedTokenParams[originalLength + 3] = IWeb3Call.TokenParam({
             key: "receiveState",
             value: _receiveStateToString(_getReceiveState(tokenNumber))
         });
@@ -311,95 +279,11 @@ contract SRHooks is
         return augmentedTokenParams;
     }
 
-    function updateModeratorAddress(
-        address newModeratorAddress
-    ) external onlyOwner {
-        // @dev allow setting to zero address to disable moderator functionality
-        // EFFECTS
-        MODERATOR_ADDRESS = newModeratorAddress;
-        emit ModeratorAddressUpdated(newModeratorAddress);
-    }
-
-    /**
-     * @notice Takedowns a token metadata slot by a moderator.
-     * @param tokenNumber The token number to takedown the metadata slot for.
-     * @param slot The slot number to takedown the metadata slot for.
-     */
-    function takedownTokenMetadataSlot(
-        uint256 tokenNumber,
-        uint256 slot
-    ) external {
-        // CHECKS
-        // msg.sender must be moderator
-        require(_isModerator(msg.sender), "Only moderator allowed");
-        // slot must be valid
-        require(slot < NUM_METADATA_SLOTS, "Invalid slot");
-        // slot must not be already takedown
-        require(
-            !tokensMetadata[tokenNumber][slot].isTakedown,
-            "Slot already takedown"
-        );
-
-        // EFFECTS
-        // takedown the token metadata slot, wiping image and sound data addresses, marking as takedown
-        TokenMetadata storage tokenMetadataStorage = tokensMetadata[
-            tokenNumber
-        ][slot];
-        tokenMetadataStorage.isTakedown = true;
-        tokenMetadataStorage.imageDataAddress = address(0); // clear the image data address
-        tokenMetadataStorage.soundDataAddress = address(0); // clear the sound data address
-        // clear the token's send/receive states, only if token is not in SendTo or ReceiveFrom state
-        // @dev SendTo and ReceiveFrom states may be expensive for owner to re-build, so we don not clear them,
-        // and instead filter on live data viewing accordingly.
-        // @dev also mitigates potential moderator abuse by removing potentially large gas usage during SendTo unwinding.
-        // send state clearing
-        // @dev effectively, this is achieved by removing the token from the general send and receive sets if it is in them
-        // and not in SendTo or ReceiveFrom state.
-        // @dev okay to optimisitically call remove - it will be a no-op if the token is not in the set
-        _sendGeneralTokens.remove(tokenNumber);
-        _receiveGeneralTokens.remove(tokenNumber);
-
-        // emit event indicating takedown of token metadata slot by moderator
-        emit ISRHooks.TokenMetadataSlotTakedown({
-            tokenNumber: tokenNumber,
-            slot: slot,
-            moderatorAddress: msg.sender
-        });
-        // emit PMPV0-indexable event for token metadata slot takedown - treat as version bump to sound and image data
-        // increment image and sound versions by 1, since takedown is a version bump
-        uint256 tokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
-            projectId: CORE_PROJECT_ID,
-            tokenNumber: tokenNumber
-        });
-        tokenMetadataStorage.imageVersion += 1;
-        tokenMetadataStorage.soundVersion += 1;
-        emit IPMPV0.TokenParamsConfigured({
-            coreContract: CORE_CONTRACT_ADDRESS,
-            tokenId: tokenId,
-            pmpInputs: _getPmpInputsForImageDataUpdate({
-                slot: slot,
-                imageVersion: tokenMetadataStorage.imageVersion
-            }),
-            authAddresses: _getSingleElementAddressArray(msg.sender)
-        });
-        emit IPMPV0.TokenParamsConfigured({
-            coreContract: CORE_CONTRACT_ADDRESS,
-            tokenId: tokenId,
-            pmpInputs: _getPmpInputsForSoundDataUpdate({
-                slot: slot,
-                soundVersion: tokenMetadataStorage.soundVersion
-            }),
-            authAddresses: _getSingleElementAddressArray(msg.sender)
-        });
-    }
-
     /**
      * @notice Updates the state and metadata for a given token.
      * Reverts if the token number is invalid or the msg.sender is not owner or valid delegate.xyz V2 of token owner.
      * Reverts if invalid configuration is provided.
      * Includes two boolean flags to update the send and receive states and token metadata separately, in a single function call.
-     * Never allows updating to a slot that has been taken down by the moderator or is invalid.
-     * Never allows updating the send or receive state while still in a slot that has been taken down by the moderator.
      * @param tokenNumber The token number to update.
      * @param updateSendState Whether to update the send state.
      * @param sendState The new send state. Valid values are SendGeneral, SendTo, Neutral.
@@ -442,7 +326,7 @@ contract SRHooks is
         );
 
         // CHECKS-AND-EFFECTS (BRANCHED LOGIC)
-        // update token metadata FIRST, to lock in slot's takedown state prior to any S/R state updates (dependent on takedown state)
+        // update token metadata first, prior to any S/R state updates (could do either first)
         if (updateTokenMetadata) {
             // EFFECTS
             // update the token metadata
@@ -454,7 +338,7 @@ contract SRHooks is
             });
         }
 
-        // update send/receive states SECOND, based on any updated takedown state from token metadata update
+        // update send/receive states second, after any metadata updates (could do either second)
         if (updateSendState) {
             _updateSendState({
                 tokenNumber: tokenNumber,
@@ -515,7 +399,7 @@ contract SRHooks is
             "block hash not available - must be in lastest 256 blocks"
         );
 
-        // populate send and receive states (use functions that account for takedown state)
+        // populate send and receive states
         sendState = _getSendState(tokenNumber);
         receiveState = _getReceiveState(tokenNumber);
 
@@ -662,18 +546,16 @@ contract SRHooks is
         liveData.tokenNumber = tokenNumber;
         liveData.ownerAddress = ownerAddress;
 
-        // get image and sound data if not taken down
-        if (!metadata.isTakedown) {
-            if (metadata.imageDataAddress != address(0)) {
-                liveData.imageDataCompressed = SSTORE2.read(
-                    metadata.imageDataAddress
-                );
-            }
-            if (metadata.soundDataAddress != address(0)) {
-                liveData.soundDataCompressed = SSTORE2.read(
-                    metadata.soundDataAddress
-                );
-            }
+        // get image and sound data
+        if (metadata.imageDataAddress != address(0)) {
+            liveData.imageDataCompressed = SSTORE2.read(
+                metadata.imageDataAddress
+            );
+        }
+        if (metadata.soundDataAddress != address(0)) {
+            liveData.soundDataCompressed = SSTORE2.read(
+                metadata.soundDataAddress
+            );
         }
 
         return liveData;
@@ -691,14 +573,14 @@ contract SRHooks is
         bytes32 blockhash_
     ) internal view returns (TokenLiveData[] memory) {
         // we will iterate continuously over the tokens sending to me, and statistically include it
-        // based on dilution rate, as well as if it has been taken down.
+        // based on dilution rate.
         // we do not sample from the general pool, since we are already sampling from it for the general tokens.
         // we perform a Feistel walk to sample token numbers from the set, and then get the live data for each token.
         uint256 sendingToMeLength = _tokensSendingToMe[tokenNumber].length();
         if (sendingToMeLength == 0) {
             return new TokenLiveData[](0); // no tokens sending to me, return empty array
         }
-        // iterate over the tokens sending to me, and statistically include it based on dilution rate, as well as if it has been taken down.
+        // iterate over the tokens sending to me, and statistically include it based on dilution rate.
         // perform Feistel walk to sample token numbers from the set
         bytes32 seed = keccak256(abi.encodePacked(blockhash_, tokenNumber));
         FeistelWalkLib.Plan memory plan = FeistelWalkLib.makePlan({
@@ -719,18 +601,10 @@ contract SRHooks is
             uint256 sampledTokenNumber = _tokensSendingToMe[tokenNumber].at(
                 sampledTokenIndex
             );
-            // check if token has been taken down, and if so, skip
+            // statistically include it based on dilution rate
             TokenAuxStateData storage tokenAuxStateData_ = _tokenAuxStateData[
                 sampledTokenNumber
             ];
-            if (
-                tokensMetadata[sampledTokenNumber][
-                    tokenAuxStateData_.activeSlot
-                ].isTakedown
-            ) {
-                continue;
-            }
-            // statistically include it based on dilution rate
             uint256 bpsChanceOfInclusion = tokenAuxStateData_.sendingToLength >
                 0
                 ? (((10_000 * (BASE_SEND_TO_RATE_PER_MINUTE * 12)) /
@@ -819,7 +693,7 @@ contract SRHooks is
         if (receivingFromMeLength == 0) {
             return (new TokenLiveData[](0), new TokenLiveData[](0)); // no tokens receiving from me, return empty arrays
         }
-        // iterate over the tokens receiving from me, and statistically include it based on dilution rate, as well as if it has been taken down.
+        // iterate over the tokens receiving from me, and statistically include it based on dilution rate.
         // perform Feistel walk to sample token numbers from the set
         bytes32 seed = keccak256(abi.encodePacked(blockhash_, tokenNumber));
         FeistelWalkLib.Plan memory plan = FeistelWalkLib.makePlan({
@@ -842,14 +716,6 @@ contract SRHooks is
             {
                 uint256 sampledTokenIndex = FeistelWalkLib.index(plan, i);
                 sampledTokenNumber = tokensReceivingFrom[sampledTokenIndex];
-            }
-            // check if token has been taken down, and if so, skip
-            if (
-                tokensMetadata[sampledTokenNumber][
-                    _tokenAuxStateData[sampledTokenNumber].activeSlot
-                ].isTakedown
-            ) {
-                continue;
             }
             // if sending generally, skip - handled in the general token iteration
             // if sending to me, statistically include it based on dilution rate
@@ -892,14 +758,6 @@ contract SRHooks is
             {
                 uint256 sampledTokenIndex = FeistelWalkLib.index(plan, i);
                 sampledTokenNumber = tokensReceivingFrom[sampledTokenIndex];
-            }
-            // check if token has been taken down, and if so, skip
-            if (
-                tokensMetadata[sampledTokenNumber][
-                    _tokenAuxStateData[sampledTokenNumber].activeSlot
-                ].isTakedown
-            ) {
-                continue;
             }
             // if sending generally, include it for sure
             if (_sendGeneralTokens.contains(sampledTokenNumber)) {
@@ -971,13 +829,12 @@ contract SRHooks is
         // CHECKS
         // updatedActiveSlot must be valid
         require(updatedActiveSlot < NUM_METADATA_SLOTS, "Invalid active slot");
-        // never allow updating to a takedown slot
+
+        // EFFECTS
         TokenMetadata storage tokenMetadataStorage = tokensMetadata[
             tokenNumber
         ][updatedActiveSlot];
-        require(!tokenMetadataStorage.isTakedown, "Slot is takedown");
 
-        // EFFECTS
         uint256 tokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
             projectId: CORE_PROJECT_ID,
             tokenNumber: tokenNumber
@@ -1104,18 +961,10 @@ contract SRHooks is
             tokensSendingTo.length <= MAX_SENDING_TO_LENGTH,
             "tokensSendingTo must be less than or equal to MAX_SENDING_TO_LENGTH"
         );
-        // never allow updating a takedown slot
-        // @dev load active slot from storage
-        uint256 activeSlot = _tokenAuxStateData[tokenNumber].activeSlot;
-        require(
-            !tokensMetadata[tokenNumber][activeSlot].isTakedown,
-            "Slot is takedown - cannot update send state while in takedown slot"
-        );
 
         // EFFECTS
         // Step 1. clear previous send state, based on storage's send state
-        // @dev use raw variant to avoid expense of double checking takedown state, since we already checked it above
-        SendStates previousSendState = _getSendStateRaw(tokenNumber);
+        SendStates previousSendState = _getSendState(tokenNumber);
         if (previousSendState == SendStates.SendGeneral) {
             // simply remove the token from the send general set
             _sendGeneralTokens.remove(tokenNumber);
@@ -1198,18 +1047,10 @@ contract SRHooks is
             tokensReceivingFrom.length <= MAX_RECEIVING_FROM_ARRAY_LENGTH,
             "tokensReceivingFrom must be less than or equal to MAX_RECEIVING_FROM_ARRAY_LENGTH"
         );
-        // never allow updating a takedown slot
-        // @dev load active slot from storage
-        uint256 activeSlot = _tokenAuxStateData[tokenNumber].activeSlot;
-        require(
-            !tokensMetadata[tokenNumber][activeSlot].isTakedown,
-            "Slot is takedown - cannot update receive state while in takedown slot"
-        );
 
         // EFFECTS
         // Step 1. clear previous receive state, based on storage's receive state
-        // @dev use raw variant to avoid expense of double checking takedown state, since we already checked it above
-        ReceiveStates previousReceiveState = _getReceiveStateRaw(tokenNumber);
+        ReceiveStates previousReceiveState = _getReceiveState(tokenNumber);
         if (previousReceiveState == ReceiveStates.ReceiveGeneral) {
             // simply remove the token from the receive general set
             _receiveGeneralTokens.remove(tokenNumber);
@@ -1241,32 +1082,13 @@ contract SRHooks is
     }
 
     /**
-     * @notice Gets the send state for a given token, accounting for takedown state.
-     * Internal function - assumes token is valid
-     * @param tokenNumber The token number to get the send state for.
-     * @return sendState The send state.
-     */
-    function _getSendState(
-        uint256 tokenNumber
-    ) internal view returns (SendStates) {
-        // @dev load active slot from storage
-        uint256 activeSlot = _tokenAuxStateData[tokenNumber].activeSlot;
-        // if slot is takedown, return neutral state
-        if (tokensMetadata[tokenNumber][activeSlot].isTakedown) {
-            return SendStates.Neutral;
-        }
-        return _getSendStateRaw(tokenNumber);
-    }
-
-    /**
-     * @notice Gets the send state for a given token, not accounting for takedown state.
-     * Provides cheaper access to derived send state if takedown state was already checked.
+     * @notice Gets the send state for a given token.
      * Internal function - assumes token is valid
      * @dev uses derived state to prefer SLOAD over SSTORE for efficiency
      * @param tokenNumber The token number to get the send state for.
      * @return sendState The send state.
      */
-    function _getSendStateRaw(
+    function _getSendState(
         uint256 tokenNumber
     ) internal view returns (SendStates) {
         // check for existence in send general set
@@ -1299,6 +1121,28 @@ contract SRHooks is
     }
 
     /**
+     * @notice Gets the receive state for a given token.
+     * Internal function - assumes token is valid
+     * @dev uses derived state to prefer SLOAD over SSTORE for efficiency
+     * @param tokenNumber The token number to get the receive state for.
+     * @return receiveState The receive state.
+     */
+    function _getReceiveState(
+        uint256 tokenNumber
+    ) internal view returns (ReceiveStates) {
+        // check for existence in receive general set
+        if (_receiveGeneralTokens.contains(tokenNumber)) {
+            return ReceiveStates.ReceiveGeneral;
+        }
+        // check for non-empty receive from array
+        if (!ImmutableUint16Array.isEmpty(_tokensReceivingFrom[tokenNumber])) {
+            return ReceiveStates.ReceiveFrom;
+        }
+        // must be in neutral state
+        return ReceiveStates.Neutral;
+    }
+
+    /**
      * @notice Converts a receive state to a string.
      * Internal function - assumes receive state is valid
      * @param receiveState The receive state to convert to a string.
@@ -1313,47 +1157,6 @@ contract SRHooks is
                 : receiveState == ReceiveStates.ReceiveFrom
                 ? "ReceiveFrom"
                 : "Neutral";
-    }
-
-    /**
-     * @notice Gets the receive state for a given token, accounting for takedown state.
-     * Internal function - assumes token is valid
-     * @param tokenNumber The token number to get the receive state for.
-     * @return receiveState The receive state.
-     */
-    function _getReceiveState(
-        uint256 tokenNumber
-    ) internal view returns (ReceiveStates) {
-        // @dev load active slot from storage
-        uint256 activeSlot = _tokenAuxStateData[tokenNumber].activeSlot;
-        // if slot is takedown, return neutral state
-        if (tokensMetadata[tokenNumber][activeSlot].isTakedown) {
-            return ReceiveStates.Neutral;
-        }
-        return _getReceiveStateRaw(tokenNumber);
-    }
-
-    /**
-     * @notice Gets the receive state for a given token, not accounting for takedown state.
-     * Provides cheaper access to derived receive state if takedown state was already checked.
-     * Internal function - assumes token is valid
-     * @dev uses derived state to prefer SLOAD over SSTORE for efficiency
-     * @param tokenNumber The token number to get the receive state for.
-     * @return receiveState The receive state.
-     */
-    function _getReceiveStateRaw(
-        uint256 tokenNumber
-    ) internal view returns (ReceiveStates) {
-        // check for existence in receive general set
-        if (_receiveGeneralTokens.contains(tokenNumber)) {
-            return ReceiveStates.ReceiveGeneral;
-        }
-        // check for non-empty receive from array
-        if (!ImmutableUint16Array.isEmpty(_tokensReceivingFrom[tokenNumber])) {
-            return ReceiveStates.ReceiveFrom;
-        }
-        // must be in neutral state
-        return ReceiveStates.Neutral;
     }
 
     function _getHexStringFromSSTORE2(

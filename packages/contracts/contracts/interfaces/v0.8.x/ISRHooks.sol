@@ -15,20 +15,12 @@ interface ISRHooks {
      * @param pmpV0Address The address of the PMPV0 contract.
      * @param coreContractAddress The address of the core contract.
      * @param coreProjectId The project ID of the core contract.
-     * @param moderatorAddress The address of the moderator.
      */
     event Initialized(
         address pmpV0Address,
         address coreContractAddress,
-        uint256 coreProjectId,
-        address moderatorAddress
+        uint256 coreProjectId
     );
-
-    /**
-     * @notice Emitted when the moderator address is updated
-     * @param moderatorAddress The new moderator address.
-     */
-    event ModeratorAddressUpdated(address moderatorAddress);
 
     /**
      * @notice Emitted when a token slot is takedown by a moderator
@@ -100,22 +92,6 @@ interface ISRHooks {
         uint256 updatedActiveSlot,
         TokenMetadataCalldata memory tokenMetadataCalldata
     ) external;
-
-    /**
-     * @notice Takedowns a token metadata slot by a moderator.
-     * @param tokenNumber The token number to takedown the metadata slot for.
-     * @param slot The slot number to takedown the metadata slot for.
-     */
-    function takedownTokenMetadataSlot(
-        uint256 tokenNumber,
-        uint256 slot
-    ) external;
-
-    /**
-     * @notice Updates the moderator address.
-     * @param newModeratorAddress The new moderator address.
-     */
-    function updateModeratorAddress(address newModeratorAddress) external;
 
     /**
      * @notice Gets the live data for a given token.
