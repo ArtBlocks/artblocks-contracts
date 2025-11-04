@@ -22,6 +22,30 @@ interface ISRHooks {
         uint256 coreProjectId
     );
 
+    /**
+     * @notice Emitted when the tokens sending to a token are updated
+     * @param coreContract The address of the core contract.
+     * @param tokenId The ID of the token.
+     * @param tokensSendingTo The tokens sending to the token.
+     */
+    event TokenSendingToUpdated(
+        address indexed coreContract,
+        uint256 indexed tokenId,
+        uint16[] tokensSendingTo
+    );
+
+    /**
+     * @notice Emitted when the tokens sending to a token are updated
+     * @param coreContract The address of the core contract.
+     * @param tokenId The ID of the token.
+     * @param tokensReceivingFrom The tokens receiving from the token.
+     */
+    event TokenReceivingFromUpdated(
+        address indexed coreContract,
+        uint256 indexed tokenId,
+        uint16[] tokensReceivingFrom
+    );
+
     // struct for the token metadata calldata
     struct TokenMetadataCalldata {
         bool updateImage; // true if updating the image data
