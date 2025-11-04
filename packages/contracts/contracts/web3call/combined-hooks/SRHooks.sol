@@ -326,7 +326,7 @@ contract SRHooks is
         );
 
         // CHECKS-AND-EFFECTS (BRANCHED LOGIC)
-        // update token metadata first, prior to any S/R state updates (could do either first)
+        // update token metadata first, prior to any S/R state updates (since you need artwork before you can send/receive)
         if (updateTokenMetadata) {
             // EFFECTS
             // update the token metadata
@@ -338,7 +338,7 @@ contract SRHooks is
             });
         }
 
-        // update send/receive states second, after any metadata updates (could do either second)
+        // update send/receive states second, after any metadata updates (since you need artwork before you can send/receive)
         if (updateSendState) {
             _updateSendState({
                 tokenNumber: tokenNumber,
@@ -829,12 +829,22 @@ contract SRHooks is
         // CHECKS
         // updatedActiveSlot must be valid
         require(updatedActiveSlot < NUM_METADATA_SLOTS, "Invalid active slot");
-
-        // EFFECTS
+        bool isUpdatingActiveSlot = _tokenAuxStateData[tokenNumber]
+            .activeSlot != updatedActiveSlot;
         TokenMetadata storage tokenMetadataStorage = _tokensMetadata[
             tokenNumber
         ][updatedActiveSlot];
+        // require that the new active slot has/will have image metadata if updating the active slot
+        // @dev this is to prevent participation in the pools without artwork
+        if (isUpdatingActiveSlot) {
+            require(
+                tokenMetadataCalldata.updateImage ||
+                    tokenMetadataStorage.imageDataAddress != address(0),
+                "New active slot must have image metadata when updating active slot"
+            );
+        }
 
+        // EFFECTS
         uint256 tokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
             projectId: CORE_PROJECT_ID,
             tokenNumber: tokenNumber
@@ -918,6 +928,7 @@ contract SRHooks is
         }
         // update the token's active slot if it has changed
         if (_tokenAuxStateData[tokenNumber].activeSlot != updatedActiveSlot) {
+            // @dev we already checked that the new active slot has/will have image metadata if updating the active slot
             // update value and emit PMPV0-indexable event for active slot update
             _tokenAuxStateData[tokenNumber].activeSlot = updatedActiveSlot
                 .toUint8();
@@ -946,6 +957,13 @@ contract SRHooks is
         address ownerAddress
     ) internal {
         // CHECKS
+        // require that the token has image metadata at the active slot
+        require(
+            _tokensMetadata[tokenNumber][
+                _tokenAuxStateData[tokenNumber].activeSlot
+            ].imageDataAddress != address(0),
+            "Token must have image metadata at active slot when particpating"
+        );
         // enforce SendTo arrays length
         (sendState == SendStates.SendTo)
             ? require(
@@ -1053,6 +1071,13 @@ contract SRHooks is
         address ownerAddress
     ) internal {
         // CHECKS
+        // require that the token has image metadata at the active slot
+        require(
+            _tokensMetadata[tokenNumber][
+                _tokenAuxStateData[tokenNumber].activeSlot
+            ].imageDataAddress != address(0),
+            "Token must have image metadata at active slot when particpating"
+        );
         // enforce ReceiveFrom arrays length
         (receiveState == ReceiveStates.ReceiveFrom)
             ? require(
