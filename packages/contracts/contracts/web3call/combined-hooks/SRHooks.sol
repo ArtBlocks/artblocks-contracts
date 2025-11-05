@@ -1311,7 +1311,7 @@ contract SRHooks is
             uint16[] memory tokensSendingTo,
             uint16[] memory tokensReceivingFrom,
             uint256 activeSlot,
-            TokenMetadata memory activeSlotTokenMetadata,
+            TokenMetadataView memory activeSlotTokenMetadata,
             address ownerAddress
         )
     {
@@ -1327,7 +1327,21 @@ contract SRHooks is
             storageArray: _tokensReceivingFrom[tokenNumber]
         });
         activeSlot = _tokenAuxStateData[tokenNumber].activeSlot;
-        activeSlotTokenMetadata = _tokensMetadata[tokenNumber][activeSlot];
+        TokenMetadata storage tokenMetadataStorage = _tokensMetadata[
+            tokenNumber
+        ][activeSlot];
+        activeSlotTokenMetadata.imageDataCompressed = tokenMetadataStorage
+            .imageDataAddress != address(0)
+            ? SSTORE2.read(tokenMetadataStorage.imageDataAddress)
+            : bytes("");
+        activeSlotTokenMetadata.imageVersion = tokenMetadataStorage
+            .imageVersion;
+        activeSlotTokenMetadata.soundDataCompressed = tokenMetadataStorage
+            .soundDataAddress != address(0)
+            ? SSTORE2.read(tokenMetadataStorage.soundDataAddress)
+            : bytes("");
+        activeSlotTokenMetadata.soundVersion = tokenMetadataStorage
+            .soundVersion;
         uint256 tokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
             projectId: CORE_PROJECT_ID,
             tokenNumber: tokenNumber
