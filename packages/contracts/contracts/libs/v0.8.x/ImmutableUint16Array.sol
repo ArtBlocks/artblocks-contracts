@@ -71,7 +71,7 @@ library ImmutableUint16Array {
             // handle end of array case
             uint256 maxIndex = i + 16 < arrayLength ? i + 16 : arrayLength;
             bytes32 chunk;
-            for (uint j = 0; j < maxIndex; j++) {
+            for (uint j = 0; j < (maxIndex - i); j++) {
                 chunk |= bytes32(uint256(values[i + j])) << (240 - (j * 16));
             }
             // store the 32 bytes into the result
