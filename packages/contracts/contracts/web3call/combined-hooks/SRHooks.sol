@@ -613,6 +613,10 @@ contract SRHooks is
             uint256 sampledTokenNumber = _tokensSendingToMe[tokenNumber].at(
                 sampledTokenIndex
             );
+            // skip self-referential (token receiving from itself)
+            if (sampledTokenNumber == tokenNumber) {
+                continue;
+            }
             // statistically include it based on dilution rate
             TokenAuxStateData storage tokenAuxStateData_ = _tokenAuxStateData[
                 sampledTokenNumber
@@ -677,7 +681,162 @@ contract SRHooks is
     }
 
     /**
+     * @notice Helper function to get tokens from the SendTo pool that are in the tokensReceivingFrom array.
+     * @dev This function automatically deduplicates tokens if the tokensReceivingFrom array contains duplicates.
+     * Self-referential tokens are also filtered out. Tokens are statistically included based on dilution rate.
+     * @param tokenNumber The token number we're checking receives from.
+     * @param tokensReceivingFrom The array of tokens that might be sending to this token.
+     * @param receivingFromMeLength The length of the tokensReceivingFrom array.
+     * @param plan The Feistel walk plan for sampling.
+     * @param seed The seed for randomness.
+     * @return selectedTokenNumbersTo Array of token numbers from SendTo states.
+     */
+    function _getTokensReceivedFromSendToPool(
+        uint256 tokenNumber,
+        uint16[] memory tokensReceivingFrom,
+        uint256 receivingFromMeLength,
+        FeistelWalkLib.Plan memory plan,
+        bytes32 seed
+    ) internal view returns (uint256[] memory selectedTokenNumbersTo) {
+        // allocate array for selected token numbers
+        selectedTokenNumbersTo = new uint256[](MAX_RECEIVE_RATE_PER_BLOCK);
+        uint256 selectedTokenNumbersToLength = 0;
+
+        // deduplication tracking array for tokensReceivingFrom (handles duplicates in user-provided array)
+        uint256[] memory seenTokens = new uint256[](MAX_RECEIVE_RATE_PER_BLOCK);
+        uint256 seenCount = 0;
+
+        for (uint256 i = 0; i < receivingFromMeLength; i++) {
+            uint256 sampledTokenNumber;
+            {
+                uint256 sampledTokenIndex = FeistelWalkLib.index(plan, i);
+                sampledTokenNumber = tokensReceivingFrom[sampledTokenIndex];
+            }
+            // skip self-referential (token receiving from itself)
+            if (sampledTokenNumber == tokenNumber) {
+                continue;
+            }
+            // check for duplicates in tokensReceivingFrom array
+            bool alreadySeen = false;
+            for (uint256 j = 0; j < seenCount; j++) {
+                if (seenTokens[j] == sampledTokenNumber) {
+                    alreadySeen = true;
+                    break;
+                }
+            }
+            if (alreadySeen) {
+                continue;
+            }
+            // if sending to me, statistically include it based on dilution rate
+            if (_tokensSendingToMe[tokenNumber].contains(sampledTokenNumber)) {
+                uint256 bpsChanceOfInclusion = _tokenAuxStateData[
+                    sampledTokenNumber
+                ].sendingToLength > 0
+                    ? (10_000 * (BASE_SEND_TO_RATE_PER_MINUTE * 12)) /
+                        (_tokenAuxStateData[sampledTokenNumber]
+                            .sendingToLength * 60) // 10_000 bps, 12s per block, 60s per minute
+                    : 0;
+                if (
+                    _randomBps(
+                        bpsChanceOfInclusion,
+                        keccak256(abi.encodePacked(seed, sampledTokenNumber, i))
+                    )
+                ) {
+                    selectedTokenNumbersTo[
+                        selectedTokenNumbersToLength
+                    ] = sampledTokenNumber;
+                    selectedTokenNumbersToLength++;
+                    // mark as seen to prevent duplicate processing
+                    seenTokens[seenCount++] = sampledTokenNumber;
+                }
+            }
+            // if we have selected the maximum number of tokens, break
+            if (selectedTokenNumbersToLength >= MAX_RECEIVE_RATE_PER_BLOCK) {
+                break;
+            }
+        }
+
+        // resize array to actual length
+        assembly {
+            mstore(selectedTokenNumbersTo, selectedTokenNumbersToLength)
+        }
+    }
+
+    /**
+     * @notice Helper function to get tokens from the general send pool that are in the tokensReceivingFrom array.
+     * @dev This function automatically deduplicates tokens if the tokensReceivingFrom array contains duplicates.
+     * Self-referential tokens are also filtered out.
+     * @param tokenNumber The token number we're checking receives from.
+     * @param tokensReceivingFrom The array of tokens that might be sending to this token.
+     * @param receivingFromMeLength The length of the tokensReceivingFrom array.
+     * @param plan The Feistel walk plan for sampling.
+     * @return selectedTokenNumbersGeneral Array of token numbers from the general pool.
+     */
+    function _getTokensReceivedFromGeneralPool(
+        uint256 tokenNumber,
+        uint16[] memory tokensReceivingFrom,
+        uint256 receivingFromMeLength,
+        FeistelWalkLib.Plan memory plan
+    ) internal view returns (uint256[] memory selectedTokenNumbersGeneral) {
+        // allocate array for selected token numbers
+        selectedTokenNumbersGeneral = new uint256[](MAX_RECEIVE_RATE_PER_BLOCK);
+        uint256 selectedTokenNumbersGeneralLength = 0;
+
+        // deduplication tracking array for tokensReceivingFrom (handles duplicates in user-provided array)
+        uint256[] memory seenTokens = new uint256[](MAX_RECEIVE_RATE_PER_BLOCK);
+        uint256 seenCount = 0;
+
+        for (uint256 i = 0; i < receivingFromMeLength; i++) {
+            uint256 sampledTokenNumber;
+            {
+                uint256 sampledTokenIndex = FeistelWalkLib.index(plan, i);
+                sampledTokenNumber = tokensReceivingFrom[sampledTokenIndex];
+            }
+            // skip self-referential (token receiving from itself)
+            if (sampledTokenNumber == tokenNumber) {
+                continue;
+            }
+            // check for duplicates in tokensReceivingFrom array
+            bool alreadySeen = false;
+            for (uint256 j = 0; j < seenCount; j++) {
+                if (seenTokens[j] == sampledTokenNumber) {
+                    alreadySeen = true;
+                    break;
+                }
+            }
+            if (alreadySeen) {
+                continue;
+            }
+            // if sending generally, include it for sure
+            if (_sendGeneralTokens.contains(sampledTokenNumber)) {
+                selectedTokenNumbersGeneral[
+                    selectedTokenNumbersGeneralLength
+                ] = sampledTokenNumber;
+                selectedTokenNumbersGeneralLength++;
+                // mark as seen to prevent duplicate processing
+                seenTokens[seenCount++] = sampledTokenNumber;
+            }
+            // if we have selected the maximum number of tokens, break
+            if (
+                selectedTokenNumbersGeneralLength >= MAX_RECEIVE_RATE_PER_BLOCK
+            ) {
+                break;
+            }
+        }
+
+        // resize array to actual length
+        assembly {
+            mstore(
+                selectedTokenNumbersGeneral,
+                selectedTokenNumbersGeneralLength
+            )
+        }
+    }
+
+    /**
      * @notice Gets the tokens received from a given token, via a Feistel walk over the tokens receiving from me.
+     * @dev This function automatically deduplicates tokens if the tokensReceivingFrom array contains duplicates,
+     * ensuring each token appears at most once in the results. Self-referential tokens are also filtered out.
      * @param tokenNumber The token number to get the tokens received from.
      * @param blockhash_ The blockhash to use for pseudo-randomness.
      * @return tokensReceivedFromGeneral The tokens received from the general pool.
@@ -713,78 +872,29 @@ contract SRHooks is
             N: receivingFromMeLength
         });
 
-        // GENERAL TOKEN ITERATION
-
-        // iterate and live pull each next index, since indeterministically sampled from the set
-        // stream the results during each iteration
-        // @dev receiving from me length is capped at MAX_RECEIVING_FROM_ARRAY_LENGTH to bound worst case iteration time when getting live data
-        // optimistically create array of max length of token numbers receiving from, since we don't know the exact length until the end
-        uint256[] memory selectedTokenNumbersTo = new uint256[](
-            MAX_RECEIVE_RATE_PER_BLOCK
-        );
-        uint256 selectedTokenNumbersToLength = 0;
-        for (uint256 i = 0; i < receivingFromMeLength; i++) {
-            uint256 sampledTokenNumber;
-            {
-                uint256 sampledTokenIndex = FeistelWalkLib.index(plan, i);
-                sampledTokenNumber = tokensReceivingFrom[sampledTokenIndex];
-            }
-            // if sending generally, skip - handled in the general token iteration
-            // if sending to me, statistically include it based on dilution rate
-            if (_tokensSendingToMe[tokenNumber].contains(sampledTokenNumber)) {
-                uint256 bpsChanceOfInclusion = _tokenAuxStateData[
-                    sampledTokenNumber
-                ].sendingToLength > 0
-                    ? (10_000 * (BASE_SEND_TO_RATE_PER_MINUTE * 12)) /
-                        (_tokenAuxStateData[sampledTokenNumber]
-                            .sendingToLength * 60) // 10_000 bps, 12s per block, 60s per minute
-                    : 0;
-                if (
-                    _randomBps(
-                        bpsChanceOfInclusion,
-                        keccak256(abi.encodePacked(seed, sampledTokenNumber, i))
-                    )
-                ) {
-                    selectedTokenNumbersTo[
-                        selectedTokenNumbersToLength
-                    ] = sampledTokenNumber;
-                    selectedTokenNumbersToLength++;
-                }
-            }
-            // if we have selected the maximum number of tokens, break
-            if (selectedTokenNumbersToLength >= MAX_RECEIVE_RATE_PER_BLOCK) {
-                break;
-            }
-        }
-
         // SEND TO TOKEN ITERATION
+        // get tokens from SendTo states (in separate function to avoid stack too deep)
+        uint256[]
+            memory selectedTokenNumbersTo = _getTokensReceivedFromSendToPool(
+                tokenNumber,
+                tokensReceivingFrom,
+                receivingFromMeLength,
+                plan,
+                seed
+            );
+        uint256 selectedTokenNumbersToLength = selectedTokenNumbersTo.length;
 
-        // execute same iteration, but for send to tokens
-        // @dev cannot simultaneously iterate over general and send to due to stack too deep limitations
-        uint256[] memory selectedTokenNumbersGeneral = new uint256[](
-            MAX_RECEIVE_RATE_PER_BLOCK
-        );
-        uint256 selectedTokenNumbersGeneralLength = 0;
-        for (uint256 i = 0; i < receivingFromMeLength; i++) {
-            uint256 sampledTokenNumber;
-            {
-                uint256 sampledTokenIndex = FeistelWalkLib.index(plan, i);
-                sampledTokenNumber = tokensReceivingFrom[sampledTokenIndex];
-            }
-            // if sending generally, include it for sure
-            if (_sendGeneralTokens.contains(sampledTokenNumber)) {
-                selectedTokenNumbersGeneral[
-                    selectedTokenNumbersGeneralLength
-                ] = sampledTokenNumber;
-                selectedTokenNumbersGeneralLength++;
-            }
-            // if we have selected the maximum number of tokens, break
-            if (
-                selectedTokenNumbersGeneralLength >= MAX_RECEIVE_RATE_PER_BLOCK
-            ) {
-                break;
-            }
-        }
+        // SEND GENERAL TOKEN ITERATION
+        // get tokens from general send pool (in separate function to avoid stack too deep)
+        uint256[]
+            memory selectedTokenNumbersGeneral = _getTokensReceivedFromGeneralPool(
+                tokenNumber,
+                tokensReceivingFrom,
+                receivingFromMeLength,
+                plan
+            );
+        uint256 selectedTokenNumbersGeneralLength = selectedTokenNumbersGeneral
+            .length;
 
         // allocate array of TokenLiveData for the selected general token numbers
         tokensReceivedFromGeneral = new TokenLiveData[](

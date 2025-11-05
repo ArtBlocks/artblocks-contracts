@@ -104,9 +104,11 @@ interface ISRHooks {
      * @param updateSendState Whether to update the send state.
      * @param sendState The new send state. Valid values are SendGeneral, SendTo, Neutral.
      * @param tokensSendingTo Tokens to send this token to. Only non-empty iff updateSendState is true and sendState is SendTo.
+     * Duplicates are automatically deduplicated when calculating dilution rates.
      * @param updateReceiveState Whether to update the receive state.
      * @param receiveState The new receive state. Valid values are ReceiveGeneral, ReceiveFrom, Neutral.
      * @param tokensReceivingFrom Tokens this token is open to receive from. Only non-empty iff updateReceiveState is true and receiveState is ReceiveFrom.
+     * Duplicates and self-referential entries are automatically filtered in getLiveData results.
      * @param updateTokenMetadata Whether to update the token metadata.
      * @param updatedActiveSlot The new active slot. If updating token metadata, this is the new active slot.
      * @param tokenMetadataCalldata The new token metadata. If updating token metadata, this is the new token metadata at the updated active slot. Only non-empty iff updateTokenMetadata is true.
