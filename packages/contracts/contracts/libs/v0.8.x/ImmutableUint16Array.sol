@@ -72,7 +72,7 @@ library ImmutableUint16Array {
             uint256 maxIndex = i + 16 < arrayLength ? i + 16 : arrayLength;
             bytes32 chunk;
             for (uint j = 0; j < maxIndex; j++) {
-                chunk |= bytes32(uint256(values[i + j])) << (30 - (j * 2));
+                chunk |= bytes32(uint256(values[i + j])) << (240 - (j * 16));
             }
             // store the 32 bytes into the result
             assembly ("memory-safe") {
@@ -154,7 +154,7 @@ library ImmutableUint16Array {
         uint256 location = 32 + 8 + (index * 2); // 32 bytes for bytes array length, 8 bytes for overall array length, 2 bytes per index
         // load the value from the packed data
         assembly ("memory-safe") {
-            result := shr(192, mload(add(allData, location))) // load the 2 bytes of the value from the packed data
+            result := shr(240, mload(add(allData, location))) // load the 2 bytes of the value from the packed data
         }
     }
 
@@ -192,9 +192,9 @@ library ImmutableUint16Array {
                 // @dev in memory, uint16 values are not packed, but are abi-encoded, so we add mul i * 0x20 to get the offset of the value in the results array
                 mstore(
                     add(results, add(mul(i, 0x20), 0x20)),
-                    shr(192, mload(ptr))
+                    shr(240, mload(ptr))
                 ) // store the 2 bytes of the value from the packed data into the results array
-                ptr := add(ptr, 0x20) // move the pointer forward by 32 bytes for next iteration
+                ptr := add(ptr, 2) // move the pointer forward by 2 bytes for next iteration
             }
         }
     }

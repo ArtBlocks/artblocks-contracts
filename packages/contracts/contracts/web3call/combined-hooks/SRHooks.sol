@@ -69,7 +69,7 @@ contract SRHooks is
     uint256 internal constant MAX_SENDING_TO_LENGTH = 25; // 25 tokens, beyond which dilution rate is too low and can inflate live data iteration time
     uint256 internal constant MAX_ITERATIONS_SENDING_TO_ME =
         MAX_RECEIVE_RATE_PER_BLOCK * MAX_SENDING_TO_LENGTH; // cap iterations at dilution rate (25x the receive rate per block) to not meaningfully impact results, but provide a backstop/bounded worst case
-    uint256 internal constant MAX_RECEIVING_FROM_ARRAY_LENGTH = 1_000_000; // max receiving from array length is 1k to bound worst case iteration time when getting live data
+    uint256 internal constant MAX_RECEIVING_FROM_ARRAY_LENGTH = 1_000; // max receiving from array length is 1k to bound worst case iteration time when getting live data
 
     // constant delegation registry pointers and rights
     IDelegationRegistryV2 public constant DELEGATE_V2 =
@@ -84,9 +84,9 @@ contract SRHooks is
     // struct for the token metadata in storage
     struct TokenMetadata {
         address imageDataAddress; // 20 bytes
-        uint16 imageVersion; // 2 bytes
+        uint16 imageVersion; // 2 bytes - max 65,535 updates per slot (extremely unlikely to be reached)
         address soundDataAddress; // 20 bytes
-        uint16 soundVersion; // 2 bytes
+        uint16 soundVersion; // 2 bytes - max 65,535 updates per slot (extremely unlikely to be reached)
     }
 
     /// @notice mapping of token numbers to slot to metadata
@@ -366,6 +366,8 @@ contract SRHooks is
      * NOTE: Each array of receivedTokensGeneral and receivedTokensTo has a maximum length of MAX_RECEIVE_RATE_PER_BLOCK,
      * but their combined length may be greater than MAX_RECEIVE_RATE_PER_BLOCK. The art script should handle this by
      * deterministically shuffling/sampling from the arrays if desired.
+     * WARNING: This function is designed for off-chain view calls only and may exceed block gas limits in cases where
+     * a token has many senders or is receiving from many tokens. It is not intended to be called within transactions.
      * @return sendState The send state of the token.
      * @return receiveState The receive state of the token.
      * @return receivedTokensGeneral The received tokens general of the token.
@@ -385,6 +387,9 @@ contract SRHooks is
         )
     {
         // CHECKS
+        // require token number is valid uint16 using SafeCast
+        tokenNumber.toUint16(); // will revert if tokenNumber > type(uint16).max
+
         // treat block number of 0 as latest completed block
         if (blockNumber == 0) {
             blockNumber = block.number - 1; // get previous block hash (latest possible block hash)
@@ -458,10 +463,17 @@ contract SRHooks is
         bytes32 blockhash_
     ) internal view returns (TokenLiveData[] memory) {
         // calculate the general pool's send rate, based on general ratio of sending and receiving tokens
-        uint256 generalPoolLength = _sendGeneralTokens.length();
-        uint256 receiveRatePerBlock = (generalPoolLength * 12) /
-            _receiveGeneralTokens.length(); // 1 per second if equal send/receive rates
-        if (receiveRatePerBlock == 0 && generalPoolLength > 0) {
+        uint256 sendGeneralLength = _sendGeneralTokens.length();
+        uint256 receiveGeneralLength = _receiveGeneralTokens.length();
+
+        // avoid divide by zero
+        if (receiveGeneralLength == 0) {
+            return new TokenLiveData[](0);
+        }
+
+        uint256 receiveRatePerBlock = (sendGeneralLength * 12) /
+            receiveGeneralLength; // 1 per second if equal send/receive rates
+        if (receiveRatePerBlock == 0 && sendGeneralLength > 0) {
             receiveRatePerBlock = 1; // don't round down to 0
         }
         // sample from general pool, based on send rate
@@ -473,10 +485,10 @@ contract SRHooks is
             return new TokenLiveData[](0); // no tokens to sample, return empty array
         }
         return
-            _sampleFromGeneralPool({
+            _sampleFromSendGeneralPool({
                 seed: seed,
                 quantity: quantity,
-                generalPoolLength: generalPoolLength
+                sendGeneralLength: sendGeneralLength
             });
     }
 
@@ -487,15 +499,15 @@ contract SRHooks is
      * @param quantity The number of tokens to sample.
      * @return result Array of TokenLiveData for sampled tokens.
      */
-    function _sampleFromGeneralPool(
+    function _sampleFromSendGeneralPool(
         bytes32 seed,
         uint256 quantity,
-        uint256 generalPoolLength
+        uint256 sendGeneralLength
     ) internal view returns (TokenLiveData[] memory) {
         // perform Feistel walk to sample token numbers from the set
         FeistelWalkLib.Plan memory plan = FeistelWalkLib.makePlan({
             seed: seed,
-            N: generalPoolLength
+            N: sendGeneralLength
         });
         uint256[] memory sampledTokenIndices = FeistelWalkLib.sample(
             plan,
@@ -607,8 +619,8 @@ contract SRHooks is
             ];
             uint256 bpsChanceOfInclusion = tokenAuxStateData_.sendingToLength >
                 0
-                ? (((10_000 * (BASE_SEND_TO_RATE_PER_MINUTE * 12)) /
-                    tokenAuxStateData_.sendingToLength) * 60) // 10_000 bps, 12s per block, 60s per minute
+                ? (10_000 * (BASE_SEND_TO_RATE_PER_MINUTE * 12)) /
+                    (tokenAuxStateData_.sendingToLength * 60) // 10_000 bps, 12s per block, 60s per minute
                 : 0;
             if (
                 _randomBps(
@@ -723,9 +735,9 @@ contract SRHooks is
                 uint256 bpsChanceOfInclusion = _tokenAuxStateData[
                     sampledTokenNumber
                 ].sendingToLength > 0
-                    ? (((10_000 * (BASE_SEND_TO_RATE_PER_MINUTE * 12)) /
-                        _tokenAuxStateData[sampledTokenNumber]
-                            .sendingToLength) * 60) // 10_000 bps, 12s per block, 60s per minute
+                    ? (10_000 * (BASE_SEND_TO_RATE_PER_MINUTE * 12)) /
+                        (_tokenAuxStateData[sampledTokenNumber]
+                            .sendingToLength * 60) // 10_000 bps, 12s per block, 60s per minute
                     : 0;
                 if (
                     _randomBps(
@@ -1006,6 +1018,14 @@ contract SRHooks is
             // clear my previous send to array
             _tokensSendingTo[tokenNumber].clear();
             _tokenAuxStateData[tokenNumber].sendingToLength = 0; // wipe the sending to length to 0
+            // emit custom event for indexing of send-to if applicable
+            // @dev aknowledge that this may cost gas for large arrays, but prefer strong indexing behavior, and
+            // still minor relative to the cost of the SSTORE operations when storing the send-to array
+            emit ISRHooks.TokenSendingToUpdated({
+                coreContract: CORE_CONTRACT_ADDRESS,
+                tokenId: tokenId,
+                tokensSendingTo: new uint16[](0)
+            });
         }
         // case: neutral state - no-op
 
@@ -1016,22 +1036,20 @@ contract SRHooks is
             // push the tokens to my send to array
             _tokensSendingTo[tokenNumber].store(tokensSendingTo);
             // push me into every token's "sending to me" set
+            // track actual unique count for dilution rate calculation
+            // @dev no validation of target tokens needed - if they don't exist or aren't participating,
+            // they simply won't appear in getLiveData results due to state set membership checks
             uint256 tokensSendingToLength = tokensSendingTo.length;
+            uint256 uniqueCount = 0;
             for (uint256 i = 0; i < tokensSendingToLength; i++) {
                 uint256 sendingToTokenNumber = tokensSendingTo[i];
-                _tokensSendingToMe[sendingToTokenNumber].add(tokenNumber);
+                // add returns true if the value was added (not already present)
+                if (_tokensSendingToMe[sendingToTokenNumber].add(tokenNumber)) {
+                    uniqueCount++;
+                }
             }
-            _tokenAuxStateData[tokenNumber]
-                .sendingToLength = tokensSendingToLength.toUint16(); // update the sending to length for dilution rate calculations
-
-            // emit custom event for indexing of send-to if applicable
-            // @dev aknowledge that this may cost gas for large arrays, but prefer strong indexing behavior, and
-            // still minor relative to the cost of the SSTORE operations when storing the send-to array
-            emit ISRHooks.TokenSendingToUpdated({
-                coreContract: CORE_CONTRACT_ADDRESS,
-                tokenId: tokenId,
-                tokensSendingTo: tokensSendingTo
-            });
+            _tokenAuxStateData[tokenNumber].sendingToLength = uniqueCount
+                .toUint16(); // update the sending to length for dilution rate calculations (unique count only)
         }
         // case: neutral state - no-op
 
@@ -1124,6 +1142,9 @@ contract SRHooks is
         if (receiveState == ReceiveStates.ReceiveGeneral) {
             _receiveGeneralTokens.add(tokenNumber);
         } else if (receiveState == ReceiveStates.ReceiveFrom) {
+            // @dev no validation of target tokens needed - if they don't exist or aren't participating,
+            // they simply won't appear in getLiveData results due to state set membership checks
+            // (tokens must be in _sendGeneralTokens or _tokensSendingToMe to be included)
             _tokensReceivingFrom[tokenNumber].store(tokensReceivingFrom);
         }
         // case: neutral state - no-op
@@ -1190,6 +1211,9 @@ contract SRHooks is
             address ownerAddress
         )
     {
+        // require token number is valid uint16 using SafeCast
+        tokenNumber.toUint16(); // will revert if tokenNumber > type(uint16).max
+
         sendState = _getSendState(tokenNumber);
         receiveState = _getReceiveState(tokenNumber);
         tokensSendingTo = ImmutableUint16Array.getAll({
@@ -1226,6 +1250,11 @@ contract SRHooks is
         uint256 tokenNumber,
         uint256 slot
     ) external view returns (TokenMetadataView memory tokenMetadata) {
+        // require token number is valid uint16 using SafeCast
+        tokenNumber.toUint16(); // will revert if tokenNumber > type(uint16).max
+        // require slot is valid
+        require(slot < NUM_METADATA_SLOTS, "Invalid slot");
+
         TokenMetadata storage tokenMetadataStorage = _tokensMetadata[
             tokenNumber
         ][slot];
@@ -1250,6 +1279,9 @@ contract SRHooks is
     function getTokensSendingToToken(
         uint256 tokenNumber
     ) external view returns (uint256[] memory tokensSendingTo) {
+        // require token number is valid uint16 using SafeCast
+        tokenNumber.toUint16(); // will revert if tokenNumber > type(uint16).max
+
         return _tokensSendingToMe[tokenNumber].values();
     }
 
@@ -1288,8 +1320,8 @@ contract SRHooks is
             sendState == SendStates.SendGeneral
                 ? "SendGeneral"
                 : sendState == SendStates.SendTo
-                    ? "SendTo"
-                    : "Neutral";
+                ? "SendTo"
+                : "Neutral";
     }
 
     /**
@@ -1327,8 +1359,8 @@ contract SRHooks is
             receiveState == ReceiveStates.ReceiveGeneral
                 ? "ReceiveGeneral"
                 : receiveState == ReceiveStates.ReceiveFrom
-                    ? "ReceiveFrom"
-                    : "Neutral";
+                ? "ReceiveFrom"
+                : "Neutral";
     }
 
     function _getHexStringFromSSTORE2(
@@ -1604,6 +1636,27 @@ contract SRHooks is
     /**
      * @notice Authorizes an upgrade to a new implementation.
      * @dev This function is required by the UUPS pattern and can only be called by the owner.
+     *
+     * UPGRADE SAFETY REQUIREMENTS:
+     * - All existing state variables MUST remain in their current storage slots
+     * - New state variables MUST be appended to the end (never inserted between existing variables)
+     * - Never modify the type or order of existing state variables
+     * - Never remove existing state variables (they can be deprecated but must remain)
+     * - The storage layout must be append-only to maintain compatibility
+     *
+     * Current state variables (in order, append-only):
+     * 1. Initializable, OwnableUpgradeable, UUPSUpgradeable inherited state
+     * 2. PMPV0_ADDRESS
+     * 3. CORE_CONTRACT_ADDRESS
+     * 4. CORE_PROJECT_ID
+     * 5. _tokensMetadata mapping
+     * 6. _tokenAuxStateData mapping
+     * 7. _sendGeneralTokens EnumerableSet
+     * 8. _receiveGeneralTokens EnumerableSet
+     * 9. _tokensSendingToMe mapping
+     * 10. _tokensSendingTo mapping
+     * 11. _tokensReceivingFrom mapping
+     *
      * @param newImplementation The address of the new implementation contract.
      */
     function _authorizeUpgrade(
