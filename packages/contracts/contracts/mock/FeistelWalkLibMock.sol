@@ -16,6 +16,7 @@ contract FeistelWalkLibMock {
      * @param N Domain size
      * @return N The domain size
      * @return M The next power of two >= N
+     * @return logM The log2 of M (precomputed)
      * @return rounds The number of Feistel rounds
      * @return k0 First round key
      * @return k1 Second round key
@@ -28,10 +29,19 @@ contract FeistelWalkLibMock {
     )
         external
         pure
-        returns (uint256, uint256, uint256, uint64, uint64, uint64, uint64)
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint64,
+            uint64,
+            uint64,
+            uint64
+        )
     {
         FeistelWalkLib.Plan memory p = FeistelWalkLib.makePlan(seed, N);
-        return (p.N, p.M, p.rounds, p.k0, p.k1, p.k2, p.k3);
+        return (p.N, p.M, p.logM, p.rounds, p.k0, p.k1, p.k2, p.k3);
     }
 
     /**

@@ -35,11 +35,11 @@ describe("FeistelWalkLib", function () {
     it("should create a valid plan for N=1", async function () {
       const { mock } = await loadFixture(deployFixture);
       const seed = randomSeed();
-      const [N, M, rounds, k0, k1, k2, k3] = await mock.makePlan(seed, 1);
+      const [N, M, , rounds, k0, k1, k2, k3] = await mock.makePlan(seed, 1);
 
       expect(N).to.equal(1);
       expect(M).to.be.gte(N); // M >= N
-      expect(rounds).to.equal(3);
+      expect(rounds).to.equal(2);
       expect(k0).to.be.gt(0);
       expect(k1).to.be.gt(0);
       expect(k2).to.be.gt(0);
@@ -49,21 +49,21 @@ describe("FeistelWalkLib", function () {
     it("should create a valid plan for N=10", async function () {
       const { mock } = await loadFixture(deployFixture);
       const seed = randomSeed();
-      const [N, M, rounds] = await mock.makePlan(seed, 10);
+      const [N, M, , rounds] = await mock.makePlan(seed, 10);
 
       expect(N).to.equal(10);
       expect(M).to.equal(16); // Next power of 2 after 10
-      expect(rounds).to.equal(3);
+      expect(rounds).to.equal(2);
     });
 
     it("should create a valid plan for power-of-2 N", async function () {
       const { mock } = await loadFixture(deployFixture);
       const seed = randomSeed();
-      const [N, M, rounds] = await mock.makePlan(seed, 64);
+      const [N, M, , rounds] = await mock.makePlan(seed, 64);
 
       expect(N).to.equal(64);
       expect(M).to.equal(64); // Already power of 2
-      expect(rounds).to.equal(3);
+      expect(rounds).to.equal(2);
     });
 
     it("should produce different round keys for different seeds", async function () {
@@ -71,8 +71,8 @@ describe("FeistelWalkLib", function () {
       const seed1 = randomSeed();
       const seed2 = randomSeed();
 
-      const [, , , k0_1, k1_1, k2_1, k3_1] = await mock.makePlan(seed1, 100);
-      const [, , , k0_2, k1_2, k2_2, k3_2] = await mock.makePlan(seed2, 100);
+      const [, , , , k0_1, k1_1, k2_1, k3_1] = await mock.makePlan(seed1, 100);
+      const [, , , , k0_2, k1_2, k2_2, k3_2] = await mock.makePlan(seed2, 100);
 
       // At least one key should be different
       const allSame =
@@ -84,11 +84,11 @@ describe("FeistelWalkLib", function () {
       const { mock } = await loadFixture(deployFixture);
       const seed = randomSeed();
 
-      const [N1, M1, rounds1, k0_1, k1_1, k2_1, k3_1] = await mock.makePlan(
+      const [N1, M1, , rounds1, k0_1, k1_1, k2_1, k3_1] = await mock.makePlan(
         seed,
         100
       );
-      const [N2, M2, rounds2, k0_2, k1_2, k2_2, k3_2] = await mock.makePlan(
+      const [N2, M2, , rounds2, k0_2, k1_2, k2_2, k3_2] = await mock.makePlan(
         seed,
         100
       );
@@ -106,8 +106,8 @@ describe("FeistelWalkLib", function () {
       const { mock } = await loadFixture(deployFixture);
       const seed = randomSeed();
 
-      const [, , , k0_1, k1_1, k2_1, k3_1] = await mock.makePlan(seed, 50);
-      const [, , , k0_2, k1_2, k2_2, k3_2] = await mock.makePlan(seed, 100);
+      const [, , , , k0_1, k1_1, k2_1, k3_1] = await mock.makePlan(seed, 50);
+      const [, , , , k0_2, k1_2, k2_2, k3_2] = await mock.makePlan(seed, 100);
 
       // At least one key should be different
       const allSame =

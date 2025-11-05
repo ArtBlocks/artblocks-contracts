@@ -9,17 +9,10 @@ pragma solidity ^0.8.20;
  *      - No duplicates, full coverage if you iterate k=0..N-1
  *      - O(1) per index; O(K) to sample K items
  *      - Works for any N (uses cycle-walking from next power-of-two domain)
- *      - Not cryptographic; just breaks linear structure well.
- *  Uses a fixed number of rounds (3) for Feistel permutation.
- *  Uses 64-bit round keys (k0, k1, k2, k3) derived from the seed.
+ *      - Not cryptographic; optimized for gas efficiency with good mixing
+ *  Uses 2 Feistel rounds with 64-bit round keys (k0, k1) derived from the seed.
+ *  Additional keys (k2, k3) reserved for potential future use.
  */
-/// @title FeistelWalkLib
-/// @author Art Blocks Inc.
-/// @notice Uniform once-over traversal of [0..N) via a seeded Feistel permutation.
-/// @dev Designed for off-chain eth_call sampling (e.g., pick K=100 from N≈10k).
-///      - No duplicates, full coverage if you iterate k=0..N-1
-///      - O(1) per index; O(K) to sample K items
-///      - Works for any N (uses cycle-walking from next power-of-two domain)
 library FeistelWalkLib {
     uint256 private constant MAX_CYCLE_WALKS = 32;
     // -------------------------------------------------------------------------
@@ -31,7 +24,8 @@ library FeistelWalkLib {
     struct Plan {
         uint256 N; // pool size (>= 1)
         uint256 M; // next power-of-two >= N (<= 2N)
-        uint256 rounds; // Feistel rounds (3 is sufficient for order-scrambling)
+        uint256 logM; // log2(M) - precomputed to avoid repeated calculation
+        uint256 rounds; // Feistel rounds (2 for gas-efficient mixing)
         // Feistel round keys (64-bit each; derived from seed)
         uint64 k0;
         uint64 k1;
@@ -49,7 +43,8 @@ library FeistelWalkLib {
         require(N > 0, "FeistelWalkLib:N=0");
         p.N = N;
         p.M = _nextPow2(N); // <= 2N
-        p.rounds = 3; // fixed, constant-time-ish per index
+        p.logM = _log2ceil(p.M); // precompute to avoid repeated calculation
+        p.rounds = 2; // 2 rounds provides good mixing with lower gas cost
 
         // Derive round keys (disjoint domains so they don't correlate)
         p.k0 = uint64(
@@ -77,7 +72,17 @@ library FeistelWalkLib {
 
         // Permute k into [0..N) using Feistel over [0..M) + cycle-walking
         return
-            _feistelPermuteRange(k, p.N, p.M, p.rounds, p.k0, p.k1, p.k2, p.k3);
+            _feistelPermuteRange(
+                k,
+                p.N,
+                p.M,
+                p.logM,
+                p.rounds,
+                p.k0,
+                p.k1,
+                p.k2,
+                p.k3
+            );
     }
 
     /// @notice Return up to K indices from the permutation (k = 0..K-1).
@@ -106,6 +111,7 @@ library FeistelWalkLib {
         uint256 x,
         uint256 N,
         uint256 M,
+        uint256 logM,
         uint256 rounds,
         uint64 k0,
         uint64 k1,
@@ -116,7 +122,16 @@ library FeistelWalkLib {
         uint256 y = x;
         unchecked {
             for (uint256 i = 0; i < MAX_CYCLE_WALKS; ++i) {
-                uint256 z = _feistelOnPow2Domain(y, M, rounds, k0, k1, k2, k3);
+                uint256 z = _feistelOnPow2Domain(
+                    y,
+                    M,
+                    logM,
+                    rounds,
+                    k0,
+                    k1,
+                    k2,
+                    k3
+                );
                 if (z < N) return z; // landed inside domain
                 y = z; // cycle-walk and try again
             }
@@ -126,15 +141,16 @@ library FeistelWalkLib {
     }
 
     /// @dev Feistel permutation over [0..M) where M is a power of two.
-    ///      Split into halves and apply a tiny 64-bit ARX round function.
+    ///      Split into halves and apply round function twice for good mixing.
     function _feistelOnPow2Domain(
         uint256 x,
         uint256 M,
-        uint256 rounds,
+        uint256 logM,
+        uint256 /* rounds */,
         uint64 k0,
         uint64 k1,
-        uint64 k2,
-        uint64 k3
+        uint64 /* k2 */,
+        uint64 /* k3 */
     ) private pure returns (uint256) {
         if (M == 1) return 0; // degenerate
         if (M == 2) {
@@ -142,43 +158,63 @@ library FeistelWalkLib {
             return ((k0 & 1) == 0) ? x : (1 - x);
         }
 
-        // m = log2(M); use balanced Feistel with equal-sized halves
-        uint256 m = _log2ceil(M);
-        uint256 half = (m + 1) / 2; // Round up for balanced network
-        uint256 mask = (uint256(1) << half) - 1;
+        // Use precomputed logM and balanced Feistel network
+        uint256 half = (logM + 1) / 2; // Round up for balanced halves
+        uint256 mask;
+        assembly {
+            mask := sub(shl(half, 1), 1)
+        }
 
-        uint256 L = x & mask;
-        uint256 R = (x >> half) & mask;
+        uint256 L;
+        uint256 R;
+        assembly {
+            L := and(x, mask)
+            R := and(shr(half, x), mask)
+        }
 
+        // Two Feistel rounds for good mixing
         unchecked {
-            for (uint256 r = 0; r < rounds; ++r) {
-                uint64 key = (r == 0) ? k0 : (r == 1) ? k1 : (r == 2) ? k2 : k3;
-                uint256 F = _roundF(uint64(R), key, r);
-                // Standard Feistel: (L, R) -> (R, L XOR F(R))
-                uint256 newL = R;
-                uint256 newR = (L ^ F) & mask;
-                L = newL;
-                R = newR;
+            // Round 0
+            uint256 F = _roundF(uint64(R), k0, 0);
+            uint256 newR;
+            assembly {
+                newR := and(xor(L, F), mask)
             }
+            L = R;
+            R = newR;
+
+            // Round 1
+            F = _roundF(uint64(R), k1, 1);
+            assembly {
+                newR := and(xor(L, F), mask)
+            }
+            L = R;
+            R = newR;
         }
 
         // Recombine
-        return (R << half) | L;
+        uint256 result;
+        assembly {
+            result := or(shl(half, R), L)
+        }
+        return result;
     }
 
-    /// @dev Small 64-bit ARX-style mix. Not cryptographic—just breaks linear structure well.
+    /// @dev Lightweight 64-bit mixing function for Feistel rounds.
+    ///      Uses XOR-shift operations for good bit avalanche without expensive multiplications.
     function _roundF(
         uint64 x,
         uint64 k,
         uint256 r
     ) private pure returns (uint64) {
         unchecked {
-            // Weyl step + xorshift-ish scrambles + 64-bit multiply mix
+            // Mix in key and round constant
             x ^= k + uint64(r * 0x9E3779B97F4A7C15);
+            // XorShift-style mixing for bit avalanche
             x ^= (x << 13);
             x ^= (x >> 7);
-            x = (x * 0x9E3779B185EBCA87);
-            x ^= (x >> 17);
+            x ^= (x << 17);
+            x ^= (x >> 5);
             return x;
         }
     }
