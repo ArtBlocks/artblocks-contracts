@@ -21,7 +21,7 @@ pragma solidity ^0.8.20;
 ///      - O(1) per index; O(K) to sample K items
 ///      - Works for any N (uses cycle-walking from next power-of-two domain)
 library FeistelWalkLib {
-    uint256 private constant MAX_CYCLE_WALKS = 9;
+    uint256 private constant MAX_CYCLE_WALKS = 32;
     // -------------------------------------------------------------------------
     // Public API
     // -------------------------------------------------------------------------
@@ -137,36 +137,33 @@ library FeistelWalkLib {
         uint64 k3
     ) private pure returns (uint256) {
         if (M == 1) return 0; // degenerate
+        if (M == 2) {
+            // Special case: 2-element domain, use key to determine permutation
+            return ((k0 & 1) == 0) ? x : (1 - x);
+        }
 
-        // m = log2(M); split x into lower/upper halves
+        // m = log2(M); use balanced Feistel with equal-sized halves
         uint256 m = _log2ceil(M);
-        uint256 half = m / 2;
-        uint256 maskL = (uint256(1) << half) - 1;
-        uint256 maskR = (uint256(1) << (m - half)) - 1;
+        uint256 half = (m + 1) / 2; // Round up for balanced network
+        uint256 mask = (uint256(1) << half) - 1;
 
-        uint256 L = x & maskL;
-        uint256 R = (x >> half) & maskR;
+        uint256 L = x & mask;
+        uint256 R = (x >> half) & mask;
 
         unchecked {
             for (uint256 r = 0; r < rounds; ++r) {
-                uint64 key = (r == 0)
-                    ? k0
-                    : (r == 1)
-                        ? k1
-                        : (r == 2)
-                            ? k2
-                            : k3;
+                uint64 key = (r == 0) ? k0 : (r == 1) ? k1 : (r == 2) ? k2 : k3;
                 uint256 F = _roundF(uint64(R), key, r);
                 // Standard Feistel: (L, R) -> (R, L XOR F(R))
                 uint256 newL = R;
-                uint256 newR = (L ^ (F & maskL)) & maskR;
+                uint256 newR = (L ^ F) & mask;
                 L = newL;
                 R = newR;
             }
         }
 
         // Recombine
-        return (R << half) | (L & maskL);
+        return (R << half) | L;
     }
 
     /// @dev Small 64-bit ARX-style mix. Not cryptographic—just breaks linear structure well.
