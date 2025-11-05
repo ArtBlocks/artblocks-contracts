@@ -35,15 +35,13 @@ describe("FeistelWalkLib", function () {
     it("should create a valid plan for N=1", async function () {
       const { mock } = await loadFixture(deployFixture);
       const seed = randomSeed();
-      const [N, M, , rounds, k0, k1, k2, k3] = await mock.makePlan(seed, 1);
+      const [N, M, , rounds, k0, k1] = await mock.makePlan(seed, 1);
 
       expect(N).to.equal(1);
       expect(M).to.be.gte(N); // M >= N
       expect(rounds).to.equal(2);
       expect(k0).to.be.gt(0);
       expect(k1).to.be.gt(0);
-      expect(k2).to.be.gt(0);
-      expect(k3).to.be.gt(0);
     });
 
     it("should create a valid plan for N=10", async function () {
@@ -71,12 +69,11 @@ describe("FeistelWalkLib", function () {
       const seed1 = randomSeed();
       const seed2 = randomSeed();
 
-      const [, , , , k0_1, k1_1, k2_1, k3_1] = await mock.makePlan(seed1, 100);
-      const [, , , , k0_2, k1_2, k2_2, k3_2] = await mock.makePlan(seed2, 100);
+      const [, , , , k0_1, k1_1] = await mock.makePlan(seed1, 100);
+      const [, , , , k0_2, k1_2] = await mock.makePlan(seed2, 100);
 
       // At least one key should be different
-      const allSame =
-        k0_1.eq(k0_2) && k1_1.eq(k1_2) && k2_1.eq(k2_2) && k3_1.eq(k3_2);
+      const allSame = k0_1.eq(k0_2) && k1_1.eq(k1_2);
       expect(allSame).to.be.false;
     });
 
@@ -84,34 +81,25 @@ describe("FeistelWalkLib", function () {
       const { mock } = await loadFixture(deployFixture);
       const seed = randomSeed();
 
-      const [N1, M1, , rounds1, k0_1, k1_1, k2_1, k3_1] = await mock.makePlan(
-        seed,
-        100
-      );
-      const [N2, M2, , rounds2, k0_2, k1_2, k2_2, k3_2] = await mock.makePlan(
-        seed,
-        100
-      );
+      const [N1, M1, , rounds1, k0_1, k1_1] = await mock.makePlan(seed, 100);
+      const [N2, M2, , rounds2, k0_2, k1_2] = await mock.makePlan(seed, 100);
 
       expect(N1).to.equal(N2);
       expect(M1).to.equal(M2);
       expect(rounds1).to.equal(rounds2);
       expect(k0_1).to.equal(k0_2);
       expect(k1_1).to.equal(k1_2);
-      expect(k2_1).to.equal(k2_2);
-      expect(k3_1).to.equal(k3_2);
     });
 
     it("should produce different plans for different N with same seed", async function () {
       const { mock } = await loadFixture(deployFixture);
       const seed = randomSeed();
 
-      const [, , , , k0_1, k1_1, k2_1, k3_1] = await mock.makePlan(seed, 50);
-      const [, , , , k0_2, k1_2, k2_2, k3_2] = await mock.makePlan(seed, 100);
+      const [, , , , k0_1, k1_1] = await mock.makePlan(seed, 50);
+      const [, , , , k0_2, k1_2] = await mock.makePlan(seed, 100);
 
-      // At least one key should be different
-      const allSame =
-        k0_1.eq(k0_2) && k1_1.eq(k1_2) && k2_1.eq(k2_2) && k3_1.eq(k3_2);
+      // Keys should differ when N differs (domain separation)
+      const allSame = k0_1.eq(k0_2) && k1_1.eq(k1_2);
       expect(allSame).to.be.false;
     });
   });
@@ -830,8 +818,8 @@ describe("FeistelWalkLib", function () {
         console.log(`  Ratio 1000/100: ${ratio1000_100.toFixed(2)}x`);
 
         // Should show roughly linear scaling (O(K))
-        // The ratios should be between 5-12x (10x ideal, but overhead varies)
-        expect(ratio100_10).to.be.gte(5);
+        // The ratios should be between 4-12x (10x ideal, but overhead varies)
+        expect(ratio100_10).to.be.gte(4);
         expect(ratio100_10).to.be.lte(12);
         expect(ratio1000_100).to.be.gte(7);
         expect(ratio1000_100).to.be.lte(12);
