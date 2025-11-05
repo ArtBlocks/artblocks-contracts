@@ -1438,8 +1438,8 @@ contract SRHooks is
             sendState == SendStates.SendGeneral
                 ? "SendGeneral"
                 : sendState == SendStates.SendTo
-                ? "SendTo"
-                : "Neutral";
+                    ? "SendTo"
+                    : "Neutral";
     }
 
     /**
@@ -1490,8 +1490,8 @@ contract SRHooks is
             receiveState == ReceiveStates.ReceiveGeneral
                 ? "ReceiveGeneral"
                 : receiveState == ReceiveStates.ReceiveFrom
-                ? "ReceiveFrom"
-                : "Neutral";
+                    ? "ReceiveFrom"
+                    : "Neutral";
     }
 
     function _getHexStringFromSSTORE2(
