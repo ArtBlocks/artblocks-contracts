@@ -145,11 +145,11 @@ contract SRHooks is
         uint256 tokenNumber,
         address addressToCheck
     ) internal view returns (bool isOwnerOrDelegate, address ownerAddress) {
-        ownerAddress = IERC721(CORE_CONTRACT_ADDRESS).ownerOf(tokenNumber);
         uint256 tokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
             projectId: CORE_PROJECT_ID,
             tokenNumber: tokenNumber
         });
+        ownerAddress = IERC721(CORE_CONTRACT_ADDRESS).ownerOf(tokenId);
         isOwnerOrDelegate =
             addressToCheck == ownerAddress ||
             DELEGATE_V2.checkDelegateForERC721({
@@ -1438,8 +1438,8 @@ contract SRHooks is
             sendState == SendStates.SendGeneral
                 ? "SendGeneral"
                 : sendState == SendStates.SendTo
-                    ? "SendTo"
-                    : "Neutral";
+                ? "SendTo"
+                : "Neutral";
     }
 
     /**
@@ -1490,8 +1490,8 @@ contract SRHooks is
             receiveState == ReceiveStates.ReceiveGeneral
                 ? "ReceiveGeneral"
                 : receiveState == ReceiveStates.ReceiveFrom
-                    ? "ReceiveFrom"
-                    : "Neutral";
+                ? "ReceiveFrom"
+                : "Neutral";
     }
 
     function _getHexStringFromSSTORE2(
