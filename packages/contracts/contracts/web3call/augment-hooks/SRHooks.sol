@@ -960,7 +960,7 @@ contract SRHooks is
             );
         }
 
-        // EFFECTS
+        // CHECKS-AND-EFFECTS (BRANCHED LOGIC)
         uint256 tokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
             projectId: CORE_PROJECT_ID,
             tokenNumber: tokenNumber

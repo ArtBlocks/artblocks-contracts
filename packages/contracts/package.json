@@ -131,6 +131,7 @@
   "author": "Art Blocks, Inc",
   "license": "LGPL-3.0-only",
   "dependencies": {
+    "@ethersproject/signing-key": "^5.8.0",
     "@nomicfoundation/hardhat-verify": "^2.0.14",
     "@openzeppelin-0.5/contracts": "npm:@openzeppelin/contracts@2.5.1",
     "@openzeppelin-4.5/contracts": "npm:@openzeppelin/contracts@4.5.0",
