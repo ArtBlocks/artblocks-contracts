@@ -119,14 +119,12 @@ export async function setupSRHooksFixture(): Promise<SRHooksFixtureConfig> {
   ) as SRHooks;
 
   // Configure PMP hooks for project 3
-  await pmp
-    .connect(config.accounts.artist)
-    .configureProjectHooks(
-      config.genArt721Core.address,
-      projectThree,
-      ethers.constants.AddressZero, // no post config hook
-      srHooksProxy.address // augment hook
-    );
+  await pmp.connect(config.accounts.artist).configureProjectHooks(
+    config.genArt721Core.address,
+    projectThree,
+    ethers.constants.AddressZero, // no post config hook
+    srHooksProxy.address // augment hook
+  );
 
   // Configure the minter for the project
   // Deploy a minter
@@ -187,4 +185,3 @@ export async function setupSRHooksFixture(): Promise<SRHooksFixtureConfig> {
 
   return srHooksConfig;
 }
-

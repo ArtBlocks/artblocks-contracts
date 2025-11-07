@@ -1123,7 +1123,7 @@ contract SRHooks is
             _tokensSendingTo[tokenNumber].clear();
             _tokenAuxStateData[tokenNumber].sendingToLength = 0; // wipe the sending to length to 0
             // emit custom event for indexing of send-to if applicable
-            // @dev aknowledge that this may cost gas for large arrays, but prefer strong indexing behavior, and
+            // @dev acknowledge that this may cost gas for large arrays, but prefer strong indexing behavior, and
             // still minor relative to the cost of the SSTORE operations when storing the send-to array
             emit ISRHooks.TokenSendingToUpdated({
                 coreContract: CORE_CONTRACT_ADDRESS,
@@ -1166,7 +1166,7 @@ contract SRHooks is
         });
 
         // emit custom event for indexing of send-to if applicable
-        // @dev aknowledge that this may cost gas for large arrays, but prefer strong indexing behavior, and
+        // @dev acknowledge that this may cost gas for large arrays, but prefer strong indexing behavior, and
         // still minor relative to the cost of the SSTORE operations when storing the send-to array
         if (sendState == SendStates.SendTo) {
             emit ISRHooks.TokenSendingToUpdated({
@@ -1232,7 +1232,7 @@ contract SRHooks is
             _tokensReceivingFrom[tokenNumber].clear();
 
             // emit custom event for indexing of receive-from if applicable
-            // @dev aknowledge that this may cost gas for large arrays, but prefer strong indexing behavior, and
+            // @dev acknowledge that this may cost gas for large arrays, but prefer strong indexing behavior, and
             // still minor relative to the cost of the SSTORE operations when storing the receive-from array
             emit ISRHooks.TokenReceivingFromUpdated({
                 coreContract: CORE_CONTRACT_ADDRESS,
@@ -1262,7 +1262,7 @@ contract SRHooks is
         });
 
         // emit custom event for indexing of receive-from if applicable
-        // @dev aknowledge that this may cost gas for large arrays, but prefer strong indexing behavior, and
+        // @dev acknowledge that this may cost gas for large arrays, but prefer strong indexing behavior, and
         // still minor relative to the cost of the SSTORE operations when storing the receive-from array
         if (receiveState == ReceiveStates.ReceiveFrom) {
             emit ISRHooks.TokenReceivingFromUpdated({
@@ -1438,8 +1438,8 @@ contract SRHooks is
             sendState == SendStates.SendGeneral
                 ? "SendGeneral"
                 : sendState == SendStates.SendTo
-                ? "SendTo"
-                : "Neutral";
+                    ? "SendTo"
+                    : "Neutral";
     }
 
     /**
@@ -1490,8 +1490,8 @@ contract SRHooks is
             receiveState == ReceiveStates.ReceiveGeneral
                 ? "ReceiveGeneral"
                 : receiveState == ReceiveStates.ReceiveFrom
-                ? "ReceiveFrom"
-                : "Neutral";
+                    ? "ReceiveFrom"
+                    : "Neutral";
     }
 
     function _getHexStringFromSSTORE2(
