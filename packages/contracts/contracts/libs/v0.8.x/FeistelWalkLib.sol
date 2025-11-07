@@ -149,7 +149,13 @@ library FeistelWalkLib {
 
         unchecked {
             for (uint256 r = 0; r < rounds; ++r) {
-                uint64 key = (r == 0) ? k0 : (r == 1) ? k1 : (r == 2) ? k2 : k3;
+                uint64 key = (r == 0)
+                    ? k0
+                    : (r == 1)
+                        ? k1
+                        : (r == 2)
+                            ? k2
+                            : k3;
                 uint256 F = _roundF(uint64(R), key, r);
                 // Standard Feistel: (L, R) -> (R, L XOR F(R))
                 uint256 newL = R;
