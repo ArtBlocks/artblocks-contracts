@@ -91,7 +91,7 @@ contract SRHooks is
 
     /// @notice mapping of token numbers to slot to metadata
     mapping(uint256 tokenNumber => mapping(uint256 slot => TokenMetadata slotMetadata))
-        private tokensMetadata;
+        private _tokensMetadata;
 
     struct TokenAuxStateData {
         uint8 activeSlot;
@@ -248,7 +248,7 @@ contract SRHooks is
         // @dev load active slot from storage
         uint256 tokenNumber = ABHelpers.tokenIdToTokenNumber(tokenId);
         uint256 activeSlot = _tokenAuxStateData[tokenNumber].activeSlot;
-        TokenMetadata storage tokenMetadataStorage = tokensMetadata[
+        TokenMetadata storage tokenMetadataStorage = _tokensMetadata[
             tokenNumber
         ][activeSlot];
         // return the image and sound data as hex strings
@@ -538,7 +538,7 @@ contract SRHooks is
 
         // get active slot and metadata
         uint256 activeSlot = _tokenAuxStateData[tokenNumber].activeSlot;
-        TokenMetadata storage metadata = tokensMetadata[tokenNumber][
+        TokenMetadata storage metadata = _tokensMetadata[tokenNumber][
             activeSlot
         ];
 
@@ -831,7 +831,7 @@ contract SRHooks is
         require(updatedActiveSlot < NUM_METADATA_SLOTS, "Invalid active slot");
 
         // EFFECTS
-        TokenMetadata storage tokenMetadataStorage = tokensMetadata[
+        TokenMetadata storage tokenMetadataStorage = _tokensMetadata[
             tokenNumber
         ][updatedActiveSlot];
 
@@ -1121,6 +1121,111 @@ contract SRHooks is
                 tokensReceivingFrom: tokensReceivingFrom
             });
         }
+    }
+
+    /**
+     * @notice Gets the state of the general pools.
+     * @return sendGeneralTokensLength The length of the send general tokens.
+     * @return receiveGeneralTokensLength The length of the receive general tokens.
+     */
+    function getGeneralPoolState()
+        external
+        view
+        returns (
+            uint256 sendGeneralTokensLength,
+            uint256 receiveGeneralTokensLength
+        )
+    {
+        return (_sendGeneralTokens.length(), _receiveGeneralTokens.length());
+    }
+
+    /**
+     * @notice Gets the state of a given token.
+     * @param tokenNumber The token number to get the state for.
+     * @return sendState The send state.
+     * @return receiveState The receive state.
+     * @return tokensSendingTo The tokens sending to the token.
+     * @return tokensReceivingFrom The tokens receiving from the token.
+     * @return activeSlot The active slot.
+     * @return activeSlotTokenMetadata The token metadata at the active slot.
+     * @return ownerAddress The address of the token owner.
+     */
+    function getTokenState(
+        uint256 tokenNumber
+    )
+        external
+        view
+        returns (
+            SendStates sendState,
+            ReceiveStates receiveState,
+            uint16[] memory tokensSendingTo,
+            uint16[] memory tokensReceivingFrom,
+            uint256 activeSlot,
+            TokenMetadata memory activeSlotTokenMetadata,
+            address ownerAddress
+        )
+    {
+        sendState = _getSendState(tokenNumber);
+        receiveState = _getReceiveState(tokenNumber);
+        tokensSendingTo = ImmutableUint16Array.getAll({
+            storageArray: _tokensSendingTo[tokenNumber]
+        });
+        tokensReceivingFrom = ImmutableUint16Array.getAll({
+            storageArray: _tokensReceivingFrom[tokenNumber]
+        });
+        activeSlot = _tokenAuxStateData[tokenNumber].activeSlot;
+        activeSlotTokenMetadata = _tokensMetadata[tokenNumber][activeSlot];
+        uint256 tokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
+            projectId: CORE_PROJECT_ID,
+            tokenNumber: tokenNumber
+        });
+        ownerAddress = IERC721(CORE_CONTRACT_ADDRESS).ownerOf(tokenId);
+        return (
+            sendState,
+            receiveState,
+            tokensSendingTo,
+            tokensReceivingFrom,
+            activeSlot,
+            activeSlotTokenMetadata,
+            ownerAddress
+        );
+    }
+
+    /**
+     * @notice Gets the token metadata at a given slot.
+     * @param tokenNumber The token number to get the token metadata for.
+     * @param slot The slot to get the token metadata for.
+     * @return tokenMetadata The token metadata at the given slot.
+     */
+    function getTokenMetadataAtSlot(
+        uint256 tokenNumber,
+        uint256 slot
+    ) external view returns (TokenMetadataView memory tokenMetadata) {
+        TokenMetadata storage tokenMetadataStorage = _tokensMetadata[
+            tokenNumber
+        ][slot];
+        tokenMetadata.imageDataCompressed = tokenMetadataStorage
+            .imageDataAddress != address(0)
+            ? SSTORE2.read(tokenMetadataStorage.imageDataAddress)
+            : bytes("");
+        tokenMetadata.imageVersion = tokenMetadataStorage.imageVersion;
+        tokenMetadata.soundDataCompressed = tokenMetadataStorage
+            .soundDataAddress != address(0)
+            ? SSTORE2.read(tokenMetadataStorage.soundDataAddress)
+            : bytes("");
+        tokenMetadata.soundVersion = tokenMetadataStorage.soundVersion;
+    }
+
+    /**
+     * @notice Gets the tokens sending to a given token.
+     * WARNING: This function is unbounded in gas cost, and is designed to be used by view accessors only. Use with caution.
+     * @param tokenNumber The token number to get the tokens sending to for.
+     * @return tokensSendingTo The token numbers sending to the given token.
+     */
+    function getTokensSendingToToken(
+        uint256 tokenNumber
+    ) external view returns (uint256[] memory tokensSendingTo) {
+        return _tokensSendingToMe[tokenNumber].values();
     }
 
     /**

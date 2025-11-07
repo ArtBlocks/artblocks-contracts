@@ -46,12 +46,32 @@ interface ISRHooks {
         uint16[] tokensReceivingFrom
     );
 
-    // struct for the token metadata calldata
+    /**
+     * @notice Struct for the token metadata calldata.
+     * @param updateImage Whether to update the image data.
+     * @param imageDataCompressed The compressed image data.
+     * @param updateSound Whether to update the sound data.
+     * @param soundDataCompressed The compressed sound data.
+     */
     struct TokenMetadataCalldata {
         bool updateImage; // true if updating the image data
         bytes imageDataCompressed; // non-empty if updating the image data
         bool updateSound; // true if updating the sound data
         bytes soundDataCompressed; // may be empty to clear the sound data, non-empty if setting the sound data
+    }
+
+    /**
+     * @notice Struct for the token metadata view.
+     * @param imageDataCompressed The compressed image data.
+     * @param imageVersion The version of the image data.
+     * @param soundDataCompressed The compressed sound data.
+     * @param soundVersion The version of the sound data.
+     */
+    struct TokenMetadataView {
+        bytes imageDataCompressed;
+        uint16 imageVersion;
+        bytes soundDataCompressed;
+        uint16 soundVersion;
     }
 
     struct TokenLiveData {
