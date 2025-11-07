@@ -45,9 +45,16 @@ interface ISRHooks {
     // struct for the token metadata calldata
     struct TokenMetadataCalldata {
         bool updateImage; // true if updating the image data
-        bytes bitmapImageCompressed; // non-empty if updating the image data
+        bytes imageDataCompressed; // non-empty if updating the image data
         bool updateSound; // true if updating the sound data
         bytes soundDataCompressed; // may be empty to clear the sound data, non-empty if setting the sound data
+    }
+
+    struct TokenLiveData {
+        uint256 tokenNumber;
+        address ownerAddress;
+        bytes imageDataCompressed;
+        bytes soundDataCompressed;
     }
 
     // enum for the different possible states of a token's SR configuration
@@ -109,4 +116,26 @@ interface ISRHooks {
      * @param newModeratorAddress The new moderator address.
      */
     function updateModeratorAddress(address newModeratorAddress) external;
+
+    /**
+     * @notice Gets the live data for a given token.
+     * @param tokenNumber The token number to get the live data for.
+     * @param blockNumber The block number to get the live data for.
+     * @return sendState The send state of the token.
+     * @return receiveState The receive state of the token.
+     * @return receivedTokensGeneral The received tokens general of the token.
+     * @return receivedTokensTo The received tokens to of the token.
+     */
+    function getLiveData(
+        uint256 tokenNumber,
+        uint256 blockNumber
+    )
+        external
+        view
+        returns (
+            SendStates sendState,
+            ReceiveStates receiveState,
+            TokenLiveData[] memory receivedTokensGeneral,
+            TokenLiveData[] memory receivedTokensTo
+        );
 }
