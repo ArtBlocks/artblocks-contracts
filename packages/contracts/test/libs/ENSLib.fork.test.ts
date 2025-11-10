@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 const FORK_URL = process.env.MAINNET_JSON_RPC_PROVIDER_URL;
-const FORK_BLOCK_NUMBER = 21024119; // Block with known ENS names
+const FORK_BLOCK_NUMBER = 23086000; // Block after universal resolver deployment
 
 // Known Ethereum addresses with ENS names (at the fork block)
 const VITALIK_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"; // vitalik.eth
