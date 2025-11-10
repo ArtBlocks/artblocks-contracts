@@ -9529,6 +9529,7 @@ __metadata:
   resolution: "artblocks-oss@workspace:."
   dependencies:
     "@changesets/cli": "npm:^2.27.5"
+    "@ethersproject/signing-key": "npm:^5.8.0"
     "@graphql-codegen/cli": "npm:^5.0.2"
     "@graphql-codegen/client-preset": "npm:^4.3.0"
     "@graphql-codegen/typescript": "npm:^4.0.1"

@@ -91,7 +91,8 @@ interface ISRHooks {
     enum ReceiveStates {
         Neutral,
         ReceiveGeneral,
-        ReceiveFrom
+        ReceiveFrom,
+        ReceiveTo
     }
 
     /**
