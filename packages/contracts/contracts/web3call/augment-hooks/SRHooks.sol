@@ -25,6 +25,7 @@ import {ImmutableUint16Array} from "../../libs/v0.8.x/ImmutableUint16Array.sol";
 import {SSTORE2} from "../../libs/v0.8.x/SSTORE2.sol";
 import {ABHelpers} from "../../libs/v0.8.x/ABHelpers.sol";
 import {FeistelWalkLib} from "../../libs/v0.8.x/FeistelWalkLib.sol";
+import {ENSLib} from "../../libs/v0.8.x/ENSLib.sol";
 
 /**
  * @title SRHooks
@@ -917,6 +918,10 @@ contract SRHooks is
             );
         }
 
+        // get owner ENS name using ENS Universal Resolver
+        // @dev try/catch pattern, avoids reverts, returns empty string if reverse lookup not configured
+        liveData.ownerEnsName = ENSLib.getEnsName(ownerAddress);
+
         return liveData;
     }
 
@@ -1429,8 +1434,8 @@ contract SRHooks is
             sendState == SendStates.SendGeneral
                 ? "SendGeneral"
                 : sendState == SendStates.SendTo
-                    ? "SendTo"
-                    : "Neutral";
+                ? "SendTo"
+                : "Neutral";
     }
 
     /**

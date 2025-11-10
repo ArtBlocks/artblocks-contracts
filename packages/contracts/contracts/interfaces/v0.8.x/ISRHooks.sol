@@ -79,6 +79,7 @@ interface ISRHooks {
         address ownerAddress;
         bytes imageDataCompressed;
         bytes soundDataCompressed;
+        string ownerEnsName;
     }
 
     // enum for the different possible states of a token's SR configuration
