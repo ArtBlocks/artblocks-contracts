@@ -131,19 +131,16 @@ interface ISRHooks {
      * @notice Gets the live data for a given token.
      * @param tokenNumber The token number to get the live data for.
      * @param blockNumber The block number to get the live data for. Must be in latest 256 blocks.
-    /**
-     * @notice Gets the live data for a given token.
-     * @param tokenNumber The token number to get the live data for.
-     * @param blockNumber The block number to get the live data for. Must be in latest 256 blocks.
      * @param maxReceive The maximum number of tokens to receive, in each array of receivedTokensGeneral and receivedTokensTo.
+     * maxReceive must be less than or equal to MAX_RECEIVE_RATE_PER_BLOCK.
      * Treats block number of 0 as latest completed block.
      * Reverts if block number is in future - need block hash to be defined.
-     * NOTE: Each array of receivedTokensGeneral and receivedTokensTo has a maximum length of MAX_RECEIVE_RATE_PER_BLOCK,
-     * but their combined length may be greater than MAX_RECEIVE_RATE_PER_BLOCK. The art script should handle this by
+     * NOTE: Each array of receivedTokensGeneral and receivedTokensTo has a maximum length of maxReceive,
+     * but their combined length may be greater than maxReceive. The art script should handle this by
      * deterministically shuffling/sampling from the arrays if desired.
      * WARNING: This function is designed for off-chain view calls only and may exceed block gas limits in cases where
      * a token has many senders or is receiving from many tokens. It is not intended to be called within transactions.
-     * WARNING: Self-referential sendGeneral and sendTo tokens may be included in the results.
+     * WARNING: Self-referential SendGeneral and SendTo tokens may be included in the results.
      * @return sendState The send state of the token.
      * @return receiveState The receive state of the token.
      * @return receivedTokensGeneral The received tokens general of the token.
