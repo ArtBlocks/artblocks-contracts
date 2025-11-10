@@ -96,6 +96,7 @@ contract SRHooks is
     struct TokenAuxStateData {
         uint8 activeSlot;
         uint16 sendingToLength; // used to calculate dilution rate when sending to multiple tokens
+        bool isReceivingTo; // true if the token is only receiving tokens sending to it, false if in any other receive state
     }
 
     /// @notice mapping of token numbers to aux state data
@@ -449,6 +450,20 @@ contract SRHooks is
                 sendState,
                 receiveState,
                 receivedTokensGeneral,
+                receivedTokensTo
+            );
+        }
+
+        // case: receiveTo state - only tokens received to specific tokens
+        if (receiveState == ReceiveStates.ReceiveTo) {
+            receivedTokensTo = _sampleReceivedTokensTo({
+                tokenNumber: tokenNumber,
+                blockhash_: blockhash_
+            });
+            return (
+                sendState,
+                receiveState,
+                new TokenLiveData[](0), // no tokens received from general pool
                 receivedTokensTo
             );
         }
@@ -1239,6 +1254,9 @@ contract SRHooks is
                 tokenId: tokenId,
                 tokensReceivingFrom: new uint16[](0)
             });
+        } else if (previousReceiveState == ReceiveStates.ReceiveTo) {
+            // set isReceivingTo to false
+            _tokenAuxStateData[tokenNumber].isReceivingTo = false;
         }
         // case: neutral state - no-op
 
@@ -1250,6 +1268,9 @@ contract SRHooks is
             // they simply won't appear in getLiveData results due to state set membership checks
             // (tokens must be in _sendGeneralTokens or _tokensSendingToMe to be included)
             _tokensReceivingFrom[tokenNumber].store(tokensReceivingFrom);
+        } else if (receiveState == ReceiveStates.ReceiveTo) {
+            // set isReceivingTo to true
+            _tokenAuxStateData[tokenNumber].isReceivingTo = true;
         }
         // case: neutral state - no-op
 
@@ -1438,8 +1459,8 @@ contract SRHooks is
             sendState == SendStates.SendGeneral
                 ? "SendGeneral"
                 : sendState == SendStates.SendTo
-                    ? "SendTo"
-                    : "Neutral";
+                ? "SendTo"
+                : "Neutral";
     }
 
     /**
@@ -1459,6 +1480,10 @@ contract SRHooks is
         // check for non-empty receive from array
         if (!ImmutableUint16Array.isEmpty(_tokensReceivingFrom[tokenNumber])) {
             return ReceiveStates.ReceiveFrom;
+        }
+        // check for isReceivingTo
+        if (_tokenAuxStateData[tokenNumber].isReceivingTo) {
+            return ReceiveStates.ReceiveTo;
         }
         // must be in neutral state
         return ReceiveStates.Neutral;
@@ -1486,12 +1511,20 @@ contract SRHooks is
     function _receiveStateToString(
         ReceiveStates receiveState
     ) internal pure returns (string memory) {
-        return
-            receiveState == ReceiveStates.ReceiveGeneral
-                ? "ReceiveGeneral"
-                : receiveState == ReceiveStates.ReceiveFrom
-                    ? "ReceiveFrom"
-                    : "Neutral";
+        if (receiveState == ReceiveStates.Neutral) {
+            return "Neutral";
+        }
+        if (receiveState == ReceiveStates.ReceiveGeneral) {
+            return "ReceiveGeneral";
+        }
+        if (receiveState == ReceiveStates.ReceiveFrom) {
+            return "ReceiveFrom";
+        }
+        if (receiveState == ReceiveStates.ReceiveTo) {
+            return "ReceiveTo";
+        }
+        // case: invalid receive state (no coverage)
+        revert("Invalid receive state");
     }
 
     function _getHexStringFromSSTORE2(

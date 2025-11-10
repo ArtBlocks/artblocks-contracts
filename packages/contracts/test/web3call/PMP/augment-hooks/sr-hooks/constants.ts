@@ -52,4 +52,5 @@ export const RECEIVE_STATES = {
   NEUTRAL: 0,
   RECEIVE_GENERAL: 1,
   RECEIVE_FROM: 2,
+  RECEIVE_TO: 3,
 } as const;
