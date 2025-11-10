@@ -1401,8 +1401,8 @@ contract SRHooks is
             sendState == SendStates.SendGeneral
                 ? "SendGeneral"
                 : sendState == SendStates.SendTo
-                ? "SendTo"
-                : "Neutral";
+                    ? "SendTo"
+                    : "Neutral";
     }
 
     /**
