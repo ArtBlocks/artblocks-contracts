@@ -60,4 +60,3 @@ contract ImmutableUint16ArrayMock {
         return uint16Array.getAll();
     }
 }
-
