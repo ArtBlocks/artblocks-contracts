@@ -933,6 +933,75 @@ describe("SRHooks_Configure", function () {
         expect(state.sendState).to.equal(SEND_STATES.NEUTRAL);
         expect(state.tokensSendingTo.length).to.equal(0);
       });
+
+      it("safely handles SendTo with duplicates then change to Neutral", async function () {
+        const config = await loadFixture(_beforeEach);
+        // Setup: SendTo with duplicate entries
+        await config.srHooksProxy
+          .connect(config.accounts.user)
+          .updateTokenStateAndMetadata(
+            0,
+            true,
+            SEND_STATES.SEND_TO,
+            [1, 1, 1], // Duplicate entries
+            false,
+            0,
+            [],
+            true,
+            0,
+            {
+              updateImage: true,
+              imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
+              updateSound: false,
+              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
+            }
+          );
+
+        // Verify state is set correctly
+        let state = await config.srHooksProxy.getTokenState(0);
+        expect(state.sendState).to.equal(SEND_STATES.SEND_TO);
+        // tokensSendingTo array stores duplicates as entered
+        expect(state.tokensSendingTo.length).to.equal(3);
+
+        // Verify getTokensSendingToToken deduplicates (token 0 only appears once)
+        const sendingTokens =
+          await config.srHooksProxy.getTokensSendingToToken(1);
+        expect(sendingTokens.length).to.equal(1);
+        expect(sendingTokens[0].toNumber()).to.equal(0);
+
+        // Change to Neutral - this should clean up state without errors
+        await expect(
+          config.srHooksProxy
+            .connect(config.accounts.user)
+            .updateTokenStateAndMetadata(
+              0,
+              true,
+              SEND_STATES.NEUTRAL,
+              [],
+              false,
+              0,
+              [],
+              false,
+              0,
+              {
+                updateImage: false,
+                imageDataCompressed: ethers.utils.toUtf8Bytes(""),
+                updateSound: false,
+                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
+              }
+            )
+        ).to.not.be.reverted;
+
+        // Verify cleanup was successful
+        state = await config.srHooksProxy.getTokenState(0);
+        expect(state.sendState).to.equal(SEND_STATES.NEUTRAL);
+        expect(state.tokensSendingTo.length).to.equal(0);
+
+        // Verify getTokensSendingToToken is now empty
+        const sendingTokensAfter =
+          await config.srHooksProxy.getTokensSendingToToken(1);
+        expect(sendingTokensAfter.length).to.equal(0);
+      });
     });
 
     describe("receive state updates", function () {

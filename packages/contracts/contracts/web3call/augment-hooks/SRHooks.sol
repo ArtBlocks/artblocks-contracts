@@ -520,11 +520,11 @@ contract SRHooks is
         bytes32 blockhash_,
         uint256 maxReceive
     ) internal view returns (TokenLiveData[] memory) {
-        // calculate the general
-        uint256 receiveGeneralLength = _receiveGeneralTokens.length();
-        uint256 sampleQuantity = receiveGeneralLength > maxReceive
+        // calculate the general send pool size (tokens available to receive from)
+        uint256 sendGeneralLength = _sendGeneralTokens.length();
+        uint256 sampleQuantity = sendGeneralLength > maxReceive
             ? maxReceive
-            : receiveGeneralLength;
+            : sendGeneralLength;
 
         // sample from general pool, quantity sampleQuantity
         bytes32 seed = keccak256(abi.encodePacked(blockhash_, tokenNumber));
@@ -1434,8 +1434,8 @@ contract SRHooks is
             sendState == SendStates.SendGeneral
                 ? "SendGeneral"
                 : sendState == SendStates.SendTo
-                    ? "SendTo"
-                    : "Neutral";
+                ? "SendTo"
+                : "Neutral";
     }
 
     /**
