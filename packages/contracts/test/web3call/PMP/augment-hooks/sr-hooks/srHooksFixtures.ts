@@ -98,7 +98,6 @@ export async function setupSRHooksFixture(): Promise<SRHooksFixtureConfig> {
   const srHooksProxy = (await upgrades.deployProxy(
     SRHooksFactory,
     [
-      pmp.address,
       config.accounts.deployer.address, // owner
       config.genArt721Core.address,
       projectThree,

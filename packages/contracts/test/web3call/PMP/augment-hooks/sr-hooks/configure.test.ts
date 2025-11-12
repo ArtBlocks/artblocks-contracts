@@ -30,7 +30,6 @@ describe("SRHooks_Configure", function () {
       // Try to initialize again
       await expect(
         config.srHooksProxy.initialize(
-          config.pmp.address,
           config.accounts.deployer.address,
           config.genArt721Core.address,
           config.projectThree
@@ -43,7 +42,6 @@ describe("SRHooks_Configure", function () {
       // Try to initialize the implementation
       await expect(
         config.srHooksImplementation.initialize(
-          config.pmp.address,
           config.accounts.deployer.address,
           config.genArt721Core.address,
           config.projectThree
@@ -53,9 +51,6 @@ describe("SRHooks_Configure", function () {
 
     it("initializes with correct values", async function () {
       const config = await loadFixture(_beforeEach);
-      expect(await config.srHooksProxy.PMPV0_ADDRESS()).to.equal(
-        config.pmp.address
-      );
       expect(await config.srHooksProxy.CORE_CONTRACT_ADDRESS()).to.equal(
         config.genArt721Core.address
       );
@@ -119,7 +114,6 @@ describe("SRHooks_Configure", function () {
       );
 
       // Verify state is preserved
-      expect(await upgraded.PMPV0_ADDRESS()).to.equal(config.pmp.address);
       expect(await upgraded.CORE_CONTRACT_ADDRESS()).to.equal(
         config.genArt721Core.address
       );
