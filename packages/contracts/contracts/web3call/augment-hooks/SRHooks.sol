@@ -25,6 +25,7 @@ import {ImmutableUint16Array} from "../../libs/v0.8.x/ImmutableUint16Array.sol";
 import {SSTORE2} from "../../libs/v0.8.x/SSTORE2.sol";
 import {ABHelpers} from "../../libs/v0.8.x/ABHelpers.sol";
 import {FeistelWalkLib} from "../../libs/v0.8.x/FeistelWalkLib.sol";
+import {ENSLib} from "../../libs/v0.8.x/ENSLib.sol";
 
 /**
  * @title SRHooks
@@ -372,6 +373,10 @@ contract SRHooks is
      * @return receiveState The receive state of the token.
      * @return receivedTokensGeneral The received tokens general of the token.
      * @return receivedTokensTo The received tokens to of the token.
+     * @return numSendGeneral The number of tokens in the send general pool.
+     * @return numReceiveGeneral The number of tokens in the receive general pool.
+     * @return numSendingToMe The number of tokens sending to me.
+     * @return usedBlockNumber The block number used to generate the random numbers.
      */
     function getLiveData(
         uint256 tokenNumber,
@@ -384,7 +389,11 @@ contract SRHooks is
             SendStates sendState,
             ReceiveStates receiveState,
             TokenLiveData[] memory receivedTokensGeneral,
-            TokenLiveData[] memory receivedTokensTo
+            TokenLiveData[] memory receivedTokensTo,
+            uint256 numSendGeneral,
+            uint256 numReceiveGeneral,
+            uint256 numSendingToMe,
+            uint256 usedBlockNumber
         )
     {
         // CHECKS
@@ -397,14 +406,12 @@ contract SRHooks is
         );
 
         // treat block number of 0 as latest completed block
-        if (blockNumber == 0) {
-            blockNumber = block.number - 1; // get previous block hash (latest possible block hash)
-        }
-        if (blockNumber > block.number - 1) {
+        usedBlockNumber = blockNumber == 0 ? block.number - 1 : blockNumber;
+        if (usedBlockNumber > block.number - 1) {
             revert("Block number in future - need block hash to be defined");
         }
         // ensure we get a valid block hash (must be in latest 256 blocks)
-        bytes32 blockhash_ = blockhash(blockNumber); // returns zero if not in latest 256 blocks
+        bytes32 blockhash_ = blockhash(usedBlockNumber); // returns zero if not in latest 256 blocks
         require(
             blockhash_ != bytes32(0),
             "block hash not available - must be in lastest 256 blocks"
@@ -414,13 +421,23 @@ contract SRHooks is
         sendState = _getSendState(tokenNumber);
         receiveState = _getReceiveState(tokenNumber);
 
+        // populate the returned state variables
+        numSendGeneral = _sendGeneralTokens.length();
+        numReceiveGeneral = _receiveGeneralTokens.length();
+        numSendingToMe = _tokensSendingToMe[tokenNumber].length();
+        // used block number already populated
+
         // case: neutral receiving state - no tokens received
         if (receiveState == ReceiveStates.Neutral) {
             return (
                 sendState,
                 receiveState,
                 new TokenLiveData[](0),
-                new TokenLiveData[](0)
+                new TokenLiveData[](0),
+                numSendGeneral,
+                numReceiveGeneral,
+                numSendingToMe,
+                usedBlockNumber
             );
         }
 
@@ -440,7 +457,11 @@ contract SRHooks is
                 sendState,
                 receiveState,
                 receivedTokensGeneral,
-                receivedTokensTo
+                receivedTokensTo,
+                numSendGeneral,
+                numReceiveGeneral,
+                numSendingToMe,
+                usedBlockNumber
             );
         }
 
@@ -458,7 +479,11 @@ contract SRHooks is
                 sendState,
                 receiveState,
                 receivedTokensGeneral,
-                receivedTokensTo
+                receivedTokensTo,
+                numSendGeneral,
+                numReceiveGeneral,
+                numSendingToMe,
+                usedBlockNumber
             );
         }
 
@@ -473,7 +498,11 @@ contract SRHooks is
                 sendState,
                 receiveState,
                 new TokenLiveData[](0), // no tokens received from general pool
-                receivedTokensTo
+                receivedTokensTo,
+                numSendGeneral,
+                numReceiveGeneral,
+                numSendingToMe,
+                usedBlockNumber
             );
         }
     }
@@ -888,6 +917,10 @@ contract SRHooks is
                 metadata.soundDataAddress
             );
         }
+
+        // get owner ENS name using ENS Universal Resolver
+        // @dev try/catch pattern, avoids reverts, returns empty string if reverse lookup not configured
+        liveData.ownerEnsName = ENSLib.getEnsName(ownerAddress);
 
         return liveData;
     }

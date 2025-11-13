@@ -79,6 +79,7 @@ interface ISRHooks {
         address ownerAddress;
         bytes imageDataCompressed;
         bytes soundDataCompressed;
+        string ownerEnsName;
     }
 
     // enum for the different possible states of a token's SR configuration
@@ -145,6 +146,10 @@ interface ISRHooks {
      * @return receiveState The receive state of the token.
      * @return receivedTokensGeneral The received tokens general of the token.
      * @return receivedTokensTo The received tokens to of the token.
+     * @return numSendGeneral The number of tokens in the send general pool.
+     * @return numReceiveGeneral The number of tokens in the receive general pool.
+     * @return numSendingToMe The number of tokens sending to me.
+     * @return usedBlockNumber The block number used to generate the random numbers.
      */
     function getLiveData(
         uint256 tokenNumber,
@@ -157,7 +162,11 @@ interface ISRHooks {
             SendStates sendState,
             ReceiveStates receiveState,
             TokenLiveData[] memory receivedTokensGeneral,
-            TokenLiveData[] memory receivedTokensTo
+            TokenLiveData[] memory receivedTokensTo,
+            uint256 numSendGeneral,
+            uint256 numReceiveGeneral,
+            uint256 numSendingToMe,
+            uint256 usedBlockNumber
         );
 
     /**
