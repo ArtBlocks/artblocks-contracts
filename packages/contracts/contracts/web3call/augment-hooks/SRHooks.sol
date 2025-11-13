@@ -39,6 +39,21 @@ import {ENSLib} from "../../libs/v0.8.x/ENSLib.sol";
  * for off-chain indexing and analysis and frontend development.
  * Implements a Feistel walk for efficient pseudo-random sampling at each block over large sets and arrays. This
  * sampling is considered efficient and effective enough for our use case of streaming pseudorandom live data at each block.
+ * @dev Operationally, this contract assumes that the PMPV0 contract will be configured with at least the following PMP values,
+ * and that those values will be configured in a way where they are never able to be updated (e.g. auth option is dead address):
+ * - SendState
+ * - ReceiveState
+ * - ActiveSlot
+ * - ImageVersionSlot0
+ * - SoundVersionSlot0
+ * - ImageVersionSlot1
+ * - SoundVersionSlot1
+ * - ImageVersionSlot2
+ * - SoundVersionSlot2
+ * - ImageVersionSlot3
+ * - SoundVersionSlot3
+ * - ImageVersionSlot4
+ * - SoundVersionSlot4
  * @dev This contract follows the UUPS (Universal Upgradeable Proxy Standard) pattern.
  * It uses OpenZeppelin's upgradeable contracts and must be deployed behind a proxy.
  * Only the owner can authorize upgrades via the _authorizeUpgrade function, which may
@@ -54,8 +69,6 @@ contract SRHooks is
     using EnumerableSet for EnumerableSet.UintSet;
     using ImmutableUint16Array for ImmutableUint16Array.Uint16Array;
     using SafeCast for uint256;
-
-    address public PMPV0_ADDRESS;
 
     address public CORE_CONTRACT_ADDRESS;
 
@@ -169,13 +182,11 @@ contract SRHooks is
      * @notice Initializes the contract with the PMPV0 address and sets the owner.
      * @dev This function replaces the constructor for upgradeable contracts.
      * Can only be called once due to the initializer modifier.
-     * @param _pmpV0Address The address of the PMPV0 contract.
      * @param _owner The address that will own this contract and authorize upgrades.
      * @param _coreContractAddress The address of the core contract.
      * @param _coreProjectId The project ID of the core contract.
      */
     function initialize(
-        address _pmpV0Address,
         address _owner,
         address _coreContractAddress,
         uint256 _coreProjectId
@@ -183,29 +194,17 @@ contract SRHooks is
         __Ownable_init(_owner);
         __UUPSUpgradeable_init();
 
-        PMPV0_ADDRESS = _pmpV0Address;
         CORE_CONTRACT_ADDRESS = _coreContractAddress;
         CORE_PROJECT_ID = _coreProjectId;
 
         emit Initialized({
-            pmpV0Address: _pmpV0Address,
             coreContractAddress: _coreContractAddress,
             coreProjectId: _coreProjectId
         });
-        // emit fake PMPV0 events to be indexed by off-chain tools
-        // @dev this allows the contract to be indexed directly by off-chain tools, including the Art Blocks subgraph.
-        emit IPMPV0.ProjectHooksConfigured({
-            coreContract: _coreContractAddress,
-            projectId: _coreProjectId,
-            tokenPMPPostConfigHook: IPMPConfigureHook(address(this)),
-            tokenPMPReadAugmentationHook: IPMPAugmentHook(address(this))
-        });
-        emit IPMPV0.ProjectConfigured({
-            coreContract: _coreContractAddress,
-            projectId: _coreProjectId,
-            pmpInputConfigs: _getPMPInputConfigs(),
-            projectConfigNonce: 1
-        });
+        // @dev this contract does not emit PMPV0 project configuration events.
+        // This decouples indexing of PMP Configure events from the indexing of the project configuration information.
+        // Operationally, this contract requires configuration of the PMP project configuration as described in the contract-
+        // level documentation.
     }
 
     /**
@@ -520,11 +519,11 @@ contract SRHooks is
         bytes32 blockhash_,
         uint256 maxReceive
     ) internal view returns (TokenLiveData[] memory) {
-        // calculate the general
-        uint256 receiveGeneralLength = _receiveGeneralTokens.length();
-        uint256 sampleQuantity = receiveGeneralLength > maxReceive
+        // calculate the general send pool size (tokens available to receive from)
+        uint256 sendGeneralLength = _sendGeneralTokens.length();
+        uint256 sampleQuantity = sendGeneralLength > maxReceive
             ? maxReceive
-            : receiveGeneralLength;
+            : sendGeneralLength;
 
         // sample from general pool, quantity sampleQuantity
         bytes32 seed = keccak256(abi.encodePacked(blockhash_, tokenNumber));
@@ -670,6 +669,7 @@ contract SRHooks is
         // or if sending to me.
         // if the token is not sending to me, or not sending generally, we skip it.
         // we perform a Feistel walk to sample token numbers from the set, and then get the live data for each token.
+        // @dev no coverage - we never allow zero-length receiveFrom arrays, but check for redundancy.
         if (receivingFromMeLength == 0) {
             return (new TokenLiveData[](0), new TokenLiveData[](0)); // no tokens receiving from me, return empty arrays
         }
@@ -1512,118 +1512,6 @@ contract SRHooks is
         return
             interfaceId == type(IPMPAugmentHook).interfaceId ||
             super.supportsInterface(interfaceId);
-    }
-
-    /**
-     * @notice Gets the PMP input configs for the project.
-     * @return pmpInputConfigs The PMP input configs for the project.
-     * @dev This function is used to get the PMP input configs for the project, based on what this hook uses.
-     */
-    function _getPMPInputConfigs()
-        internal
-        pure
-        returns (IPMPV0.PMPInputConfig[] memory)
-    {
-        // build PMPInputConfigs for the project, based on what this hook uses
-        string[] memory sendStateSelectOptions = new string[](3);
-        sendStateSelectOptions[0] = "Neutral";
-        sendStateSelectOptions[1] = "SendGeneral";
-        sendStateSelectOptions[2] = "SendTo";
-        string[] memory receiveStateSelectOptions = new string[](3);
-        receiveStateSelectOptions[0] = "Neutral";
-        receiveStateSelectOptions[1] = "ReceiveGeneral";
-        receiveStateSelectOptions[2] = "ReceiveFrom";
-
-        IPMPV0.PMPInputConfig[]
-            memory pmpInputConfigs = new IPMPV0.PMPInputConfig[](13); // 13 slots (2 for s/r state, 1 for active slot, 5 for image, 5 for sound)
-
-        // SendState config
-        pmpInputConfigs[0] = IPMPV0.PMPInputConfig({
-            key: "SendState",
-            pmpConfig: IPMPV0.PMPConfig({
-                authOption: IPMPV0.AuthOption.TokenOwner,
-                paramType: IPMPV0.ParamType.Select,
-                pmpLockedAfterTimestamp: 0,
-                authAddress: address(0),
-                selectOptions: sendStateSelectOptions,
-                minRange: 0,
-                maxRange: 0
-            })
-        });
-
-        // ReceiveState config
-        pmpInputConfigs[1] = IPMPV0.PMPInputConfig({
-            key: "ReceiveState",
-            pmpConfig: IPMPV0.PMPConfig({
-                authOption: IPMPV0.AuthOption.TokenOwner,
-                paramType: IPMPV0.ParamType.Select,
-                pmpLockedAfterTimestamp: 0,
-                authAddress: address(0),
-                selectOptions: receiveStateSelectOptions,
-                minRange: 0,
-                maxRange: 0
-            })
-        });
-
-        // ActiveSlot config
-        pmpInputConfigs[2] = IPMPV0.PMPInputConfig({
-            key: "ActiveSlot",
-            pmpConfig: IPMPV0.PMPConfig({
-                authOption: IPMPV0.AuthOption.TokenOwner,
-                paramType: IPMPV0.ParamType.Uint256Range,
-                pmpLockedAfterTimestamp: 0,
-                authAddress: address(0),
-                selectOptions: new string[](0),
-                minRange: 0,
-                maxRange: bytes32(uint256(NUM_METADATA_SLOTS - 1))
-            })
-        });
-
-        // Iteratively build ImageVersionSlot[0-4] configs
-        for (uint256 i = 0; i < NUM_METADATA_SLOTS; i++) {
-            string memory imageKey = string(
-                bytes.concat(
-                    bytes("ImageVersionSlot"),
-                    bytes(Strings.toString(i))
-                )
-            );
-            pmpInputConfigs[3 + i] = IPMPV0.PMPInputConfig({
-                key: imageKey,
-                pmpConfig: IPMPV0.PMPConfig({
-                    authOption: IPMPV0.AuthOption.TokenOwner,
-                    paramType: IPMPV0.ParamType.Uint256Range,
-                    pmpLockedAfterTimestamp: 0,
-                    authAddress: address(0),
-                    selectOptions: new string[](0),
-                    minRange: 0,
-                    maxRange: bytes32(uint256(99999999))
-                })
-            });
-        }
-
-        // Iteratively build SoundVersionSlot[0-4] configs
-        for (uint256 i = 0; i < NUM_METADATA_SLOTS; i++) {
-            string memory soundKey = string(
-                bytes.concat(
-                    bytes("SoundVersionSlot"),
-                    bytes(Strings.toString(i))
-                )
-            );
-            pmpInputConfigs[8 + i] = IPMPV0.PMPInputConfig({
-                key: soundKey,
-                pmpConfig: IPMPV0.PMPConfig({
-                    authOption: IPMPV0.AuthOption.TokenOwner,
-                    paramType: IPMPV0.ParamType.Uint256Range,
-                    pmpLockedAfterTimestamp: 0,
-                    authAddress: address(0),
-                    selectOptions: new string[](0),
-                    minRange: 0,
-                    maxRange: bytes32(uint256(99999999))
-                })
-            });
-        }
-
-        return pmpInputConfigs;
     }
 
     /**

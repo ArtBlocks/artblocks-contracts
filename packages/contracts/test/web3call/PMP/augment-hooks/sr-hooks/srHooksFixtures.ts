@@ -1,4 +1,3 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers, upgrades } from "hardhat";
 import { BigNumber } from "ethers";
 import {
@@ -98,7 +97,6 @@ export async function setupSRHooksFixture(): Promise<SRHooksFixtureConfig> {
   const srHooksProxy = (await upgrades.deployProxy(
     SRHooksFactory,
     [
-      pmp.address,
       config.accounts.deployer.address, // owner
       config.genArt721Core.address,
       projectThree,

@@ -28,6 +28,7 @@ export const srHooksRevertMessages = {
   blockHashNotAvailable:
     "block hash not available - must be in lastest 256 blocks",
   invalidSlot: "Invalid slot",
+  maxReceiveTooLarge: "maxReceive is too large",
 };
 
 // Constants from SRHooks contract

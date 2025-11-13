@@ -12,15 +12,10 @@ pragma solidity ^0.8.0;
 interface ISRHooks {
     /**
      * @notice Emitted when the contract is initialized
-     * @param pmpV0Address The address of the PMPV0 contract.
      * @param coreContractAddress The address of the core contract.
      * @param coreProjectId The project ID of the core contract.
      */
-    event Initialized(
-        address pmpV0Address,
-        address coreContractAddress,
-        uint256 coreProjectId
-    );
+    event Initialized(address coreContractAddress, uint256 coreProjectId);
 
     /**
      * @notice Emitted when the tokens sending to a token are updated
