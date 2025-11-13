@@ -63,12 +63,9 @@ contract SRHooks is
     uint256 public constant MAX_IMAGE_DATA_LENGTH = 1024 * 15; // 15 KB, beyond which is unlikely to represent a 64x64 image
     uint256 public constant MAX_SOUND_DATA_LENGTH = 1024 * 10; // 10 KB, beyond which is unlikely to represent a sound
 
-    uint256 internal constant MAX_RECEIVE_RATE_PER_BLOCK = 3 * 12; // 3 tokens per 12s block
-    uint256 internal constant BASE_SEND_TO_RATE_PER_MINUTE = 1; // send once per minute, may be diluted by sending to multiple tokens
+    uint256 internal constant MAX_RECEIVE_RATE_PER_BLOCK = 36; // 36 tokens per 12s block, to limit payload size for art script
 
-    uint256 internal constant MAX_SENDING_TO_LENGTH = 25; // 25 tokens, beyond which dilution rate is too low and can inflate live data iteration time
-    uint256 internal constant MAX_ITERATIONS_SENDING_TO_ME =
-        MAX_RECEIVE_RATE_PER_BLOCK * MAX_SENDING_TO_LENGTH; // cap iterations at dilution rate (25x the receive rate per block) to not meaningfully impact results, but provide a backstop/bounded worst case
+    uint256 internal constant MAX_SENDING_TO_LENGTH = 25; // 25 tokens, beyond which gas costs are high, you are over-represented, and if dilution is considered in the future, it would greatly inflate live data iteration time
     uint256 internal constant MAX_RECEIVING_FROM_ARRAY_LENGTH = 1_000; // max receiving from array length is 1k to bound worst case iteration time when getting live data
 
     // constant delegation registry pointers and rights
@@ -95,7 +92,6 @@ contract SRHooks is
 
     struct TokenAuxStateData {
         uint8 activeSlot;
-        uint16 sendingToLength; // used to calculate dilution rate when sending to multiple tokens
         bool isReceivingTo; // true if the token is only receiving tokens sending to it, false if in any other receive state
     }
 
@@ -362,13 +358,16 @@ contract SRHooks is
      * @notice Gets the live data for a given token.
      * @param tokenNumber The token number to get the live data for.
      * @param blockNumber The block number to get the live data for. Must be in latest 256 blocks.
+     * @param maxReceive The maximum number of tokens to receive, in each array of receivedTokensGeneral and receivedTokensTo.
+     * maxReceive must be less than or equal to MAX_RECEIVE_RATE_PER_BLOCK.
      * Treats block number of 0 as latest completed block.
      * Reverts if block number is in future - need block hash to be defined.
-     * NOTE: Each array of receivedTokensGeneral and receivedTokensTo has a maximum length of MAX_RECEIVE_RATE_PER_BLOCK,
-     * but their combined length may be greater than MAX_RECEIVE_RATE_PER_BLOCK. The art script should handle this by
+     * NOTE: Each array of receivedTokensGeneral and receivedTokensTo has a maximum length of maxReceive,
+     * but their combined length may be greater than maxReceive. The art script should handle this by
      * deterministically shuffling/sampling from the arrays if desired.
      * WARNING: This function is designed for off-chain view calls only and may exceed block gas limits in cases where
      * a token has many senders or is receiving from many tokens. It is not intended to be called within transactions.
+     * WARNING: Self-referential SendGeneral and SendTo tokens may be included in the results.
      * @return sendState The send state of the token.
      * @return receiveState The receive state of the token.
      * @return receivedTokensGeneral The received tokens general of the token.
@@ -376,7 +375,8 @@ contract SRHooks is
      */
     function getLiveData(
         uint256 tokenNumber,
-        uint256 blockNumber
+        uint256 blockNumber,
+        uint256 maxReceive
     )
         external
         view
@@ -390,6 +390,11 @@ contract SRHooks is
         // CHECKS
         // require token number is valid uint16 using SafeCast
         tokenNumber.toUint16(); // will revert if tokenNumber > type(uint16).max
+        // require maxReceive is not too large
+        require(
+            maxReceive <= MAX_RECEIVE_RATE_PER_BLOCK,
+            "maxReceive is too large"
+        );
 
         // treat block number of 0 as latest completed block
         if (blockNumber == 0) {
@@ -423,11 +428,13 @@ contract SRHooks is
         if (receiveState == ReceiveStates.ReceiveGeneral) {
             receivedTokensGeneral = _sampleReceivedTokensGeneral({
                 tokenNumber: tokenNumber,
-                blockhash_: blockhash_
+                blockhash_: blockhash_,
+                maxReceive: maxReceive
             });
             receivedTokensTo = _sampleReceivedTokensTo({
                 tokenNumber: tokenNumber,
-                blockhash_: blockhash_
+                blockhash_: blockhash_,
+                maxReceive: maxReceive
             });
             return (
                 sendState,
@@ -444,7 +451,8 @@ contract SRHooks is
                 receivedTokensTo
             ) = _sampleTokensReceivedFrom({
                 tokenNumber: tokenNumber,
-                blockhash_: blockhash_
+                blockhash_: blockhash_,
+                maxReceive: maxReceive
             });
             return (
                 sendState,
@@ -458,7 +466,8 @@ contract SRHooks is
         if (receiveState == ReceiveStates.ReceiveTo) {
             receivedTokensTo = _sampleReceivedTokensTo({
                 tokenNumber: tokenNumber,
-                blockhash_: blockhash_
+                blockhash_: blockhash_,
+                maxReceive: maxReceive
             });
             return (
                 sendState,
@@ -474,41 +483,24 @@ contract SRHooks is
      * Assumes token is receiving generally.
      * @param tokenNumber The token number to get the received tokens general for.
      * @param blockhash_ The block hash to get the received tokens general for.
+     * @param maxReceive The maximum number of tokens to receive.
      * @return receivedTokensGeneral The received tokens general.
      */
     function _sampleReceivedTokensGeneral(
         uint256 tokenNumber,
-        bytes32 blockhash_
+        bytes32 blockhash_,
+        uint256 maxReceive
     ) internal view returns (TokenLiveData[] memory) {
-        // calculate the general pool's send rate, based on general ratio of sending and receiving tokens
-        uint256 sendGeneralLength = _sendGeneralTokens.length();
+        // calculate the general
         uint256 receiveGeneralLength = _receiveGeneralTokens.length();
+        uint256 sampleQuantity = receiveGeneralLength > maxReceive
+            ? maxReceive
+            : receiveGeneralLength;
 
-        // avoid divide by zero
-        if (receiveGeneralLength == 0) {
-            // no tokens receiving generally, return empty array
-            return new TokenLiveData[](0);
-        }
-
-        uint256 receiveRatePerBlock = (sendGeneralLength * 12) /
-            receiveGeneralLength; // 1 per second if equal send/receive rates
-        if (receiveRatePerBlock == 0 && sendGeneralLength > 0) {
-            receiveRatePerBlock = 1; // don't round down to 0
-        }
-        // sample from general pool, based on send rate
+        // sample from general pool, quantity sampleQuantity
         bytes32 seed = keccak256(abi.encodePacked(blockhash_, tokenNumber));
-        uint256 quantity = receiveRatePerBlock > MAX_RECEIVE_RATE_PER_BLOCK
-            ? MAX_RECEIVE_RATE_PER_BLOCK
-            : receiveRatePerBlock;
-        if (quantity == 0) {
-            return new TokenLiveData[](0); // no tokens to sample, return empty array
-        }
         return
-            _sampleFromSendGeneralPool({
-                seed: seed,
-                quantity: quantity,
-                sendGeneralLength: sendGeneralLength
-            });
+            _sampleFromSendGeneralPool({seed: seed, quantity: sampleQuantity});
     }
 
     /**
@@ -520,18 +512,24 @@ contract SRHooks is
      */
     function _sampleFromSendGeneralPool(
         bytes32 seed,
-        uint256 quantity,
-        uint256 sendGeneralLength
+        uint256 quantity
     ) internal view returns (TokenLiveData[] memory) {
+        // edge case: quantity is 0, return empty array
+        // @dev no coverage - this is a weird case
+        if (quantity == 0) {
+            return new TokenLiveData[](0);
+        }
+        // calculate the send general pool length to support making a plan
+        uint256 sendGeneralLength = _sendGeneralTokens.length();
         // perform Feistel walk to sample token numbers from the set
         FeistelWalkLib.Plan memory plan = FeistelWalkLib.makePlan({
             seed: seed,
             N: sendGeneralLength
         });
-        uint256[] memory sampledTokenIndices = FeistelWalkLib.sample(
-            plan,
-            quantity
-        );
+        uint256[] memory sampledTokenIndices = FeistelWalkLib.sample({
+            p: plan,
+            K: quantity
+        });
         // populate TokenLiveData for each sampled token
         uint256 sampledCount = sampledTokenIndices.length;
         TokenLiveData[] memory result = new TokenLiveData[](sampledCount);
@@ -544,7 +542,7 @@ contract SRHooks is
                 projectId: _projectId,
                 tokenNumber: tokenNumber
             });
-            result[i] = _getTokenLiveDataForToken({
+            result[i] = _getLiveDataForToken({
                 tokenNumber: tokenNumber,
                 tokenId: tokenId,
                 coreContractAddress: _coreContractAddress
@@ -558,93 +556,59 @@ contract SRHooks is
      * Assumes token is receiving generally.
      * @param tokenNumber The token number to get the received tokens to for.
      * @param blockhash_ The block hash to get the received tokens to for.
+     * @param maxReceive The maximum number of tokens to receive.
      * @return receivedTokensTo The received tokens to.
      */
     function _sampleReceivedTokensTo(
         uint256 tokenNumber,
-        bytes32 blockhash_
+        bytes32 blockhash_,
+        uint256 maxReceive
     ) internal view returns (TokenLiveData[] memory) {
-        // we will iterate continuously over the tokens sending to me, and statistically include it
-        // based on dilution rate.
-        // we do not sample from the general pool, since we are already sampling from it for the general tokens.
         // we perform a Feistel walk to sample token numbers from the set, and then get the live data for each token.
         uint256 sendingToMeLength = _tokensSendingToMe[tokenNumber].length();
         if (sendingToMeLength == 0) {
             return new TokenLiveData[](0); // no tokens sending to me, return empty array
         }
-        // iterate over the tokens sending to me, and statistically include it based on dilution rate.
-        // perform Feistel walk to sample token numbers from the set
+        // return length will be lower of sendingToMeLength and maxReceive
+        uint256 sampleQuantity = sendingToMeLength > maxReceive
+            ? maxReceive
+            : sendingToMeLength;
+        // iterate over the tokens sending to me; perform Feistel walk to sample token numbers from the set
         bytes32 seed = keccak256(abi.encodePacked(blockhash_, tokenNumber));
         FeistelWalkLib.Plan memory plan = FeistelWalkLib.makePlan({
             seed: seed,
             N: sendingToMeLength
         });
-        // iterate and live pull each next index, since indeterministically sampled from the set
-        // optimistically create array of max length of token numbers sending to me, since we don't know the exact length until the end
-        uint256[] memory selectedTokenNumbers = new uint256[](
-            MAX_RECEIVE_RATE_PER_BLOCK
-        );
-        uint256 selectedTokenNumbersLength = 0;
-        uint256 maxIterations = sendingToMeLength > MAX_ITERATIONS_SENDING_TO_ME
-            ? MAX_ITERATIONS_SENDING_TO_ME
-            : sendingToMeLength;
-        for (uint256 i = 0; i < maxIterations; i++) {
-            uint256 sampledTokenIndex = FeistelWalkLib.index(plan, i);
-            uint256 sampledTokenNumber = _tokensSendingToMe[tokenNumber].at(
-                sampledTokenIndex
-            );
-            // skip self-referential (token receiving from itself)
-            if (sampledTokenNumber == tokenNumber) {
-                continue;
-            }
-            // statistically include it based on dilution rate
-            TokenAuxStateData storage tokenAuxStateData_ = _tokenAuxStateData[
-                sampledTokenNumber
-            ];
-            uint256 bpsChanceOfInclusion = tokenAuxStateData_.sendingToLength >
-                0
-                ? (10_000 * (BASE_SEND_TO_RATE_PER_MINUTE * 12)) /
-                    (tokenAuxStateData_.sendingToLength * 60) // 10_000 bps, 12s per block, 60s per minute
-                : 0;
-            if (
-                _randomBps(
-                    bpsChanceOfInclusion,
-                    keccak256(abi.encodePacked(seed, sampledTokenNumber, i))
-                )
-            ) {
-                // statistically include it
-                selectedTokenNumbers[
-                    selectedTokenNumbersLength
-                ] = sampledTokenNumber;
-                selectedTokenNumbersLength++;
-                // if we have selected the maximum number of tokens, break
-                if (selectedTokenNumbersLength >= MAX_RECEIVE_RATE_PER_BLOCK) {
-                    break;
-                }
-            }
-        }
+        // sample token numbers from the set
+        uint256[] memory sampledTokenIndices = FeistelWalkLib.sample({
+            p: plan,
+            K: sampleQuantity
+        });
         // allocate array of TokenLiveData for the selected token numbers
-        TokenLiveData[] memory selectedTokenLiveData = new TokenLiveData[](
-            selectedTokenNumbersLength
-        );
+        TokenLiveData[] memory result = new TokenLiveData[](sampleQuantity);
         // @dev pull project id and core contract address into memory for efficient sload minimization
         uint256 _projectId = CORE_PROJECT_ID;
         address _coreContractAddress = CORE_CONTRACT_ADDRESS;
+        EnumerableSet.UintSet storage tokensSendingToMe_ = _tokensSendingToMe[
+            tokenNumber
+        ];
         // for each selected token number, get the live data
-        for (uint256 i = 0; i < selectedTokenNumbersLength; i++) {
-            uint256 selectedTokenNumber = selectedTokenNumbers[i];
+        for (uint256 i = 0; i < sampleQuantity; i++) {
+            uint256 selectedTokenNumber = tokensSendingToMe_.at(
+                sampledTokenIndices[i]
+            );
             uint256 selectedTokenId = ABHelpers
                 .tokenIdFromProjectIdAndTokenNumber({
                     projectId: _projectId,
                     tokenNumber: selectedTokenNumber
                 });
-            selectedTokenLiveData[i] = _getTokenLiveDataForToken({
+            result[i] = _getLiveDataForToken({
                 tokenNumber: selectedTokenNumber,
                 tokenId: selectedTokenId,
                 coreContractAddress: _coreContractAddress
             });
         }
-        return selectedTokenLiveData;
+        return result;
     }
 
     /**
@@ -653,12 +617,14 @@ contract SRHooks is
      * ensuring each token appears at most once in the results. Self-referential tokens are also filtered out.
      * @param tokenNumber The token number to get the tokens received from.
      * @param blockhash_ The blockhash to use for pseudo-randomness.
+     * @param maxReceive The maximum number of tokens to receive.
      * @return tokensReceivedFromGeneral The tokens received from the general pool.
      * @return tokensReceivedFromTo The tokens received to the specific tokens.
      */
     function _sampleTokensReceivedFrom(
         uint256 tokenNumber,
-        bytes32 blockhash_
+        bytes32 blockhash_,
+        uint256 maxReceive
     )
         internal
         view
@@ -672,14 +638,13 @@ contract SRHooks is
             .getAll();
         uint256 receivingFromMeLength = tokensReceivingFrom.length;
         // we will iterate continuously over the tokens receiving from me, and include it if from the general pool,
-        // or statistically include it if it is a sendingTo token to me.
+        // or if sending to me.
         // if the token is not sending to me, or not sending generally, we skip it.
         // we perform a Feistel walk to sample token numbers from the set, and then get the live data for each token.
         if (receivingFromMeLength == 0) {
             return (new TokenLiveData[](0), new TokenLiveData[](0)); // no tokens receiving from me, return empty arrays
         }
-        // iterate over the tokens receiving from me, and statistically include it based on dilution rate.
-        // perform Feistel walk to sample token numbers from the set
+        // iterate over the tokens receiving from me; perform Feistel walk to sample token numbers from the set
         bytes32 seed = keccak256(abi.encodePacked(blockhash_, tokenNumber));
         FeistelWalkLib.Plan memory plan = FeistelWalkLib.makePlan({
             seed: seed,
@@ -689,24 +654,25 @@ contract SRHooks is
         // SEND TO TOKEN ITERATION
         // sample tokens from SendTo states (in separate function to avoid stack too deep)
         uint256[]
-            memory selectedTokenNumbersTo = _sampleTokensReceivedFromSendToPool(
-                tokenNumber,
-                tokensReceivingFrom,
-                receivingFromMeLength,
-                plan,
-                seed
-            );
+            memory selectedTokenNumbersTo = _sampleTokensReceivedFromSendToPool({
+                tokenNumber: tokenNumber,
+                tokensReceivingFrom: tokensReceivingFrom,
+                receivingFromMeLength: receivingFromMeLength,
+                plan: plan,
+                maxReceive: maxReceive
+            });
         uint256 selectedTokenNumbersToLength = selectedTokenNumbersTo.length;
 
         // SEND GENERAL TOKEN ITERATION
         // sample tokens from general send pool (in separate function to avoid stack too deep)
         uint256[]
-            memory selectedTokenNumbersGeneral = _sampleTokensReceivedFromGeneralPool(
-                tokenNumber,
-                tokensReceivingFrom,
-                receivingFromMeLength,
-                plan
-            );
+            memory selectedTokenNumbersGeneral = _sampleTokensReceivedFromGeneralPool({
+                tokenNumber: tokenNumber,
+                tokensReceivingFrom: tokensReceivingFrom,
+                receivingFromMeLength: receivingFromMeLength,
+                plan: plan,
+                maxReceive: maxReceive
+            });
         uint256 selectedTokenNumbersGeneralLength = selectedTokenNumbersGeneral
             .length;
 
@@ -720,7 +686,7 @@ contract SRHooks is
         // for each selected general token number, get the live data
         for (uint256 i = 0; i < selectedTokenNumbersGeneralLength; i++) {
             uint256 selectedTokenNumber = selectedTokenNumbersGeneral[i];
-            tokensReceivedFromGeneral[i] = _getTokenLiveDataForToken({
+            tokensReceivedFromGeneral[i] = _getLiveDataForToken({
                 tokenNumber: selectedTokenNumber,
                 tokenId: ABHelpers.tokenIdFromProjectIdAndTokenNumber({
                     projectId: _projectId,
@@ -736,7 +702,7 @@ contract SRHooks is
         // for each selected to token number, get the live data
         for (uint256 i = 0; i < selectedTokenNumbersToLength; i++) {
             uint256 selectedTokenNumber = selectedTokenNumbersTo[i];
-            tokensReceivedFromTo[i] = _getTokenLiveDataForToken({
+            tokensReceivedFromTo[i] = _getLiveDataForToken({
                 tokenNumber: selectedTokenNumber,
                 tokenId: ABHelpers.tokenIdFromProjectIdAndTokenNumber({
                     projectId: _projectId,
@@ -751,13 +717,12 @@ contract SRHooks is
     /**
      * @notice Helper function to sample tokens from the SendTo pool that are in the tokensReceivingFrom array.
      * @dev This function automatically deduplicates tokens if the tokensReceivingFrom array contains duplicates.
-     * Self-referential tokens are also filtered out. Tokens are statistically included based on dilution rate.
-     * The maximum number of tokens to sample is MAX_RECEIVE_RATE_PER_BLOCK.
+     * Self-referential tokens are also filtered out.
      * @param tokenNumber The token number we're checking receives from.
      * @param tokensReceivingFrom The array of tokens that might be sending to this token.
      * @param receivingFromMeLength The length of the tokensReceivingFrom array.
      * @param plan The Feistel walk plan for sampling.
-     * @param seed The seed for randomness.
+     * @param maxReceive The maximum number of tokens to receive.
      * @return selectedTokenNumbersTo Array of token numbers from SendTo states.
      */
     function _sampleTokensReceivedFromSendToPool(
@@ -765,14 +730,14 @@ contract SRHooks is
         uint16[] memory tokensReceivingFrom,
         uint256 receivingFromMeLength,
         FeistelWalkLib.Plan memory plan,
-        bytes32 seed
+        uint256 maxReceive
     ) internal view returns (uint256[] memory selectedTokenNumbersTo) {
         // allocate array for selected token numbers
-        selectedTokenNumbersTo = new uint256[](MAX_RECEIVE_RATE_PER_BLOCK);
+        selectedTokenNumbersTo = new uint256[](maxReceive);
         uint256 selectedTokenNumbersToLength = 0;
 
         // deduplication tracking array for tokensReceivingFrom (handles duplicates in user-provided array)
-        uint256[] memory seenTokens = new uint256[](MAX_RECEIVE_RATE_PER_BLOCK);
+        uint256[] memory seenTokens = new uint256[](maxReceive);
         uint256 seenCount = 0;
 
         for (uint256 i = 0; i < receivingFromMeLength; i++) {
@@ -796,31 +761,17 @@ contract SRHooks is
             if (alreadySeen) {
                 continue;
             }
-            // if sending to me, statistically include it based on dilution rate
+            // if sending to me, include it
             if (_tokensSendingToMe[tokenNumber].contains(sampledTokenNumber)) {
-                uint256 bpsChanceOfInclusion = _tokenAuxStateData[
-                    sampledTokenNumber
-                ].sendingToLength > 0
-                    ? (10_000 * (BASE_SEND_TO_RATE_PER_MINUTE * 12)) /
-                        (_tokenAuxStateData[sampledTokenNumber]
-                            .sendingToLength * 60) // 10_000 bps, 12s per block, 60s per minute
-                    : 0;
-                if (
-                    _randomBps(
-                        bpsChanceOfInclusion,
-                        keccak256(abi.encodePacked(seed, sampledTokenNumber, i))
-                    )
-                ) {
-                    selectedTokenNumbersTo[
-                        selectedTokenNumbersToLength
-                    ] = sampledTokenNumber;
-                    selectedTokenNumbersToLength++;
-                    // mark as seen to prevent duplicate processing
-                    seenTokens[seenCount++] = sampledTokenNumber;
-                }
+                selectedTokenNumbersTo[
+                    selectedTokenNumbersToLength
+                ] = sampledTokenNumber;
+                selectedTokenNumbersToLength++;
+                // mark as seen to prevent duplicate processing
+                seenTokens[seenCount++] = sampledTokenNumber;
             }
             // if we have selected the maximum number of tokens, break
-            if (selectedTokenNumbersToLength >= MAX_RECEIVE_RATE_PER_BLOCK) {
+            if (selectedTokenNumbersToLength >= maxReceive) {
                 break;
             }
         }
@@ -835,25 +786,26 @@ contract SRHooks is
      * @notice Helper function to sample tokens from the general send pool that are in the tokensReceivingFrom array.
      * @dev This function automatically deduplicates tokens if the tokensReceivingFrom array contains duplicates.
      * Self-referential tokens are also filtered out.
-     * The maximum number of tokens to sample is MAX_RECEIVE_RATE_PER_BLOCK.
      * @param tokenNumber The token number we're checking receives from.
      * @param tokensReceivingFrom The array of tokens that might be sending to this token.
      * @param receivingFromMeLength The length of the tokensReceivingFrom array.
      * @param plan The Feistel walk plan for sampling.
+     * @param maxReceive The maximum number of tokens to receive.
      * @return selectedTokenNumbersGeneral Array of token numbers from the general pool.
      */
     function _sampleTokensReceivedFromGeneralPool(
         uint256 tokenNumber,
         uint16[] memory tokensReceivingFrom,
         uint256 receivingFromMeLength,
-        FeistelWalkLib.Plan memory plan
+        FeistelWalkLib.Plan memory plan,
+        uint256 maxReceive
     ) internal view returns (uint256[] memory selectedTokenNumbersGeneral) {
         // allocate array for selected token numbers
-        selectedTokenNumbersGeneral = new uint256[](MAX_RECEIVE_RATE_PER_BLOCK);
+        selectedTokenNumbersGeneral = new uint256[](maxReceive);
         uint256 selectedTokenNumbersGeneralLength = 0;
 
         // deduplication tracking array for tokensReceivingFrom (handles duplicates in user-provided array)
-        uint256[] memory seenTokens = new uint256[](MAX_RECEIVE_RATE_PER_BLOCK);
+        uint256[] memory seenTokens = new uint256[](maxReceive);
         uint256 seenCount = 0;
 
         for (uint256 i = 0; i < receivingFromMeLength; i++) {
@@ -886,10 +838,7 @@ contract SRHooks is
                 // mark as seen to prevent duplicate processing
                 seenTokens[seenCount++] = sampledTokenNumber;
                 // if we have selected the maximum number of tokens, break
-                if (
-                    selectedTokenNumbersGeneralLength >=
-                    MAX_RECEIVE_RATE_PER_BLOCK
-                ) {
+                if (selectedTokenNumbersGeneralLength >= maxReceive) {
                     break;
                 }
             }
@@ -910,7 +859,7 @@ contract SRHooks is
      * @param tokenNumber The token number to get live data for.
      * @return liveData The TokenLiveData struct for the token.
      */
-    function _getTokenLiveDataForToken(
+    function _getLiveDataForToken(
         uint256 tokenNumber,
         uint256 tokenId,
         address coreContractAddress
@@ -1136,7 +1085,6 @@ contract SRHooks is
             }
             // clear my previous send to array
             _tokensSendingTo[tokenNumber].clear();
-            _tokenAuxStateData[tokenNumber].sendingToLength = 0; // wipe the sending to length to 0
             // emit custom event for indexing of send-to if applicable
             // @dev acknowledge that this may cost gas for large arrays, but prefer strong indexing behavior, and
             // still minor relative to the cost of the SSTORE operations when storing the send-to array
@@ -1155,20 +1103,14 @@ contract SRHooks is
             // push the tokens to my send to array
             _tokensSendingTo[tokenNumber].store(tokensSendingTo);
             // push me into every token's "sending to me" set
-            // track actual unique count for dilution rate calculation
             // @dev no validation of target tokens needed - if they don't exist or aren't participating,
             // they simply won't appear in getLiveData results due to state set membership checks
             uint256 tokensSendingToLength = tokensSendingTo.length;
-            uint256 uniqueCount = 0;
             for (uint256 i = 0; i < tokensSendingToLength; i++) {
                 uint256 sendingToTokenNumber = tokensSendingTo[i];
-                // add returns true if the value was added (not already present)
-                if (_tokensSendingToMe[sendingToTokenNumber].add(tokenNumber)) {
-                    uniqueCount++;
-                }
+                // add the token to the "sending to me" Set
+                _tokensSendingToMe[sendingToTokenNumber].add(tokenNumber);
             }
-            _tokenAuxStateData[tokenNumber].sendingToLength = uniqueCount
-                .toUint16(); // update the sending to length for dilution rate calculations (unique count only)
         }
         // case: neutral state - no-op
 
@@ -1459,8 +1401,8 @@ contract SRHooks is
             sendState == SendStates.SendGeneral
                 ? "SendGeneral"
                 : sendState == SendStates.SendTo
-                ? "SendTo"
-                : "Neutral";
+                    ? "SendTo"
+                    : "Neutral";
     }
 
     /**
@@ -1487,19 +1429,6 @@ contract SRHooks is
         }
         // must be in neutral state
         return ReceiveStates.Neutral;
-    }
-
-    /**
-     * @notice Randomly determines if an event should occur based on a given BPS chance.
-     * @param bps The BPS chance of the event occurring.
-     * @param prng prng
-     * @return true if the event should occur, false otherwise.
-     */
-    function _randomBps(
-        uint256 bps,
-        bytes32 prng
-    ) internal pure returns (bool) {
-        return uint256(prng) % 10_000 < bps;
     }
 
     /**
