@@ -10,6 +10,16 @@ import {
   SEND_STATES,
   RECEIVE_STATES,
 } from "./constants";
+import {
+  bytes,
+  updateImage,
+  updateImageAndSound,
+  updateSendState,
+  updateReceiveState,
+  updateImageAndSendState,
+  updateImageAndReceiveState,
+  updateImageSoundAndStates,
+} from "./testHelpers";
 import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
@@ -94,28 +104,17 @@ describe("SRHooks_Views", function () {
 
     it("tracks send general pool additions", async function () {
       const config = await loadFixture(_beforeEach);
-      const imageData = ethers.utils.toUtf8Bytes("test image");
 
       // Add token 0 to send general pool (token 0 is already minted and owned by user)
-      await config.srHooksProxy
-        .connect(config.accounts.user)
-        .updateTokenStateAndMetadata(
-          0,
-          true,
-          SEND_STATES.SEND_GENERAL,
-          [],
-          false,
-          0,
-          [],
-          true,
-          0,
-          {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          }
-        );
+      await updateImageAndSendState(
+        config.srHooksProxy,
+        0,
+        "test image",
+        0,
+        SEND_STATES.SEND_GENERAL,
+        [],
+        config.accounts.user
+      );
 
       let [sendLength, receiveLength] =
         await config.srHooksProxy.getGeneralPoolState();
@@ -123,25 +122,15 @@ describe("SRHooks_Views", function () {
       expect(receiveLength).to.equal(0);
 
       // Add token 1 to send general pool (token 1 is owned by user2)
-      await config.srHooksProxy
-        .connect(config.accounts.user2)
-        .updateTokenStateAndMetadata(
-          1,
-          true,
-          SEND_STATES.SEND_GENERAL,
-          [],
-          false,
-          0,
-          [],
-          true,
-          0,
-          {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          }
-        );
+      await updateImageAndSendState(
+        config.srHooksProxy,
+        1,
+        "test image",
+        0,
+        SEND_STATES.SEND_GENERAL,
+        [],
+        config.accounts.user2
+      );
 
       [sendLength, receiveLength] =
         await config.srHooksProxy.getGeneralPoolState();
@@ -151,28 +140,17 @@ describe("SRHooks_Views", function () {
 
     it("tracks receive general pool additions", async function () {
       const config = await loadFixture(_beforeEach);
-      const imageData = ethers.utils.toUtf8Bytes("test image");
 
       // Add token 0 to receive general pool
-      await config.srHooksProxy
-        .connect(config.accounts.user)
-        .updateTokenStateAndMetadata(
-          0,
-          false,
-          0,
-          [],
-          true,
-          RECEIVE_STATES.RECEIVE_GENERAL,
-          [],
-          true,
-          0,
-          {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          }
-        );
+      await updateImageAndReceiveState(
+        config.srHooksProxy,
+        0,
+        "test image",
+        0,
+        RECEIVE_STATES.RECEIVE_GENERAL,
+        [],
+        config.accounts.user
+      );
 
       let [sendLength, receiveLength] =
         await config.srHooksProxy.getGeneralPoolState();
@@ -180,25 +158,15 @@ describe("SRHooks_Views", function () {
       expect(receiveLength).to.equal(1);
 
       // Add token 1 to receive general pool (token 1 is owned by user2)
-      await config.srHooksProxy
-        .connect(config.accounts.user2)
-        .updateTokenStateAndMetadata(
-          1,
-          false,
-          0,
-          [],
-          true,
-          RECEIVE_STATES.RECEIVE_GENERAL,
-          [],
-          true,
-          0,
-          {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          }
-        );
+      await updateImageAndReceiveState(
+        config.srHooksProxy,
+        1,
+        "test image",
+        0,
+        RECEIVE_STATES.RECEIVE_GENERAL,
+        [],
+        config.accounts.user2
+      );
 
       [sendLength, receiveLength] =
         await config.srHooksProxy.getGeneralPoolState();
@@ -208,49 +176,28 @@ describe("SRHooks_Views", function () {
 
     it("tracks both pools growing simultaneously", async function () {
       const config = await loadFixture(_beforeEach);
-      const imageData = ethers.utils.toUtf8Bytes("test image");
 
       // Token 0: send general
-      await config.srHooksProxy
-        .connect(config.accounts.user)
-        .updateTokenStateAndMetadata(
-          0,
-          true,
-          SEND_STATES.SEND_GENERAL,
-          [],
-          false,
-          0,
-          [],
-          true,
-          0,
-          {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          }
-        );
+      await updateImageAndSendState(
+        config.srHooksProxy,
+        0,
+        "test image",
+        0,
+        SEND_STATES.SEND_GENERAL,
+        [],
+        config.accounts.user
+      );
 
       // Token 1: receive general (token 1 is owned by user2)
-      await config.srHooksProxy
-        .connect(config.accounts.user2)
-        .updateTokenStateAndMetadata(
-          1,
-          false,
-          0,
-          [],
-          true,
-          RECEIVE_STATES.RECEIVE_GENERAL,
-          [],
-          true,
-          0,
-          {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          }
-        );
+      await updateImageAndReceiveState(
+        config.srHooksProxy,
+        1,
+        "test image",
+        0,
+        RECEIVE_STATES.RECEIVE_GENERAL,
+        [],
+        config.accounts.user2
+      );
 
       const [sendLength, receiveLength] =
         await config.srHooksProxy.getGeneralPoolState();
@@ -260,53 +207,30 @@ describe("SRHooks_Views", function () {
 
     it("tracks pool removals when tokens leave", async function () {
       const config = await loadFixture(_beforeEach);
-      const imageData = ethers.utils.toUtf8Bytes("test image");
 
       // Add token 0 to send general pool
-      await config.srHooksProxy
-        .connect(config.accounts.user)
-        .updateTokenStateAndMetadata(
-          0,
-          true,
-          SEND_STATES.SEND_GENERAL,
-          [],
-          false,
-          0,
-          [],
-          true,
-          0,
-          {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          }
-        );
+      await updateImageAndSendState(
+        config.srHooksProxy,
+        0,
+        "test image",
+        0,
+        SEND_STATES.SEND_GENERAL,
+        [],
+        config.accounts.user
+      );
 
       let [sendLength, receiveLength] =
         await config.srHooksProxy.getGeneralPoolState();
       expect(sendLength).to.equal(1);
 
       // Remove from pool by switching to Neutral
-      await config.srHooksProxy
-        .connect(config.accounts.user)
-        .updateTokenStateAndMetadata(
-          0,
-          true,
-          SEND_STATES.NEUTRAL,
-          [],
-          false,
-          0,
-          [],
-          false,
-          0,
-          {
-            updateImage: false,
-            imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          }
-        );
+      await updateSendState(
+        config.srHooksProxy,
+        0,
+        SEND_STATES.NEUTRAL,
+        [],
+        config.accounts.user
+      );
 
       [sendLength, receiveLength] =
         await config.srHooksProxy.getGeneralPoolState();
@@ -349,64 +273,58 @@ describe("SRHooks_Views", function () {
 
     it("returns correct metadata for populated slot", async function () {
       const config = await loadFixture(_beforeEach);
-      const imageData = ethers.utils.toUtf8Bytes("test image");
-      const soundData = ethers.utils.toUtf8Bytes("test sound");
 
       // Populate slot 0
-      await config.srHooksProxy
-        .connect(config.accounts.user)
-        .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-          updateImage: true,
-          imageDataCompressed: imageData,
-          updateSound: true,
-          soundDataCompressed: soundData,
-        });
+      await updateImageAndSound(
+        config.srHooksProxy,
+        0,
+        "test image",
+        "test sound",
+        0,
+        config.accounts.user
+      );
 
       const metadata = await config.srHooksProxy.getTokenMetadataAtSlot(0, 0);
 
       expect(metadata.imageDataCompressed).to.equal(
-        ethers.utils.hexlify(imageData)
+        ethers.utils.hexlify(bytes("test image"))
       );
       expect(metadata.imageVersion).to.equal(1);
       expect(metadata.soundDataCompressed).to.equal(
-        ethers.utils.hexlify(soundData)
+        ethers.utils.hexlify(bytes("test sound"))
       );
       expect(metadata.soundVersion).to.equal(1);
     });
 
     it("returns independent metadata for different slots", async function () {
       const config = await loadFixture(_beforeEach);
-      const imageData0 = ethers.utils.toUtf8Bytes("image slot 0");
-      const imageData1 = ethers.utils.toUtf8Bytes("image slot 1");
 
       // Populate slot 0
-      await config.srHooksProxy
-        .connect(config.accounts.user)
-        .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-          updateImage: true,
-          imageDataCompressed: imageData0,
-          updateSound: false,
-          soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-        });
+      await updateImage(
+        config.srHooksProxy,
+        0,
+        "image slot 0",
+        0,
+        config.accounts.user
+      );
 
       // Populate slot 1
-      await config.srHooksProxy
-        .connect(config.accounts.user)
-        .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 1, {
-          updateImage: true,
-          imageDataCompressed: imageData1,
-          updateSound: false,
-          soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-        });
+      await updateImage(
+        config.srHooksProxy,
+        0,
+        "image slot 1",
+        1,
+        config.accounts.user
+      );
 
       const metadata0 = await config.srHooksProxy.getTokenMetadataAtSlot(0, 0);
       const metadata1 = await config.srHooksProxy.getTokenMetadataAtSlot(0, 1);
 
       expect(metadata0.imageDataCompressed).to.equal(
-        ethers.utils.hexlify(imageData0)
+        ethers.utils.hexlify(bytes("image slot 0"))
       );
       expect(metadata1.imageDataCompressed).to.equal(
-        ethers.utils.hexlify(imageData1)
+        ethers.utils.hexlify(bytes("image slot 1"))
       );
       expect(metadata0.imageVersion).to.equal(1);
       expect(metadata1.imageVersion).to.equal(1);
@@ -433,28 +351,17 @@ describe("SRHooks_Views", function () {
 
     it("returns tokens sending to the target token", async function () {
       const config = await loadFixture(_beforeEach);
-      const imageData = ethers.utils.toUtf8Bytes("test image");
 
       // Token 0 sends to token 2
-      await config.srHooksProxy
-        .connect(config.accounts.user)
-        .updateTokenStateAndMetadata(
-          0,
-          true,
-          SEND_STATES.SEND_TO,
-          [2],
-          false,
-          0,
-          [],
-          true,
-          0,
-          {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          }
-        );
+      await updateImageAndSendState(
+        config.srHooksProxy,
+        0,
+        "test image",
+        0,
+        SEND_STATES.SEND_TO,
+        [2],
+        config.accounts.user
+      );
 
       const sendingToToken2 =
         await config.srHooksProxy.getTokensSendingToToken(2);
@@ -465,49 +372,28 @@ describe("SRHooks_Views", function () {
 
     it("returns multiple tokens sending to the target", async function () {
       const config = await loadFixture(_beforeEach);
-      const imageData = ethers.utils.toUtf8Bytes("test image");
 
       // Token 0 sends to token 3
-      await config.srHooksProxy
-        .connect(config.accounts.user)
-        .updateTokenStateAndMetadata(
-          0,
-          true,
-          SEND_STATES.SEND_TO,
-          [3],
-          false,
-          0,
-          [],
-          true,
-          0,
-          {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          }
-        );
+      await updateImageAndSendState(
+        config.srHooksProxy,
+        0,
+        "test image",
+        0,
+        SEND_STATES.SEND_TO,
+        [3],
+        config.accounts.user
+      );
 
       // Token 1 sends to token 3 (token 1 is owned by user2)
-      await config.srHooksProxy
-        .connect(config.accounts.user2)
-        .updateTokenStateAndMetadata(
-          1,
-          true,
-          SEND_STATES.SEND_TO,
-          [3],
-          false,
-          0,
-          [],
-          true,
-          0,
-          {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          }
-        );
+      await updateImageAndSendState(
+        config.srHooksProxy,
+        1,
+        "test image",
+        0,
+        SEND_STATES.SEND_TO,
+        [3],
+        config.accounts.user2
+      );
 
       const sendingToToken3 =
         await config.srHooksProxy.getTokensSendingToToken(3);
@@ -520,53 +406,30 @@ describe("SRHooks_Views", function () {
 
     it("updates when token stops sending to target", async function () {
       const config = await loadFixture(_beforeEach);
-      const imageData = ethers.utils.toUtf8Bytes("test image");
 
       // Token 0 sends to token 2
-      await config.srHooksProxy
-        .connect(config.accounts.user)
-        .updateTokenStateAndMetadata(
-          0,
-          true,
-          SEND_STATES.SEND_TO,
-          [2],
-          false,
-          0,
-          [],
-          true,
-          0,
-          {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          }
-        );
+      await updateImageAndSendState(
+        config.srHooksProxy,
+        0,
+        "test image",
+        0,
+        SEND_STATES.SEND_TO,
+        [2],
+        config.accounts.user
+      );
 
       let sendingToToken2 =
         await config.srHooksProxy.getTokensSendingToToken(2);
       expect(sendingToToken2.length).to.equal(1);
 
       // Token 0 stops sending to token 2
-      await config.srHooksProxy
-        .connect(config.accounts.user)
-        .updateTokenStateAndMetadata(
-          0,
-          true,
-          SEND_STATES.NEUTRAL,
-          [],
-          false,
-          0,
-          [],
-          false,
-          0,
-          {
-            updateImage: false,
-            imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          }
-        );
+      await updateSendState(
+        config.srHooksProxy,
+        0,
+        SEND_STATES.NEUTRAL,
+        [],
+        config.accounts.user
+      );
 
       sendingToToken2 = await config.srHooksProxy.getTokensSendingToToken(2);
       expect(sendingToToken2.length).to.equal(0);
@@ -622,14 +485,13 @@ describe("SRHooks_Views", function () {
         const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Setup token with image
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          config.accounts.user
+        );
 
         // Should not revert and should return usedBlockNumber
         const [, , , , , , , usedBlockNumber] =
@@ -640,17 +502,15 @@ describe("SRHooks_Views", function () {
 
       it("accepts maxReceive = MAX_RECEIVE_RATE_PER_BLOCK", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Setup token with image
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          config.accounts.user
+        );
 
         // Should not revert
         await expect(
@@ -664,48 +524,27 @@ describe("SRHooks_Views", function () {
 
       it("handles maxReceive = 0 correctly", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Setup tokens: Token 0 SendGeneral, Token 1 ReceiveGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          config.accounts.user
+        );
 
-        await config.srHooksProxy
-          .connect(config.accounts.user2)
-          .updateTokenStateAndMetadata(
-            1,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          1,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user2
+        );
 
         // Call with maxReceive = 0
         const [, , receivedGeneral, receivedTo] =
@@ -720,17 +559,15 @@ describe("SRHooks_Views", function () {
     describe("Neutral receive state", function () {
       it("returns empty arrays when in Neutral receive state", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Setup token with Neutral receive state
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          config.accounts.user
+        );
 
         const [
           sendState,
@@ -755,28 +592,17 @@ describe("SRHooks_Views", function () {
 
       it("returns correct send state even with Neutral receive state", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Setup token with SendGeneral and Neutral receive
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         const [
           sendState,
@@ -803,28 +629,17 @@ describe("SRHooks_Views", function () {
     describe("ReceiveGeneral state - general pool sampling", function () {
       it("returns empty arrays when no senders in general pool", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Setup token as ReceiveGeneral but no senders
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         const [
           sendState,
@@ -848,50 +663,29 @@ describe("SRHooks_Views", function () {
 
       it("samples from general pool when equal send/receive ratios", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Create 1 sender and 1 receiver (1:1 ratio)
         // Token 0: SendGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         // Token 1: ReceiveGeneral (token 1 is owned by user2)
-        await config.srHooksProxy
-          .connect(config.accounts.user2)
-          .updateTokenStateAndMetadata(
-            1,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          1,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user2
+        );
 
         const [
           sendState,
@@ -920,7 +714,6 @@ describe("SRHooks_Views", function () {
 
       it("respects MAX_RECEIVE_RATE_PER_BLOCK cap", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Mint 101 additional tokens for deployer (need 100 senders + 1 receiver)
         const newTokens = await mintAdditionalTokens(
@@ -932,48 +725,28 @@ describe("SRHooks_Views", function () {
         // Create many senders and few receivers (high ratio)
         // Create 100 senders
         for (let i = 0; i < 100; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              newTokens[i],
-              true,
-              SEND_STATES.SEND_GENERAL,
-              [],
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            newTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_GENERAL,
+            [],
+            config.accounts.deployer
+          );
         }
 
         // Create 1 receiver (use the 101st token)
         const receiverToken = newTokens[100];
-        await config.srHooksProxy
-          .connect(config.accounts.deployer)
-          .updateTokenStateAndMetadata(
-            receiverToken,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          receiverToken,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.deployer
+        );
 
         // Request MAX_RECEIVE_RATE_PER_BLOCK samples
         const [
@@ -1005,7 +778,6 @@ describe("SRHooks_Views", function () {
 
       it("returns different samples across different blocks", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Mint 11 tokens for deployer (10 senders + 1 receiver)
         const newTokens = await mintAdditionalTokens(
@@ -1016,48 +788,28 @@ describe("SRHooks_Views", function () {
 
         // Create 10 senders
         for (let i = 0; i < 10; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              newTokens[i],
-              true,
-              SEND_STATES.SEND_GENERAL,
-              [],
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            newTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_GENERAL,
+            [],
+            config.accounts.deployer
+          );
         }
 
         // Create receiver
         const receiverToken = newTokens[10];
-        await config.srHooksProxy
-          .connect(config.accounts.deployer)
-          .updateTokenStateAndMetadata(
-            receiverToken,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          receiverToken,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.deployer
+        );
 
         // Query two different historical blocks to ensure different block hashes
         // Don't rely on mining - explicitly use different blocks
@@ -1096,7 +848,6 @@ describe("SRHooks_Views", function () {
 
       it("handles low send/receive ratios correctly", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Mint 11 tokens for deployer (1 sender + 10 receivers)
         const newTokens = await mintAdditionalTokens(
@@ -1106,47 +857,27 @@ describe("SRHooks_Views", function () {
         );
 
         // Create 1 sender
-        await config.srHooksProxy
-          .connect(config.accounts.deployer)
-          .updateTokenStateAndMetadata(
-            newTokens[0],
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          newTokens[0],
+          "test image",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          config.accounts.deployer
+        );
 
         // Create 10 receivers
         for (let i = 1; i <= 10; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              newTokens[i],
-              false,
-              0,
-              [],
-              true,
-              RECEIVE_STATES.RECEIVE_GENERAL,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndReceiveState(
+            config.srHooksProxy,
+            newTokens[i],
+            "test image",
+            0,
+            RECEIVE_STATES.RECEIVE_GENERAL,
+            [],
+            config.accounts.deployer
+          );
         }
 
         // Request 5 samples, but only 1 sender available
@@ -1164,50 +895,29 @@ describe("SRHooks_Views", function () {
     describe("ReceiveGeneral state - SendTo sampling", function () {
       it("includes tokens sending directly to the receiver", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Use existing tokens 0 (owned by user) and 1 (owned by user2)
         // Token 0: SendTo token 1
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_TO,
-            [1],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          SEND_STATES.SEND_TO,
+          [1],
+          config.accounts.user
+        );
 
         // Token 1: ReceiveGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.user2)
-          .updateTokenStateAndMetadata(
-            1,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          1,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user2
+        );
 
         // With maxReceive=10 and only 1 token in the SendTo pool, we get that 1 token
         const [, , receivedGeneral, receivedTo] =
@@ -1221,7 +931,6 @@ describe("SRHooks_Views", function () {
 
       it("includes SendTo tokens that send to multiple targets", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Mint 11 tokens for deployer (1 sender + 10 targets)
         const newTokens = await mintAdditionalTokens(
@@ -1232,46 +941,26 @@ describe("SRHooks_Views", function () {
 
         // Token 0 (newTokens[0]): SendTo 10 different tokens
         const sendToTargets = newTokens.slice(1, 11);
-        await config.srHooksProxy
-          .connect(config.accounts.deployer)
-          .updateTokenStateAndMetadata(
-            newTokens[0],
-            true,
-            SEND_STATES.SEND_TO,
-            sendToTargets,
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          newTokens[0],
+          "test image",
+          0,
+          SEND_STATES.SEND_TO,
+          sendToTargets,
+          config.accounts.deployer
+        );
 
         // First target: ReceiveGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.deployer)
-          .updateTokenStateAndMetadata(
-            newTokens[1],
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          newTokens[1],
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.deployer
+        );
 
         // Token 0 sends to multiple targets including newTokens[1]
         // With maxReceive=10, token 0 should be included in receivedTo
@@ -1286,7 +975,6 @@ describe("SRHooks_Views", function () {
 
       it("verifies SendTo tokens are included across multiple samples", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Mint 10 tokens for deployer to act as senders
         const senderTokens = await mintAdditionalTokens(
@@ -1297,47 +985,27 @@ describe("SRHooks_Views", function () {
 
         // Set all 10 tokens to SendTo token 0
         for (let i = 0; i < 10; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              senderTokens[i],
-              true,
-              SEND_STATES.SEND_TO,
-              [0], // All sending to token 0
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            senderTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_TO,
+            [0],
+            config.accounts.deployer
+          );
         }
 
         // Token 0: ReceiveGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         // With maxReceive=10, we should get up to 10 tokens from the SendTo pool
         // 10 tokens are SendTo token 0, so they're all in the pool
@@ -1359,7 +1027,6 @@ describe("SRHooks_Views", function () {
 
       it("respects maxReceive cap when sampling SendTo tokens", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Mint 19 tokens for deployer (10 senders + 9 additional targets)
         const mintedTokens = await mintAdditionalTokens(
@@ -1376,47 +1043,27 @@ describe("SRHooks_Views", function () {
         // Set all 10 senders to SendTo all 10 targets (including token 0)
         // This means all 10 senders will be in token 0's SendTo pool
         for (let i = 0; i < 10; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              senderTokens[i],
-              true,
-              SEND_STATES.SEND_TO,
-              targetTokens, // All 10 senders send to all 10 targets (including token 0)
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            senderTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_TO,
+            targetTokens,
+            config.accounts.deployer
+          );
         }
 
         // Token 0: ReceiveGeneral (will receive from SendTo pool, capped by maxReceive)
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         // With maxReceive=5 and 10 senders in the SendTo pool, we get exactly 5 tokens
         // This tests that maxReceive properly caps the result
@@ -1440,7 +1087,6 @@ describe("SRHooks_Views", function () {
     describe("ReceiveGeneral state - combined pools", function () {
       it("returns tokens from BOTH general and SendTo pools simultaneously", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Mint 4 additional tokens (2 for SendGeneral, 2 for SendTo)
         const newTokens = await mintAdditionalTokens(
@@ -1451,70 +1097,40 @@ describe("SRHooks_Views", function () {
 
         // Tokens 0,1 (newTokens[0-1]): SendGeneral
         for (let i = 0; i < 2; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              newTokens[i],
-              true,
-              SEND_STATES.SEND_GENERAL,
-              [],
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            newTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_GENERAL,
+            [],
+            config.accounts.deployer
+          );
         }
 
         // Tokens 2,3 (newTokens[2-3]): SendTo token 0 (from fixture)
         for (let i = 2; i < 4; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              newTokens[i],
-              true,
-              SEND_STATES.SEND_TO,
-              [0], // Sending to token 0
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            newTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_TO,
+            [0],
+            config.accounts.deployer
+          );
         }
 
         // Token 0: ReceiveGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         const [, , receivedGeneral, receivedTo] =
           await config.srHooksProxy.getLiveData(0, 0, 10);
@@ -1537,7 +1153,6 @@ describe("SRHooks_Views", function () {
 
       it("independently caps general and SendTo arrays with same maxReceive", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Mint 20 tokens (10 for SendGeneral, 10 for SendTo)
         const newTokens = await mintAdditionalTokens(
@@ -1548,70 +1163,40 @@ describe("SRHooks_Views", function () {
 
         // Tokens 0-9: SendGeneral
         for (let i = 0; i < 10; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              newTokens[i],
-              true,
-              SEND_STATES.SEND_GENERAL,
-              [],
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            newTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_GENERAL,
+            [],
+            config.accounts.deployer
+          );
         }
 
         // Tokens 10-19: SendTo token 0
         for (let i = 10; i < 20; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              newTokens[i],
-              true,
-              SEND_STATES.SEND_TO,
-              [0],
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            newTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_TO,
+            [0],
+            config.accounts.deployer
+          );
         }
 
         // Token 0: ReceiveGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         // With maxReceive=5, each array should be capped at 5
         const [, , receivedGeneral, receivedTo] =
@@ -1626,7 +1211,6 @@ describe("SRHooks_Views", function () {
 
       it("handles empty general pool with non-empty SendTo pool", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Mint 3 tokens for SendTo only (no SendGeneral tokens)
         const newTokens = await mintAdditionalTokens(
@@ -1637,47 +1221,27 @@ describe("SRHooks_Views", function () {
 
         // All 3 tokens: SendTo token 0
         for (let i = 0; i < 3; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              newTokens[i],
-              true,
-              SEND_STATES.SEND_TO,
-              [0],
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            newTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_TO,
+            [0],
+            config.accounts.deployer
+          );
         }
 
         // Token 0: ReceiveGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         const [, , receivedGeneral, receivedTo] =
           await config.srHooksProxy.getLiveData(0, 0, 10);
@@ -1691,121 +1255,67 @@ describe("SRHooks_Views", function () {
     describe("ReceiveFrom state", function () {
       it("returns empty arrays when receivingFrom array is empty", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // This should revert during updateTokenStateAndMetadata
         // ReceiveFrom requires non-empty tokensReceivingFrom array
         // Token 0 is owned by user
         await expectRevert(
-          config.srHooksProxy
-            .connect(config.accounts.user)
-            .updateTokenStateAndMetadata(
-              0,
-              false,
-              0,
-              [],
-              true,
-              RECEIVE_STATES.RECEIVE_FROM,
-              [], // Empty array - should revert
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            ),
+          updateImageAndReceiveState(
+            config.srHooksProxy,
+            0,
+            "test image",
+            0,
+            RECEIVE_STATES.RECEIVE_FROM,
+            [],
+            config.accounts.user
+          ),
           srHooksRevertMessages.tokensReceivingFromMustBeNonEmpty
         );
       });
 
       it("receives only from specified tokens in SendGeneral state", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Use existing tokens 0, 1, 2 (owned by user, user2, additional)
         // Tokens 0, 1, 2: SendGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
-
-        await config.srHooksProxy
-          .connect(config.accounts.user2)
-          .updateTokenStateAndMetadata(
-            1,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
-
-        await config.srHooksProxy
-          .connect(config.accounts.additional)
-          .updateTokenStateAndMetadata(
-            2,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          config.accounts.user
+        );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          1,
+          "test image",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          config.accounts.user2
+        );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          2,
+          "test image",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          config.accounts.additional
+        );
 
         // Token 3: ReceiveFrom [0, 1] (not 2)
-        await config.srHooksProxy
-          .connect(config.accounts.additional2)
-          .updateTokenStateAndMetadata(
-            3,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            [0, 1], // Only tokens 0 and 1
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          3,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          [0, 1],
+          config.accounts.additional2
+        );
 
         const [, , receivedGeneral, receivedTo] =
           await config.srHooksProxy.getLiveData(3, 0, 10);
@@ -1824,49 +1334,28 @@ describe("SRHooks_Views", function () {
 
       it("receives from tokens in SendTo state when in ReceiveFrom list", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Token 0: SendTo token 1
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_TO,
-            [1],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          SEND_STATES.SEND_TO,
+          [1],
+          config.accounts.user
+        );
 
         // Token 1: ReceiveFrom [0]
-        await config.srHooksProxy
-          .connect(config.accounts.user2)
-          .updateTokenStateAndMetadata(
-            1,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            [0],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          1,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          [0],
+          config.accounts.user2
+        );
 
         const [, , receivedGeneral, receivedTo] =
           await config.srHooksProxy.getLiveData(1, 0, 10);
@@ -1880,28 +1369,20 @@ describe("SRHooks_Views", function () {
 
       it("filters out self-referential tokens", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Token 0: SendGeneral AND ReceiveFrom itself
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            [0], // Token 0 receiving from itself
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageSoundAndStates(
+          config.srHooksProxy,
+          0,
+          "test image",
+          "",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          RECEIVE_STATES.RECEIVE_FROM,
+          [0],
+          config.accounts.user
+        );
 
         const [, , receivedGeneral, receivedTo] =
           await config.srHooksProxy.getLiveData(0, 0, 10);
@@ -1913,49 +1394,28 @@ describe("SRHooks_Views", function () {
 
       it("handles duplicates in receivingFrom array", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Token 1: SendGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.user2)
-          .updateTokenStateAndMetadata(
-            1,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          1,
+          "test image",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          config.accounts.user2
+        );
 
         // Token 0: ReceiveFrom [1, 1, 1] (duplicates)
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            [1, 1, 1], // Duplicates
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          [1, 1, 1],
+          config.accounts.user
+        );
 
         const [, , receivedGeneral, receivedTo] =
           await config.srHooksProxy.getLiveData(0, 0, 10);
@@ -1969,7 +1429,6 @@ describe("SRHooks_Views", function () {
 
       it("samples different results across blocks for ReceiveFrom", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Mint 11 tokens for deployer (10 senders + 1 receiver)
         const newTokens = await mintAdditionalTokens(
@@ -1980,48 +1439,28 @@ describe("SRHooks_Views", function () {
 
         // Create 10 SendGeneral tokens
         for (let i = 0; i < 10; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              newTokens[i],
-              true,
-              SEND_STATES.SEND_GENERAL,
-              [],
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            newTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_GENERAL,
+            [],
+            config.accounts.deployer
+          );
         }
 
         // Last token: ReceiveFrom the 10 senders
         const receiverToken = newTokens[10];
-        await config.srHooksProxy
-          .connect(config.accounts.deployer)
-          .updateTokenStateAndMetadata(
-            receiverToken,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            newTokens.slice(0, 10),
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          receiverToken,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          newTokens.slice(0, 10),
+          config.accounts.deployer
+        );
 
         // Query two different historical blocks to ensure different block hashes
         // Don't rely on mining - explicitly use different blocks
@@ -2060,59 +1499,37 @@ describe("SRHooks_Views", function () {
 
       it("filters out tokens in receivingFrom that are in Neutral state", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Token 1: SendGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.user2)
-          .updateTokenStateAndMetadata(
-            1,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          1,
+          "test image",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          config.accounts.user2
+        );
 
         // Token 2: Neutral (has image but not participating in send/receive)
-        await config.srHooksProxy
-          .connect(config.accounts.additional)
-          .updateTokenStateAndMetadata(2, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          2,
+          "test image",
+          0,
+          config.accounts.additional
+        );
 
         // Token 0: ReceiveFrom [1, 2]
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            [1, 2],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          [1, 2],
+          config.accounts.user
+        );
 
         const [, , receivedGeneral, receivedTo] =
           await config.srHooksProxy.getLiveData(0, 0, 10);
@@ -2125,70 +1542,39 @@ describe("SRHooks_Views", function () {
 
       it("filters out SendTo tokens that aren't sending to this token", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Token 1: SendTo token 3 (not sending to token 0)
-        await config.srHooksProxy
-          .connect(config.accounts.user2)
-          .updateTokenStateAndMetadata(
-            1,
-            true,
-            SEND_STATES.SEND_TO,
-            [3],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          1,
+          "test image",
+          0,
+          SEND_STATES.SEND_TO,
+          [3],
+          config.accounts.user2
+        );
 
         // Token 2: SendGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.additional)
-          .updateTokenStateAndMetadata(
-            2,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          2,
+          "test image",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          config.accounts.additional
+        );
 
         // Token 0: ReceiveFrom [1, 2]
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            [1, 2],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          [1, 2],
+          config.accounts.user
+        );
 
         const [, , receivedGeneral, receivedTo] =
           await config.srHooksProxy.getLiveData(0, 0, 10);
@@ -2202,80 +1588,48 @@ describe("SRHooks_Views", function () {
 
       it("returns both general and SendTo from receivingFrom list", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Token 1: SendGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.user2)
-          .updateTokenStateAndMetadata(
-            1,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          1,
+          "test image",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          config.accounts.user2
+        );
 
         // Token 2: SendTo token 0
-        await config.srHooksProxy
-          .connect(config.accounts.additional)
-          .updateTokenStateAndMetadata(
-            2,
-            true,
-            SEND_STATES.SEND_TO,
-            [0],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          2,
+          "test image",
+          0,
+          SEND_STATES.SEND_TO,
+          [0],
+          config.accounts.additional
+        );
 
         // Token 3: Neutral (should be filtered)
-        await config.srHooksProxy
-          .connect(config.accounts.additional2)
-          .updateTokenStateAndMetadata(3, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          3,
+          "test image",
+          0,
+          config.accounts.additional2
+        );
 
         // Token 0: ReceiveFrom [1, 2, 3]
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            [1, 2, 3],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          [1, 2, 3],
+          config.accounts.user
+        );
 
         const [, , receivedGeneral, receivedTo] =
           await config.srHooksProxy.getLiveData(0, 0, 10);
@@ -2289,59 +1643,37 @@ describe("SRHooks_Views", function () {
 
       it("handles receivingFrom where all tokens are filtered out", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Token 1: SendTo token 3 (not sending to token 0)
-        await config.srHooksProxy
-          .connect(config.accounts.user2)
-          .updateTokenStateAndMetadata(
-            1,
-            true,
-            SEND_STATES.SEND_TO,
-            [3],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          1,
+          "test image",
+          0,
+          SEND_STATES.SEND_TO,
+          [3],
+          config.accounts.user2
+        );
 
         // Token 2: Neutral
-        await config.srHooksProxy
-          .connect(config.accounts.additional)
-          .updateTokenStateAndMetadata(2, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          2,
+          "test image",
+          0,
+          config.accounts.additional
+        );
 
         // Token 0: ReceiveFrom [1, 2] (but both should be filtered)
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            [1, 2],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          [1, 2],
+          config.accounts.user
+        );
 
         const [, , receivedGeneral, receivedTo] =
           await config.srHooksProxy.getLiveData(0, 0, 10);
@@ -2353,7 +1685,6 @@ describe("SRHooks_Views", function () {
 
       it("respects maxReceive when many receivingFrom tokens are valid", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Mint 10 tokens, all SendGeneral
         const newTokens = await mintAdditionalTokens(
@@ -2363,47 +1694,27 @@ describe("SRHooks_Views", function () {
         );
 
         for (let i = 0; i < 10; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              newTokens[i],
-              true,
-              SEND_STATES.SEND_GENERAL,
-              [],
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            newTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_GENERAL,
+            [],
+            config.accounts.deployer
+          );
         }
 
         // Token 0: ReceiveFrom all 10 tokens
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            newTokens,
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          newTokens,
+          config.accounts.user
+        );
 
         // With maxReceive=3, should only get 3 tokens despite 10 being valid
         const [, , receivedGeneral, receivedTo] =
@@ -2425,51 +1736,31 @@ describe("SRHooks_Views", function () {
     describe("TokenLiveData structure", function () {
       it("returns correct token metadata in live data", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData0 = ethers.utils.toUtf8Bytes("token 0 image");
-        const soundData0 = ethers.utils.toUtf8Bytes("token 0 sound");
-        const imageData1 = ethers.utils.toUtf8Bytes("token 1 image");
 
         // Token 0: SendGeneral with image and sound
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData0,
-              updateSound: true,
-              soundDataCompressed: soundData0,
-            }
-          );
+        await updateImageSoundAndStates(
+          config.srHooksProxy,
+          0,
+          "token 0 image",
+          "token 0 sound",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          RECEIVE_STATES.NEUTRAL,
+          [],
+          config.accounts.user
+        );
 
         // Token 1: ReceiveGeneral with image only
-        await config.srHooksProxy
-          .connect(config.accounts.user2)
-          .updateTokenStateAndMetadata(
-            1,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData1,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          1,
+          "token 1 image",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user2
+        );
 
         const [, , receivedGeneral] = await config.srHooksProxy.getLiveData(
           1,
@@ -2491,49 +1782,28 @@ describe("SRHooks_Views", function () {
 
       it("includes correct activeSlot in live data", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Token 0: SendGeneral, create image at slot 1 (not 0)
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            true,
-            1, // Slot 1
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          1,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         // Token 1: ReceiveGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.user2)
-          .updateTokenStateAndMetadata(
-            1,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          1,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user2
+        );
 
         const [, , receivedGeneral] = await config.srHooksProxy.getLiveData(
           1,
@@ -2555,70 +1825,39 @@ describe("SRHooks_Views", function () {
     describe("ReceiveTo state", function () {
       it("returns only SendTo tokens for ReceiveTo state", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Token 0: SendTo token 1
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_TO,
-            [1],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          SEND_STATES.SEND_TO,
+          [1],
+          config.accounts.user
+        );
 
         // Token 2: SendGeneral (should not be included)
-        await config.srHooksProxy
-          .connect(config.accounts.additional)
-          .updateTokenStateAndMetadata(
-            2,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          2,
+          "test image",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          config.accounts.additional
+        );
 
         // Token 1: ReceiveTo
-        await config.srHooksProxy
-          .connect(config.accounts.user2)
-          .updateTokenStateAndMetadata(
-            1,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_TO,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          1,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_TO,
+          [],
+          config.accounts.user2
+        );
 
         const [sendState, receiveState, receivedGeneral, receivedTo] =
           await config.srHooksProxy.getLiveData(1, 0, 10);
@@ -2631,7 +1870,6 @@ describe("SRHooks_Views", function () {
 
       it("handles multiple SendTo tokens in ReceiveTo state", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Mint 5 tokens for deployer to act as senders
         const senderTokens = await mintAdditionalTokens(
@@ -2642,47 +1880,27 @@ describe("SRHooks_Views", function () {
 
         // Set all 5 tokens to SendTo token 0
         for (let i = 0; i < 5; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              senderTokens[i],
-              true,
-              SEND_STATES.SEND_TO,
-              [0],
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            senderTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_TO,
+            [0],
+            config.accounts.deployer
+          );
         }
 
         // Token 0: ReceiveTo
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_TO,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_TO,
+          [],
+          config.accounts.user
+        );
 
         const [, receiveState, receivedGeneral, receivedTo] =
           await config.srHooksProxy.getLiveData(0, 0, 10);
@@ -2702,7 +1920,6 @@ describe("SRHooks_Views", function () {
 
       it("respects maxReceive cap in ReceiveTo state", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Mint 10 tokens for deployer to act as senders
         const senderTokens = await mintAdditionalTokens(
@@ -2713,47 +1930,27 @@ describe("SRHooks_Views", function () {
 
         // Set all 10 tokens to SendTo token 0
         for (let i = 0; i < 10; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              senderTokens[i],
-              true,
-              SEND_STATES.SEND_TO,
-              [0],
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            senderTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_TO,
+            [0],
+            config.accounts.deployer
+          );
         }
 
         // Token 0: ReceiveTo
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_TO,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_TO,
+          [],
+          config.accounts.user
+        );
 
         // Request only 5 samples despite 10 available
         const [, receiveState, receivedGeneral, receivedTo] =
@@ -2774,7 +1971,6 @@ describe("SRHooks_Views", function () {
 
       it("returns only SendTo tokens even when general pool has senders", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Mint 8 tokens (5 SendGeneral, 3 SendTo token 0)
         const newTokens = await mintAdditionalTokens(
@@ -2785,70 +1981,40 @@ describe("SRHooks_Views", function () {
 
         // Tokens 0-4: SendGeneral
         for (let i = 0; i < 5; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              newTokens[i],
-              true,
-              SEND_STATES.SEND_GENERAL,
-              [],
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            newTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_GENERAL,
+            [],
+            config.accounts.deployer
+          );
         }
 
         // Tokens 5-7: SendTo token 0
         for (let i = 5; i < 8; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              newTokens[i],
-              true,
-              SEND_STATES.SEND_TO,
-              [0],
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            newTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_TO,
+            [0],
+            config.accounts.deployer
+          );
         }
 
         // Token 0: ReceiveTo
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_TO,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_TO,
+          [],
+          config.accounts.user
+        );
 
         const [, receiveState, receivedGeneral, receivedTo] =
           await config.srHooksProxy.getLiveData(0, 0, 10);
@@ -2874,28 +2040,17 @@ describe("SRHooks_Views", function () {
     describe("Send state combinations", function () {
       it("returns SendGeneral state for token in SendGeneral", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Token 0: SendGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         const [sendState] = await config.srHooksProxy.getLiveData(0, 0, 10);
 
@@ -2904,28 +2059,17 @@ describe("SRHooks_Views", function () {
 
       it("returns SendTo state for token in SendTo", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Token 0: SendTo token 1
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_TO,
-            [1],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          SEND_STATES.SEND_TO,
+          [1],
+          config.accounts.user
+        );
 
         const [sendState] = await config.srHooksProxy.getLiveData(0, 0, 10);
 
@@ -2934,17 +2078,15 @@ describe("SRHooks_Views", function () {
 
       it("returns Neutral send state for token not sending", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Token 0: Has image but not participating in send
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          config.accounts.user
+        );
 
         const [sendState] = await config.srHooksProxy.getLiveData(0, 0, 10);
 
@@ -2955,28 +2097,20 @@ describe("SRHooks_Views", function () {
     describe("Edge cases and quirks", function () {
       it("allows token to send generally and appear in its own getLiveData", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Token 0: Both SendGeneral AND ReceiveGeneral (self-referential quirk)
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageSoundAndStates(
+          config.srHooksProxy,
+          0,
+          "test image",
+          "",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         const [sendState, receiveState, receivedGeneral, receivedTo] =
           await config.srHooksProxy.getLiveData(0, 0, 10);
@@ -2990,49 +2124,26 @@ describe("SRHooks_Views", function () {
 
       it("allows token to SendTo itself", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Token 0: SendTo itself
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_TO,
-            [0], // Sending to itself
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          SEND_STATES.SEND_TO,
+          [0],
+          config.accounts.user
+        );
 
         // Token 0: ReceiveGeneral (to check if it receives from itself)
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         const [sendState, receiveState, receivedGeneral, receivedTo] =
           await config.srHooksProxy.getLiveData(0, 0, 10);
@@ -3047,49 +2158,28 @@ describe("SRHooks_Views", function () {
 
       it("deduplicates SendTo array when token has duplicate targets", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Token 0: SendTo token 1 with duplicates [1, 1, 1]
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_TO,
-            [1, 1, 1], // Duplicate entries
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          SEND_STATES.SEND_TO,
+          [1, 1, 1],
+          config.accounts.user
+        );
 
         // Token 1: ReceiveGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.user2)
-          .updateTokenStateAndMetadata(
-            1,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          1,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user2
+        );
 
         const [, , receivedGeneral, receivedTo] =
           await config.srHooksProxy.getLiveData(1, 0, 10);
@@ -3110,7 +2200,6 @@ describe("SRHooks_Views", function () {
     describe("Pool state values", function () {
       it("returns accurate numSendGeneral, numReceiveGeneral, numSendingToMe", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Mint 10 tokens (5 SendGeneral, 3 ReceiveGeneral, 2 SendTo token 0)
         const newTokens = await mintAdditionalTokens(
@@ -3121,93 +2210,53 @@ describe("SRHooks_Views", function () {
 
         // Tokens 0-4: SendGeneral
         for (let i = 0; i < 5; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              newTokens[i],
-              true,
-              SEND_STATES.SEND_GENERAL,
-              [],
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            newTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_GENERAL,
+            [],
+            config.accounts.deployer
+          );
         }
 
         // Tokens 5-7: ReceiveGeneral
         for (let i = 5; i < 8; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              newTokens[i],
-              false,
-              0,
-              [],
-              true,
-              RECEIVE_STATES.RECEIVE_GENERAL,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndReceiveState(
+            config.srHooksProxy,
+            newTokens[i],
+            "test image",
+            0,
+            RECEIVE_STATES.RECEIVE_GENERAL,
+            [],
+            config.accounts.deployer
+          );
         }
 
         // Tokens 8-9: SendTo token 0
         for (let i = 8; i < 10; i++) {
-          await config.srHooksProxy
-            .connect(config.accounts.deployer)
-            .updateTokenStateAndMetadata(
-              newTokens[i],
-              true,
-              SEND_STATES.SEND_TO,
-              [0],
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: imageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            );
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            newTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_TO,
+            [0],
+            config.accounts.deployer
+          );
         }
 
         // Token 0: ReceiveGeneral (to query pool states)
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         const [, , , , numSendGeneral, numReceiveGeneral, numSendingToMe] =
           await config.srHooksProxy.getLiveData(0, 0, 10);
@@ -3219,38 +2268,26 @@ describe("SRHooks_Views", function () {
 
       it("updates numSendingToMe when tokens change SendTo targets", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Token 0: SendTo token 1
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_TO,
-            [1],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          SEND_STATES.SEND_TO,
+          [1],
+          config.accounts.user
+        );
 
         // Token 1: Set up to query numSendingToMe
-        await config.srHooksProxy
-          .connect(config.accounts.user2)
-          .updateTokenStateAndMetadata(1, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          1,
+          "test image",
+          0,
+          config.accounts.user2
+        );
 
         // First query: token 0 is SendTo token 1
         const [, , , , , , numSendingToMe1] =
@@ -3258,25 +2295,13 @@ describe("SRHooks_Views", function () {
         expect(numSendingToMe1).to.equal(1);
 
         // Token 0 changes to SendTo token 2 instead
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_TO,
-            [2],
-            false,
-            0,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateSendState(
+          config.srHooksProxy,
+          0,
+          SEND_STATES.SEND_TO,
+          [2],
+          config.accounts.user
+        );
 
         // Second query: token 0 no longer SendTo token 1
         const [, , , , , , numSendingToMe2] =

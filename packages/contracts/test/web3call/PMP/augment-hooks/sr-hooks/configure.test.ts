@@ -2,14 +2,26 @@ import { expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers, upgrades } from "hardhat";
-import { constants } from "ethers";
-import { SRHooksFixtureConfig, setupSRHooksFixture } from "./srHooksFixtures";
+import { setupSRHooksFixture } from "./srHooksFixtures";
 import {
   srHooksRevertMessages,
   SR_CONSTANTS,
   SEND_STATES,
   RECEIVE_STATES,
 } from "./constants";
+import {
+  bytes,
+  emptyBytes,
+  updateImage,
+  updateSound,
+  updateImageAndSound,
+  updateSendState,
+  updateReceiveState,
+  updateImageAndSendState,
+  updateImageAndReceiveState,
+  updateImageSoundAndStates,
+  changeActiveSlot,
+} from "./testHelpers";
 import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
@@ -208,39 +220,19 @@ describe("SRHooks_Configure", function () {
     describe("metadata updates", function () {
       it("reverts when switching to slot without image", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Create image at slot 0
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          config.accounts.user
+        );
 
         // Try to switch to empty slot 1 without providing image
         await expectRevert(
-          config.srHooksProxy
-            .connect(config.accounts.user)
-            .updateTokenStateAndMetadata(
-              0,
-              false,
-              0,
-              [],
-              false,
-              0,
-              [],
-              true,
-              1,
-              {
-                updateImage: false,
-                imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            ),
+          changeActiveSlot(config.srHooksProxy, 0, 1, config.accounts.user),
           srHooksRevertMessages.newActiveSlotMustHaveImage
         );
       });
@@ -248,25 +240,13 @@ describe("SRHooks_Configure", function () {
       it("reverts when active slot is >= NUM_METADATA_SLOTS", async function () {
         const config = await loadFixture(_beforeEach);
         await expectRevert(
-          config.srHooksProxy
-            .connect(config.accounts.user)
-            .updateTokenStateAndMetadata(
-              0,
-              false,
-              0,
-              [],
-              false,
-              0,
-              [],
-              true,
-              SR_CONSTANTS.NUM_METADATA_SLOTS, // Invalid slot
-              {
-                updateImage: true,
-                imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            ),
+          updateImage(
+            config.srHooksProxy,
+            0,
+            "test",
+            SR_CONSTANTS.NUM_METADATA_SLOTS, // Invalid slot
+            config.accounts.user
+          ),
           srHooksRevertMessages.invalidActiveSlot
         );
       });
@@ -274,25 +254,7 @@ describe("SRHooks_Configure", function () {
       it("reverts when image data is empty when updating", async function () {
         const config = await loadFixture(_beforeEach);
         await expectRevert(
-          config.srHooksProxy
-            .connect(config.accounts.user)
-            .updateTokenStateAndMetadata(
-              0,
-              false,
-              0,
-              [],
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            ),
+          updateImage(config.srHooksProxy, 0, "", 0, config.accounts.user),
           srHooksRevertMessages.imageDataRequired
         );
       });
@@ -304,25 +266,13 @@ describe("SRHooks_Configure", function () {
         );
 
         await expectRevert(
-          config.srHooksProxy
-            .connect(config.accounts.user)
-            .updateTokenStateAndMetadata(
-              0,
-              false,
-              0,
-              [],
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: true,
-                imageDataCompressed: tooLargeImageData,
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            ),
+          updateImage(
+            config.srHooksProxy,
+            0,
+            tooLargeImageData,
+            0,
+            config.accounts.user
+          ),
           srHooksRevertMessages.imageDataTooLarge
         );
       });
@@ -344,9 +294,9 @@ describe("SRHooks_Configure", function () {
               0,
               {
                 updateImage: false,
-                imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
+                imageDataCompressed: bytes("test"),
                 updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
+                soundDataCompressed: emptyBytes(),
               }
             ),
           srHooksRevertMessages.imageDataMustBeEmpty
@@ -355,49 +305,34 @@ describe("SRHooks_Configure", function () {
 
       it("reverts when sound data exceeds MAX_SOUND_DATA_LENGTH", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
         const tooLargeSoundData = Buffer.alloc(
           SR_CONSTANTS.MAX_SOUND_DATA_LENGTH + 1
         );
 
         // First create image
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          config.accounts.user
+        );
 
         // Try to add too large sound
         await expectRevert(
-          config.srHooksProxy
-            .connect(config.accounts.user)
-            .updateTokenStateAndMetadata(
-              0,
-              false,
-              0,
-              [],
-              false,
-              0,
-              [],
-              true,
-              0,
-              {
-                updateImage: false,
-                imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-                updateSound: true,
-                soundDataCompressed: tooLargeSoundData,
-              }
-            ),
+          updateSound(
+            config.srHooksProxy,
+            0,
+            tooLargeSoundData,
+            0,
+            config.accounts.user
+          ),
           srHooksRevertMessages.soundDataTooLarge
         );
       });
 
       it("reverts when sound data is provided but not updating", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         await expectRevert(
           config.srHooksProxy
@@ -414,9 +349,9 @@ describe("SRHooks_Configure", function () {
               0,
               {
                 updateImage: true,
-                imageDataCompressed: imageData,
+                imageDataCompressed: bytes("test image"),
                 updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes("test sound"),
+                soundDataCompressed: bytes("test sound"),
               }
             ),
           srHooksRevertMessages.soundDataMustBeEmpty
@@ -425,53 +360,48 @@ describe("SRHooks_Configure", function () {
 
       it("allows owner to update image metadata at active slot", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image data");
+        const imageData = "test image data";
 
         // Update image at slot 0
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          imageData,
+          0,
+          config.accounts.user
+        );
 
         // Verify the metadata was updated
         const metadata = await config.srHooksProxy.getTokenMetadataAtSlot(0, 0);
         expect(metadata.imageDataCompressed).to.equal(
-          ethers.utils.hexlify(imageData)
+          ethers.utils.hexlify(bytes(imageData))
         );
         expect(metadata.imageVersion).to.equal(1);
       });
 
       it("increments image version on each update", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData1 = ethers.utils.toUtf8Bytes("test image 1");
-        const imageData2 = ethers.utils.toUtf8Bytes("test image 2");
 
         // First update
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: imageData1,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test image 1",
+          0,
+          config.accounts.user
+        );
 
         let metadata = await config.srHooksProxy.getTokenMetadataAtSlot(0, 0);
         expect(metadata.imageVersion).to.equal(1);
 
         // Second update
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: imageData2,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test image 2",
+          0,
+          config.accounts.user
+        );
 
         metadata = await config.srHooksProxy.getTokenMetadataAtSlot(0, 0);
         expect(metadata.imageVersion).to.equal(2);
@@ -479,64 +409,51 @@ describe("SRHooks_Configure", function () {
 
       it("allows owner to update sound metadata", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
-        const soundData = ethers.utils.toUtf8Bytes("test sound data");
 
         // First update image to create slot
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          config.accounts.user
+        );
 
         // Update sound
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: false,
-            imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-            updateSound: true,
-            soundDataCompressed: soundData,
-          });
+        await updateSound(
+          config.srHooksProxy,
+          0,
+          "test sound data",
+          0,
+          config.accounts.user
+        );
 
         // Verify the sound metadata was updated
         const metadata = await config.srHooksProxy.getTokenMetadataAtSlot(0, 0);
         expect(metadata.soundDataCompressed).to.equal(
-          ethers.utils.hexlify(soundData)
+          ethers.utils.hexlify(bytes("test sound data"))
         );
         expect(metadata.soundVersion).to.equal(1);
       });
 
       it("allows clearing sound data with empty bytes", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
-        const soundData = ethers.utils.toUtf8Bytes("test sound");
 
         // Setup: create image and sound
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: true,
-            soundDataCompressed: soundData,
-          });
+        await updateImageAndSound(
+          config.srHooksProxy,
+          0,
+          "test image",
+          "test sound",
+          0,
+          config.accounts.user
+        );
 
         let metadata = await config.srHooksProxy.getTokenMetadataAtSlot(0, 0);
         expect(metadata.soundVersion).to.equal(1);
 
         // Clear sound data
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: false,
-            imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-            updateSound: true,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateSound(config.srHooksProxy, 0, "", 0, config.accounts.user);
 
         metadata = await config.srHooksProxy.getTokenMetadataAtSlot(0, 0);
         expect(metadata.soundDataCompressed).to.equal("0x");
@@ -545,34 +462,30 @@ describe("SRHooks_Configure", function () {
 
       it("allows updating to different slot", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData0 = ethers.utils.toUtf8Bytes("slot 0 image");
-        const imageData1 = ethers.utils.toUtf8Bytes("slot 1 image");
 
         // Create image at slot 0
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: imageData0,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "slot 0 image",
+          0,
+          config.accounts.user
+        );
 
         // Create image at slot 1 and switch to it
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 1, {
-            updateImage: true,
-            imageDataCompressed: imageData1,
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "slot 1 image",
+          1,
+          config.accounts.user
+        );
 
         // Verify active slot is now 1
         const state = await config.srHooksProxy.getTokenState(0);
         expect(state.activeSlot).to.equal(1);
         expect(state.activeSlotTokenMetadata.imageDataCompressed).to.equal(
-          ethers.utils.hexlify(imageData1)
+          ethers.utils.hexlify(bytes("slot 1 image"))
         );
 
         // Verify slot 0 still has its data
@@ -581,31 +494,29 @@ describe("SRHooks_Configure", function () {
           0
         );
         expect(metadata0.imageDataCompressed).to.equal(
-          ethers.utils.hexlify(imageData0)
+          ethers.utils.hexlify(bytes("slot 0 image"))
         );
       });
 
       it("allows updating both image and sound in single call", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
-        const soundData = ethers.utils.toUtf8Bytes("test sound");
 
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: imageData,
-            updateSound: true,
-            soundDataCompressed: soundData,
-          });
+        await updateImageAndSound(
+          config.srHooksProxy,
+          0,
+          "test image",
+          "test sound",
+          0,
+          config.accounts.user
+        );
 
         const metadata = await config.srHooksProxy.getTokenMetadataAtSlot(0, 0);
         expect(metadata.imageDataCompressed).to.equal(
-          ethers.utils.hexlify(imageData)
+          ethers.utils.hexlify(bytes("test image"))
         );
         expect(metadata.imageVersion).to.equal(1);
         expect(metadata.soundDataCompressed).to.equal(
-          ethers.utils.hexlify(soundData)
+          ethers.utils.hexlify(bytes("test sound"))
         );
         expect(metadata.soundVersion).to.equal(1);
       });
@@ -615,25 +526,13 @@ describe("SRHooks_Configure", function () {
       it("reverts when updating send state without image at active slot", async function () {
         const config = await loadFixture(_beforeEach);
         await expectRevert(
-          config.srHooksProxy
-            .connect(config.accounts.user)
-            .updateTokenStateAndMetadata(
-              0,
-              true,
-              SEND_STATES.SEND_GENERAL,
-              [],
-              false,
-              0,
-              [],
-              false,
-              0,
-              {
-                updateImage: false,
-                imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            ),
+          updateSendState(
+            config.srHooksProxy,
+            0,
+            SEND_STATES.SEND_GENERAL,
+            [],
+            config.accounts.user
+          ),
           srHooksRevertMessages.tokenMustHaveImageAtActiveSlot
         );
       });
@@ -641,36 +540,23 @@ describe("SRHooks_Configure", function () {
       it("reverts when SendTo state has empty tokensSendingTo", async function () {
         const config = await loadFixture(_beforeEach);
         // First create image
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          config.accounts.user
+        );
 
         // Try SendTo without tokens
         await expectRevert(
-          config.srHooksProxy
-            .connect(config.accounts.user)
-            .updateTokenStateAndMetadata(
-              0,
-              true,
-              SEND_STATES.SEND_TO,
-              [], // empty array
-              false,
-              0,
-              [],
-              false,
-              0,
-              {
-                updateImage: false,
-                imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            ),
+          updateSendState(
+            config.srHooksProxy,
+            0,
+            SEND_STATES.SEND_TO,
+            [],
+            config.accounts.user
+          ),
           srHooksRevertMessages.tokensSendingToMustBeNonEmpty
         );
       });
@@ -678,36 +564,23 @@ describe("SRHooks_Configure", function () {
       it("reverts when non-SendTo state has non-empty tokensSendingTo", async function () {
         const config = await loadFixture(_beforeEach);
         // First create image
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          config.accounts.user
+        );
 
         // Try SendGeneral with tokens
         await expectRevert(
-          config.srHooksProxy
-            .connect(config.accounts.user)
-            .updateTokenStateAndMetadata(
-              0,
-              true,
-              SEND_STATES.SEND_GENERAL,
-              [1], // non-empty array
-              false,
-              0,
-              [],
-              false,
-              0,
-              {
-                updateImage: false,
-                imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            ),
+          updateSendState(
+            config.srHooksProxy,
+            0,
+            SEND_STATES.SEND_GENERAL,
+            [1],
+            config.accounts.user
+          ),
           srHooksRevertMessages.tokensSendingToMustBeEmpty
         );
       });
@@ -715,14 +588,13 @@ describe("SRHooks_Configure", function () {
       it("reverts when tokensSendingTo exceeds MAX_SENDING_TO_LENGTH", async function () {
         const config = await loadFixture(_beforeEach);
         // First create image
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          config.accounts.user
+        );
 
         // Create array that's too long
         const tooManyTokens = Array.from(
@@ -731,25 +603,13 @@ describe("SRHooks_Configure", function () {
         );
 
         await expectRevert(
-          config.srHooksProxy
-            .connect(config.accounts.user)
-            .updateTokenStateAndMetadata(
-              0,
-              true,
-              SEND_STATES.SEND_TO,
-              tooManyTokens,
-              false,
-              0,
-              [],
-              false,
-              0,
-              {
-                updateImage: false,
-                imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            ),
+          updateSendState(
+            config.srHooksProxy,
+            0,
+            SEND_STATES.SEND_TO,
+            tooManyTokens,
+            config.accounts.user
+          ),
           srHooksRevertMessages.tokensSendingToTooLong
         );
       });
@@ -757,35 +617,22 @@ describe("SRHooks_Configure", function () {
       it("allows updating to SendGeneral state", async function () {
         const config = await loadFixture(_beforeEach);
         // First create image
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          config.accounts.user
+        );
 
         // Update to SendGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateSendState(
+          config.srHooksProxy,
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         const state = await config.srHooksProxy.getTokenState(0);
         expect(state.sendState).to.equal(SEND_STATES.SEND_GENERAL);
@@ -794,35 +641,22 @@ describe("SRHooks_Configure", function () {
       it("allows updating to SendTo state", async function () {
         const config = await loadFixture(_beforeEach);
         // First create image
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          config.accounts.user
+        );
 
         // Update to SendTo
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_TO,
-            [1, 2], // sending to tokens 1 and 2
-            false,
-            0,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateSendState(
+          config.srHooksProxy,
+          0,
+          SEND_STATES.SEND_TO,
+          [1, 2],
+          config.accounts.user
+        );
 
         const state = await config.srHooksProxy.getTokenState(0);
         expect(state.sendState).to.equal(SEND_STATES.SEND_TO);
@@ -834,46 +668,24 @@ describe("SRHooks_Configure", function () {
       it("allows changing from SendGeneral to SendTo", async function () {
         const config = await loadFixture(_beforeEach);
         // Setup
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         // Change to SendTo
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_TO,
-            [1],
-            false,
-            0,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateSendState(
+          config.srHooksProxy,
+          0,
+          SEND_STATES.SEND_TO,
+          [1],
+          config.accounts.user
+        );
 
         const state = await config.srHooksProxy.getTokenState(0);
         expect(state.sendState).to.equal(SEND_STATES.SEND_TO);
@@ -882,46 +694,24 @@ describe("SRHooks_Configure", function () {
       it("allows changing from SendTo to Neutral", async function () {
         const config = await loadFixture(_beforeEach);
         // Setup
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_TO,
-            [1],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          SEND_STATES.SEND_TO,
+          [1],
+          config.accounts.user
+        );
 
         // Change to Neutral
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.NEUTRAL,
-            [],
-            false,
-            0,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateSendState(
+          config.srHooksProxy,
+          0,
+          SEND_STATES.NEUTRAL,
+          [],
+          config.accounts.user
+        );
 
         const state = await config.srHooksProxy.getTokenState(0);
         expect(state.sendState).to.equal(SEND_STATES.NEUTRAL);
@@ -931,25 +721,15 @@ describe("SRHooks_Configure", function () {
       it("safely handles SendTo with duplicates then change to Neutral", async function () {
         const config = await loadFixture(_beforeEach);
         // Setup: SendTo with duplicate entries
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_TO,
-            [1, 1, 1], // Duplicate entries
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          SEND_STATES.SEND_TO,
+          [1, 1, 1],
+          config.accounts.user
+        );
 
         // Verify state is set correctly
         let state = await config.srHooksProxy.getTokenState(0);
@@ -965,25 +745,13 @@ describe("SRHooks_Configure", function () {
 
         // Change to Neutral - this should clean up state without errors
         await expect(
-          config.srHooksProxy
-            .connect(config.accounts.user)
-            .updateTokenStateAndMetadata(
-              0,
-              true,
-              SEND_STATES.NEUTRAL,
-              [],
-              false,
-              0,
-              [],
-              false,
-              0,
-              {
-                updateImage: false,
-                imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            )
+          updateSendState(
+            config.srHooksProxy,
+            0,
+            SEND_STATES.NEUTRAL,
+            [],
+            config.accounts.user
+          )
         ).to.not.be.reverted;
 
         // Verify cleanup was successful
@@ -1002,25 +770,13 @@ describe("SRHooks_Configure", function () {
       it("reverts when updating receive state without image at active slot", async function () {
         const config = await loadFixture(_beforeEach);
         await expectRevert(
-          config.srHooksProxy
-            .connect(config.accounts.user)
-            .updateTokenStateAndMetadata(
-              0,
-              false,
-              0,
-              [],
-              true,
-              RECEIVE_STATES.RECEIVE_GENERAL,
-              [],
-              false,
-              0,
-              {
-                updateImage: false,
-                imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            ),
+          updateReceiveState(
+            config.srHooksProxy,
+            0,
+            RECEIVE_STATES.RECEIVE_GENERAL,
+            [],
+            config.accounts.user
+          ),
           srHooksRevertMessages.tokenMustHaveImageAtActiveSlot
         );
       });
@@ -1028,36 +784,23 @@ describe("SRHooks_Configure", function () {
       it("reverts when ReceiveFrom state has empty tokensReceivingFrom", async function () {
         const config = await loadFixture(_beforeEach);
         // First create image
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          config.accounts.user
+        );
 
         // Try ReceiveFrom without tokens
         await expectRevert(
-          config.srHooksProxy
-            .connect(config.accounts.user)
-            .updateTokenStateAndMetadata(
-              0,
-              false,
-              0,
-              [],
-              true,
-              RECEIVE_STATES.RECEIVE_FROM,
-              [], // empty array
-              false,
-              0,
-              {
-                updateImage: false,
-                imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            ),
+          updateReceiveState(
+            config.srHooksProxy,
+            0,
+            RECEIVE_STATES.RECEIVE_FROM,
+            [],
+            config.accounts.user
+          ),
           srHooksRevertMessages.tokensReceivingFromMustBeNonEmpty
         );
       });
@@ -1065,36 +808,23 @@ describe("SRHooks_Configure", function () {
       it("reverts when non-ReceiveFrom state has non-empty tokensReceivingFrom", async function () {
         const config = await loadFixture(_beforeEach);
         // First create image
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          config.accounts.user
+        );
 
         // Try ReceiveGeneral with tokens
         await expectRevert(
-          config.srHooksProxy
-            .connect(config.accounts.user)
-            .updateTokenStateAndMetadata(
-              0,
-              false,
-              0,
-              [],
-              true,
-              RECEIVE_STATES.RECEIVE_GENERAL,
-              [1], // non-empty array
-              false,
-              0,
-              {
-                updateImage: false,
-                imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            ),
+          updateReceiveState(
+            config.srHooksProxy,
+            0,
+            RECEIVE_STATES.RECEIVE_GENERAL,
+            [1],
+            config.accounts.user
+          ),
           srHooksRevertMessages.tokensReceivingFromMustBeEmpty
         );
       });
@@ -1102,14 +832,13 @@ describe("SRHooks_Configure", function () {
       it("reverts when tokensReceivingFrom exceeds MAX_RECEIVING_FROM_ARRAY_LENGTH", async function () {
         const config = await loadFixture(_beforeEach);
         // First create image
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          config.accounts.user
+        );
 
         // Create array that's too long
         const tooManyTokens = Array.from(
@@ -1118,25 +847,13 @@ describe("SRHooks_Configure", function () {
         );
 
         await expectRevert(
-          config.srHooksProxy
-            .connect(config.accounts.user)
-            .updateTokenStateAndMetadata(
-              0,
-              false,
-              0,
-              [],
-              true,
-              RECEIVE_STATES.RECEIVE_FROM,
-              tooManyTokens,
-              false,
-              0,
-              {
-                updateImage: false,
-                imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            ),
+          updateReceiveState(
+            config.srHooksProxy,
+            0,
+            RECEIVE_STATES.RECEIVE_FROM,
+            tooManyTokens,
+            config.accounts.user
+          ),
           srHooksRevertMessages.tokensReceivingFromTooLong
         );
       });
@@ -1144,35 +861,22 @@ describe("SRHooks_Configure", function () {
       it("allows updating to ReceiveGeneral state", async function () {
         const config = await loadFixture(_beforeEach);
         // First create image
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          config.accounts.user
+        );
 
         // Update to ReceiveGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         const state = await config.srHooksProxy.getTokenState(0);
         expect(state.receiveState).to.equal(RECEIVE_STATES.RECEIVE_GENERAL);
@@ -1181,35 +885,22 @@ describe("SRHooks_Configure", function () {
       it("allows updating to ReceiveFrom state", async function () {
         const config = await loadFixture(_beforeEach);
         // First create image
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          config.accounts.user
+        );
 
         // Update to ReceiveFrom
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            [1, 2], // receiving from tokens 1 and 2
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          [1, 2],
+          config.accounts.user
+        );
 
         const state = await config.srHooksProxy.getTokenState(0);
         expect(state.receiveState).to.equal(RECEIVE_STATES.RECEIVE_FROM);
@@ -1221,46 +912,24 @@ describe("SRHooks_Configure", function () {
       it("allows changing from ReceiveGeneral to ReceiveFrom", async function () {
         const config = await loadFixture(_beforeEach);
         // Setup
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         // Change to ReceiveFrom
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            [1],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          [1],
+          config.accounts.user
+        );
 
         const state = await config.srHooksProxy.getTokenState(0);
         expect(state.receiveState).to.equal(RECEIVE_STATES.RECEIVE_FROM);
@@ -1269,46 +938,24 @@ describe("SRHooks_Configure", function () {
       it("allows changing from ReceiveFrom to Neutral", async function () {
         const config = await loadFixture(_beforeEach);
         // Setup
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            [1],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          [1],
+          config.accounts.user
+        );
 
         // Change to Neutral
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.NEUTRAL,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.NEUTRAL,
+          [],
+          config.accounts.user
+        );
 
         const state = await config.srHooksProxy.getTokenState(0);
         expect(state.receiveState).to.equal(RECEIVE_STATES.NEUTRAL);
@@ -1318,35 +965,22 @@ describe("SRHooks_Configure", function () {
       it("allows updating to ReceiveTo state", async function () {
         const config = await loadFixture(_beforeEach);
         // First create image
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          config.accounts.user
+        );
 
         // Update to ReceiveTo
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_TO,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.RECEIVE_TO,
+          [],
+          config.accounts.user
+        );
 
         const state = await config.srHooksProxy.getTokenState(0);
         expect(state.receiveState).to.equal(RECEIVE_STATES.RECEIVE_TO);
@@ -1356,25 +990,13 @@ describe("SRHooks_Configure", function () {
       it("reverts when updating to ReceiveTo state without image at active slot", async function () {
         const config = await loadFixture(_beforeEach);
         await expectRevert(
-          config.srHooksProxy
-            .connect(config.accounts.user)
-            .updateTokenStateAndMetadata(
-              0,
-              false,
-              0,
-              [],
-              true,
-              RECEIVE_STATES.RECEIVE_TO,
-              [],
-              false,
-              0,
-              {
-                updateImage: false,
-                imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            ),
+          updateReceiveState(
+            config.srHooksProxy,
+            0,
+            RECEIVE_STATES.RECEIVE_TO,
+            [],
+            config.accounts.user
+          ),
           srHooksRevertMessages.tokenMustHaveImageAtActiveSlot
         );
       });
@@ -1382,36 +1004,23 @@ describe("SRHooks_Configure", function () {
       it("reverts when ReceiveTo state has non-empty tokensReceivingFrom", async function () {
         const config = await loadFixture(_beforeEach);
         // First create image
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(0, false, 0, [], false, 0, [], true, 0, {
-            updateImage: true,
-            imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-            updateSound: false,
-            soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-          });
+        await updateImage(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          config.accounts.user
+        );
 
         // Try ReceiveTo with tokens
         await expectRevert(
-          config.srHooksProxy
-            .connect(config.accounts.user)
-            .updateTokenStateAndMetadata(
-              0,
-              false,
-              0,
-              [],
-              true,
-              RECEIVE_STATES.RECEIVE_TO,
-              [1], // non-empty array
-              false,
-              0,
-              {
-                updateImage: false,
-                imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-                updateSound: false,
-                soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-              }
-            ),
+          updateReceiveState(
+            config.srHooksProxy,
+            0,
+            RECEIVE_STATES.RECEIVE_TO,
+            [1],
+            config.accounts.user
+          ),
           srHooksRevertMessages.tokensReceivingFromMustBeEmpty
         );
       });
@@ -1419,46 +1028,24 @@ describe("SRHooks_Configure", function () {
       it("allows changing from ReceiveGeneral to ReceiveTo", async function () {
         const config = await loadFixture(_beforeEach);
         // Setup
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         // Change to ReceiveTo
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_TO,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.RECEIVE_TO,
+          [],
+          config.accounts.user
+        );
 
         const state = await config.srHooksProxy.getTokenState(0);
         expect(state.receiveState).to.equal(RECEIVE_STATES.RECEIVE_TO);
@@ -1467,46 +1054,24 @@ describe("SRHooks_Configure", function () {
       it("allows changing from ReceiveFrom to ReceiveTo", async function () {
         const config = await loadFixture(_beforeEach);
         // Setup
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            [1],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          [1],
+          config.accounts.user
+        );
 
         // Change to ReceiveTo
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_TO,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.RECEIVE_TO,
+          [],
+          config.accounts.user
+        );
 
         const state = await config.srHooksProxy.getTokenState(0);
         expect(state.receiveState).to.equal(RECEIVE_STATES.RECEIVE_TO);
@@ -1516,50 +1081,28 @@ describe("SRHooks_Configure", function () {
       it("allows changing from ReceiveTo to Neutral", async function () {
         const config = await loadFixture(_beforeEach);
         // Setup
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_TO,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          RECEIVE_STATES.RECEIVE_TO,
+          [],
+          config.accounts.user
+        );
 
         // Verify ReceiveTo state
         let state = await config.srHooksProxy.getTokenState(0);
         expect(state.receiveState).to.equal(RECEIVE_STATES.RECEIVE_TO);
 
         // Change to Neutral
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.NEUTRAL,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.NEUTRAL,
+          [],
+          config.accounts.user
+        );
 
         state = await config.srHooksProxy.getTokenState(0);
         expect(state.receiveState).to.equal(RECEIVE_STATES.NEUTRAL);
@@ -1568,46 +1111,24 @@ describe("SRHooks_Configure", function () {
       it("allows changing from ReceiveTo to ReceiveGeneral", async function () {
         const config = await loadFixture(_beforeEach);
         // Setup
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_TO,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          RECEIVE_STATES.RECEIVE_TO,
+          [],
+          config.accounts.user
+        );
 
         // Change to ReceiveGeneral
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         const state = await config.srHooksProxy.getTokenState(0);
         expect(state.receiveState).to.equal(RECEIVE_STATES.RECEIVE_GENERAL);
@@ -1616,46 +1137,24 @@ describe("SRHooks_Configure", function () {
       it("allows changing from ReceiveTo to ReceiveFrom", async function () {
         const config = await loadFixture(_beforeEach);
         // Setup
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_TO,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test",
+          0,
+          RECEIVE_STATES.RECEIVE_TO,
+          [],
+          config.accounts.user
+        );
 
         // Change to ReceiveFrom
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            [1, 2],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          [1, 2],
+          config.accounts.user
+        );
 
         const state = await config.srHooksProxy.getTokenState(0);
         expect(state.receiveState).to.equal(RECEIVE_STATES.RECEIVE_FROM);
@@ -1666,27 +1165,16 @@ describe("SRHooks_Configure", function () {
 
       it("allows setting ReceiveTo and metadata in single call", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_TO,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_TO,
+          [],
+          config.accounts.user
+        );
 
         const state = await config.srHooksProxy.getTokenState(0);
         expect(state.receiveState).to.equal(RECEIVE_STATES.RECEIVE_TO);
@@ -1698,25 +1186,18 @@ describe("SRHooks_Configure", function () {
       it("allows updating metadata, send, and receive states together", async function () {
         const config = await loadFixture(_beforeEach);
 
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: ethers.utils.toUtf8Bytes("test image"),
-              updateSound: true,
-              soundDataCompressed: ethers.utils.toUtf8Bytes("test sound"),
-            }
-          );
+        await updateImageSoundAndStates(
+          config.srHooksProxy,
+          0,
+          "test image",
+          "test sound",
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         const state = await config.srHooksProxy.getTokenState(0);
         expect(state.sendState).to.equal(1);
@@ -1727,28 +1208,17 @@ describe("SRHooks_Configure", function () {
 
       it("clears tokensSendingTo array when switching away from SendTo state", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Setup: Create SendTo state with tokens
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_TO,
-            [1, 2, 3], // sending to tokens 1, 2, 3
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          SEND_STATES.SEND_TO,
+          [1, 2, 3],
+          config.accounts.user
+        );
 
         // Verify SendTo state is set with tokens
         let state = await config.srHooksProxy.getTokenState(0);
@@ -1759,25 +1229,13 @@ describe("SRHooks_Configure", function () {
         expect(state.tokensSendingTo[2]).to.equal(3);
 
         // Switch to SendGeneral (should clear tokensSendingTo)
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_GENERAL,
-            [],
-            false,
-            0,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateSendState(
+          config.srHooksProxy,
+          0,
+          SEND_STATES.SEND_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         // Verify tokensSendingTo is empty
         state = await config.srHooksProxy.getTokenState(0);
@@ -1785,25 +1243,13 @@ describe("SRHooks_Configure", function () {
         expect(state.tokensSendingTo.length).to.equal(0);
 
         // Switch back to SendTo with different tokens
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.SEND_TO,
-            [2], // only token 2 this time
-            false,
-            0,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateSendState(
+          config.srHooksProxy,
+          0,
+          SEND_STATES.SEND_TO,
+          [2],
+          config.accounts.user
+        );
 
         // Verify new SendTo state
         state = await config.srHooksProxy.getTokenState(0);
@@ -1812,25 +1258,13 @@ describe("SRHooks_Configure", function () {
         expect(state.tokensSendingTo[0]).to.equal(2);
 
         // Switch to Neutral (should also clear tokensSendingTo)
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            true,
-            SEND_STATES.NEUTRAL,
-            [],
-            false,
-            0,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateSendState(
+          config.srHooksProxy,
+          0,
+          SEND_STATES.NEUTRAL,
+          [],
+          config.accounts.user
+        );
 
         // Verify tokensSendingTo is empty again
         state = await config.srHooksProxy.getTokenState(0);
@@ -1840,28 +1274,17 @@ describe("SRHooks_Configure", function () {
 
       it("clears tokensReceivingFrom array when switching away from ReceiveFrom state", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Setup: Create ReceiveFrom state with tokens
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            [1, 2, 3], // receiving from tokens 1, 2, 3
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          [1, 2, 3],
+          config.accounts.user
+        );
 
         // Verify ReceiveFrom state is set with tokens
         let state = await config.srHooksProxy.getTokenState(0);
@@ -1872,25 +1295,13 @@ describe("SRHooks_Configure", function () {
         expect(state.tokensReceivingFrom[2]).to.equal(3);
 
         // Switch to ReceiveGeneral (should clear tokensReceivingFrom)
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         // Verify tokensReceivingFrom is empty
         state = await config.srHooksProxy.getTokenState(0);
@@ -1898,25 +1309,13 @@ describe("SRHooks_Configure", function () {
         expect(state.tokensReceivingFrom.length).to.equal(0);
 
         // Switch back to ReceiveFrom with different tokens
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            [2], // only token 2 this time
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          [2],
+          config.accounts.user
+        );
 
         // Verify new ReceiveFrom state
         state = await config.srHooksProxy.getTokenState(0);
@@ -1925,25 +1324,13 @@ describe("SRHooks_Configure", function () {
         expect(state.tokensReceivingFrom[0]).to.equal(2);
 
         // Switch to Neutral (should also clear tokensReceivingFrom)
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.NEUTRAL,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.NEUTRAL,
+          [],
+          config.accounts.user
+        );
 
         // Verify tokensReceivingFrom is empty again
         state = await config.srHooksProxy.getTokenState(0);
@@ -1953,103 +1340,56 @@ describe("SRHooks_Configure", function () {
 
       it("clears ReceiveTo state when switching to other receive states", async function () {
         const config = await loadFixture(_beforeEach);
-        const imageData = ethers.utils.toUtf8Bytes("test image");
 
         // Setup: Create ReceiveTo state
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_TO,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: imageData,
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_TO,
+          [],
+          config.accounts.user
+        );
 
         // Verify ReceiveTo state is set
         let state = await config.srHooksProxy.getTokenState(0);
         expect(state.receiveState).to.equal(RECEIVE_STATES.RECEIVE_TO);
 
         // Switch to ReceiveGeneral (should clear ReceiveTo)
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_GENERAL,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.RECEIVE_GENERAL,
+          [],
+          config.accounts.user
+        );
 
         // Verify state changed
         state = await config.srHooksProxy.getTokenState(0);
         expect(state.receiveState).to.equal(RECEIVE_STATES.RECEIVE_GENERAL);
 
         // Switch back to ReceiveTo
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_TO,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.RECEIVE_TO,
+          [],
+          config.accounts.user
+        );
 
         // Verify ReceiveTo state
         state = await config.srHooksProxy.getTokenState(0);
         expect(state.receiveState).to.equal(RECEIVE_STATES.RECEIVE_TO);
 
         // Switch to ReceiveFrom (should clear ReceiveTo)
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_FROM,
-            [1, 2],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          [1, 2],
+          config.accounts.user
+        );
 
         // Verify new ReceiveFrom state
         state = await config.srHooksProxy.getTokenState(0);
@@ -2057,25 +1397,13 @@ describe("SRHooks_Configure", function () {
         expect(state.tokensReceivingFrom.length).to.equal(2);
 
         // Switch back to ReceiveTo
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.RECEIVE_TO,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.RECEIVE_TO,
+          [],
+          config.accounts.user
+        );
 
         // Verify ReceiveTo state again
         state = await config.srHooksProxy.getTokenState(0);
@@ -2083,25 +1411,13 @@ describe("SRHooks_Configure", function () {
         expect(state.tokensReceivingFrom.length).to.equal(0);
 
         // Switch to Neutral (should also clear ReceiveTo)
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            0,
-            false,
-            0,
-            [],
-            true,
-            RECEIVE_STATES.NEUTRAL,
-            [],
-            false,
-            0,
-            {
-              updateImage: false,
-              imageDataCompressed: ethers.utils.toUtf8Bytes(""),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateReceiveState(
+          config.srHooksProxy,
+          0,
+          RECEIVE_STATES.NEUTRAL,
+          [],
+          config.accounts.user
+        );
 
         // Verify Neutral state
         state = await config.srHooksProxy.getTokenState(0);
@@ -2114,25 +1430,13 @@ describe("SRHooks_Configure", function () {
         const expectedTokenId = config.projectThreeTokenZero;
 
         // Update token 0
-        await config.srHooksProxy
-          .connect(config.accounts.user)
-          .updateTokenStateAndMetadata(
-            tokenNumber,
-            false,
-            0,
-            [],
-            false,
-            0,
-            [],
-            true,
-            0,
-            {
-              updateImage: true,
-              imageDataCompressed: ethers.utils.toUtf8Bytes("test"),
-              updateSound: false,
-              soundDataCompressed: ethers.utils.toUtf8Bytes(""),
-            }
-          );
+        await updateImage(
+          config.srHooksProxy,
+          tokenNumber,
+          "test",
+          0,
+          config.accounts.user
+        );
 
         // Verify state using token number
         const state = await config.srHooksProxy.getTokenState(tokenNumber);
