@@ -15,7 +15,6 @@ import {IDelegateRegistry as IDelegationRegistryV2} from "../../interfaces/v0.8.
 import {IPMPConfigureHook} from "../../interfaces/v0.8.x/IPMPConfigureHook.sol";
 import {IPMPAugmentHook} from "../../interfaces/v0.8.x/IPMPAugmentHook.sol";
 
-import {EnumerableSet} from "@openzeppelin-5.0/contracts/utils/structs/EnumerableSet.sol";
 import {SafeCast} from "@openzeppelin-5.0/contracts/utils/math/SafeCast.sol";
 import {Initializable} from "@openzeppelin-5.0/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin-5.0/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -26,6 +25,7 @@ import {SSTORE2} from "../../libs/v0.8.x/SSTORE2.sol";
 import {ABHelpers} from "../../libs/v0.8.x/ABHelpers.sol";
 import {FeistelWalkLib} from "../../libs/v0.8.x/FeistelWalkLib.sol";
 import {ENSLib} from "../../libs/v0.8.x/ENSLib.sol";
+import {EnumerableSetUint16} from "../../libs/v0.8.x/EnumerableSetUint16.sol";
 
 /**
  * @title SRHooks
@@ -66,7 +66,7 @@ contract SRHooks is
     UUPSUpgradeable,
     ISRHooks
 {
-    using EnumerableSet for EnumerableSet.UintSet;
+    using EnumerableSetUint16 for EnumerableSetUint16.Uint16Set;
     using ImmutableUint16Array for ImmutableUint16Array.Uint16Array;
     using SafeCast for uint256;
 
@@ -116,21 +116,21 @@ contract SRHooks is
     // ------ SEND/RECEIVE STATE (GLOBAL) ------
 
     /// @notice Set of token numbers that are currently in state SendGeneral
-    // @dev TODO - could develop a custom packed array + index mapping uint16EnumerableSet to improve efficiency vs. OpenZeppelin's EnumerableSet
+    // @dev Uses custom packed EnumerableSetUint16 to efficiently pack uint16 values into shared storage slots
     // @dev need O(1) access and O(1) insertion/removal for both sending and receiving tokens, so use an EnumerableSet
-    EnumerableSet.UintSet private _sendGeneralTokens;
+    EnumerableSetUint16.Uint16Set private _sendGeneralTokens;
 
     /// @notice Set of token numbers that are currently in state ReceiveGeneral
-    // @dev TODO - could develop a custom packed array + index mapping uint16EnumerableSet to improve efficiency vs. OpenZeppelin's EnumerableSet
+    // @dev Uses custom packed EnumerableSetUint16 to efficiently pack uint16 values into shared storage slots
     // @dev need O(1) access and O(1) insertion/removal for both sending and receiving tokens, so use an EnumerableSet
-    EnumerableSet.UintSet private _receiveGeneralTokens;
+    EnumerableSetUint16.Uint16Set private _receiveGeneralTokens;
 
     // ------ SEND/RECEIVE STATE (PER TOKEN) ------
 
     /// @notice Set of token numbers that are sending to a specific token
-    // @dev TODO - could develop a custom packed array + index mapping uint16EnumerableSet to improve efficiency vs. OpenZeppelin's EnumerableSet
+    // @dev Uses custom packed EnumerableSetUint16 to efficiently pack uint16 values into shared storage slots
     // @dev need O(1) access and O(1) insertion/removal for both sending and receiving tokens, so use an EnumerableSet
-    mapping(uint256 receivingTokenNumber => EnumerableSet.UintSet tokensSendingToMe)
+    mapping(uint256 receivingTokenNumber => EnumerableSetUint16.Uint16Set tokensSendingToMe)
         private _tokensSendingToMe;
 
     /// @notice Array of token numbers that a given token is sending to (when in state SendTo)
@@ -617,9 +617,8 @@ contract SRHooks is
         // @dev pull project id and core contract address into memory for efficient sload minimization
         uint256 _projectId = CORE_PROJECT_ID;
         address _coreContractAddress = CORE_CONTRACT_ADDRESS;
-        EnumerableSet.UintSet storage tokensSendingToMe_ = _tokensSendingToMe[
-            tokenNumber
-        ];
+        EnumerableSetUint16.Uint16Set
+            storage tokensSendingToMe_ = _tokensSendingToMe[tokenNumber];
         // for each selected token number, get the live data
         for (uint256 i = 0; i < sampleQuantity; i++) {
             uint256 selectedTokenNumber = tokensSendingToMe_.at(
@@ -791,7 +790,11 @@ contract SRHooks is
                 continue;
             }
             // if sending to me, include it
-            if (_tokensSendingToMe[tokenNumber].contains(sampledTokenNumber)) {
+            if (
+                _tokensSendingToMe[tokenNumber].contains(
+                    uint16(sampledTokenNumber)
+                )
+            ) {
                 selectedTokenNumbersTo[
                     selectedTokenNumbersToLength
                 ] = sampledTokenNumber;
@@ -859,7 +862,7 @@ contract SRHooks is
                 continue;
             }
             // if sending generally, include it for sure
-            if (_sendGeneralTokens.contains(sampledTokenNumber)) {
+            if (_sendGeneralTokens.contains(uint16(sampledTokenNumber))) {
                 selectedTokenNumbersGeneral[
                     selectedTokenNumbersGeneralLength
                 ] = sampledTokenNumber;
@@ -1103,7 +1106,7 @@ contract SRHooks is
         SendStates previousSendState = _getSendState(tokenNumber);
         if (previousSendState == SendStates.SendGeneral) {
             // simply remove the token from the send general set
-            _sendGeneralTokens.remove(tokenNumber);
+            _sendGeneralTokens.remove(uint16(tokenNumber));
         } else if (previousSendState == SendStates.SendTo) {
             // pop from every previous token's "sending to me" set, which is a O(n) operation for n tokens previously sent to
             // @dev pull into memory for efficient sload minimization
@@ -1114,7 +1117,9 @@ contract SRHooks is
                 .length;
             for (uint256 i = 0; i < previousTokensSendingToLength; i++) {
                 uint256 sendingToTokenNumber = previousTokensSendingTo[i];
-                _tokensSendingToMe[sendingToTokenNumber].remove(tokenNumber);
+                _tokensSendingToMe[sendingToTokenNumber].remove(
+                    uint16(tokenNumber)
+                );
             }
             // clear my previous send to array
             _tokensSendingTo[tokenNumber].clear();
@@ -1131,7 +1136,7 @@ contract SRHooks is
 
         // Step 2. populate the new send state
         if (sendState == SendStates.SendGeneral) {
-            _sendGeneralTokens.add(tokenNumber);
+            _sendGeneralTokens.add(uint16(tokenNumber));
         } else if (sendState == SendStates.SendTo) {
             // push the tokens to my send to array
             _tokensSendingTo[tokenNumber].store(tokensSendingTo);
@@ -1142,7 +1147,9 @@ contract SRHooks is
             for (uint256 i = 0; i < tokensSendingToLength; i++) {
                 uint256 sendingToTokenNumber = tokensSendingTo[i];
                 // add the token to the "sending to me" Set
-                _tokensSendingToMe[sendingToTokenNumber].add(tokenNumber);
+                _tokensSendingToMe[sendingToTokenNumber].add(
+                    uint16(tokenNumber)
+                );
             }
         }
         // case: neutral state - no-op
@@ -1216,7 +1223,7 @@ contract SRHooks is
         ReceiveStates previousReceiveState = _getReceiveState(tokenNumber);
         if (previousReceiveState == ReceiveStates.ReceiveGeneral) {
             // simply remove the token from the receive general set
-            _receiveGeneralTokens.remove(tokenNumber);
+            _receiveGeneralTokens.remove(uint16(tokenNumber));
         } else if (previousReceiveState == ReceiveStates.ReceiveFrom) {
             // simple removal of my receive from array - we don't have a reverse mapping of the array across other tokens
             _tokensReceivingFrom[tokenNumber].clear();
@@ -1237,7 +1244,7 @@ contract SRHooks is
 
         // Step 2. populate the new receive state
         if (receiveState == ReceiveStates.ReceiveGeneral) {
-            _receiveGeneralTokens.add(tokenNumber);
+            _receiveGeneralTokens.add(uint16(tokenNumber));
         } else if (receiveState == ReceiveStates.ReceiveFrom) {
             // @dev no validation of target tokens needed - if they don't exist or aren't participating,
             // they simply won't appear in getLiveData results due to state set membership checks
@@ -1410,7 +1417,7 @@ contract SRHooks is
         uint256 tokenNumber
     ) internal view returns (SendStates) {
         // check for existence in send general set
-        if (_sendGeneralTokens.contains(tokenNumber)) {
+        if (_sendGeneralTokens.contains(uint16(tokenNumber))) {
             return SendStates.SendGeneral;
         }
         // check for non-empty send to array
@@ -1434,8 +1441,8 @@ contract SRHooks is
             sendState == SendStates.SendGeneral
                 ? "SendGeneral"
                 : sendState == SendStates.SendTo
-                    ? "SendTo"
-                    : "Neutral";
+                ? "SendTo"
+                : "Neutral";
     }
 
     /**
@@ -1449,7 +1456,7 @@ contract SRHooks is
         uint256 tokenNumber
     ) internal view returns (ReceiveStates) {
         // check for existence in receive general set
-        if (_receiveGeneralTokens.contains(tokenNumber)) {
+        if (_receiveGeneralTokens.contains(uint16(tokenNumber))) {
             return ReceiveStates.ReceiveGeneral;
         }
         // check for non-empty receive from array
