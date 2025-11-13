@@ -49,7 +49,8 @@ export interface MetadataUpdate {
 export function imageOnly(imageData: string | Uint8Array): MetadataUpdate {
   return {
     updateImage: true,
-    imageDataCompressed: typeof imageData === "string" ? bytes(imageData) : imageData,
+    imageDataCompressed:
+      typeof imageData === "string" ? bytes(imageData) : imageData,
     updateSound: false,
     soundDataCompressed: emptyBytes(),
   };
@@ -63,7 +64,8 @@ export function soundOnly(soundData: string | Uint8Array): MetadataUpdate {
     updateImage: false,
     imageDataCompressed: emptyBytes(),
     updateSound: true,
-    soundDataCompressed: typeof soundData === "string" ? bytes(soundData) : soundData,
+    soundDataCompressed:
+      typeof soundData === "string" ? bytes(soundData) : soundData,
   };
 }
 
@@ -76,9 +78,11 @@ export function imageAndSound(
 ): MetadataUpdate {
   return {
     updateImage: true,
-    imageDataCompressed: typeof imageData === "string" ? bytes(imageData) : imageData,
+    imageDataCompressed:
+      typeof imageData === "string" ? bytes(imageData) : imageData,
     updateSound: true,
-    soundDataCompressed: typeof soundData === "string" ? bytes(soundData) : soundData,
+    soundDataCompressed:
+      typeof soundData === "string" ? bytes(soundData) : soundData,
   };
 }
 
@@ -108,20 +112,18 @@ export async function updateImage(
   slot: number,
   owner: SignerWithAddress
 ) {
-  return contract
-    .connect(owner)
-    .updateTokenStateAndMetadata(
-      tokenNumber,
-      false, // updateSendState
-      0, // newSendState
-      [], // tokensSendingTo
-      false, // updateReceiveState
-      0, // newReceiveState
-      [], // tokensReceivingFrom
-      true, // updateActiveSlot
-      slot,
-      imageOnly(imageData)
-    );
+  return contract.connect(owner).updateTokenStateAndMetadata(
+    tokenNumber,
+    false, // updateSendState
+    0, // newSendState
+    [], // tokensSendingTo
+    false, // updateReceiveState
+    0, // newReceiveState
+    [], // tokensReceivingFrom
+    true, // updateActiveSlot
+    slot,
+    imageOnly(imageData)
+  );
 }
 
 /**
@@ -134,20 +136,18 @@ export async function updateSound(
   slot: number,
   owner: SignerWithAddress
 ) {
-  return contract
-    .connect(owner)
-    .updateTokenStateAndMetadata(
-      tokenNumber,
-      false, // updateSendState
-      0, // newSendState
-      [], // tokensSendingTo
-      false, // updateReceiveState
-      0, // newReceiveState
-      [], // tokensReceivingFrom
-      true, // updateActiveSlot
-      slot,
-      soundOnly(soundData)
-    );
+  return contract.connect(owner).updateTokenStateAndMetadata(
+    tokenNumber,
+    false, // updateSendState
+    0, // newSendState
+    [], // tokensSendingTo
+    false, // updateReceiveState
+    0, // newReceiveState
+    [], // tokensReceivingFrom
+    true, // updateActiveSlot
+    slot,
+    soundOnly(soundData)
+  );
 }
 
 /**
@@ -161,20 +161,18 @@ export async function updateImageAndSound(
   slot: number,
   owner: SignerWithAddress
 ) {
-  return contract
-    .connect(owner)
-    .updateTokenStateAndMetadata(
-      tokenNumber,
-      false, // updateSendState
-      0, // newSendState
-      [], // tokensSendingTo
-      false, // updateReceiveState
-      0, // newReceiveState
-      [], // tokensReceivingFrom
-      true, // updateActiveSlot
-      slot,
-      imageAndSound(imageData, soundData)
-    );
+  return contract.connect(owner).updateTokenStateAndMetadata(
+    tokenNumber,
+    false, // updateSendState
+    0, // newSendState
+    [], // tokensSendingTo
+    false, // updateReceiveState
+    0, // newReceiveState
+    [], // tokensReceivingFrom
+    true, // updateActiveSlot
+    slot,
+    imageAndSound(imageData, soundData)
+  );
 }
 
 /**
@@ -187,20 +185,18 @@ export async function updateSendState(
   tokensSendingTo: number[],
   owner: SignerWithAddress
 ) {
-  return contract
-    .connect(owner)
-    .updateTokenStateAndMetadata(
-      tokenNumber,
-      true, // updateSendState
-      newSendState,
-      tokensSendingTo,
-      false, // updateReceiveState
-      0, // newReceiveState
-      [], // tokensReceivingFrom
-      false, // updateActiveSlot
-      0, // activeSlot
-      noMetadata()
-    );
+  return contract.connect(owner).updateTokenStateAndMetadata(
+    tokenNumber,
+    true, // updateSendState
+    newSendState,
+    tokensSendingTo,
+    false, // updateReceiveState
+    0, // newReceiveState
+    [], // tokensReceivingFrom
+    false, // updateActiveSlot
+    0, // activeSlot
+    noMetadata()
+  );
 }
 
 /**
@@ -213,20 +209,18 @@ export async function updateReceiveState(
   tokensReceivingFrom: number[],
   owner: SignerWithAddress
 ) {
-  return contract
-    .connect(owner)
-    .updateTokenStateAndMetadata(
-      tokenNumber,
-      false, // updateSendState
-      0, // newSendState
-      [], // tokensSendingTo
-      true, // updateReceiveState
-      newReceiveState,
-      tokensReceivingFrom,
-      false, // updateActiveSlot
-      0, // activeSlot
-      noMetadata()
-    );
+  return contract.connect(owner).updateTokenStateAndMetadata(
+    tokenNumber,
+    false, // updateSendState
+    0, // newSendState
+    [], // tokensSendingTo
+    true, // updateReceiveState
+    newReceiveState,
+    tokensReceivingFrom,
+    false, // updateActiveSlot
+    0, // activeSlot
+    noMetadata()
+  );
 }
 
 /**
@@ -241,20 +235,18 @@ export async function updateBothStates(
   tokensReceivingFrom: number[],
   owner: SignerWithAddress
 ) {
-  return contract
-    .connect(owner)
-    .updateTokenStateAndMetadata(
-      tokenNumber,
-      true, // updateSendState
-      newSendState,
-      tokensSendingTo,
-      true, // updateReceiveState
-      newReceiveState,
-      tokensReceivingFrom,
-      false, // updateActiveSlot
-      0, // activeSlot
-      noMetadata()
-    );
+  return contract.connect(owner).updateTokenStateAndMetadata(
+    tokenNumber,
+    true, // updateSendState
+    newSendState,
+    tokensSendingTo,
+    true, // updateReceiveState
+    newReceiveState,
+    tokensReceivingFrom,
+    false, // updateActiveSlot
+    0, // activeSlot
+    noMetadata()
+  );
 }
 
 /**
@@ -269,20 +261,18 @@ export async function updateImageAndSendState(
   tokensSendingTo: number[],
   owner: SignerWithAddress
 ) {
-  return contract
-    .connect(owner)
-    .updateTokenStateAndMetadata(
-      tokenNumber,
-      true, // updateSendState
-      newSendState,
-      tokensSendingTo,
-      false, // updateReceiveState
-      0, // newReceiveState
-      [], // tokensReceivingFrom
-      true, // updateActiveSlot
-      slot,
-      imageOnly(imageData)
-    );
+  return contract.connect(owner).updateTokenStateAndMetadata(
+    tokenNumber,
+    true, // updateSendState
+    newSendState,
+    tokensSendingTo,
+    false, // updateReceiveState
+    0, // newReceiveState
+    [], // tokensReceivingFrom
+    true, // updateActiveSlot
+    slot,
+    imageOnly(imageData)
+  );
 }
 
 /**
@@ -297,20 +287,18 @@ export async function updateImageAndReceiveState(
   tokensReceivingFrom: number[],
   owner: SignerWithAddress
 ) {
-  return contract
-    .connect(owner)
-    .updateTokenStateAndMetadata(
-      tokenNumber,
-      false, // updateSendState
-      0, // newSendState
-      [], // tokensSendingTo
-      true, // updateReceiveState
-      newReceiveState,
-      tokensReceivingFrom,
-      true, // updateActiveSlot
-      slot,
-      imageOnly(imageData)
-    );
+  return contract.connect(owner).updateTokenStateAndMetadata(
+    tokenNumber,
+    false, // updateSendState
+    0, // newSendState
+    [], // tokensSendingTo
+    true, // updateReceiveState
+    newReceiveState,
+    tokensReceivingFrom,
+    true, // updateActiveSlot
+    slot,
+    imageOnly(imageData)
+  );
 }
 
 /**
@@ -328,20 +316,18 @@ export async function updateImageSoundAndStates(
   tokensReceivingFrom: number[],
   owner: SignerWithAddress
 ) {
-  return contract
-    .connect(owner)
-    .updateTokenStateAndMetadata(
-      tokenNumber,
-      true, // updateSendState
-      newSendState,
-      tokensSendingTo,
-      true, // updateReceiveState
-      newReceiveState,
-      tokensReceivingFrom,
-      true, // updateActiveSlot
-      slot,
-      imageAndSound(imageData, soundData)
-    );
+  return contract.connect(owner).updateTokenStateAndMetadata(
+    tokenNumber,
+    true, // updateSendState
+    newSendState,
+    tokensSendingTo,
+    true, // updateReceiveState
+    newReceiveState,
+    tokensReceivingFrom,
+    true, // updateActiveSlot
+    slot,
+    imageAndSound(imageData, soundData)
+  );
 }
 
 /**
@@ -353,20 +339,18 @@ export async function changeActiveSlot(
   newSlot: number,
   owner: SignerWithAddress
 ) {
-  return contract
-    .connect(owner)
-    .updateTokenStateAndMetadata(
-      tokenNumber,
-      false, // updateSendState
-      0, // newSendState
-      [], // tokensSendingTo
-      false, // updateReceiveState
-      0, // newReceiveState
-      [], // tokensReceivingFrom
-      true, // updateActiveSlot
-      newSlot,
-      noMetadata()
-    );
+  return contract.connect(owner).updateTokenStateAndMetadata(
+    tokenNumber,
+    false, // updateSendState
+    0, // newSendState
+    [], // tokensSendingTo
+    false, // updateReceiveState
+    0, // newReceiveState
+    [], // tokensReceivingFrom
+    true, // updateActiveSlot
+    newSlot,
+    noMetadata()
+  );
 }
 
 // ============================================================================
@@ -416,4 +400,3 @@ export async function getLiveData(
     usedBlockNumber,
   };
 }
-

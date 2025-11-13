@@ -1731,6 +1731,105 @@ describe("SRHooks_Views", function () {
           expect(newTokens).to.include(tokenNum);
         });
       });
+
+      it("correctly handles duplicates in receivingFrom array for SendTo tokens", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        // Token 1: SendTo token 0
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          1,
+          "test image",
+          0,
+          SEND_STATES.SEND_TO,
+          [0],
+          config.accounts.user2
+        );
+
+        // Token 2: SendTo token 0
+        await updateImageAndSendState(
+          config.srHooksProxy,
+          2,
+          "test image",
+          0,
+          SEND_STATES.SEND_TO,
+          [0],
+          config.accounts.additional
+        );
+
+        // Token 0: ReceiveFrom [1, 2, 1, 2] (duplicates!)
+        // This tests the deduplication logic in _sampleTokensReceivedFromSendToPool
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          [1, 2, 1, 2],
+          config.accounts.user
+        );
+
+        const [, , receivedGeneral, receivedTo] =
+          await config.srHooksProxy.getLiveData(0, 0, 10);
+
+        // Should only include tokens 1 and 2 once each (deduplicated)
+        expect(receivedGeneral.length).to.equal(0);
+        expect(receivedTo.length).to.equal(2);
+
+        const receivedTokenNumbers = receivedTo
+          .map((t) => t.tokenNumber.toNumber())
+          .sort((a, b) => a - b);
+        expect(receivedTokenNumbers).to.deep.equal([1, 2]);
+      });
+
+      it("breaks early when maxReceive is reached in ReceiveFrom with SendTo tokens", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        // Mint 10 tokens, all SendTo token 0
+        const newTokens = await mintAdditionalTokens(
+          config,
+          config.accounts.deployer,
+          10
+        );
+
+        for (let i = 0; i < 10; i++) {
+          await updateImageAndSendState(
+            config.srHooksProxy,
+            newTokens[i],
+            "test image",
+            0,
+            SEND_STATES.SEND_TO,
+            [0],
+            config.accounts.deployer
+          );
+        }
+
+        // Token 0: ReceiveFrom all 10 tokens
+        await updateImageAndReceiveState(
+          config.srHooksProxy,
+          0,
+          "test image",
+          0,
+          RECEIVE_STATES.RECEIVE_FROM,
+          newTokens,
+          config.accounts.user
+        );
+
+        // With maxReceive=3, should break early after collecting 3 SendTo tokens
+        const [, , receivedGeneral, receivedTo] =
+          await config.srHooksProxy.getLiveData(0, 0, 3);
+
+        expect(receivedGeneral.length).to.equal(0);
+        expect(receivedTo.length).to.equal(3); // Break triggered at maxReceive
+
+        // Verify all returned tokens are from the newTokens list
+        const receivedTokenNums = receivedTo.map((t) =>
+          t.tokenNumber.toNumber()
+        );
+        receivedTokenNums.forEach((tokenNum) => {
+          expect(newTokens).to.include(tokenNum);
+        });
+      });
     });
 
     describe("TokenLiveData structure", function () {

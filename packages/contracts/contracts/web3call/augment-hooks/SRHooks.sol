@@ -669,6 +669,7 @@ contract SRHooks is
         // or if sending to me.
         // if the token is not sending to me, or not sending generally, we skip it.
         // we perform a Feistel walk to sample token numbers from the set, and then get the live data for each token.
+        // @dev no coverage - we never allow zero-length receiveFrom arrays, but check for redundancy.
         if (receivingFromMeLength == 0) {
             return (new TokenLiveData[](0), new TokenLiveData[](0)); // no tokens receiving from me, return empty arrays
         }
