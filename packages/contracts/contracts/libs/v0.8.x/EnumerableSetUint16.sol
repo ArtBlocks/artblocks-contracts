@@ -6,7 +6,7 @@ pragma solidity ^0.8.0;
 /**
  * @title EnumerableSetUint16
  * @author Art Blocks Inc.
- * @notice Gas-optimized enumerable set library for uint16 values.
+ * @notice Gas-optimized enumerable set library for uint16 values with assembly optimizations.
  * @dev This library efficiently packs uint16 values into shared uint256 storage slots,
  * storing up to 16 uint16 values per slot. This significantly reduces gas costs compared
  * to OpenZeppelin's EnumerableSet.UintSet which stores each value in its own slot.
@@ -20,6 +20,12 @@ pragma solidity ^0.8.0;
  *
  * Count is derived on-demand by examining the last slot to find the highest populated position.
  * This eliminates an SSTORE operation on every add/remove, significantly reducing gas costs.
+ *
+ * Assembly is used extensively for:
+ * - Efficient bit manipulation operations
+ * - Optimized storage access patterns
+ * - Reduced memory operations
+ * - Binary search for finding highest offset
  *
  * Interface is compatible with OpenZeppelin's EnumerableSet.UintSet, but specifically
  * for uint16 values.
@@ -67,27 +73,51 @@ library EnumerableSetUint16 {
         }
 
         uint256 count = length(set);
+        uint256 slotIndex;
+        uint256 offsetInSlot;
 
-        // Calculate which slot and offset to use
-        uint256 slotIndex = count >> 4; // count / 16
-        uint256 offsetInSlot = count & 0xF; // count % 16
+        assembly {
+            // slotIndex = count >> 4 (count / 16)
+            slotIndex := shr(4, count)
+            // offsetInSlot = count & 0xF (count % 16)
+            offsetInSlot := and(count, 0xF)
+        }
 
         // Ensure the slot exists
         if (slotIndex >= set._values.length) {
             set._values.push(0);
         }
 
-        // Pack the value+1 into the slot at the correct offset
-        // We store value+1 so that 0 represents an empty slot
-        // Each uint16 occupies 16 bits, so shift by offsetInSlot * 16
-        uint256 slot = set._values[slotIndex];
-        uint256 mask = uint256(0xFFFF) << (offsetInSlot * 16);
-        slot = (slot & ~mask) | (uint256(value + 1) << (offsetInSlot * 16));
-        set._values[slotIndex] = slot;
+        // Pack the value+1 into the slot using assembly
+        assembly {
+            // Calculate storage slot for _values[slotIndex]
+            mstore(0x00, set.slot)
+            let valuesSlot := keccak256(0x00, 0x20)
+            let targetSlot := add(valuesSlot, slotIndex)
+
+            // Load current slot value
+            let slot := sload(targetSlot)
+
+            // Calculate shift amount: offsetInSlot * 16
+            let shiftAmount := shl(4, offsetInSlot)
+
+            // Create mask: 0xFFFF << shiftAmount
+            let mask := shl(shiftAmount, 0xFFFF)
+
+            // Clear the target position and insert value+1
+            // slot = (slot & ~mask) | ((value + 1) << shiftAmount)
+            slot := or(and(slot, not(mask)), shl(shiftAmount, add(value, 1)))
+
+            // Store back
+            sstore(targetSlot, slot)
+        }
 
         // Store the position (1-indexed) in packed format
         // Position encodes: ((slotIndex << 4) | offsetInSlot) + 1
-        uint256 position = ((slotIndex << 4) | offsetInSlot) + 1;
+        uint256 position;
+        assembly {
+            position := add(or(shl(4, slotIndex), offsetInSlot), 1)
+        }
         _setPackedIndex(set._indexesPacked, value, position);
 
         return true;
@@ -109,49 +139,99 @@ library EnumerableSetUint16 {
         }
 
         uint256 lastIndex = length(set) - 1;
-
-        // Decode the position of the value to remove
-        // Position is 1-indexed, so subtract 1 to get 0-indexed position
         uint256 valuePosition = valueIndex - 1;
 
         if (lastIndex != valuePosition) {
-            // We need to move the last element to the position of the removed element
-            uint256 lastSlotIndex = lastIndex >> 4;
-            uint256 lastOffsetInSlot = lastIndex & 0xF;
+            uint256 lastSlotIndex;
+            uint256 lastOffsetInSlot;
+            uint256 lastValuePlusOne;
 
-            // Extract the last value (stored as value+1, so subtract 1)
-            uint256 lastSlot = set._values[lastSlotIndex];
-            uint16 lastValuePlusOne = uint16(
-                (lastSlot >> (lastOffsetInSlot * 16)) & 0xFFFF
-            );
+            assembly {
+                lastSlotIndex := shr(4, lastIndex)
+                lastOffsetInSlot := and(lastIndex, 0xF)
+
+                // Load last value
+                mstore(0x00, set.slot)
+                let valuesSlot := keccak256(0x00, 0x20)
+                let lastSlot := sload(add(valuesSlot, lastSlotIndex))
+
+                // Extract last value: (lastSlot >> (lastOffsetInSlot * 16)) & 0xFFFF
+                lastValuePlusOne := and(
+                    shr(shl(4, lastOffsetInSlot), lastSlot),
+                    0xFFFF
+                )
+            }
 
             // Move last value to the removed value's position
-            uint256 valueSlotIndex = valuePosition >> 4;
-            uint256 valueOffsetInSlot = valuePosition & 0xF;
-            uint256 mask = uint256(0xFFFF) << (valueOffsetInSlot * 16);
-            set._values[valueSlotIndex] =
-                (set._values[valueSlotIndex] & ~mask) |
-                (uint256(lastValuePlusOne) << (valueOffsetInSlot * 16));
+            uint256 valueSlotIndex;
+            uint256 valueOffsetInSlot;
 
-            // Update the moved value's index in packed format
+            assembly {
+                valueSlotIndex := shr(4, valuePosition)
+                valueOffsetInSlot := and(valuePosition, 0xF)
+
+                // Calculate storage slot
+                mstore(0x00, set.slot)
+                let valuesSlot := keccak256(0x00, 0x20)
+                let targetSlot := add(valuesSlot, valueSlotIndex)
+
+                // Load current slot
+                let slot := sload(targetSlot)
+
+                // Calculate shift and mask
+                let shiftAmount := shl(4, valueOffsetInSlot)
+                let mask := shl(shiftAmount, 0xFFFF)
+
+                // Update slot: (slot & ~mask) | (lastValuePlusOne << shiftAmount)
+                slot := or(
+                    and(slot, not(mask)),
+                    shl(shiftAmount, lastValuePlusOne)
+                )
+
+                // Store back
+                sstore(targetSlot, slot)
+            }
+
+            // Update the moved value's index
             _setPackedIndex(
                 set._indexesPacked,
-                lastValuePlusOne - 1,
+                uint16(lastValuePlusOne - 1),
                 valueIndex
             );
         }
 
         // Clear the last position
-        {
-            uint256 lastSlotIndex = lastIndex >> 4;
-            uint256 lastOffsetInSlot = lastIndex & 0xF;
-            uint256 mask = uint256(0xFFFF) << (lastOffsetInSlot * 16);
-            set._values[lastSlotIndex] = set._values[lastSlotIndex] & ~mask;
+        uint256 lastSlotIndex;
+        uint256 lastOffsetInSlot;
+        bool shouldPop;
 
-            // If the last slot is now empty, pop it from the array
-            if (set._values[lastSlotIndex] == 0) {
-                set._values.pop();
-            }
+        assembly {
+            lastSlotIndex := shr(4, lastIndex)
+            lastOffsetInSlot := and(lastIndex, 0xF)
+
+            // Calculate storage slot
+            mstore(0x00, set.slot)
+            let valuesSlot := keccak256(0x00, 0x20)
+            let targetSlot := add(valuesSlot, lastSlotIndex)
+
+            // Load current slot
+            let slot := sload(targetSlot)
+
+            // Clear the position: slot & ~(0xFFFF << (lastOffsetInSlot * 16))
+            let shiftAmount := shl(4, lastOffsetInSlot)
+            let mask := shl(shiftAmount, 0xFFFF)
+            slot := and(slot, not(mask))
+
+            // Store back
+            sstore(targetSlot, slot)
+
+            // Check if we should pop: slot is zero
+            shouldPop := iszero(slot)
+        }
+
+        // Pop the array if the last slot is now empty
+        if (shouldPop && lastSlotIndex == set._values.length - 1) {
+            set._values.pop();
         }
 
         // Delete the removed value's packed index
@@ -171,29 +251,56 @@ library EnumerableSetUint16 {
     }
 
     /**
-     * @dev Returns the number of values in the set. O(1).
-     * Derives count by examining the last slot to find the highest populated position.
+     * @dev Returns the number of values in the set. O(1) amortized.
+     * Uses binary search to find the highest populated position in the last slot.
      */
-    function length(Uint16Set storage set) internal view returns (uint256) {
+    function length(
+        Uint16Set storage set
+    ) internal view returns (uint256 result) {
         uint256 valuesLength = set._values.length;
 
         if (valuesLength == 0) {
             return 0;
         }
 
-        // Get the last slot
         uint256 lastSlot = set._values[valuesLength - 1];
 
-        // Find the highest non-zero 16-bit segment (right-most populated position)
-        uint256 highestOffset = 0;
-        for (uint256 i = 0; i < 16; i++) {
-            uint256 segment = (lastSlot >> (i * 16)) & 0xFFFF;
-            if (segment != 0) {
-                highestOffset = i;
+        // Use binary search to find highest non-zero 16-bit segment
+        uint256 highestOffset;
+        assembly {
+            let slot := lastSlot
+            highestOffset := 0
+
+            // Binary search for highest non-zero segment
+            // Check upper half (bits 128-255)
+            let upper := shr(128, slot)
+            if gt(upper, 0) {
+                highestOffset := 8
+                slot := upper
+            }
+
+            // Check upper 4 positions of current 8-position range
+            upper := shr(64, slot)
+            if gt(upper, 0) {
+                highestOffset := add(highestOffset, 4)
+                slot := upper
+            }
+
+            // Check upper 2 positions of current 4-position range
+            upper := shr(32, slot)
+            if gt(upper, 0) {
+                highestOffset := add(highestOffset, 2)
+                slot := upper
+            }
+
+            // Check upper 1 position of current 2-position range
+            upper := shr(16, slot)
+            if gt(upper, 0) {
+                highestOffset := add(highestOffset, 1)
             }
         }
 
-        // Calculate total length
+        // Calculate total length: ((valuesLength - 1) * 16) + highestOffset + 1
         return ((valuesLength - 1) << 4) + highestOffset + 1;
     }
 
@@ -215,14 +322,23 @@ library EnumerableSetUint16 {
             "EnumerableSetUint16: index out of bounds"
         );
 
-        uint256 slotIndex = index >> 4; // index / 16
-        uint256 offsetInSlot = index & 0xF; // index % 16
+        uint256 result;
+        assembly {
+            // slotIndex = index >> 4
+            let slotIndex := shr(4, index)
+            // offsetInSlot = index & 0xF
+            let offsetInSlot := and(index, 0xF)
 
-        uint256 slot = set._values[slotIndex];
-        uint256 valuePlusOne = (slot >> (offsetInSlot * 16)) & 0xFFFF;
+            // Load slot value
+            mstore(0x00, set.slot)
+            let valuesSlot := keccak256(0x00, 0x20)
+            let slot := sload(add(valuesSlot, slotIndex))
 
-        // Values are stored as value+1, so subtract 1 to get the actual value
-        return uint16(valuePlusOne - 1);
+            // Extract value: (slot >> (offsetInSlot * 16)) & 0xFFFF - 1
+            result := sub(and(shr(shl(4, offsetInSlot), slot), 0xFFFF), 1)
+        }
+
+        return uint16(result);
     }
 
     /**
@@ -251,17 +367,29 @@ library EnumerableSetUint16 {
      * @dev Internal helper to get a packed index for a value.
      * @param packed The packed index mapping.
      * @param value The uint16 value to look up.
-     * @return The position (1-indexed, 0 means not present).
+     * @return position The position (1-indexed, 0 means not present).
      */
     function _getPackedIndex(
         mapping(uint16 => uint256) storage packed,
         uint16 value
-    ) private view returns (uint256) {
-        uint16 bucketIndex = value >> 4; // value / 16
-        uint256 posInBucket = value & 0xF; // value % 16
+    ) private view returns (uint256 position) {
+        assembly {
+            // bucketIndex = value >> 4
+            let bucketIndex := shr(4, value)
+            // posInBucket = value & 0xF
+            let posInBucket := and(value, 0xF)
 
-        uint256 bucket = packed[bucketIndex];
-        return (bucket >> (posInBucket * 16)) & 0xFFFF;
+            // Calculate storage slot for packed[bucketIndex]
+            mstore(0x00, bucketIndex)
+            mstore(0x20, packed.slot)
+            let bucketSlot := keccak256(0x00, 0x40)
+
+            // Load bucket
+            let bucket := sload(bucketSlot)
+
+            // Extract position: (bucket >> (posInBucket * 16)) & 0xFFFF
+            position := and(shr(shl(4, posInBucket), bucket), 0xFFFF)
+        }
     }
 
     /**
@@ -275,12 +403,29 @@ library EnumerableSetUint16 {
         uint16 value,
         uint256 position
     ) private {
-        uint16 bucketIndex = value >> 4; // value / 16
-        uint256 posInBucket = value & 0xF; // value % 16
+        assembly {
+            // bucketIndex = value >> 4
+            let bucketIndex := shr(4, value)
+            // posInBucket = value & 0xF
+            let posInBucket := and(value, 0xF)
 
-        uint256 bucket = packed[bucketIndex];
-        uint256 mask = uint256(0xFFFF) << (posInBucket * 16);
-        bucket = (bucket & ~mask) | (position << (posInBucket * 16));
-        packed[bucketIndex] = bucket;
+            // Calculate storage slot for packed[bucketIndex]
+            mstore(0x00, bucketIndex)
+            mstore(0x20, packed.slot)
+            let bucketSlot := keccak256(0x00, 0x40)
+
+            // Load current bucket
+            let bucket := sload(bucketSlot)
+
+            // Calculate shift and mask
+            let shiftAmount := shl(4, posInBucket)
+            let mask := shl(shiftAmount, 0xFFFF)
+
+            // Update bucket: (bucket & ~mask) | (position << shiftAmount)
+            bucket := or(and(bucket, not(mask)), shl(shiftAmount, position))
+
+            // Store back
+            sstore(bucketSlot, bucket)
+        }
     }
 }
