@@ -24,6 +24,11 @@
       "address": "0x705E55FCD5CB00eB727213aa777C914B814817Be",
       "txHash": "0x9b2dff144b330d332d500d364a326a4351939a9007d8846a22dc346c8e50d47f",
       "kind": "transparent"
+    },
+    {
+      "address": "0x4A8ed1FC47dc71c3EDA3F13F1F2B0a317740f32a",
+      "txHash": "0x19a8fed0ef7ba643a59ade09e65ab2e3a95d63bb9314e66fda67f0f3fe505687",
+      "kind": "uups"
     }
   ],
   "impls": {
@@ -656,6 +661,242 @@
           }
         },
         "namespaces": {}
+      }
+    },
+    "a939a32f165886fcb0c89761d9c1fadc1f74c96398cfef1868aaaa2bac8f1700": {
+      "address": "0x1c3E2c3d14E07C6d0732ea56aA893e990Cb52091",
+      "txHash": "0xbf463f82f5868fb435ba10e511bb191ca20e5715d6672ce1b87244df489c2a62",
+      "layout": {
+        "solcVersion": "0.8.22",
+        "storage": [
+          {
+            "label": "CORE_CONTRACT_ADDRESS",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_address",
+            "contract": "SRHooks",
+            "src": "contracts/web3call/augment-hooks/SRHooks.sol:73"
+          },
+          {
+            "label": "CORE_PROJECT_ID",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256",
+            "contract": "SRHooks",
+            "src": "contracts/web3call/augment-hooks/SRHooks.sol:75"
+          },
+          {
+            "label": "_tokensMetadata",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(TokenMetadata)7753_storage))",
+            "contract": "SRHooks",
+            "src": "contracts/web3call/augment-hooks/SRHooks.sol:104"
+          },
+          {
+            "label": "_tokenAuxStateData",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_mapping(t_uint256,t_struct(TokenAuxStateData)7766_storage)",
+            "contract": "SRHooks",
+            "src": "contracts/web3call/augment-hooks/SRHooks.sol:113"
+          },
+          {
+            "label": "_sendGeneralTokens",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_struct(Uint16Set)5836_storage",
+            "contract": "SRHooks",
+            "src": "contracts/web3call/augment-hooks/SRHooks.sol:121"
+          },
+          {
+            "label": "_receiveGeneralTokens",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_struct(Uint16Set)5836_storage",
+            "contract": "SRHooks",
+            "src": "contracts/web3call/augment-hooks/SRHooks.sol:126"
+          },
+          {
+            "label": "_tokensSendingToMe",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_mapping(t_uint256,t_struct(Uint16Set)5836_storage)",
+            "contract": "SRHooks",
+            "src": "contracts/web3call/augment-hooks/SRHooks.sol:133"
+          },
+          {
+            "label": "_tokensSendingTo",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_mapping(t_uint256,t_struct(Uint16Array)7141_storage)",
+            "contract": "SRHooks",
+            "src": "contracts/web3call/augment-hooks/SRHooks.sol:138"
+          },
+          {
+            "label": "_tokensReceivingFrom",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_mapping(t_uint256,t_struct(Uint16Array)7141_storage)",
+            "contract": "SRHooks",
+            "src": "contracts/web3call/augment-hooks/SRHooks.sol:143"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_uint16,t_uint256)": {
+            "label": "mapping(uint16 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(TokenMetadata)7753_storage))": {
+            "label": "mapping(uint256 => mapping(uint256 => struct SRHooks.TokenMetadata))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(TokenAuxStateData)7766_storage)": {
+            "label": "mapping(uint256 => struct SRHooks.TokenAuxStateData)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(TokenMetadata)7753_storage)": {
+            "label": "mapping(uint256 => struct SRHooks.TokenMetadata)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(Uint16Array)7141_storage)": {
+            "label": "mapping(uint256 => struct ImmutableUint16Array.Uint16Array)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(Uint16Set)5836_storage)": {
+            "label": "mapping(uint256 => struct EnumerableSetUint16.Uint16Set)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(TokenAuxStateData)7766_storage": {
+            "label": "struct SRHooks.TokenAuxStateData",
+            "members": [
+              {
+                "label": "activeSlot",
+                "type": "t_uint8",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "isReceivingTo",
+                "type": "t_bool",
+                "offset": 1,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(TokenMetadata)7753_storage": {
+            "label": "struct SRHooks.TokenMetadata",
+            "members": [
+              {
+                "label": "imageDataAddress",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "imageVersion",
+                "type": "t_uint16",
+                "offset": 20,
+                "slot": "0"
+              },
+              {
+                "label": "soundDataAddress",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "soundVersion",
+                "type": "t_uint16",
+                "offset": 20,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Uint16Array)7141_storage": {
+            "label": "struct ImmutableUint16Array.Uint16Array",
+            "members": [
+              {
+                "label": "dataPointer",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(Uint16Set)5836_storage": {
+            "label": "struct EnumerableSetUint16.Uint16Set",
+            "members": [
+              {
+                "label": "_values",
+                "type": "t_array(t_uint256)dyn_storage",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_indexesPacked",
+                "type": "t_mapping(t_uint16,t_uint256)",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin-5.0/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin-5.0/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin-5.0/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
       }
     }
   }

@@ -197,7 +197,7 @@ contract SRHooks is
         CORE_CONTRACT_ADDRESS = _coreContractAddress;
         CORE_PROJECT_ID = _coreProjectId;
 
-        emit Initialized({
+        emit SRHooksInitialized({
             coreContractAddress: _coreContractAddress,
             coreProjectId: _coreProjectId
         });
@@ -1441,8 +1441,8 @@ contract SRHooks is
             sendState == SendStates.SendGeneral
                 ? "SendGeneral"
                 : sendState == SendStates.SendTo
-                    ? "SendTo"
-                    : "Neutral";
+                ? "SendTo"
+                : "Neutral";
     }
 
     /**

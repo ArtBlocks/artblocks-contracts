@@ -15,7 +15,10 @@ interface ISRHooks {
      * @param coreContractAddress The address of the core contract.
      * @param coreProjectId The project ID of the core contract.
      */
-    event Initialized(address coreContractAddress, uint256 coreProjectId);
+    event SRHooksInitialized(
+        address coreContractAddress,
+        uint256 coreProjectId
+    );
 
     /**
      * @notice Emitted when the tokens sending to a token are updated
