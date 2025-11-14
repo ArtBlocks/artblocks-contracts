@@ -107,7 +107,8 @@ describe(`OwnedCreate2FactoryV0 Integration`, async function () {
         )
         .withArgs(config.accounts.user.address);
     });
-    it("drains ETH balance to recipient address", async function () {
+    // skip on coverage because it's flaky on coverage
+    it("drains ETH balance to recipient address [@skip-on-coverage]", async function () {
       const config = await loadFixture(_beforeEach);
       const sendAmount = ethers.utils.parseEther("1.0");
       await config.accounts.deployer.sendTransaction({
@@ -143,7 +144,8 @@ describe(`OwnedCreate2FactoryV0 Integration`, async function () {
       ).to.equal(0);
     });
 
-    it("handles balance of zero", async function () {
+    // skip on coverage because it's flaky on coverage
+    it("handles balance of zero [@skip-on-coverage]", async function () {
       const config = await loadFixture(_beforeEach);
       const initialDeployerBalance = await ethers.provider.getBalance(
         config.accounts.deployer.address

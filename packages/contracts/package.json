@@ -131,16 +131,22 @@
   "author": "Art Blocks, Inc",
   "license": "LGPL-3.0-only",
   "dependencies": {
+    "@ethersproject/signing-key": "^5.8.0",
     "@nomicfoundation/hardhat-verify": "^2.0.14",
     "@openzeppelin-0.5/contracts": "npm:@openzeppelin/contracts@2.5.1",
     "@openzeppelin-4.5/contracts": "npm:@openzeppelin/contracts@4.5.0",
     "@openzeppelin-4.7/contracts": "npm:@openzeppelin/contracts@4.7.1",
     "@openzeppelin-4.8/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@4.8.0",
     "@openzeppelin-5.0/contracts": "npm:@openzeppelin/contracts@5.0.1",
+    "@openzeppelin-5.0/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@5.0.1",
+    "@openzeppelin/contracts": "5.0.1",
     "@urql/exchange-retry": "^1.3.0",
     "graphql": "^16.8.2",
     "scripty.sol": "2.1.1",
     "solady": "^0.0.181",
     "urql": "^4.2.1"
+  },
+  "resolutions": {
+    "@openzeppelin-5.0/contracts-upgradeable/@openzeppelin/contracts": "5.0.1"
   }
 }

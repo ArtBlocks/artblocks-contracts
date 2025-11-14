@@ -93,6 +93,7 @@ __metadata:
     "@aws-sdk/client-s3": "npm:^3.596.0"
     "@aws-sdk/credential-providers": "npm:^3.651.1"
     "@defi-wonderland/smock": "npm:^2.4.0"
+    "@ethersproject/signing-key": "npm:^5.8.0"
     "@gnosis.pm/safe-contracts": "npm:^1.3.0"
     "@gnosis.pm/safe-core-sdk": "npm:^2.1.0"
     "@gnosis.pm/safe-core-sdk-types": "npm:^1.7.0"
@@ -112,6 +113,8 @@ __metadata:
     "@openzeppelin-4.7/contracts": "npm:@openzeppelin/contracts@4.7.1"
     "@openzeppelin-4.8/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@4.8.0"
     "@openzeppelin-5.0/contracts": "npm:@openzeppelin/contracts@5.0.1"
+    "@openzeppelin-5.0/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@5.0.1"
+    "@openzeppelin/contracts": "npm:5.0.1"
     "@openzeppelin/hardhat-upgrades": "npm:^1.28.0"
     "@openzeppelin/test-helpers": "npm:^0.5.16"
     "@remix-project/remixd": "npm:^0.6.46"
@@ -4094,6 +4097,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ethersproject/properties@npm:^5.8.0":
+  version: 5.8.0
+  resolution: "@ethersproject/properties@npm:5.8.0"
+  dependencies:
+    "@ethersproject/logger": "npm:^5.8.0"
+  checksum: 10c0/20256d7eed65478a38dabdea4c3980c6591b7b75f8c45089722b032ceb0e1cd3dd6dd60c436cfe259337e6909c28d99528c172d06fc74bbd61be8eb9e68be2e6
+  languageName: node
+  linkType: hard
+
 "@ethersproject/providers@npm:5.7.2":
   version: 5.7.2
   resolution: "@ethersproject/providers@npm:5.7.2"
@@ -4174,6 +4186,20 @@ __metadata:
     elliptic: "npm:6.5.4"
     hash.js: "npm:1.1.7"
   checksum: 10c0/fe2ca55bcdb6e370d81372191d4e04671234a2da872af20b03c34e6e26b97dc07c1ee67e91b673680fb13344c9d5d7eae52f1fa6117733a3d68652b778843e09
+  languageName: node
+  linkType: hard
+
+"@ethersproject/signing-key@npm:^5.8.0":
+  version: 5.8.0
+  resolution: "@ethersproject/signing-key@npm:5.8.0"
+  dependencies:
+    "@ethersproject/bytes": "npm:^5.8.0"
+    "@ethersproject/logger": "npm:^5.8.0"
+    "@ethersproject/properties": "npm:^5.8.0"
+    bn.js: "npm:^5.2.1"
+    elliptic: "npm:6.6.1"
+    hash.js: "npm:1.1.7"
+  checksum: 10c0/a7ff6cd344b0609737a496b6d5b902cf5528ed5a7ce2c0db5e7b69dc491d1810d1d0cd51dddf9dc74dd562ab4961d76e982f1750359b834c53c202e85e4c8502
   languageName: node
   linkType: hard
 
@@ -6137,7 +6163,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openzeppelin-5.0/contracts@npm:@openzeppelin/contracts@5.0.1":
+"@openzeppelin-5.0/contracts-upgradeable@npm:@openzeppelin/contracts-upgradeable@5.0.1":
+  version: 5.0.1
+  resolution: "@openzeppelin/contracts-upgradeable@npm:5.0.1"
+  peerDependencies:
+    "@openzeppelin/contracts": 5.0.1
+  checksum: 10c0/49869321b1e6bd664d33c143c3be54e9205c7f53eb768e4375728401931d5f4d6c4144e4265d75fbdb8a7acfdd939d9726bd964d97b028484150dfa6497719c1
+  languageName: node
+  linkType: hard
+
+"@openzeppelin-5.0/contracts@npm:@openzeppelin/contracts@5.0.1, @openzeppelin/contracts@npm:5.0.1":
   version: 5.0.1
   resolution: "@openzeppelin/contracts@npm:5.0.1"
   checksum: 10c0/f3fcd60c851421d22b94e89850b1de5bb423c7caa77b570a458c3f918da8aca639ce9cf1f789eb91e0301c8a042e10d0e6215c346f66e29a2063e04787efca6b
@@ -9494,6 +9529,7 @@ __metadata:
   resolution: "artblocks-oss@workspace:."
   dependencies:
     "@changesets/cli": "npm:^2.27.5"
+    "@ethersproject/signing-key": "npm:^5.8.0"
     "@graphql-codegen/cli": "npm:^5.0.2"
     "@graphql-codegen/client-preset": "npm:^4.3.0"
     "@graphql-codegen/typescript": "npm:^4.0.1"
@@ -12436,6 +12472,21 @@ __metadata:
     minimalistic-assert: "npm:^1.0.1"
     minimalistic-crypto-utils: "npm:^1.0.1"
   checksum: 10c0/5f361270292c3b27cf0843e84526d11dec31652f03c2763c6c2b8178548175ff5eba95341dd62baff92b2265d1af076526915d8af6cc9cb7559c44a62f8ca6e2
+  languageName: node
+  linkType: hard
+
+"elliptic@npm:6.6.1":
+  version: 6.6.1
+  resolution: "elliptic@npm:6.6.1"
+  dependencies:
+    bn.js: "npm:^4.11.9"
+    brorand: "npm:^1.1.0"
+    hash.js: "npm:^1.0.0"
+    hmac-drbg: "npm:^1.0.1"
+    inherits: "npm:^2.0.4"
+    minimalistic-assert: "npm:^1.0.1"
+    minimalistic-crypto-utils: "npm:^1.0.1"
+  checksum: 10c0/8b24ef782eec8b472053793ea1e91ae6bee41afffdfcb78a81c0a53b191e715cbe1292aa07165958a9bbe675bd0955142560b1a007ffce7d6c765bcaf951a867
   languageName: node
   linkType: hard
 
