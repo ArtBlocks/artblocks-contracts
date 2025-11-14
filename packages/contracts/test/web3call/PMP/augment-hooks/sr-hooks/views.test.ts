@@ -811,6 +811,10 @@ describe("SRHooks_Views", function () {
           config.accounts.deployer
         );
 
+        // Mine additional blocks to ensure we have sufficient block history
+        // We need at least 10 blocks of history to sample from
+        await mine(15);
+
         // Query two different historical blocks to ensure different block hashes
         // Don't rely on mining - explicitly use different blocks
         const currentBlock = await ethers.provider.getBlockNumber();
@@ -1461,6 +1465,10 @@ describe("SRHooks_Views", function () {
           newTokens.slice(0, 10),
           config.accounts.deployer
         );
+
+        // Mine additional blocks to ensure we have sufficient block history
+        // We need at least 10 blocks of history to sample from
+        await mine(15);
 
         // Query two different historical blocks to ensure different block hashes
         // Don't rely on mining - explicitly use different blocks
