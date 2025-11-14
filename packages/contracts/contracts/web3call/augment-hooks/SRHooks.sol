@@ -197,7 +197,7 @@ contract SRHooks is
         CORE_CONTRACT_ADDRESS = _coreContractAddress;
         CORE_PROJECT_ID = _coreProjectId;
 
-        emit Initialized({
+        emit SRHooksInitialized({
             coreContractAddress: _coreContractAddress,
             coreProjectId: _coreProjectId
         });

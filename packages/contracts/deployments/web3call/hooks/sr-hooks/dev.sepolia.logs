@@ -1,0 +1,99 @@
+================================================================================
+SRHooks Deployment Script - Sepolia Dev Testnet
+================================================================================
+
+--------------------------------------------------
+Validating deployment configuration...
+--------------------------------------------------
+✓ Network validated: sepolia (Chain ID: 11155111)
+✓ Deployer address: 0x78019DB3F39bff49A119C5566bb693083f270FAB
+✓ Deployer balance: 0.109863983355286596 ETH
+✓ Owner address validated: 0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4
+✓ Core contract address validated: 0x4a6d2e4a18e194317025d7a995c705aab58d3485
+✓ Core contract verified on-chain
+✓ Project ID validated: 16
+
+--------------------------------------------------
+Configuration Summary:
+--------------------------------------------------
+Network:              sepolia
+Deployer:             0x78019DB3F39bff49A119C5566bb693083f270FAB
+Owner:                0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4
+Core Contract:        0x4a6d2e4a18e194317025d7a995c705aab58d3485
+Project ID:           16
+
+--------------------------------------------------
+Deploying SRHooks contract...
+--------------------------------------------------
+✓ SRHooks factory created
+Deploying implementation and proxy contracts...
+(This may take a minute...)
+Duplicate definition of Initialized (Initialized(uint64), Initialized(address,uint256))
+Warning: A proxy admin was previously deployed on this network
+
+    This is not natively used with the current kind of proxy ('uups').
+    Changes to the admin will have no effect on this new proxy.
+
+Duplicate definition of Initialized (Initialized(uint64), Initialized(address,uint256))
+Waiting for deployment transaction to be mined...
+
+✓ SRHooks implementation deployed at: 0x1c3E2c3d14E07C6d0732ea56aA893e990Cb52091
+✓ SRHooks proxy deployed at:          0x4A8ed1FC47dc71c3EDA3F13F1F2B0a317740f32a
+
+--------------------------------------------------
+Validating deployment...
+--------------------------------------------------
+✓ Proxy correctly points to implementation
+✓ Core contract address correctly set
+✓ Project ID correctly set
+✓ Owner correctly set
+[WARNING] Contract does not support IPMPAugmentHook interface
+
+--------------------------------------------------
+Verifying contracts on Etherscan...
+--------------------------------------------------
+Waiting 30 seconds for Etherscan to index the contracts...
+Verifying implementation contract...
+Successfully submitted source code for contract
+contracts/web3call/augment-hooks/SRHooks.sol:SRHooks at 0x1c3E2c3d14E07C6d0732ea56aA893e990Cb52091
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract SRHooks on the block explorer.
+https://sepolia.etherscan.io/address/0x1c3E2c3d14E07C6d0732ea56aA893e990Cb52091#code
+
+✓ Implementation contract verified on Etherscan
+
+Note: The proxy contract is automatically verified by the upgrades plugin.
+
+================================================================================
+DEPLOYMENT SUMMARY
+================================================================================
+
+Network:                   sepolia
+Deployer:                  0x78019DB3F39bff49A119C5566bb693083f270FAB
+
+SRHooks Implementation:    0x1c3E2c3d14E07C6d0732ea56aA893e990Cb52091
+SRHooks Proxy:             0x4A8ed1FC47dc71c3EDA3F13F1F2B0a317740f32a
+
+Configuration:
+  Owner:                   0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4
+  Core Contract:           0x4a6d2e4a18e194317025d7a995c705aab58d3485
+  Project ID:              16
+
+Etherscan Links:
+  Implementation: https://sepolia.etherscan.io/address/0x1c3E2c3d14E07C6d0732ea56aA893e990Cb52091
+  Proxy:          https://sepolia.etherscan.io/address/0x4A8ed1FC47dc71c3EDA3F13F1F2B0a317740f32a
+
+Next Steps:
+  1. Verify the deployment on Etherscan using the links above
+  2. Configure PMPV0 to use this SRHooks contract as an augment hook
+     - Call: pmp.configureProjectHooks(coreContract, projectId, address(0), srHooksAddress)
+  3. Test the contract functionality on testnet before mainnet deployment
+
+Upgrade Authority:
+  - Only the owner can authorize upgrades via _authorizeUpgrade
+  - Current owner: 0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4
+
+================================================================================
+DEPLOYMENT COMPLETE
+================================================================================
