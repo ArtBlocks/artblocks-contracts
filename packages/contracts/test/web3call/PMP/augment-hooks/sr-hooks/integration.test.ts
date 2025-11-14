@@ -38,7 +38,7 @@ describe("SRHooks Integration Tests", function () {
   }
 
   describe("Delegation V2 Integration", function () {
-    it("allows delegate.xyz V2 delegate to update token state", async function () {
+    it("allows delegate.xyz V2 delegate to update token state [@skip-on-coverage]", async function () {
       const config = await loadFixture(_beforeEach);
       const imageData = ethers.utils.toUtf8Bytes("test image");
       const tokenId = config.projectThree * 1000000; // Token 0

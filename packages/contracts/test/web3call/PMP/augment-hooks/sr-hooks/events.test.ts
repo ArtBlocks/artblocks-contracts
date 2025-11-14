@@ -60,7 +60,7 @@ describe("SRHooks Events", function () {
 
       // Find Initialized event in the deployment logs
       const initializedTopic = ethers.utils.keccak256(
-        ethers.utils.toUtf8Bytes("Initialized(address,uint256)")
+        ethers.utils.toUtf8Bytes("SRHooksInitialized(address,uint256)")
       );
 
       const initializedLog = deployReceipt.logs.find(
@@ -71,7 +71,7 @@ describe("SRHooks Events", function () {
 
       // Decode the event
       const iface = new ethers.utils.Interface([
-        "event Initialized(address coreContractAddress, uint256 coreProjectId)",
+        "event SRHooksInitialized(address coreContractAddress, uint256 coreProjectId)",
       ]);
       const decodedEvent = iface.parseLog(initializedLog!);
 
