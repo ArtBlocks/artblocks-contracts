@@ -141,15 +141,18 @@ library EnumerableSetUint16 {
         uint256 lastIndex = length(set) - 1;
         uint256 valuePosition = valueIndex - 1;
 
+        // Calculate last slot position (used in both branches)
+        uint256 lastSlotIndex;
+        uint256 lastOffsetInSlot;
+        assembly {
+            lastSlotIndex := shr(4, lastIndex)
+            lastOffsetInSlot := and(lastIndex, 0xF)
+        }
+
         if (lastIndex != valuePosition) {
-            uint256 lastSlotIndex;
-            uint256 lastOffsetInSlot;
             uint256 lastValuePlusOne;
 
             assembly {
-                lastSlotIndex := shr(4, lastIndex)
-                lastOffsetInSlot := and(lastIndex, 0xF)
-
                 // Load last value
                 mstore(0x00, set.slot)
                 let valuesSlot := keccak256(0x00, 0x20)
@@ -201,14 +204,9 @@ library EnumerableSetUint16 {
         }
 
         // Clear the last position
-        uint256 lastSlotIndex;
-        uint256 lastOffsetInSlot;
         bool shouldPop;
 
         assembly {
-            lastSlotIndex := shr(4, lastIndex)
-            lastOffsetInSlot := and(lastIndex, 0xF)
-
             // Calculate storage slot
             mstore(0x00, set.slot)
             let valuesSlot := keccak256(0x00, 0x20)
