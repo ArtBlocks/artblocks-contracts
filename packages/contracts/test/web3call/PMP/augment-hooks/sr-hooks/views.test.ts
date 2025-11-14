@@ -712,7 +712,7 @@ describe("SRHooks_Views", function () {
         expect(usedBlockNumber).to.exist;
       });
 
-      it("respects MAX_RECEIVE_RATE_PER_BLOCK cap", async function () {
+      it("respects MAX_RECEIVE_RATE_PER_BLOCK cap [@skip-on-coverage]", async function () {
         const config = await loadFixture(_beforeEach);
 
         // Mint 101 additional tokens for deployer (need 100 senders + 1 receiver)
@@ -776,7 +776,7 @@ describe("SRHooks_Views", function () {
         expect(usedBlockNumber).to.exist;
       });
 
-      it("returns different samples across different blocks", async function () {
+      it("returns different samples across different blocks [@skip-on-coverage]", async function () {
         const config = await loadFixture(_beforeEach);
 
         // Mint 11 tokens for deployer (10 senders + 1 receiver)
@@ -846,7 +846,7 @@ describe("SRHooks_Views", function () {
         expect(hasDifference).to.be.true;
       });
 
-      it("handles low send/receive ratios correctly", async function () {
+      it("handles low send/receive ratios correctly [@skip-on-coverage]", async function () {
         const config = await loadFixture(_beforeEach);
 
         // Mint 11 tokens for deployer (1 sender + 10 receivers)
@@ -973,7 +973,7 @@ describe("SRHooks_Views", function () {
         expect(receivedTo[0].tokenNumber).to.equal(newTokens[0]);
       });
 
-      it("verifies SendTo tokens are included across multiple samples", async function () {
+      it("verifies SendTo tokens are included across multiple samples [@skip-on-coverage]", async function () {
         const config = await loadFixture(_beforeEach);
 
         // Mint 10 tokens for deployer to act as senders
@@ -1025,7 +1025,7 @@ describe("SRHooks_Views", function () {
         });
       });
 
-      it("respects maxReceive cap when sampling SendTo tokens", async function () {
+      it("respects maxReceive cap when sampling SendTo tokens [@skip-on-coverage]", async function () {
         const config = await loadFixture(_beforeEach);
 
         // Mint 19 tokens for deployer (10 senders + 9 additional targets)
@@ -1151,7 +1151,7 @@ describe("SRHooks_Views", function () {
         expect(sendToTokenNums).to.deep.equal([newTokens[2], newTokens[3]]);
       });
 
-      it("independently caps general and SendTo arrays with same maxReceive", async function () {
+      it("independently caps general and SendTo arrays with same maxReceive [@skip-on-coverage]", async function () {
         const config = await loadFixture(_beforeEach);
 
         // Mint 20 tokens (10 for SendGeneral, 10 for SendTo)
@@ -2068,7 +2068,7 @@ describe("SRHooks_Views", function () {
         });
       });
 
-      it("returns only SendTo tokens even when general pool has senders", async function () {
+      it("returns only SendTo tokens even when general pool has senders [@skip-on-coverage]", async function () {
         const config = await loadFixture(_beforeEach);
 
         // Mint 8 tokens (5 SendGeneral, 3 SendTo token 0)
@@ -2297,7 +2297,7 @@ describe("SRHooks_Views", function () {
     });
 
     describe("Pool state values", function () {
-      it("returns accurate numSendGeneral, numReceiveGeneral, numSendingToMe", async function () {
+      it("returns accurate numSendGeneral, numReceiveGeneral, numSendingToMe [@skip-on-coverage]", async function () {
         const config = await loadFixture(_beforeEach);
 
         // Mint 10 tokens (5 SendGeneral, 3 ReceiveGeneral, 2 SendTo token 0)
