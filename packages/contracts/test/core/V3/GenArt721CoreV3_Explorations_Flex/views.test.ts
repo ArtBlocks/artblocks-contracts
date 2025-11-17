@@ -105,4 +105,3 @@ for (const coreContractName of coreContractsToTest) {
     });
   });
 }
-

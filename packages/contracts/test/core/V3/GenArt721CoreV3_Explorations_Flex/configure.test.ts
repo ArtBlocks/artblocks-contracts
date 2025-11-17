@@ -82,14 +82,16 @@ for (const coreContractName of coreContractsToTest) {
         const v3flexlib = await v3flexlibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
-          {
-            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
-              library.address,
-            "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
-          },
-          config.accounts.deployer
-        );
+        const explorationsFactory =
+          new GenArt721CoreV3_Explorations_Flex__factory(
+            {
+              "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+                library.address,
+              "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib":
+                v3flexlib.address,
+            },
+            config.accounts.deployer
+          );
         const invalidExplorationsConfiguration = {
           tokenName: config.name,
           tokenSymbol: config.symbol,
@@ -132,14 +134,16 @@ for (const coreContractName of coreContractsToTest) {
         const v3flexlib = await v3flexlibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
-          {
-            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
-              library.address,
-            "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
-          },
-          config.accounts.deployer
-        );
+        const explorationsFactory =
+          new GenArt721CoreV3_Explorations_Flex__factory(
+            {
+              "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+                library.address,
+              "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib":
+                v3flexlib.address,
+            },
+            config.accounts.deployer
+          );
         const invalidExplorationsConfiguration = {
           tokenName: config.name,
           tokenSymbol: config.symbol,
@@ -182,14 +186,16 @@ for (const coreContractName of coreContractsToTest) {
         const v3flexlib = await v3flexlibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
-          {
-            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
-              library.address,
-            "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
-          },
-          config.accounts.deployer
-        );
+        const explorationsFactory =
+          new GenArt721CoreV3_Explorations_Flex__factory(
+            {
+              "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+                library.address,
+              "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib":
+                v3flexlib.address,
+            },
+            config.accounts.deployer
+          );
         const invalidExplorationsConfiguration = {
           tokenName: config.name,
           tokenSymbol: config.symbol,
@@ -232,14 +238,16 @@ for (const coreContractName of coreContractsToTest) {
         const v3flexlib = await v3flexlibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
-          {
-            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
-              library.address,
-            "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
-          },
-          config.accounts.deployer
-        );
+        const explorationsFactory =
+          new GenArt721CoreV3_Explorations_Flex__factory(
+            {
+              "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+                library.address,
+              "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib":
+                v3flexlib.address,
+            },
+            config.accounts.deployer
+          );
         const invalidExplorationsConfiguration = {
           tokenName: config.name,
           tokenSymbol: config.symbol,
@@ -282,14 +290,16 @@ for (const coreContractName of coreContractsToTest) {
         const v3flexlib = await v3flexlibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
-          {
-            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
-              library.address,
-            "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
-          },
-          config.accounts.deployer
-        );
+        const explorationsFactory =
+          new GenArt721CoreV3_Explorations_Flex__factory(
+            {
+              "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+                library.address,
+              "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib":
+                v3flexlib.address,
+            },
+            config.accounts.deployer
+          );
         const invalidExplorationsConfiguration = {
           tokenName: config.name,
           tokenSymbol: config.symbol,
@@ -331,14 +341,16 @@ for (const coreContractName of coreContractsToTest) {
         const v3flexlib = await v3flexlibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
-          {
-            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
-              library.address,
-            "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
-          },
-          config.accounts.deployer
-        );
+        const explorationsFactory =
+          new GenArt721CoreV3_Explorations_Flex__factory(
+            {
+              "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+                library.address,
+              "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib":
+                v3flexlib.address,
+            },
+            config.accounts.deployer
+          );
         const invalidExplorationsConfiguration = {
           tokenName: config.name,
           tokenSymbol: config.symbol,
@@ -380,14 +392,16 @@ for (const coreContractName of coreContractsToTest) {
         const v3flexlib = await v3flexlibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
-          {
-            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
-              library.address,
-            "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
-          },
-          config.accounts.deployer
-        );
+        const explorationsFactory =
+          new GenArt721CoreV3_Explorations_Flex__factory(
+            {
+              "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+                library.address,
+              "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib":
+                v3flexlib.address,
+            },
+            config.accounts.deployer
+          );
         const invalidExplorationsConfiguration = {
           tokenName: config.name,
           tokenSymbol: config.symbol,
@@ -429,14 +443,16 @@ for (const coreContractName of coreContractsToTest) {
         const v3flexlib = await v3flexlibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
-          {
-            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
-              library.address,
-            "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
-          },
-          config.accounts.deployer
-        );
+        const explorationsFactory =
+          new GenArt721CoreV3_Explorations_Flex__factory(
+            {
+              "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+                library.address,
+              "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib":
+                v3flexlib.address,
+            },
+            config.accounts.deployer
+          );
         const invalidExplorationsConfiguration = {
           tokenName: config.name,
           tokenSymbol: config.symbol,
@@ -651,4 +667,3 @@ for (const coreContractName of coreContractsToTest) {
     });
   });
 }
-
