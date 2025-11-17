@@ -21,6 +21,8 @@ import {
   GenArt721CoreV3_Engine_Flex_PROHIBITION,
   GenArt721CoreV3_Engine_IncorrectCoreType,
   GenArt721CoreV3_Explorations,
+  GenArt721CoreV3_Explorations_Flex,
+  GenArt721CoreV3_Explorations_Flex__factory,
   GenArt721Minter_PBAB,
   MinterFilterV0,
   MinterFilterV1,
@@ -770,6 +772,89 @@ export async function deployCoreWithMinterFilter<
       DEFAULT_BASE_URI,
       config.universalReader.address
     );
+  } else if (coreContractName.endsWith("V3_Explorations_Flex")) {
+    randomizer = await deployAndGet(config, _randomizerName, []);
+    const minterFilterSuite = await deploySharedMinterFilter(
+      config,
+      minterFilterName
+    );
+    let adminACLContractName = useAdminACLWithEvents
+      ? "MockAdminACLV0Events"
+      : "AdminACLV0";
+    minterFilter = minterFilterSuite.minterFilter;
+
+    // if function input has adminACL contract name, use that instead
+    adminACLContractName = _adminACLContractName
+      ? _adminACLContractName
+      : adminACLContractName;
+    adminACL = await deployAndGet(config, adminACLContractName, []);
+    // split provider
+    const mockSplitterFactory = await deployAndGet(
+      config,
+      "Mock0xSplitsV2PullFactory",
+      []
+    );
+    config.splitProvider = (await deployAndGet(config, "SplitProviderV0", [
+      mockSplitterFactory.address, // _splitterFactory
+    ])) as SplitProviderV0;
+    const validExplorationsConfiguration = {
+      tokenName: config.name,
+      tokenSymbol: config.symbol,
+      renderProviderAddress: config.accounts.deployer.address,
+      platformProviderAddress: constants.AddressZero,
+      newSuperAdminAddress: "0x0000000000000000000000000000000000000000",
+      minterFilterAddress: minterFilter.address,
+      randomizerContract: randomizer.address,
+      splitProviderAddress: config.splitProvider?.address,
+      startingProjectId: 999,
+      autoApproveArtistSplitProposals: false,
+      nullPlatformProvider: true,
+      allowArtistProjectActivation: false,
+    };
+    const bytecodeStorageLibFactory = await ethers.getContractFactory(
+      "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+    );
+
+    const library = await bytecodeStorageLibFactory
+      .connect(config.accounts.deployer)
+      .deploy(/* no args for library ever */);
+    const v3flexlibFactory = await ethers.getContractFactory(
+      "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib"
+    );
+    const v3flexlib = await v3flexlibFactory
+      .connect(config.accounts.deployer)
+      .deploy(/* no args for library ever */);
+    const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
+      {
+        "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+          library.address,
+        "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
+      },
+      config.accounts.deployer
+    );
+    // deploy UniversalReader
+    config.universalReader = (await deployAndGet(
+      config,
+      "UniversalBytecodeStorageReader",
+      [config.accounts.deployer.address]
+    )) as UniversalBytecodeStorageReader;
+    // deploy version-specific reader and configure universalReader
+    const versionedReaderFactory = await ethers.getContractFactory(
+      "BytecodeStorageReaderContractV2_Web3Call",
+      { libraries: { BytecodeStorageReader: library.address } }
+    );
+    const versionedReader = await versionedReaderFactory
+      .connect(config.accounts.deployer)
+      .deploy();
+    await config.universalReader
+      .connect(config.accounts.deployer)
+      .updateBytecodeStorageReaderContract(versionedReader.address);
+    // deploy explorations core
+    genArt721Core = await explorationsFactory.deploy(
+      validExplorationsConfiguration,
+      adminACL.address,
+      config.universalReader.address
+    );
   } else if (
     coreContractName.endsWith("V3_Engine") ||
     coreContractName.endsWith("V3_Engine_Flex") ||
@@ -884,6 +969,7 @@ export async function deploySharedMinterFilter(
 type DeployCoreSupportedCoreContractNames =
   | "GenArt721CoreV3"
   | "GenArt721CoreV3_Explorations"
+  | "GenArt721CoreV3_Explorations_Flex"
   | "GenArt721CoreV3_Engine"
   | "GenArt721CoreV3_Engine_Flex"
   | "GenArt721CoreV3_Engine_Flex_PROHIBITION"
@@ -892,6 +978,7 @@ type DeployCoreSupportedCoreContractNames =
 type DeployCoreSupportedCoreContractTypes = {
   GenArt721CoreV3: GenArt721CoreV3;
   GenArt721CoreV3_Explorations: GenArt721CoreV3_Explorations;
+  GenArt721CoreV3_Explorations_Flex: GenArt721CoreV3_Explorations_Flex;
   GenArt721CoreV3_Engine: GenArt721CoreV3_Engine;
   GenArt721CoreV3_Engine_Flex: GenArt721CoreV3_Engine_Flex;
   GenArt721CoreV3_Engine_Flex_PROHIBITION: GenArt721CoreV3_Engine_Flex_PROHIBITION;

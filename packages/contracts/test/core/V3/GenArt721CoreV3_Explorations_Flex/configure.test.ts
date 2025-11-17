@@ -1,0 +1,654 @@
+import { constants } from "@openzeppelin/test-helpers";
+import { expect } from "chai";
+import { ethers } from "hardhat";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import {
+  AdminACLV0,
+  GenArt721CoreV3_Explorations_Flex,
+  MinterFilterV2,
+  SharedRandomizerV0,
+  UniversalBytecodeStorageReader,
+} from "../../../../scripts/contracts";
+import { GenArt721CoreV3_Explorations_Flex__factory } from "../../../../scripts/contracts/factories/contracts/GenArt721CoreV3_Explorations_Flex.sol";
+import {
+  GENART721_ERROR_NAME,
+  GENART721_ERROR_CODES,
+} from "../../../util/common";
+
+import {
+  T_Config,
+  getAccounts,
+  assignDefaultConstants,
+  deployCoreWithMinterFilter,
+} from "../../../util/common";
+
+interface T_ExplorationsTestConfig extends T_Config {
+  genArt721Core: GenArt721CoreV3_Explorations_Flex;
+  adminACL: AdminACLV0;
+  minterFilter: MinterFilterV2;
+  randomizer: SharedRandomizerV0;
+  universalReader: UniversalBytecodeStorageReader;
+}
+
+// test the following V3 core contract derivatives:
+const coreContractsToTest = [
+  "GenArt721CoreV3_Explorations_Flex", // V3.2 core Explorations Flex contract
+];
+
+const ExternalAssetDependencyType = {
+  IPFS: 0,
+  ARWEAVE: 1,
+  ONCHAIN: 2,
+  ART_BLOCKS_DEPENDENCY_REGISTRY: 3,
+};
+
+/**
+ * Tests for V3 core dealing with configuring the core contract.
+ */
+for (const coreContractName of coreContractsToTest) {
+  describe(`${coreContractName} Contract Configure`, async function () {
+    async function _beforeEach() {
+      let config: T_Config = {
+        accounts: await getAccounts(),
+      };
+      config = await assignDefaultConstants(config);
+
+      // deploy and configure minter filter and minter
+      ({
+        genArt721Core: config.genArt721Core,
+        minterFilter: config.minterFilter,
+        randomizer: config.randomizer,
+        adminACL: config.adminACL,
+      } = await deployCoreWithMinterFilter(
+        config,
+        coreContractName,
+        "MinterFilterV2"
+      ));
+      return config as T_ExplorationsTestConfig;
+    }
+
+    describe("constructor", async function () {
+      it("reverts when render provider address is zero", async function () {
+        const config = await loadFixture(_beforeEach);
+        const bytecodeStorageLibFactory = await ethers.getContractFactory(
+          "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+        );
+        const library = await bytecodeStorageLibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        const v3flexlibFactory = await ethers.getContractFactory(
+          "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib"
+        );
+        const v3flexlib = await v3flexlibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
+          {
+            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+              library.address,
+            "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
+          },
+          config.accounts.deployer
+        );
+        const invalidExplorationsConfiguration = {
+          tokenName: config.name,
+          tokenSymbol: config.symbol,
+          renderProviderAddress: constants.ZERO_ADDRESS, // INVALID ZERO ADDRESS
+          platformProviderAddress: constants.ZERO_ADDRESS,
+          newSuperAdminAddress: constants.ZERO_ADDRESS,
+          minterFilterAddress: config.minterFilter.address,
+          randomizerContract: config.randomizer?.address,
+          splitProviderAddress: config.splitProvider.address,
+          startingProjectId: 999,
+          autoApproveArtistSplitProposals: false,
+          nullPlatformProvider: true,
+          allowArtistProjectActivation: false,
+        };
+        // deploy explorations core
+        const deployTx = explorationsFactory.getDeployTransaction(
+          invalidExplorationsConfiguration,
+          config.adminACL.address,
+          config.universalReader.address
+        );
+        await expect(config.accounts.deployer.sendTransaction(deployTx))
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
+      });
+
+      it("reverts when randomizer address is zero", async function () {
+        const config = await loadFixture(_beforeEach);
+        const bytecodeStorageLibFactory = await ethers.getContractFactory(
+          "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+        );
+        const library = await bytecodeStorageLibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        const v3flexlibFactory = await ethers.getContractFactory(
+          "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib"
+        );
+        const v3flexlib = await v3flexlibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
+          {
+            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+              library.address,
+            "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
+          },
+          config.accounts.deployer
+        );
+        const invalidExplorationsConfiguration = {
+          tokenName: config.name,
+          tokenSymbol: config.symbol,
+          renderProviderAddress: config.accounts.deployer.address,
+          platformProviderAddress: constants.ZERO_ADDRESS,
+          newSuperAdminAddress: constants.ZERO_ADDRESS,
+          minterFilterAddress: config.minterFilter.address,
+          randomizerContract: constants.ZERO_ADDRESS, // INVALID ZERO ADDRESS
+          splitProviderAddress: config.splitProvider?.address,
+          startingProjectId: 999,
+          autoApproveArtistSplitProposals: false,
+          nullPlatformProvider: true,
+          allowArtistProjectActivation: false,
+        };
+        // deploy explorations core
+        const deployTx = explorationsFactory.getDeployTransaction(
+          invalidExplorationsConfiguration,
+          config.adminACL.address,
+          config.universalReader.address
+        );
+        await expect(config.accounts.deployer.sendTransaction(deployTx))
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
+      });
+
+      it("reverts when adminACL address is zero", async function () {
+        const config = await loadFixture(_beforeEach);
+        const bytecodeStorageLibFactory = await ethers.getContractFactory(
+          "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+        );
+        const library = await bytecodeStorageLibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        const v3flexlibFactory = await ethers.getContractFactory(
+          "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib"
+        );
+        const v3flexlib = await v3flexlibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
+          {
+            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+              library.address,
+            "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
+          },
+          config.accounts.deployer
+        );
+        const invalidExplorationsConfiguration = {
+          tokenName: config.name,
+          tokenSymbol: config.symbol,
+          renderProviderAddress: config.accounts.deployer.address,
+          platformProviderAddress: constants.ZERO_ADDRESS,
+          newSuperAdminAddress: constants.ZERO_ADDRESS,
+          minterFilterAddress: config.minterFilter.address,
+          randomizerContract: config.randomizer.address,
+          splitProviderAddress: config.splitProvider?.address,
+          startingProjectId: 999,
+          autoApproveArtistSplitProposals: false,
+          nullPlatformProvider: true,
+          allowArtistProjectActivation: false,
+        };
+        // deploy explorations core
+        const deployTx = explorationsFactory.getDeployTransaction(
+          invalidExplorationsConfiguration,
+          constants.ZERO_ADDRESS, // INVALID ZERO ADDRESS
+          config.universalReader.address
+        );
+        await expect(config.accounts.deployer.sendTransaction(deployTx))
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
+      });
+
+      it("reverts when reader address is zero", async function () {
+        const config = await loadFixture(_beforeEach);
+        const bytecodeStorageLibFactory = await ethers.getContractFactory(
+          "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+        );
+        const library = await bytecodeStorageLibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        const v3flexlibFactory = await ethers.getContractFactory(
+          "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib"
+        );
+        const v3flexlib = await v3flexlibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
+          {
+            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+              library.address,
+            "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
+          },
+          config.accounts.deployer
+        );
+        const invalidExplorationsConfiguration = {
+          tokenName: config.name,
+          tokenSymbol: config.symbol,
+          renderProviderAddress: config.accounts.deployer.address,
+          platformProviderAddress: constants.ZERO_ADDRESS,
+          newSuperAdminAddress: constants.ZERO_ADDRESS,
+          minterFilterAddress: config.minterFilter.address,
+          randomizerContract: config.randomizer.address,
+          splitProviderAddress: config.splitProvider?.address,
+          startingProjectId: 999,
+          autoApproveArtistSplitProposals: false,
+          nullPlatformProvider: true,
+          allowArtistProjectActivation: false,
+        };
+        // deploy explorations core
+        const deployTx = explorationsFactory.getDeployTransaction(
+          invalidExplorationsConfiguration,
+          config.adminACL.address,
+          constants.ZERO_ADDRESS // INVALID ZERO ADDRESS
+        );
+        await expect(config.accounts.deployer.sendTransaction(deployTx))
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyNonZeroAddress);
+      });
+
+      it("reverts when auto approve split proposals is true", async function () {
+        const config = await loadFixture(_beforeEach);
+        const bytecodeStorageLibFactory = await ethers.getContractFactory(
+          "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+        );
+        const library = await bytecodeStorageLibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        const v3flexlibFactory = await ethers.getContractFactory(
+          "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib"
+        );
+        const v3flexlib = await v3flexlibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
+          {
+            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+              library.address,
+            "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
+          },
+          config.accounts.deployer
+        );
+        const invalidExplorationsConfiguration = {
+          tokenName: config.name,
+          tokenSymbol: config.symbol,
+          renderProviderAddress: config.accounts.deployer.address,
+          platformProviderAddress: constants.ZERO_ADDRESS,
+          newSuperAdminAddress: constants.ZERO_ADDRESS,
+          minterFilterAddress: config.minterFilter.address,
+          randomizerContract: config.randomizer.address,
+          splitProviderAddress: config.splitProvider?.address,
+          startingProjectId: 999,
+          autoApproveArtistSplitProposals: true, // INVALID TRUE
+          nullPlatformProvider: true,
+          allowArtistProjectActivation: false,
+        };
+        // deploy explorations core
+        const deployTx = explorationsFactory.getDeployTransaction(
+          invalidExplorationsConfiguration,
+          config.adminACL.address,
+          config.universalReader.address
+        );
+        await expect(
+          config.accounts.deployer.sendTransaction(deployTx)
+        ).to.be.revertedWith(
+          "GenArt721CoreV3_Explorations_Flex: autoApproveArtistSplitProposals must be false"
+        );
+      });
+
+      it("reverts when platform provider isn't constrained to be null", async function () {
+        const config = await loadFixture(_beforeEach);
+        const bytecodeStorageLibFactory = await ethers.getContractFactory(
+          "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+        );
+        const library = await bytecodeStorageLibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        const v3flexlibFactory = await ethers.getContractFactory(
+          "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib"
+        );
+        const v3flexlib = await v3flexlibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
+          {
+            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+              library.address,
+            "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
+          },
+          config.accounts.deployer
+        );
+        const invalidExplorationsConfiguration = {
+          tokenName: config.name,
+          tokenSymbol: config.symbol,
+          renderProviderAddress: config.accounts.deployer.address,
+          platformProviderAddress: constants.ZERO_ADDRESS,
+          newSuperAdminAddress: constants.ZERO_ADDRESS,
+          minterFilterAddress: config.minterFilter.address,
+          randomizerContract: config.randomizer.address,
+          splitProviderAddress: config.splitProvider?.address,
+          startingProjectId: 999,
+          autoApproveArtistSplitProposals: false,
+          nullPlatformProvider: false, // INVALID FALSE
+          allowArtistProjectActivation: false,
+        };
+        // deploy explorations core
+        const deployTx = explorationsFactory.getDeployTransaction(
+          invalidExplorationsConfiguration,
+          config.adminACL.address,
+          config.universalReader.address
+        );
+        await expect(
+          config.accounts.deployer.sendTransaction(deployTx)
+        ).to.be.revertedWith(
+          "GenArt721CoreV3_Explorations_Flex: nullPlatformProvider must be true"
+        );
+      });
+
+      it("reverts when allowArtistProjectActivation is true", async function () {
+        const config = await loadFixture(_beforeEach);
+        const bytecodeStorageLibFactory = await ethers.getContractFactory(
+          "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+        );
+        const library = await bytecodeStorageLibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        const v3flexlibFactory = await ethers.getContractFactory(
+          "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib"
+        );
+        const v3flexlib = await v3flexlibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
+          {
+            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+              library.address,
+            "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
+          },
+          config.accounts.deployer
+        );
+        const invalidExplorationsConfiguration = {
+          tokenName: config.name,
+          tokenSymbol: config.symbol,
+          renderProviderAddress: config.accounts.deployer.address,
+          platformProviderAddress: constants.ZERO_ADDRESS,
+          newSuperAdminAddress: constants.ZERO_ADDRESS,
+          minterFilterAddress: config.minterFilter.address,
+          randomizerContract: config.randomizer.address,
+          splitProviderAddress: config.splitProvider?.address,
+          startingProjectId: 999,
+          autoApproveArtistSplitProposals: false,
+          nullPlatformProvider: true,
+          allowArtistProjectActivation: true, // INVALID TRUE
+        };
+        // deploy explorations core
+        const deployTx = explorationsFactory.getDeployTransaction(
+          invalidExplorationsConfiguration,
+          config.adminACL.address,
+          config.universalReader.address
+        );
+        await expect(
+          config.accounts.deployer.sendTransaction(deployTx)
+        ).to.be.revertedWith(
+          "GenArt721CoreV3_Explorations_Flex: allowArtistProjectActivation must be false"
+        );
+      });
+
+      it("reverts when starting project is zero", async function () {
+        const config = await loadFixture(_beforeEach);
+        const bytecodeStorageLibFactory = await ethers.getContractFactory(
+          "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader"
+        );
+        const library = await bytecodeStorageLibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        const v3flexlibFactory = await ethers.getContractFactory(
+          "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib"
+        );
+        const v3flexlib = await v3flexlibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
+          {
+            "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
+              library.address,
+            "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
+          },
+          config.accounts.deployer
+        );
+        const invalidExplorationsConfiguration = {
+          tokenName: config.name,
+          tokenSymbol: config.symbol,
+          renderProviderAddress: config.accounts.deployer.address,
+          platformProviderAddress: constants.ZERO_ADDRESS,
+          newSuperAdminAddress: constants.ZERO_ADDRESS,
+          minterFilterAddress: config.minterFilter.address,
+          randomizerContract: config.randomizer.address,
+          splitProviderAddress: config.splitProvider?.address,
+          startingProjectId: 0, // INVALID ZERO
+          autoApproveArtistSplitProposals: false,
+          nullPlatformProvider: true,
+          allowArtistProjectActivation: false,
+        };
+        // deploy explorations core
+        const deployTx = explorationsFactory.getDeployTransaction(
+          invalidExplorationsConfiguration,
+          config.adminACL.address,
+          config.universalReader.address
+        );
+        await expect(
+          config.accounts.deployer.sendTransaction(deployTx)
+        ).to.be.revertedWith(
+          "GenArt721CoreV3_Explorations_Flex: startingProjectId must be greater than 0"
+        );
+      });
+
+      it("properly initializes default base URI based on contract address", async function () {
+        const config = await loadFixture(_beforeEach);
+        // For Explorations, the base URI should be constructed from the contract address (lowercase)
+        const contractAddress = config.genArt721Core.address.toLowerCase();
+        const expectedTokenURI = `https://token.artblocks.io/${contractAddress}/`;
+        expect(await config.genArt721Core.defaultBaseURI()).to.equal(
+          expectedTokenURI
+        );
+      });
+    });
+
+    describe("initialize", function () {
+      it("reverts on call to initialize (explorations is initialized in constructor)", async function () {
+        const config = await loadFixture(_beforeEach);
+        const validExplorationsConfiguration = {
+          tokenName: config.name,
+          tokenSymbol: config.symbol,
+          renderProviderAddress: config.accounts.deployer.address,
+          platformProviderAddress: constants.ZERO_ADDRESS,
+          newSuperAdminAddress: constants.ZERO_ADDRESS,
+          minterFilterAddress: config.minterFilter.address,
+          randomizerContract: config.randomizer.address,
+          splitProviderAddress: config.splitProvider?.address,
+          startingProjectId: 999,
+          autoApproveArtistSplitProposals: false,
+          nullPlatformProvider: true,
+          allowArtistProjectActivation: false,
+        };
+        await expect(
+          config.genArt721Core.initialize(
+            validExplorationsConfiguration,
+            constants.ZERO_ADDRESS, // dummy adminACL
+            "dummybaseurihost", // dummy baseURI
+            constants.ZERO_ADDRESS // dummy reader
+          )
+        ).to.be.revertedWith(
+          "GenArt721CoreV3_Explorations_Flex: contract initialized in constructor"
+        );
+      });
+    });
+
+    describe("updateArtblocksCurationRegistryAddress", function () {
+      it("reverts when called by non-admin", async function () {
+        const config = await loadFixture(_beforeEach);
+        const newAddress = config.accounts.deployer.address;
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.user)
+            .updateArtblocksCurationRegistryAddress(newAddress)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyAdminACL);
+      });
+
+      it("updates state after calling", async function () {
+        const config = await loadFixture(_beforeEach);
+        const newAddress = config.accounts.deployer.address;
+        await config.genArt721Core.updateArtblocksCurationRegistryAddress(
+          newAddress
+        );
+        expect(
+          await config.genArt721Core.artblocksCurationRegistryAddress()
+        ).to.equal(newAddress);
+      });
+    });
+
+    describe("addProjectExternalAssetDependency", function () {
+      it("reverts when called by non-artist or admin", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.user)
+            .addProjectExternalAssetDependency(
+              0,
+              "dummycid",
+              ExternalAssetDependencyType.ONCHAIN
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtistOrAdminACL);
+      });
+
+      it("reverts when dependency type is not ONCHAIN", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core.addProjectExternalAssetDependency(
+            0,
+            "dummycid",
+            ExternalAssetDependencyType.IPFS
+          )
+        ).to.be.revertedWith(
+          "GenArt721CoreV3_Explorations_Flex: Dependency type must be ONCHAIN"
+        );
+      });
+
+      it("accepts valid ONCHAIN dependency", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core.addProjectExternalAssetDependency(
+          0,
+          "dummyonchaindata",
+          ExternalAssetDependencyType.ONCHAIN
+        );
+        expect(
+          (
+            await config.genArt721Core.projectExternalAssetDependencyByIndex(
+              0,
+              0
+            )
+          ).data
+        ).to.equal("dummyonchaindata");
+      });
+    });
+
+    describe("updateProjectExternalAssetDependency", function () {
+      it("reverts when called by non-artist or admin", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.user)
+            .updateProjectExternalAssetDependency(
+              0,
+              0,
+              "dummycid",
+              ExternalAssetDependencyType.ONCHAIN
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtistOrAdminACL);
+      });
+
+      it("reverts when dependency type is not ONCHAIN", async function () {
+        const config = await loadFixture(_beforeEach);
+        // add a dependency first
+        await config.genArt721Core.addProjectExternalAssetDependency(
+          0,
+          "dummyonchaindata",
+          ExternalAssetDependencyType.ONCHAIN
+        );
+        // update the dependency
+        await expect(
+          config.genArt721Core.updateProjectExternalAssetDependency(
+            0,
+            0,
+            "dummycid",
+            ExternalAssetDependencyType.IPFS
+          )
+        ).to.be.revertedWith(
+          "GenArt721CoreV3_Explorations_Flex: Dependency type must be ONCHAIN"
+        );
+      });
+
+      it("updates the dependency", async function () {
+        const config = await loadFixture(_beforeEach);
+        // add a dependency first
+        await config.genArt721Core.addProjectExternalAssetDependency(
+          0,
+          "dummyonchaindata",
+          ExternalAssetDependencyType.ONCHAIN
+        );
+        // update the dependency
+        await config.genArt721Core.updateProjectExternalAssetDependency(
+          0,
+          0,
+          "dummyonchaindata",
+          ExternalAssetDependencyType.ONCHAIN
+        );
+        expect(
+          (
+            await config.genArt721Core.projectExternalAssetDependencyByIndex(
+              0,
+              0
+            )
+          ).data
+        ).to.equal("dummyonchaindata");
+      });
+    });
+  });
+}
+
