@@ -51,13 +51,10 @@ contract GenArt721CoreV3_Explorations_Flex is GenArt721CoreV3_Engine_Flex {
      * @param adminACLContract_ Address of the admin ACL contract.
      * @param bytecodeStorageReaderContract_ Address of the bytecode storage reader contract to be used by this
      * contract.
-     * @dev parameter `defaultBaseURIHost` is not used or operated on in this contract - it is ignored and
-     * will be overridden in the constructor.
      */
     constructor(
         EngineConfiguration memory engineConfiguration,
         address adminACLContract_,
-        string memory /*defaultBaseURIHost*/,
         address bytecodeStorageReaderContract_
     ) GenArt721CoreV3_Engine_Flex() {
         // input validation generally performed by the engine factory
@@ -86,33 +83,13 @@ contract GenArt721CoreV3_Explorations_Flex is GenArt721CoreV3_Engine_Flex {
             "GenArt721CoreV3_Explorations_Flex: startingProjectId must be greater than 0"
         );
 
-        // actual default base uri is hard-coded, depending on the contract address
-        string memory defaultBaseURIHost = string.concat(
-            "https://token.artblocks.io/",
-            _addressToHexString(address(this)),
-            "/"
-        );
-
         // initialize the contract
         _initialize({
             engineConfiguration: engineConfiguration,
             adminACLContract_: adminACLContract_,
-            defaultBaseURIHost: defaultBaseURIHost,
+            defaultBaseURIHost: "https://token.artblocks.io/", // function will append contract address
             bytecodeStorageReaderContract_: bytecodeStorageReaderContract_
         });
-    }
-
-    function _addressToHexString(
-        address _address
-    ) internal pure returns (string memory) {
-        // convert address to hex string
-        bytes memory buffer = new bytes(20);
-        for (uint256 i = 0; i < 20; i++) {
-            buffer[i] = bytes1(
-                uint8(uint256(uint160(_address)) / (2 ** (8 * (19 - i))))
-            );
-        }
-        return string.concat("0x", string(buffer));
     }
 
     /**
