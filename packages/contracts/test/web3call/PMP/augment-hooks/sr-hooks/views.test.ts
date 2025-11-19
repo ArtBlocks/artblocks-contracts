@@ -26,7 +26,7 @@ Logger.setLogLevel(Logger.levels.ERROR);
 
 // we fork test in hardhat to avoid low-level call reverts in hardhat when ens universal resolver is not deployed
 const FORK_URL = process.env.MAINNET_JSON_RPC_PROVIDER_URL;
-const FORK_BLOCK_NUMBER = 23086000; // Block after universal resolver deployment
+const FORK_BLOCK_NUMBER = 23829300; // Block after universal resolver deployment
 
 /**
  * Test suite for SRHooks view functions
