@@ -174,8 +174,8 @@ export function getProdRenderProviderPaymentAddress(
       `productClass is required and must be a valid ProductClassEnum. value: ${productClass}`
     );
   }
-  return MAIN_CONFIG[networkName]?.[environment]?.[productClass]
-    ?.prodRenderProviderPaymentAddress;
+  return MAIN_CONFIG[networkName]?.[environment]
+    ?.prodRenderProviderPaymentAddress?.[productClass];
 }
 
 type T_RENDER_PROVIDER_PAYMENT_ADDRESSES = {
