@@ -162,11 +162,10 @@ contract InjectBlockHeightProjectInvocationsAndArtistProjectOverrides is
         returns (IWeb3Call.TokenParam[] memory augmentedTokenParams)
     {
         // get artist project overrides
-        EnumerableMap.Bytes32ToBytes32Map storage overrides = artistProjectOverrides[
-            coreContract
-        ][
-            ABHelpers.tokenIdToProjectId({tokenId: tokenId}) // project id
-        ];
+        EnumerableMap.Bytes32ToBytes32Map
+            storage overrides = artistProjectOverrides[coreContract][
+                ABHelpers.tokenIdToProjectId({tokenId: tokenId}) // project id
+            ];
         uint256 overrideCount = overrides.length();
 
         // create a new augmentedTokenParams array with maximum length of
