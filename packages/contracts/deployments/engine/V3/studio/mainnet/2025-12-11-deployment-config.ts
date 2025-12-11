@@ -30,7 +30,7 @@ export const deployConfigDetailsArray = [
     artistName: "Anna Condo",
     // set to the address you want to transfer the superAdmin role to
     // (can be the zero address if you have an existing Admin ACL Contract and are not transferring)
-    newSuperAdminAddress: "0xC6c5eE2C54c79695EbEf26f3171e5b96Ed74578",
+    newSuperAdminAddress: "0xC6c5eE2C54c79695EbEf26f3171e5b96Ed74578d",
     // see /scripts/util/constants.ts::MAIN_CONFIG for the correct address if prod deployment
     renderProviderAddress: "0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd",
     // platform provider address should be set to the zero address for Studio deployments
