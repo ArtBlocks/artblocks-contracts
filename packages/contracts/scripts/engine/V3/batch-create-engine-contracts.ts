@@ -19,6 +19,230 @@ import {
   getActiveCoreRegistry,
   getProdRenderProviderPaymentAddress,
 } from "../../util/constants";
+import fs from "fs";
+import path from "path";
+
+// Types for Gnosis Safe Transaction Builder JSON format
+type AbiInput = {
+  internalType: string;
+  name: string;
+  type: string;
+  components?: AbiInput[];
+};
+
+type ContractMethod = {
+  inputs: AbiInput[];
+  name: string;
+  payable: boolean;
+  outputs?: AbiInput[];
+  stateMutability?: string;
+  type?: string;
+};
+
+type TxBuilderTransaction = {
+  to: string;
+  value: string;
+  data: string | null;
+  contractMethod: ContractMethod | null;
+  contractInputsValues: Record<string, string> | null;
+};
+
+type TxBuilderMeta = {
+  name: string;
+  description: string;
+  txBuilderVersion: string;
+  createdFromSafeAddress: string;
+  createdFromOwnerAddress: string;
+  checksum: string;
+};
+
+type TxBuilderJson = {
+  version: string;
+  chainId: string;
+  createdAt: number;
+  meta: TxBuilderMeta;
+  transactions: TxBuilderTransaction[];
+};
+
+// ABI definition for createEngineContract function
+// Note: This matches the exact format expected by Gnosis Safe Transaction Builder
+// - components must come before internalType for tuple types
+// - Only inputs, name, and payable are included (no outputs, stateMutability, type)
+const CREATE_ENGINE_CONTRACT_METHOD: ContractMethod = {
+  inputs: [
+    {
+      internalType: "enum IEngineFactoryV0.EngineCoreType",
+      name: "engineCoreContractType",
+      type: "uint8",
+    },
+    {
+      components: [
+        { internalType: "string", name: "tokenName", type: "string" },
+        { internalType: "string", name: "tokenSymbol", type: "string" },
+        {
+          internalType: "address",
+          name: "renderProviderAddress",
+          type: "address",
+        },
+        {
+          internalType: "address",
+          name: "platformProviderAddress",
+          type: "address",
+        },
+        {
+          internalType: "address",
+          name: "newSuperAdminAddress",
+          type: "address",
+        },
+        {
+          internalType: "address",
+          name: "randomizerContract",
+          type: "address",
+        },
+        {
+          internalType: "address",
+          name: "splitProviderAddress",
+          type: "address",
+        },
+        {
+          internalType: "address",
+          name: "minterFilterAddress",
+          type: "address",
+        },
+        { internalType: "uint248", name: "startingProjectId", type: "uint248" },
+        {
+          internalType: "bool",
+          name: "autoApproveArtistSplitProposals",
+          type: "bool",
+        },
+        { internalType: "bool", name: "nullPlatformProvider", type: "bool" },
+        {
+          internalType: "bool",
+          name: "allowArtistProjectActivation",
+          type: "bool",
+        },
+      ],
+      internalType: "struct EngineConfiguration",
+      name: "engineConfiguration",
+      type: "tuple",
+    },
+    {
+      internalType: "address",
+      name: "adminACLContract",
+      type: "address",
+    },
+    {
+      internalType: "bytes32",
+      name: "salt",
+      type: "bytes32",
+    },
+  ],
+  name: "createEngineContract",
+  payable: false,
+};
+
+// Type for transaction data with input values for TX Builder
+// Note: data is set to null to let Transaction Builder encode from ABI and contractInputsValues
+type TxBuilderInputData = {
+  to: string;
+  value: string;
+  data: null;
+  contractInputsValues: {
+    engineCoreContractType: string;
+    engineConfiguration: string;
+    adminACLContract: string;
+    salt: string;
+  };
+};
+
+/**
+ * Serialize a JSON object in a deterministic way for checksum calculation.
+ * This matches the Gnosis Safe Transaction Builder's serialization format.
+ */
+function serializeJSONObject(json: unknown): string {
+  if (Array.isArray(json)) {
+    return `[${json.map((el) => serializeJSONObject(el)).join(",")}]`;
+  }
+
+  if (typeof json === "object" && json !== null) {
+    let acc = "";
+    const keys = Object.keys(json).sort();
+    acc += `{${JSON.stringify(keys)}`;
+
+    for (let i = 0; i < keys.length; i++) {
+      acc += `${serializeJSONObject((json as Record<string, unknown>)[keys[i]])},`;
+    }
+
+    return `${acc}}`;
+  }
+
+  return `${JSON.stringify(json === undefined ? null : json)}`;
+}
+
+/**
+ * Calculate the checksum for a Transaction Builder JSON file.
+ * The checksum is calculated by serializing the batch (with name set to null)
+ * and hashing it with keccak256.
+ */
+function calculateChecksum(
+  batchFile: Omit<TxBuilderJson, "meta"> & {
+    meta: Omit<TxBuilderMeta, "checksum">;
+  }
+): string {
+  const serialized = serializeJSONObject({
+    ...batchFile,
+    meta: { ...batchFile.meta, name: null },
+  });
+  return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(serialized));
+}
+
+/**
+ * Generate a Gnosis Safe Transaction Builder JSON file from transaction data.
+ */
+function generateTxBuilderJson(
+  transactions: TxBuilderInputData[],
+  chainId: number,
+  safeAddress: string
+): TxBuilderJson {
+  const txBuilderTransactions: TxBuilderTransaction[] = transactions.map(
+    (tx) => ({
+      to: tx.to,
+      value: tx.value,
+      data: tx.data ?? null,
+      contractMethod: CREATE_ENGINE_CONTRACT_METHOD,
+      contractInputsValues: tx.contractInputsValues,
+    })
+  );
+
+  const createdAt = Date.now();
+
+  // Create the batch file without checksum first
+  const batchFileWithoutChecksum = {
+    version: "1.0",
+    chainId: chainId.toString(),
+    createdAt,
+    meta: {
+      name: "Batch Engine Contract Deployment",
+      description: "Batch deployment of Engine contracts via EngineFactoryV0",
+      txBuilderVersion: "1.16.5",
+      createdFromSafeAddress: safeAddress,
+      createdFromOwnerAddress: "",
+    },
+    transactions: txBuilderTransactions,
+  };
+
+  // Calculate checksum
+  const checksum = calculateChecksum(batchFileWithoutChecksum);
+
+  // Return the complete batch file with checksum
+  return {
+    ...batchFileWithoutChecksum,
+    meta: {
+      ...batchFileWithoutChecksum.meta,
+      checksum,
+    },
+  };
+}
 
 /**
  * This script was created to batch deploy new Engine and Engine Flex contracts
@@ -27,6 +251,13 @@ import {
  * `post-batch-create-engine-contract` script to sync off-chain data.
  * IMPORTANT: This configures the core contract to use the active shared minter
  * filter and active shared randomizer as defined in constants.ts
+ *
+ * OPTIONAL: Set EXPORT_TX_BUILDER=true to export a tx_builder.json file instead
+ * of proposing transactions directly to the Gnosis Safe. This file can be uploaded
+ * to the Gnosis Safe Transaction Builder app to execute the transactions.
+ *
+ * Example usage:
+ *   EXPORT_TX_BUILDER=true yarn deploy:v3-engine:mainnet
  */
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
@@ -185,6 +416,7 @@ async function main() {
   const splitProviderAddress = getActiveSharedSplitProvider();
 
   const txData: MetaTransactionData[] = [];
+  const txBuilderData: TxBuilderInputData[] = [];
 
   for (const engineContractConfiguration of deployConfigDetailsArray) {
     const {
@@ -347,6 +579,22 @@ async function main() {
         value: "0",
         data,
       });
+
+      // Also build data for TX Builder with human-readable input values
+      // Format the engineConfiguration tuple as a JSON string for display
+      const engineConfigTuple = `["${tokenName}","${tokenTicker}","${renderProviderAddress}","${platformProviderAddress}","${newSuperAdminAddress}","${randomizerAddress}","${splitProviderAddress}","${minterFilterAddress}",${startingProjectId},${autoApproveArtistSplitProposals},${nullPlatformProvider},${allowArtistProjectActivation}]`;
+
+      txBuilderData.push({
+        to: engineFactoryAddress,
+        value: "0",
+        data: null,
+        contractInputsValues: {
+          engineCoreContractType: engineCoreContractType.toString(),
+          engineConfiguration: engineConfigTuple,
+          adminACLContract: adminACLContract,
+          salt: inputSalt,
+        },
+      });
     } else {
       const tx = await engineFactory.createEngineContract(
         engineCoreContractType,
@@ -375,27 +623,54 @@ async function main() {
 
   // Use SDK to propose transactions if we're using a gnosis safe
   if (gnosisSetup) {
-    const nonce = await gnosisSetup.protocolKit.getNonce();
-    const safeTransaction = await gnosisSetup.protocolKit.createTransaction({
-      safeTransactionData: txData,
-      onlyCalls: true,
-      options: {
-        nonce,
-      },
-    });
-    const senderAddress = await signer.getAddress();
-    const safeTxHash =
-      await gnosisSetup.protocolKit.getTransactionHash(safeTransaction);
-    const signature =
-      await gnosisSetup.protocolKit.signTransactionHash(safeTxHash);
-    await gnosisSetup.safeApiKit.proposeTransaction({
-      safeAddress: await gnosisSetup.protocolKit.getAddress(),
-      safeTransactionData: safeTransaction.data,
-      safeTxHash,
-      senderAddress,
-      senderSignature: signature.data,
-    });
-    console.log("Proposed transactions sent to gnosis safe");
+    // Check if we should export to Transaction Builder JSON instead of proposing
+    const exportTxBuilder = process.env.EXPORT_TX_BUILDER === "true";
+
+    if (exportTxBuilder) {
+      // Get chain ID for the Transaction Builder JSON
+      const network = await ethers.provider.getNetwork();
+      const chainId = network.chainId;
+
+      // Generate the Transaction Builder JSON
+      // safeAddress is guaranteed to exist due to earlier validation when useGnosisSafe is true
+      const txBuilderJson = generateTxBuilderJson(
+        txBuilderData,
+        chainId,
+        deployNetworkConfiguration.safeAddress!
+      );
+
+      // Write the JSON file to the root directory
+      const outputPath = path.resolve(process.cwd(), "tx_builder.json");
+      fs.writeFileSync(outputPath, JSON.stringify(txBuilderJson, null, 2));
+
+      console.log(`[INFO] Transaction Builder JSON exported to: ${outputPath}`);
+      console.log(`[INFO] Contains ${txBuilderData.length} transaction(s)`);
+      console.log(
+        `[INFO] Upload this file to Gnosis Safe Transaction Builder to execute the transactions`
+      );
+    } else {
+      const nonce = await gnosisSetup.protocolKit.getNonce();
+      const safeTransaction = await gnosisSetup.protocolKit.createTransaction({
+        safeTransactionData: txData,
+        onlyCalls: true,
+        options: {
+          nonce,
+        },
+      });
+      const senderAddress = await signer.getAddress();
+      const safeTxHash =
+        await gnosisSetup.protocolKit.getTransactionHash(safeTransaction);
+      const signature =
+        await gnosisSetup.protocolKit.signTransactionHash(safeTxHash);
+      await gnosisSetup.safeApiKit.proposeTransaction({
+        safeAddress: await gnosisSetup.protocolKit.getAddress(),
+        safeTransactionData: safeTransaction.data,
+        safeTxHash,
+        senderAddress,
+        senderSignature: signature.data,
+      });
+      console.log("Proposed transactions sent to gnosis safe");
+    }
   }
 }
 
