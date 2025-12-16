@@ -2529,3 +2529,97 @@ Date: 2024-10-03T20:31:48.898Z
         ---
       
         
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2025-12-16T03:41:55.592Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** mainnet
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000559cA3F3f1279C0ec121c302ed010457#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x000000008DD9A7CD3f4A267A88082d4a1E2f6553#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x000000004058B5159ABB5a3Dd8cf775A7519E75F#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine | 0x000000399EFC1EF4666A18b9c29325234CCea397
+  
+        **Engine Contract:** https://etherscan.io/address/0x000000399EFC1EF4666A18b9c29325234CCea397#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Anna Condo
+        - **Token Name:** Art Blocks Studio | 89
+        - **Token Ticker:** ABSTUDIO_89
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0xc65c5702A2690eAC8143986b8EaAe799C38Be27e
+        - **Super Admin Address:** 0xC6c5eE2C54c79695EbEf26f3171e5b96Ed74578d        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-89-mainnet
+        
+        ---
+      
+        
+        ## Deployment: Engine | 0x00009F857C1ccD5ca0DC5900427fb8DA00628099
+  
+        **Engine Contract:** https://etherscan.io/address/0x00009F857C1ccD5ca0DC5900427fb8DA00628099#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Srđan Šarović & Una Popović
+        - **Token Name:** Art Blocks Studio | 90
+        - **Token Ticker:** ABSTUDIO_90
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x8c29B4382F92d5ccd6a6c08453c2ADF8a12EDdDB
+        - **Super Admin Address:** 0x4B50Ded197eAb540978a5Ad8564C05b43eb183Da        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-90-mainnet
+        
+        ---
+      
+        
+        ## Deployment: Engine Flex | 0x000019bD92633E9e00dC08aDB0d0DFfB00A1fe2a
+  
+        **Engine Contract:** https://etherscan.io/address/0x000019bD92633E9e00dC08aDB0d0DFfB00A1fe2a#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Baret LaVida
+        - **Token Name:** Art Blocks Studio | 91
+        - **Token Ticker:** ABSTUDIO_91
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x8103b2fd12760a92212d4F2affaa8ee2E21eF71C
+        - **Super Admin Address:** 0xf013F0FcDb6a88425C41DBE78884A614D99591F1        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-91-mainnet
+        
+        ---
+      
+        
