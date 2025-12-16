@@ -314,12 +314,17 @@ async function main() {
     console.log("using wallet", await signer.getAddress());
   } else {
     const deployerWallet = getDeployerWallet();
-
-    if (!deployerWallet) {
-      throw new Error("Deployer wallet not found");
+    // if using tx builder, accept null deployer wallet
+    if (process.env.EXPORT_TX_BUILDER === "true" && !deployerWallet) {
+      // assign a dummy signer
+      console.log("[INFO] exporting tx builder file, using dummy signer");
+      signer = await ethers.getSigner(ZERO_ADDRESS);
+    } else {
+      if (!deployerWallet) {
+        throw new Error("Deployer wallet not found");
+      }
+      signer = deployerWallet.connect(ethers.provider);
     }
-
-    signer = deployerWallet.connect(ethers.provider);
   }
 
   let gnosisSetup: {
