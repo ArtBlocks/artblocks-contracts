@@ -12,7 +12,8 @@ export const deployNetworkConfiguration = {
   safeAddress: "0xD3bE6e30D901fa2e2Fd7f3Ebd23189f5376a4f9D",
   transactionServiceUrl: "https://safe-transaction-arbitrum.safe.global",
   // set the transaction hash after successful execution of the batch creation
-  transactionHash: "",
+  transactionHash:
+    "0x1b8381f2dfe2fed885b921b7b58f25de86ea2907a4256dc67dc441d850115730",
 };
 
 export const deployConfigDetailsArray = [
