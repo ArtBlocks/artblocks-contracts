@@ -79,3 +79,48 @@ Date: 2024-06-27T21:34:10.776Z
       - **Image Bucket:** generative-goods-base
 
         ---
+
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2026-01-08T21:34:48.291Z
+  
+  ## **Network:** arbitrum
+  
+  ## **Environment:** arbitrum
+  
+  **Engine Implementation:** https://arbitrum.etherscan.io/address/0x00000000559cA3F3f1279C0ec121c302ed010457#code
+  
+  **Engine Flex Implementation:** https://arbitrum.etherscan.io/address/0x000000008DD9A7CD3f4A267A88082d4a1E2f6553#code
+  
+  **Engine Factory:** https://arbitrum.etherscan.io/address/0x000000007566E6566771d28E91bD465bEE8426a5#code
+  
+  **Core Registry:** https://arbitrum.etherscan.io/address/0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2#code
+  
+  ---
+
+  
+        ## Deployment: Engine Flex | 0x00000002B3B9e963e0D36C39Aa80383Ae713c62b
+  
+        **Engine Contract:** https://arbitrum.etherscan.io/address/0x00000002B3B9e963e0D36C39Aa80383Ae713c62b#code
+        
+        **Metadata**
+        - **Starting Project Id:** 100
+        - **Artist Name:** Generative Goods
+        - **Token Name:** Generative Goods
+        - **Token Ticker:** GENGOODS
+        - **Auto Approve Artist Split Proposals:** false
+        - **Render Provider Address, Primary Sales:** 0x4fbFc0F88270FE3405Ee5bf8c98CC03647b4fdA4
+        - **Platform Provider Address, Primary Sales:** 0x6E1081d518f8eE5D11460CbEDef1ED5A47Bf98a7
+        - **Null Platform Provider:** false
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x4587a74B0bDC1BEc7744482DD84CcA669E4d5936
+        - **Super Admin Address:** 0x6E1081d518f8eE5D11460CbEDef1ED5A47Bf98a7        
+
+      **Other**
+
+      - **Starting project ID:** 100
+      - **Image Bucket:** generative-goods-arbitrum
+        
+        ---
+      
+        
