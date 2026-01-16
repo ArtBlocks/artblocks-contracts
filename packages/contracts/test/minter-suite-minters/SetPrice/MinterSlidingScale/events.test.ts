@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
 import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
@@ -123,6 +124,91 @@ runForEach.forEach((params) => {
 
     describe("Common Set Price Minter Events Tests", async function () {
       await SetPrice_Common_Events(_beforeEach);
+    });
+
+    describe("TokenPricePaid", async function () {
+      it("emits TokenPricePaid event on purchase at minimum price", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+
+        const expectedTokenId = config.projectZero * 1000000;
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address, {
+              value: config.pricePerTokenInWei,
+            })
+        )
+          .to.emit(config.minter, "TokenPricePaid")
+          .withArgs(
+            config.genArt721Core.address,
+            expectedTokenId,
+            config.pricePerTokenInWei
+          );
+      });
+
+      it("emits TokenPricePaid event with higher price when paid above minimum", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+
+        const expectedTokenId = config.projectZero * 1000000;
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address, {
+              value: config.higherPricePerTokenInWei,
+            })
+        )
+          .to.emit(config.minter, "TokenPricePaid")
+          .withArgs(
+            config.genArt721Core.address,
+            expectedTokenId,
+            config.higherPricePerTokenInWei
+          );
+      });
+
+      it("emits TokenPricePaid event on purchaseTo", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+
+        const expectedTokenId = config.projectZero * 1000000;
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseTo(
+              config.accounts.additional.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              {
+                value: config.pricePerTokenInWei,
+              }
+            )
+        )
+          .to.emit(config.minter, "TokenPricePaid")
+          .withArgs(
+            config.genArt721Core.address,
+            expectedTokenId,
+            config.pricePerTokenInWei
+          );
+      });
     });
   });
 });

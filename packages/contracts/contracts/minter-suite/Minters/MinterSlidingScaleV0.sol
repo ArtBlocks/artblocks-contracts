@@ -50,6 +50,10 @@ import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGu
  * The full amount sent (msg.value) is accepted and split among stakeholders
  * according to the configured revenue splits - no refund is issued for amounts
  * above the minimum price.
+ * ----------------------------------------------------------------------------
+ * @notice Price Recording:
+ * This minter records the actual price paid for each token, which can be
+ * retrieved via the `getTokenPricePaid` view function.
  */
 contract MinterSlidingScaleV0 is
     ReentrancyGuard,
@@ -67,6 +71,22 @@ contract MinterSlidingScaleV0 is
 
     /// minter version for this minter
     string public constant minterVersion = "v0.0.0";
+
+    /**
+     * @notice Emitted when a token is minted, recording the price paid.
+     * @param coreContract Core contract address for the token
+     * @param tokenId Token ID that was minted
+     * @param pricePaid Price paid for the token in Wei
+     */
+    event TokenPricePaid(
+        address indexed coreContract,
+        uint256 indexed tokenId,
+        uint256 pricePaid
+    );
+
+    /// @notice Mapping of core contract => tokenId => price paid in Wei
+    mapping(address coreContract => mapping(uint256 tokenId => uint256 pricePaid))
+        private _tokenPricePaid;
 
     // MODIFIERS
     // @dev contract uses modifier-like internal functions instead of modifiers
@@ -338,6 +358,23 @@ contract MinterSlidingScaleV0 is
     }
 
     /**
+     * @notice Gets the price paid for a specific token.
+     * @dev Returns 0 if the token was not minted via this minter or if
+     * the token does not exist. This function does not validate that the
+     * token was minted via this minter.
+     * @param coreContract Core contract address for the token
+     * @param tokenId Token ID to get the price paid for
+     * @return pricePaidInWei Price paid for the token in Wei, or 0 if not
+     * minted via this minter
+     */
+    function getTokenPricePaid(
+        address coreContract,
+        uint256 tokenId
+    ) external view returns (uint256 pricePaidInWei) {
+        return _tokenPricePaid[coreContract][tokenId];
+    }
+
+    /**
      * @notice Syncs local maximum invocations of project `projectId` based on
      * the value currently defined in the core contract.
      * @param projectId Project ID to set the maximum invocations for.
@@ -410,6 +447,14 @@ contract MinterSlidingScaleV0 is
         MaxInvocationsLib.validateMintEffectsInvocations({
             tokenId: tokenId,
             coreContract: coreContract
+        });
+
+        // Record the price paid for this token
+        _tokenPricePaid[coreContract][tokenId] = msg.value;
+        emit TokenPricePaid({
+            coreContract: coreContract,
+            tokenId: tokenId,
+            pricePaid: msg.value
         });
 
         // INTERACTIONS

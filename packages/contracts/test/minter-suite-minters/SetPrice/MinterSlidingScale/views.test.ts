@@ -164,5 +164,129 @@ runForEach.forEach((params) => {
         expect(minterVersion).to.equal(TARGET_MINTER_NAME);
       });
     });
+
+    describe("getTokenPricePaid", async function () {
+      it("returns 0 for token not minted via this minter", async function () {
+        const config = await loadFixture(_beforeEach);
+        // query a token that doesn't exist
+        const pricePaid = await config.minter.getTokenPricePaid(
+          config.genArt721Core.address,
+          0
+        );
+        expect(pricePaid).to.equal(0);
+      });
+
+      it("returns correct price paid at minimum price", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+
+        // purchase at minimum price
+        await config.minter
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.pricePerTokenInWei,
+          });
+
+        // token ID for project 0, invocation 0 is 0
+        const tokenId = config.projectZero * 1000000;
+        const pricePaid = await config.minter.getTokenPricePaid(
+          config.genArt721Core.address,
+          tokenId
+        );
+        expect(pricePaid).to.equal(config.pricePerTokenInWei);
+      });
+
+      it("returns correct price paid above minimum price", async function () {
+        const config = await loadFixture(_beforeEach);
+        const higherPrice = config.pricePerTokenInWei.add(
+          ethers.utils.parseEther("0.5")
+        );
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+
+        // purchase at higher price
+        await config.minter
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: higherPrice,
+          });
+
+        // token ID for project 0, invocation 0 is 0
+        const tokenId = config.projectZero * 1000000;
+        const pricePaid = await config.minter.getTokenPricePaid(
+          config.genArt721Core.address,
+          tokenId
+        );
+        expect(pricePaid).to.equal(higherPrice);
+      });
+
+      it("tracks different prices for different tokens", async function () {
+        const config = await loadFixture(_beforeEach);
+        const price1 = config.pricePerTokenInWei;
+        const price2 = config.pricePerTokenInWei.add(
+          ethers.utils.parseEther("0.25")
+        );
+        const price3 = config.pricePerTokenInWei.add(
+          ethers.utils.parseEther("0.75")
+        );
+
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+
+        // purchase 3 tokens at different prices
+        await config.minter
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: price1,
+          });
+        await config.minter
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: price2,
+          });
+        await config.minter
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: price3,
+          });
+
+        // verify each token has the correct price recorded
+        const baseTokenId = config.projectZero * 1000000;
+        expect(
+          await config.minter.getTokenPricePaid(
+            config.genArt721Core.address,
+            baseTokenId
+          )
+        ).to.equal(price1);
+        expect(
+          await config.minter.getTokenPricePaid(
+            config.genArt721Core.address,
+            baseTokenId + 1
+          )
+        ).to.equal(price2);
+        expect(
+          await config.minter.getTokenPricePaid(
+            config.genArt721Core.address,
+            baseTokenId + 2
+          )
+        ).to.equal(price3);
+      });
+    });
   });
 });
