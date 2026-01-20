@@ -2623,3 +2623,47 @@ Date: 2024-10-03T20:31:48.898Z
         ---
       
         
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2026-01-20T22:41:33.262Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** mainnet
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000559cA3F3f1279C0ec121c302ed010457#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x000000008DD9A7CD3f4A267A88082d4a1E2f6553#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x000000004058B5159ABB5a3Dd8cf775A7519E75F#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine | 0x0000000C687DaeD0fbA60d1dBA4e5f6149E8B894
+  
+        **Engine Contract:** https://etherscan.io/address/0x0000000C687DaeD0fbA60d1dBA4e5f6149E8B894#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Casey Reas
+        - **Token Name:** Art Blocks Studio | 92
+        - **Token Ticker:** ABSTUDIO_92
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x2df9D423bD17154fe1Dcb5202cE7B0BdAAA39e3E
+        - **Super Admin Address:** 0x457ee5f723C7606c12a7264b52e285906F91eEA6        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-92-mainnet
+        
+        ---
+      
+        
