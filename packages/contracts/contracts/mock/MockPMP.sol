@@ -91,7 +91,7 @@ contract MockPMP is IPMPV0 {
         address coreContract,
         uint256 tokenId,
         PMPInput[] calldata pmpInputs
-    ) external override {
+    ) external pure override {
         // Silence unused variable warnings
         coreContract;
         tokenId;
@@ -110,7 +110,7 @@ contract MockPMP is IPMPV0 {
         address coreContract,
         uint256 projectId,
         PMPInputConfig[] calldata pmpInputConfigs
-    ) external override {
+    ) external pure override {
         // Silence unused variable warnings
         coreContract;
         projectId;
@@ -131,7 +131,7 @@ contract MockPMP is IPMPV0 {
         uint256 projectId,
         IPMPConfigureHook tokenPMPPostConfigHook,
         IPMPAugmentHook tokenPMPReadAugmentationHook
-    ) external override {
+    ) external pure override {
         // Silence unused variable warnings
         coreContract;
         projectId;
