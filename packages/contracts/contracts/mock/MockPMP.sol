@@ -36,7 +36,12 @@ contract MockPMP is IPMPV0 {
     function getTokenParams(
         address coreContract,
         uint256 tokenId
-    ) external pure override returns (IWeb3Call.TokenParam[] memory tokenParams) {
+    )
+        external
+        pure
+        override
+        returns (IWeb3Call.TokenParam[] memory tokenParams)
+    {
         // Silence unused variable warning
         coreContract;
 
@@ -51,28 +56,16 @@ contract MockPMP is IPMPV0 {
         tokenParams = new IWeb3Call.TokenParam[](5);
 
         // Color parameter (hex color)
-        tokenParams[0] = IWeb3Call.TokenParam({
-            key: "color",
-            value: "#FF5733"
-        });
+        tokenParams[0] = IWeb3Call.TokenParam({key: "color", value: "#FF5733"});
 
         // Size parameter (uint256 range)
-        tokenParams[1] = IWeb3Call.TokenParam({
-            key: "size",
-            value: "42"
-        });
+        tokenParams[1] = IWeb3Call.TokenParam({key: "size", value: "42"});
 
         // Enabled parameter (boolean)
-        tokenParams[2] = IWeb3Call.TokenParam({
-            key: "enabled",
-            value: "true"
-        });
+        tokenParams[2] = IWeb3Call.TokenParam({key: "enabled", value: "true"});
 
         // Mode parameter (select option)
-        tokenParams[3] = IWeb3Call.TokenParam({
-            key: "mode",
-            value: "turbo"
-        });
+        tokenParams[3] = IWeb3Call.TokenParam({key: "mode", value: "turbo"});
 
         // Label parameter (string)
         tokenParams[4] = IWeb3Call.TokenParam({

@@ -6,9 +6,11 @@ describe("MockGenArt721V3Core", function () {
   let mockCore: MockGenArt721V3Core;
 
   beforeEach(async function () {
-    const MockGenArt721V3CoreFactory =
-      await ethers.getContractFactory("MockGenArt721V3Core");
-    mockCore = (await MockGenArt721V3CoreFactory.deploy()) as MockGenArt721V3Core;
+    const MockGenArt721V3CoreFactory = await ethers.getContractFactory(
+      "MockGenArt721V3Core"
+    );
+    mockCore =
+      (await MockGenArt721V3CoreFactory.deploy()) as MockGenArt721V3Core;
     await mockCore.deployed();
   });
 
@@ -118,7 +120,9 @@ describe("MockGenArt721V3Core", function () {
       await mockCore.setExternalAssetDependencyBytecodeAddress(0, newAddress);
 
       const dep = await mockCore.projectExternalAssetDependencyByIndex(0, 0);
-      expect(dep.bytecodeAddress.toLowerCase()).to.equal(newAddress.toLowerCase());
+      expect(dep.bytecodeAddress.toLowerCase()).to.equal(
+        newAddress.toLowerCase()
+      );
     });
 
     it("can add project script", async function () {
@@ -199,16 +203,14 @@ describe("MockPMP", function () {
   describe("write functions (no-ops)", function () {
     it("configureTokenParams does not revert", async function () {
       // This should not revert
-      await expect(
-        mockPMP.configureTokenParams(mockCoreAddress, 0, [])
-      ).to.not.be.reverted;
+      await expect(mockPMP.configureTokenParams(mockCoreAddress, 0, [])).to.not
+        .be.reverted;
     });
 
     it("configureProject does not revert", async function () {
       // This should not revert
-      await expect(
-        mockPMP.configureProject(mockCoreAddress, 0, [])
-      ).to.not.be.reverted;
+      await expect(mockPMP.configureProject(mockCoreAddress, 0, [])).to.not.be
+        .reverted;
     });
 
     it("configureProjectHooks does not revert", async function () {
@@ -258,13 +260,21 @@ describe("MockPMP", function () {
 
   describe("getProjectPMPConfig", function () {
     it("returns HexColor config for 'color' key", async function () {
-      const config = await mockPMP.getProjectPMPConfig(mockCoreAddress, 0, "color");
+      const config = await mockPMP.getProjectPMPConfig(
+        mockCoreAddress,
+        0,
+        "color"
+      );
       expect(config.paramType).to.equal(6); // HexColor
       expect(config.highestConfigNonce).to.equal(1);
     });
 
     it("returns Uint256Range config for 'size' key", async function () {
-      const config = await mockPMP.getProjectPMPConfig(mockCoreAddress, 0, "size");
+      const config = await mockPMP.getProjectPMPConfig(
+        mockCoreAddress,
+        0,
+        "size"
+      );
       expect(config.paramType).to.equal(3); // Uint256Range
       expect(config.minRange).to.equal(ethers.constants.HashZero);
       expect(config.maxRange).to.equal(
@@ -273,12 +283,20 @@ describe("MockPMP", function () {
     });
 
     it("returns Bool config for 'enabled' key", async function () {
-      const config = await mockPMP.getProjectPMPConfig(mockCoreAddress, 0, "enabled");
+      const config = await mockPMP.getProjectPMPConfig(
+        mockCoreAddress,
+        0,
+        "enabled"
+      );
       expect(config.paramType).to.equal(2); // Bool
     });
 
     it("returns Select config for 'mode' key with options", async function () {
-      const config = await mockPMP.getProjectPMPConfig(mockCoreAddress, 0, "mode");
+      const config = await mockPMP.getProjectPMPConfig(
+        mockCoreAddress,
+        0,
+        "mode"
+      );
       expect(config.paramType).to.equal(1); // Select
       expect(config.selectOptionsLength).to.equal(3);
       expect(config.selectOptions.length).to.equal(3);
@@ -288,12 +306,20 @@ describe("MockPMP", function () {
     });
 
     it("returns String config for 'label' key", async function () {
-      const config = await mockPMP.getProjectPMPConfig(mockCoreAddress, 0, "label");
+      const config = await mockPMP.getProjectPMPConfig(
+        mockCoreAddress,
+        0,
+        "label"
+      );
       expect(config.paramType).to.equal(8); // String
     });
 
     it("returns Unconfigured for unknown key", async function () {
-      const config = await mockPMP.getProjectPMPConfig(mockCoreAddress, 0, "unknownKey");
+      const config = await mockPMP.getProjectPMPConfig(
+        mockCoreAddress,
+        0,
+        "unknownKey"
+      );
       expect(config.paramType).to.equal(0); // Unconfigured
       expect(config.highestConfigNonce).to.equal(0);
     });
@@ -306,9 +332,11 @@ describe("MockGenArt721V3Core + MockPMP Integration", function () {
 
   beforeEach(async function () {
     // Deploy both contracts
-    const MockGenArt721V3CoreFactory =
-      await ethers.getContractFactory("MockGenArt721V3Core");
-    mockCore = (await MockGenArt721V3CoreFactory.deploy()) as MockGenArt721V3Core;
+    const MockGenArt721V3CoreFactory = await ethers.getContractFactory(
+      "MockGenArt721V3Core"
+    );
+    mockCore =
+      (await MockGenArt721V3CoreFactory.deploy()) as MockGenArt721V3Core;
     await mockCore.deployed();
 
     const MockPMPFactory = await ethers.getContractFactory("MockPMP");
@@ -316,7 +344,10 @@ describe("MockGenArt721V3Core + MockPMP Integration", function () {
     await mockPMP.deployed();
 
     // Link them together
-    await mockCore.setExternalAssetDependencyBytecodeAddress(0, mockPMP.address);
+    await mockCore.setExternalAssetDependencyBytecodeAddress(
+      0,
+      mockPMP.address
+    );
   });
 
   it("core contract references PMP contract correctly", async function () {

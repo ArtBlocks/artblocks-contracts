@@ -46,17 +46,23 @@ contract MockGenArt721V3Core {
 
     constructor() {
         // Initialize with a sample script
-        _projectScripts.push("// Sample p5.js script\nfunction setup() { createCanvas(400, 400); }\nfunction draw() { background(tokenData.hash); }");
-        
+        _projectScripts.push(
+            "// Sample p5.js script\nfunction setup() { createCanvas(400, 400); }\nfunction draw() { background(tokenData.hash); }"
+        );
+
         // Initialize with a sample ONCHAIN external asset dependency
         // This simulates having a PMP contract as an external dependency
         // @dev For ONCHAIN type: cid is empty string, data is "#web3call_contract#"
-        _externalAssetDependencies.push(ExternalAssetDependency({
-            cid: "", // Empty string for ONCHAIN type per interface spec
-            dependencyType: IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyType.ONCHAIN,
-            bytecodeAddress: address(0), // Will be set during deployment if needed
-            data: "#web3call_contract#" // The web3call marker for ONCHAIN dependencies
-        }));
+        _externalAssetDependencies.push(
+            ExternalAssetDependency({
+                cid: "", // Empty string for ONCHAIN type per interface spec
+                dependencyType: IGenArt721CoreContractV3_Engine_Flex
+                    .ExternalAssetDependencyType
+                    .ONCHAIN,
+                bytecodeAddress: address(0), // Will be set during deployment if needed
+                data: "#web3call_contract#" // The web3call marker for ONCHAIN dependencies
+            })
+        );
     }
 
     // =========================================================================
@@ -81,7 +87,9 @@ contract MockGenArt721V3Core {
      * @param _tokenId Token ID to query.
      * @return uint256 Project ID (always 0 for this mock).
      */
-    function tokenIdToProjectId(uint256 _tokenId) external pure returns (uint256) {
+    function tokenIdToProjectId(
+        uint256 _tokenId
+    ) external pure returns (uint256) {
         return _tokenId / ONE_MILLION;
     }
 
@@ -192,17 +200,31 @@ contract MockGenArt721V3Core {
     function projectExternalAssetDependencyByIndex(
         uint256 _projectId,
         uint256 _index
-    ) external view returns (IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyWithData memory) {
+    )
+        external
+        view
+        returns (
+            IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyWithData
+                memory
+        )
+    {
         require(_projectId == PROJECT_ID, "Project does not exist");
-        require(_index < _externalAssetDependencies.length, "Dependency index out of bounds");
-        
-        ExternalAssetDependency storage dep = _externalAssetDependencies[_index];
-        return IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyWithData({
-            cid: dep.cid, // Empty string for ONCHAIN type
-            dependencyType: dep.dependencyType,
-            bytecodeAddress: dep.bytecodeAddress,
-            data: dep.data // "#web3call_contract#" for ONCHAIN web3call dependencies
-        });
+        require(
+            _index < _externalAssetDependencies.length,
+            "Dependency index out of bounds"
+        );
+
+        ExternalAssetDependency storage dep = _externalAssetDependencies[
+            _index
+        ];
+        return
+            IGenArt721CoreContractV3_Engine_Flex
+                .ExternalAssetDependencyWithData({
+                    cid: dep.cid, // Empty string for ONCHAIN type
+                    dependencyType: dep.dependencyType,
+                    bytecodeAddress: dep.bytecodeAddress,
+                    data: dep.data // "#web3call_contract#" for ONCHAIN web3call dependencies
+                });
     }
 
     // =========================================================================
@@ -239,7 +261,10 @@ contract MockGenArt721V3Core {
         uint256 _index,
         address _bytecodeAddress
     ) external {
-        require(_index < _externalAssetDependencies.length, "Index out of bounds");
+        require(
+            _index < _externalAssetDependencies.length,
+            "Index out of bounds"
+        );
         _externalAssetDependencies[_index].bytecodeAddress = _bytecodeAddress;
     }
 
@@ -256,12 +281,14 @@ contract MockGenArt721V3Core {
         address _bytecodeAddress,
         string memory _data
     ) external {
-        _externalAssetDependencies.push(ExternalAssetDependency({
-            cid: _cid,
-            dependencyType: _dependencyType,
-            bytecodeAddress: _bytecodeAddress,
-            data: _data
-        }));
+        _externalAssetDependencies.push(
+            ExternalAssetDependency({
+                cid: _cid,
+                dependencyType: _dependencyType,
+                bytecodeAddress: _bytecodeAddress,
+                data: _data
+            })
+        );
     }
 
     /**
@@ -368,10 +395,10 @@ contract MockGenArt721V3Core {
         return (
             MAX_TOKENS, // invocations
             MAX_TOKENS, // maxInvocations
-            true,       // active
-            false,      // paused
-            0,          // completedTimestamp (not completed)
-            false       // locked
+            true, // active
+            false, // paused
+            0, // completedTimestamp (not completed)
+            false // locked
         );
     }
 
