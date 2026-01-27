@@ -16,11 +16,12 @@ import { ArtBlocksClient } from "../..";
 /**
  * Token details pulled from Hasura after a token has been minted.
  */
-export type TokenDetails = GetTokenDetailsQuery["tokens_metadata_by_pk"];
+export type TokenDetails = GetTokenDetailsQuery["tokens_metadata"][0];
 
 export type PurchaseTrackingMachineContext = {
   artblocksClient: ArtBlocksClient;
   purchaseTransactionHash: Hex;
+  chainId: number;
   mintedTokenId?: string;
   mintedToken?: TokenDetails;
   errorMessage?: string;
@@ -33,6 +34,7 @@ export const purchaseTrackingMachine = setup({
       purchaseTransactionHash: Hex;
       artblocksClient: ArtBlocksClient;
       marketplaceUrl?: string;
+      chainId: number;
     },
     context: {} as PurchaseTrackingMachineContext,
     emitted: {} as
@@ -49,10 +51,11 @@ export const purchaseTrackingMachine = setup({
         input: {
           artblocksClient: ArtBlocksClient;
           purchaseTransactionHash: Hex;
+          chainId: number;
         };
       }) => {
-        const { purchaseTransactionHash, artblocksClient } = input;
-        const publicClient = artblocksClient.getPublicClient();
+        const { purchaseTransactionHash, artblocksClient, chainId } = input;
+        const publicClient = artblocksClient.getPublicClient(chainId);
 
         if (!publicClient) {
           throw new Error("Public client not found");
@@ -119,7 +122,7 @@ export const purchaseTrackingMachine = setup({
     }),
   },
   guards: {
-    tokenFound: (_, { mintedToken }: { mintedToken: TokenDetails }) =>
+    tokenFound: (_, { mintedToken }: { mintedToken?: TokenDetails }) =>
       Boolean(mintedToken),
   },
 }).createMachine({
@@ -129,6 +132,7 @@ export const purchaseTrackingMachine = setup({
     artblocksClient: input.artblocksClient,
     purchaseTransactionHash: input.purchaseTransactionHash,
     marketplaceUrl: input.marketplaceUrl,
+    chainId: input.chainId,
   }),
   initial: "awaitingPurchaseConfirmation",
   states: {
@@ -139,6 +143,7 @@ export const purchaseTrackingMachine = setup({
         input: ({ context }) => ({
           artblocksClient: context.artblocksClient,
           purchaseTransactionHash: context.purchaseTransactionHash,
+          chainId: context.chainId,
         }),
         onDone: {
           target: "awaitingTokenSync",
@@ -170,6 +175,7 @@ export const purchaseTrackingMachine = setup({
           tokenId: context.mintedTokenId,
           artblocksClient: context.artblocksClient,
           marketplaceUrl: context.marketplaceUrl,
+          chainId: context.chainId,
         }),
         onDone: [
           {
@@ -177,7 +183,8 @@ export const purchaseTrackingMachine = setup({
             actions: {
               type: "assignMintedToken",
               params: ({ event }) => ({
-                mintedToken: event.output.token,
+                // Token is guaranteed to exist by the tokenFound guard
+                mintedToken: event.output.token!,
               }),
             },
             guard: {

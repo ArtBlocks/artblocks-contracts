@@ -5,9 +5,9 @@ export async function processEthToWei(
   value: unknown,
   args: TransformProjectMinterConfigurationFormValuesArgs
 ): Promise<bigint> {
-  const { minterConfiguration, clientContext } = args;
+  const { minterConfiguration, clientContext, project } = args;
 
-  const { publicClient } = clientContext;
+  const publicClient = clientContext.publicClientResolver(project.chain_id);
 
   if (
     typeof value !== "string" &&
@@ -21,7 +21,7 @@ export async function processEthToWei(
 
   const valueString = value.toString();
 
-  if (minterConfiguration.currency_address !== zeroAddress) {
+  if (minterConfiguration.currency_address !== zeroAddress && publicClient) {
     try {
       const decimals = await publicClient.readContract({
         address: minterConfiguration.currency_address as Hex,

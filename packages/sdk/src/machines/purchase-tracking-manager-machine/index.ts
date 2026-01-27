@@ -25,6 +25,7 @@ type PurchaseTrackingManagerMachineEvents =
   | {
       type: "PURCHASE_INITIATED";
       txHash: Hex;
+      chainId: number;
     }
   | {
       type: "PURCHASE_COMPLETED";
@@ -53,9 +54,11 @@ export const purchaseTrackingManagerMachine = setup({
     spawnPurchaseTrackingMachine: assign({
       purchaseTrackingMachines: (
         { spawn, context },
-        params: { txHash: Hex }
+        params: { txHash: Hex; chainId: number }
       ) => {
-        const publicClient = context.artblocksClient.getPublicClient();
+        const publicClient = context.artblocksClient.getPublicClient(
+          params.chainId
+        );
 
         if (!publicClient) {
           return context.purchaseTrackingMachines;
@@ -70,6 +73,7 @@ export const purchaseTrackingManagerMachine = setup({
               artblocksClient: context.artblocksClient,
               purchaseTransactionHash: params.txHash,
               marketplaceUrl: context.marketplaceUrl,
+              chainId: params.chainId,
             },
           }),
         };
@@ -100,7 +104,7 @@ export const purchaseTrackingManagerMachine = setup({
         {
           type: "spawnPurchaseTrackingMachine",
           params({ event }) {
-            return { txHash: event.txHash };
+            return { txHash: event.txHash, chainId: event.chainId };
           },
         },
       ],

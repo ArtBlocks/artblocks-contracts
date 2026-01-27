@@ -41,7 +41,7 @@ export const postRAMMachine = setup({
         input: Pick<PostRAMMachineContext, "artblocksClient" | "project">;
       }): Promise<Array<BidDetailsFragment>> => {
         const { artblocksClient, project } = input;
-        const publicClient = artblocksClient.getPublicClient();
+        const publicClient = artblocksClient.getPublicClient(project.chain_id);
         const walletClient = artblocksClient.getWalletClient();
 
         if (!publicClient) {
@@ -55,6 +55,7 @@ export const postRAMMachine = setup({
 
         const bids = await artblocksClient.graphqlRequest(GetUserBidsDocument, {
           projectId: project.id,
+          chainId: project.chain_id,
           userAddress: walletClient.account.address.toLowerCase(),
         });
 

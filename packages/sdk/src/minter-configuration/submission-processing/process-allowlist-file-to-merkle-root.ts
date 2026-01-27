@@ -26,6 +26,7 @@ export async function processAllowlistFileToMerkleRoot(
   const {
     clientContext,
     projectId,
+    project,
     minterConfiguration,
     allowedPrivilegedRolesForProject,
   } = args;
@@ -102,6 +103,7 @@ export async function processAllowlistFileToMerkleRoot(
     updateOffChainExtraMinterDetailsMutationDocument,
     {
       projectMinterConfigId: minterConfiguration.id,
+      chainId: project.chain_id,
       extraMinterDetails: {
         pendingMerkleRoot: merkleRoot,
         pendingAllowlistedAddressesLink: url.split("?")[0],

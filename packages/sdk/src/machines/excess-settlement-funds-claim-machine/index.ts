@@ -19,8 +19,8 @@ import { iUnsharedDAExpSettlementAbi } from "../../../abis/iUnsharedDAExpSettlem
  */
 
 const getReceiptDocument = graphql(/* GraphQL */ `
-  query GetReceipt($id: String!) {
-    receipt_metadata_by_pk(id: $id) {
+  query GetReceipt($id: String!, $chainId: Int!) {
+    receipt_metadata(where: { id: { _eq: $id }, chain_id: { _eq: $chainId } }) {
       id
       excess_settlement_funds
     }
@@ -56,7 +56,7 @@ export const excessSettlementFundsClaimMachine = setup({
         };
       }): Promise<Hex> => {
         const walletClient = artblocksClient.getWalletClient();
-        const publicClient = artblocksClient.getPublicClient();
+        const publicClient = artblocksClient.getPublicClient(receipt.chain_id);
 
         if (!publicClient) {
           throw new Error("Public client is not available");
@@ -111,11 +111,15 @@ export const excessSettlementFundsClaimMachine = setup({
     ),
     awaitClaimConfirmations: fromPromise(
       async ({
-        input: { txHash, artblocksClient },
+        input: { txHash, artblocksClient, receipt },
       }: {
-        input: { txHash?: Hex; artblocksClient: ArtBlocksClient };
+        input: {
+          txHash?: Hex;
+          artblocksClient: ArtBlocksClient;
+          receipt: ReceiptSettlementDataFragment;
+        };
       }) => {
-        const publicClient = artblocksClient.getPublicClient();
+        const publicClient = artblocksClient.getPublicClient(receipt.chain_id);
 
         if (!publicClient) {
           throw new Error("Public client is not available");
@@ -141,16 +145,17 @@ export const excessSettlementFundsClaimMachine = setup({
       }) => {
         const res = await artblocksClient.graphqlRequest(getReceiptDocument, {
           id: receipt.id,
+          chainId: receipt.chain_id,
         });
 
-        return res.receipt_metadata_by_pk;
+        return res.receipt_metadata[0];
       }
     ),
   },
   guards: {
     hasExcessSettlementFunds: (
       _,
-      { receipt }: { receipt: GetReceiptQuery["receipt_metadata_by_pk"] }
+      { receipt }: { receipt: GetReceiptQuery["receipt_metadata"][0] }
     ) => {
       if (receipt?.excess_settlement_funds === "0") {
         return false;
@@ -217,9 +222,10 @@ export const excessSettlementFundsClaimMachine = setup({
     awaitingClaimConfirmations: {
       invoke: {
         src: "awaitClaimConfirmations",
-        input: ({ context: { txHash, artblocksClient } }) => ({
+        input: ({ context: { txHash, artblocksClient, receipt } }) => ({
           txHash,
           artblocksClient,
+          receipt,
         }),
         onDone: "fetchingReceipt",
         onError: "error",

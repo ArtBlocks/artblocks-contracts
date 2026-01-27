@@ -2,8 +2,12 @@ import { graphql } from "../generated/gql";
 
 export const getProjectMinterConfigurationQueryDocument = graphql(
   /* GraphQL */ `
-    query GetProjectMinterConfiguration($projectId: String!) {
-      projects_metadata_by_pk(id: $projectId) {
+    query GetProjectMinterConfiguration($projectId: String!, $chainId: Int!) {
+      projects_metadata(
+        where: { id: { _eq: $projectId }, chain_id: { _eq: $chainId } }
+        limit: 1
+      ) {
+        chain_id
         project_id
         user_is_artist
 
@@ -55,8 +59,14 @@ export const getProjectMinterConfigurationQueryDocument = graphql(
 
 export const getProjectMinterConfigurationUpdatesQueryDocument = graphql(
   /* GraphQL */ `
-    query GetProjectMinterConfigurationUpdates($projectId: String!) {
-      projects_metadata_by_pk(id: $projectId) {
+    query GetProjectMinterConfigurationUpdates(
+      $projectId: String!
+      $chainId: Int!
+    ) {
+      projects_metadata(
+        where: { id: { _eq: $projectId }, chain_id: { _eq: $chainId } }
+        limit: 1
+      ) {
         minter_configuration {
           properties_updated_at
         }
@@ -66,8 +76,11 @@ export const getProjectMinterConfigurationUpdatesQueryDocument = graphql(
 );
 
 export const getProjectsMetadataUpdatesQueryDocument = graphql(/* GraphQL */ `
-  query GetProjectsMetadataUpdatesQuery($projectId: String!) {
-    projects_metadata_by_pk(id: $projectId) {
+  query GetProjectsMetadataUpdatesQuery($projectId: String!, $chainId: Int!) {
+    projects_metadata(
+      where: { id: { _eq: $projectId }, chain_id: { _eq: $chainId } }
+      limit: 1
+    ) {
       properties_updated_at
     }
   }
@@ -86,13 +99,19 @@ export const updateOffChainExtraMinterDetailsMutationDocument = graphql(
   /* GraphQL */ `
     mutation UpdateOffChainExtraMinterDetails(
       $projectMinterConfigId: String!
+      $chainId: Int!
       $extraMinterDetails: jsonb!
     ) {
-      update_project_minter_configurations_by_pk(
-        pk_columns: { id: $projectMinterConfigId }
+      update_project_minter_configurations(
+        where: {
+          id: { _eq: $projectMinterConfigId }
+          chain_id: { _eq: $chainId }
+        }
         _append: { offchain_extra_minter_details: $extraMinterDetails }
       ) {
-        offchain_extra_minter_details
+        returning {
+          offchain_extra_minter_details
+        }
       }
     }
   `

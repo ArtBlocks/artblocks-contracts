@@ -12,12 +12,14 @@ jest.mock("./minter-configuration", () => ({
 describe("ArtBlocksClient", () => {
   let abClient: ArtBlocksClient;
   const mockPublicClient = {} as PublicClient; // Mock as needed
+  const mockPublicClientResolver = () => mockPublicClient;
   const graphqlEndpoint = "https://test.graphql.endpoint";
   const jwt = "test-jwt";
+  const testChainId = 1;
 
   beforeEach(() => {
     abClient = new ArtBlocksClient({
-      publicClient: mockPublicClient,
+      publicClientResolver: mockPublicClientResolver,
       graphqlEndpoint,
       authToken: jwt,
     });
@@ -25,7 +27,7 @@ describe("ArtBlocksClient", () => {
 
   describe("constructor", () => {
     it("initializes with the correct properties", () => {
-      expect(abClient.context.publicClient).toBe(mockPublicClient);
+      expect(abClient.getPublicClient(testChainId)).toBe(mockPublicClient);
       expect(abClient.context.userIsStaff).toBe(false);
 
       const headers =
@@ -49,11 +51,14 @@ describe("ArtBlocksClient", () => {
         data: mockData,
       });
 
-      const config =
-        await abClient.getProjectMinterConfigurationContext(projectId);
+      const config = await abClient.getProjectMinterConfigurationContext(
+        projectId,
+        testChainId
+      );
 
       expect(generateProjectMinterConfigurationForms).toHaveBeenCalledWith({
         projectId,
+        chainId: testChainId,
         onConfigurationChange: expect.any(Function),
         clientContext: abClient.context,
       });
@@ -61,14 +66,14 @@ describe("ArtBlocksClient", () => {
       expect(config.forms).toBe(mockForms);
     });
 
-    it("throws an error if getProjectMinterConfigurationContext is called without a publicClient in context", async () => {
-      abClient.setPublicClient(undefined);
+    it("throws an error if getProjectMinterConfigurationContext is called without a publicClientResolver in context", async () => {
+      abClient.setPublicClientResolver(undefined);
       const projectId = "test-project-id";
 
       await expect(
-        abClient.getProjectMinterConfigurationContext(projectId)
+        abClient.getProjectMinterConfigurationContext(projectId, testChainId)
       ).rejects.toThrow(
-        "A publicClient is required to get project minter configuration context"
+        "A publicClientResolver is required to get project minter configuration context"
       );
     });
   });
@@ -90,8 +95,10 @@ describe("ArtBlocksClient", () => {
     });
 
     it("correctly subscribes and notifies subscribers of configuration changes", async () => {
-      const config =
-        await abClient.getProjectMinterConfigurationContext(projectId);
+      const config = await abClient.getProjectMinterConfigurationContext(
+        projectId,
+        testChainId
+      );
       const subscriberMock = jest.fn();
 
       // Subscribe
@@ -108,8 +115,10 @@ describe("ArtBlocksClient", () => {
     });
 
     it("allows subscribers to unsubscribe", async () => {
-      const config =
-        await abClient.getProjectMinterConfigurationContext(projectId);
+      const config = await abClient.getProjectMinterConfigurationContext(
+        projectId,
+        testChainId
+      );
       const subscriberMock = jest.fn();
 
       // Subscribe and then immediately unsubscribe
@@ -124,8 +133,10 @@ describe("ArtBlocksClient", () => {
     });
 
     it("handles multiple subscribers", async () => {
-      const config =
-        await abClient.getProjectMinterConfigurationContext(projectId);
+      const config = await abClient.getProjectMinterConfigurationContext(
+        projectId,
+        testChainId
+      );
       const firstSubscriberMock = jest.fn();
       const secondSubscriberMock = jest.fn();
 

@@ -17,6 +17,7 @@ export class ProjectIneligibleForPrimarySaleError extends Error {
 const getProjectDetailsFragmentsDocument = graphql(/* GraphQL */ `
   fragment ProjectDetails on projects_metadata {
     id
+    chain_id
     artist_address
     artist_name
     complete
@@ -72,9 +73,12 @@ const getProjectDetailsFragmentsDocument = graphql(/* GraphQL */ `
 `);
 
 export const getProjectDetailsDocument = graphql(/* GraphQL */ `
-  query GetProjectDetails($projectId: String!, $ttl: Int = 15)
+  query GetProjectDetails($projectId: String!, $chainId: Int!, $ttl: Int = 15)
   @cached(ttl: $ttl) {
-    projects_metadata_by_pk(id: $projectId) {
+    projects_metadata(
+      where: { id: { _eq: $projectId }, chain_id: { _eq: $chainId } }
+      limit: 1
+    ) {
       ...ProjectDetails
     }
   }
@@ -83,7 +87,7 @@ export const getProjectDetailsDocument = graphql(/* GraphQL */ `
 /**
  * Stable details relevant to the sale of a project, pulled from Hasura.
  */
-export type ProjectDetails = GetProjectDetailsQuery["projects_metadata_by_pk"];
+export type ProjectDetails = GetProjectDetailsQuery["projects_metadata"][0];
 
 /**
  * Relevant project data likely to update during a live sale. This is pulled
@@ -407,7 +411,8 @@ export function deserializeSnapshot({
  */
 export async function getSerializedSnapshotWithProjectData(
   projectId: string,
-  artblocksClient: ArtBlocksClient
+  artblocksClient: ArtBlocksClient,
+  chainId: number
 ) {
   const projectSaleManagerMachineActor = createActor(
     projectSaleManagerMachine,
@@ -415,6 +420,7 @@ export async function getSerializedSnapshotWithProjectData(
       input: {
         projectId,
         artblocksClient,
+        chainId,
       },
     }
   );
