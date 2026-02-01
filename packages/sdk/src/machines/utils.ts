@@ -23,6 +23,7 @@ export const SUPPORTED_MINTER_TYPES = [
   Minter_Type_Names_Enum.MinterSetPriceErc20V5,
   Minter_Type_Names_Enum.MinterMinPriceV0,
   Minter_Type_Names_Enum.MinterMinPriceMerkleV0,
+  Minter_Type_Names_Enum.MinterSlidingScaleV0,
 ];
 
 export const SUPPORTED_SETTLEMENT_CLAIM_MINTER_TYPES = [
