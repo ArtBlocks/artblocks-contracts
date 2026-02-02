@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import { expectRevert } from "@openzeppelin/test-helpers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
@@ -627,6 +628,187 @@ runForEach.forEach((params) => {
               value: config.pricePerTokenInWei,
             }
           );
+      });
+    });
+
+    describe("max price cap (20x minimum)", async function () {
+      it("allows purchase at exactly 20x minimum price", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        const maxPrice = config.pricePerTokenInWei.mul(20);
+        // should succeed at exactly 20x
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: maxPrice,
+          });
+      });
+
+      it("reverts when paying more than 20x minimum price", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        const overMaxPrice = config.pricePerTokenInWei.mul(20).add(1);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address, {
+              value: overMaxPrice,
+            }),
+          revertMessages.onlyUpTo20xMinPrice
+        );
+      });
+
+      it("reverts when paying significantly more than 20x minimum price", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        const wayOverMaxPrice = config.pricePerTokenInWei.mul(100);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address, {
+              value: wayOverMaxPrice,
+            }),
+          revertMessages.onlyUpTo20xMinPrice
+        );
+      });
+
+      it("enforces max price cap via purchaseTo as well", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        const overMaxPrice = config.pricePerTokenInWei.mul(20).add(1);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseTo(
+              config.accounts.additional.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              {
+                value: overMaxPrice,
+              }
+            ),
+          revertMessages.onlyUpTo20xMinPrice
+        );
+      });
+
+      it("MAX_PRICE_MULTIPLIER constant is 20", async function () {
+        const config = await loadFixture(_beforeEach);
+        const multiplier = await config.minter.MAX_PRICE_MULTIPLIER();
+        expect(multiplier).to.equal(20);
+      });
+    });
+
+    describe("minimum price enforcement (0.015 ETH)", async function () {
+      it("MIN_PRICE_PER_TOKEN constant is 0.015 ETH", async function () {
+        const config = await loadFixture(_beforeEach);
+        const minPrice = await config.minter.MIN_PRICE_PER_TOKEN();
+        expect(minPrice).to.equal(ethers.utils.parseEther("0.015"));
+      });
+
+      it("reverts when setting price below MIN_PRICE_PER_TOKEN", async function () {
+        const config = await loadFixture(_beforeEach);
+        const belowMinPrice = ethers.utils.parseEther("0.014");
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .updatePricePerTokenInWei(
+              config.projectZero,
+              config.genArt721Core.address,
+              belowMinPrice
+            ),
+          revertMessages.priceLtMinAllowed
+        );
+      });
+
+      it("reverts when setting price to zero", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .updatePricePerTokenInWei(
+              config.projectZero,
+              config.genArt721Core.address,
+              0
+            ),
+          revertMessages.priceLtMinAllowed
+        );
+      });
+
+      it("allows setting price at exactly MIN_PRICE_PER_TOKEN", async function () {
+        const config = await loadFixture(_beforeEach);
+        const minPrice = ethers.utils.parseEther("0.015");
+        // should succeed at exactly minimum
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            minPrice
+          );
+        // verify price was set
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.tokenPriceInWei).to.equal(minPrice);
+      });
+
+      it("allows setting price above MIN_PRICE_PER_TOKEN", async function () {
+        const config = await loadFixture(_beforeEach);
+        const aboveMinPrice = ethers.utils.parseEther("0.1");
+        // should succeed above minimum
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            aboveMinPrice
+          );
+        // verify price was set
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.tokenPriceInWei).to.equal(aboveMinPrice);
+      });
+
+      it("reverts when setting price just below MIN_PRICE_PER_TOKEN (1 wei below)", async function () {
+        const config = await loadFixture(_beforeEach);
+        const justBelowMinPrice = ethers.utils.parseEther("0.015").sub(1);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .updatePricePerTokenInWei(
+              config.projectZero,
+              config.genArt721Core.address,
+              justBelowMinPrice
+            ),
+          revertMessages.priceLtMinAllowed
+        );
       });
     });
   });
