@@ -41,6 +41,7 @@ export type PurchaseInitiationMachineEvents =
   | {
       type: "INITIATE_PURCHASE";
       purchaseToAddress?: Hex;
+      customPriceInWei?: bigint;
     }
   | {
       type: "RESET";
@@ -66,6 +67,7 @@ export type PurchaseInitiationMachineContext = {
   project: NonNullable<ProjectDetails>;
   projectSaleManagerMachine: AnyActorRef; // This is necessary to avoid circular dependencies
   purchaseToAddress?: Hex;
+  customPriceInWei?: bigint;
   errorMessage?: string;
   additionalPurchaseData?: AdditionalPurchaseData;
   userIneligibilityReason?: UserIneligibilityReason;
@@ -227,6 +229,7 @@ export const purchaseInitiationMachine = setup({
           | "project"
           | "projectSaleManagerMachine"
           | "purchaseToAddress"
+          | "customPriceInWei"
           | "additionalPurchaseData"
         >;
       }): Promise<Hex> => {
@@ -308,6 +311,10 @@ export const purchaseInitiationMachine = setup({
       purchaseToAddress: (_, params: { purchaseToAddress?: Hex }) =>
         params.purchaseToAddress,
     }),
+    assignCustomPriceInWei: assign({
+      customPriceInWei: (_, params: { customPriceInWei?: bigint }) =>
+        params.customPriceInWei,
+    }),
     assignErrorMessageFromError: assign({
       errorMessage: (
         _,
@@ -328,6 +335,7 @@ export const purchaseInitiationMachine = setup({
         artblocksClient: updatedArtblocksClient ?? context.artblocksClient,
         additionalPurchaseData: undefined,
         purchaseToAddress: undefined,
+        customPriceInWei: undefined,
         errorMessage: undefined,
         initiatedTxHash: undefined,
         erc20ApprovalAmount: undefined,
@@ -524,12 +532,20 @@ export const purchaseInitiationMachine = setup({
         INITIATE_PURCHASE: [
           {
             target: "initiatingPurchase",
-            actions: {
-              type: "assignPurchaseToAddress",
-              params: ({ event }) => ({
-                purchaseToAddress: event.purchaseToAddress,
-              }),
-            },
+            actions: [
+              {
+                type: "assignPurchaseToAddress",
+                params: ({ event }) => ({
+                  purchaseToAddress: event.purchaseToAddress,
+                }),
+              },
+              {
+                type: "assignCustomPriceInWei",
+                params: ({ event }) => ({
+                  customPriceInWei: event.customPriceInWei,
+                }),
+              },
+            ],
             guard: {
               type: "isERC20AllowanceSufficient",
               params: ({ context }) => ({
@@ -539,12 +555,20 @@ export const purchaseInitiationMachine = setup({
           },
           {
             target: "awaitingERC20AllowanceApprovalAmount",
-            actions: {
-              type: "assignPurchaseToAddress",
-              params: ({ event }) => ({
-                purchaseToAddress: event.purchaseToAddress,
-              }),
-            },
+            actions: [
+              {
+                type: "assignPurchaseToAddress",
+                params: ({ event }) => ({
+                  purchaseToAddress: event.purchaseToAddress,
+                }),
+              },
+              {
+                type: "assignCustomPriceInWei",
+                params: ({ event }) => ({
+                  customPriceInWei: event.customPriceInWei,
+                }),
+              },
+            ],
           },
         ],
         RESET: {
@@ -660,6 +684,7 @@ export const purchaseInitiationMachine = setup({
           artblocksClient: context.artblocksClient,
           project: context.project,
           purchaseToAddress: context.purchaseToAddress,
+          customPriceInWei: context.customPriceInWei,
           projectSaleManagerMachine: context.projectSaleManagerMachine,
           additionalPurchaseData: context.additionalPurchaseData,
         }),
