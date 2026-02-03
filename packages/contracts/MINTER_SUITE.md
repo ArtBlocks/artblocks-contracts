@@ -84,7 +84,7 @@ These are the smart contracts that receive funds, and split them between the art
 - V4: [0x47e2df2723238f913741Cc6b1963e76fdfD19B94](https://etherscan.io/address/0x47e2df2723238f913741Cc6b1963e76fdfD19B94#code)
 - V5 (shared with Engine): [0x7E6F7Aa281133e394041b5fEA1f3Be7a00D7201F](https://etherscan.io/address/0x7E6F7Aa281133e394041b5fEA1f3Be7a00D7201F#code)
 
-#### MinterDAExpSettlement (Expotential Decay Last Price Dutch Auction)
+#### MinterDAExpSettlement (Exponential Decay Last Price Dutch Auction)
 
 - V0: N/A, never used in prod.
 - V1: [0xfdE58c821D1c226b4a45c22904de20b114EDe7E7](https://etherscan.io/address/0xfdE58c821D1c226b4a45c22904de20b114EDe7E7#code)
