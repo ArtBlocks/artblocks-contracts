@@ -133,4 +133,6 @@ export const revertMessages = {
   noBidsInAuction: "No bids in auction",
   onlySlotLtNumSlots: "Only slot index lt NUM_SLOTS",
   onlyGteMinFee: "Only gte min mint fee",
+  onlyUpTo20xMinPrice: "Only pay up to 20x min price",
+  priceLtMinAllowed: "Price lt min allowed price",
 };

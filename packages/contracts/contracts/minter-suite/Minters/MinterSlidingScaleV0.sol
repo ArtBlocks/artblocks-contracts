@@ -46,7 +46,9 @@ import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGu
  * checks performed by this minter's Minter Filter.
  * ----------------------------------------------------------------------------
  * @notice Pricing Mechanism:
- * This minter accepts payments at or above a configured minimum price per token.
+ * This minter accepts payments at or above a configured minimum price per token,
+ * up to a maximum of 20x the minimum price (to prevent fat-finger errors).
+ * The minimum configurable price is 0.015 ETH (MIN_PRICE_PER_TOKEN).
  * The full amount sent (msg.value) is accepted and split among stakeholders
  * according to the configured revenue splits - no refund is issued for amounts
  * above the minimum price.
@@ -71,6 +73,15 @@ contract MinterSlidingScaleV0 is
 
     /// minter version for this minter
     string public constant minterVersion = "v0.0.0";
+
+    /// @notice Maximum price multiplier relative to the minimum price.
+    /// @dev Payments are capped at MAX_PRICE_MULTIPLIER * minPrice to prevent
+    /// fat-finger errors.
+    uint256 public constant MAX_PRICE_MULTIPLIER = 20;
+
+    /// @notice Minimum allowed price per token in Wei (0.015 ETH).
+    /// @dev Artists cannot configure a price below this value.
+    uint256 public constant MIN_PRICE_PER_TOKEN = 0.015 ether;
 
     /**
      * @notice Emitted when a token is minted, recording the price paid.
@@ -136,12 +147,13 @@ contract MinterSlidingScaleV0 is
     /**
      * @notice Updates this minter's minimum price per token of project `projectId`
      * to be '_pricePerTokenInWei`, in Wei.
-     * @dev Note that it is intentionally supported here that the configured
-     * minimum price may be explicitly set to `0`.
-     * @dev Purchasers may send any amount >= this minimum price.
+     * @dev The configured minimum price must be >= MIN_PRICE_PER_TOKEN (0.015 ETH).
+     * @dev Purchasers may send any amount >= this minimum price, up to 20x the
+     * minimum price.
      * @param projectId Project ID to set the minimum price per token for.
      * @param coreContract Core contract address for the given project.
      * @param pricePerTokenInWei Minimum price per token to set for the project, in Wei.
+     * Must be >= MIN_PRICE_PER_TOKEN.
      */
     function updatePricePerTokenInWei(
         uint256 projectId,
@@ -153,6 +165,10 @@ contract MinterSlidingScaleV0 is
             coreContract: coreContract,
             sender: msg.sender
         });
+        require(
+            pricePerTokenInWei >= MIN_PRICE_PER_TOKEN,
+            "Price lt min allowed price"
+        );
         SetPriceLib.updatePricePerToken({
             projectId: projectId,
             coreContract: coreContract,
@@ -320,13 +336,15 @@ contract MinterSlidingScaleV0 is
     /**
      * @notice Gets if minimum price of token is configured, minimum price for minting a
      * token on project `projectId`, and currency symbol and address to be
-     * used as payment. Note that purchasers may send amounts >= the minimum price.
+     * used as payment. Note that purchasers may send amounts >= the minimum price,
+     * up to 20x the minimum price.
      * @param projectId Project ID to get price information for
      * @param coreContract Contract address of the core contract
      * @return isConfigured true only if minimum token price has been configured on
      * this minter
      * @return tokenPriceInWei current minimum price of token on this minter - invalid
-     * if price has not yet been configured. Purchasers may send higher amounts.
+     * if price has not yet been configured. Purchasers may send amounts between this
+     * value and 20x this value.
      * @return currencySymbol currency symbol for purchases of project on this
      * minter. This minter always returns "ETH"
      * @return currencyAddress currency address for purchases of project on
@@ -401,6 +419,7 @@ contract MinterSlidingScaleV0 is
     /**
      * @notice Purchases a token from project `projectId` and sets
      * the token's owner to `to`.
+     * @dev Payment must be >= minimum price and <= 20x minimum price.
      * @param to Address to be the new token's owner.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
@@ -434,6 +453,11 @@ contract MinterSlidingScaleV0 is
         require(
             msg.value >= minPricePerTokenInWei,
             "Must send value gte minimum price"
+        );
+
+        require(
+            msg.value <= minPricePerTokenInWei * MAX_PRICE_MULTIPLIER,
+            "Only pay up to 20x min price"
         );
 
         // EFFECTS

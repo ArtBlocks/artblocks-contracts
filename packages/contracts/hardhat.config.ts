@@ -54,6 +54,9 @@ const ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL =
 const BASE_MAINNET_JSON_RPC_PROVIDER_URL =
   process.env.BASE_MAINNET_JSON_RPC_PROVIDER_URL || "";
 
+const HOODI_JSON_RPC_PROVIDER_URL =
+  process.env.HOODI_JSON_RPC_PROVIDER_URL || "";
+
 // Sidechain Configuration
 const PALM_MAINNET_JSON_RPC_PROVIDER_URL =
   process.env.PALM_MAINNET_JSON_RPC_PROVIDER_URL || "";
@@ -141,6 +144,13 @@ module.exports = {
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 200,
     },
+    hoodi: {
+      url: HOODI_JSON_RPC_PROVIDER_URL,
+      accounts: [`${PRIVATE_KEY}`],
+      gasPrice: "auto",
+      gasMultiplier: 2.0,
+      maxNominalGasPriceGwei: 200,
+    },
     coverage: {
       url: "http://localhost:8545",
     },
@@ -164,6 +174,14 @@ module.exports = {
         urls: {
           apiURL: "https://api-sepolia.arbiscan.io/api",
           browserURL: "https://sepolia.arbiscan.io",
+        },
+      },
+      {
+        network: "hoodi",
+        chainId: 560048,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api",
+          browserURL: "https://hoodi.etherscan.io",
         },
       },
     ],
