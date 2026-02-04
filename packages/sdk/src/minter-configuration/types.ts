@@ -1,5 +1,4 @@
-import { PublicClient } from "viem";
-import { ArtBlocksClientContext } from "..";
+import { ArtBlocksClientContext, PublicClientResolver } from "..";
 import {
   GetProjectMinterConfigurationQuery,
   ProjectMinterConfigurationDetailsFragment,
@@ -9,25 +8,28 @@ import { FormBlueprint } from "../types";
 
 export type GenerateProjectMinterConfigurationFormsArgs = {
   projectId: string;
+  chainId: number;
   onConfigurationChange: (args: {
     data: ProjectMinterConfigurationData;
     forms: FormBlueprint[];
   }) => void;
   clientContext: ArtBlocksClientContext & {
-    publicClient: PublicClient;
+    publicClientResolver: PublicClientResolver;
   };
 };
 
-export type GenerateProjectMinterConfigurationFormsContext =
-  GenerateProjectMinterConfigurationFormsArgs & {
-    allowedPrivilegedRolesForProject: string[];
-    coreContractAddress: string;
-    projectIndex: number;
-    project: ProjectWithMinterFilter;
-  };
+export type GenerateProjectMinterConfigurationFormsContext = Omit<
+  GenerateProjectMinterConfigurationFormsArgs,
+  "chainId"
+> & {
+  allowedPrivilegedRolesForProject: string[];
+  coreContractAddress: string;
+  projectIndex: number;
+  project: ProjectWithMinterFilter;
+};
 
 export type ProjectWithMinterFilter = NonNullable<
-  GetProjectMinterConfigurationQuery["projects_metadata_by_pk"]
+  GetProjectMinterConfigurationQuery["projects_metadata"][0]
 > & {
   contract: {
     minter_filter: {
@@ -37,7 +39,7 @@ export type ProjectWithMinterFilter = NonNullable<
 };
 
 export type ProjectMinterConfigurationData =
-  GetProjectMinterConfigurationQuery["projects_metadata_by_pk"];
+  GetProjectMinterConfigurationQuery["projects_metadata"][0];
 
 export type TransformProjectMinterConfigurationFormValuesArgs =
   GenerateProjectMinterConfigurationFormsContext & {

@@ -25,13 +25,14 @@ import {
 export async function pollForSyncedMinterConfigUpdates(
   clientContext: ArtBlocksClientContext,
   projectId: string,
+  chainId: number,
   transactionConfirmedAt: Date,
   updateProperties: string[]
 ) {
   await asyncPoll(
     async (): Promise<
       AsyncData<
-        GetProjectMinterConfigurationUpdatesQuery["projects_metadata_by_pk"]
+        GetProjectMinterConfigurationUpdatesQuery["projects_metadata"][0]
       >
     > => {
       try {
@@ -39,9 +40,10 @@ export async function pollForSyncedMinterConfigUpdates(
           getProjectMinterConfigurationUpdatesQueryDocument,
           {
             projectId,
+            chainId,
           }
         );
-        const project = result.projects_metadata_by_pk;
+        const project = result.projects_metadata[0];
 
         if (!project) {
           return Promise.reject(
@@ -84,13 +86,14 @@ export async function pollForSyncedMinterConfigUpdates(
 export async function pollForProjectUpdates(
   clientContext: ArtBlocksClientContext,
   projectId: string,
+  chainId: number,
   transactionConfirmedAt: Date,
   updateProperties: string[]
 ) {
   await asyncPoll(
     async (): Promise<
       AsyncData<
-        GetProjectMinterConfigurationUpdatesQuery["projects_metadata_by_pk"]
+        GetProjectMinterConfigurationUpdatesQuery["projects_metadata"][0]
       >
     > => {
       try {
@@ -98,9 +101,10 @@ export async function pollForProjectUpdates(
           getProjectsMetadataUpdatesQueryDocument,
           {
             projectId,
+            chainId,
           }
         );
-        const project = result.projects_metadata_by_pk;
+        const project = result.projects_metadata[0];
 
         if (!project) {
           return Promise.reject(

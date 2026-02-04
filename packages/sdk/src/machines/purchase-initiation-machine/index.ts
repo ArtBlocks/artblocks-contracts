@@ -152,6 +152,7 @@ export const purchaseInitiationMachine = setup({
     emitted: {} as {
       type: "purchaseInitiated";
       txHash: Hex;
+      chainId: number;
     },
   },
   actors: {
@@ -165,7 +166,7 @@ export const purchaseInitiationMachine = setup({
         >;
       }): Promise<UserPurchaseContext> => {
         const { artblocksClient, project } = input;
-        const publicClient = artblocksClient.getPublicClient();
+        const publicClient = artblocksClient.getPublicClient(project.chain_id);
         const walletClient = artblocksClient.getWalletClient();
 
         if (!publicClient) {
@@ -286,8 +287,8 @@ export const purchaseInitiationMachine = setup({
           "artblocksClient" | "project" | "erc20ApprovalTxHash"
         >;
       }): Promise<void> => {
-        const { artblocksClient } = input;
-        const publicClient = artblocksClient.getPublicClient();
+        const { artblocksClient, project } = input;
+        const publicClient = artblocksClient.getPublicClient(project.chain_id);
 
         if (!publicClient) {
           throw new Error("Public client unavailable");
@@ -352,6 +353,7 @@ export const purchaseInitiationMachine = setup({
       purchaseTrackingManagerMachine.send({
         type: "PURCHASE_INITIATED",
         txHash: params.txHash,
+        chainId: context.project.chain_id,
       });
     },
     assignAdditionalPurchaseData: assign({
@@ -376,10 +378,13 @@ export const purchaseInitiationMachine = setup({
     assignERC20ApprovalTxHash: assign({
       erc20ApprovalTxHash: (_, params: { txHash: Hex }) => params.txHash,
     }),
-    emitPurchaseInitiatedEvent: emit((_, params: { txHash: Hex }) => ({
-      type: "purchaseInitiated" as const,
-      txHash: params.txHash,
-    })),
+    emitPurchaseInitiatedEvent: emit(
+      ({ context }, params: { txHash: Hex }) => ({
+        type: "purchaseInitiated" as const,
+        txHash: params.txHash,
+        chainId: context.project.chain_id,
+      })
+    ),
   },
   guards: {
     isUserRejectedError: (_, { error }: { error: unknown }) => {
