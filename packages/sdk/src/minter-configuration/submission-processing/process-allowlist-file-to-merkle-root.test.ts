@@ -73,6 +73,7 @@ describe("processAllowlistFileToMerkleRoot", () => {
       getAllowlistUploadUrlQueryDocument,
       {
         projectId: args.projectId,
+        chainId: args.project.chain_id,
       }
     );
 
