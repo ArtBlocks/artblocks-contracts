@@ -134,9 +134,8 @@ export const excessSettlementFundsManagerMachine = setup({
         const { artblocksClient, receiptPollingInterval } = context;
 
         const walletClient = artblocksClient.getWalletClient();
-        const publicClient = artblocksClient.getPublicClient();
 
-        if (!walletClient || !publicClient) {
+        if (!walletClient || !artblocksClient.context.publicClientResolver) {
           return;
         }
 
@@ -193,11 +192,13 @@ export const excessSettlementFundsManagerMachine = setup({
                 artblocksClient,
               } = context;
               const walletClient = artblocksClient.getWalletClient();
-              const publicClient = artblocksClient.getPublicClient();
 
               const updatedClaimMachines = new Map(claimMachines);
 
-              if (!publicClient || !walletClient) {
+              if (
+                !artblocksClient.context.publicClientResolver ||
+                !walletClient
+              ) {
                 enqueue.assign({
                   claimMachines: updatedClaimMachines,
                 });

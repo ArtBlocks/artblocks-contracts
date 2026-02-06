@@ -6,17 +6,20 @@ import { ProjectMinterConfigurationDetailsFragment } from "../../generated/graph
 import { FormFieldSchema } from "../../json-schema";
 import { GraphQLClient } from "graphql-request";
 import { PublicClient } from "viem";
+import { PublicClientResolver } from "../../index";
 
 export function generateTransformProjectMinterConfigurationFormValuesArgs(
   overrides?: Partial<TransformProjectMinterConfigurationFormValuesArgs>
 ) {
+  const mockPublicClientResolver: PublicClientResolver = () =>
+    ({}) as unknown as PublicClient;
   const args: TransformProjectMinterConfigurationFormValuesArgs = {
     clientContext: {
       graphqlClient: {
         request: jest.fn(),
       } as unknown as GraphQLClient,
       userIsStaff: false,
-      publicClient: {} as unknown as PublicClient,
+      publicClientResolver: mockPublicClientResolver,
     },
     projectId: "fake-project-id",
     minterConfiguration: {
@@ -29,6 +32,7 @@ export function generateTransformProjectMinterConfigurationFormValuesArgs(
     formValues: {},
     project: {
       id: "fake-project-id",
+      chain_id: 1,
     } as unknown as ProjectWithMinterFilter,
     schema: {} as unknown as FormFieldSchema,
     ...overrides,

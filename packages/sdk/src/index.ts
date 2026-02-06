@@ -6,21 +6,35 @@ import { GraphQLClient, RequestDocument, Variables } from "graphql-request";
 import { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import { VariablesAndRequestHeadersArgs } from "graphql-request/build/esm/types";
 
+/**
+ * A function that resolves to a PublicClient for a given chainId.
+ */
+export type PublicClientResolver = (
+  chainId: number
+) => PublicClient | undefined;
+
 export type ArtBlocksClientOptions = {
   graphqlEndpoint: string;
-  publicClient?: PublicClient;
+  publicClientResolver?: PublicClientResolver;
   authToken?: string;
   walletClient?: WalletClient;
 };
 
 export type ArtBlocksClientContext = {
   graphqlClient: GraphQLClient;
-  publicClient?: PublicClient;
+  publicClientResolver?: PublicClientResolver;
   walletClient?: WalletClient;
   userIsStaff: boolean;
 };
 
-type ArtBlocksClientContextWithPublicClient = ArtBlocksClientContext & {
+/**
+ * A resolved context with a concrete PublicClient for a specific chain.
+ * Used internally when making chain-specific calls.
+ */
+export type ArtBlocksClientContextWithPublicClient = Omit<
+  ArtBlocksClientContext,
+  "publicClientResolver"
+> & {
   publicClient: PublicClient;
 };
 
@@ -28,7 +42,7 @@ export class ArtBlocksClient {
   context: ArtBlocksClientContext;
 
   constructor({
-    publicClient,
+    publicClientResolver,
     walletClient,
     authToken,
     graphqlEndpoint,
@@ -56,7 +70,7 @@ export class ArtBlocksClient {
 
     this.context = {
       graphqlClient,
-      publicClient,
+      publicClientResolver,
       walletClient,
       userIsStaff,
     };
@@ -73,12 +87,14 @@ export class ArtBlocksClient {
     });
   }
 
-  getPublicClient(): PublicClient | undefined {
-    return this.context.publicClient;
+  getPublicClient(chainId: number): PublicClient | undefined {
+    return this.context.publicClientResolver?.(chainId);
   }
 
-  setPublicClient(publicClient: PublicClient | undefined) {
-    this.context.publicClient = publicClient;
+  setPublicClientResolver(
+    publicClientResolver: PublicClientResolver | undefined
+  ) {
+    this.context.publicClientResolver = publicClientResolver;
   }
 
   setWalletClient(walletClient: WalletClient | undefined) {
@@ -99,10 +115,13 @@ export class ArtBlocksClient {
     );
   }
 
-  async getProjectMinterConfigurationContext(projectId: string) {
-    if (!this.context.publicClient) {
+  async getProjectMinterConfigurationContext(
+    projectId: string,
+    chainId: number
+  ) {
+    if (!this.context.publicClientResolver) {
       throw new Error(
-        "A publicClient is required to get project minter configuration context"
+        "A publicClientResolver is required to get project minter configuration context"
       );
     }
 
@@ -123,11 +142,18 @@ export class ArtBlocksClient {
       }
     };
 
+    // Build the client context with the resolver
+    const clientContext = {
+      ...this.context,
+      publicClientResolver: this.context.publicClientResolver,
+    };
+
     // Load the initial configuration
     const { forms, data } = await generateProjectMinterConfigurationForms({
       projectId,
+      chainId,
       onConfigurationChange: notifySubscribers,
-      clientContext: this.context as ArtBlocksClientContextWithPublicClient,
+      clientContext,
     });
 
     return {
@@ -137,16 +163,22 @@ export class ArtBlocksClient {
 
       // Provide a method to refresh the configuration
       refresh: async () => {
-        if (!this.context.publicClient) {
+        if (!this.context.publicClientResolver) {
           throw new Error(
-            "A publicClient is required to get project minter configuration context"
+            "A publicClientResolver is required to get project minter configuration context"
           );
         }
 
+        const clientContext = {
+          ...this.context,
+          publicClientResolver: this.context.publicClientResolver,
+        };
+
         await generateProjectMinterConfigurationForms({
           projectId,
+          chainId,
           onConfigurationChange: notifySubscribers,
-          clientContext: this.context as ArtBlocksClientContextWithPublicClient,
+          clientContext,
         });
       },
 

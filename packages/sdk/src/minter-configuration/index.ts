@@ -52,10 +52,10 @@ import {
 export async function generateProjectMinterConfigurationForms(
   args: GenerateProjectMinterConfigurationFormsArgs
 ): Promise<{
-  data: GetProjectMinterConfigurationQuery["projects_metadata_by_pk"];
+  data: GetProjectMinterConfigurationQuery["projects_metadata"][0];
   forms: FormBlueprint[];
 }> {
-  const { projectId, clientContext } = args;
+  const { projectId, chainId, clientContext } = args;
   const [coreContractAddress, projectIndexString] = projectId.split("-");
   const projectIndex = Number(projectIndexString);
 
@@ -64,10 +64,11 @@ export async function generateProjectMinterConfigurationForms(
     getProjectMinterConfigurationQueryDocument,
     {
       projectId,
+      chainId,
     }
   );
 
-  const project = res.projects_metadata_by_pk;
+  const project = res.projects_metadata[0];
 
   if (!project) {
     throw new Error(`Could not find project with id ${projectId}`);
@@ -85,8 +86,9 @@ export async function generateProjectMinterConfigurationForms(
     project.user_is_artist ?? false
   );
 
+  const { chainId: _, ...argsWithoutChainId } = args;
   const context: GenerateProjectMinterConfigurationFormsContext = {
-    ...args,
+    ...argsWithoutChainId,
     allowedPrivilegedRolesForProject,
     coreContractAddress,
     projectIndex,
@@ -97,7 +99,7 @@ export async function generateProjectMinterConfigurationForms(
   let configurationForms = [minterSelectionForm];
 
   // If no minter has been selected, return only the minter selection form
-  const minterConfiguration = res.projects_metadata_by_pk?.minter_configuration;
+  const minterConfiguration = project.minter_configuration;
 
   if (!minterConfiguration || !minterConfiguration.minter) {
     return { data: project, forms: configurationForms };
@@ -175,6 +177,12 @@ async function generateSelectMinterForm({
         .sort((a, b) => b.title.localeCompare(a.title));
   }
 
+  const publicClient = clientContext.publicClientResolver(project.chain_id);
+  if (!publicClient) {
+    throw new Error(
+      "A publicClient is required to generate minter configuration forms"
+    );
+  }
   // Initialize configurationForms with the minter selection form
   const form = {
     key: "setMinterForProject",
@@ -182,7 +190,7 @@ async function generateSelectMinterForm({
     initialFormValues: await getInitialMinterConfigurationValuesForFormField(
       minterSelectionFormSchemaWithMinters,
       minterConfiguration ?? null,
-      clientContext.publicClient
+      publicClient
     ),
     zodSchema: formFieldSchemaToZod(minterSelectionFormSchemaWithMinters),
     handleSubmit: async (
@@ -193,6 +201,11 @@ async function generateSelectMinterForm({
       if (!walletClient) {
         throw new Error(
           "A walletClient is required to submit the set minter form"
+        );
+      }
+      if (!publicClient) {
+        throw new Error(
+          "A publicClient is required to submit the set minter form"
         );
       }
       // We need basic information about the project and the
@@ -223,7 +236,7 @@ async function generateSelectMinterForm({
 
       // Submit the transaction
       const { blockHash } = await submitTransaction({
-        publicClient: clientContext.publicClient,
+        publicClient,
         walletClient,
         address: minterFilterAddress,
         abi: minterSelectionFormSchemaWithMinters.transactionDetails.abi as Abi,
@@ -240,7 +253,7 @@ async function generateSelectMinterForm({
       onProgress?.(SubmissionStatusEnum.SYNCING);
 
       // Get block confirmation timestamp
-      const { timestamp } = await clientContext.publicClient.getBlock({
+      const { timestamp } = await publicClient.getBlock({
         blockHash,
       });
       const transactionConfirmedAt = new Date(Number(timestamp) * 1000);
@@ -251,12 +264,14 @@ async function generateSelectMinterForm({
       await pollForProjectUpdates(
         clientContext,
         projectId,
+        project.chain_id,
         transactionConfirmedAt,
         ["minter_configuration_id"]
       );
 
       const updatedForms = await generateProjectMinterConfigurationForms({
         clientContext,
+        chainId: project.chain_id,
         onConfigurationChange,
         projectId,
       });
@@ -282,6 +297,7 @@ async function generateMinterForm(
 ): Promise<FormBlueprint> {
   const {
     clientContext,
+    project,
     key,
     projectId,
     formSchema,
@@ -292,12 +308,18 @@ async function generateMinterForm(
   } = args;
 
   const processedFormSchema = processFormSchema(formSchema);
+  const publicClient = clientContext.publicClientResolver(project.chain_id);
+  if (!publicClient) {
+    throw new Error(
+      "A publicClient is required to generate minter configuration forms"
+    );
+  }
 
   const initialFormValues =
     await getInitialMinterConfigurationValuesForFormField(
       processedFormSchema,
       minterConfiguration,
-      clientContext.publicClient
+      publicClient
     );
 
   return {
@@ -313,6 +335,11 @@ async function generateMinterForm(
       if (!walletClient) {
         throw new Error(
           "A walletClient is required to submit the minter configuration form"
+        );
+      }
+      if (!publicClient) {
+        throw new Error(
+          "A publicClient is required to submit the minter configuration form"
         );
       }
 
@@ -346,7 +373,7 @@ async function generateMinterForm(
       );
 
       const { blockHash } = await submitTransaction({
-        publicClient: clientContext.publicClient,
+        publicClient,
         walletClient,
         address: minterConfiguration.minter.address as `0x${string}`,
         abi: transactionDetails.abi as Abi,
@@ -360,7 +387,7 @@ async function generateMinterForm(
       onProgress?.(SubmissionStatusEnum.SYNCING);
 
       // Get block confirmation timestamp
-      const { timestamp } = await clientContext.publicClient.getBlock({
+      const { timestamp } = await publicClient.getBlock({
         blockHash,
       });
       const transactionConfirmedAt = new Date(Number(timestamp) * 1000);
@@ -372,13 +399,18 @@ async function generateMinterForm(
       await pollForSyncedMinterConfigUpdates(
         clientContext,
         projectId,
+        project.chain_id,
         transactionConfirmedAt,
         expectedUpdates
       );
 
-      onConfigurationChange(
-        await generateProjectMinterConfigurationForms(args)
-      );
+      const updatedForms = await generateProjectMinterConfigurationForms({
+        clientContext,
+        chainId: project.chain_id,
+        onConfigurationChange,
+        projectId,
+      });
+      onConfigurationChange(updatedForms);
     },
   };
 }

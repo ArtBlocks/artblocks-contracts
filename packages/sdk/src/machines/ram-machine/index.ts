@@ -122,10 +122,17 @@ graphql(/* GraphQL */ `
 `);
 
 const getUserBidsDocument = graphql(/* GraphQL */ `
-  query GetUserBids($projectId: String!, $userAddress: String!) {
+  query GetUserBids(
+    $projectId: String!
+    $chainId: Int!
+    $userAddress: String!
+  ) {
     project_ranked_bids(
       args: { project: $projectId }
-      where: { bidder_address: { _eq: $userAddress } }
+      where: {
+        bidder_address: { _eq: $userAddress }
+        chain_id: { _eq: $chainId }
+      }
       order_by: { rank: asc }
     ) {
       ...BidDetails
@@ -152,7 +159,7 @@ export const ramMachine = setup({
         input: Pick<RAMMachineContext, "artblocksClient" | "project">;
       }): Promise<Array<BidDetailsFragment>> => {
         const { artblocksClient, project } = input;
-        const publicClient = artblocksClient.getPublicClient();
+        const publicClient = artblocksClient.getPublicClient(project.chain_id);
         const walletClient = artblocksClient.getWalletClient();
 
         if (!publicClient) {
@@ -166,6 +173,7 @@ export const ramMachine = setup({
 
         const bids = await artblocksClient.graphqlRequest(getUserBidsDocument, {
           projectId: project.id,
+          chainId: project.chain_id,
           userAddress: walletClient.account.address.toLowerCase(),
         });
 
@@ -190,7 +198,7 @@ export const ramMachine = setup({
         txRequest: SimulateCreateOrTopUpBidRequest;
       }> => {
         const { project, artblocksClient } = input;
-        const publicClient = artblocksClient.getPublicClient();
+        const publicClient = artblocksClient.getPublicClient(project.chain_id);
         const walletClient = artblocksClient.getWalletClient();
 
         const { projectIndex, coreContractAddress } =
@@ -289,11 +297,11 @@ export const ramMachine = setup({
       }: {
         input: Pick<
           RAMMachineContext,
-          "artblocksClient" | "txHash" | "txRequest"
+          "artblocksClient" | "project" | "txHash" | "txRequest"
         >;
       }): Promise<bigint> => {
-        const { artblocksClient, txHash, txRequest } = input;
-        const publicClient = artblocksClient.getPublicClient();
+        const { artblocksClient, project, txHash, txRequest } = input;
+        const publicClient = artblocksClient.getPublicClient(project.chain_id);
 
         if (!publicClient) {
           throw new Error("Public client unavailable");
@@ -688,6 +696,7 @@ export const ramMachine = setup({
         src: "waitForBidTxConfirmation",
         input: ({ context }) => ({
           artblocksClient: context.artblocksClient,
+          project: context.project,
           txHash: context.txHash,
           txRequest: context.txRequest,
         }),

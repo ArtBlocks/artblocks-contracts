@@ -14,7 +14,7 @@ describe("processEthToWei", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     args = generateTransformProjectMinterConfigurationFormValuesArgs();
-    args.clientContext.publicClient = mockPublicClient;
+    args.clientContext.publicClientResolver = () => mockPublicClient;
   });
 
   it("should throw an error if value is not a string, number, or bigint", async () => {

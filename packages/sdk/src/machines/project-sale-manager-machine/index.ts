@@ -53,6 +53,7 @@ type ProjectSaleManagerMachineEvents =
 
 export type ProjectSaleManagerMachineContext = {
   projectId?: string;
+  chainId: number;
   artblocksClient: ArtBlocksClient;
   project?: ProjectDetails;
   liveSaleData?: LiveSaleData;
@@ -135,6 +136,7 @@ export const projectSaleManagerMachine = setup({
       projectId?: string;
       project?: ProjectDetails;
       artblocksClient: ArtBlocksClient;
+      chainId: number;
     },
     context: {} as ProjectSaleManagerMachineContext,
     events: {} as ProjectSaleManagerMachineEvents,
@@ -144,9 +146,13 @@ export const projectSaleManagerMachine = setup({
       async ({
         input,
       }: {
-        input: { projectId?: string; artblocksClient: ArtBlocksClient };
+        input: {
+          projectId?: string;
+          artblocksClient: ArtBlocksClient;
+          chainId: number;
+        };
       }): Promise<NonNullable<ProjectDetails>> => {
-        const { projectId, artblocksClient } = input;
+        const { projectId, artblocksClient, chainId } = input;
 
         // This is an expected case for non-AB projects so we throw a custom error
         // and transition to a non-error state.
@@ -160,13 +166,14 @@ export const projectSaleManagerMachine = setup({
           getProjectDetailsDocument,
           {
             projectId,
+            chainId,
           }
         );
 
         // We don't expect this to happen, so throw a normal error
         // instead of a custom one to trigger a transition to the
         // error state
-        const project = res.projects_metadata_by_pk;
+        const project = res.projects_metadata[0];
         if (!project) {
           throw new Error("Project not found");
         }
@@ -385,7 +392,7 @@ export const projectSaleManagerMachine = setup({
       return Boolean(context.errorMessage);
     },
     isPublicClientUnavailable: ({ context }) => {
-      return !context.artblocksClient.getPublicClient();
+      return !context.artblocksClient.getPublicClient(context.chainId);
     },
   },
 }).createMachine({
@@ -393,6 +400,7 @@ export const projectSaleManagerMachine = setup({
   id: "projectSaleManagerMachine",
   context: ({ input }) => ({
     projectId: input.projectId,
+    chainId: input.chainId,
     artblocksClient: input.artblocksClient,
     project: input.project,
   }),
@@ -457,6 +465,7 @@ export const projectSaleManagerMachine = setup({
         input: ({ context }) => ({
           projectId: context.projectId,
           artblocksClient: context.artblocksClient,
+          chainId: context.chainId,
         }),
         onDone: [
           {

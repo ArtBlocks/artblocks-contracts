@@ -11,8 +11,11 @@ import { ArtBlocksClient } from "../..";
  */
 
 const getTokenDetailsDocument = graphql(/* GraphQL */ `
-  query GetTokenDetails($tokenId: String!) {
-    tokens_metadata_by_pk(id: $tokenId) {
+  query GetTokenDetails($tokenId: String!, $chainId: Int!) {
+    tokens_metadata(
+      where: { id: { _eq: $tokenId }, chain_id: { _eq: $chainId } }
+      limit: 1
+    ) {
       id
       token_id
       invocation
@@ -32,6 +35,7 @@ const POLLING_INTERVAL = 5000;
 type TokenPollingMachineContext = {
   artblocksClient: ArtBlocksClient;
   tokenId?: string;
+  chainId: number;
   token?: TokenDetails;
   maxRetries: number;
   retries: number;
@@ -95,6 +99,7 @@ export const tokenPollingMachine = setup({
       tokenId?: string;
       artblocksClient: ArtBlocksClient;
       marketplaceUrl?: string;
+      chainId: number;
     },
     context: {} as TokenPollingMachineContext,
     output: {} as { token?: TokenDetails; errorMessage?: string },
@@ -108,17 +113,19 @@ export const tokenPollingMachine = setup({
           tokenId?: string;
           artblocksClient: ArtBlocksClient;
           marketplaceUrl?: string;
+          chainId: number;
         };
       }) => {
         if (!input.tokenId) {
           throw new Error("Token ID not found");
         }
-        const { tokenId, artblocksClient } = input;
+        const { tokenId, artblocksClient, chainId } = input;
 
         const res = await artblocksClient.graphqlRequest(
           getTokenDetailsDocument,
           {
             tokenId,
+            chainId,
           }
         );
 
@@ -126,23 +133,24 @@ export const tokenPollingMachine = setup({
         // before returning the token details and moving to the
         // `complete` state. If we have a marketplace URL, make
         // sure the asset exists there as well.
-        if (res.tokens_metadata_by_pk && input.marketplaceUrl) {
+        const token = res.tokens_metadata[0];
+        if (token && input.marketplaceUrl) {
           try {
             const asset = await getMarketplaceAsset(
               input.marketplaceUrl,
-              res.tokens_metadata_by_pk.contract_address,
-              res.tokens_metadata_by_pk.token_id
+              token.contract_address,
+              token.token_id
             );
 
             if (!asset) {
-              return null;
+              return undefined;
             }
           } catch (error) {
-            return null;
+            return undefined;
           }
         }
 
-        return res.tokens_metadata_by_pk;
+        return token;
       }
     ),
   },
@@ -181,6 +189,7 @@ export const tokenPollingMachine = setup({
   /** @xstate-layout N4IgpgJg5mDOIC5QBcD2BrMA7ACqgNvgJZZQCyAhgMYAWJYAdAGZjK0lQAqG2AIqxSL5YAYgiosjEgDceDNJlwFipSu0nNW6rjyz9kg4QhmoqFZEQkBtAAwBdW3cSgADqlhELE5yAAeiAFoADgBGIIYAdhsbEIBWAE4ANhCQgBZE2IAaEABPRAAmG3iGAGYIsIiy1PjUktiAX3rshWw8Qg41Og0WNi6dRX1DUXENE0x5XTaVcmouxh7tbgGBIVhjLFkzLyxHKxCnJBA3D22ffwQAhJCGdIiEiPza-JL8oOy8hBfYhht8kMfnkF4mkIvFGs1JsoOrN6JpehwlnwVsIxBIpBs5C0lO1VDDulo+oi9Mi1iYtpYdvYrPkDq53J4KWdArEgTdEnd4hEIolUkESjF3ohauEQvF4kEgjZJfkMiUwU0QFiptD1PMCQjdINViIwAAnXWoXUMFz4cxMQ0AWwmimVuNVcMWmpJ6025gpu3sPmODO8h3OAWexTSotij0lEuFgoQCUiNkSiSCqS5wJq+W54MVkJxM3tAHdBBZSCJfLADMhGBQmOXdQAKWLRGwAShESqhdrmDHzDNIji99NOfsCIUqP1StSlQQTsUSgKjhW+1VShRKiXicfiZSCjQVWFQEDgPlb2c69D7J0Zg4uk8SsZiCWSaQyUYDEUiG5Kw7F+ViodiJS3CpHtMJ74vCpBElqwhnj6WBMhc5QlDcP4yryvKghKUZBN8LL5GmoKpCEK7hhmQEqh2XaFlA0EDqA-ohOyDD1oRzwsRuQRcnOoJvn+4oxHGRGJCRWbAXijBUKgFomqwYDURetGIOUDApGuuH5PEaZlIRUaxEuPxxM8ZSJDY-4SkJNptjmHZ6gauqyb68kIOxpQyjYf6JCUHmxMmUb8q+7EyjK9E8vECTbvUQA */
   context: ({ input }) => ({
     tokenId: input.tokenId,
+    chainId: input.chainId,
     maxRetries: 100,
     retries: 0,
     marketplaceUrl: input.marketplaceUrl,
@@ -196,6 +205,7 @@ export const tokenPollingMachine = setup({
           tokenId: context.tokenId,
           artblocksClient: context.artblocksClient,
           marketplaceUrl: context.marketplaceUrl,
+          chainId: context.chainId,
         }),
         onDone: [
           {
