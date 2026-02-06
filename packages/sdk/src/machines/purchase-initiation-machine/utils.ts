@@ -820,10 +820,17 @@ export async function initiateBasePurchase(
   });
 
   // For sliding scale minters, use the custom price if provided, otherwise fall back to base price
-  // For other minters, always use the base price (liveSaleData.tokenPriceInWei)
+  // For other minters, throw an error if customPriceInWei is provided (indicates a bug)
   const isSlidingScale = isSlidingScaleMinterType(
     project.minter_configuration?.minter?.minter_type
   );
+
+  if (input.customPriceInWei && !isSlidingScale) {
+    throw new Error(
+      "customPriceInWei can only be used with sliding scale minters"
+    );
+  }
+
   const valueToSend =
     isSlidingScale && input.customPriceInWei
       ? input.customPriceInWei
