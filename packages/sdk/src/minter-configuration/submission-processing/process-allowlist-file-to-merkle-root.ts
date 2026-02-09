@@ -57,6 +57,7 @@ export async function processAllowlistFileToMerkleRoot(
     getAllowlistUploadUrlQueryDocument,
     {
       projectId,
+      chainId: project.chain_id,
     }
   );
 

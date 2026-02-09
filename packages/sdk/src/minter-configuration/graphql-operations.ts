@@ -87,8 +87,8 @@ export const getProjectsMetadataUpdatesQueryDocument = graphql(/* GraphQL */ `
 `);
 
 export const getAllowlistUploadUrlQueryDocument = graphql(/* GraphQL */ `
-  query GetAllowlistUploadUrl($projectId: String!) {
-    getAllowlistUploadUrl(projectId: $projectId) {
+  query GetAllowlistUploadUrl($projectId: String!, $chainId: Int!) {
+    getAllowlistUploadUrl(projectId: $projectId, chainId: $chainId) {
       url
       key
     }
