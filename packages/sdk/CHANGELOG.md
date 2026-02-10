@@ -1,5 +1,11 @@
 # @artblocks/sdk
 
+## 0.2.0
+
+### Minor Changes
+
+- 7d1d667: Add sliding scale minter v0 with optional custom price in wei
+
 ## 0.1.29
 
 ### Patch Changes
