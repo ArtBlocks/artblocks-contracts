@@ -73,6 +73,7 @@ describe("processAllowlistFileToMerkleRoot", () => {
       getAllowlistUploadUrlQueryDocument,
       {
         projectId: args.projectId,
+        chainId: args.project.chain_id,
       }
     );
 
@@ -96,6 +97,7 @@ describe("processAllowlistFileToMerkleRoot", () => {
       updateOffChainExtraMinterDetailsMutationDocument,
       {
         projectMinterConfigId: args.minterConfiguration.id,
+        chainId: args.project.chain_id,
         extraMinterDetails: {
           pendingMerkleRoot: "fake-merkle-root",
           pendingAllowlistedAddressesLink: "fake-url",

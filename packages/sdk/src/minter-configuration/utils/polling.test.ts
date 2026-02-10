@@ -14,13 +14,14 @@ describe("polling", () => {
   });
 
   const artblocksClientContext = {
-    publicClient: {} as any,
+    publicClientResolver: () => ({}) as any,
     graphqlClient: {
       request: jest.fn(),
     },
     userIsStaff: false,
   } as unknown as ArtBlocksClientContext;
   const projectId = "test-project-id";
+  const chainId = 1;
   const transactionConfirmedAt = new Date();
   const updateProperties = ["property1", "property2"];
 
@@ -29,13 +30,15 @@ describe("polling", () => {
       (
         artblocksClientContext.graphqlClient.request as jest.Mock
       ).mockResolvedValue({
-        projects_metadata_by_pk: {
-          minter_configuration: {
-            properties_updated_at: {
-              property1: new Date().toISOString(),
+        projects_metadata: [
+          {
+            minter_configuration: {
+              properties_updated_at: {
+                property1: new Date().toISOString(),
+              },
             },
           },
-        },
+        ],
       });
 
       (asyncPoll as jest.Mock).mockImplementation(async (callback) => {
@@ -45,6 +48,7 @@ describe("polling", () => {
       await pollForSyncedMinterConfigUpdates(
         artblocksClientContext,
         projectId,
+        chainId,
         transactionConfirmedAt,
         updateProperties
       );
@@ -58,30 +62,34 @@ describe("polling", () => {
       (
         artblocksClientContext.graphqlClient.request as jest.Mock
       ).mockResolvedValueOnce({
-        projects_metadata_by_pk: {
-          minter_configuration: {
-            properties_updated_at: {
-              property1: new Date(
-                transactionConfirmedAt.getTime() - 1000
-              ).toISOString(), // 1 second before the transaction
+        projects_metadata: [
+          {
+            minter_configuration: {
+              properties_updated_at: {
+                property1: new Date(
+                  transactionConfirmedAt.getTime() - 1000
+                ).toISOString(), // 1 second before the transaction
+              },
             },
           },
-        },
+        ],
       });
 
       // Second call: the property is updated
       (
         artblocksClientContext.graphqlClient.request as jest.Mock
       ).mockResolvedValueOnce({
-        projects_metadata_by_pk: {
-          minter_configuration: {
-            properties_updated_at: {
-              property1: new Date(
-                transactionConfirmedAt.getTime() + 1000
-              ).toISOString(), // 1 second after the transaction
+        projects_metadata: [
+          {
+            minter_configuration: {
+              properties_updated_at: {
+                property1: new Date(
+                  transactionConfirmedAt.getTime() + 1000
+                ).toISOString(), // 1 second after the transaction
+              },
             },
           },
-        },
+        ],
       });
 
       // Mock asyncPoll to call the callback immediately
@@ -93,6 +101,7 @@ describe("polling", () => {
       await pollForSyncedMinterConfigUpdates(
         artblocksClientContext,
         projectId,
+        chainId,
         transactionConfirmedAt,
         updateProperties
       );
@@ -108,7 +117,7 @@ describe("polling", () => {
     it("should throw an error if the project is not found", async () => {
       (
         artblocksClientContext.graphqlClient.request as jest.Mock
-      ).mockResolvedValue({});
+      ).mockResolvedValue({ projects_metadata: [] });
 
       (asyncPoll as jest.Mock).mockImplementation(async (callback) => {
         await callback();
@@ -118,6 +127,7 @@ describe("polling", () => {
         pollForSyncedMinterConfigUpdates(
           artblocksClientContext,
           projectId,
+          chainId,
           transactionConfirmedAt,
           updateProperties
         )
@@ -137,6 +147,7 @@ describe("polling", () => {
         pollForSyncedMinterConfigUpdates(
           artblocksClientContext,
           projectId,
+          chainId,
           transactionConfirmedAt,
           updateProperties
         )
@@ -149,11 +160,13 @@ describe("polling", () => {
       (
         artblocksClientContext.graphqlClient.request as jest.Mock
       ).mockResolvedValue({
-        projects_metadata_by_pk: {
-          properties_updated_at: {
-            property1: new Date().toISOString(),
+        projects_metadata: [
+          {
+            properties_updated_at: {
+              property1: new Date().toISOString(),
+            },
           },
-        },
+        ],
       });
 
       (asyncPoll as jest.Mock).mockImplementation(async (callback) => {
@@ -163,6 +176,7 @@ describe("polling", () => {
       await pollForProjectUpdates(
         artblocksClientContext,
         projectId,
+        chainId,
         transactionConfirmedAt,
         updateProperties
       );
@@ -176,26 +190,30 @@ describe("polling", () => {
       (
         artblocksClientContext.graphqlClient.request as jest.Mock
       ).mockResolvedValueOnce({
-        projects_metadata_by_pk: {
-          properties_updated_at: {
-            property1: new Date(
-              transactionConfirmedAt.getTime() - 1000
-            ).toISOString(), // 1 second before the transaction
+        projects_metadata: [
+          {
+            properties_updated_at: {
+              property1: new Date(
+                transactionConfirmedAt.getTime() - 1000
+              ).toISOString(), // 1 second before the transaction
+            },
           },
-        },
+        ],
       });
 
       // Second call: the property is updated
       (
         artblocksClientContext.graphqlClient.request as jest.Mock
       ).mockResolvedValueOnce({
-        projects_metadata_by_pk: {
-          properties_updated_at: {
-            property1: new Date(
-              transactionConfirmedAt.getTime() + 1000
-            ).toISOString(), // 1 second after the transaction
+        projects_metadata: [
+          {
+            properties_updated_at: {
+              property1: new Date(
+                transactionConfirmedAt.getTime() + 1000
+              ).toISOString(), // 1 second after the transaction
+            },
           },
-        },
+        ],
       });
 
       // Mock asyncPoll to call the callback immediately
@@ -207,6 +225,7 @@ describe("polling", () => {
       await pollForProjectUpdates(
         artblocksClientContext,
         projectId,
+        chainId,
         transactionConfirmedAt,
         updateProperties
       );
@@ -222,7 +241,7 @@ describe("polling", () => {
     it("should throw an error if the project is not found", async () => {
       (
         artblocksClientContext.graphqlClient.request as jest.Mock
-      ).mockResolvedValue({});
+      ).mockResolvedValue({ projects_metadata: [] });
 
       (asyncPoll as jest.Mock).mockImplementation(async (callback) => {
         await callback();
@@ -232,6 +251,7 @@ describe("polling", () => {
         pollForProjectUpdates(
           artblocksClientContext,
           projectId,
+          chainId,
           transactionConfirmedAt,
           updateProperties
         )
@@ -251,6 +271,7 @@ describe("polling", () => {
         pollForProjectUpdates(
           artblocksClientContext,
           projectId,
+          chainId,
           transactionConfirmedAt,
           updateProperties
         )

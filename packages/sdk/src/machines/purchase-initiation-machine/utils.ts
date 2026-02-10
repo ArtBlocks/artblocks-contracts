@@ -118,11 +118,13 @@ const getUserTokensInAllowlistDocument = graphql(/* GraphQL */ `
   query getUserTokensInAllowlistDocument(
     $allowedProjectIds: [String!]!
     $userAddressAndVaults: [String!]!
+    $chainId: Int!
   ) {
     tokens_metadata(
       where: {
         project_id: { _in: $allowedProjectIds }
         owner_address: { _in: $userAddressAndVaults }
+        chain_id: { _eq: $chainId }
       }
     ) {
       id
@@ -136,7 +138,7 @@ export async function getHolderMinterUserPurchaseContext(
 ): Promise<UserPurchaseContext> {
   const { project, artblocksClient } = input;
   const walletClient = artblocksClient.getWalletClient();
-  const publicClient = artblocksClient.getPublicClient();
+  const publicClient = artblocksClient.getPublicClient(project.chain_id);
 
   assertPublicClientAvailable(publicClient);
   assertWalletClientWithAccount(walletClient);
@@ -170,6 +172,7 @@ export async function getHolderMinterUserPurchaseContext(
     {
       allowedProjectIds,
       userAddressAndVaults,
+      chainId: project.chain_id,
     }
   );
 
@@ -244,7 +247,7 @@ export async function initiateHolderMinterPurchase(
   } = input;
 
   const walletClient = artblocksClient.getWalletClient();
-  const publicClient = artblocksClient.getPublicClient();
+  const publicClient = artblocksClient.getPublicClient(project.chain_id);
   const liveSaleData =
     projectSaleManagerMachine.getSnapshot().context.liveSaleData;
 
@@ -337,7 +340,7 @@ export async function getMerkleMinterUserPurchaseContext(
 ): Promise<UserPurchaseContext> {
   const { project, artblocksClient } = input;
   const walletClient = artblocksClient.getWalletClient();
-  const publicClient = artblocksClient.getPublicClient();
+  const publicClient = artblocksClient.getPublicClient(project.chain_id);
 
   assertPublicClientAvailable(publicClient);
   assertWalletClientWithAccount(walletClient);
@@ -510,7 +513,7 @@ export async function initiateMerkleMinterPurchase(
   } = input;
 
   const walletClient = artblocksClient.getWalletClient();
-  const publicClient = artblocksClient.getPublicClient();
+  const publicClient = artblocksClient.getPublicClient(project.chain_id);
   const liveSaleData =
     projectSaleManagerMachine.getSnapshot().context.liveSaleData;
 
@@ -587,7 +590,7 @@ export async function checkERC20Allowance(
   input: Pick<PurchaseInitiationMachineContext, "artblocksClient" | "project">
 ): Promise<bigint> {
   const { artblocksClient, project } = input;
-  const publicClient = artblocksClient.getPublicClient();
+  const publicClient = artblocksClient.getPublicClient(project.chain_id);
   const walletClient = artblocksClient.getWalletClient();
 
   assertPublicClientAvailable(publicClient);
@@ -618,7 +621,7 @@ export async function getERC20Decimals(
   input: Pick<PurchaseInitiationMachineContext, "artblocksClient" | "project">
 ): Promise<number> {
   const { artblocksClient, project } = input;
-  const publicClient = artblocksClient.getPublicClient();
+  const publicClient = artblocksClient.getPublicClient(project.chain_id);
 
   assertProjectWithValidMinterConfiguration(project);
   assertPublicClientAvailable(publicClient);
@@ -642,7 +645,7 @@ export async function initiateERC20AllowanceApproval(
 ) {
   const { artblocksClient, project, erc20ApprovalAmount } = input;
   const walletClient = artblocksClient.getWalletClient();
-  const publicClient = artblocksClient.getPublicClient();
+  const publicClient = artblocksClient.getPublicClient(project.chain_id);
 
   assertPublicClientAvailable(publicClient);
   assertWalletClientWithAccount(walletClient);
@@ -700,7 +703,7 @@ export async function initiateERC20Purchase(
   const { artblocksClient, project, projectSaleManagerMachine } = input;
 
   const walletClient = artblocksClient.getWalletClient();
-  const publicClient = artblocksClient.getPublicClient();
+  const publicClient = artblocksClient.getPublicClient(project.chain_id);
   const liveSaleData =
     projectSaleManagerMachine.getSnapshot().context.liveSaleData;
 
@@ -761,7 +764,7 @@ export async function getRAMMinterUserPurchaseContext(
 ): Promise<UserPurchaseContext> {
   const { artblocksClient, project } = input;
   const walletClient = artblocksClient.getWalletClient();
-  const publicClient = artblocksClient.getPublicClient();
+  const publicClient = artblocksClient.getPublicClient(project.chain_id);
 
   assertPublicClientAvailable(publicClient);
   assertWalletClientWithAccount(walletClient);
@@ -773,6 +776,7 @@ export async function getRAMMinterUserPurchaseContext(
 
   const userBids = await artblocksClient.graphqlRequest(GetUserBidsDocument, {
     projectId: project.id,
+    chainId: project.chain_id,
     userAddress: walletClient.account.address.toLowerCase(),
   });
 
@@ -798,7 +802,7 @@ export async function initiateBasePurchase(
   const { artblocksClient, project, projectSaleManagerMachine } = input;
 
   const walletClient = artblocksClient.getWalletClient();
-  const publicClient = artblocksClient.getPublicClient();
+  const publicClient = artblocksClient.getPublicClient(project.chain_id);
   const liveSaleData =
     projectSaleManagerMachine.getSnapshot().context.liveSaleData;
 

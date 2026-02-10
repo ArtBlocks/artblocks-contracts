@@ -15,6 +15,7 @@ import { ArtBlocksClient } from "../..";
 export const receiptSettlementDataFragment = graphql(/* GraphQL */ `
   fragment ReceiptSettlementData on receipt_metadata {
     id
+    chain_id
     project {
       id
       name

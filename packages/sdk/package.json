@@ -1,6 +1,6 @@
 {
   "name": "@artblocks/sdk",
-  "version": "0.1.30-28",
+  "version": "0.1.30-30",
   "description": "JavaScript SDK for configuring and using Art Blocks minters.",
   "main": "dist/index.js",
   "repository": "git@github.com:ArtBlocks/artblocks-sdk.git",
@@ -83,7 +83,7 @@
     "graphql-request": "^6.1.0",
     "lodash": "^4.17.21",
     "merkletreejs": "^0.4.1",
-    "viem": "^2.13.7",
+    "viem": "2.39.0",
     "xstate": "5.13.2",
     "zod": "^3.23.8"
   },

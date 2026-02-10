@@ -77,7 +77,7 @@ export const liveSaleDataPollingMachine = setup({
           "project" | "artblocksClient"
         >;
       }) => {
-        const publicClient = artblocksClient.getPublicClient();
+        const publicClient = artblocksClient.getPublicClient(project.chain_id);
 
         if (!publicClient) {
           throw new Error("Public client is unavailable");
