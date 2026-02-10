@@ -16,7 +16,11 @@ describe("MintMulticallUtil", function () {
       genArt721Core: config.genArt721Core,
       randomizer: config.randomizer,
       adminACL: config.adminACL,
-    } = await deployCore(config, "GenArt721CoreV3_Engine", config.coreRegistry));
+    } = await deployCore(
+      config,
+      "GenArt721CoreV3_Engine",
+      config.coreRegistry
+    ));
 
     // update core's minter to minter filter
     await config.genArt721Core.updateMinterContract(
@@ -69,11 +73,9 @@ describe("MintMulticallUtil", function () {
       .updateProjectMaxInvocations(config.projectZero, 15);
 
     // Deploy MintMulticallUtil owned by deployer
-    const mintMulticallUtil = await deployAndGet(
-      config,
-      "MintMulticallUtil",
-      [config.accounts.deployer.address]
-    );
+    const mintMulticallUtil = await deployAndGet(config, "MintMulticallUtil", [
+      config.accounts.deployer.address,
+    ]);
 
     return { ...config, mintMulticallUtil };
   }
@@ -184,10 +186,7 @@ describe("MintMulticallUtil", function () {
             config.genArt721Core.address,
             { value: 0 }
           )
-      ).to.be.revertedWithCustomError(
-        config.mintMulticallUtil,
-        "ZeroMints"
-      );
+      ).to.be.revertedWithCustomError(config.mintMulticallUtil, "ZeroMints");
     });
   });
 });

@@ -80,11 +80,9 @@ contract MintMulticallUtil is Ownable {
         uint256 pricePerMint = msg.value / numMints;
 
         for (uint256 i = 0; i < numMints; ) {
-            uint256 tokenId = IMinterSetPriceV5(minter).purchaseTo{value: pricePerMint}(
-                toAddresses[i],
-                projectId,
-                coreContract
-            );
+            uint256 tokenId = IMinterSetPriceV5(minter).purchaseTo{
+                value: pricePerMint
+            }(toAddresses[i], projectId, coreContract);
 
             emit TokenMinted(tokenId, toAddresses[i]);
 
