@@ -22,6 +22,7 @@ import {
   isHolderMinterType,
   isMerkleMinterType,
   isRAMMinterType,
+  isSlidingScaleMinterType,
 } from "../utils";
 import { graphql } from "../../generated/index";
 import { iSharedMinterHolderV0Abi } from "../../../abis/iSharedMinterHolderV0Abi";
@@ -795,6 +796,7 @@ export async function initiateBasePurchase(
     | "project"
     | "projectSaleManagerMachine"
     | "purchaseToAddress"
+    | "customPriceInWei"
   >
 ): Promise<Hex> {
   const { artblocksClient, project, projectSaleManagerMachine } = input;
@@ -821,11 +823,28 @@ export async function initiateBasePurchase(
     },
   });
 
+  // For sliding scale minters, use the custom price if provided, otherwise fall back to base price
+  // For other minters, throw an error if customPriceInWei is provided (indicates a bug)
+  const isSlidingScale = isSlidingScaleMinterType(
+    project.minter_configuration?.minter?.minter_type
+  );
+
+  if (input.customPriceInWei && !isSlidingScale) {
+    throw new Error(
+      "customPriceInWei can only be used with sliding scale minters"
+    );
+  }
+
+  const valueToSend =
+    isSlidingScale && input.customPriceInWei
+      ? input.customPriceInWei
+      : liveSaleData.tokenPriceInWei;
+
   if (input.purchaseToAddress) {
     const { request } = await minterContract.simulate.purchaseTo(
       [input.purchaseToAddress, projectIndex, coreContractAddress],
       {
-        value: liveSaleData.tokenPriceInWei,
+        value: valueToSend,
         account: walletClient.account.address,
       }
     );
@@ -838,7 +857,7 @@ export async function initiateBasePurchase(
   const { request } = await minterContract.simulate.purchase(
     [projectIndex, coreContractAddress],
     {
-      value: liveSaleData.tokenPriceInWei,
+      value: valueToSend,
       account: walletClient.account.address,
     }
   );

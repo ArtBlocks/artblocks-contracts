@@ -23,6 +23,7 @@ export const SUPPORTED_MINTER_TYPES = [
   Minter_Type_Names_Enum.MinterSetPriceErc20V5,
   Minter_Type_Names_Enum.MinterMinPriceV0,
   Minter_Type_Names_Enum.MinterMinPriceMerkleV0,
+  Minter_Type_Names_Enum.MinterSlidingScaleV0,
 ];
 
 export const SUPPORTED_SETTLEMENT_CLAIM_MINTER_TYPES = [
@@ -45,6 +46,10 @@ const HOLDER_MINTER_TYPES = [
 const ERC20_MINTER_TYPES = [Minter_Type_Names_Enum.MinterSetPriceErc20V5];
 
 const RAM_MINTER_TYPES = [Minter_Type_Names_Enum.MinterRamv0];
+
+const SLIDING_SCALE_MINTER_TYPES = [
+  Minter_Type_Names_Enum.MinterSlidingScaleV0,
+];
 
 /**
  * Checks if a minter type is supported by the purchase machine.
@@ -111,6 +116,20 @@ export function isRAMMinterType(
 ) {
   return (
     RAM_MINTER_TYPES as Array<Minter_Type_Names_Enum | undefined>
+  ).includes(minterType);
+}
+
+/**
+ * Checks if a minter type is a Sliding Scale minter.
+ *
+ * @param minterType - The minter type to check.
+ * @returns A boolean indicating whether the minter type is a Sliding Scale minter.
+ */
+export function isSlidingScaleMinterType(
+  minterType: Minter_Type_Names_Enum | undefined
+) {
+  return (
+    SLIDING_SCALE_MINTER_TYPES as Array<Minter_Type_Names_Enum | undefined>
   ).includes(minterType);
 }
 
