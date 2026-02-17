@@ -32,6 +32,11 @@ interface IEngineFactoryV0 {
      * new Engine or Engine Flex contracts.
      */
     event Abandoned();
+    /**
+     * @notice The default base URI host was updated.
+     * @param defaultBaseURIHost new default base URI host
+     */
+    event DefaultBaseURIHostUpdated(string defaultBaseURIHost);
 
     /**
      * @notice Creates a new Engine or Engine Flex contract with the provided
@@ -68,6 +73,16 @@ interface IEngineFactoryV0 {
      * Only callable by the owner.
      */
     function drainERC20(address ERC20TokenAddress, address recipient) external;
+
+    /**
+     * @notice Updates the default base URI host used when initializing new
+     * Engine contracts.
+     * Only callable by the owner.
+     * @param _defaultBaseURIHost New default base URI host.
+     */
+    function updateDefaultBaseURIHost(
+        string memory _defaultBaseURIHost
+    ) external;
 
     /**
      * @notice Calls transferOwnership on the core registry.

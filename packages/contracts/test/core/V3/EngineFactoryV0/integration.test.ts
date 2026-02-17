@@ -820,6 +820,72 @@ describe(`EngineFactoryV0 Integration`, async function () {
         config?.validEngineConfigurationExistingAdminACL?.startingProjectId
       );
     });
+    it("creates a new Engine contract with updated chain-id namespaced base URI", async function () {
+      const config = await loadFixture(_beforeEach);
+      // update defaultBaseURIHost to chain-id namespaced URI
+      const newBaseURIHost = "https://token.artblocks.io/1/";
+      await config.engineFactory
+        .connect(config.accounts.deployer)
+        .updateDefaultBaseURIHost(newBaseURIHost);
+      // create a new Engine contract
+      const tx = await config.engineFactory
+        .connect(config.accounts.deployer)
+        .createEngineContract(
+          0,
+          config.validEngineConfigurationExistingAdminACL,
+          config?.adminACL?.address,
+          ethers.utils.formatBytes32String("Unique salt Engine6") // random salt
+        );
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      // get Engine contract address from logs
+      const engineCreationLog = receipt.logs[receipt.logs.length - 1];
+      const engineAddress = ethers.utils.getAddress(
+        "0x" + engineCreationLog.topics[1].slice(-40)
+      );
+      // get Engine contract
+      const engine = await ethers.getContractAt(
+        "GenArt721CoreV3_Engine",
+        engineAddress
+      );
+      // validate the defaultBaseURI uses the new chain-id namespaced format
+      const defaultBaseUri = await engine.defaultBaseURI();
+      expect(defaultBaseUri).to.equal(
+        `https://token.artblocks.io/1/${engineAddress?.toLowerCase()}/`
+      );
+    });
+    it("creates a new Engine Flex contract with updated chain-id namespaced base URI", async function () {
+      const config = await loadFixture(_beforeEach);
+      // update defaultBaseURIHost to arbitrum chain-id namespaced URI
+      const newBaseURIHost = "https://token.artblocks.io/42161/";
+      await config.engineFactory
+        .connect(config.accounts.deployer)
+        .updateDefaultBaseURIHost(newBaseURIHost);
+      // create a new Engine Flex contract
+      const tx = await config.engineFactory
+        .connect(config.accounts.deployer)
+        .createEngineContract(
+          1,
+          config.validEngineConfigurationExistingAdminACL,
+          config?.adminACL?.address,
+          ethers.utils.formatBytes32String("Unique salt Engine7") // random salt
+        );
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      // get Engine contract address from logs
+      const engineCreationLog = receipt.logs[receipt.logs.length - 1];
+      const engineAddress = ethers.utils.getAddress(
+        "0x" + engineCreationLog.topics[1].slice(-40)
+      );
+      // get Engine Flex contract
+      const engine = await ethers.getContractAt(
+        "GenArt721CoreV3_Engine_Flex",
+        engineAddress
+      );
+      // validate the defaultBaseURI uses the new chain-id namespaced format
+      const defaultBaseUri = await engine.defaultBaseURI();
+      expect(defaultBaseUri).to.equal(
+        `https://token.artblocks.io/42161/${engineAddress?.toLowerCase()}/`
+      );
+    });
   });
   describe("transferCoreRegistryOwnership", async function () {
     it("reverts if not called by owner", async function () {
