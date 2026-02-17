@@ -89,7 +89,7 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
      * @param coreRegistry_ address of the core registry contract
      * @param owner_ address of the initial owner
      * @param defaultBaseURIHost_ default base URI prefix for all Engine contracts,
-     * e.g. "https://token.artblocks.io/" for mainnet, "https://token.arbitrum.artblocks.io/" for arbitrum, etc.
+     * e.g. "https://token.artblocks.io/1/" for mainnet, "https://token.artblocks.io/42161/" for arbitrum, etc.
      * @param universalBytecodeStorageReader_ address of the UniversalBytecodeStorageReader contract
      */
     constructor(
@@ -217,6 +217,25 @@ contract EngineFactoryV0 is Ownable, IEngineFactoryV0 {
         );
         // emit event
         emit EngineContractCreated(engineContract);
+    }
+
+    /**
+     * @notice Updates the default base URI host used when initializing new
+     * Engine contracts.
+     * e.g. "https://token.artblocks.io/1/" for mainnet,
+     * "https://token.artblocks.io/42161/" for arbitrum, etc.
+     * Only callable by the owner.
+     * @param _defaultBaseURIHost New default base URI host.
+     */
+    function updateDefaultBaseURIHost(
+        string memory _defaultBaseURIHost
+    ) external onlyOwner {
+        require(
+            bytes(_defaultBaseURIHost).length > 0,
+            "Must input non-empty string"
+        );
+        defaultBaseURIHost = _defaultBaseURIHost;
+        emit DefaultBaseURIHostUpdated(_defaultBaseURIHost);
     }
 
     /**

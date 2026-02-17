@@ -4,4 +4,5 @@ export const revertMessages = {
   factoryAbandoned: "factory is abandoned",
   onlyNonZeroAddress: "Must input non-zero address",
   adminACLExists: "AdminACL already exists",
+  onlyNonEmptyString: "Must input non-empty string",
 };
