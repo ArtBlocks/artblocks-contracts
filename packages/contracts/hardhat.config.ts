@@ -196,7 +196,6 @@ module.exports = {
       "GenArt721CoreV3_Engine$",
       "GenArt721CoreV3_Engine_Flex$",
       "MinterRAM.*",
-      "SRHooks",
     ],
   },
   docgen: {
