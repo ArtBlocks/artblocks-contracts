@@ -341,11 +341,9 @@ runForEach.forEach((params) => {
 
       it("blocks purchases through the incorrect minter", async function () {
         const config = await loadFixture(_beforeEach);
-        const setPriceMinter = await deployAndGet(
-          config,
-          TARGET_MINTER_NAME,
-          [config.minterFilter.address]
-        );
+        const setPriceMinter = await deployAndGet(config, TARGET_MINTER_NAME, [
+          config.minterFilter.address,
+        ]);
         await config.minterFilter
           .connect(config.accounts.deployer)
           .approveMinterGlobally(setPriceMinter.address);
