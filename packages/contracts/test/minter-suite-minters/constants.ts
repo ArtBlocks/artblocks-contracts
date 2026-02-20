@@ -44,6 +44,8 @@ export const revertMessages = {
   ERC20NoEther: "ERC20: No ETH when using ERC20",
   ERC20NullAddress: "null address, only ERC20",
   ERC20NonNullSymbol: "only non-null symbol",
+  onlyAllowlistedAddresses: "Only allowlisted addresses",
+  onlyNonZeroHashSeeds: "Only non-zero hash seeds",
   panelAlreadyMinted: "Panel already minted",
   unexpectedHashSeed: "Unexpected token hash seed",
   inactiveFunction: "Inactive function",
