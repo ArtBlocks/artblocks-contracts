@@ -115,8 +115,9 @@ function resolveRecipientPool(config: RecipientConfig): string[] {
     return config.addresses;
   }
   // Generate N unique wallets (addresses only; private keys are discarded)
-  return Array.from({ length: config.count }, () =>
-    ethers.Wallet.createRandom().address
+  return Array.from(
+    { length: config.count },
+    () => ethers.Wallet.createRandom().address
   );
 }
 
@@ -144,8 +145,13 @@ async function main() {
       throw new Error("Each transaction must have numMints > 0");
     }
   }
-  if (config.recipients.mode === "addresses" && config.recipients.addresses.length === 0) {
-    throw new Error("recipients.addresses must not be empty when mode is 'addresses'");
+  if (
+    config.recipients.mode === "addresses" &&
+    config.recipients.addresses.length === 0
+  ) {
+    throw new Error(
+      "recipients.addresses must not be empty when mode is 'addresses'"
+    );
   }
   if (config.recipients.mode === "unique" && config.recipients.count <= 0) {
     throw new Error("recipients.count must be > 0 when mode is 'unique'");
