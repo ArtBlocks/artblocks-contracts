@@ -8,16 +8,14 @@ Art Blocks has deployed infrastructure on different networks that support our sm
 
 The following contracts are deployed to all Art Blocks supported networks and are not permissioned. They also may be safely deployed by any wallet on any network, thanks to the use of the [keyless create2 factory system of contracts](./README.md#keyless-create2-factory).
 
-> note: the Web3Call version of the BytecodeStorageReaderContractV2 is currently used on sepolia - prod networks are still the previous version during the transition period.
-
-| Contract/Library                                     | Address                                      |
-| ---------------------------------------------------- | -------------------------------------------- |
-| Library: BytecodeStorageV2:BytecodeStorageReader     | `0x000000000016A5A5ff2FA7799C4BEe89bA59B74e` |
-| BytecodeStorageReaderContractV2_Web3Call             | `0x000000000005e4192e8789423aEC2FA32E4D52a0` |
-| V3FlexLib (used v3.2.5 - current)                    | `0x00000000Db6f2EBe627260e411E6c973B7c48A62` |
-| SplitProviderV0                                      | `0x00000000CE5EEBAB4B5C2d6Cc5E73eaafA634DB3` |
-| Implementation: GenArt721CoreV3_Engine (v3.2.4)      | `0x00000000559cA3F3f1279C0ec121c302ed010457` |
-| Implementation: GenArt721CoreV3_Engine_Flex (v3.2.5) | `0x000000008DD9A7CD3f4A267A88082d4a1E2f6553` |
+| Contract/Library                                      | Address                                      |
+| ----------------------------------------------------- | -------------------------------------------- |
+| Library: BytecodeStorageV2:BytecodeStorageReader      | `0x000000000016A5A5ff2FA7799C4BEe89bA59B74e` |
+| BytecodeStorageReaderContractV2_Web3Call              | `0x000000000005e4192e8789423aEC2FA32E4D52a0` |
+| V3FlexLib (used v3.2.5 - current)                     | `0x00000000Db6f2EBe627260e411E6c973B7c48A62` |
+| SplitProviderV0                                       | `0x00000000CE5EEBAB4B5C2d6Cc5E73eaafA634DB3` |
+| Implementation: GenArt721CoreV3_Engine (v3.2.9)       | `0x00000000f10424506961445f935ec76579e0769F` |
+| Implementation: GenArt721CoreV3_Engine_Flex (v3.2.10) | `0x000000000132CFBeC18C143aB0AaD021B1fDEA13` |
 
 ## Permissioned deployments
 
@@ -154,6 +152,8 @@ They are included here for reference purposes.
 | Contract/Library                                     | Address                                      |
 | ---------------------------------------------------- | -------------------------------------------- |
 | BytecodeStorageReaderContractV2                      | `0x00000000163FA16098800B2B2e4A5F96949F413b` |
+| Implementation: GenArt721CoreV3_Engine (v3.2.4)      | `0x00000000559cA3F3f1279C0ec121c302ed010457` |
+| Implementation: GenArt721CoreV3_Engine_Flex (v3.2.5) | `0x000000008DD9A7CD3f4A267A88082d4a1E2f6553` |
 | V3FlexLib (used v3.2.1 - v3.2.3)                     | `0x0000000006FD94B22fb33164322019750E854f96` |
 | Implementation: GenArt721CoreV3_Engine (v3.2.2)      | `0x000000F74f006CE6480042f001c45c928D1Ae6E7` |
 | Implementation: GenArt721CoreV3_Engine_Flex (v3.2.3) | `0x0066009B13b8DfDabbE07800ee00004b008257D9` |
