@@ -42,19 +42,6 @@ struct EngineConfiguration {
 }
 
 interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
-    /**
-     * @notice Token ID `_tokenId` minted to `_to`, with token hash
-     * `_tokenHash`.
-     * @dev When `_tokenHash` is non-zero, the token hash was assigned
-     * atomically during the mint transaction. When `_tokenHash` is
-     * bytes32(0), the hash has not yet been assigned.
-     */
-    event Mint(
-        address indexed _to,
-        uint256 indexed _tokenId,
-        bytes32 _tokenHash
-    );
-
     // @dev new function in V3.2
     /**
      * @notice Initializes the contract with the provided `engineConfiguration`.
