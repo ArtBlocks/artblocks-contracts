@@ -267,7 +267,7 @@ contract GenArt721CoreV3_Engine is
     bool public allowArtistProjectActivation;
 
     /// version & type of this core contract
-    bytes32 constant CORE_VERSION = "v3.2.4";
+    bytes32 constant CORE_VERSION = "v3.2.9";
 
     function coreVersion() external pure virtual returns (string memory) {
         return CORE_VERSION.toString();
@@ -362,6 +362,29 @@ contract GenArt721CoreV3_Engine is
                 adminACLAllowed(msg.sender, address(this), _selector))
         ) {
             revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminACL);
+        }
+    }
+
+    function _onlyArtistIfUnlockedElseAdminACL(
+        uint256 _projectId,
+        bytes4 _selector
+    ) internal {
+        if (_projectUnlocked(_projectId)) {
+            if (
+                msg.sender != _projectIdToFinancials[_projectId].artistAddress
+            ) {
+                revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
+            }
+        } else {
+            if (
+                !adminACLAllowed(
+                    msg.sender,
+                    address(this),
+                    _selector
+                )
+            ) {
+                revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
+            }
         }
     }
 
@@ -493,7 +516,12 @@ contract GenArt721CoreV3_Engine is
         // Do not need to also log `projectId` in event, as the `projectId` for
         // a given token can be derived from the `tokenId` with:
         //   projectId = tokenId / 1_000_000
-        emit Mint(_to, thisTokenId);
+        bytes12 hashSeed = _ownersAndHashSeeds[thisTokenId].hashSeed;
+        emit Mint(
+            _to,
+            thisTokenId,
+            hashSeed != 0 ? keccak256(abi.encode(hashSeed)) : bytes32(0)
+        );
 
         return thisTokenId;
     }
@@ -1158,25 +1186,10 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         string memory _projectArtistName
     ) external {
-        // if unlocked, only artist may update, if locked, only admin may update
-        // @dev valid project checked in _projectUnlocked function
-        if (_projectUnlocked(_projectId)) {
-            if (
-                msg.sender != _projectIdToFinancials[_projectId].artistAddress
-            ) {
-                revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
-            }
-        } else {
-            if (
-                !adminACLAllowed(
-                    msg.sender,
-                    address(this),
-                    this.updateProjectArtistName.selector
-                )
-            ) {
-                revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
-            }
-        }
+        _onlyArtistIfUnlockedElseAdminACL(
+            _projectId,
+            this.updateProjectArtistName.selector
+        );
         _onlyNonEmptyString(_projectArtistName);
         projects[_projectId].artist = _projectArtistName;
         emit ProjectUpdated(
@@ -1283,24 +1296,10 @@ contract GenArt721CoreV3_Engine is
         string memory _projectDescription
     ) external {
         // checks
-        // if unlocked, only artist may update, if locked, only admin may update
-        if (_projectUnlocked(_projectId)) {
-            if (
-                msg.sender != _projectIdToFinancials[_projectId].artistAddress
-            ) {
-                revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
-            }
-        } else {
-            if (
-                !adminACLAllowed(
-                    msg.sender,
-                    address(this),
-                    this.updateProjectDescription.selector
-                )
-            ) {
-                revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
-            }
-        }
+        _onlyArtistIfUnlockedElseAdminACL(
+            _projectId,
+            this.updateProjectDescription.selector
+        );
         // effects
         // store description in contract bytecode, replacing reference address from
         // the old storage description with the newly created one
