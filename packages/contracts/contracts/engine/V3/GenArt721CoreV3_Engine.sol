@@ -376,13 +376,7 @@ contract GenArt721CoreV3_Engine is
                 revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
             }
         } else {
-            if (
-                !adminACLAllowed(
-                    msg.sender,
-                    address(this),
-                    _selector
-                )
-            ) {
+            if (!adminACLAllowed(msg.sender, address(this), _selector)) {
                 revert GenArt721Error(ErrorCodes.OnlyArtistOrAdminIfLocked);
             }
         }
