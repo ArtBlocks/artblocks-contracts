@@ -199,7 +199,7 @@ type T_MAIN_CONFIG = {
 export const MAIN_CONFIG: T_MAIN_CONFIG = {
   mainnet: {
     mainnet: {
-      engineFactory: "0x00000000D0A0E78e243625Dbb4A5B37286Eac629",
+      engineFactory: "0x00000067f7CE2C47f295b2DE3485a796d2FC058f",
       sharedMinterFilter: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
       sharedRandomizer: "0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91",
       universalBytecodeStorageReader:
@@ -214,7 +214,7 @@ export const MAIN_CONFIG: T_MAIN_CONFIG = {
   },
   arbitrum: {
     arbitrum: {
-      engineFactory: "0x000000D60eeC180eDC00001173dE37ACd269b196",
+      engineFactory: "0x000000672BF0ff9F0506ed6206772612dd7A798B",
       sharedMinterFilter: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
       sharedRandomizer: "0x6a5976391E708fBf918c3786cd1FcbB88732fbc1",
       universalBytecodeStorageReader:
@@ -227,7 +227,7 @@ export const MAIN_CONFIG: T_MAIN_CONFIG = {
   },
   base: {
     base: {
-      engineFactory: "0x0000000005aBb84fF93f599a6309cA71a6DD4e4E",
+      engineFactory: "0x0000006712ebceb6d73e1f33d70c603b1d090d30",
       sharedMinterFilter: "0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5",
       sharedRandomizer: "0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98",
       universalBytecodeStorageReader:
@@ -241,7 +241,7 @@ export const MAIN_CONFIG: T_MAIN_CONFIG = {
   },
   sepolia: {
     staging: {
-      engineFactory: "0x000000ab19F142143f03f96E2Bdf068474E50b7D",
+      engineFactory: "0x00000006741521Ccd80EEd7BfA8bDbe542B425Cf",
       sharedMinterFilter: "0xa07f47c30C262adcC263A4D44595972c50e04db7",
       sharedRandomizer: "0x28f2D3805652FB5d359486dFfb7D08320D403240",
       universalBytecodeStorageReader:
@@ -250,7 +250,7 @@ export const MAIN_CONFIG: T_MAIN_CONFIG = {
       dependencyRegistry: "0xEFA7Ef074A6E90a99fba8bAd4dCf337ef298387f",
     },
     dev: {
-      engineFactory: "0x0000000765f79939e1Abb63C266cE983bd5eF5c0",
+      engineFactory: "0x004493006600aDB55FA95244ED29000B2D00F200",
       sharedMinterFilter: "0x29e9f09244497503f304FA549d50eFC751D818d2",
       sharedRandomizer: "0xA6F7e62F3B52552f79b2Baa2858a1DB18016c09B",
       universalBytecodeStorageReader:
