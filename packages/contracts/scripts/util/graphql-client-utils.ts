@@ -21,7 +21,9 @@ const getEndpointAndAdminSecret = (): {
       hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_PROD;
       break;
     default:
-      throw new Error(`Invalid NODE_ENV: ${process.env.NODE_ENV}. Must be "dev", "staging", or "prod".`);
+      throw new Error(
+        `Invalid NODE_ENV: ${process.env.NODE_ENV}. Must be "dev", "staging", or "prod".`
+      );
   }
   return { graphqlAPIEndpoint, hasuraAdminSecret };
 };
