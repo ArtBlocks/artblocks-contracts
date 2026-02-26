@@ -11,43 +11,20 @@ const {
 
 const supportedNetworks = [
   "mainnet",
-  "ropsten",
-  "goerli",
-  "arbitrum-goerli",
   "arbitrum",
   "sepolia",
   "arbitrum-sepolia",
   "base",
 ];
 
-const ethereumAWSCreds = {
-  accessKeyId: process.env.ETHEREUM_AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.ETHEREUM_AWS_SECRET_ACCESS_KEY,
+const awsCreds = {
+  accessKeyId: process.env.PROD_AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.PROD_AWS_SECRET_ACCESS_KEY,
 };
 
-const arbitrumAWSCreds = {
-  accessKeyId: process.env.ARBITRUM_AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.ARBITRUM_AWS_SECRET_ACCESS_KEY,
-};
-
-const baseAWSCreds = {
-  accessKeyId: process.env.BASE_AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.BASE_AWS_SECRET_ACCESS_KEY,
-};
-
-const ethereumS3Client = new S3Client({
+const s3Client = new S3Client({
   region: "us-east-1",
-  credentials: ethereumAWSCreds,
-});
-
-const arbitrumS3Client = new S3Client({
-  region: "us-east-1",
-  credentials: arbitrumAWSCreds,
-});
-
-const baseS3Client = new S3Client({
-  region: "us-east-1",
-  credentials: baseAWSCreds,
+  credentials: awsCreds,
 });
 
 const createBucket = async (bucketName: string, client: any) => {
@@ -111,15 +88,8 @@ const createEngineBucket = async (
     throw new Error("Unsupported network");
   }
 
-  // set S3 client depending on selected network
   if (client === undefined) {
-    if (networkName === "arbitrum" || networkName === "arbitrum-goerli") {
-      client = arbitrumS3Client;
-    } else if (networkName === "base") {
-      client = baseS3Client;
-    } else {
-      client = ethereumS3Client;
-    }
+    client = s3Client;
   }
 
   // create bucket + update configuration

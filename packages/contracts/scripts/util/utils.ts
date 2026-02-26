@@ -175,6 +175,11 @@ export async function getNetworkName() {
   return networkName;
 }
 
+export async function getChainId(): Promise<number> {
+  const network = await ethers.provider.getNetwork();
+  return network.chainId;
+}
+
 export function chunkArray<T>(array: T[], chunkSize: number): T[][] {
   const result: T[][] = [];
   for (let i = 0; i < array.length; i += chunkSize) {

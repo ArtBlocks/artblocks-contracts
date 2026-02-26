@@ -1,5 +1,6 @@
 fragment insertContractsMetaResponseFragment on contracts_metadata {
   address
+  chain_id
   name
   bucket_name
   default_vertical_name
@@ -12,7 +13,7 @@ mutation InsertContractsMetadata(
     objects: $contractsMetadata
     on_conflict: {
       constraint: contracts_metadata_pkey
-      update_columns: [address, name, bucket_name, default_vertical_name]
+      update_columns: [name, bucket_name, default_vertical_name]
     }
   ) {
     returning {

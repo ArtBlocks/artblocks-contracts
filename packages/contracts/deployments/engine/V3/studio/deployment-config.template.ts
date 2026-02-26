@@ -4,7 +4,7 @@
 export const deployNetworkConfiguration = {
   network: "sepolia",
   // environment is only used for metadata purposes, and is not used in the deployment process
-  // Please set to "dev", "staging", or "mainnet", arbitrum as appropriate
+  // Please set to "dev", "staging", or "prod" as appropriate
   environment: "dev",
   useLedgerSigner: false,
   // ONLY Gnosis Safe is supported for Studio deployments at this time
