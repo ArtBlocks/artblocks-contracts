@@ -143,10 +143,29 @@ runForEach.forEach((params) => {
     describe("Mint events", async function () {
       it("emits Mint event when pre-minting tokens", async function () {
         const config = await loadFixture(_beforeEach);
-
-        await expect(config.minter.connect(config.accounts.deployer).preMint(1))
-          .to.emit(config.genArt721Core, "Mint")
-          .withArgs(config.minter.address, testValues.tokenIdZero);
+        const MINT_WITH_HASH_TOPIC = ethers.utils.keccak256(
+          ethers.utils.toUtf8Bytes("Mint(address,uint256,bytes32)")
+        );
+        const tx = await config.minter
+          .connect(config.accounts.deployer)
+          .preMint(1);
+        const receipt = await tx.wait();
+        const mintLog = receipt.logs.find(
+          (log: any) =>
+            log.address === config.genArt721Core.address &&
+            log.topics[0] === MINT_WITH_HASH_TOPIC
+        );
+        expect(mintLog).to.not.be.undefined;
+        const decodedTo = ethers.utils.defaultAbiCoder.decode(
+          ["address"],
+          mintLog!.topics[1]
+        )[0];
+        const decodedTokenId = ethers.utils.defaultAbiCoder.decode(
+          ["uint256"],
+          mintLog!.topics[2]
+        )[0];
+        expect(decodedTo).to.equal(config.minter.address);
+        expect(decodedTokenId).to.equal(testValues.tokenIdZero);
       });
     });
 
