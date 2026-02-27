@@ -93,27 +93,6 @@ module.exports = {
       gasMultiplier: 4.0,
       maxNominalGasPriceGwei: 400,
     },
-    goerli: {
-      url: GOERLI_JSON_RPC_PROVIDER_URL,
-      accounts: [`${PRIVATE_KEY}`],
-      gasPrice: "auto",
-      gasMultiplier: 10.0,
-      maxNominalGasPriceGwei: 200,
-    },
-    palm_mainnet: {
-      url: PALM_MAINNET_JSON_RPC_PROVIDER_URL,
-      accounts: [`${PRIVATE_KEY}`],
-      gasPrice: "auto",
-      gasMultiplier: 1.5,
-      maxNominalGasPriceGwei: 50,
-    },
-    palm_testnet: {
-      url: PALM_TESTNET_JSON_RPC_PROVIDER_URL,
-      accounts: [`${PRIVATE_KEY}`],
-      gasPrice: "auto",
-      gasMultiplier: 1.5,
-      maxNominalGasPriceGwei: 200,
-    },
     base: {
       url: BASE_MAINNET_JSON_RPC_PROVIDER_URL,
       accounts: [`${PRIVATE_KEY}`],
@@ -129,20 +108,6 @@ module.exports = {
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 50,
-    },
-    "arbitrum-sepolia": {
-      url: ARBITRUM_SEPOLIA_JSON_RPC_PROVIDER_URL,
-      accounts: [`${PRIVATE_KEY}`],
-      gasPrice: "auto",
-      gasMultiplier: 1.5,
-      maxNominalGasPriceGwei: 200,
-    },
-    "arbitrum-goerli": {
-      url: ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL,
-      accounts: [`${PRIVATE_KEY}`],
-      gasPrice: "auto",
-      gasMultiplier: 1.5,
-      maxNominalGasPriceGwei: 200,
     },
     hoodi: {
       url: HOODI_JSON_RPC_PROVIDER_URL,
@@ -166,14 +131,6 @@ module.exports = {
         urls: {
           apiURL: "https://api.etherscan.io/v2/api",
           browserURL: "https://sepolia.etherscan.io",
-        },
-      },
-      {
-        network: "arbitrum-sepolia",
-        chainId: 421614,
-        urls: {
-          apiURL: "https://api-sepolia.arbiscan.io/api",
-          browserURL: "https://sepolia.arbiscan.io",
         },
       },
       {
