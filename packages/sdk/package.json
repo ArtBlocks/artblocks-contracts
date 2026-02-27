@@ -81,7 +81,7 @@
     "encoding": "^0.1.13",
     "graphql": "^16.8.2",
     "graphql-request": "^6.1.0",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "merkletreejs": "^0.4.1",
     "viem": "2.39.0",
     "xstate": "5.13.2",
