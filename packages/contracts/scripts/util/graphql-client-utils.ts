@@ -12,32 +12,18 @@ const getEndpointAndAdminSecret = (): {
       graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_DEV;
       hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_DEV;
       break;
-    case "arbitrum-dev":
-      graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_ARBITRUM_DEV;
-      hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_ARBITRUM_DEV;
-      break;
-    case "arbitrum-staging":
-      graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_ARBITRUM_STAGING;
-      hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_ARBITRUM_STAGING;
-      break;
-    case "arbitrum":
-      graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_ARBITRUM_MAINNET;
-      hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_ARBITRUM_MAINNET;
-      break;
     case "staging":
       graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_STAGING;
       hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_STAGING;
       break;
-    case "mainnet":
-      graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_MAINNET;
-      hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_MAINNET;
-      break;
-    case "base":
-      graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_BASE_MAINNET;
-      hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_BASE_MAINNET;
+    case "prod":
+      graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_PROD;
+      hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_PROD;
       break;
     default:
-      throw new Error(`Invalid NODE_ENV: ${process.env.NODE_ENV}`);
+      throw new Error(
+        `Invalid NODE_ENV: ${process.env.NODE_ENV}. Must be "dev", "staging", or "prod".`
+      );
   }
   return { graphqlAPIEndpoint, hasuraAdminSecret };
 };
