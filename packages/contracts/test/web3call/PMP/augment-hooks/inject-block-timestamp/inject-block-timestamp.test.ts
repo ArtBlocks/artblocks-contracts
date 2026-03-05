@@ -121,9 +121,8 @@ describe("InjectBlockTimestamp", function () {
       const config = await loadFixture(_beforeEach);
       // IPMPAugmentHook interface ID
       const IPMPAugmentHookInterfaceId = "0x58f8699f";
-      expect(
-        await config.hook.supportsInterface(IPMPAugmentHookInterfaceId)
-      ).to.be.true;
+      expect(await config.hook.supportsInterface(IPMPAugmentHookInterfaceId)).to
+        .be.true;
     });
 
     it("supports ERC165 interface", async function () {
