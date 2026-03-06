@@ -304,15 +304,9 @@ async function startServer(configs: CompiledConfig[]) {
   });
 
   server.listen(PORT, () => {
-    console.log(
-      `\n  ┌──────────────────────────────────────────┐`
-    );
-    console.log(
-      `  │  CREATE2 Deployer: http://localhost:${PORT}  │`
-    );
-    console.log(
-      `  └──────────────────────────────────────────┘\n`
-    );
+    console.log(`\n  ┌──────────────────────────────────────────┐`);
+    console.log(`  │  CREATE2 Deployer: http://localhost:${PORT}  │`);
+    console.log(`  └──────────────────────────────────────────┘\n`);
   });
 }
 
@@ -349,9 +343,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(
-    `Generating initcode for ${deployConfigs.length} config(s)...\n`
-  );
+  console.log(`Generating initcode for ${deployConfigs.length} config(s)...\n`);
 
   const compiled: CompiledConfig[] = [];
   for (const config of deployConfigs) {
