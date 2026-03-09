@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CREATE2 Deployer</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" crossorigin="anonymous"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #1a1a1a;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    header h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+
+    .wallet-section { display: flex; align-items: center; gap: 12px; }
+
+    .wallet-info {
+      font-size: 13px;
+      color: #555;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    }
+
+    .btn {
+      padding: 7px 14px;
+      border: 1px solid #d0d0d0;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn:hover { background: #f0f0f0; }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    .btn-primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+    .btn-green { background: #16a34a; color: #fff; border-color: #16a34a; }
+    .btn-green:hover:not(:disabled) { background: #15803d; }
+    .btn-sm { padding: 3px 8px; font-size: 11px; }
+
+    main { max-width: 960px; margin: 24px auto; padding: 0 16px; }
+
+    .contract-card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+    .card-hdr {
+      padding: 14px 20px;
+      background: #fafafa;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .card-hdr h2 {
+      font-size: 15px;
+      font-weight: 700;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    }
+    .card-body { padding: 20px; }
+
+    .info-grp { margin-bottom: 14px; }
+    .info-grp label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 3px;
+    }
+    .info-grp code, .info-grp pre {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 12px;
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+
+    .initcode-wrap { position: relative; }
+    .initcode-wrap textarea {
+      width: 100%;
+      height: 68px;
+      resize: vertical;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 11px;
+      padding: 8px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      background: #fafafa;
+      color: #333;
+    }
+    .initcode-wrap .btn-sm { position: absolute; top: 6px; right: 6px; }
+
+    .hash-row { display: flex; align-items: center; gap: 8px; }
+
+    .chains { margin-top: 18px; border-top: 1px solid #eee; padding-top: 14px; }
+
+    .chain-row {
+      border: 1px solid #e8e8e8;
+      border-radius: 6px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      background: #fcfcfc;
+    }
+    .chain-row h3 { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+    .chain-row h3 span { color: #999; font-weight: 400; }
+
+    .field-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .field-row label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      min-width: 130px;
+      flex-shrink: 0;
+    }
+    .field-row code {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    .salt-input {
+      flex: 1;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 12px;
+      padding: 5px 8px;
+      border: 1px solid #d0d0d0;
+      border-radius: 4px;
+    }
+    .salt-input:disabled { background: #f0f0f0; color: #999; }
+
+    .actions { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+
+    .status { font-size: 13px; font-weight: 500; }
+    .s-pending { color: #d97706; }
+    .s-ok { color: #16a34a; }
+    .s-err { color: #dc2626; }
+
+    .verify-out {
+      margin-top: 6px;
+      padding: 6px 8px;
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      font-family: 'SF Mono', monospace;
+      font-size: 10px;
+      max-height: 120px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .msg { text-align: center; padding: 48px; color: #999; }
+    a { color: #2563eb; }
+    details > summary { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>CREATE2 Deployer</h1>
+    <div class="wallet-section">
+      <span id="wallet-info" class="wallet-info"></span>
+      <button id="connect-btn" class="btn btn-primary" onclick="connectWallet()">Connect Wallet</button>
+    </div>
+  </header>
+
+  <main id="app"><p class="msg">Loading deployment configs&hellip;</p></main>
+
+  <script>
+    /* ------------------------------------------------------------------ */
+    /* State                                                               */
+    /* ------------------------------------------------------------------ */
+
+    const S = {
+      configs: [],
+      chainConfig: {},
+      factory: '',
+      provider: null,
+      signer: null,
+      walletAddr: '',
+      walletChain: 0,
+      salts: {},
+      deploy: {},
+      verify: {},
+    };
+
+    const SAFE_CREATE2_IFACE = new ethers.utils.Interface([
+      'function safeCreate2(bytes32 salt, bytes initializationCode) payable returns (address)',
+    ]);
+
+    /* ------------------------------------------------------------------ */
+    /* Init                                                                */
+    /* ------------------------------------------------------------------ */
+
+    async function init() {
+      const res = await fetch('/api/configs');
+      const data = await res.json();
+      S.configs = data.configs;
+      S.chainConfig = data.chainConfig;
+      S.factory = data.factory;
+
+      S.configs.forEach((cfg, ci) => {
+        cfg.chainIds.forEach(cid => {
+          const k = key(ci, cid);
+          S.salts[k] = '0x' + '0'.repeat(64);
+          S.deploy[k] = { status: 'pending' };
+          S.verify[k] = { status: 'idle' };
+        });
+      });
+
+      render();
+
+      if (window.ethereum) {
+        const accts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accts.length) connectWallet();
+      }
+
+      setInterval(pollVerify, 3000);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Wallet                                                              */
+    /* ------------------------------------------------------------------ */
+
+    async function connectWallet() {
+      if (!window.ethereum) { alert('No wallet detected. Install MetaMask.'); return; }
+      const p = new ethers.providers.Web3Provider(window.ethereum);
+      await p.send('eth_requestAccounts', []);
+      S.provider = p;
+      S.signer = p.getSigner();
+      S.walletAddr = await S.signer.getAddress();
+      S.walletChain = (await p.getNetwork()).chainId;
+
+      window.ethereum.on('chainChanged', cid => {
+        S.walletChain = parseInt(cid, 16);
+        renderWallet();
+      });
+      window.ethereum.on('accountsChanged', accts => {
+        S.walletAddr = accts[0] || '';
+        renderWallet();
+      });
+
+      renderWallet();
+    }
+
+    function renderWallet() {
+      const info = document.getElementById('wallet-info');
+      const btn = document.getElementById('connect-btn');
+      if (S.walletAddr) {
+        const chainName = (S.chainConfig[S.walletChain] || {}).name || S.walletChain;
+        info.textContent = S.walletAddr.slice(0, 6) + '...' + S.walletAddr.slice(-4) + ' | ' + chainName;
+        btn.textContent = 'Connected';
+        btn.disabled = true;
+        btn.classList.remove('btn-primary');
+      }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Helpers                                                             */
+    /* ------------------------------------------------------------------ */
+
+    function key(ci, cid) { return ci + '-' + cid; }
+
+    function normSalt(s) {
+      let h = (s || '').trim();
+      if (h.startsWith('0x') || h.startsWith('0X')) h = h.slice(2);
+      if (!/^[0-9a-fA-F]*$/.test(h) || h.length > 64) return null;
+      return '0x' + h.padStart(64, '0');
+    }
+
+    function predictAddr(initcodeHash, rawSalt) {
+      const salt = normSalt(rawSalt);
+      if (!salt) return null;
+      try { return ethers.utils.getCreate2Address(S.factory, salt, initcodeHash); }
+      catch { return null; }
+    }
+
+    function esc(s) {
+      if (typeof s !== 'string') s = String(s);
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Copy                                                                */
+    /* ------------------------------------------------------------------ */
+
+    function copyText(text, btnEl) {
+      navigator.clipboard.writeText(text).then(() => {
+        if (!btnEl) return;
+        const orig = btnEl.textContent;
+        btnEl.textContent = 'Copied!';
+        setTimeout(() => { btnEl.textContent = orig; }, 1200);
+      });
+    }
+
+    function copyInitcode(ci) { copyText(S.configs[ci].initcode, event.target); }
+    function copyHash(ci) { copyText(S.configs[ci].initcodeHash, event.target); }
+    function copyAddr(ci, cid) {
+      const addr = predictAddr(S.configs[ci].initcodeHash, S.salts[key(ci, cid)]);
+      if (addr) copyText(addr, event.target);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Salt change (targeted DOM update — no full re-render)               */
+    /* ------------------------------------------------------------------ */
+
+    function onSaltChange(ci, cid, val) {
+      const k = key(ci, cid);
+      S.salts[k] = val;
+      const el = document.getElementById('addr-' + k);
+      if (el) {
+        const addr = predictAddr(S.configs[ci].initcodeHash, val);
+        el.textContent = addr || 'Invalid salt';
+        el.style.color = addr ? '' : '#dc2626';
+      }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Deploy                                                              */
+    /* ------------------------------------------------------------------ */
+
+    async function pollForReceipt(txHash, maxAttempts = 120, intervalMs = 5000) {
+      for (let i = 0; i < maxAttempts; i++) {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const receipt = await provider.getTransactionReceipt(txHash);
+        if (receipt) return receipt;
+        await new Promise(r => setTimeout(r, intervalMs));
+      }
+      return null;
+    }
+
+    function logDeployToServer(ci, cid, txHash, addr) {
+      const cfg = S.configs[ci];
+      const k = key(ci, cid);
+      fetch('/api/log-deployment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contractName: cfg.contractName,
+          address: addr,
+          chainId: cid,
+          salt: normSalt(S.salts[k]),
+          txHash,
+          args: cfg.args,
+          libraries: cfg.libraries,
+          initcodeHash: cfg.initcodeHash,
+        }),
+      }).catch(e => console.error('Failed to log deployment', e));
+    }
+
+    async function doDeploy(ci, cid) {
+      const k = key(ci, cid);
+      const cfg = S.configs[ci];
+      const salt = normSalt(S.salts[k]);
+      if (!salt) { alert('Invalid salt'); return; }
+      if (!S.signer) { alert('Connect wallet first.'); return; }
+
+      const targetHex = '0x' + cid.toString(16);
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: targetHex }],
+        });
+      } catch (e) {
+        setDeploy(k, 'error', { error: 'Chain switch failed: ' + (e.message || e) });
+        return;
+      }
+
+      S.provider = new ethers.providers.Web3Provider(window.ethereum);
+      S.signer = S.provider.getSigner();
+      S.walletChain = cid;
+      renderWallet();
+
+      setDeploy(k, 'sending');
+
+      try {
+        const data = SAFE_CREATE2_IFACE.encodeFunctionData('safeCreate2', [salt, cfg.initcode]);
+        const tx = await S.signer.sendTransaction({ to: S.factory, data });
+        const addr = predictAddr(cfg.initcodeHash, S.salts[k]);
+
+        setDeploy(k, 'mining', { txHash: tx.hash, address: addr });
+
+        const receipt = await pollForReceipt(tx.hash);
+        if (!receipt) {
+          setDeploy(k, 'mining', { txHash: tx.hash, address: addr,
+            stale: 'Polling timed out. Use Check TX to retry.' });
+          return;
+        }
+
+        setDeploy(k, 'deployed', { txHash: tx.hash, address: addr });
+        logDeployToServer(ci, cid, tx.hash, addr);
+      } catch (e) {
+        setDeploy(k, 'error', { error: e.reason || e.message || 'Transaction failed' });
+      }
+    }
+
+    async function checkTx(ci, cid) {
+      const k = key(ci, cid);
+      const ds = S.deploy[k];
+      if (!ds || !ds.txHash) return;
+
+      const targetHex = '0x' + cid.toString(16);
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: targetHex }],
+        });
+      } catch {}
+
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const receipt = await provider.getTransactionReceipt(ds.txHash);
+
+      if (receipt) {
+        setDeploy(k, 'deployed', { txHash: ds.txHash, address: ds.address });
+        logDeployToServer(ci, cid, ds.txHash, ds.address);
+      } else {
+        alert('Receipt not found yet — transaction may still be pending.');
+      }
+    }
+
+    function setDeploy(k, status, extra) {
+      S.deploy[k] = { status, ...(extra || {}) };
+      render();
+    }
+
+    function resetDeploy(ci, cid) {
+      S.deploy[key(ci, cid)] = { status: 'pending' };
+      render();
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Verify                                                              */
+    /* ------------------------------------------------------------------ */
+
+    async function doVerify(ci, cid) {
+      const k = key(ci, cid);
+      const cfg = S.configs[ci];
+      const ds = S.deploy[k];
+      if (!ds || ds.status !== 'deployed') return;
+
+      S.verify[k] = { status: 'queued' };
+      render();
+
+      try {
+        const res = await fetch('/api/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contractName: cfg.contractName,
+            address: ds.address,
+            args: cfg.args,
+            libraries: cfg.libraries,
+            chainId: cid,
+          }),
+        });
+        const data = await res.json();
+        S.verify[k] = { status: 'queued', id: data.id };
+      } catch (e) {
+        S.verify[k] = { status: 'failed', output: 'Request failed: ' + e.message };
+        render();
+      }
+    }
+
+    async function pollVerify() {
+      const hasActive = Object.values(S.verify).some(
+        v => v.status === 'queued' || v.status === 'running'
+      );
+      if (!hasActive) return;
+
+      try {
+        const res = await fetch('/api/verify-status');
+        const jobs = await res.json();
+        let changed = false;
+        for (const [k, vs] of Object.entries(S.verify)) {
+          if (!vs.id) continue;
+          const job = jobs.find(j => j.id === vs.id);
+          if (job && (job.status !== vs.status || job.output !== vs.output)) {
+            S.verify[k] = { ...vs, status: job.status, output: job.output };
+            changed = true;
+          }
+        }
+        if (changed) render();
+      } catch {}
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Render                                                              */
+    /* ------------------------------------------------------------------ */
+
+    function render() {
+      const app = document.getElementById('app');
+
+      if (!S.configs.length) {
+        app.innerHTML = '<p class="msg">No deployment configs loaded.</p>';
+        return;
+      }
+
+      const ae = document.activeElement;
+      const fk = ae && ae.dataset ? ae.dataset.saltKey : null;
+      const ss = ae ? ae.selectionStart : null;
+      const se = ae ? ae.selectionEnd : null;
+
+      let h = '';
+      S.configs.forEach((cfg, ci) => {
+        h += '<div class="contract-card"><div class="card-hdr"><h2>' + esc(cfg.contractName) + '</h2></div>';
+        h += '<div class="card-body">';
+
+        h += '<div class="info-grp"><label>Constructor Args</label><code>' + esc(JSON.stringify(cfg.args)) + '</code></div>';
+
+        if (Object.keys(cfg.libraries).length) {
+          h += '<div class="info-grp"><label>Libraries</label><pre>' + esc(JSON.stringify(cfg.libraries, null, 2)) + '</pre></div>';
+        }
+
+        h += '<div class="info-grp"><label>Initcode</label>';
+        h += '<div class="initcode-wrap"><textarea readonly>' + cfg.initcode + '</textarea>';
+        h += '<button class="btn btn-sm" onclick="copyInitcode(' + ci + ')">Copy</button></div></div>';
+
+        h += '<div class="info-grp"><label>Initcode Hash</label><div class="hash-row">';
+        h += '<code>' + cfg.initcodeHash + '</code>';
+        h += '<button class="btn btn-sm" onclick="copyHash(' + ci + ')">Copy</button></div></div>';
+
+        h += '<div class="chains">';
+        cfg.chainIds.forEach(cid => {
+          const k = key(ci, cid);
+          const chain = S.chainConfig[cid] || { name: 'Chain ' + cid };
+          const salt = S.salts[k];
+          const addr = predictAddr(cfg.initcodeHash, salt);
+          const ds = S.deploy[k] || { status: 'pending' };
+          const vs = S.verify[k] || { status: 'idle' };
+          const locked = ds.status !== 'pending' && ds.status !== 'error';
+
+          h += '<div class="chain-row">';
+          h += '<h3>' + esc(chain.name) + ' <span>(' + cid + ')</span></h3>';
+
+          h += '<div class="field-row"><label>Salt</label>';
+          h += '<input class="salt-input" data-salt-key="' + k + '" value="' + esc(salt) + '"';
+          h += ' oninput="onSaltChange(' + ci + ',' + cid + ',this.value)"';
+          if (locked) h += ' disabled';
+          h += '></div>';
+
+          h += '<div class="field-row"><label>Predicted Address</label>';
+          h += '<code id="addr-' + k + '"' + (addr ? '' : ' style="color:#dc2626"') + '>';
+          h += addr || 'Invalid salt';
+          h += '</code>';
+          h += '<button class="btn btn-sm" onclick="copyAddr(' + ci + ',' + cid + ')">Copy</button></div>';
+
+          h += '<div class="actions">';
+          if (ds.status === 'pending') {
+            h += '<button class="btn btn-primary" onclick="doDeploy(' + ci + ',' + cid + ')">Deploy</button>';
+          } else if (ds.status === 'sending') {
+            h += '<span class="status s-pending">Sending transaction&hellip;</span>';
+          } else if (ds.status === 'mining') {
+            let link = ds.txHash.slice(0, 14) + '...';
+            if (chain.explorer) link = '<a href="' + chain.explorer + '/tx/' + ds.txHash + '" target="_blank">' + link + '</a>';
+            h += '<span class="status s-pending">Mining&hellip; ' + link + '</span>';
+            h += ' <button class="btn btn-sm" onclick="checkTx(' + ci + ',' + cid + ')">Check TX</button>';
+            if (ds.stale) h += ' <span class="status s-err" style="font-size:12px">' + esc(ds.stale) + '</span>';
+          } else if (ds.status === 'deployed') {
+            let link = '';
+            if (chain.explorer) link = ' <a href="' + chain.explorer + '/tx/' + ds.txHash + '" target="_blank">tx</a>';
+            h += '<span class="status s-ok">Deployed &#10003;' + link + '</span>';
+          } else if (ds.status === 'error') {
+            h += '<span class="status s-err">' + esc(ds.error || 'Error') + '</span> ';
+            h += '<button class="btn btn-sm" onclick="resetDeploy(' + ci + ',' + cid + ')">Retry</button>';
+          }
+          h += '</div>';
+
+          if (ds.status === 'deployed') {
+            h += '<div class="actions" style="margin-top:6px">';
+            if (vs.status === 'idle') {
+              h += '<button class="btn btn-green" onclick="doVerify(' + ci + ',' + cid + ')">Verify</button>';
+            } else if (vs.status === 'queued') {
+              h += '<span class="status s-pending">Queued&hellip;</span>';
+            } else if (vs.status === 'running') {
+              h += '<span class="status s-pending">Verifying&hellip;</span>';
+            } else if (vs.status === 'success') {
+              h += '<span class="status s-ok">Verified &#10003;</span>';
+            } else if (vs.status === 'failed') {
+              h += '<span class="status s-err">Verification failed</span> ';
+              h += '<button class="btn btn-sm" onclick="doVerify(' + ci + ',' + cid + ')">Retry</button>';
+            }
+            if (vs.output) {
+              h += ' <details><summary class="btn btn-sm">Log</summary>';
+              h += '<pre class="verify-out">' + esc(vs.output) + '</pre></details>';
+            }
+            h += '</div>';
+          }
+
+          h += '</div>'; // chain-row
+        });
+        h += '</div>'; // chains
+        h += '</div></div>'; // card-body, contract-card
+      });
+
+      app.innerHTML = h;
+
+      if (fk) {
+        const el = document.querySelector('[data-salt-key="' + fk + '"]');
+        if (el) { el.focus(); if (ss != null) { el.selectionStart = ss; el.selectionEnd = se; } }
+      }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Boot                                                                */
+    /* ------------------------------------------------------------------ */
+
+    init();
+  </script>
+</body>
+</html>
