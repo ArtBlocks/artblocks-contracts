@@ -1,5 +1,11 @@
 # @artblocks/sdk
 
+## 0.1.30
+
+### Patch Changes
+
+- 010fb88: Add support for custom price in sliding scale minter
+
 ## 0.1.29
 
 ### Patch Changes
