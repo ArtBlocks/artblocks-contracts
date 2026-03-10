@@ -229,20 +229,7 @@ export const projectSaleManagerMachine = setup({
       ) => params.projectIneligibleReason,
     }),
     assignIdleReason: assign({
-      idleReason: ({ context }) => {
-        const nextIdleReason = getProjectSaleManagerIdleReason(context);
-
-        console.count(
-          "[projectSaleManagerMachine] assignIdleReason executions"
-        );
-        console.debug("[projectSaleManagerMachine] assignIdleReason", {
-          projectId: context.project?.id,
-          previousIdleReason: context.idleReason,
-          nextIdleReason,
-        });
-
-        return nextIdleReason;
-      },
+      idleReason: ({ context }) => getProjectSaleManagerIdleReason(context),
     }),
     clearIdleReason: assign({
       idleReason: undefined,
