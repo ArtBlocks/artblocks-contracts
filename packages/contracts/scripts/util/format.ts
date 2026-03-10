@@ -5,6 +5,7 @@ const formatTitleCaseToKebabCase = (str: string, networkName: string) => {
     .replace(/\s/g, "-") // remove whitespace
     .replace(/\(/g, "") // remove (
     .replace(/\)/g, "") // remove )
+    .replace(/\|/g, "") // remove |
     .replace(/\./g, "-") // replace "." w/ "-"
     .replace(/\_/g, "-") // replace "_" w/ "-"
     .replace(/-x-/g, "-") // replace "-x-" w/ "-" (partner contracts)

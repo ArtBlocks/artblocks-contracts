@@ -50,3 +50,10 @@ The following standard hooks were deployed by Art Blocks.
 - mainnet: 0x531f0D949F76A75cB865b2C75Dd65bae1Eb7609B
 - arbitrum: 0x531f0D949F76A75cB865b2C75Dd65bae1Eb7609B
 - base: 0x531f0D949F76A75cB865b2C75Dd65bae1Eb7609B
+
+## InjectBlockTimestamp
+
+- sepolia testnet: 0x28Fa000605836c29C93Df8dCd07F03ae2273fFFB
+- mainnet: 0x28Fa000605836c29C93Df8dCd07F03ae2273fFFB
+- arbitrum: 0x28Fa000605836c29C93Df8dCd07F03ae2273fFFB
+- base: 0x28Fa000605836c29C93Df8dCd07F03ae2273fFFB

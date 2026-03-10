@@ -799,6 +799,137 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
+    describe("Mint", function () {
+      const MINT_WITH_HASH_TOPIC = ethers.utils.keccak256(
+        ethers.utils.toUtf8Bytes("Mint(address,uint256,bytes32)")
+      );
+
+      it("emits Mint with token hash when hash seed is atomically assigned", async function () {
+        const config = await loadFixture(_beforeEach);
+        const tokenId = config.projectZeroTokenZero;
+        // mint a token (default randomizer assigns hash atomically)
+        const tx = await config.minter
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero);
+        const receipt = await tx.wait();
+        // find the 3-param Mint event by topic
+        const mintLog = receipt.logs.find(
+          (log: any) =>
+            log.address === config.genArt721Core.address &&
+            log.topics[0] === MINT_WITH_HASH_TOPIC
+        );
+        expect(mintLog).to.not.be.undefined;
+        // decode and verify: indexed _to, indexed _tokenId, non-indexed _tokenHash
+        const decodedTo = ethers.utils.defaultAbiCoder.decode(
+          ["address"],
+          mintLog!.topics[1]
+        )[0];
+        const decodedTokenId = ethers.utils.defaultAbiCoder.decode(
+          ["uint256"],
+          mintLog!.topics[2]
+        )[0];
+        const decodedTokenHash = ethers.utils.defaultAbiCoder.decode(
+          ["bytes32"],
+          mintLog!.data
+        )[0];
+        expect(decodedTo).to.equal(config.accounts.artist.address);
+        expect(decodedTokenId).to.equal(tokenId);
+        // verify the token hash is non-zero (was atomically assigned)
+        expect(decodedTokenHash).to.not.equal(ethers.constants.HashZero);
+        // verify it matches the on-chain token hash via low-level call
+        const iface = new ethers.utils.Interface([
+          "function tokenIdToHash(uint256) view returns (bytes32)",
+        ]);
+        const calldata = iface.encodeFunctionData("tokenIdToHash", [
+          ethers.BigNumber.from(tokenId!.toString()),
+        ]);
+        const result = await ethers.provider.call({
+          to: config.genArt721Core.address,
+          data: calldata,
+        });
+        const tokenHash = iface.decodeFunctionResult(
+          "tokenIdToHash",
+          result
+        )[0];
+        expect(decodedTokenHash).to.equal(tokenHash);
+      });
+
+      it("emits Mint with zero hash when hash seed is not atomically assigned", async function () {
+        // deploy a fresh core with a non-atomic randomizer
+        let freshConfig: T_Config = {
+          accounts: await getAccounts(),
+        };
+        freshConfig = await assignDefaultConstants(freshConfig);
+        ({
+          genArt721Core: freshConfig.genArt721Core,
+          minterFilter: freshConfig.minterFilter,
+          randomizer: freshConfig.randomizer,
+        } = await deployCoreWithMinterFilter(
+          freshConfig,
+          coreContractName,
+          "MinterFilterV1",
+          true,
+          undefined,
+          "RandomizerV2_NoAssignMock"
+        ));
+        const minter = await deployAndGet(freshConfig, "MinterSetPriceV2", [
+          freshConfig.genArt721Core.address,
+          freshConfig.minterFilter.address,
+        ]);
+        // add and configure project
+        await freshConfig.genArt721Core
+          .connect(freshConfig.accounts.deployer)
+          .addProject("name", freshConfig.accounts.artist.address);
+        await freshConfig.genArt721Core
+          .connect(freshConfig.accounts.deployer)
+          .toggleProjectIsActive(freshConfig.projectZero);
+        await freshConfig.genArt721Core
+          .connect(freshConfig.accounts.artist)
+          .updateProjectMaxInvocations(
+            freshConfig.projectZero,
+            freshConfig.maxInvocations
+          );
+        await freshConfig.minterFilter
+          .connect(freshConfig.accounts.deployer)
+          .addApprovedMinter(minter.address);
+        await freshConfig.minterFilter
+          .connect(freshConfig.accounts.deployer)
+          .setMinterForProject(freshConfig.projectZero, minter.address);
+        await minter
+          .connect(freshConfig.accounts.artist)
+          .updatePricePerTokenInWei(freshConfig.projectZero, 0);
+        // mint a token (NoAssign randomizer does NOT set hash atomically)
+        const tokenId = freshConfig.projectZeroTokenZero;
+        const tx = await minter
+          .connect(freshConfig.accounts.artist)
+          .purchase(freshConfig.projectZero);
+        const receipt = await tx.wait();
+        // find the 3-param Mint event by topic
+        const mintLog = receipt.logs.find(
+          (log: any) =>
+            log.address === freshConfig.genArt721Core.address &&
+            log.topics[0] === MINT_WITH_HASH_TOPIC
+        );
+        expect(mintLog).to.not.be.undefined;
+        // decode and verify token hash is zero
+        const decodedTo = ethers.utils.defaultAbiCoder.decode(
+          ["address"],
+          mintLog!.topics[1]
+        )[0];
+        const decodedTokenId = ethers.utils.defaultAbiCoder.decode(
+          ["uint256"],
+          mintLog!.topics[2]
+        )[0];
+        const decodedTokenHash = ethers.utils.defaultAbiCoder.decode(
+          ["bytes32"],
+          mintLog!.data
+        )[0];
+        expect(decodedTo).to.equal(freshConfig.accounts.artist.address);
+        expect(decodedTokenId).to.equal(tokenId);
+        expect(decodedTokenHash).to.equal(ethers.constants.HashZero);
+      });
+    });
+
     describe("ProjectRoyaltySplitterUpdated", function () {
       it("emits ProjectRoyaltySplitterUpdated when updated", async function () {
         const config = await loadFixture(_beforeEach);

@@ -1,5 +1,6 @@
 fragment insertProjectsMetaResponseFragment on projects_metadata {
   id
+  chain_id
   contract_address
   artist_address
   project_id
@@ -12,12 +13,9 @@ mutation InsertProjectsMetadata(
   insert_projects_metadata(
     objects: $projectsMetadata
     on_conflict: {
-      constraint: projects_meta_pkey
+      constraint: projects_metadata_pkey
       update_columns: [
-        id
-        contract_address
         artist_address
-        project_id
         vertical_name
       ]
     }

@@ -15,15 +15,17 @@ export const syncContractMetadataAfterDeploy = async (
   contractAddress: string,
   contractName: string,
   bucketName: string,
+  chainId: number,
   defaultVerticalName?: string,
   client?: Client
 ): Promise<InsertContractsMetadataMutation> => {
   if (client === undefined) {
     client = getClient();
   }
-  console.log(`Upserting 1 contract...`);
+  console.log(`Upserting 1 contract (chain_id: ${chainId})...`);
   const contractsMetadataInsertInput: Contracts_Metadata_Insert_Input = {
     address: contractAddress.toLowerCase(),
+    chain_id: chainId,
     name: contractName,
     bucket_name: bucketName,
     default_vertical_name: defaultVerticalName || "unassigned",
@@ -35,7 +37,6 @@ export const syncContractMetadataAfterDeploy = async (
       2
     )}`
   );
-  // upsert contract metadata
   const insertContractsMetadataRes = await client
     .mutation<
       InsertContractsMetadataMutation,
@@ -56,20 +57,21 @@ export const syncContractMetadataAfterDeploy = async (
   }
 };
 
-// This is generally used to update the vertical name of a project after deployment
 export const syncProjectMetadataAfterDeploy = async (
   contractAddress: string,
   projectId: number,
   artistAddress: string,
+  chainId: number,
   verticalName?: string,
   client?: Client
 ): Promise<InsertProjectsMetadataMutation> => {
   if (client === undefined) {
     client = getClient();
   }
-  console.log(`Upserting 1 project...`);
+  console.log(`Upserting 1 project (chain_id: ${chainId})...`);
   const projectsMetadataInsertInput: Projects_Metadata_Insert_Input = {
     id: `${contractAddress.toLowerCase()}-${projectId}`,
+    chain_id: chainId,
     contract_address: contractAddress.toLowerCase(),
     project_id: projectId.toString(),
     artist_address: artistAddress.toLowerCase(),
@@ -82,7 +84,6 @@ export const syncProjectMetadataAfterDeploy = async (
       2
     )}`
   );
-  // upsert project metadata
   const insertProjectsMetadataRes = await client
     .mutation<
       InsertProjectsMetadataMutation,

@@ -144,6 +144,19 @@ interface IGenArt721CoreContractV3_Base is IGenArt721CoreProjectScriptV1 {
     event Mint(address indexed _to, uint256 indexed _tokenId);
 
     /**
+     * @notice Token ID `_tokenId` minted to `_to`, with token hash
+     * `_tokenHash`.
+     * @dev New event in v3.2.9. When `_tokenHash` is non-zero, the token
+     * hash was assigned atomically during the mint transaction. When
+     * `_tokenHash` is bytes32(0), the hash has not yet been assigned.
+     */
+    event Mint(
+        address indexed _to,
+        uint256 indexed _tokenId,
+        bytes32 _tokenHash
+    );
+
+    /**
      * @notice currentMinter updated to `_currentMinter`.
      * @dev Implemented starting with V3 core
      */

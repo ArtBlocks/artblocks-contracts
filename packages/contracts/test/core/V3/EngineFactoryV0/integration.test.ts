@@ -173,7 +173,7 @@ describe(`EngineFactoryV0 Integration`, async function () {
       const engineContractCoreType = await engine.coreType();
       const engineContractCoreVersion = await engine.coreVersion();
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine");
-      expect(engineContractCoreVersion).to.be.equal("v3.2.4");
+      expect(engineContractCoreVersion).to.be.equal("v3.2.9");
       // validate initialization
       const engineContractMinter = await engine.minterContract();
       expect(engineContractMinter).to.equal(
@@ -283,7 +283,7 @@ describe(`EngineFactoryV0 Integration`, async function () {
       const engineContractCoreType = await engine.coreType();
       const engineContractCoreVersion = await engine.coreVersion();
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine");
-      expect(engineContractCoreVersion).to.be.equal("v3.2.4");
+      expect(engineContractCoreVersion).to.be.equal("v3.2.9");
       // validate initialization
       const engineContractMinter = await engine.minterContract();
       expect(engineContractMinter).to.equal(
@@ -401,7 +401,7 @@ describe(`EngineFactoryV0 Integration`, async function () {
       const engineContractCoreType = await engine.coreType();
       const engineContractCoreVersion = await engine.coreVersion();
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine");
-      expect(engineContractCoreVersion).to.be.equal("v3.2.4");
+      expect(engineContractCoreVersion).to.be.equal("v3.2.9");
       // validate initialization
       const engineContractMinter = await engine.minterContract();
       expect(engineContractMinter).to.equal(
@@ -512,7 +512,7 @@ describe(`EngineFactoryV0 Integration`, async function () {
       const engineContractCoreType = await engine.coreType();
       const engineContractCoreVersion = await engine.coreVersion();
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
-      expect(engineContractCoreVersion).to.be.equal("v3.2.5");
+      expect(engineContractCoreVersion).to.be.equal("v3.2.10");
       // validate initialization
       const engineContractMinter = await engine.minterContract();
       expect(engineContractMinter).to.equal(
@@ -622,7 +622,7 @@ describe(`EngineFactoryV0 Integration`, async function () {
       const engineContractCoreType = await engine.coreType();
       const engineContractCoreVersion = await engine.coreVersion();
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
-      expect(engineContractCoreVersion).to.be.equal("v3.2.5");
+      expect(engineContractCoreVersion).to.be.equal("v3.2.10");
       // validate initialization
       const engineContractMinter = await engine.minterContract();
       expect(engineContractMinter).to.equal(
@@ -738,7 +738,7 @@ describe(`EngineFactoryV0 Integration`, async function () {
       const engineContractCoreType = await engine.coreType();
       const engineContractCoreVersion = await engine.coreVersion();
       expect(engineContractCoreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
-      expect(engineContractCoreVersion).to.be.equal("v3.2.5");
+      expect(engineContractCoreVersion).to.be.equal("v3.2.10");
       // validate initialization
       const engineContractMinter = await engine.minterContract();
       expect(engineContractMinter).to.equal(
@@ -818,6 +818,72 @@ describe(`EngineFactoryV0 Integration`, async function () {
       const nextProjectId = await engine.nextProjectId();
       expect(nextProjectId).to.equal(
         config?.validEngineConfigurationExistingAdminACL?.startingProjectId
+      );
+    });
+    it("creates a new Engine contract with updated chain-id namespaced base URI", async function () {
+      const config = await loadFixture(_beforeEach);
+      // update defaultBaseURIHost to chain-id namespaced URI
+      const newBaseURIHost = "https://token.artblocks.io/1/";
+      await config.engineFactory
+        .connect(config.accounts.deployer)
+        .updateDefaultBaseURIHost(newBaseURIHost);
+      // create a new Engine contract
+      const tx = await config.engineFactory
+        .connect(config.accounts.deployer)
+        .createEngineContract(
+          0,
+          config.validEngineConfigurationExistingAdminACL,
+          config?.adminACL?.address,
+          ethers.utils.formatBytes32String("Unique salt Engine6") // random salt
+        );
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      // get Engine contract address from logs
+      const engineCreationLog = receipt.logs[receipt.logs.length - 1];
+      const engineAddress = ethers.utils.getAddress(
+        "0x" + engineCreationLog.topics[1].slice(-40)
+      );
+      // get Engine contract
+      const engine = await ethers.getContractAt(
+        "GenArt721CoreV3_Engine",
+        engineAddress
+      );
+      // validate the defaultBaseURI uses the new chain-id namespaced format
+      const defaultBaseUri = await engine.defaultBaseURI();
+      expect(defaultBaseUri).to.equal(
+        `https://token.artblocks.io/1/${engineAddress?.toLowerCase()}/`
+      );
+    });
+    it("creates a new Engine Flex contract with updated chain-id namespaced base URI", async function () {
+      const config = await loadFixture(_beforeEach);
+      // update defaultBaseURIHost to arbitrum chain-id namespaced URI
+      const newBaseURIHost = "https://token.artblocks.io/42161/";
+      await config.engineFactory
+        .connect(config.accounts.deployer)
+        .updateDefaultBaseURIHost(newBaseURIHost);
+      // create a new Engine Flex contract
+      const tx = await config.engineFactory
+        .connect(config.accounts.deployer)
+        .createEngineContract(
+          1,
+          config.validEngineConfigurationExistingAdminACL,
+          config?.adminACL?.address,
+          ethers.utils.formatBytes32String("Unique salt Engine7") // random salt
+        );
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      // get Engine contract address from logs
+      const engineCreationLog = receipt.logs[receipt.logs.length - 1];
+      const engineAddress = ethers.utils.getAddress(
+        "0x" + engineCreationLog.topics[1].slice(-40)
+      );
+      // get Engine Flex contract
+      const engine = await ethers.getContractAt(
+        "GenArt721CoreV3_Engine_Flex",
+        engineAddress
+      );
+      // validate the defaultBaseURI uses the new chain-id namespaced format
+      const defaultBaseUri = await engine.defaultBaseURI();
+      expect(defaultBaseUri).to.equal(
+        `https://token.artblocks.io/42161/${engineAddress?.toLowerCase()}/`
       );
     });
   });

@@ -150,4 +150,18 @@ describe(`EngineFactoryV0 Events`, async function () {
         .withArgs();
     });
   });
+
+  describe("DefaultBaseURIHostUpdated", async function () {
+    it("is emitted when defaultBaseURIHost is updated", async function () {
+      const config = await loadFixture(_beforeEach);
+      const newBaseURIHost = "https://token.artblocks.io/1/";
+      await expect(
+        config.engineFactory
+          .connect(config.accounts.deployer)
+          .updateDefaultBaseURIHost(newBaseURIHost)
+      )
+        .to.emit(config.engineFactory, "DefaultBaseURIHostUpdated")
+        .withArgs(newBaseURIHost);
+    });
+  });
 });

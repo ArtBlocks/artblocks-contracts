@@ -4,7 +4,7 @@ export const deployConfigDetailsArray = [
   {
     network: "sepolia",
     // environment is only used for metadata purposes, and is not used in the deployment process
-    // Please set to "dev", "staging", or "mainnet", as appropriate
+    // Please set to "dev", "staging", or "prod" as appropriate
     environment: "dev",
     // if you want to use an existing admin ACL, set the address here (otherwise set as undefined to deploy a new one)
     existingAdminACL: undefined,

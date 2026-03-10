@@ -161,10 +161,6 @@ export async function getNetworkName() {
   let networkName = network.name;
   if (networkName === "homestead") {
     networkName = "mainnet";
-  } else if (networkName === "unknown" && network.chainId === 421614) {
-    // The arbitrum-sepolia rpc currently only returns a chainId
-    // for arbitrum-sepolia so we need to manually set the name here
-    networkName = "arbitrum-sepolia";
   } else if (networkName === "unknown" && network.chainId === 8453) {
     // base rpc doesn't return name, so handle unknown + chainId
     networkName = "base";
@@ -173,6 +169,11 @@ export async function getNetworkName() {
   }
 
   return networkName;
+}
+
+export async function getChainId(): Promise<number> {
+  const network = await ethers.provider.getNetwork();
+  return network.chainId;
 }
 
 export function chunkArray<T>(array: T[], chunkSize: number): T[][] {
