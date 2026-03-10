@@ -13,6 +13,14 @@ export class ProjectIneligibleForPrimarySaleError extends Error {
   }
 }
 
+export const PROJECT_SALE_MANAGER_IDLE_REASONS = {
+  WALLET_NOT_CONNECTED: "WALLET_NOT_CONNECTED",
+  WRONG_NETWORK: "WRONG_NETWORK",
+} as const;
+
+export type ProjectSaleManagerIdleReason =
+  (typeof PROJECT_SALE_MANAGER_IDLE_REASONS)[keyof typeof PROJECT_SALE_MANAGER_IDLE_REASONS];
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getProjectDetailsFragmentsDocument = graphql(/* GraphQL */ `
   fragment ProjectDetails on projects_metadata {
@@ -178,6 +186,37 @@ export function isProjectIneligibleForPrimarySale(
   );
 }
 
+export function getProjectSaleManagerIdleReason(
+  context: ProjectSaleManagerMachineContext
+): ProjectSaleManagerIdleReason | undefined {
+  const { artblocksClient, project } = context;
+  const walletClient = artblocksClient.getWalletClient();
+
+  // This is intentionally a curated set of user-facing idle reasons, not a
+  // complete mirror of every branch that can make the sale non-purchasable.
+  // Internal gating conditions such as missing live sale data, RAM auction
+  // phase details, project completion, public client availability, and other
+  // machine-level prerequisites are handled elsewhere via state transitions or
+  // direct context checks rather than being surfaced as idle reasons.
+
+  if (!project) {
+    return undefined;
+  }
+
+  if (!walletClient?.account) {
+    return PROJECT_SALE_MANAGER_IDLE_REASONS.WALLET_NOT_CONNECTED;
+  }
+
+  if (
+    walletClient.chain?.id !== undefined &&
+    walletClient.chain.id !== project.chain_id
+  ) {
+    return PROJECT_SALE_MANAGER_IDLE_REASONS.WRONG_NETWORK;
+  }
+
+  return undefined;
+}
+
 export function isProjectPurchasable(
   context: ProjectSaleManagerMachineContext
 ) {
@@ -193,6 +232,13 @@ export function isProjectPurchasable(
   }
 
   if (!project) {
+    return false;
+  }
+
+  if (
+    getProjectSaleManagerIdleReason(context) ===
+    PROJECT_SALE_MANAGER_IDLE_REASONS.WRONG_NETWORK
+  ) {
     return false;
   }
 
@@ -241,6 +287,13 @@ export function isProjectRAMBiddable(
     return false;
   }
 
+  if (
+    getProjectSaleManagerIdleReason(context) ===
+    PROJECT_SALE_MANAGER_IDLE_REASONS.WRONG_NETWORK
+  ) {
+    return false;
+  }
+
   if (!liveSaleData.ramMinterAuctionDetails) {
     return false;
   }
@@ -266,6 +319,13 @@ export function isProjectPostRAM(context: ProjectSaleManagerMachineContext) {
   }
 
   if (!project) {
+    return false;
+  }
+
+  if (
+    getProjectSaleManagerIdleReason(context) ===
+    PROJECT_SALE_MANAGER_IDLE_REASONS.WRONG_NETWORK
+  ) {
     return false;
   }
 
