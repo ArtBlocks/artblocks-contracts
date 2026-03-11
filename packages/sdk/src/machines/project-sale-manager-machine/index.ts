@@ -10,7 +10,9 @@ import { purchaseTrackingManagerMachine } from "../purchase-tracking-manager-mac
 import {
   LiveSaleData,
   ProjectDetails,
+  ProjectSaleManagerIdleReason,
   ProjectIneligibleForPrimarySaleError,
+  getProjectSaleManagerIdleReason,
   getProjectDetailsDocument,
   isProjectComplete,
   isProjectIneligibleForPrimarySale,
@@ -59,6 +61,7 @@ export type ProjectSaleManagerMachineContext = {
   liveSaleData?: LiveSaleData;
   errorMessage?: string;
   projectIneligibleReason?: string;
+  idleReason?: ProjectSaleManagerIdleReason;
   purchaseTrackingManagerMachine?: ActorRefFrom<
     typeof purchaseTrackingManagerMachine
   >;
@@ -224,6 +227,12 @@ export const projectSaleManagerMachine = setup({
         _,
         params: { projectIneligibleReason: string }
       ) => params.projectIneligibleReason,
+    }),
+    assignIdleReason: assign({
+      idleReason: ({ context }) => getProjectSaleManagerIdleReason(context),
+    }),
+    clearIdleReason: assign({
+      idleReason: undefined,
     }),
     spawnLiveSaleDataPollingMachine: enqueueActions(
       ({ enqueue, context, system }) => {
@@ -415,6 +424,9 @@ export const projectSaleManagerMachine = setup({
               artblocksClient: event.artblocksClient,
             }),
           },
+          {
+            type: "assignIdleReason",
+          },
         ],
       },
     ],
@@ -494,33 +506,37 @@ export const projectSaleManagerMachine = setup({
     idle: {
       description:
         "The 'idle' state is a waiting state where the machine evaluates the next steps based on the current context. It acts as a decision point, assessing conditions for a sale, errors, project ineligibility, or completion. Transitions from this state are determined by guards that check data availability, project eligibility, and other sale prerequisites. If conditions change, the machine moves to a specific state to handle the situation, such as initiating the sale process, handling errors, or dealing with ineligibility or completion.",
+      entry: "assignIdleReason",
       always: [
         {
           target: "error",
           guard: "isErrorMessageAvailable",
-          actions: "stopLiveSaleDataPollingMachine",
+          actions: ["clearIdleReason", "stopLiveSaleDataPollingMachine"],
         },
         {
           target: "projectIneligibleForPrimarySale",
           guard: "isProjectIneligibleForPrimarySale",
-          actions: "stopLiveSaleDataPollingMachine",
+          actions: ["clearIdleReason", "stopLiveSaleDataPollingMachine"],
         },
         {
           target: "projectSaleComplete",
           guard: "isProjectComplete",
-          actions: "stopLiveSaleDataPollingMachine",
+          actions: ["clearIdleReason", "stopLiveSaleDataPollingMachine"],
         },
         {
           target: "readyForPurchase",
           guard: "isPurchasable",
+          actions: "clearIdleReason",
         },
         {
           target: "readyForRam",
           guard: "isRAMBiddable",
+          actions: "clearIdleReason",
         },
         {
           target: "postRAM",
           guard: "isPostRAM",
+          actions: "clearIdleReason",
         },
         {
           guard: "isPublicClientUnavailable",
