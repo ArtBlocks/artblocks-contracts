@@ -168,8 +168,7 @@ function createDeploymentConfigPathCompleter(baseDir: string) {
         return e.name.startsWith(partialName);
       })
       .map((e) => {
-        const rel =
-          displayPrefix === "" ? e.name : `${displayPrefix}${e.name}`;
+        const rel = displayPrefix === "" ? e.name : `${displayPrefix}${e.name}`;
         return e.isDirectory() ? `${rel}/` : rel;
       })
       .sort();
