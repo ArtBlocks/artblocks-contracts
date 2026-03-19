@@ -5,14 +5,15 @@ export const deployNetworkConfiguration = {
   network: "mainnet",
   // environment is only used for metadata purposes, and is not used in the deployment process
   // Please set to "dev", "staging", or "mainnet", arbitrum as appropriate
-  environment: "mainnet",
+  environment: "prod",
   useLedgerSigner: true,
   // ONLY Gnosis Safe is supported for Studio deployments at this time
   useGnosisSafe: true,
   safeAddress: "0x52119BB73Ac8bdbE59aF0EEdFd4E4Ee6887Ed2EA",
   transactionServiceUrl: "https://safe-transaction-mainnet.safe.global",
   // set the transaction hash after successful execution of the batch creation
-  transactionHash: "",
+  transactionHash:
+    "0x6ba5a511fe8eb28863fdcdea6536dd8988e18cf620491bf096ab006a40d151e7",
 };
 
 export const deployConfigDetailsArray = [
