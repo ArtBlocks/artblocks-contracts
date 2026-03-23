@@ -18,7 +18,10 @@ describe("polling", () => {
     graphqlClient: {
       request: jest.fn(),
     },
-    userIsStaff: false,
+    authContext: {
+      profileId: null,
+      userIsStaff: false,
+    },
   } as unknown as ArtBlocksClientContext;
   const projectId = "test-project-id";
   const chainId = 1;

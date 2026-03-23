@@ -35,6 +35,15 @@ type ExcessSettlementFundsClaimMachineContext = {
   txHash?: Hex;
 };
 
+export type ExcessSettlementFundsClaimMachineEvents =
+  | {
+      type: "INITIATE_CLAIM";
+    }
+  | {
+      type: "ART_BLOCKS_CLIENT_UPDATED";
+      artblocksClient: ArtBlocksClient;
+    };
+
 // TODO: Improve error handling
 export const excessSettlementFundsClaimMachine = setup({
   types: {
@@ -43,7 +52,7 @@ export const excessSettlementFundsClaimMachine = setup({
       "receipt" | "artblocksClient"
     >,
     context: {} as ExcessSettlementFundsClaimMachineContext,
-    events: { type: "INITIATE_CLAIM" },
+    events: {} as ExcessSettlementFundsClaimMachineEvents,
   },
   actors: {
     initiateExcessSettlementFundsClaim: fromPromise(
@@ -64,6 +73,13 @@ export const excessSettlementFundsClaimMachine = setup({
 
         if (!walletClient?.account) {
           throw new Error("Wallet client is not connected to an account");
+        }
+
+        if (
+          walletClient.account.address.toLowerCase() !==
+          receipt.user_address.toLowerCase()
+        ) {
+          throw new Error("Wallet client is connected to the wrong account");
         }
 
         const isSharedMinter =
@@ -166,23 +182,148 @@ export const excessSettlementFundsClaimMachine = setup({
     isUserRejectedError: (_, { error }: { error: unknown }) => {
       return isUserRejectedError(error);
     },
+    isWalletUnavailable: (
+      _,
+      { artblocksClient }: { artblocksClient: ArtBlocksClient }
+    ) => {
+      return !artblocksClient.getWalletClient()?.account;
+    },
+    isWrongWallet: (
+      { context },
+      { artblocksClient }: { artblocksClient: ArtBlocksClient }
+    ) => {
+      const walletAddress = artblocksClient.getWalletClient()?.account?.address;
+
+      return (
+        walletAddress !== undefined &&
+        walletAddress.toLowerCase() !==
+          context.receipt.user_address.toLowerCase()
+      );
+    },
+    isWrongChain: (
+      { context },
+      { artblocksClient }: { artblocksClient: ArtBlocksClient }
+    ) => {
+      const walletChainId = artblocksClient.getWalletClient()?.chain?.id;
+
+      return (
+        walletChainId !== undefined &&
+        walletChainId !== context.receipt.chain_id
+      );
+    },
   },
   actions: {
+    assignArtblocksClient: assign({
+      artblocksClient: (_, params: { artblocksClient: ArtBlocksClient }) =>
+        params.artblocksClient,
+    }),
     assignTxHash: assign({
       txHash: (_, params: { txHash: Hex }) => params.txHash,
     }),
   },
 }).createMachine({
   /** @xstate-layout N4IgpgJg5mDOIC5QAoC2BDAxgCwJYDswBKAOlwgBswBiASQDlaAVWgQSYFEB9AYQBlWtALIBtAAwBdRKAAOAe1i4ALrjn5pIAB6IAtAFYAHADYSBgCxmjATgMAmAOxijZpwBoQAT0R6zJMWdsARls9Iz0xA0MQgF9o9zQsPEJSAmVcdBV8KFgeCnRcVGoINTAyfAA3OQBrUoScAmIytIyCbNz81AQCSswWtXEJAY15RRU1DW0EAGYxKxJbA0CrWynbKyWjAys9dy8EHXtbPztIq3sAwPCxPVj4jHrkppUWrJy8guowACcvuS+SGR5JQAMz+qBIdSSjVSz0ybXenW6cl6Y3wAyGSBAIzS40xkzMU1M9kCWym5gcQQM9h2nkQDgMJBsZkCEQMBhmYimXNuIEhDRS+GacLeHU+Pz+AKBoK+4L5jxh6WF7QKXQqyL6aMkIkCUkx2NRE0QhxIemCegc2ymgSmPlsu0QAV85pcC3CekcZnsPLljXQAHd8nDlageGpgbgZRrYEUSmVKjUIfcoaR-YHWsHQ-hw5HUbBVT0NejJMMFDj1HjEIFAkZ7CanLZrvZVpFrPb9lW5s7-EY1norDaAt6k-ySKm0lkM2GIxhc2Lfv9ARlpbLh48x0GEZnszPVPg80iUbui7rZKWDRWEPZjQTPetrJcjGJAm2pnNrUYNlMLttbEYh4kR2BMAlAeKAACUwEwMBcBkJQY0IONqlqVdGiAkCknAyDoNg-N1VRY8S1GXdDQQJYrxIAkG0cMRiUCT0jDbFk9EZSIXBvM4q2cf8HlQ4DQIgqCYLg4oEKRBMfVIND+KwoTcMPfotR1QiyxIlYG3mbYxGuYJ7GMKY2x0a1CTWLkuTMU06L0KYvTiXkUMkviMIE7C4O+edJSXMFEwAx4pKcmScIPQstWLPUz2Ii93zmKkVksBsLC-Gk9kWeYZh7KsLOtWwzG45MSADccoGoTRYCUDJSnQYElG+ZArjEIhqAk-K0yyDFTyI3FQEmEkvxIK9-G2KtrIWO1aXbbK+vCOwrx8RYzCsP9bKaty-mK0rytHKqapZLSGuW8UvjarFws6rRdCMZwSFfV8wi-GYZmfMa+0CEgqxJFZq1mc0DFykdYAAV0wKDYGjEqyuqzbqq+ZAG12xr7JIAGgbgWAjv1CKurpLZOxcPR3XmmwbQMqxfGu5lqx8AIths2z8DkCA4A0CTlPPTH9gWo4rLsVYfwWIx9LGnQ1L6iJZk5DlstCX75UoMAWYxs72bok0yTU3m9LbHw-AuKZnHWFYScWu4fOhQVYVaEUCnl07JkMpZTDJFkrAWnn1jbAl5i0gx-BWYlDDEGIloR9d003Kcc13eAwo68s2epBkQmCfxdbMcxFgMuinWyrSvyrcyvyNuyTYc9DWmcoTrdjxXLnCEgwgW0J7H7X37AziwTWzzlyfzyxpcaAq4Ur1S6MJEmLGz4k7AYwXrV8JueasoIe0fKY+9IFaviHi8FmV-wlnmtPDgcTXVlezOwifR9Ih+oPi8RwHgaj9qVO372Xt0gPnDx4IuTb5iG0WAHa4PZZjcliNEIAA */
-  initial: "idle",
+  initial: "checkingReadiness",
   context: ({ input }) => ({
     artblocksClient: input.artblocksClient,
     receipt: input.receipt,
   }),
+  on: {
+    ART_BLOCKS_CLIENT_UPDATED: {
+      actions: {
+        type: "assignArtblocksClient",
+        params: ({ event }) => ({
+          artblocksClient: event.artblocksClient,
+        }),
+      },
+    },
+  },
   states: {
+    checkingReadiness: {
+      always: [
+        {
+          target: "walletUnavailable",
+          guard: {
+            type: "isWalletUnavailable",
+            params: ({ context }) => ({
+              artblocksClient: context.artblocksClient,
+            }),
+          },
+        },
+        {
+          target: "wrongWallet",
+          guard: {
+            type: "isWrongWallet",
+            params: ({ context }) => ({
+              artblocksClient: context.artblocksClient,
+            }),
+          },
+        },
+        {
+          target: "wrongChain",
+          guard: {
+            type: "isWrongChain",
+            params: ({ context }) => ({
+              artblocksClient: context.artblocksClient,
+            }),
+          },
+        },
+        {
+          target: "idle",
+        },
+      ],
+    },
+    walletUnavailable: {
+      on: {
+        ART_BLOCKS_CLIENT_UPDATED: {
+          target: "checkingReadiness",
+          actions: {
+            type: "assignArtblocksClient",
+            params: ({ event }) => ({
+              artblocksClient: event.artblocksClient,
+            }),
+          },
+        },
+      },
+    },
+    wrongWallet: {
+      on: {
+        ART_BLOCKS_CLIENT_UPDATED: {
+          target: "checkingReadiness",
+          actions: {
+            type: "assignArtblocksClient",
+            params: ({ event }) => ({
+              artblocksClient: event.artblocksClient,
+            }),
+          },
+        },
+      },
+    },
+    wrongChain: {
+      on: {
+        ART_BLOCKS_CLIENT_UPDATED: {
+          target: "checkingReadiness",
+          actions: {
+            type: "assignArtblocksClient",
+            params: ({ event }) => ({
+              artblocksClient: event.artblocksClient,
+            }),
+          },
+        },
+      },
+    },
     idle: {
       on: {
         INITIATE_CLAIM: "initiatingsClaim",
+        ART_BLOCKS_CLIENT_UPDATED: {
+          target: "checkingReadiness",
+          actions: {
+            type: "assignArtblocksClient",
+            params: ({ event }) => ({
+              artblocksClient: event.artblocksClient,
+            }),
+          },
+        },
       },
     },
     initiatingsClaim: {
@@ -203,7 +344,7 @@ export const excessSettlementFundsClaimMachine = setup({
         },
         onError: [
           {
-            target: "idle",
+            target: "checkingReadiness",
             guard: {
               type: "isUserRejectedError",
               params({ event }) {
@@ -264,7 +405,7 @@ export const excessSettlementFundsClaimMachine = setup({
     },
     error: {
       after: {
-        1000: "idle",
+        1000: "checkingReadiness",
       },
     },
     success: {

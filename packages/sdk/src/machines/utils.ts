@@ -11,12 +11,13 @@ export type KnownMinterType = `${Minter_Type_Names_Enum}`;
 // non-nullish string from newer or independently generated enum definitions.
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type MinterTypeInput = KnownMinterType | (string & {}) | undefined;
+export type DefinedMinterTypeInput = Exclude<MinterTypeInput, undefined>;
 
 /**
  * List of supported minter types for the purchase machine. This is expected
  * to grow over time.
  */
-export const SUPPORTED_MINTER_TYPES: MinterTypeInput[] = [
+export const SUPPORTED_MINTER_TYPES: DefinedMinterTypeInput[] = [
   Minter_Type_Names_Enum.MinterSetPriceV5,
   Minter_Type_Names_Enum.MinterDaExpV5,
   Minter_Type_Names_Enum.MinterDaLinV5,
@@ -32,32 +33,33 @@ export const SUPPORTED_MINTER_TYPES: MinterTypeInput[] = [
   Minter_Type_Names_Enum.MinterSlidingScaleV0,
 ];
 
-export const SUPPORTED_SETTLEMENT_CLAIM_MINTER_TYPES: MinterTypeInput[] = [
-  Minter_Type_Names_Enum.MinterDaExpSettlementV0,
-  Minter_Type_Names_Enum.MinterDaExpSettlementV1,
-  Minter_Type_Names_Enum.MinterDaExpSettlementV2,
-  Minter_Type_Names_Enum.MinterDaExpSettlementV3,
-];
+export const SUPPORTED_SETTLEMENT_CLAIM_MINTER_TYPES: DefinedMinterTypeInput[] =
+  [
+    Minter_Type_Names_Enum.MinterDaExpSettlementV0,
+    Minter_Type_Names_Enum.MinterDaExpSettlementV1,
+    Minter_Type_Names_Enum.MinterDaExpSettlementV2,
+    Minter_Type_Names_Enum.MinterDaExpSettlementV3,
+  ];
 
-const MERKLE_MINTER_TYPES: MinterTypeInput[] = [
+const MERKLE_MINTER_TYPES: DefinedMinterTypeInput[] = [
   Minter_Type_Names_Enum.MinterSetPriceMerkleV5,
   Minter_Type_Names_Enum.MinterMinPriceMerkleV0,
 ];
-const HOLDER_MINTER_TYPES: MinterTypeInput[] = [
+const HOLDER_MINTER_TYPES: DefinedMinterTypeInput[] = [
   Minter_Type_Names_Enum.MinterDaLinHolderV5,
   Minter_Type_Names_Enum.MinterDaExpHolderV5,
   Minter_Type_Names_Enum.MinterSetPriceHolderV5,
 ];
 
-const ERC20_MINTER_TYPES: MinterTypeInput[] = [
+const ERC20_MINTER_TYPES: DefinedMinterTypeInput[] = [
   Minter_Type_Names_Enum.MinterSetPriceErc20V5,
 ];
 
-const RAM_MINTER_TYPES: MinterTypeInput[] = [
+const RAM_MINTER_TYPES: DefinedMinterTypeInput[] = [
   Minter_Type_Names_Enum.MinterRamv0,
 ];
 
-const SLIDING_SCALE_MINTER_TYPES: MinterTypeInput[] = [
+const SLIDING_SCALE_MINTER_TYPES: DefinedMinterTypeInput[] = [
   Minter_Type_Names_Enum.MinterSlidingScaleV0,
 ];
 
@@ -68,6 +70,10 @@ const SLIDING_SCALE_MINTER_TYPES: MinterTypeInput[] = [
  * @returns A boolean indicating whether the minter type is supported.
  */
 export function isSupportedMinterType(minterType: MinterTypeInput) {
+  if (minterType === undefined) {
+    return false;
+  }
+
   return SUPPORTED_MINTER_TYPES.includes(minterType);
 }
 
@@ -78,6 +84,10 @@ export function isSupportedMinterType(minterType: MinterTypeInput) {
  * @returns A boolean indicating whether the minter type is a Merkle minter.
  */
 export function isMerkleMinterType(minterType: MinterTypeInput) {
+  if (minterType === undefined) {
+    return false;
+  }
+
   return MERKLE_MINTER_TYPES.includes(minterType);
 }
 
@@ -88,6 +98,10 @@ export function isMerkleMinterType(minterType: MinterTypeInput) {
  * @returns A boolean indicating whether the minter type is a Holder minter.
  */
 export function isHolderMinterType(minterType: MinterTypeInput) {
+  if (minterType === undefined) {
+    return false;
+  }
+
   return HOLDER_MINTER_TYPES.includes(minterType);
 }
 
@@ -98,6 +112,10 @@ export function isHolderMinterType(minterType: MinterTypeInput) {
  * @returns A boolean indicating whether the minter type is an ERC20 minter.
  */
 export function isERC20MinterType(minterType: MinterTypeInput) {
+  if (minterType === undefined) {
+    return false;
+  }
+
   return ERC20_MINTER_TYPES.includes(minterType);
 }
 
@@ -108,6 +126,10 @@ export function isERC20MinterType(minterType: MinterTypeInput) {
  * @returns A boolean indicating whether the minter type is a RAM minter.
  */
 export function isRAMMinterType(minterType: MinterTypeInput) {
+  if (minterType === undefined) {
+    return false;
+  }
+
   return RAM_MINTER_TYPES.includes(minterType);
 }
 
@@ -118,6 +140,10 @@ export function isRAMMinterType(minterType: MinterTypeInput) {
  * @returns A boolean indicating whether the minter type is a Sliding Scale minter.
  */
 export function isSlidingScaleMinterType(minterType: MinterTypeInput) {
+  if (minterType === undefined) {
+    return false;
+  }
+
   return SLIDING_SCALE_MINTER_TYPES.includes(minterType);
 }
 

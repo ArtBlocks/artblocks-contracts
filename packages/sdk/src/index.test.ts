@@ -28,7 +28,7 @@ describe("ArtBlocksClient", () => {
   describe("constructor", () => {
     it("initializes with the correct properties", () => {
       expect(abClient.getPublicClient(testChainId)).toBe(mockPublicClient);
-      expect(abClient.context.userIsStaff).toBe(false);
+      expect(abClient.context.authContext).toBeUndefined();
 
       const headers =
         typeof abClient.context.graphqlClient.requestConfig.headers ===
@@ -38,6 +38,86 @@ describe("ArtBlocksClient", () => {
       expect(abClient.context.graphqlClient).toBeInstanceOf(GraphQLClient);
       expect((abClient.context.graphqlClient as any).url).toBe(graphqlEndpoint);
       expect(headers).toHaveProperty("Authorization", `Bearer ${jwt}`);
+    });
+
+    it("omits the authorization header when authToken is not provided", () => {
+      const unauthenticatedClient = new ArtBlocksClient({
+        publicClientResolver: mockPublicClientResolver,
+        graphqlEndpoint,
+      });
+
+      const headers =
+        typeof unauthenticatedClient.context.graphqlClient.requestConfig
+          .headers === "function"
+          ? unauthenticatedClient.context.graphqlClient.requestConfig.headers()
+          : unauthenticatedClient.context.graphqlClient.requestConfig.headers;
+
+      expect(headers).toEqual({});
+    });
+  });
+
+  describe("auth and wallet context helpers", () => {
+    it("updates auth and wallet state explicitly", () => {
+      const walletClient = {
+        account: {
+          address: "0x0000000000000000000000000000000000000001",
+        },
+      } as any;
+
+      expect(abClient.getWalletClient()).toBeUndefined();
+      expect(abClient.getAuthContext()).toBeUndefined();
+      expect(abClient.getProfileId()).toBeNull();
+      expect(abClient.hasAuthenticatedUser()).toBe(false);
+
+      abClient.setWalletClient(walletClient);
+      abClient.setAuthContext({
+        profileId: 123,
+        userIsStaff: true,
+      });
+
+      expect(abClient.getWalletClient()).toBe(walletClient);
+      expect(abClient.getAuthContext()).toEqual({
+        profileId: 123,
+        userIsStaff: true,
+      });
+      expect(abClient.getProfileId()).toBe(123);
+      expect(abClient.hasAuthenticatedUser()).toBe(true);
+
+      abClient.setAuthContext({
+        profileId: null,
+        userIsStaff: false,
+      });
+
+      expect(abClient.getProfileId()).toBeNull();
+      expect(abClient.hasAuthenticatedUser()).toBe(false);
+    });
+
+    it("updates graphql authorization headers when authToken changes", () => {
+      abClient.setAuthToken("next-token");
+      expect(
+        (abClient.context.graphqlClient as any).requestConfig.headers
+      ).toEqual({
+        Authorization: "Bearer next-token",
+      });
+
+      abClient.setAuthToken(undefined);
+      expect(
+        (abClient.context.graphqlClient as any).requestConfig.headers
+      ).toEqual({});
+    });
+  });
+
+  describe("graphqlRequest", () => {
+    it("forwards requests to the underlying graphql client", async () => {
+      const requestSpy = jest
+        .spyOn(abClient.context.graphqlClient, "request")
+        .mockResolvedValue({ viewer: { id: "123" } });
+
+      await expect(
+        abClient.graphqlRequest("query Viewer { viewer { id } }")
+      ).resolves.toEqual({ viewer: { id: "123" } });
+
+      expect(requestSpy).toHaveBeenCalledWith("query Viewer { viewer { id } }");
     });
   });
 
@@ -73,6 +153,27 @@ describe("ArtBlocksClient", () => {
       await expect(
         abClient.getProjectMinterConfigurationContext(projectId, testChainId)
       ).rejects.toThrow(
+        "A publicClientResolver is required to get project minter configuration context"
+      );
+    });
+
+    it("throws an error if refresh is called after the publicClientResolver is removed", async () => {
+      const projectId = "test-project-id";
+      const mockForms: FormBlueprint[] = [];
+      const mockData = {};
+      (generateProjectMinterConfigurationForms as jest.Mock).mockResolvedValue({
+        forms: mockForms,
+        data: mockData,
+      });
+
+      const config = await abClient.getProjectMinterConfigurationContext(
+        projectId,
+        testChainId
+      );
+
+      abClient.setPublicClientResolver(undefined);
+
+      await expect(config.refresh()).rejects.toThrow(
         "A publicClientResolver is required to get project minter configuration context"
       );
     });

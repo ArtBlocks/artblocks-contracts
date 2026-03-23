@@ -81,7 +81,7 @@ export async function generateProjectMinterConfigurationForms(
   }
 
   const allowedPrivilegedRolesForProject = getAllowedPrivilegedRoles(
-    clientContext.userIsStaff,
+    clientContext.authContext?.userIsStaff ?? false,
     project.contract.user_is_allowlisted ?? false,
     project.user_is_artist ?? false
   );
