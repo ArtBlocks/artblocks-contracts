@@ -1,4 +1,7 @@
-import { ReceiptSettlementDataFragment } from "../../generated/graphql";
+import {
+  GetReceiptsWithExcessSettlementFundsForUserQuery,
+  ReceiptSettlementDataFragment,
+} from "../../generated/graphql";
 import { graphql } from "../../generated/index";
 import { assign, fromPromise, sendParent, setup } from "xstate";
 import {
@@ -16,6 +19,7 @@ export const receiptSettlementDataFragment = graphql(/* GraphQL */ `
   fragment ReceiptSettlementData on receipt_metadata {
     id
     chain_id
+    user_address
     project {
       id
       name
@@ -49,12 +53,12 @@ export const receiptSettlementDataFragment = graphql(/* GraphQL */ `
 export const getReceiptsWithExcessSettlementFundsForUserDocument = graphql(
   /* GraphQL */ `
     query GetReceiptsWithExcessSettlementFundsForUser(
-      $userAddress: String!
+      $profileId: Int!
       $supportedMinterTypes: [minter_type_names_enum!]!
     ) {
       receipt_metadata(
         where: {
-          user_address: { _eq: $userAddress }
+          user: { profile_id: { _eq: $profileId } }
           excess_settlement_funds: { _neq: "0" }
           minter: { type: { type: { _in: $supportedMinterTypes } } }
           project_minter_configuration: {
@@ -71,23 +75,39 @@ export const getReceiptsWithExcessSettlementFundsForUserDocument = graphql(
   `
 );
 
-class WalletClientUnavailableError extends Error {
+class SessionUnavailableError extends Error {
   constructor() {
-    super("Wallet client is unavailable");
-    this.name = "WalletClientUnavailableError";
+    super("Authenticated user is unavailable");
+    this.name = "SessionUnavailableError";
   }
 }
 
 const MAX_ERROR_COUNT = 5;
 
+type GetReceiptsWithExcessSettlementFundsForUserResult = {
+  receipt_metadata: GetReceiptsWithExcessSettlementFundsForUserQuery["receipt_metadata"];
+};
+
+type GetReceiptsWithExcessSettlementFundsForUserVariables = {
+  profileId: number;
+  supportedMinterTypes: Array<
+    Exclude<(typeof SUPPORTED_SETTLEMENT_CLAIM_MINTER_TYPES)[number], undefined>
+  >;
+};
+
 export const receiptPollingMachine = setup({
   types: {
-    input: {} as { artblocksClient: ArtBlocksClient; pollingInterval: number },
+    input: {} as {
+      artblocksClient: ArtBlocksClient;
+      pollingInterval: number;
+      profileId: number;
+    },
     context: {} as {
       artblocksClient: ArtBlocksClient;
       receipts?: ReceiptSettlementDataFragment[];
       errorMessageCounts: Record<string, number>;
       pollingInterval: number;
+      profileId: number;
     },
   },
   actors: {
@@ -95,23 +115,25 @@ export const receiptPollingMachine = setup({
       async ({
         input,
       }: {
-        input: { artblocksClient: ArtBlocksClient; pollingInterval?: number };
+        input: {
+          artblocksClient: ArtBlocksClient;
+          pollingInterval?: number;
+          profileId: number;
+        };
       }): Promise<ReceiptSettlementDataFragment[]> => {
-        const { artblocksClient } = input;
-        const walletClient = artblocksClient.getWalletClient();
+        const { artblocksClient, profileId } = input;
 
-        const userAddress = walletClient?.account?.address;
-        if (!userAddress) {
-          throw new WalletClientUnavailableError();
+        if (profileId === null || profileId === undefined) {
+          throw new SessionUnavailableError();
         }
 
-        const res = await artblocksClient.graphqlRequest(
-          getReceiptsWithExcessSettlementFundsForUserDocument,
-          {
-            userAddress: userAddress.toLowerCase(),
-            supportedMinterTypes: SUPPORTED_SETTLEMENT_CLAIM_MINTER_TYPES,
-          }
-        );
+        const res = await artblocksClient.graphqlRequest<
+          GetReceiptsWithExcessSettlementFundsForUserResult,
+          GetReceiptsWithExcessSettlementFundsForUserVariables
+        >(getReceiptsWithExcessSettlementFundsForUserDocument, {
+          profileId,
+          supportedMinterTypes: SUPPORTED_SETTLEMENT_CLAIM_MINTER_TYPES,
+        });
         const receipts = res.receipt_metadata;
         return receipts;
       }
@@ -144,8 +166,8 @@ export const receiptPollingMachine = setup({
     }),
   },
   guards: {
-    isWalletClientUnavailableError: (_, { error }: { error: unknown }) => {
-      return error instanceof WalletClientUnavailableError;
+    isSessionUnavailableError: (_, { error }: { error: unknown }) => {
+      return error instanceof SessionUnavailableError;
     },
     isMaxErrorCountReached: ({ context }, { error }: { error: unknown }) => {
       const errorMessage = getMessageFromError(error);
@@ -163,6 +185,7 @@ export const receiptPollingMachine = setup({
     artblocksClient: input.artblocksClient,
     errorMessageCounts: {},
     pollingInterval: input.pollingInterval,
+    profileId: input.profileId,
   }),
   input: {},
   states: {
@@ -173,6 +196,7 @@ export const receiptPollingMachine = setup({
         src: "fetchReceiptsForUser",
         input: ({ context }) => ({
           artblocksClient: context.artblocksClient,
+          profileId: context.profileId,
         }),
         onDone: {
           description:

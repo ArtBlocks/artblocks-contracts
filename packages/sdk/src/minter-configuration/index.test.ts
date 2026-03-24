@@ -37,7 +37,10 @@ function createMockArtBlocksClientContext(): MockArtBlocksClientContext {
     graphqlClient: {
       request: request as jest.MockedFunction<any>,
     },
-    userIsStaff: false,
+    authContext: {
+      profileId: null,
+      userIsStaff: false,
+    },
     walletClient: {
       account: { address: "0x1234" },
       writeContract: jest.fn(),

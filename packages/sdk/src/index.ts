@@ -13,18 +13,24 @@ export type PublicClientResolver = (
   chainId: number
 ) => PublicClient | undefined;
 
+export type ArtBlocksClientAuthContext = {
+  profileId: number | null;
+  userIsStaff: boolean;
+};
+
 export type ArtBlocksClientOptions = {
   graphqlEndpoint: string;
   publicClientResolver?: PublicClientResolver;
   authToken?: string;
   walletClient?: WalletClient;
+  authContext?: ArtBlocksClientAuthContext;
 };
 
 export type ArtBlocksClientContext = {
   graphqlClient: GraphQLClient;
   publicClientResolver?: PublicClientResolver;
   walletClient?: WalletClient;
-  userIsStaff: boolean;
+  authContext?: ArtBlocksClientAuthContext;
 };
 
 /**
@@ -45,6 +51,7 @@ export class ArtBlocksClient {
     publicClientResolver,
     walletClient,
     authToken,
+    authContext,
     graphqlEndpoint,
   }: ArtBlocksClientOptions) {
     // Create a GraphQL client with the provided endpoint and auth token
@@ -60,19 +67,11 @@ export class ArtBlocksClient {
       },
     });
 
-    // Parse the JWT to determine if the user is staff
-    const jwtString = Buffer.from(
-      authToken?.split(".")[1] ?? "",
-      "base64"
-    ).toString();
-    const jwtData = jwtString ? JSON.parse(jwtString) : null;
-    const userIsStaff = Boolean(jwtData?.isStaff);
-
     this.context = {
       graphqlClient,
       publicClientResolver,
       walletClient,
-      userIsStaff,
+      authContext,
     };
   }
 
@@ -101,8 +100,24 @@ export class ArtBlocksClient {
     this.context.walletClient = walletClient;
   }
 
+  setAuthContext(authContext: ArtBlocksClientAuthContext | undefined) {
+    this.context.authContext = authContext;
+  }
+
   getWalletClient() {
     return this.context.walletClient;
+  }
+
+  getAuthContext() {
+    return this.context.authContext;
+  }
+
+  getProfileId() {
+    return this.context.authContext?.profileId ?? null;
+  }
+
+  hasAuthenticatedUser() {
+    return this.getProfileId() !== null;
   }
 
   async graphqlRequest<T, V extends Variables = Variables>(
