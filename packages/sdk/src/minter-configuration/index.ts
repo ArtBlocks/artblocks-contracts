@@ -83,8 +83,7 @@ export async function generateProjectMinterConfigurationForms(
   const walletAddress =
     clientContext.walletClient?.account?.address?.toLowerCase();
 
-  const userIsArtist =
-    walletAddress === project.artist_address?.toLowerCase();
+  const userIsArtist = walletAddress === project.artist_address?.toLowerCase();
 
   const userIsAllowlisted = walletAddress
     ? project.contract.allowlisted_users?.some(
