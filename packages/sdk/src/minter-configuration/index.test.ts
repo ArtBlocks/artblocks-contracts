@@ -544,9 +544,9 @@ function getTestResponse() {
       {
         project_id: "0",
         chain_id: 1,
-        user_is_artist: false,
+        artist_address: "0x0000000000000000000000000000000000000000",
         contract: {
-          user_is_allowlisted: false,
+          allowlisted_users: [],
           minter_filter: {
             type: "MinterFilterV2",
             address: "0x29e9f09244497503f304fa549d50efc751d818d2",

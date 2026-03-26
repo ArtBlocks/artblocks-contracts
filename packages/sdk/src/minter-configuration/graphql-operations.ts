@@ -9,10 +9,12 @@ export const getProjectMinterConfigurationQueryDocument = graphql(
       ) {
         chain_id
         project_id
-        user_is_artist
+        artist_address
 
         contract {
-          user_is_allowlisted
+          allowlisted_users {
+            user_address
+          }
           minter_filter {
             type
             address
