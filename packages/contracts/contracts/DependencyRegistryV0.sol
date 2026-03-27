@@ -643,6 +643,76 @@ contract DependencyRegistryV0 is
     }
 
     /**
+     * @notice Updates the canvas tag for dependency `dependencyNameAndVersion`.
+     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
+     * @param canvasTag The new canvas tag for the dependency.
+     */
+    function updateDependencyCanvasTag(
+        bytes32 dependencyNameAndVersion,
+        IDependencyRegistryV0.CanvasTag canvasTag
+    ) external {
+        _onlyAdminACL(this.updateDependencyCanvasTag.selector);
+        _onlyExistingDependency(dependencyNameAndVersion);
+
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
+        dependency.canvasTag = canvasTag;
+
+        emit DependencyCanvasTagUpdated(dependencyNameAndVersion, canvasTag);
+    }
+
+    /**
+     * @notice Updates the loadAsModule flag for dependency `dependencyNameAndVersion`.
+     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
+     * @param loadAsModule The new loadAsModule flag for the dependency.
+     */
+    function updateDependencyLoadAsModule(
+        bytes32 dependencyNameAndVersion,
+        bool loadAsModule
+    ) external {
+        _onlyAdminACL(this.updateDependencyLoadAsModule.selector);
+        _onlyExistingDependency(dependencyNameAndVersion);
+
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
+        dependency.loadAsModule = loadAsModule;
+
+        emit DependencyLoadAsModuleUpdated(
+            dependencyNameAndVersion,
+            loadAsModule
+        );
+    }
+
+    /**
+     * @notice Updates the project script special type for dependency `dependencyNameAndVersion`.
+     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
+     * @param projectScriptSpecialType The new project script special type for the dependency.
+     * For example, "type=‘application/processing" for processing.js
+     */
+    function updateDependencyProjectScriptSpecialType(
+        bytes32 dependencyNameAndVersion,
+        string memory projectScriptSpecialType
+    ) external {
+        _onlyAdminACL(this.updateDependencyProjectScriptSpecialType.selector);
+        _onlyExistingDependency(dependencyNameAndVersion);
+
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
+        dependency.projectScriptSpecialType = projectScriptSpecialType;
+
+        emit DependencyProjectScriptSpecialTypeUpdated(
+            dependencyNameAndVersion,
+            projectScriptSpecialType
+        );
+    }
+
+    /**
      * @notice These functions were removed in an upgrade, registering and unregistering
      * contracts are handled by the core registry.
      */
@@ -1001,34 +1071,11 @@ contract DependencyRegistryV0 is
      * @notice Returns details for a given dependency type `dependencyNameAndVersion` input as string.
      * Reverts if input string does not fit within 32 bytes.
      * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
-     * @return nameAndVersion String representation of `dependencyNameAndVersion`.
-     *                        (e.g. "p5js(atSymbol)1.0.0")
-     * @return licenseType License type for dependency
-     * @return preferredCDN Preferred CDN URL for dependency
-     * @return additionalCDNCount Count of additional CDN URLs for dependency
-     * @return preferredRepository Preferred repository URL for dependency
-     * @return additionalRepositoryCount Count of additional repository URLs for dependency
-     * @return dependencyWebsite Project website URL for dependency
-     * @return availableOnChain Whether dependency is available on chain
-     * @return scriptCount Count of on-chain scripts for dependency
+     * @return dependencyDetails Details for a given dependency type.
      */
     function getDependencyDetailsFromString(
         string memory dependencyNameAndVersion
-    )
-        external
-        view
-        returns (
-            string memory nameAndVersion,
-            string memory licenseType,
-            string memory preferredCDN,
-            uint24 additionalCDNCount,
-            string memory preferredRepository,
-            uint24 additionalRepositoryCount,
-            string memory dependencyWebsite,
-            bool availableOnChain,
-            uint24 scriptCount
-        )
-    {
+    ) external view returns (DependencyDetails memory dependencyDetails) {
         _onlyBytes32String(dependencyNameAndVersion);
         return getDependencyDetails(dependencyNameAndVersion.stringToBytes32());
     }
@@ -1377,50 +1424,32 @@ contract DependencyRegistryV0 is
     /**
      * @notice Returns details for a given dependency type `dependencyNameAndVersion`.
      * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
-     * @return nameAndVersion String representation of `dependencyNameAndVersion`.
-     *                        (e.g. "p5js(atSymbol)1.0.0")
-     * @return licenseType License type for dependency
-     * @return preferredCDN Preferred CDN URL for dependency
-     * @return additionalCDNCount Count of additional CDN URLs for dependency
-     * @return preferredRepository Preferred repository URL for dependency
-     * @return additionalRepositoryCount Count of additional repository URLs for dependency
-     * @return dependencyWebsite Project website URL for dependency
-     * @return availableOnChain Whether dependency is available on chain
-     * @return scriptCount Count of on-chain scripts for dependency
+     * @return dependencyDetails Details for a given dependency type.
      */
     function getDependencyDetails(
         bytes32 dependencyNameAndVersion
-    )
-        public
-        view
-        returns (
-            string memory nameAndVersion,
-            string memory licenseType,
-            string memory preferredCDN,
-            uint24 additionalCDNCount,
-            string memory preferredRepository,
-            uint24 additionalRepositoryCount,
-            string memory dependencyWebsite,
-            bool availableOnChain,
-            uint24 scriptCount
-        )
-    {
+    ) public view returns (DependencyDetails memory dependencyDetails) {
         DependencyRegistryStorageLib.Dependency
             storage dependency = DependencyRegistryStorageLib
                 .s()
                 .dependencyRecords[dependencyNameAndVersion];
 
-        return (
-            dependencyNameAndVersion.toString(),
-            dependency.licenseType.toString(),
-            dependency.preferredCDN,
-            dependency.additionalCDNCount,
-            dependency.preferredRepository,
-            dependency.additionalRepositoryCount,
-            dependency.website,
-            dependency.scriptCount > 0,
-            dependency.scriptCount
-        );
+        dependencyDetails.nameAndVersion = dependencyNameAndVersion.toString();
+        dependencyDetails.licenseType = dependency.licenseType.toString();
+        dependencyDetails.preferredCDN = dependency.preferredCDN;
+        dependencyDetails.additionalCDNCount = dependency.additionalCDNCount;
+        dependencyDetails.preferredRepository = dependency.preferredRepository;
+        dependencyDetails.additionalRepositoryCount = dependency
+            .additionalRepositoryCount;
+        dependencyDetails.dependencyWebsite = dependency.website;
+        dependencyDetails.availableOnChain = dependency.scriptCount > 0;
+        dependencyDetails.scriptCount = dependency.scriptCount;
+        dependencyDetails.canvasTag = dependency.canvasTag;
+        dependencyDetails.loadAsModule = dependency.loadAsModule;
+        dependencyDetails.projectScriptSpecialType = dependency
+            .projectScriptSpecialType;
+
+        // @dev implicit return of dependencyDetails
     }
 
     /**
