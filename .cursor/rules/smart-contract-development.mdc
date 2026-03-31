@@ -1,0 +1,27 @@
+---
+description: Smart contract development standards — clarity over assumptions
+globs: **/*.sol
+alwaysApply: false
+---
+
+# Smart Contract Development
+
+Smart contracts are immutable and handle real value. Never assume — always clarify.
+
+## Core Principle: Zero Ambiguity
+
+- **Never assume numeric values** (BPS, percentages, fees, amounts, thresholds). Always confirm with the user before writing them into a contract.
+- **Never assume behavioral semantics** (revert vs return empty, mutable vs immutable, upgradeable vs non-upgradeable). If the spec doesn't say, ask.
+- **Flag every design decision** that has financial, security, or irreversibility implications before implementing.
+
+## Before Writing Code
+
+- Enumerate all configurable parameters and confirm their types, ranges, and defaults.
+- Confirm access control model (who can call what, and when).
+- Confirm revert vs fallback behavior for edge cases.
+
+## During Implementation
+
+- Pack structs intentionally and document slot layout when doing so.
+- Use explicit types (`uint16` for BPS, not `uint256`) when the domain constrains the range.
+- Validate all inputs at the boundary (require/revert with clear messages).
