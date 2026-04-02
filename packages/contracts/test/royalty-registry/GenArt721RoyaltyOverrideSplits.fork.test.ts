@@ -120,11 +120,9 @@ describe("Royalty Override Splitter Migration - Mainnet Fork [ @skip-on-coverage
       const adminAclFactory = await ethers.getContractFactory(
         "AdminACLV0RoyaltyRegistry"
       );
-      const newAdminACL = await adminAclFactory.connect(localDeployer).deploy();
-      // transfer superAdmin to the real V3 superAdmin (multisig)
-      await newAdminACL
+      const newAdminACL = await adminAclFactory
         .connect(localDeployer)
-        .changeSuperAdmin(v3SuperAdmin, [V3_CORE]);
+        .deploy(v3SuperAdmin);
 
       expect(await newAdminACL.superAdmin()).to.equal(v3SuperAdmin);
 
