@@ -41,9 +41,8 @@ describe("AdminACLV0RoyaltyRegistry", async function () {
   describe("supportsInterface", async function () {
     it("supports IAdminACLV0", async function () {
       await loadFixture(_beforeEach);
-      expect(
-        await adminACL.supportsInterface(IADMINACL_V0_INTERFACE_ID)
-      ).to.be.true;
+      expect(await adminACL.supportsInterface(IADMINACL_V0_INTERFACE_ID)).to.be
+        .true;
     });
 
     it("supports IERC165", async function () {
@@ -61,22 +60,14 @@ describe("AdminACLV0RoyaltyRegistry", async function () {
     it("returns true for superAdmin", async function () {
       await loadFixture(_beforeEach);
       expect(
-        await adminACL.allowed(
-          deployer.address,
-          ADDRESS_ZERO,
-          "0x00000000"
-        )
+        await adminACL.allowed(deployer.address, ADDRESS_ZERO, "0x00000000")
       ).to.be.true;
     });
 
     it("returns false for non-superAdmin", async function () {
       await loadFixture(_beforeEach);
       expect(
-        await adminACL.allowed(
-          nonAdmin.address,
-          ADDRESS_ZERO,
-          "0x00000000"
-        )
+        await adminACL.allowed(nonAdmin.address, ADDRESS_ZERO, "0x00000000")
       ).to.be.false;
     });
   });
@@ -85,9 +76,7 @@ describe("AdminACLV0RoyaltyRegistry", async function () {
     it("allows superAdmin to change superAdmin", async function () {
       await loadFixture(_beforeEach);
       await expect(
-        adminACL
-          .connect(deployer)
-          .changeSuperAdmin(newSuperAdmin.address, [])
+        adminACL.connect(deployer).changeSuperAdmin(newSuperAdmin.address, [])
       )
         .to.emit(adminACL, "SuperAdminTransferred")
         .withArgs(deployer.address, newSuperAdmin.address, []);
@@ -98,9 +87,7 @@ describe("AdminACLV0RoyaltyRegistry", async function () {
     it("reverts for non-superAdmin", async function () {
       await loadFixture(_beforeEach);
       await expectRevert(
-        adminACL
-          .connect(nonAdmin)
-          .changeSuperAdmin(newSuperAdmin.address, []),
+        adminACL.connect(nonAdmin).changeSuperAdmin(newSuperAdmin.address, []),
         "Only superAdmin"
       );
     });
@@ -113,11 +100,7 @@ describe("AdminACLV0RoyaltyRegistry", async function () {
 
       // old superAdmin no longer authorized
       expect(
-        await adminACL.allowed(
-          deployer.address,
-          ADDRESS_ZERO,
-          "0x00000000"
-        )
+        await adminACL.allowed(deployer.address, ADDRESS_ZERO, "0x00000000")
       ).to.be.false;
 
       // new superAdmin is authorized
@@ -186,11 +169,7 @@ describe("AdminACLV0RoyaltyRegistry", async function () {
       await expectRevert(
         adminACL
           .connect(nonAdmin)
-          .setRoyaltyLookupAddressOn(
-            ADDRESS_ZERO,
-            ADDRESS_ZERO,
-            ADDRESS_ZERO
-          ),
+          .setRoyaltyLookupAddressOn(ADDRESS_ZERO, ADDRESS_ZERO, ADDRESS_ZERO),
         "Only superAdmin"
       );
     });

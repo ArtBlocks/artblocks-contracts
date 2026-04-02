@@ -129,9 +129,8 @@ describe("Royalty Override Splitter Migration - Mainnet Fork [ @skip-on-coverage
       expect(await newAdminACL.superAdmin()).to.equal(v3SuperAdmin);
 
       // Verify new shim supports correct interface
-      expect(
-        await newShim.supportsInterface(ROYALTY_OVERRIDE_INTERFACE_ID)
-      ).to.be.true;
+      expect(await newShim.supportsInterface(ROYALTY_OVERRIDE_INTERFACE_ID)).to
+        .be.true;
 
       // --- Phase 2: Configure royalty splitters ---
 
@@ -168,8 +167,7 @@ describe("Royalty Override Splitter Migration - Mainnet Fork [ @skip-on-coverage
       // --- Phase 3: V0 and V1 — Update Royalty Registry ---
 
       // Impersonate V0 admin and fund with ETH for gas
-      const impersonatedV0Admin =
-        await ethers.getImpersonatedSigner(v0Admin);
+      const impersonatedV0Admin = await ethers.getImpersonatedSigner(v0Admin);
       await ethers.provider.send("hardhat_setBalance", [
         v0Admin,
         "0x8AC7230489E80000", // 10 ETH
@@ -191,8 +189,7 @@ describe("Royalty Override Splitter Migration - Mainnet Fork [ @skip-on-coverage
       );
 
       // Impersonate V1 admin
-      const impersonatedV1Admin =
-        await ethers.getImpersonatedSigner(v1Admin);
+      const impersonatedV1Admin = await ethers.getImpersonatedSigner(v1Admin);
       await ethers.provider.send("hardhat_setBalance", [
         v1Admin,
         "0x8AC7230489E80000",

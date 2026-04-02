@@ -34,8 +34,14 @@ describe("GenArt721RoyaltyOverrideSplits", async function () {
   const bps10000 = 10000;
 
   async function _beforeEach() {
-    [owner, nonOwner, splitterAddr1, splitterAddr2, coreContractA, coreContractB] =
-      await ethers.getSigners();
+    [
+      owner,
+      nonOwner,
+      splitterAddr1,
+      splitterAddr2,
+      coreContractA,
+      coreContractB,
+    ] = await ethers.getSigners();
 
     const factory = await ethers.getContractFactory(
       "GenArt721RoyaltyOverrideSplits"
@@ -65,9 +71,8 @@ describe("GenArt721RoyaltyOverrideSplits", async function () {
 
     it("supports IERC165 (0x01ffc9a7)", async function () {
       await loadFixture(_beforeEach);
-      expect(
-        await royaltyOverride.supportsInterface(ERC165_INTERFACE_ID)
-      ).to.be.true;
+      expect(await royaltyOverride.supportsInterface(ERC165_INTERFACE_ID)).to.be
+        .true;
     });
 
     it("does not support invalid interface (0xffffffff)", async function () {
@@ -320,10 +325,7 @@ describe("GenArt721RoyaltyOverrideSplits", async function () {
     it("reverts for unconfigured project", async function () {
       await loadFixture(_beforeEach);
       await expectRevert(
-        royaltyOverride.getRoyalties(
-          coreContractA.address,
-          tokenIdProject0
-        ),
+        royaltyOverride.getRoyalties(coreContractA.address, tokenIdProject0),
         "No royalty configured"
       );
     });
@@ -342,10 +344,7 @@ describe("GenArt721RoyaltyOverrideSplits", async function () {
         .connect(owner)
         .removeRoyaltyConfig(coreContractA.address, projectZero);
       await expectRevert(
-        royaltyOverride.getRoyalties(
-          coreContractA.address,
-          tokenIdProject0
-        ),
+        royaltyOverride.getRoyalties(coreContractA.address, tokenIdProject0),
         "No royalty configured"
       );
     });
@@ -362,10 +361,7 @@ describe("GenArt721RoyaltyOverrideSplits", async function () {
         );
       // coreContractB project 0 is not configured
       await expectRevert(
-        royaltyOverride.getRoyalties(
-          coreContractB.address,
-          tokenIdProject0
-        ),
+        royaltyOverride.getRoyalties(coreContractB.address, tokenIdProject0),
         "No royalty configured"
       );
     });

@@ -28,7 +28,11 @@ interface IRoyaltyRegistry {
  * Care must be taken to ensure that the admin ACL contract is secure behind a
  * multi-sig or other secure access control mechanism.
  */
-contract AdminACLV0RoyaltyRegistry is IAdminACLV0, IAdminACLV0_Extended, ERC165 {
+contract AdminACLV0RoyaltyRegistry is
+    IAdminACLV0,
+    IAdminACLV0_Extended,
+    ERC165
+{
     string public AdminACLType = "AdminACLV0RoyaltyRegistry";
 
     /// superAdmin is the only address that passes any and all ACL checks
