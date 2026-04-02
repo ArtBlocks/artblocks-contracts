@@ -55,3 +55,29 @@ Canonical append-only deployment log.
 - **Timestamp:** 2026-03-06T22:24:00.376Z
 
 ---
+
+## GenArt721RoyaltyOverrideSplits
+
+- **Chain:** Ethereum Mainnet (1)
+- **Address:** [0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff](https://etherscan.io/address/0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff)
+- **Salt:** `0x0000000000000000000000000000000000000000000000000000000000000000`
+- **TX:** [0xfcd6bd5e7c90591500671eb1997c321a9a458699d240fc83bb454ac2ee79e1f8](https://etherscan.io/tx/0xfcd6bd5e7c90591500671eb1997c321a9a458699d240fc83bb454ac2ee79e1f8)
+- **Args:** `["0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xadc20ec9257355a77e0e81dd885e7b2a896d83fc1d6c2b9041787bef366e79f2`
+- **Timestamp:** 2026-04-02T16:02:52.549Z
+
+---
+
+## AdminACLV0RoyaltyRegistry
+
+- **Chain:** Ethereum Mainnet (1)
+- **Address:** [0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632](https://etherscan.io/address/0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632)
+- **Salt:** `0x0000000000000000000000000000000000000000000000000000000000000000`
+- **TX:** [0x1aa9bca3fc7c578f30769a102e7aa245f3418920263a19738bfeb26c38aee701](https://etherscan.io/tx/0x1aa9bca3fc7c578f30769a102e7aa245f3418920263a19738bfeb26c38aee701)
+- **Args:** `["0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xe8b7a3f187cfc365ac46dba1a7c362cabaf9e586d3cd985af5e0cb9ff148c529`
+- **Timestamp:** 2026-04-02T16:29:17.994Z
+
+---

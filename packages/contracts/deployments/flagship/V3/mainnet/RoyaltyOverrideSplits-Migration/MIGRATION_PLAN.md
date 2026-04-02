@@ -25,8 +25,10 @@ required for the V3 core contract.
 |---|---|
 | Royalty Registry (proxy) | `0xaD2184FB5DBcfC05d8f056542fB25b04fa32A95D` |
 | Royalty Registry (impl) | `0xd389340d95c851655dD99c5781be1c5e39d30B31` |
-| Current royalty shim | `0x7B5369c24a47A72eCF932bf6974f506dDE4D5Eb1` |
+| Previous royalty shim | `0x7B5369c24a47A72eCF932bf6974f506dDE4D5Eb1` |
 | Current V3 AdminACL (AdminACLV1) | `0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82` |
+| **New royalty shim (GenArt721RoyaltyOverrideSplits)** | `0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff` |
+| **New AdminACL (AdminACLV0RoyaltyRegistry)** | `0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632` |
 
 ---
 
@@ -35,6 +37,8 @@ required for the V3 core contract.
 ### 1. GenArt721RoyaltyOverrideSplits
 
 **Source:** `contracts/royalty-registry/GenArt721RoyaltyOverrideSplits.sol`
+**Deployed:** [`0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff`](https://etherscan.io/address/0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff)
+**TX:** [0xfcd6bd5e7c90591500671eb1997c321a9a458699d240fc83bb454ac2ee79e1f8](https://etherscan.io/tx/0xfcd6bd5e7c90591500671eb1997c321a9a458699d240fc83bb454ac2ee79e1f8)
 
 A royalty override shim that maps `(coreContract, projectId) → (splitter, bps)`
 entirely via admin-configured state. No data is sourced from the underlying core
@@ -43,11 +47,13 @@ value. `getRoyalties` returns a single recipient (the splitter) and the
 configured BPS.
 
 **Constructor args:**
-- `owner_`: Address of the owner wallet (Art Blocks multisig)
+- `owner_`: `0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283` (Art Blocks multisig)
 
 ### 2. AdminACLV0RoyaltyRegistry
 
 **Source:** `contracts/AdminACLV0RoyaltyRegistry.sol`
+**Deployed:** [`0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632`](https://etherscan.io/address/0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632)
+**TX:** [0x1aa9bca3fc7c578f30769a102e7aa245f3418920263a19738bfeb26c38aee701](https://etherscan.io/tx/0x1aa9bca3fc7c578f30769a102e7aa245f3418920263a19738bfeb26c38aee701)
 
 An AdminACLV0-based contract with a single additional function:
 `setRoyaltyLookupAddressOn(royaltyRegistry, tokenAddress, royaltyLookupAddress)`.
@@ -57,7 +63,8 @@ This is needed because the V3 core contract returns the AdminACL address from
 `msg.sender == admin()`. The current AdminACLV1 has no capability to call
 `setRoyaltyLookupAddress` on the Royalty Registry.
 
-**Constructor args:** none (sets `superAdmin = msg.sender`)
+**Constructor args:**
+- `superAdmin_`: `0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283` (Art Blocks multisig)
 
 ---
 
@@ -126,18 +133,19 @@ core contract that reports this AdminACL as its `admin()`.
 - [ ] Royalty splitter contracts deployed and verified for all relevant projects
 - [ ] BPS values confirmed for each project's royalty configuration
 
-### Phase 1: Deploy New Contracts
+### Phase 1: Deploy New Contracts — COMPLETED
 
-**Step 1.1** — Deploy `GenArt721RoyaltyOverrideSplits`
-- Constructor arg: Art Blocks multisig address as `owner_`
-- Verify on Etherscan
+**Step 1.1** — Deploy `GenArt721RoyaltyOverrideSplits` — **DONE**
+- Deployed via immutable CREATE2 factory (`0x0000000000ffe8b47b3e2130213b802212439497`)
+- Constructor arg: `owner_ = 0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283`
+- Address: `0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff`
+- Verified on Etherscan
 
-**Step 1.2** — Deploy `AdminACLV0RoyaltyRegistry`
-- Constructor sets `superAdmin = msg.sender`
-- If deployed via OwnedCreate2Factory: follow up with `changeSuperAdmin` to
-  transfer superAdmin to the Art Blocks multisig
-- If deployed directly from multisig: superAdmin is already correct
-- Verify on Etherscan
+**Step 1.2** — Deploy `AdminACLV0RoyaltyRegistry` — **DONE**
+- Deployed via immutable CREATE2 factory (`0x0000000000ffe8b47b3e2130213b802212439497`)
+- Constructor arg: `superAdmin_ = 0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283`
+- Address: `0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632`
+- Verified on Etherscan
 
 ### Phase 2: Configure Royalty Splitters
 
@@ -163,7 +171,7 @@ can directly call `setRoyaltyLookupAddress` on the Royalty Registry.
 ```
 setRoyaltyLookupAddress(
     0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a,  // V0 core
-    <new GenArt721RoyaltyOverrideSplits address>
+    0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff   // GenArt721RoyaltyOverrideSplits
 )
 ```
 
@@ -171,7 +179,7 @@ setRoyaltyLookupAddress(
 ```
 setRoyaltyLookupAddress(
     0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270,  // V1 core
-    <new GenArt721RoyaltyOverrideSplits address>
+    0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff   // GenArt721RoyaltyOverrideSplits
 )
 ```
 
@@ -183,14 +191,15 @@ AdminACLV1 cannot call `setRoyaltyLookupAddress`. Therefore, we must first
 migrate the AdminACL.
 
 **Step 4.1** — Verify the new `AdminACLV0RoyaltyRegistry` superAdmin is set to
-the correct multisig address.
+the correct multisig address (`0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283`).
+Call `superAdmin()` on `0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632`.
 
 **Step 4.2** — From the current AdminACLV1 (`0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82`),
 call:
 ```
 transferOwnershipOn(
     0x99a9B7c1116f9ceEB1652de04d5969CcE509B069,  // V3 core
-    <new AdminACLV0RoyaltyRegistry address>
+    0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632   // AdminACLV0RoyaltyRegistry
 )
 ```
 
@@ -204,12 +213,13 @@ internal `adminACLContract` reference is updated atomically.
 - [ ] Verify the multisig can still call admin functions on V3 core (e.g.
       read-only check via `allowed()`)
 
-**Step 4.3** — From the new `AdminACLV0RoyaltyRegistry` (via superAdmin), call:
+**Step 4.3** — From the new `AdminACLV0RoyaltyRegistry`
+(`0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632`) via superAdmin, call:
 ```
 setRoyaltyLookupAddressOn(
     0xaD2184FB5DBcfC05d8f056542fB25b04fa32A95D,  // Royalty Registry proxy
     0x99a9B7c1116f9ceEB1652de04d5969CcE509B069,  // V3 core
-    <new GenArt721RoyaltyOverrideSplits address>
+    0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff   // GenArt721RoyaltyOverrideSplits
 )
 ```
 
@@ -251,16 +261,15 @@ immediately regain full control of the V3 core through it.
 
 ## Transaction Summary
 
-| Step | Caller | Target | Function | Critical |
-|---|---|---|---|---|
-| 1.1 | Deployer | — | Deploy GenArt721RoyaltyOverrideSplits | |
-| 1.2 | Deployer | — | Deploy AdminACLV0RoyaltyRegistry | |
-| 1.2b | Deployer (if factory) | AdminACLV0RoyaltyRegistry | `changeSuperAdmin(multisig, [...])` | |
-| 2.x | Owner (multisig) | GenArt721RoyaltyOverrideSplits | `setRoyaltyConfig(...)` per project | |
-| 3.1 | V0 admin EOA | Royalty Registry proxy | `setRoyaltyLookupAddress(V0, newShim)` | YES |
-| 3.2 | V1 admin EOA | Royalty Registry proxy | `setRoyaltyLookupAddress(V1, newShim)` | YES |
-| 4.2 | superAdmin (multisig) | AdminACLV1 | `transferOwnershipOn(V3, newAdminACL)` | **YES** |
-| 4.3 | superAdmin (multisig) | AdminACLV0RoyaltyRegistry | `setRoyaltyLookupAddressOn(registry, V3, newShim)` | YES |
+| Step | Caller | Target | Function | Critical | Status |
+|---|---|---|---|---|---|
+| 1.1 | Deployer | — | Deploy GenArt721RoyaltyOverrideSplits(`0xCF00…A283`) | | **DONE** |
+| 1.2 | Deployer | — | Deploy AdminACLV0RoyaltyRegistry(`0xCF00…A283`) | | **DONE** |
+| 2.x | Owner (`0xCF00…A283`) | `0xF45a…70ff` | `setRoyaltyConfig(...)` per project | | |
+| 3.1 | V0 admin EOA | `0xaD21…5DBc` | `setRoyaltyLookupAddress(0x059E…3a, 0xF45a…70ff)` | YES | |
+| 3.2 | V1 admin EOA | `0xaD21…5DBc` | `setRoyaltyLookupAddress(0xa7d8…270, 0xF45a…70ff)` | YES | |
+| 4.2 | superAdmin (`0xCF00…A283`) | `0x18b1…c82` | `transferOwnershipOn(0x99a9…069, 0xa102…632)` | **YES** | |
+| 4.3 | superAdmin (`0xCF00…A283`) | `0xa102…632` | `setRoyaltyLookupAddressOn(0xaD21…5DBc, 0x99a9…069, 0xF45a…70ff)` | YES | |
 
 ---
 
