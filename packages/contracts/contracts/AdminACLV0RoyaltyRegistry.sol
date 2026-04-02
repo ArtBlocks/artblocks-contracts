@@ -38,8 +38,8 @@ contract AdminACLV0RoyaltyRegistry is
     /// superAdmin is the only address that passes any and all ACL checks
     address public superAdmin;
 
-    constructor() {
-        superAdmin = msg.sender;
+    constructor(address superAdmin_) {
+        superAdmin = superAdmin_;
     }
 
     /**
