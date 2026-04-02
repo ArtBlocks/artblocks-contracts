@@ -1,11 +1,11 @@
 # Royalty Override Splitter Migration Plan
 
-## Mainnet Flagship Core Contracts
+## Mainnet Art Blocks Core Contracts
 
-This document describes the migration of royalty override infrastructure for the
-three mainnet flagship Art Blocks core contracts to a new
-`GenArt721RoyaltyOverrideSplits` shim, and the associated AdminACL migration
-required for the V3 core contract.
+This document describes the migration of royalty override infrastructure for
+Art Blocks core contracts (flagship + partnership) to a new
+`GenArt721RoyaltyOverrideSplits` shim, and the associated AdminACL migrations
+required for V3 core contracts.
 
 ---
 
@@ -13,11 +13,20 @@ required for the V3 core contract.
 
 ### Core Contracts
 
-| Contract | Address | Admin Model |
-|---|---|---|
-| V0 Flagship | `0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a` | `admin()` returns EOA |
-| V1 Flagship | `0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270` | `admin()` returns EOA |
-| V3 Flagship | `0x99a9B7c1116f9ceEB1652de04d5969CcE509B069` | `admin()` returns AdminACL (`0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82`) |
+| Label | Contract | Address | Admin Model |
+|---|---|---|---|
+| V0 Flagship | GenArt721 | `0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a` | `admin()` returns EOA |
+| V1 Flagship | GenArt721 | `0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270` | `admin()` returns EOA |
+| V3 Flagship | GenArt721CoreV3 | `0x99a9B7c1116f9ceEB1652de04d5969CcE509B069` | `admin()` returns AdminACL (`0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82`) |
+| Pace | Art Blocks x Pace | `0x64780CE53f6e966E18a22AF13a2F97369580ec11` | `admin()` returns AB multisig EOA directly |
+| Pace V3 | Art Blocks x Pace (V3) | `0xeA698596b6009A622C3eD00dD5a8b5d1CAE4fC36` | `admin()` returns AdminACL (`0x4F68170A7b3C9B52780289ab2E50a5C26b08B09C`) |
+| Bright Moments | Art Blocks x Bright Moments | `0x145789247973c5D612bf121E9E4eef84b63eb707` | `admin()` returns AdminACL (`0x4F68170A7b3C9B52780289ab2E50a5C26b08B09C`) |
+| Collabs | Collaborations | `0x942BC2d3e7a589FE5bd4A5C6eF9727DFd82F5C8a` | `admin()` returns AdminACL (`0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82`) |
+
+### Excluded (already ERC-2981 compliant)
+
+- Curated Flex (`0xAB00000000002ADE39f58F9D8278a31574fFBe77`) — 10 projects
+- All Art Blocks Studio contracts (~55 projects) — per-artist Engine contracts
 
 ### Infrastructure
 
@@ -26,7 +35,8 @@ required for the V3 core contract.
 | Royalty Registry (proxy) | `0xaD2184FB5DBcfC05d8f056542fB25b04fa32A95D` |
 | Royalty Registry (impl) | `0xd389340d95c851655dD99c5781be1c5e39d30B31` |
 | Previous royalty shim | `0x7B5369c24a47A72eCF932bf6974f506dDE4D5Eb1` |
-| Current V3 AdminACL (AdminACLV1) | `0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82` |
+| Current V3 Flagship + Collabs AdminACL (AdminACLV1) | `0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82` |
+| Current Pace V3 + Bright Moments AdminACL | `0x4F68170A7b3C9B52780289ab2E50a5C26b08B09C` |
 | **New royalty shim (GenArt721RoyaltyOverrideSplits)** | `0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff` |
 | **New AdminACL (AdminACLV0RoyaltyRegistry)** | `0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632` |
 
@@ -68,7 +78,16 @@ This is needed because the V3 core contract returns the AdminACL address from
 
 ---
 
-## AdminACL Migration Regression Analysis: AdminACLV1 → AdminACLV0RoyaltyRegistry
+## AdminACL Migration Regression Analysis
+
+Applies to all 4 V3 cores being migrated to `AdminACLV0RoyaltyRegistry`.
+
+Two existing AdminACL contracts are in use:
+- `0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82` — serves V3 Flagship + Collabs
+- `0x4F68170A7b3C9B52780289ab2E50a5C26b08B09C` — serves Pace V3 + Bright Moments
+
+Both have superAdmin `0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283` (AB multisig).
+The regression analysis below applies to all four migrations.
 
 ### What AdminACLV1 has that AdminACLV0 does NOT
 
@@ -114,12 +133,14 @@ core contract that reports this AdminACL as its `admin()`.
 
 ### Pre-migration checklist
 
-- [ ] Verify no payment approvers are currently configured on AdminACLV1
-      (`getNumPaymentApprovers()` on `0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82`)
-- [ ] If payment approvers exist, document them and confirm their removal is
-      acceptable
-- [ ] Confirm the superAdmin address on the current AdminACLV1
-      (`superAdmin()` on `0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82`)
+- [ ] Verify no payment approvers are currently configured on AdminACL
+      `0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82` (V3 Flagship + Collabs)
+- [ ] Verify no payment approvers are currently configured on AdminACL
+      `0x4F68170A7b3C9B52780289ab2E50a5C26b08B09C` (Pace V3 + Bright Moments)
+- [ ] If payment approvers exist on either, document them and confirm their
+      removal is acceptable
+- [ ] Confirm superAdmin is `0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283` on
+      both AdminACLs
 
 ---
 
@@ -129,7 +150,8 @@ core contract that reports this AdminACL as its `admin()`.
 
 - [ ] All contracts verified on Etherscan
 - [ ] Fork tests pass (simulating the full migration sequence)
-- [ ] superAdmin address confirmed on current AdminACLV1
+- [ ] superAdmin address confirmed as `0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283`
+      on both AdminACLs (`0x18b1…` and `0x4F68…`)
 - [ ] Royalty splitter contracts deployed and verified for all relevant projects
 - [ ] BPS values confirmed for each project's royalty configuration
 
@@ -149,10 +171,28 @@ core contract that reports this AdminACL as its `admin()`.
 
 ### Phase 2: Configure Royalty Splitters
 
-**Step 2.1** — On `GenArt721RoyaltyOverrideSplits`, call `setRoyaltyConfig` for
-each `(coreContract, projectId)` that requires royalty configuration.
+**Step 2.1** — On `GenArt721RoyaltyOverrideSplits` (`0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff`),
+call `setRoyaltyConfig` for each `(coreContract, projectId)` that requires
+royalty configuration.
 
-For each of the three core contracts, configure every active project:
+**490 total projects** across 7 core contracts:
+
+| Core | Contract | Projects |
+|---|---|---|
+| V0 Flagship | `0x059EDD72…` | 3 |
+| V1 Flagship | `0xa7d8d9ef…` | 359 |
+| V3 Flagship | `0x99a9B7c1…` | 115 |
+| Pace | `0x64780CE5…` | 5 |
+| Pace V3 | `0xeA698596…` | 3 |
+| Bright Moments | `0x14578924…` | 2 |
+| Collabs | `0x942BC2d3…` | 3 |
+
+All projects use **750 BPS** except Lucky Clover (V3 project 478) which uses
+**250 BPS**.
+
+Full mapping: `deployments/royalty-registry/mainnet/royalty-config-mapping.tsv`
+
+For each project:
 - `setRoyaltyConfig(coreContract, projectId, splitterAddress, bps)`
 - Verify each configuration via `royaltyConfigs(coreContract, projectId)`
 
@@ -161,12 +201,12 @@ royalty registry is pointed to the new shim. Once the registry points to the new
 shim, misconfigured projects will revert on `getRoyalties` (which is safe — the
 registry will fall through — but may cause unexpected behavior on marketplaces).
 
-### Phase 3: V0 and V1 Core — Update Royalty Registry Lookup
+### Phase 3: EOA-Admin Contracts — Update Royalty Registry Lookup
 
-For V0 and V1 core contracts, the `admin()` function returns an EOA. That EOA
-can directly call `setRoyaltyLookupAddress` on the Royalty Registry.
+For contracts where `admin()` returns an EOA, the EOA can directly call
+`setRoyaltyLookupAddress` on the Royalty Registry.
 
-**Step 3.1** — From the V0 core admin EOA, call on the Royalty Registry proxy
+**Step 3.1** — V0 Flagship: from admin EOA, call on Royalty Registry proxy
 (`0xaD2184FB5DBcfC05d8f056542fB25b04fa32A95D`):
 ```
 setRoyaltyLookupAddress(
@@ -175,7 +215,7 @@ setRoyaltyLookupAddress(
 )
 ```
 
-**Step 3.2** — From the V1 core admin EOA, call on the Royalty Registry proxy:
+**Step 3.2** — V1 Flagship: from admin EOA, call on Royalty Registry proxy:
 ```
 setRoyaltyLookupAddress(
     0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270,  // V1 core
@@ -183,79 +223,151 @@ setRoyaltyLookupAddress(
 )
 ```
 
-### Phase 4: V3 Core — AdminACL Migration + Royalty Registry Update
+**Step 3.3** — Pace (V1-era): from AB multisig EOA, call on Royalty Registry proxy:
+```
+setRoyaltyLookupAddress(
+    0x64780CE53f6e966E18a22AF13a2F97369580ec11,  // Art Blocks x Pace
+    0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff   // GenArt721RoyaltyOverrideSplits
+)
+```
 
-The V3 core contract returns the AdminACL address from `admin()`. The Royalty
-Registry requires `msg.sender == admin()` to authorize overrides. The current
-AdminACLV1 cannot call `setRoyaltyLookupAddress`. Therefore, we must first
-migrate the AdminACL.
+### Phase 4: V3 Cores — AdminACL Migration + Royalty Registry Update
+
+V3 core contracts return the AdminACL address from `admin()`. The Royalty
+Registry requires `msg.sender == admin()` to authorize overrides. The existing
+AdminACLs on these contracts lack the ability to call `setRoyaltyLookupAddress`.
+Therefore, we must migrate each to the new `AdminACLV0RoyaltyRegistry`.
+
+**The following 4 V3 contracts require this flow:**
+
+| Core | Address | Current AdminACL | superAdmin |
+|---|---|---|---|
+| V3 Flagship | `0x99a9B7c1116f9ceEB1652de04d5969CcE509B069` | `0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82` | `0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283` |
+| Pace V3 | `0xeA698596b6009A622C3eD00dD5a8b5d1CAE4fC36` | `0x4F68170A7b3C9B52780289ab2E50a5C26b08B09C` | `0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283` |
+| Bright Moments | `0x145789247973c5D612bf121E9E4eef84b63eb707` | `0x4F68170A7b3C9B52780289ab2E50a5C26b08B09C` | `0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283` |
+| Collabs | `0x942BC2d3e7a589FE5bd4A5C6eF9727DFd82F5C8a` | `0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82` | `0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283` |
+
+> **Note:** V3 Flagship and Collabs share the same AdminACL
+> (`0x18b18cF97…`). Pace V3 and Bright Moments share a different AdminACL
+> (`0x4F68170A…`). All four have the same superAdmin (AB multisig).
+> Each `transferOwnershipOn` call migrates a single core contract
+> independently — the shared AdminACL does not create ordering dependencies.
+
+**For each V3 core, repeat Steps 4.1–4.3:**
 
 **Step 4.1** — Verify the new `AdminACLV0RoyaltyRegistry` superAdmin is set to
 the correct multisig address (`0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283`).
 Call `superAdmin()` on `0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632`.
 
-**Step 4.2** — From the current AdminACLV1 (`0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82`),
-call:
+**Step 4.2** — From the current AdminACL of each V3 core, call:
 ```
 transferOwnershipOn(
-    0x99a9B7c1116f9ceEB1652de04d5969CcE509B069,  // V3 core
+    <V3 core address>,
     0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632   // AdminACLV0RoyaltyRegistry
 )
 ```
 
-This transfers ownership of the V3 core to the new AdminACL. The V3 core's
-internal `adminACLContract` reference is updated atomically.
+Concrete `transferOwnershipOn` calls (all called by superAdmin `0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283`):
 
-**CRITICAL SAFETY CHECK after Step 4.2:**
-- [ ] Verify `owner()` on V3 core returns the new AdminACL address
-- [ ] Verify `admin()` on V3 core returns the new AdminACL address
-- [ ] Verify `superAdmin()` on the new AdminACL returns the multisig
-- [ ] Verify the multisig can still call admin functions on V3 core (e.g.
-      read-only check via `allowed()`)
+**V3 Flagship** — call on `0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82`:
+```
+transferOwnershipOn(0x99a9B7c1116f9ceEB1652de04d5969CcE509B069, 0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632)
+```
+
+**Pace V3** — call on `0x4F68170A7b3C9B52780289ab2E50a5C26b08B09C`:
+```
+transferOwnershipOn(0xeA698596b6009A622C3eD00dD5a8b5d1CAE4fC36, 0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632)
+```
+
+**Bright Moments** — call on `0x4F68170A7b3C9B52780289ab2E50a5C26b08B09C`:
+```
+transferOwnershipOn(0x145789247973c5D612bf121E9E4eef84b63eb707, 0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632)
+```
+
+**Collabs** — call on `0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82`:
+```
+transferOwnershipOn(0x942BC2d3e7a589FE5bd4A5C6eF9727DFd82F5C8a, 0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632)
+```
+
+**CRITICAL SAFETY CHECK after each Step 4.2:**
+- [ ] Verify `owner()` on the V3 core returns the new AdminACL address
+- [ ] Verify `admin()` on the V3 core returns the new AdminACL address
+- [ ] Verify `superAdmin()` on the new AdminACL still returns the multisig
+- [ ] Verify the multisig can still call admin functions on the V3 core
 
 **Step 4.3** — From the new `AdminACLV0RoyaltyRegistry`
-(`0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632`) via superAdmin, call:
+(`0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632`) via superAdmin, call for each:
 ```
 setRoyaltyLookupAddressOn(
     0xaD2184FB5DBcfC05d8f056542fB25b04fa32A95D,  // Royalty Registry proxy
-    0x99a9B7c1116f9ceEB1652de04d5969CcE509B069,  // V3 core
+    <V3 core address>,
     0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff   // GenArt721RoyaltyOverrideSplits
 )
 ```
 
+Concrete calls for each V3 core:
+
+**V3 Flagship:**
+```
+setRoyaltyLookupAddressOn(0xaD2184FB5DBcfC05d8f056542fB25b04fa32A95D, 0x99a9B7c1116f9ceEB1652de04d5969CcE509B069, 0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff)
+```
+
+**Pace V3:**
+```
+setRoyaltyLookupAddressOn(0xaD2184FB5DBcfC05d8f056542fB25b04fa32A95D, 0xeA698596b6009A622C3eD00dD5a8b5d1CAE4fC36, 0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff)
+```
+
+**Bright Moments:**
+```
+setRoyaltyLookupAddressOn(0xaD2184FB5DBcfC05d8f056542fB25b04fa32A95D, 0x145789247973c5D612bf121E9E4eef84b63eb707, 0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff)
+```
+
+**Collabs:**
+```
+setRoyaltyLookupAddressOn(0xaD2184FB5DBcfC05d8f056542fB25b04fa32A95D, 0x942BC2d3e7a589FE5bd4A5C6eF9727DFd82F5C8a, 0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff)
+```
+
 ### Phase 5: Post-Migration Verification
 
-- [ ] For each core contract, verify `getRoyaltyLookupAddress(coreContract)`
+- [ ] For each of the 7 core contracts, verify `getRoyaltyLookupAddress(coreContract)`
       on the Royalty Registry returns the new shim address
 - [ ] For a sample token on each core contract, call `getRoyalties` on the new
       shim and verify correct splitter address and BPS are returned
 - [ ] Verify marketplace royalty behavior (e.g. OpenSea, Blur) for tokens from
       each core contract
-- [ ] Verify superAdmin on new AdminACL can perform admin operations on V3 core
+- [ ] Verify superAdmin on new AdminACL can perform admin operations on all 4
+      V3 cores (V3 Flagship, Pace V3, Bright Moments, Collabs)
 
 ---
 
 ## Rollback Plan
 
-### V0 and V1 Core
+### V0, V1, and Pace (EOA-admin) Contracts
 
 The admin EOA can call `setRoyaltyLookupAddress` on the Royalty Registry to
 point back to the old shim (`0x7B5369c24a47A72eCF932bf6974f506dDE4D5Eb1`) or
 set to `address(0)` to clear the override entirely.
 
-### V3 Core — AdminACL
+### V3 Cores (AdminACL-managed)
 
 The new `AdminACLV0RoyaltyRegistry` supports `transferOwnershipOn`, so the
 superAdmin can migrate to any AdminACL that supports `IAdminACLV0`. The new
 AdminACL can also call `setRoyaltyLookupAddressOn` to point back to the old shim
 or clear.
 
-To roll back to the original AdminACLV1 at
+For the V3 Flagship, to roll back to the original AdminACLV1 at
 `0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82`: call `transferOwnershipOn(V3Core,
 0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82)` from the new AdminACL. The old
 AdminACLV1 still exists on-chain, still supports `IAdminACLV0` (passes the
 ERC165 check), and its `superAdmin` is unchanged — so the multisig would
-immediately regain full control of the V3 core through it.
+immediately regain full control.
+
+For the other V3 cores, the same rollback pattern applies — call
+`transferOwnershipOn` from the new AdminACL to point back to their original
+AdminACL:
+- Pace V3 → `0x4F68170A7b3C9B52780289ab2E50a5C26b08B09C`
+- Bright Moments → `0x4F68170A7b3C9B52780289ab2E50a5C26b08B09C`
+- Collabs → `0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82`
 
 ---
 
@@ -265,11 +377,18 @@ immediately regain full control of the V3 core through it.
 |---|---|---|---|---|---|
 | 1.1 | Deployer | — | Deploy GenArt721RoyaltyOverrideSplits(`0xCF00…A283`) | | **DONE** |
 | 1.2 | Deployer | — | Deploy AdminACLV0RoyaltyRegistry(`0xCF00…A283`) | | **DONE** |
-| 2.x | Owner (`0xCF00…A283`) | `0xF45a…70ff` | `setRoyaltyConfig(...)` per project | | |
-| 3.1 | V0 admin EOA | `0xaD21…5DBc` | `setRoyaltyLookupAddress(0x059E…3a, 0xF45a…70ff)` | YES | |
-| 3.2 | V1 admin EOA | `0xaD21…5DBc` | `setRoyaltyLookupAddress(0xa7d8…270, 0xF45a…70ff)` | YES | |
-| 4.2 | superAdmin (`0xCF00…A283`) | `0x18b1…c82` | `transferOwnershipOn(0x99a9…069, 0xa102…632)` | **YES** | |
-| 4.3 | superAdmin (`0xCF00…A283`) | `0xa102…632` | `setRoyaltyLookupAddressOn(0xaD21…5DBc, 0x99a9…069, 0xF45a…70ff)` | YES | |
+| 2.x | Owner (`0xCF00…A283`) | `0xF45a…70ff` | `setRoyaltyConfig(...)` × 490 projects | | |
+| 3.1 | V0 admin EOA | `0xaD21…5DBc` | `setRoyaltyLookupAddress(V0, shim)` | YES | |
+| 3.2 | V1 admin EOA | `0xaD21…5DBc` | `setRoyaltyLookupAddress(V1, shim)` | YES | |
+| 3.3 | AB multisig EOA | `0xaD21…5DBc` | `setRoyaltyLookupAddress(Pace, shim)` | YES | |
+| 4.2a | superAdmin | `0x18b1…c82` | `transferOwnershipOn(V3 Flagship, 0xa102…632)` | **YES** | |
+| 4.2b | superAdmin | `0x4F68…B09C` | `transferOwnershipOn(Pace V3, 0xa102…632)` | **YES** | |
+| 4.2c | superAdmin | `0x4F68…B09C` | `transferOwnershipOn(Bright Moments, 0xa102…632)` | **YES** | |
+| 4.2d | superAdmin | `0x18b1…c82` | `transferOwnershipOn(Collabs, 0xa102…632)` | **YES** | |
+| 4.3a | superAdmin | `0xa102…632` | `setRoyaltyLookupAddressOn(registry, V3 Flagship, shim)` | YES | |
+| 4.3b | superAdmin | `0xa102…632` | `setRoyaltyLookupAddressOn(registry, Pace V3, shim)` | YES | |
+| 4.3c | superAdmin | `0xa102…632` | `setRoyaltyLookupAddressOn(registry, Bright Moments, shim)` | YES | |
+| 4.3d | superAdmin | `0xa102…632` | `setRoyaltyLookupAddressOn(registry, Collabs, shim)` | YES | |
 
 ---
 
