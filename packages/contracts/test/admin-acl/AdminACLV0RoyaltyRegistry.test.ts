@@ -121,7 +121,9 @@ describe("AdminACLV0RoyaltyRegistry", async function () {
       const dummyFactory = await ethers.getContractFactory(
         "AdminACLV0RoyaltyRegistry"
       );
-      const dummy = await dummyFactory.connect(deployer).deploy(deployer.address);
+      const dummy = await dummyFactory
+        .connect(deployer)
+        .deploy(deployer.address);
 
       await expectRevert(
         adminACL
