@@ -264,15 +264,54 @@ immediately regain full control of the V3 core through it.
 
 ---
 
-## Testing Requirements (to be implemented)
+## Test Coverage (implemented)
 
-- [ ] Unit tests for `GenArt721RoyaltyOverrideSplits` (set/remove/get royalties)
-- [ ] Unit tests for `AdminACLV0RoyaltyRegistry` (all AdminACLV0 functions +
-      `setRoyaltyLookupAddressOn`)
-- [ ] Mainnet fork tests simulating the full migration sequence:
-  - Deploy new contracts
-  - Configure royalties
-  - Execute AdminACL migration for V3
-  - Execute Royalty Registry updates for all three cores
-  - Verify `getRoyalties` returns correct data for sample tokens
-  - Verify admin operations still work on V3 core after migration
+### Unit Tests
+
+- `test/royalty-registry/GenArt721RoyaltyOverrideSplits.test.ts` — 22 tests
+  - Deployment (owner, MAX_BPS)
+  - ERC165 interface support
+  - setRoyaltyConfig (access control, zero-address, BPS bounds, updates,
+    cross-contract independence)
+  - removeRoyaltyConfig (access control, state cleanup)
+  - getRoyalties (correct values, tokenId→projectId derivation, reverts on
+    unconfigured)
+  - royaltyConfigs view (introspection)
+
+- `test/admin-acl/AdminACLV0RoyaltyRegistry.test.ts` — 14 tests
+  - Deployment (superAdmin, AdminACLType)
+  - ERC165 interface support (IAdminACLV0, IERC165)
+  - allowed() (superAdmin vs non-superAdmin)
+  - changeSuperAdmin (access control, state, old admin revoked)
+  - transferOwnershipOn (access control, IAdminACLV0 ERC165 check)
+  - renounceOwnershipOn (access control)
+  - setRoyaltyLookupAddressOn (access control)
+
+### Mainnet Fork Tests
+
+- `test/royalty-registry/GenArt721RoyaltyOverrideSplits.fork.test.ts` — 5 tests
+
+  Forks mainnet at a pinned block and exercises the full migration against real
+  deployed contracts. Verifies:
+  - Pre-migration state (V0/V1 admin is EOA, V3 admin is AdminACLV1)
+  - Phase 1: Deploy new contracts on fork
+  - Phase 2: Configure royalty splitters, verify via view + getRoyalties
+  - Phase 3: V0/V1 admin EOA updates Royalty Registry lookup
+  - Phase 4: AdminACL migration (transferOwnershipOn) + Royalty Registry update
+    via new AdminACL's setRoyaltyLookupAddressOn
+  - Phase 5: All three cores point to new shim, getRoyalties returns correct data
+  - Reversibility: AdminACL ownership transferred back to original AdminACLV1,
+    then re-migrated forward (full round-trip verified)
+
+### Running Tests
+
+```bash
+# Unit tests only
+npx hardhat test test/royalty-registry/GenArt721RoyaltyOverrideSplits.test.ts test/admin-acl/AdminACLV0RoyaltyRegistry.test.ts
+
+# Fork tests (requires MAINNET_JSON_RPC_PROVIDER_URL in .env)
+npx hardhat test test/royalty-registry/GenArt721RoyaltyOverrideSplits.fork.test.ts
+
+# All tests
+npx hardhat test test/royalty-registry/ test/admin-acl/AdminACLV0RoyaltyRegistry.test.ts
+```
