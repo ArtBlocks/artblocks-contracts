@@ -27,4 +27,11 @@ export type DeployConfig = {
 //   },
 // ];
 
-export const deployConfigs: DeployConfig[] = [];
+export const deployConfigs: DeployConfig[] = [
+  {
+    contractName: "SRSimpleHooks",
+    args: [],
+    libraries: {},
+    chainIds: [11155111],
+  },
+];
