@@ -81,3 +81,16 @@ Canonical append-only deployment log.
 - **Timestamp:** 2026-04-02T16:29:17.994Z
 
 ---
+
+## SRSimpleHooks
+
+- **Chain:** Sepolia (11155111)
+- **Address:** [0xE474dDFd8B006577996c6B5658f3d6a3f6060706](https://sepolia.etherscan.io/address/0xE474dDFd8B006577996c6B5658f3d6a3f6060706)
+- **Salt:** `0x0000000000000000000000000000000000000000000000000000000000000000`
+- **TX:** [0x6b2363ba0c3f73859dacd9ed929654d79dcd46991ab2b11fc3ea2dfa0a274f05](https://sepolia.etherscan.io/tx/0x6b2363ba0c3f73859dacd9ed929654d79dcd46991ab2b11fc3ea2dfa0a274f05)
+- **Args:** `[]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x4e90ea6d100041ff9aaf5fd7619dc0b05028686635b716c17a9828c6382cadb2`
+- **Timestamp:** 2026-04-03T20:33:05.550Z
+
+---
