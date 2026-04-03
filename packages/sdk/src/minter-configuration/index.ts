@@ -80,10 +80,22 @@ export async function generateProjectMinterConfigurationForms(
     );
   }
 
+  const walletAddress =
+    clientContext.walletClient?.account?.address?.toLowerCase();
+
+  const userIsArtist = walletAddress === project.artist_address?.toLowerCase();
+
+  const userIsAllowlisted = walletAddress
+    ? project.contract.allowlisted_users?.some(
+        (u: { user_address: string }) =>
+          u.user_address?.toLowerCase() === walletAddress
+      ) ?? false
+    : false;
+
   const allowedPrivilegedRolesForProject = getAllowedPrivilegedRoles(
-    clientContext.userIsStaff,
-    project.contract.user_is_allowlisted ?? false,
-    project.user_is_artist ?? false
+    clientContext.authContext?.userIsStaff ?? false,
+    userIsAllowlisted,
+    userIsArtist
   );
 
   const { chainId: _, ...argsWithoutChainId } = args;

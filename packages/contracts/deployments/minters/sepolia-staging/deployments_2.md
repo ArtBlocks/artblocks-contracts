@@ -12,5 +12,24 @@ const inputs: T_Inputs = {
   network: "sepolia",
   contractName: "MinterSlidingScaleV0",
   args: ["0xa07f47c30C262adcC263A4D44595972c50e04db7"],
+  libraries: {},
+};
+```
+
+## 2026-02-26
+
+### MinterSetPriceOnChainAllowV0
+
+Deployed via git-init-code.ts + keyless create2 factory
+
+Deployment Config:
+
+```
+const inputs: T_Inputs = {
+  address: "0xE0Ea98c50C415e92106AF95490B69286BBa1cfE1",
+  network: "sepolia",
+  contractName: "MinterSetPriceOnChainAllowV0",
+  args: ["0xa07f47c30C262adcC263A4D44595972c50e04db7"],
+  libraries: {},
 };
 ```

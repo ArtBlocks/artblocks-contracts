@@ -12,7 +12,12 @@ import { Logger } from "@ethersproject/logger";
 Logger.setLogLevel(Logger.levels.ERROR);
 
 // delay to avoid issues with reorgs and tx failures
-import { delay, getConfigInputs, getNetworkName } from "../../util/utils";
+import {
+  delay,
+  getConfigInputs,
+  getNetworkName,
+  getChainId,
+} from "../../util/utils";
 import { EXTRA_DELAY_BETWEEN_TX } from "../../util/constants";
 import { syncContractMetadataAfterDeploy } from "../../util/graphql-utils";
 import { createEngineBucket } from "../../util/aws_s3";
@@ -41,6 +46,7 @@ async function main() {
   // get accounts and network
   const [deployer] = await ethers.getSigners();
   const networkName = await getNetworkName();
+  const chainId = await getChainId();
   const outputSummaryFile = path.join(inputFileDirectory, "DEPLOYMENTS.md");
   const etherscanSubdomain = networkName === "mainnet" ? "" : `${networkName}.`;
 
@@ -211,6 +217,7 @@ async function main() {
         engineContractAddress,
         tokenName,
         bucketName,
+        chainId,
         defaultVerticalName
       );
       // log deployment info

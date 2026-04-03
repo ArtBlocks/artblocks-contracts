@@ -31,8 +31,6 @@ if (process.argv.length == 2) {
 // ----- API KEYS -----
 
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "";
-const ARBISCAN_API_KEY = process.env.ARBISCAN_API_KEY || "";
-const BASESCAN_API_KEY = process.env.BASESCAN_API_KEY || "";
 
 // @dev load environment variables, falling back to defaults if not set to
 // enable running tests without a populated .env file
@@ -40,28 +38,16 @@ const MAINNET_JSON_RPC_PROVIDER_URL =
   process.env.MAINNET_JSON_RPC_PROVIDER_URL || "";
 const SEPOLIA_JSON_RPC_PROVIDER_URL =
   process.env.SEPOLIA_JSON_RPC_PROVIDER_URL || "";
-const GOERLI_JSON_RPC_PROVIDER_URL =
-  process.env.GOERLI_JSON_RPC_PROVIDER_URL || "";
 
 // L2 Configuration
 const ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL =
   process.env.ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL || "";
-const ARBITRUM_SEPOLIA_JSON_RPC_PROVIDER_URL =
-  process.env.ARBITRUM_SEPOLIA_JSON_RPC_PROVIDER_URL || "";
-const ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL =
-  process.env.ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL || "";
 
 const BASE_MAINNET_JSON_RPC_PROVIDER_URL =
   process.env.BASE_MAINNET_JSON_RPC_PROVIDER_URL || "";
 
 const HOODI_JSON_RPC_PROVIDER_URL =
   process.env.HOODI_JSON_RPC_PROVIDER_URL || "";
-
-// Sidechain Configuration
-const PALM_MAINNET_JSON_RPC_PROVIDER_URL =
-  process.env.PALM_MAINNET_JSON_RPC_PROVIDER_URL || "";
-const PALM_TESTNET_JSON_RPC_PROVIDER_URL =
-  process.env.PALM_TESTNET_JSON_RPC_PROVIDER_URL || "";
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
@@ -93,27 +79,6 @@ module.exports = {
       gasMultiplier: 4.0,
       maxNominalGasPriceGwei: 400,
     },
-    goerli: {
-      url: GOERLI_JSON_RPC_PROVIDER_URL,
-      accounts: [`${PRIVATE_KEY}`],
-      gasPrice: "auto",
-      gasMultiplier: 10.0,
-      maxNominalGasPriceGwei: 200,
-    },
-    palm_mainnet: {
-      url: PALM_MAINNET_JSON_RPC_PROVIDER_URL,
-      accounts: [`${PRIVATE_KEY}`],
-      gasPrice: "auto",
-      gasMultiplier: 1.5,
-      maxNominalGasPriceGwei: 50,
-    },
-    palm_testnet: {
-      url: PALM_TESTNET_JSON_RPC_PROVIDER_URL,
-      accounts: [`${PRIVATE_KEY}`],
-      gasPrice: "auto",
-      gasMultiplier: 1.5,
-      maxNominalGasPriceGwei: 200,
-    },
     base: {
       url: BASE_MAINNET_JSON_RPC_PROVIDER_URL,
       accounts: [`${PRIVATE_KEY}`],
@@ -129,20 +94,6 @@ module.exports = {
       gasPrice: "auto",
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 50,
-    },
-    "arbitrum-sepolia": {
-      url: ARBITRUM_SEPOLIA_JSON_RPC_PROVIDER_URL,
-      accounts: [`${PRIVATE_KEY}`],
-      gasPrice: "auto",
-      gasMultiplier: 1.5,
-      maxNominalGasPriceGwei: 200,
-    },
-    "arbitrum-goerli": {
-      url: ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL,
-      accounts: [`${PRIVATE_KEY}`],
-      gasPrice: "auto",
-      gasMultiplier: 1.5,
-      maxNominalGasPriceGwei: 200,
     },
     hoodi: {
       url: HOODI_JSON_RPC_PROVIDER_URL,
@@ -166,14 +117,6 @@ module.exports = {
         urls: {
           apiURL: "https://api.etherscan.io/v2/api",
           browserURL: "https://sepolia.etherscan.io",
-        },
-      },
-      {
-        network: "arbitrum-sepolia",
-        chainId: 421614,
-        urls: {
-          apiURL: "https://api-sepolia.arbiscan.io/api",
-          browserURL: "https://sepolia.arbiscan.io",
         },
       },
       {

@@ -1,8 +1,11 @@
 import { setup, assign, enqueueActions, ActorRefFrom } from "xstate";
-import { ReceiptSettlementDataFragment } from "../../generated/graphql";
 import { receiptPollingMachine } from "./receipt-polling-machine";
-import { excessSettlementFundsClaimMachine } from "../excess-settlement-funds-claim-machine";
+import {
+  excessSettlementFundsClaimMachine,
+  ExcessSettlementFundsClaimMachineEvents,
+} from "../excess-settlement-funds-claim-machine";
 import { ArtBlocksClient } from "../..";
+import { ReceiptSettlementDataFragment } from "../../generated/graphql";
 
 /**
  * TODO
@@ -54,6 +57,38 @@ export const excessSettlementFundsManagerMachine = setup({
       artblocksClient: (_, params: { artblocksClient: ArtBlocksClient }) =>
         params.artblocksClient,
     }),
+    restartReceiptPollingMachine: enqueueActions(({ context, enqueue }) => {
+      const { artblocksClient, receiptPollingInterval } = context;
+      const profileId = artblocksClient.getProfileId();
+
+      enqueue.stopChild("receiptPollingMachine");
+
+      if (profileId === null) {
+        return;
+      }
+
+      enqueue.spawnChild("receiptPollingMachine", {
+        id: "receiptPollingMachine",
+        systemId: "receiptPollingMachine",
+        input: {
+          artblocksClient,
+          pollingInterval: receiptPollingInterval,
+          profileId,
+        },
+      });
+    }),
+    syncClaimMachinesWithArtblocksClient: enqueueActions(
+      ({ context }, params: { artblocksClient: ArtBlocksClient }) => {
+        const { claimMachines = new Map() } = context;
+
+        claimMachines.forEach((claimMachine) => {
+          claimMachine.send({
+            type: "ART_BLOCKS_CLIENT_UPDATED",
+            artblocksClient: params.artblocksClient,
+          } as ExcessSettlementFundsClaimMachineEvents);
+        });
+      }
+    ),
   },
   guards: {
     hasClaimableExcessSettlementFunds: (
@@ -62,23 +97,23 @@ export const excessSettlementFundsManagerMachine = setup({
     ) => {
       return receipts.length > 0;
     },
-    walletClientAvailable: (
+    authenticatedUserAvailable: (
       _,
       { artblocksClient }: { artblocksClient: ArtBlocksClient }
     ) => {
-      return Boolean(artblocksClient.getWalletClient());
+      return artblocksClient.hasAuthenticatedUser();
     },
-    walletClientUnavailable: (
+    authenticatedUserUnavailable: (
       _,
       { artblocksClient }: { artblocksClient: ArtBlocksClient }
     ) => {
-      return !artblocksClient.getWalletClient();
+      return !artblocksClient.hasAuthenticatedUser();
     },
   },
 }).createMachine({
   /** @xstate-layout N4IgpgJg5mDOIC5RgB4GM6wMpgC64BswBbMAO1wDEBXMiWAWQEMymYAnZtACwEsywAYgCiADQDCwrFgD6WYQBUFAGWENhAOQUzKAVQ0ARWeOUBBAJLqDAbQAMAXUSgADgHtYvXL1dknIFIgAjLYArCEAdADsAGwATJG2ACwAnGGx0RkANCAAnogAtADMtsnhsclxKcm2kQAcIYWFiQC+zdmoGLDYeIQk5FS09MysHFx8AuFMaGiutLi6rABuTLwETABGRIKmAEraAELKAPLiANLGyuaa2roACgamCsI2Dn5uHl4+fgEI+anhiRC8RiiUS0Sa0VsgWyeV+-xSkWCTUKwVstRKrXa6EwOHwRFIFBodEYLDYYE4U3GYEm01mFAWTGWqw2W12B2OZwuVy0MjuDyeNkCjiQIHenm8vhFP3y0USAMKiIaiUK6QasViMKCtli4UCgVioXRsRVyXKkUx4GxXVxvQJA2JwzJFJ4-GpBF4sFw5H4UEornYOzAGF4zlwsG2exkhxO5xkJm5N3uj2edmFLnc4q+UsQtT1ANqtUKDSatjRhVqmrhtQBIWCyuiFVs0UihQtHRxPXx-SJQ1Jo0prvC7s93rIvv9geDofDO2EknMtwUskoinEAAkU68RWLPpLQD8whFarEQrKDSiSnrKy2yqfooEG4DC7Fla02iAyK4IHA-O3rZ2+kJQYSRGckxldN4M13b4CgVWxdUKaJj3iRICzLSt8kCepwlSOsGmPEI0ViNsrW6PFAPtXtQOdKkaRmOYGSZNZNjASCPglGDfhVHVAkQ5DIlQ9FC0rRpAnCWpZUiMIMmiU8sJIzoyNtbtgMdfsXQmYcvTIH0-QDIMwBDMM2MzPd-EQFJqwEpDTWKSIW2NSIMIqcJtVCeJkiNWoKmiN9miAA */
   id: "excessSettlementFundsManagerMachine",
-  initial: "accountUnavailable",
+  initial: "checkingSession",
   context: ({ input }) => ({
     artblocksClient: input.artblocksClient,
     receiptPollingInterval:
@@ -100,13 +135,29 @@ export const excessSettlementFundsManagerMachine = setup({
     },
   },
   states: {
-    accountUnavailable: {
+    checkingSession: {
+      always: [
+        {
+          target: "listeningForReceipts",
+          guard: {
+            type: "authenticatedUserAvailable",
+            params: ({ context }) => ({
+              artblocksClient: context.artblocksClient,
+            }),
+          },
+        },
+        {
+          target: "sessionUnavailable",
+        },
+      ],
+    },
+    sessionUnavailable: {
       on: {
         ART_BLOCKS_CLIENT_UPDATED: [
           {
             target: "listeningForReceipts",
             guard: {
-              type: "walletClientAvailable",
+              type: "authenticatedUserAvailable",
               params: ({ event }) => ({
                 artblocksClient: event.artblocksClient,
               }),
@@ -132,10 +183,9 @@ export const excessSettlementFundsManagerMachine = setup({
     listeningForReceipts: {
       entry: enqueueActions(({ context, enqueue }) => {
         const { artblocksClient, receiptPollingInterval } = context;
+        const profileId = artblocksClient.getProfileId();
 
-        const walletClient = artblocksClient.getWalletClient();
-
-        if (!walletClient || !artblocksClient.context.publicClientResolver) {
+        if (profileId === null) {
           return;
         }
 
@@ -145,18 +195,12 @@ export const excessSettlementFundsManagerMachine = setup({
           input: {
             artblocksClient,
             pollingInterval: receiptPollingInterval,
+            profileId,
           },
         });
       }),
       on: {
         ART_BLOCKS_CLIENT_UPDATED: {
-          target: "accountUnavailable",
-          guard: {
-            type: "walletClientUnavailable",
-            params: ({ event }) => ({
-              artblocksClient: event.artblocksClient,
-            }),
-          },
           actions: [
             {
               type: "assignArtblocksClient",
@@ -164,21 +208,15 @@ export const excessSettlementFundsManagerMachine = setup({
                 artblocksClient: event.artblocksClient,
               }),
             },
-            enqueueActions(({ context, enqueue }) => {
-              enqueue.stopChild("receiptPollingMachine");
-
-              const {
-                claimMachines = new Map<
-                  string,
-                  ActorRefFrom<typeof excessSettlementFundsClaimMachine>
-                >(),
-              } = context;
-              claimMachines.forEach((_, id) => {
-                enqueue.stopChild(id);
-              });
-
-              enqueue.assign({ claimMachines: new Map() });
-            }),
+            {
+              type: "syncClaimMachinesWithArtblocksClient",
+              params: ({ event }) => ({
+                artblocksClient: event.artblocksClient,
+              }),
+            },
+            {
+              type: "restartReceiptPollingMachine",
+            },
           ],
         },
         RECEIPTS_FETCHED: [
@@ -191,19 +229,7 @@ export const excessSettlementFundsManagerMachine = setup({
                 >(),
                 artblocksClient,
               } = context;
-              const walletClient = artblocksClient.getWalletClient();
-
               const updatedClaimMachines = new Map(claimMachines);
-
-              if (
-                !artblocksClient.context.publicClientResolver ||
-                !walletClient
-              ) {
-                enqueue.assign({
-                  claimMachines: updatedClaimMachines,
-                });
-                return;
-              }
 
               const receipts = event.receipts;
 
@@ -217,7 +243,13 @@ export const excessSettlementFundsManagerMachine = setup({
               // to the parent machine when it is done, so we can remove it.
               claimMachines.forEach((claimMachine, id) => {
                 const snapshot = claimMachine.getSnapshot();
-                if (!receiptsMap.has(id) && snapshot.matches("idle")) {
+                if (
+                  !receiptsMap.has(id) &&
+                  (snapshot.matches("idle") ||
+                    snapshot.matches("wrongWallet") ||
+                    snapshot.matches("wrongChain") ||
+                    snapshot.matches("walletUnavailable"))
+                ) {
                   enqueue.stopChild(id);
                   updatedClaimMachines.delete(id);
                 }
@@ -249,6 +281,30 @@ export const excessSettlementFundsManagerMachine = setup({
             }),
           },
         ],
+      },
+      always: {
+        target: "sessionUnavailable",
+        guard: {
+          type: "authenticatedUserUnavailable",
+          params: ({ context }) => ({
+            artblocksClient: context.artblocksClient,
+          }),
+        },
+        actions: enqueueActions(({ context, enqueue }) => {
+          enqueue.stopChild("receiptPollingMachine");
+
+          const {
+            claimMachines = new Map<
+              string,
+              ActorRefFrom<typeof excessSettlementFundsClaimMachine>
+            >(),
+          } = context;
+          claimMachines.forEach((_, id) => {
+            enqueue.stopChild(id);
+          });
+
+          enqueue.assign({ claimMachines: new Map() });
+        }),
       },
     },
   },

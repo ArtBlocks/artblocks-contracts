@@ -28,6 +28,19 @@ type MintTransactionConfig = {
   numMints: number;
 };
 
+type RecipientConfig =
+  | {
+      /** Use explicit addresses. Each mint randomly picks from this pool. */
+      mode: "addresses";
+      addresses: string[];
+    }
+  | {
+      /** Generate N unique wallets. Mints are assigned pseudorandomly to one of each.
+       *  Note: Private keys are not persisted; add key export if you need to access tokens. */
+      mode: "unique";
+      count: number;
+    };
+
 type InputConfig = {
   /** The deployed MintMulticallUtil contract address */
   mintMulticallUtilAddress: string;
@@ -42,11 +55,16 @@ type InputConfig = {
   /** Maximum gas price in Gwei. Transactions will not be sent if the
    *  current gas price exceeds this value. */
   maxGasPriceGwei: number;
-  /** Array of recipient addresses. For each mint, an address is randomly
-   *  selected from this pool. */
-  recipientAddresses: string[];
+  /** Recipient config: either explicit addresses or N unique generated wallets. */
+  recipients: RecipientConfig;
   /** Array of transaction configs. Each entry produces one on-chain tx. */
   transactions: MintTransactionConfig[];
+  /** Delay in milliseconds between sending each transaction (default: 5000). */
+  delayBetweenTxMs?: number;
+};
+const recipients: RecipientConfig = {
+  mode: "unique",
+  count: 100,
 };
 
 // FILL THIS OUT
@@ -57,16 +75,30 @@ const INPUT_CONFIG: InputConfig = {
   projectId: 100,
   pricePerTokenEth: "0.0",
   maxGasPriceGwei: 0.1,
-  recipientAddresses: [
-    "0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4",
-    "0xAbaBab074cbD610f70A0809b6c4BA8852d7B93Da",
+  // Option A: explicit addresses (randomly picks from pool per mint)
+  recipients: recipients,
+  // Option B: generate N unique wallets (mints assigned pseudorandomly)
+  // recipients: { mode: "unique", count: 100 },
+  transactions: [
+    { numMints: 500 },
+    { numMints: 500 },
+    { numMints: 500 },
+    { numMints: 500 },
+    { numMints: 500 },
+    { numMints: 500 },
+    { numMints: 500 },
+    { numMints: 500 },
+    { numMints: 500 },
+    { numMints: 500 },
   ],
-  transactions: [{ numMints: 3 }, { numMints: 2 }],
+  delayBetweenTxMs: 5_000,
 };
 
 // =============================================================================
 // ABI - minimal ABI for MintMulticallUtil.purchaseToMulti
 // =============================================================================
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const MINT_MULTICALL_UTIL_ABI = [
   "function purchaseToMulti(address minter, uint256 numMints, address[] calldata toAddresses, uint256 projectId, address coreContract) external payable",
@@ -77,7 +109,23 @@ const MINT_MULTICALL_UTIL_ABI = [
 // =============================================================================
 
 /**
- * Randomly selects `count` addresses from the pool (with replacement).
+ * Resolves recipient config into a pool of addresses.
+ * - addresses: returns the provided array
+ * - unique: generates N fresh wallets and returns their addresses
+ */
+function resolveRecipientPool(config: RecipientConfig): string[] {
+  if (config.mode === "addresses") {
+    return config.addresses;
+  }
+  // Generate N unique wallets (addresses only; private keys are discarded)
+  return Array.from(
+    { length: config.count },
+    () => ethers.Wallet.createRandom().address
+  );
+}
+
+/**
+ * Pseudorandomly selects `count` addresses from the pool (with replacement).
  */
 function buildRandomRecipientArray(pool: string[], count: number): string[] {
   const result: string[] = [];
@@ -92,9 +140,6 @@ async function main() {
   // ---- Validate config ----
   const config = INPUT_CONFIG;
 
-  if (config.recipientAddresses.length === 0) {
-    throw new Error("recipientAddresses must not be empty");
-  }
   if (config.transactions.length === 0) {
     throw new Error("transactions must not be empty");
   }
@@ -103,6 +148,24 @@ async function main() {
       throw new Error("Each transaction must have numMints > 0");
     }
   }
+  if (
+    config.recipients.mode === "addresses" &&
+    config.recipients.addresses.length === 0
+  ) {
+    throw new Error(
+      "recipients.addresses must not be empty when mode is 'addresses'"
+    );
+  }
+  if (config.recipients.mode === "unique" && config.recipients.count <= 0) {
+    throw new Error("recipients.count must be > 0 when mode is 'unique'");
+  }
+
+  // ---- Resolve recipient pool ----
+  const recipientPool = resolveRecipientPool(config.recipients);
+  const poolDescription =
+    config.recipients.mode === "addresses"
+      ? `${recipientPool.length} addresses`
+      : `${recipientPool.length} unique generated wallets`;
 
   // ---- Setup signer & provider ----
   const [signer] = await ethers.getSigners();
@@ -188,12 +251,11 @@ async function main() {
   console.log(`Total mints: ${totalMints}`);
   console.log(`Price per token: ${config.pricePerTokenEth} ETH`);
   console.log(`Total ETH required: ${ethers.utils.formatEther(totalEth)} ETH`);
-  console.log(
-    `Recipient pool size: ${config.recipientAddresses.length} addresses`
-  );
+  console.log(`Recipient pool: ${poolDescription}`);
   console.log(
     `Gas price (L2 base fee): ${ethers.utils.formatUnits(gasPrice, "gwei")} Gwei`
   );
+  console.log(`Delay between txs: ${config.delayBetweenTxMs ?? 5_000}ms`);
   console.log("------------------------\n");
 
   // ---- Check balance ----
@@ -214,10 +276,7 @@ async function main() {
     const { numMints } = txConfig;
 
     // Build random recipient array for this tx
-    const toAddresses = buildRandomRecipientArray(
-      config.recipientAddresses,
-      numMints
-    );
+    const toAddresses = buildRandomRecipientArray(recipientPool, numMints);
 
     // Calculate total value for this tx
     const txValue = pricePerToken.mul(numMints);
@@ -279,6 +338,12 @@ async function main() {
     console.log(`  tx hash: ${txResponse.hash}`);
 
     nonce++;
+
+    const delayMs = config.delayBetweenTxMs ?? 5_000;
+    if (delayMs > 0 && i < config.transactions.length - 1) {
+      console.log(`  waiting ${delayMs}ms before next transaction...`);
+      await sleep(delayMs);
+    }
   }
 
   // ---- Wait for all transactions to be mined ----

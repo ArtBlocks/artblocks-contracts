@@ -18,7 +18,10 @@ export function generateTransformProjectMinterConfigurationFormValuesArgs(
       graphqlClient: {
         request: jest.fn(),
       } as unknown as GraphQLClient,
-      userIsStaff: false,
+      authContext: {
+        profileId: null,
+        userIsStaff: false,
+      },
       publicClientResolver: mockPublicClientResolver,
     },
     projectId: "fake-project-id",

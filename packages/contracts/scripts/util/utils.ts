@@ -1,9 +1,22 @@
-import prompt from "prompt";
 import fs from "fs";
 import path from "path";
+import * as readline from "readline";
 import { ProductClassEnum } from "./constants";
-var util = require("util");
 import { ethers } from "hardhat";
+
+/**
+ * Top-level directories under the contracts package root that clutter
+ * autocomplete and are never deployment-config parents.
+ */
+const PATH_COMPLETE_IGNORE_AT_ROOT = new Set([
+  "node_modules",
+  "artifacts",
+  "cache",
+  "coverage",
+  "typechain-types",
+  "dist",
+  "build",
+]);
 
 export function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -98,6 +111,117 @@ export type DeployConfigDetails = {
   requiredSplitBPS?: number;
 };
 
+/**
+ * Tab-complete paths relative to `baseDir` (typically the contracts package root).
+ * Uses Node readline so Tab works in the terminal like a shell.
+ */
+function createDeploymentConfigPathCompleter(baseDir: string) {
+  return (line: string): readline.CompleterResult => {
+    const trimmed = line;
+
+    let absSearchDir: string;
+    let displayPrefix: string;
+    let partialName: string;
+
+    if (!trimmed) {
+      absSearchDir = baseDir;
+      displayPrefix = "";
+      partialName = "";
+    } else {
+      const lastSlash = trimmed.lastIndexOf("/");
+      if (lastSlash === -1) {
+        absSearchDir = baseDir;
+        displayPrefix = "";
+        partialName = trimmed;
+      } else {
+        const relDir = trimmed.slice(0, lastSlash);
+        partialName = trimmed.slice(lastSlash + 1);
+        absSearchDir = path.resolve(baseDir, relDir);
+        displayPrefix = trimmed.slice(0, lastSlash + 1);
+      }
+    }
+
+    let entries: fs.Dirent[];
+    try {
+      const st = fs.statSync(absSearchDir);
+      if (!st.isDirectory()) {
+        return [[], line];
+      }
+      entries = fs.readdirSync(absSearchDir, { withFileTypes: true });
+    } catch {
+      return [[], line];
+    }
+
+    const atPackageRoot = path.resolve(absSearchDir) === path.resolve(baseDir);
+
+    const matches = entries
+      .filter((e) => {
+        if (e.name.startsWith(".")) {
+          return false;
+        }
+        if (atPackageRoot && PATH_COMPLETE_IGNORE_AT_ROOT.has(e.name)) {
+          return false;
+        }
+        if (partialName === "") {
+          return true;
+        }
+        return e.name.startsWith(partialName);
+      })
+      .map((e) => {
+        const rel = displayPrefix === "" ? e.name : `${displayPrefix}${e.name}`;
+        return e.isDirectory() ? `${rel}/` : rel;
+      })
+      .sort();
+
+    return [matches.length ? matches : [], line];
+  };
+}
+
+function promptDeploymentConfigPath(
+  label: string,
+  baseDir: string
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      completer: createDeploymentConfigPathCompleter(baseDir),
+      terminal: process.stdin.isTTY,
+    });
+
+    let finished = false;
+
+    const onSigInt = () => {
+      process.removeListener("SIGINT", onSigInt);
+      finished = true;
+      rl.close();
+      reject(new Error("Config path prompt aborted (SIGINT)"));
+    };
+    process.once("SIGINT", onSigInt);
+
+    rl.setPrompt(`${label}: `);
+    rl.prompt();
+
+    rl.on("line", (answer) => {
+      finished = true;
+      process.removeListener("SIGINT", onSigInt);
+      rl.close();
+      resolve(answer.trim());
+    });
+
+    rl.on("close", () => {
+      if (!finished) {
+        process.removeListener("SIGINT", onSigInt);
+        reject(
+          new Error(
+            "Config path prompt closed before a path was entered (empty stdin or EOF)"
+          )
+        );
+      }
+    });
+  });
+}
+
 export async function getConfigInputs(
   exampleConfigPath: string,
   promptMessage: string
@@ -109,14 +233,22 @@ export async function getConfigInputs(
 }> {
   // get repo's root directory absolute path
   const appPath = await getAppPath();
+  if (!appPath) {
+    throw new Error(
+      "[ERROR] Could not resolve package root directory for config path resolution"
+    );
+  }
   console.log(appPath);
   console.log(
     `[INFO] example deployment config file is:\n\n${exampleConfigPath}\n`
   );
-  prompt.start();
-  const deploymentConfigFile = (
-    await prompt.get<{ from: string }>([promptMessage])
-  )[promptMessage];
+  console.log(
+    "[INFO] Tab completes paths relative to the directory printed above."
+  );
+  const deploymentConfigFile = await promptDeploymentConfigPath(
+    promptMessage,
+    appPath
+  );
   // dynamically import input deployment configuration detailsf
   console.log("appPath", appPath);
   console.log("deploymentConfigFile", deploymentConfigFile);
@@ -161,10 +293,6 @@ export async function getNetworkName() {
   let networkName = network.name;
   if (networkName === "homestead") {
     networkName = "mainnet";
-  } else if (networkName === "unknown" && network.chainId === 421614) {
-    // The arbitrum-sepolia rpc currently only returns a chainId
-    // for arbitrum-sepolia so we need to manually set the name here
-    networkName = "arbitrum-sepolia";
   } else if (networkName === "unknown" && network.chainId === 8453) {
     // base rpc doesn't return name, so handle unknown + chainId
     networkName = "base";
@@ -173,6 +301,11 @@ export async function getNetworkName() {
   }
 
   return networkName;
+}
+
+export async function getChainId(): Promise<number> {
+  const network = await ethers.provider.getNetwork();
+  return network.chainId;
 }
 
 export function chunkArray<T>(array: T[], chunkSize: number): T[][] {
