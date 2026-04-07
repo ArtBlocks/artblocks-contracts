@@ -81,3 +81,16 @@ Canonical append-only deployment log.
 - **Timestamp:** 2026-04-02T16:29:17.994Z
 
 ---
+
+## SeaDropXArtBlocksShim
+
+- **Chain:** Ethereum Mainnet (1)
+- **Address:** [0x0F4007A244aA34796F44CA013bE906aeb1058b70](https://etherscan.io/address/0x0F4007A244aA34796F44CA013bE906aeb1058b70)
+- **Salt:** `0x0000000000000000000000000000000000000000000000000000000000000000`
+- **TX:** [0xa04d50caa51d9a43e84e76363ddfb0e6f3faae556bbd292d1411fdfdfce7aa5a](https://etherscan.io/tx/0xa04d50caa51d9a43e84e76363ddfb0e6f3faae556bbd292d1411fdfdfce7aa5a)
+- **Args:** `["0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b","0x00005EA00Ac477B1030CE78506496e8C2dE24bf5","0x000000DC68934eD27Fd11E32491cdF6717ACAF21",1]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xf101ac9e509d863aa63e39f9471283f49e09d3fca48e956fa945924b844ca4b4`
+- **Timestamp:** 2026-04-07T16:05:32.866Z
+
+---
