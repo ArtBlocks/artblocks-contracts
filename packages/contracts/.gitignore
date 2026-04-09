@@ -49,6 +49,9 @@ scripts/contracts
 # Any local dev scripts
 scripts/.local/
 
+# CREATE2 deployer temp files
+.create2-deploy-tmp/
+
 # any local constructor args
 constructor-args.js
 

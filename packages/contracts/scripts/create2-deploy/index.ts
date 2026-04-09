@@ -51,6 +51,10 @@ const CHAIN_CONFIG: Record<
 type CompiledConfig = DeployConfig & {
   initcode: string;
   initcodeHash: string;
+  proxyInitcode?: string;
+  proxyInitcodeHash?: string;
+  implAddress?: string;
+  proxyArgs?: any[];
 };
 
 type VerifyJob = {
@@ -60,6 +64,7 @@ type VerifyJob = {
   args: any[];
   libraries: Record<string, string>;
   chainId: number;
+  contract?: string;
   status: "queued" | "running" | "success" | "failed";
   output: string;
 };
@@ -77,6 +82,7 @@ function queueVerification(params: {
   args: any[];
   libraries: Record<string, string>;
   chainId: number;
+  contract?: string;
 }): string {
   const id = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   verifyJobs.push({ ...params, id, status: "queued", output: "" });
@@ -111,6 +117,7 @@ function processNextVerification() {
       address: job.address,
       args: job.args,
       libraries: job.libraries,
+      contract: job.contract,
     })
   );
 
@@ -353,10 +360,49 @@ async function main() {
     const deployTx = factory.getDeployTransaction(...config.args);
     const initcode = deployTx.data?.toString() as string;
     const initcodeHash = hre.ethers.utils.keccak256(initcode);
-    compiled.push({ ...config, initcode, initcodeHash });
-    console.log(`  ${config.contractName}`);
-    console.log(`    initcodeHash: ${initcodeHash}`);
-    console.log(`    chains: [${config.chainIds.join(", ")}]\n`);
+
+    const entry: CompiledConfig = { ...config, initcode, initcodeHash };
+
+    if (config.proxy) {
+      const implSalt = "0x" + "0".repeat(64);
+      const implAddress = hre.ethers.utils.getCreate2Address(
+        CREATE2_FACTORY,
+        implSalt,
+        initcodeHash
+      );
+
+      const initializeData = factory.interface.encodeFunctionData(
+        "initialize",
+        config.proxy.initializeArgs
+      );
+
+      const proxyFactory = await hre.ethers.getContractFactory(
+        "@openzeppelin-5.0/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+      );
+      const proxyDeployTx = proxyFactory.getDeployTransaction(
+        implAddress,
+        initializeData
+      );
+      const proxyInitcode = proxyDeployTx.data?.toString() as string;
+      const proxyInitcodeHash = hre.ethers.utils.keccak256(proxyInitcode);
+
+      entry.implAddress = implAddress;
+      entry.proxyInitcode = proxyInitcode;
+      entry.proxyInitcodeHash = proxyInitcodeHash;
+      entry.proxyArgs = [implAddress, initializeData];
+
+      console.log(`  ${config.contractName} (UUPS Proxy)`);
+      console.log(`    impl initcodeHash: ${initcodeHash}`);
+      console.log(`    impl address:      ${implAddress}`);
+      console.log(`    proxy initcodeHash: ${proxyInitcodeHash}`);
+      console.log(`    chains: [${config.chainIds.join(", ")}]\n`);
+    } else {
+      console.log(`  ${config.contractName}`);
+      console.log(`    initcodeHash: ${initcodeHash}`);
+      console.log(`    chains: [${config.chainIds.join(", ")}]\n`);
+    }
+
+    compiled.push(entry);
   }
 
   await startServer(compiled);
