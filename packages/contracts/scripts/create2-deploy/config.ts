@@ -3,11 +3,16 @@ export type DeployConfig = {
   args: any[];
   libraries: Record<string, string>;
   chainIds: number[];
+  /** When set, the contract is deployed as a UUPS implementation + ERC1967Proxy. */
+  proxy?: {
+    /** Arguments passed to the implementation's `initialize()` function. */
+    initializeArgs: any[];
+  };
 };
 
 // Edit this array with your deployment batch.
 //
-// Example:
+// Example (plain CREATE2):
 //
 // export const deployConfigs: DeployConfig[] = [
 //   {
@@ -16,14 +21,19 @@ export type DeployConfig = {
 //     libraries: {},
 //     chainIds: [11155111],
 //   },
+// ];
+//
+// Example (UUPS proxy pattern — deploys implementation + ERC1967Proxy):
+//
+// export const deployConfigs: DeployConfig[] = [
 //   {
-//     contractName: "GenArt721CoreV3_Engine",
+//     contractName: "SRSimpleHooks",
 //     args: [],
-//     libraries: {
-//       "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
-//         "0x000000000016A5A5ff2FA7799C4BEe89bA59B74e",
+//     libraries: {},
+//     chainIds: [11155111],
+//     proxy: {
+//       initializeArgs: ["0xOwnerAddress", "0xCoreContractAddress", 251],
 //     },
-//     chainIds: [1, 42161, 8453, 11155111],
 //   },
 // ];
 

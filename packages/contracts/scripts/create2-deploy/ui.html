@@ -75,6 +75,19 @@
       font-weight: 700;
       font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
     }
+    .card-hdr .badge {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 2px 7px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: #dbeafe;
+      color: #1e40af;
+      border-radius: 4px;
+      vertical-align: middle;
+    }
     .card-body { padding: 20px; }
 
     .info-grp { margin-bottom: 14px; }
@@ -122,6 +135,22 @@
     }
     .chain-row h3 { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
     .chain-row h3 span { color: #999; font-weight: 400; }
+
+    .step-section {
+      border: 1px solid #e8e8e8;
+      border-radius: 5px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      background: #fff;
+    }
+    .step-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #6366f1;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
 
     .field-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
     .field-row label {
@@ -225,6 +254,13 @@
           S.salts[k] = '0x' + '0'.repeat(64);
           S.deploy[k] = { status: 'pending' };
           S.verify[k] = { status: 'idle' };
+
+          if (cfg.proxyInitcode) {
+            const pk = pkey(ci, cid);
+            S.salts[pk] = '0x' + '0'.repeat(64);
+            S.deploy[pk] = { status: 'pending' };
+            S.verify[pk] = { status: 'idle' };
+          }
         });
       });
 
@@ -280,6 +316,7 @@
     /* ------------------------------------------------------------------ */
 
     function key(ci, cid) { return ci + '-' + cid; }
+    function pkey(ci, cid) { return 'p-' + ci + '-' + cid; }
 
     function normSalt(s) {
       let h = (s || '').trim();
@@ -315,8 +352,14 @@
 
     function copyInitcode(ci) { copyText(S.configs[ci].initcode, event.target); }
     function copyHash(ci) { copyText(S.configs[ci].initcodeHash, event.target); }
+    function copyProxyInitcode(ci) { copyText(S.configs[ci].proxyInitcode, event.target); }
+    function copyProxyHash(ci) { copyText(S.configs[ci].proxyInitcodeHash, event.target); }
     function copyAddr(ci, cid) {
       const addr = predictAddr(S.configs[ci].initcodeHash, S.salts[key(ci, cid)]);
+      if (addr) copyText(addr, event.target);
+    }
+    function copyProxyAddr(ci, cid) {
+      const addr = predictAddr(S.configs[ci].proxyInitcodeHash, S.salts[pkey(ci, cid)]);
       if (addr) copyText(addr, event.target);
     }
 
@@ -335,8 +378,19 @@
       }
     }
 
+    function onProxySaltChange(ci, cid, val) {
+      const pk = pkey(ci, cid);
+      S.salts[pk] = val;
+      const el = document.getElementById('addr-' + pk);
+      if (el) {
+        const addr = predictAddr(S.configs[ci].proxyInitcodeHash, val);
+        el.textContent = addr || 'Invalid salt';
+        el.style.color = addr ? '' : '#dc2626';
+      }
+    }
+
     /* ------------------------------------------------------------------ */
-    /* Deploy                                                              */
+    /* Deploy (shared logic)                                               */
     /* ------------------------------------------------------------------ */
 
     async function pollForReceipt(txHash, maxAttempts = 120, intervalMs = 5000) {
@@ -348,6 +402,22 @@
       }
       return null;
     }
+
+    async function switchChain(cid) {
+      const targetHex = '0x' + cid.toString(16);
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: targetHex }],
+      });
+      S.provider = new ethers.providers.Web3Provider(window.ethereum);
+      S.signer = S.provider.getSigner();
+      S.walletChain = cid;
+      renderWallet();
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Deploy — Implementation                                             */
+    /* ------------------------------------------------------------------ */
 
     function logDeployToServer(ci, cid, txHash, addr) {
       const cfg = S.configs[ci];
@@ -375,21 +445,8 @@
       if (!salt) { alert('Invalid salt'); return; }
       if (!S.signer) { alert('Connect wallet first.'); return; }
 
-      const targetHex = '0x' + cid.toString(16);
-      try {
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: targetHex }],
-        });
-      } catch (e) {
-        setDeploy(k, 'error', { error: 'Chain switch failed: ' + (e.message || e) });
-        return;
-      }
-
-      S.provider = new ethers.providers.Web3Provider(window.ethereum);
-      S.signer = S.provider.getSigner();
-      S.walletChain = cid;
-      renderWallet();
+      try { await switchChain(cid); }
+      catch (e) { setDeploy(k, 'error', { error: 'Chain switch failed: ' + (e.message || e) }); return; }
 
       setDeploy(k, 'sending');
 
@@ -419,13 +476,7 @@
       const ds = S.deploy[k];
       if (!ds || !ds.txHash) return;
 
-      const targetHex = '0x' + cid.toString(16);
-      try {
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: targetHex }],
-        });
-      } catch {}
+      try { await switchChain(cid); } catch {}
 
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const receipt = await provider.getTransactionReceipt(ds.txHash);
@@ -438,13 +489,97 @@
       }
     }
 
+    function markImplDeployed(ci, cid) {
+      const k = key(ci, cid);
+      const addr = predictAddr(S.configs[ci].initcodeHash, S.salts[k]);
+      setDeploy(k, 'deployed', { address: addr, txHash: '(pre-existing)', skipped: true });
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Deploy — Proxy                                                      */
+    /* ------------------------------------------------------------------ */
+
+    function logProxyDeployToServer(ci, cid, txHash, addr) {
+      const cfg = S.configs[ci];
+      const pk = pkey(ci, cid);
+      fetch('/api/log-deployment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contractName: cfg.contractName + ' (Proxy)',
+          address: addr,
+          chainId: cid,
+          salt: normSalt(S.salts[pk]),
+          txHash,
+          args: cfg.proxyArgs || [],
+          libraries: {},
+          initcodeHash: cfg.proxyInitcodeHash,
+        }),
+      }).catch(e => console.error('Failed to log proxy deployment', e));
+    }
+
+    async function doProxyDeploy(ci, cid) {
+      const pk = pkey(ci, cid);
+      const cfg = S.configs[ci];
+      const salt = normSalt(S.salts[pk]);
+      if (!salt) { alert('Invalid salt'); return; }
+      if (!S.signer) { alert('Connect wallet first.'); return; }
+
+      try { await switchChain(cid); }
+      catch (e) { setDeploy(pk, 'error', { error: 'Chain switch failed: ' + (e.message || e) }); return; }
+
+      setDeploy(pk, 'sending');
+
+      try {
+        const data = SAFE_CREATE2_IFACE.encodeFunctionData('safeCreate2', [salt, cfg.proxyInitcode]);
+        const tx = await S.signer.sendTransaction({ to: S.factory, data });
+        const addr = predictAddr(cfg.proxyInitcodeHash, S.salts[pk]);
+
+        setDeploy(pk, 'mining', { txHash: tx.hash, address: addr });
+
+        const receipt = await pollForReceipt(tx.hash);
+        if (!receipt) {
+          setDeploy(pk, 'mining', { txHash: tx.hash, address: addr,
+            stale: 'Polling timed out. Use Check TX to retry.' });
+          return;
+        }
+
+        setDeploy(pk, 'deployed', { txHash: tx.hash, address: addr });
+        logProxyDeployToServer(ci, cid, tx.hash, addr);
+      } catch (e) {
+        setDeploy(pk, 'error', { error: e.reason || e.message || 'Transaction failed' });
+      }
+    }
+
+    async function checkProxyTx(ci, cid) {
+      const pk = pkey(ci, cid);
+      const ds = S.deploy[pk];
+      if (!ds || !ds.txHash) return;
+
+      try { await switchChain(cid); } catch {}
+
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const receipt = await provider.getTransactionReceipt(ds.txHash);
+
+      if (receipt) {
+        setDeploy(pk, 'deployed', { txHash: ds.txHash, address: ds.address });
+        logProxyDeployToServer(ci, cid, ds.txHash, ds.address);
+      } else {
+        alert('Receipt not found yet — transaction may still be pending.');
+      }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Deploy state                                                        */
+    /* ------------------------------------------------------------------ */
+
     function setDeploy(k, status, extra) {
       S.deploy[k] = { status, ...(extra || {}) };
       render();
     }
 
-    function resetDeploy(ci, cid) {
-      S.deploy[key(ci, cid)] = { status: 'pending' };
+    function resetDeploy(k) {
+      S.deploy[k] = { status: 'pending' };
       render();
     }
 
@@ -481,6 +616,36 @@
       }
     }
 
+    async function doProxyVerify(ci, cid) {
+      const pk = pkey(ci, cid);
+      const cfg = S.configs[ci];
+      const ds = S.deploy[pk];
+      if (!ds || ds.status !== 'deployed') return;
+
+      S.verify[pk] = { status: 'queued' };
+      render();
+
+      try {
+        const res = await fetch('/api/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contractName: 'ERC1967Proxy',
+            address: ds.address,
+            args: cfg.proxyArgs || [],
+            libraries: {},
+            chainId: cid,
+            contract: '@openzeppelin-5.0/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy',
+          }),
+        });
+        const data = await res.json();
+        S.verify[pk] = { status: 'queued', id: data.id };
+      } catch (e) {
+        S.verify[pk] = { status: 'failed', output: 'Request failed: ' + e.message };
+        render();
+      }
+    }
+
     async function pollVerify() {
       const hasActive = Object.values(S.verify).some(
         v => v.status === 'queued' || v.status === 'running'
@@ -504,6 +669,69 @@
     }
 
     /* ------------------------------------------------------------------ */
+    /* Render helpers                                                       */
+    /* ------------------------------------------------------------------ */
+
+    function renderDeployActions(stateKey, deployFn, checkFn, chain) {
+      const ds = S.deploy[stateKey] || { status: 'pending' };
+      const vs = S.verify[stateKey] || { status: 'idle' };
+      let h = '';
+
+      h += '<div class="actions">';
+      if (ds.status === 'pending') {
+        h += '<button class="btn btn-primary" onclick="' + deployFn + '">Deploy</button>';
+      } else if (ds.status === 'sending') {
+        h += '<span class="status s-pending">Sending transaction&hellip;</span>';
+      } else if (ds.status === 'mining') {
+        let link = ds.txHash.slice(0, 14) + '...';
+        if (chain.explorer) link = '<a href="' + chain.explorer + '/tx/' + ds.txHash + '" target="_blank">' + link + '</a>';
+        h += '<span class="status s-pending">Mining&hellip; ' + link + '</span>';
+        h += ' <button class="btn btn-sm" onclick="' + checkFn + '">Check TX</button>';
+        if (ds.stale) h += ' <span class="status s-err" style="font-size:12px">' + esc(ds.stale) + '</span>';
+      } else if (ds.status === 'deployed') {
+        if (ds.skipped) {
+          h += '<span class="status s-ok">Pre-existing &#10003;</span>';
+        } else {
+          let link = '';
+          if (chain.explorer) link = ' <a href="' + chain.explorer + '/tx/' + ds.txHash + '" target="_blank">tx</a>';
+          h += '<span class="status s-ok">Deployed &#10003;' + link + '</span>';
+        }
+      } else if (ds.status === 'error') {
+        h += '<span class="status s-err">' + esc(ds.error || 'Error') + '</span> ';
+        h += '<button class="btn btn-sm" onclick="resetDeploy(\'' + stateKey + '\')">Retry</button>';
+      }
+      h += '</div>';
+
+      return h;
+    }
+
+    function renderVerifyActions(stateKey, verifyFn) {
+      const ds = S.deploy[stateKey] || {};
+      const vs = S.verify[stateKey] || { status: 'idle' };
+      if (ds.status !== 'deployed' || ds.skipped) return '';
+
+      let h = '<div class="actions" style="margin-top:6px">';
+      if (vs.status === 'idle') {
+        h += '<button class="btn btn-green" onclick="' + verifyFn + '">Verify</button>';
+      } else if (vs.status === 'queued') {
+        h += '<span class="status s-pending">Queued&hellip;</span>';
+      } else if (vs.status === 'running') {
+        h += '<span class="status s-pending">Verifying&hellip;</span>';
+      } else if (vs.status === 'success') {
+        h += '<span class="status s-ok">Verified &#10003;</span>';
+      } else if (vs.status === 'failed') {
+        h += '<span class="status s-err">Verification failed</span> ';
+        h += '<button class="btn btn-sm" onclick="' + verifyFn + '">Retry</button>';
+      }
+      if (vs.output) {
+        h += ' <details><summary class="btn btn-sm">Log</summary>';
+        h += '<pre class="verify-out">' + esc(vs.output) + '</pre></details>';
+      }
+      h += '</div>';
+      return h;
+    }
+
+    /* ------------------------------------------------------------------ */
     /* Render                                                              */
     /* ------------------------------------------------------------------ */
 
@@ -522,7 +750,11 @@
 
       let h = '';
       S.configs.forEach((cfg, ci) => {
-        h += '<div class="contract-card"><div class="card-hdr"><h2>' + esc(cfg.contractName) + '</h2></div>';
+        const isProxy = !!cfg.proxyInitcode;
+
+        h += '<div class="contract-card"><div class="card-hdr"><h2>' + esc(cfg.contractName);
+        if (isProxy) h += '<span class="badge">UUPS Proxy</span>';
+        h += '</h2></div>';
         h += '<div class="card-body">';
 
         h += '<div class="info-grp"><label>Constructor Args</label><code>' + esc(JSON.stringify(cfg.args)) + '</code></div>';
@@ -531,26 +763,46 @@
           h += '<div class="info-grp"><label>Libraries</label><pre>' + esc(JSON.stringify(cfg.libraries, null, 2)) + '</pre></div>';
         }
 
-        h += '<div class="info-grp"><label>Initcode</label>';
-        h += '<div class="initcode-wrap"><textarea readonly>' + cfg.initcode + '</textarea>';
-        h += '<button class="btn btn-sm" onclick="copyInitcode(' + ci + ')">Copy</button></div></div>';
+        if (isProxy) {
+          h += '<div class="info-grp"><label>Implementation Address (all chains)</label><code>' + cfg.implAddress + '</code></div>';
+          h += '<div class="info-grp"><label>Initialize Args</label><code>' + esc(JSON.stringify(cfg.proxy.initializeArgs)) + '</code></div>';
+        }
 
+        h += '<details style="margin-bottom:14px"><summary style="font-size:12px;color:#888;cursor:pointer">';
+        h += isProxy ? 'Implementation Initcode' : 'Initcode';
+        h += '</summary>';
+        h += '<div class="info-grp" style="margin-top:8px"><div class="initcode-wrap"><textarea readonly>' + cfg.initcode + '</textarea>';
+        h += '<button class="btn btn-sm" onclick="copyInitcode(' + ci + ')">Copy</button></div></div>';
         h += '<div class="info-grp"><label>Initcode Hash</label><div class="hash-row">';
         h += '<code>' + cfg.initcodeHash + '</code>';
         h += '<button class="btn btn-sm" onclick="copyHash(' + ci + ')">Copy</button></div></div>';
+        h += '</details>';
+
+        if (isProxy) {
+          h += '<details style="margin-bottom:14px"><summary style="font-size:12px;color:#888;cursor:pointer">Proxy Initcode</summary>';
+          h += '<div class="info-grp" style="margin-top:8px"><div class="initcode-wrap"><textarea readonly>' + cfg.proxyInitcode + '</textarea>';
+          h += '<button class="btn btn-sm" onclick="copyProxyInitcode(' + ci + ')">Copy</button></div></div>';
+          h += '<div class="info-grp"><label>Proxy Initcode Hash</label><div class="hash-row">';
+          h += '<code>' + cfg.proxyInitcodeHash + '</code>';
+          h += '<button class="btn btn-sm" onclick="copyProxyHash(' + ci + ')">Copy</button></div></div>';
+          h += '</details>';
+        }
 
         h += '<div class="chains">';
         cfg.chainIds.forEach(cid => {
           const k = key(ci, cid);
+          const pk = pkey(ci, cid);
           const chain = S.chainConfig[cid] || { name: 'Chain ' + cid };
           const salt = S.salts[k];
           const addr = predictAddr(cfg.initcodeHash, salt);
           const ds = S.deploy[k] || { status: 'pending' };
-          const vs = S.verify[k] || { status: 'idle' };
           const locked = ds.status !== 'pending' && ds.status !== 'error';
 
           h += '<div class="chain-row">';
           h += '<h3>' + esc(chain.name) + ' <span>(' + cid + ')</span></h3>';
+
+          // --- Implementation section ---
+          if (isProxy) h += '<div class="step-section"><div class="step-label">Step 1 &mdash; Implementation</div>';
 
           h += '<div class="field-row"><label>Salt</label>';
           h += '<input class="salt-input" data-salt-key="' + k + '" value="' + esc(salt) + '"';
@@ -564,45 +816,42 @@
           h += '</code>';
           h += '<button class="btn btn-sm" onclick="copyAddr(' + ci + ',' + cid + ')">Copy</button></div>';
 
-          h += '<div class="actions">';
-          if (ds.status === 'pending') {
-            h += '<button class="btn btn-primary" onclick="doDeploy(' + ci + ',' + cid + ')">Deploy</button>';
-          } else if (ds.status === 'sending') {
-            h += '<span class="status s-pending">Sending transaction&hellip;</span>';
-          } else if (ds.status === 'mining') {
-            let link = ds.txHash.slice(0, 14) + '...';
-            if (chain.explorer) link = '<a href="' + chain.explorer + '/tx/' + ds.txHash + '" target="_blank">' + link + '</a>';
-            h += '<span class="status s-pending">Mining&hellip; ' + link + '</span>';
-            h += ' <button class="btn btn-sm" onclick="checkTx(' + ci + ',' + cid + ')">Check TX</button>';
-            if (ds.stale) h += ' <span class="status s-err" style="font-size:12px">' + esc(ds.stale) + '</span>';
-          } else if (ds.status === 'deployed') {
-            let link = '';
-            if (chain.explorer) link = ' <a href="' + chain.explorer + '/tx/' + ds.txHash + '" target="_blank">tx</a>';
-            h += '<span class="status s-ok">Deployed &#10003;' + link + '</span>';
-          } else if (ds.status === 'error') {
-            h += '<span class="status s-err">' + esc(ds.error || 'Error') + '</span> ';
-            h += '<button class="btn btn-sm" onclick="resetDeploy(' + ci + ',' + cid + ')">Retry</button>';
-          }
-          h += '</div>';
+          h += renderDeployActions(k, 'doDeploy(' + ci + ',' + cid + ')', 'checkTx(' + ci + ',' + cid + ')', chain);
 
-          if (ds.status === 'deployed') {
-            h += '<div class="actions" style="margin-top:6px">';
-            if (vs.status === 'idle') {
-              h += '<button class="btn btn-green" onclick="doVerify(' + ci + ',' + cid + ')">Verify</button>';
-            } else if (vs.status === 'queued') {
-              h += '<span class="status s-pending">Queued&hellip;</span>';
-            } else if (vs.status === 'running') {
-              h += '<span class="status s-pending">Verifying&hellip;</span>';
-            } else if (vs.status === 'success') {
-              h += '<span class="status s-ok">Verified &#10003;</span>';
-            } else if (vs.status === 'failed') {
-              h += '<span class="status s-err">Verification failed</span> ';
-              h += '<button class="btn btn-sm" onclick="doVerify(' + ci + ',' + cid + ')">Retry</button>';
-            }
-            if (vs.output) {
-              h += ' <details><summary class="btn btn-sm">Log</summary>';
-              h += '<pre class="verify-out">' + esc(vs.output) + '</pre></details>';
-            }
+          if (isProxy && ds.status === 'pending') {
+            h += '<div class="actions" style="margin-top:4px">';
+            h += '<button class="btn btn-sm" onclick="markImplDeployed(' + ci + ',' + cid + ')" style="color:#6366f1;border-color:#c7d2fe">';
+            h += 'Skip (already deployed)</button></div>';
+          }
+
+          h += renderVerifyActions(k, 'doVerify(' + ci + ',' + cid + ')');
+
+          if (isProxy) h += '</div>';
+
+          // --- Proxy section ---
+          if (isProxy) {
+            const proxySalt = S.salts[pk];
+            const proxyAddr = predictAddr(cfg.proxyInitcodeHash, proxySalt);
+            const pds = S.deploy[pk] || { status: 'pending' };
+            const pLocked = pds.status !== 'pending' && pds.status !== 'error';
+
+            h += '<div class="step-section" style="margin-top:8px"><div class="step-label">Step 2 &mdash; ERC1967 Proxy</div>';
+
+            h += '<div class="field-row"><label>Salt</label>';
+            h += '<input class="salt-input" data-salt-key="' + pk + '" value="' + esc(proxySalt) + '"';
+            h += ' oninput="onProxySaltChange(' + ci + ',' + cid + ',this.value)"';
+            if (pLocked) h += ' disabled';
+            h += '></div>';
+
+            h += '<div class="field-row"><label>Predicted Address</label>';
+            h += '<code id="addr-' + pk + '"' + (proxyAddr ? '' : ' style="color:#dc2626"') + '>';
+            h += proxyAddr || 'Invalid salt';
+            h += '</code>';
+            h += '<button class="btn btn-sm" onclick="copyProxyAddr(' + ci + ',' + cid + ')">Copy</button></div>';
+
+            h += renderDeployActions(pk, 'doProxyDeploy(' + ci + ',' + cid + ')', 'checkProxyTx(' + ci + ',' + cid + ')', chain);
+            h += renderVerifyActions(pk, 'doProxyVerify(' + ci + ',' + cid + ')');
+
             h += '</div>';
           }
 
