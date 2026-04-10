@@ -18,6 +18,10 @@ async function main() {
     verifyArgs.libraries = params.libraries;
   }
 
+  if (params.contract) {
+    verifyArgs.contract = params.contract;
+  }
+
   console.log(
     `Verifying ${params.contractName || "contract"} at ${params.address}...`
   );
