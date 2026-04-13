@@ -159,7 +159,7 @@ __metadata:
     prompt-sync: "npm:^4.2.0"
     readline-sync: "npm:^1.4.10"
     scripty.sol: "npm:2.1.1"
-    solady: "npm:^0.0.181"
+    solady: "npm:^0.1.26"
     solidity-coverage: "npm:^0.8.12"
     ts-node: "npm:^9.1.1"
     tsconfig: "npm:*"
@@ -21942,10 +21942,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"solady@npm:^0.0.181":
-  version: 0.0.181
-  resolution: "solady@npm:0.0.181"
-  checksum: 10c0/24eaaec07fa584af452e040c78a4123515ccf2f46704d56af867d029afda0d5b0e72337cba18c3e8888ba8733b18d116a9641f1a90750ca50bd72ede41ae26e0
+"solady@npm:^0.1.26":
+  version: 0.1.26
+  resolution: "solady@npm:0.1.26"
+  checksum: 10c0/b265a0600353f9076bcc184762007ec9b86254931132034152bf1882ead52413970dd535af667e8863c91e2ef996fc670892d8d9ded23c58ca0142eea8ae57a9
   languageName: node
   linkType: hard
 
