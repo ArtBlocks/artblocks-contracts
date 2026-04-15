@@ -94,3 +94,55 @@ Canonical append-only deployment log.
 - **Timestamp:** 2026-04-07T16:05:32.866Z
 
 ---
+
+## RelayExecutor
+
+- **Chain:** Sepolia (11155111)
+- **Address:** [0x00000000E5B4F98664E466418C7cdBF6745843c4](https://sepolia.etherscan.io/address/0x00000000E5B4F98664E466418C7cdBF6745843c4)
+- **Salt:** `0x0000000000000000000000000000000000000000b319f1595abc75884a1b0070`
+- **TX:** [0x0824b0c8ba10f17b4893c354856e2f9de41985d7bb0c3a26692ff33305c823b4](https://sepolia.etherscan.io/tx/0x0824b0c8ba10f17b4893c354856e2f9de41985d7bb0c3a26692ff33305c823b4)
+- **Args:** `[]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x14b0507e0f1514257addc718397620b3d5d90c486668cabcde18f1e0d0609d1c`
+- **Timestamp:** 2026-04-13T22:50:39.974Z
+
+---
+
+## RelayExecutor
+
+- **Chain:** Ethereum Mainnet (1)
+- **Address:** [0x00000000E5B4F98664E466418C7cdBF6745843c4](https://etherscan.io/address/0x00000000E5B4F98664E466418C7cdBF6745843c4)
+- **Salt:** `0x0000000000000000000000000000000000000000b319f1595abc75884a1b0070`
+- **TX:** [0xce920bb8ff382bbe0b16733d70dd7bcf118478d6a4ae3ba3bbd65992d45f8b47](https://etherscan.io/tx/0xce920bb8ff382bbe0b16733d70dd7bcf118478d6a4ae3ba3bbd65992d45f8b47)
+- **Args:** `[]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x14b0507e0f1514257addc718397620b3d5d90c486668cabcde18f1e0d0609d1c`
+- **Timestamp:** 2026-04-13T22:53:43.000Z
+
+---
+
+## RelayExecutor
+
+- **Chain:** Arbitrum One (42161)
+- **Address:** [0x00000000E5B4F98664E466418C7cdBF6745843c4](https://arbiscan.io/address/0x00000000E5B4F98664E466418C7cdBF6745843c4)
+- **Salt:** `0x0000000000000000000000000000000000000000b319f1595abc75884a1b0070`
+- **TX:** [0x1ceb357736ffdb9ef08608ed74a813cf47ce14062e50ac13cb7ce8cb2f29983a](https://arbiscan.io/tx/0x1ceb357736ffdb9ef08608ed74a813cf47ce14062e50ac13cb7ce8cb2f29983a)
+- **Args:** `[]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x14b0507e0f1514257addc718397620b3d5d90c486668cabcde18f1e0d0609d1c`
+- **Timestamp:** 2026-04-13T22:55:08.239Z
+
+---
+
+## RelayExecutor
+
+- **Chain:** Base (8453)
+- **Address:** [0x00000000E5B4F98664E466418C7cdBF6745843c4](https://basescan.org/address/0x00000000E5B4F98664E466418C7cdBF6745843c4)
+- **Salt:** `0x0000000000000000000000000000000000000000b319f1595abc75884a1b0070`
+- **TX:** [0x6ea4042f17bf42eae26cac54d1b8a23fc7112ba761c313b16b43aa2695cbe512](https://basescan.org/tx/0x6ea4042f17bf42eae26cac54d1b8a23fc7112ba761c313b16b43aa2695cbe512)
+- **Args:** `[]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x14b0507e0f1514257addc718397620b3d5d90c486668cabcde18f1e0d0609d1c`
+- **Timestamp:** 2026-04-13T22:55:16.375Z
+
+---
