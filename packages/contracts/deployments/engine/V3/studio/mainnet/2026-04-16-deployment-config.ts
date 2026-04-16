@@ -27,7 +27,7 @@ export const deployConfigDetailsArray = [
     tokenName: "Art Blocks Studio | 97",
     tokenTicker: "ABSTUDIO_97",
     // optionally define this for improved readability and searchability in the deployment logs
-    artistName: "James Merill",
+    artistName: "James Merrill",
     // set to the address you want to transfer the superAdmin role to
     // (can be the zero address if you have an existing Admin ACL Contract and are not transferring)
     newSuperAdminAddress: "0xB3B212da1F50DE8eCDE59C932e36DF7aFb6319cB",
