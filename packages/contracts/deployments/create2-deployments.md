@@ -146,3 +146,55 @@ Canonical append-only deployment log.
 - **Timestamp:** 2026-04-13T22:55:16.375Z
 
 ---
+
+## RelayExecutorPartialReverts
+
+- **Chain:** Arbitrum One (42161)
+- **Address:** [0x00000000000f75216F9A9F23d82c287AA2446bF9](https://arbiscan.io/address/0x00000000000f75216F9A9F23d82c287AA2446bF9)
+- **Salt:** `0x00000000000000000000000000000000000000001f330b1b8ad57a61f61c00e0`
+- **TX:** [0x995dbbe6bd3b9fab77114a7e77be45a1a3155dc13184072127ab7b9419fd6814](https://arbiscan.io/tx/0x995dbbe6bd3b9fab77114a7e77be45a1a3155dc13184072127ab7b9419fd6814)
+- **Args:** `[]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x374b8431e6f90627b0a45cc8b2dff8b5291b218bee3927f20d4e3cd6419f1998`
+- **Timestamp:** 2026-04-16T19:27:26.469Z
+
+---
+
+## RelayExecutorPartialReverts
+
+- **Chain:** Base (8453)
+- **Address:** [0x00000000000f75216F9A9F23d82c287AA2446bF9](https://basescan.org/address/0x00000000000f75216F9A9F23d82c287AA2446bF9)
+- **Salt:** `0x00000000000000000000000000000000000000001f330b1b8ad57a61f61c00e0`
+- **TX:** [0x6ec00ec30c51ec53387bd5bd7264f5f86740c7be5687b2763dae954d7f9d2179](https://basescan.org/tx/0x6ec00ec30c51ec53387bd5bd7264f5f86740c7be5687b2763dae954d7f9d2179)
+- **Args:** `[]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x374b8431e6f90627b0a45cc8b2dff8b5291b218bee3927f20d4e3cd6419f1998`
+- **Timestamp:** 2026-04-16T19:27:31.978Z
+
+---
+
+## RelayExecutorPartialReverts
+
+- **Chain:** Ethereum Mainnet (1)
+- **Address:** [0x00000000000f75216F9A9F23d82c287AA2446bF9](https://etherscan.io/address/0x00000000000f75216F9A9F23d82c287AA2446bF9)
+- **Salt:** `0x00000000000000000000000000000000000000001f330b1b8ad57a61f61c00e0`
+- **TX:** [0x33650d6b35eee1fe2261ed4949342c4b92d52bce93f3a0ef5d00fe0a971c060f](https://etherscan.io/tx/0x33650d6b35eee1fe2261ed4949342c4b92d52bce93f3a0ef5d00fe0a971c060f)
+- **Args:** `[]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x374b8431e6f90627b0a45cc8b2dff8b5291b218bee3927f20d4e3cd6419f1998`
+- **Timestamp:** 2026-04-16T19:28:38.366Z
+
+---
+
+## RelayExecutorPartialReverts
+
+- **Chain:** Sepolia (11155111)
+- **Address:** [0x00000000000f75216F9A9F23d82c287AA2446bF9](https://sepolia.etherscan.io/address/0x00000000000f75216F9A9F23d82c287AA2446bF9)
+- **Salt:** `0x00000000000000000000000000000000000000001f330b1b8ad57a61f61c00e0`
+- **TX:** [0x470e3c0752a8ab406bd7f028c0b31b0d20f19ba3113a0f193712e9f73cf81e6f](https://sepolia.etherscan.io/tx/0x470e3c0752a8ab406bd7f028c0b31b0d20f19ba3113a0f193712e9f73cf81e6f)
+- **Args:** `[]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x374b8431e6f90627b0a45cc8b2dff8b5291b218bee3927f20d4e3cd6419f1998`
+- **Timestamp:** 2026-04-16T19:28:40.112Z
+
+---
