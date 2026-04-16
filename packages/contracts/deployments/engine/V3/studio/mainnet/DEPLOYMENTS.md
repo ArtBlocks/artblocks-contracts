@@ -2805,3 +2805,47 @@ Date: 2024-10-03T20:31:48.898Z
         ---
       
         
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2026-04-16T22:03:53.519Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** prod
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000f10424506961445f935ec76579e0769F#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x000000000132CFBeC18C143aB0AaD021B1fDEA13#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x00000067f7CE2C47f295b2DE3485a796d2FC058f#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine Flex | 0x67ec6463Ac3b5A03909ED429Bc3278FD5d29CC8b
+  
+        **Engine Contract:** https://etherscan.io/address/0x67ec6463Ac3b5A03909ED429Bc3278FD5d29CC8b#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** James Merrill
+        - **Token Name:** Art Blocks Studio | 97
+        - **Token Ticker:** ABSTUDIO_97
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0xb05fD87142D88093A9b6F938790d71FCef2949b0
+        - **Super Admin Address:** 0xB3B212da1F50DE8eCDE59C932e36DF7aFb6319cB        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-97-mainnet
+        
+        ---
+      
+        
