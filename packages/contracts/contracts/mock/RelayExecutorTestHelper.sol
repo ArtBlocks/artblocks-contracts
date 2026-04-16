@@ -2,6 +2,7 @@
 pragma solidity 0.8.22;
 
 import {RelayExecutor} from "../relay/RelayExecutor.sol";
+import {RelayExecutorPartialReverts} from "../relay/RelayExecutorPartialReverts.sol";
 
 /// @dev Helper that wraps RelayExecutor so tests can invoke execute() as
 ///      msg.sender == address(this), mimicking the EIP-7702 delegation model
@@ -32,4 +33,12 @@ contract MockTarget {
     }
 
     receive() external payable {}
+}
+
+/// @dev Helper that wraps RelayExecutorPartialReverts so tests can invoke
+///      execute() as msg.sender == address(this).
+contract RelayExecutorPartialRevertsTestHelper is RelayExecutorPartialReverts {
+    function selfExecute(bytes32 mode, bytes calldata executionData) external {
+        this.execute(mode, executionData);
+    }
 }
