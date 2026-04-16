@@ -28,5 +28,5 @@
     "@changesets/cli": "^2.27.5",
     "@ethersproject/signing-key": "^5.8.0"
   },
-  "packageManager": "yarn@4.3.1"
+  "packageManager": "yarn@4.14.0+sha512.31053dd4c730c75e8665ad00bbfe07a7bed08aef54c5edfd8d484463680180b1c87035a61b9e15ff2cad310a329176cac433009e2d402ac69d1386f9445d7ccb"
 }
