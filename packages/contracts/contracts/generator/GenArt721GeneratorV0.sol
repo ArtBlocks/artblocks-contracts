@@ -821,17 +821,16 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         HTMLTag memory htmlTag
     ) internal view {
         // Get script count and preferred CDN for the dependency.
-        (
-            ,
-            ,
-            string memory preferredCDN,
-            ,
-            ,
-            ,
-            ,
-            ,
-            uint24 scriptCount
-        ) = dependencyRegistry.getDependencyDetails(dependencyNameAndVersion);
+        string memory preferredCDN;
+        uint24 scriptCount;
+        // block scope to avoid stack too deep error
+        {
+            IDependencyRegistryV0.DependencyDetails
+                memory dependencyDetails = dependencyRegistry
+                    .getDependencyDetails(dependencyNameAndVersion);
+            preferredCDN = dependencyDetails.preferredCDN;
+            scriptCount = dependencyDetails.scriptCount;
+        }
 
         // If no scripts on-chain, load the script from the preferred CDN.
         if (scriptCount == 0) {
@@ -1021,8 +1020,11 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             return true;
         }
         // query and return result of dependency registry for on-chain status
-        (, , , , , , , availableOnChain, ) = dependencyRegistry
-            .getDependencyDetails(dependencyNameAndVersion);
+        IDependencyRegistryV0.DependencyDetails
+            memory dependencyDetails = dependencyRegistry.getDependencyDetails(
+                dependencyNameAndVersion
+            );
+        return dependencyDetails.availableOnChain;
     }
 
     /**
