@@ -534,6 +534,45 @@ contract MinterSetPriceTieredOnChainAllowV0 is
     }
 
     /**
+     * @notice Returns the effective price for a given wallet address on
+     * project `projectId`. If the wallet is allowlisted, returns the
+     * allowlist price; otherwise returns the public price.
+     * @param projectId Project ID to get price information for
+     * @param coreContract Contract address of the core contract
+     * @param wallet Address to check the effective price for
+     * @return isConfigured true only if prices have been configured for the
+     * project
+     * @return tokenPriceInWei effective price per token for the given wallet,
+     * in Wei
+     */
+    function getPriceInfoForAddress(
+        uint256 projectId,
+        address coreContract,
+        address wallet
+    ) external view returns (bool isConfigured, uint256 tokenPriceInWei) {
+        SetPriceLib.SetPriceProjectConfig
+            storage setPriceProjectConfig_ = SetPriceLib
+                .getSetPriceProjectConfig({
+                    projectId: projectId,
+                    coreContract: coreContract
+                });
+        isConfigured = setPriceProjectConfig_.priceIsConfigured;
+        if (
+            OnChainAllowlistLib.isAllowlisted({
+                projectId: projectId,
+                coreContract: coreContract,
+                wallet: wallet
+            })
+        ) {
+            tokenPriceInWei = _allowlistPriceStorage().prices[coreContract][
+                projectId
+            ];
+        } else {
+            tokenPriceInWei = setPriceProjectConfig_.pricePerToken;
+        }
+    }
+
+    /**
      * @notice Syncs local maximum invocations of project `projectId` based on
      * the value currently defined in the core contract.
      * @param projectId Project ID to set the maximum invocations for.

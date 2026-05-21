@@ -244,6 +244,96 @@ runForEach.forEach((params) => {
       });
     });
 
+    describe("getPriceInfoForAddress", async function () {
+      it("returns not configured when prices not set", async function () {
+        const config = await loadFixture(_beforeEach);
+        const result = await config.minter.getPriceInfoForAddress(
+          config.projectZero,
+          config.genArt721Core.address,
+          config.accounts.user.address
+        );
+        expect(result.isConfigured).to.be.false;
+        expect(result.tokenPriceInWei).to.equal(0);
+      });
+
+      it("returns allowlist price for allowlisted address", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricesPerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei,
+            config.allowlistPricePerTokenInWei
+          );
+        // artist is on allowlist from _beforeEach
+        const result = await config.minter.getPriceInfoForAddress(
+          config.projectZero,
+          config.genArt721Core.address,
+          config.accounts.artist.address
+        );
+        expect(result.isConfigured).to.be.true;
+        expect(result.tokenPriceInWei).to.equal(
+          config.allowlistPricePerTokenInWei
+        );
+      });
+
+      it("returns public price for non-allowlisted address", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricesPerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei,
+            config.allowlistPricePerTokenInWei
+          );
+        const result = await config.minter.getPriceInfoForAddress(
+          config.projectZero,
+          config.genArt721Core.address,
+          config.accounts.additional.address
+        );
+        expect(result.isConfigured).to.be.true;
+        expect(result.tokenPriceInWei).to.equal(config.pricePerTokenInWei);
+      });
+
+      it("reflects allowlist changes", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricesPerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei,
+            config.allowlistPricePerTokenInWei
+          );
+        // artist is allowlisted, gets allowlist price
+        let result = await config.minter.getPriceInfoForAddress(
+          config.projectZero,
+          config.genArt721Core.address,
+          config.accounts.artist.address
+        );
+        expect(result.tokenPriceInWei).to.equal(
+          config.allowlistPricePerTokenInWei
+        );
+        // remove artist from allowlist
+        await config.minter
+          .connect(config.accounts.artist)
+          .removeAddressesFromAllowlist(
+            config.projectZero,
+            config.genArt721Core.address,
+            [config.accounts.artist.address]
+          );
+        // now gets public price
+        result = await config.minter.getPriceInfoForAddress(
+          config.projectZero,
+          config.genArt721Core.address,
+          config.accounts.artist.address
+        );
+        expect(result.tokenPriceInWei).to.equal(config.pricePerTokenInWei);
+      });
+    });
+
     describe("isEngineView", async function () {
       it("correctly reports isEngine", async function () {
         const config = await loadFixture(_beforeEach);
