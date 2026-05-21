@@ -175,6 +175,55 @@ runForEach.forEach((params) => {
             config.pricePerTokenInWei
           );
       });
+
+      it("emits AllowlistPricePerTokenUpdated event for allowlist price", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .updatePricesPerTokenInWei(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.pricePerTokenInWei,
+              config.allowlistPricePerTokenInWei
+            )
+        )
+          .to.emit(config.minter, "AllowlistPricePerTokenUpdated")
+          .withArgs(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.allowlistPricePerTokenInWei
+          );
+      });
+
+      it("emits both price events in a single transaction", async function () {
+        const config = await loadFixture(_beforeEach);
+        const tx = config.minter
+          .connect(config.accounts.artist)
+          .updatePricesPerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei,
+            config.allowlistPricePerTokenInWei
+          );
+        await expect(tx)
+          .to.emit(
+            await ethers.getContractAt("SetPriceLib", config.minter.address),
+            "PricePerTokenUpdated"
+          )
+          .withArgs(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        await expect(tx)
+          .to.emit(config.minter, "AllowlistPricePerTokenUpdated")
+          .withArgs(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.allowlistPricePerTokenInWei
+          );
+      });
     });
 
     describe("addAddressesToAllowlist", async function () {

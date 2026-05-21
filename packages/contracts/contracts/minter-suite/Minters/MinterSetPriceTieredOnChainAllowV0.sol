@@ -88,6 +88,12 @@ contract MinterSetPriceTieredOnChainAllowV0 is
         mapping(address coreContract => mapping(uint256 projectId => uint256 allowlistPricePerToken)) prices;
     }
 
+    event AllowlistPricePerTokenUpdated(
+        uint256 indexed projectId,
+        address indexed coreContract,
+        uint256 indexed allowlistPricePerToken
+    );
+
     /**
      * @notice Initializes contract to be a Filtered Minter for
      * `minterFilter` minter filter.
@@ -159,6 +165,11 @@ contract MinterSetPriceTieredOnChainAllowV0 is
         _allowlistPriceStorage().prices[coreContract][
             projectId
         ] = allowlistPricePerTokenInWei;
+        emit AllowlistPricePerTokenUpdated(
+            projectId,
+            coreContract,
+            allowlistPricePerTokenInWei
+        );
 
         // for convenience, sync local max invocations to the core contract if
         // and only if max invocations have not already been synced.
