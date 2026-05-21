@@ -1705,11 +1705,7 @@ contract SRHooks is
             mstore(0x0f, 0x30313233343536373839616263646566) // Store the "0123456789abcdef" lookup.
             let o := add(result, 0x20)
             let end := add(raw, n)
-            for {
-
-            } iszero(eq(raw, end)) {
-
-            } {
+            for {} iszero(eq(raw, end)) {} {
                 raw := add(raw, 1)
                 mstore8(add(o, 1), mload(and(mload(raw), 15)))
                 mstore8(o, mload(and(shr(4, mload(raw)), 15)))
