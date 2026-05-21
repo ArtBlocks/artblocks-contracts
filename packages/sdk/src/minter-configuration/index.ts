@@ -86,10 +86,10 @@ export async function generateProjectMinterConfigurationForms(
   const userIsArtist = walletAddress === project.artist_address?.toLowerCase();
 
   const userIsAllowlisted = walletAddress
-    ? project.contract.allowlisted_users?.some(
+    ? (project.contract.allowlisted_users?.some(
         (u: { user_address: string }) =>
           u.user_address?.toLowerCase() === walletAddress
-      ) ?? false
+      ) ?? false)
     : false;
 
   const allowedPrivilegedRolesForProject = getAllowedPrivilegedRoles(
