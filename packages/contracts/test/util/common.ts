@@ -1054,7 +1054,7 @@ export async function deployCore<
     coreContractName.endsWith("V3_Explorations")
   ) {
     let adminACLContractName =
-      (_adminACLContractName ?? useAdminACLWithEvents)
+      _adminACLContractName ?? useAdminACLWithEvents
         ? "MockAdminACLV0Events"
         : "AdminACLV0";
     adminACL = await deployAndGet(config, adminACLContractName, []);

@@ -178,11 +178,11 @@ export function isProjectIneligibleForPrimarySale(
 ) {
   return Boolean(
     context.projectIneligibleReason ||
-    !context.project ||
-    !context.project.minter_configuration ||
-    !isSupportedMinterType(
-      context.project.minter_configuration?.minter?.minter_type
-    )
+      !context.project ||
+      !context.project.minter_configuration ||
+      !isSupportedMinterType(
+        context.project.minter_configuration?.minter?.minter_type
+      )
   );
 }
 

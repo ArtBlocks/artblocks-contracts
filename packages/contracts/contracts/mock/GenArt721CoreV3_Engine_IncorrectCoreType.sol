@@ -272,8 +272,10 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
      * contract to continue to function if the owner decides to renounce
      * ownership.
      */
-    modifier onlyAdminACLOrRenouncedArtist(uint256 _projectId, bytes4 _selector)
-    {
+    modifier onlyAdminACLOrRenouncedArtist(
+        uint256 _projectId,
+        bytes4 _selector
+    ) {
         require(
             adminACLAllowed(msg.sender, address(this), _selector) ||
                 (owner() == address(0) &&
