@@ -59,6 +59,7 @@ module.exports = {
   solidity: solidityConfig,
   networks: {
     hardhat: {
+      hardfork: "prague",
       gasPrice: 100000000000, // 100 gwei
       initialBaseFeePerGas: 0,
       maxNominalGasPriceGwei: 200, // gwei
