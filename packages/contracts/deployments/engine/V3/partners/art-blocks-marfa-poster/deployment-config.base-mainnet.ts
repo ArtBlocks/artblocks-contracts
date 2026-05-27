@@ -9,13 +9,14 @@ export const deployNetworkConfiguration = {
   // ONLY Gnosis Safe is supported for Studio deployments at this time
   useGnosisSafe: true,
   safeAddress: "0x62F8fa18C079C20743F45E74925F80658c68f7b3",
-  transactionServiceUrl: "https://safe-transaction-base.safe.global/",
+  transactionServiceUrl: "https://safe-transaction-base.safe.global",
   // set the transaction hash after successful execution of the batch creation
   transactionHash: "",
 };
 
 export const deployConfigDetailsArray = [
   {
+    productClass: "Engine",
     // 0 for Engine, 1 for Engine Flex
     engineCoreContractType: 1,
     // INCREMENT THESE NUMBERS FOR EACH NEW STUDIO DEPLOYMENT
