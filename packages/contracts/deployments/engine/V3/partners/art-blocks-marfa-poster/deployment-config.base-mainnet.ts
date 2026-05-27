@@ -19,8 +19,8 @@ export const deployConfigDetailsArray = [
     // 0 for Engine, 1 for Engine Flex
     engineCoreContractType: 1,
     // INCREMENT THESE NUMBERS FOR EACH NEW STUDIO DEPLOYMENT
-    tokenName: "Marfa Weekend 2026 Poster",
-    tokenTicker: "ABMW26",
+    tokenName: "Marfa Weekend Poster",
+    tokenTicker: "ABMW",
     // see /scripts/util/constants.ts::MAIN_CONFIG for the correct address if prod deployment
     renderProviderAddress: "0xc5bd90634d9355B93FE8d07e6F79eAB5EF20AbCc",
     // platform provider address should be set to the zero address for Studio deployments
