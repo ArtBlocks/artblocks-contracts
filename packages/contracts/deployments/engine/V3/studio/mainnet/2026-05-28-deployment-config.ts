@@ -12,7 +12,8 @@ export const deployNetworkConfiguration = {
   safeAddress: "0x52119BB73Ac8bdbE59aF0EEdFd4E4Ee6887Ed2EA",
   transactionServiceUrl: "https://safe-transaction-mainnet.safe.global",
   // set the transaction hash after successful execution of the batch creation
-  transactionHash: "",
+  transactionHash:
+    "0x4bd9f213bb22cb2a309f03cb341390dd6ac2b115efc257f00dbffa3545197a99",
 };
 
 export const deployConfigDetailsArray = [
@@ -30,7 +31,7 @@ export const deployConfigDetailsArray = [
     artistName: "William Mapan",
     // set to the address you want to transfer the superAdmin role to
     // (can be the zero address if you have an existing Admin ACL Contract and are not transferring)
-    newSuperAdminAddress: "0x52119BB73Ac8bdbE59aF0EEdFd4E4Ee6887Ed2EA",
+    newSuperAdminAddress: "0x35ed163479CbD7dB9BB8a7AdbCB680f368a89501",
     // see /scripts/util/constants.ts::MAIN_CONFIG for the correct address if prod deployment
     renderProviderAddress: "0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd",
     // platform provider address should be set to the zero address for Studio deployments
