@@ -46,6 +46,9 @@ const ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL =
 const BASE_MAINNET_JSON_RPC_PROVIDER_URL =
   process.env.BASE_MAINNET_JSON_RPC_PROVIDER_URL || "";
 
+const SHAPE_MAINNET_JSON_RPC_PROVIDER_URL =
+  process.env.SHAPE_MAINNET_JSON_RPC_PROVIDER_URL || "";
+
 const HOODI_JSON_RPC_PROVIDER_URL =
   process.env.HOODI_JSON_RPC_PROVIDER_URL || "";
 
@@ -95,6 +98,14 @@ module.exports = {
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 50,
     },
+    shape: {
+      url: SHAPE_MAINNET_JSON_RPC_PROVIDER_URL,
+      accounts: [`${PRIVATE_KEY}`],
+      // ledgerAccounts: ["0x"],
+      gasPrice: "auto",
+      gasMultiplier: 1.5,
+      maxNominalGasPriceGwei: 50,
+    },
     hoodi: {
       url: HOODI_JSON_RPC_PROVIDER_URL,
       accounts: [`${PRIVATE_KEY}`],
@@ -125,6 +136,14 @@ module.exports = {
         urls: {
           apiURL: "https://api.etherscan.io/v2/api",
           browserURL: "https://hoodi.etherscan.io",
+        },
+      },
+      {
+        network: "shape",
+        chainId: 360,
+        urls: {
+          apiURL: "https://shapescan.xyz/api",
+          browserURL: "https://shapescan.xyz",
         },
       },
     ],
