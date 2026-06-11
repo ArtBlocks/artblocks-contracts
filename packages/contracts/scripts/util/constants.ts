@@ -247,8 +247,8 @@ export const MAIN_CONFIG: T_MAIN_CONFIG = {
       universalBytecodeStorageReader: "",
       scriptyBuilderV2: "",
       prodRenderProviderPaymentAddress: {
-        [ProductClassEnum.Engine]: "",
-        [ProductClassEnum.Sudio]: "",
+        [ProductClassEnum.Engine]: "0x6b0A560e8b98b1eFbd687Fb4116c4a188c9F8C30",
+        [ProductClassEnum.Sudio]: "0xD98eEA78a6EE3015a576842236e935E97E56df00",
       },
     },
   },
