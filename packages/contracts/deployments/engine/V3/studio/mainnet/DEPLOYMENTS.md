@@ -2849,3 +2849,91 @@ Date: 2024-10-03T20:31:48.898Z
         ---
       
         
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2026-05-28T18:46:09.738Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** prod
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000f10424506961445f935ec76579e0769F#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x000000000132CFBeC18C143aB0AaD021B1fDEA13#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x00000067f7CE2C47f295b2DE3485a796d2FC058f#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine | 0x78AC66980B3e5fEc2ee5242ffd509F0AeCBfaA8F
+  
+        **Engine Contract:** https://etherscan.io/address/0x78AC66980B3e5fEc2ee5242ffd509F0AeCBfaA8F#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** William Mapan
+        - **Token Name:** Art Blocks Studio | 98
+        - **Token Ticker:** ABSTUDIO_98
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x942f204420c23E303f724C6B8396Ead50d9B8043
+        - **Super Admin Address:** 0x35ed163479CbD7dB9BB8a7AdbCB680f368a89501        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-98-mainnet
+        
+        ---
+      
+        
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2026-05-28T18:47:56.484Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** prod
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000f10424506961445f935ec76579e0769F#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x000000000132CFBeC18C143aB0AaD021B1fDEA13#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x00000067f7CE2C47f295b2DE3485a796d2FC058f#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine | 0x78AC66980B3e5fEc2ee5242ffd509F0AeCBfaA8F
+  
+        **Engine Contract:** https://etherscan.io/address/0x78AC66980B3e5fEc2ee5242ffd509F0AeCBfaA8F#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Anna Carreras
+        - **Token Name:** Art Blocks Studio | 99
+        - **Token Ticker:** ABSTUDIO_99
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x942f204420c23E303f724C6B8396Ead50d9B8043
+        - **Super Admin Address:** 0x32f848b9436f6400e5fa1fd46e9b96f4541c0966        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-99-mainnet
+        
+        ---
+      
+        
