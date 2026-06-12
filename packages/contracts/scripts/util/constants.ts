@@ -12,6 +12,7 @@ export const DELEGATION_REGISTRY_V1_ADDRESSES = {
   sepolia: "0x00000000000076A84feF008CDAbe6409d2FE638B",
   arbitrum: "0x00000000000076A84feF008CDAbe6409d2FE638B",
   base: "0x00000000000076A84feF008CDAbe6409d2FE638B",
+  shape: "0x00000000000076A84feF008CDAbe6409d2FE638B",
 };
 
 export const DELEGATION_REGISTRY_V2_ADDRESSES = {
@@ -237,14 +238,14 @@ export const MAIN_CONFIG: T_MAIN_CONFIG = {
       },
     },
   },
-  // @dev leave empty until Shape mainnet infrastructure is deployed (chain ID 360).
-  // See deployments/engine/V3/shape/INFRASTRUCTURE.md for bootstrap order.
+  // Shape mainnet (chain ID 360) — see deployments/engine/V3/shape/INFRASTRUCTURE.md
   shape: {
     prod: {
-      engineFactory: "",
-      sharedMinterFilter: "",
-      sharedRandomizer: "",
-      universalBytecodeStorageReader: "",
+      engineFactory: "0x69Ee773e7DC7386581aFAAacd345113e34238806",
+      sharedMinterFilter: "0x6DdDBbd9aE353fCdaCB83a8fb085714bFc7F3f66",
+      sharedRandomizer: "0x5705023921B577e5BAeFF66f1fC7d52f5ccF1232",
+      universalBytecodeStorageReader:
+        "0x25eFD6E38Bd12f97C997696eEE07f5d587CE1FdA",
       scriptyBuilderV2: "",
       prodRenderProviderPaymentAddress: {
         [ProductClassEnum.Engine]: "0x6b0A560e8b98b1eFbd687Fb4116c4a188c9F8C30",
