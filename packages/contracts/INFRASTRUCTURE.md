@@ -17,6 +17,8 @@ The following contracts are deployed to all Art Blocks supported networks and ar
 | Implementation: GenArt721CoreV3_Engine (v3.2.9)       | `0x00000000f10424506961445f935ec76579e0769F` |
 | Implementation: GenArt721CoreV3_Engine_Flex (v3.2.10) | `0x000000000132CFBeC18C143aB0AaD021B1fDEA13` |
 
+**Shape (chain ID 360):** Step 1 unpermissioned contracts are deployed and verified on [Shapescan](https://shapescan.xyz) at the addresses above (cross-chain CREATE2). Deploy log: `deployments/create2-deployments.md`.
+
 ## Permissioned deployments
 
 The following diagrams show the deployment of permissioned infrastructure contracts on Art Blocks supported networks. These contracts are permissioned to be deployed by specific wallets and are used to deploy and index the core contracts.
@@ -95,6 +97,46 @@ erDiagram
     }
 ```
 
+### Shape
+
+Unpermissioned Step 1 contracts (table above) are deployed on Shape. Permissioned contracts below are not yet deployed.
+
+| Contract | Address (Shape) | Explorer |
+| -------- | --------------- | -------- |
+| Library: BytecodeStorageReader | `0x000000000016A5A5ff2FA7799C4BEe89bA59B74e` | [Shapescan](https://shapescan.xyz/address/0x000000000016A5A5ff2FA7799C4BEe89bA59B74e) |
+| V3FlexLib | `0x00000000Db6f2EBe627260e411E6c973B7c48A62` | [Shapescan](https://shapescan.xyz/address/0x00000000Db6f2EBe627260e411E6c973B7c48A62) |
+| BytecodeStorageReaderContractV2_Web3Call | `0x000000000005e4192e8789423aEC2FA32E4D52a0` | [Shapescan](https://shapescan.xyz/address/0x000000000005e4192e8789423aEC2FA32E4D52a0) |
+| SplitProviderV0 | `0x00000000CE5EEBAB4B5C2d6Cc5E73eaafA634DB3` | [Shapescan](https://shapescan.xyz/address/0x00000000CE5EEBAB4B5C2d6Cc5E73eaafA634DB3) |
+| GenArt721CoreV3_Engine (v3.2.9) | `0x00000000f10424506961445f935ec76579e0769F` | [Shapescan](https://shapescan.xyz/address/0x00000000f10424506961445f935ec76579e0769F) |
+| GenArt721CoreV3_Engine_Flex (v3.2.10) | `0x000000000132CFBeC18C143aB0AaD021B1fDEA13` | [Shapescan](https://shapescan.xyz/address/0x000000000132CFBeC18C143aB0AaD021B1fDEA13) |
+
+```mermaid
+---
+title: Shape setup (mainnet, chain ID 360)
+---
+erDiagram
+    DeployerMultisig ||--|| EngineFactory : owns
+    EngineFactory ||--|| CoreRegistry : owns
+    EngineFactory ||--|| UniversalBytecodeStorageReader : initializes-cores-with
+    DeployerMultisig {
+        addr _0x279c2BEE983b73ba4035Ef5c8aD059CF2d0DB848
+    }
+    AdminMultisig {
+        addr _0x75EADBfbbc0ac884DBdfBcFc443A561Ce3fa9235
+    }
+    EngineFactory {
+        addr _0x69Ee773e7DC7386581aFAAacd345113e34238806
+    }
+    CoreRegistry {
+        addr _0x440E1B5A98332BcA7564DbffA4146f976CE75397
+    }
+    UniversalBytecodeStorageReader {
+        addr _0x25eFD6E38Bd12f97C997696eEE07f5d587CE1FdA
+    }
+```
+
+Deployer Safe owns permissioned infra; Admin Safe receives shared suite ACL admin. See `deployments/engine/V3/shape/INFRASTRUCTURE.md` for bootstrap steps (Step 2+).
+
 ### Sepolia (artist staging)
 
 ```mermaid
@@ -168,14 +210,14 @@ The following contracts were deployed by Art Blocks on various production networ
 
 They are included here for reference purposes.
 
-| Contract/Library (network:Contract)     | Address                                      |
-| --------------------------------------- | -------------------------------------------- |
-| mainnet:EngineFactory (v3.2.4, v3.2.5)  | `0x00000000D0A0E78e243625Dbb4A5B37286Eac629` |
-| arbitrum:EngineFactory (v3.2.4, v3.2.5) | `0x000000D60eeC180eDC00001173dE37ACd269b196` |
-| base:EngineFactory (v3.2.4, v3.2.5)     | `0x0000000005aBb84fF93f599a6309cA71a6DD4e4E` |
+| Contract/Library (network:Contract)            | Address                                      |
+| ---------------------------------------------- | -------------------------------------------- |
+| mainnet:EngineFactory (v3.2.4, v3.2.5)         | `0x00000000D0A0E78e243625Dbb4A5B37286Eac629` |
+| arbitrum:EngineFactory (v3.2.4, v3.2.5)        | `0x000000D60eeC180eDC00001173dE37ACd269b196` |
+| base:EngineFactory (v3.2.4, v3.2.5)            | `0x0000000005aBb84fF93f599a6309cA71a6DD4e4E` |
 | sepolia-staging:EngineFactory (v3.2.4, v3.2.5) | `0x000000ab19F142143f03f96E2Bdf068474E50b7D` |
-| sepolia-dev:EngineFactory (v3.2.4, v3.2.5) | `0x0000000765f79939e1Abb63C266cE983bd5eF5c0` |
-| mainnet:EngineFactory (v3.2.2, v3.2.3)  | `0x000000AB1a0786eE8c71516d9AbB8a36fbdDb7CB` |
-| arbitrum:EngineFactory (v3.2.2, v3.2.3) | `0x000000da9D51CC51a50Dc296246075859b13ab0B` |
-| mainnet:EngineFactory (v3.2.0, v3.2.1)  | `0x00000000F82E4e6D5AB22D63050FCb2bF15eE95d` |
-| arbitrum:EngineFactory (v3.2.0, v3.2.1) | `0x000000bbAA3E36b60C06A92430D8956459c2Fd51` |
+| sepolia-dev:EngineFactory (v3.2.4, v3.2.5)     | `0x0000000765f79939e1Abb63C266cE983bd5eF5c0` |
+| mainnet:EngineFactory (v3.2.2, v3.2.3)         | `0x000000AB1a0786eE8c71516d9AbB8a36fbdDb7CB` |
+| arbitrum:EngineFactory (v3.2.2, v3.2.3)        | `0x000000da9D51CC51a50Dc296246075859b13ab0B` |
+| mainnet:EngineFactory (v3.2.0, v3.2.1)         | `0x00000000F82E4e6D5AB22D63050FCb2bF15eE95d` |
+| arbitrum:EngineFactory (v3.2.0, v3.2.1)        | `0x000000bbAA3E36b60C06A92430D8956459c2Fd51` |

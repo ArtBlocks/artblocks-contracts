@@ -12,6 +12,7 @@ export const DELEGATION_REGISTRY_V1_ADDRESSES = {
   sepolia: "0x00000000000076A84feF008CDAbe6409d2FE638B",
   arbitrum: "0x00000000000076A84feF008CDAbe6409d2FE638B",
   base: "0x00000000000076A84feF008CDAbe6409d2FE638B",
+  shape: "0x00000000000076A84feF008CDAbe6409d2FE638B",
 };
 
 export const DELEGATION_REGISTRY_V2_ADDRESSES = {
@@ -24,7 +25,7 @@ export const DELEGATION_REGISTRY_V2_ADDRESSES = {
 /**
  * Get active shared minter filter contract address for the given network and
  * environment.
- * @param networkName network name (e.g. "mainnet", "arbitrum", "base", "sepolia")
+ * @param networkName network name (e.g. "mainnet", "arbitrum", "base", "shape", "sepolia")
  * @param environment environment (e.g. "dev", "staging", "prod")
  * @returns active shared minter filter contract address
  */
@@ -45,7 +46,7 @@ export function getActiveSharedMinterFilter(
 /**
  * Get active shared randomizer contract address for the given network and
  * environment.
- * @param networkName network name (e.g. "mainnet", "arbitrum", "base", "sepolia")
+ * @param networkName network name (e.g. "mainnet", "arbitrum", "base", "shape", "sepolia")
  * @param environment environment (e.g. "dev", "staging", "prod")
  * @returns active shared randomizer contract address
  */
@@ -153,7 +154,7 @@ export enum ProductClassEnum {
  * Helper function to get the prod render provider payment address for the given
  * network and environment, if there is a requirement.
  * Returns undefined if there is no requirement for a specific render provider (e.g. testnet)
- * @param networkName network name, e.g. "mainnet", "arbitrum", "base", "sepolia"
+ * @param networkName network name, e.g. "mainnet", "arbitrum", "base", "shape", "sepolia"
  * @param environment environment, e.g. "dev", "staging", "prod"
  * @param productClass product class, "Engine", "Studio"
  * @returns address if require a specific render provider payment address for the given network and environment, otherwise undefined
@@ -234,6 +235,21 @@ export const MAIN_CONFIG: T_MAIN_CONFIG = {
       prodRenderProviderPaymentAddress: {
         [ProductClassEnum.Engine]: "0xc5bd90634d9355B93FE8d07e6F79eAB5EF20AbCc",
         [ProductClassEnum.Sudio]: "0xc8D1099702cB95baf954a4E3e2bEaF883314f464",
+      },
+    },
+  },
+  // Shape mainnet (chain ID 360) — see deployments/engine/V3/shape/INFRASTRUCTURE.md
+  shape: {
+    prod: {
+      engineFactory: "0x69Ee773e7DC7386581aFAAacd345113e34238806",
+      sharedMinterFilter: "0x6DdDBbd9aE353fCdaCB83a8fb085714bFc7F3f66",
+      sharedRandomizer: "0x5705023921B577e5BAeFF66f1fC7d52f5ccF1232",
+      universalBytecodeStorageReader:
+        "0x25eFD6E38Bd12f97C997696eEE07f5d587CE1FdA",
+      scriptyBuilderV2: "",
+      prodRenderProviderPaymentAddress: {
+        [ProductClassEnum.Engine]: "0x6b0A560e8b98b1eFbd687Fb4116c4a188c9F8C30",
+        [ProductClassEnum.Sudio]: "0xD98eEA78a6EE3015a576842236e935E97E56df00",
       },
     },
   },

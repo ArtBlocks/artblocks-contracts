@@ -11,7 +11,12 @@ import { Logger } from "@ethersproject/logger";
 Logger.setLogLevel(Logger.levels.ERROR);
 
 // delay to avoid issues with reorgs and tx failures
-import { delay, getConfigInputs, getNetworkName } from "../util/utils";
+import {
+  delay,
+  getConfigInputs,
+  getNetworkName,
+  getBlockExplorerAddressUrl,
+} from "../util/utils";
 import {
   DELEGATION_REGISTRY_V1_ADDRESSES,
   EXTRA_DELAY_BETWEEN_TX,
@@ -181,8 +186,6 @@ async function main() {
     //////////////////////////////////////////////////////////////////////////////
 
     const outputSummaryFile = path.join(inputFileDirectory, "DEPLOYMENTS.md");
-    const etherscanSubdomain =
-      networkName === "mainnet" ? "" : `${networkName}.`;
     const outputMd = `
 # Shared Minter Deployment
 
@@ -196,7 +199,7 @@ Date: ${new Date().toISOString()}
 
 **${
       deployDetails.minterName
-    }:** https://${etherscanSubdomain}etherscan.io/address/${minterAddress}#code
+    }:** ${getBlockExplorerAddressUrl(networkName, minterAddress)}
 
 **Associated Minter Filter:** ${deployDetails.minterFilterAddress}
 
