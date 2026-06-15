@@ -109,6 +109,15 @@ All permissioned infra and shared suite contracts are deployed; `AdminACLV0` sup
 1. **Off-chain:** register `chain_id: 360` in Hasura prod
 2. **Studio deploys:** `yarn deploy:v3-engine:shape:txbuilder` when ready
 
+### 11. Post-param / Web3Call — complete
+
+| Contract | Address | Shape tx |
+| -------- | ------- | -------- |
+| `PMPV0` | `0x00000000A78E278b2d2e2935FaeBe19ee9F1FF14` | [deploy](https://shapescan.xyz/tx/0x5c9361cc0af87d2126f9f89ec55fff292e9d6a45be944428db19e35556c717b2) · [verified](https://shapescan.xyz/address/0x00000000A78E278b2d2e2935FaeBe19ee9F1FF14#code) |
+| Standard augment hooks (8) | same as mainnet/base | `deployments/web3call/hooks/standard-augment-hooks/deployed-standard-augment-hooks.md` (all verified on Shape) |
+
+Deploy log: `deployments/create2-deployments.jsonl` (chain ID 360, 2026-06-15).
+
 ## Engine / studio batch deploys
 
 Deployment configs should use:

@@ -99,16 +99,16 @@ erDiagram
 
 ### Shape
 
-Unpermissioned Step 1 contracts (table above) are deployed on Shape. Permissioned contracts below are not yet deployed.
+Unpermissioned Step 1 contracts (table above) and permissioned engine bootstrap (EngineFactory, CoreRegistry, shared suite, PMP + standard augment hooks) are deployed on Shape. See `deployments/engine/V3/shape/INFRASTRUCTURE.md` for full deploy log.
 
-| Contract | Address (Shape) | Explorer |
-| -------- | --------------- | -------- |
-| Library: BytecodeStorageReader | `0x000000000016A5A5ff2FA7799C4BEe89bA59B74e` | [Shapescan](https://shapescan.xyz/address/0x000000000016A5A5ff2FA7799C4BEe89bA59B74e) |
-| V3FlexLib | `0x00000000Db6f2EBe627260e411E6c973B7c48A62` | [Shapescan](https://shapescan.xyz/address/0x00000000Db6f2EBe627260e411E6c973B7c48A62) |
+| Contract                                 | Address (Shape)                              | Explorer                                                                              |
+| ---------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Library: BytecodeStorageReader           | `0x000000000016A5A5ff2FA7799C4BEe89bA59B74e` | [Shapescan](https://shapescan.xyz/address/0x000000000016A5A5ff2FA7799C4BEe89bA59B74e) |
+| V3FlexLib                                | `0x00000000Db6f2EBe627260e411E6c973B7c48A62` | [Shapescan](https://shapescan.xyz/address/0x00000000Db6f2EBe627260e411E6c973B7c48A62) |
 | BytecodeStorageReaderContractV2_Web3Call | `0x000000000005e4192e8789423aEC2FA32E4D52a0` | [Shapescan](https://shapescan.xyz/address/0x000000000005e4192e8789423aEC2FA32E4D52a0) |
-| SplitProviderV0 | `0x00000000CE5EEBAB4B5C2d6Cc5E73eaafA634DB3` | [Shapescan](https://shapescan.xyz/address/0x00000000CE5EEBAB4B5C2d6Cc5E73eaafA634DB3) |
-| GenArt721CoreV3_Engine (v3.2.9) | `0x00000000f10424506961445f935ec76579e0769F` | [Shapescan](https://shapescan.xyz/address/0x00000000f10424506961445f935ec76579e0769F) |
-| GenArt721CoreV3_Engine_Flex (v3.2.10) | `0x000000000132CFBeC18C143aB0AaD021B1fDEA13` | [Shapescan](https://shapescan.xyz/address/0x000000000132CFBeC18C143aB0AaD021B1fDEA13) |
+| SplitProviderV0                          | `0x00000000CE5EEBAB4B5C2d6Cc5E73eaafA634DB3` | [Shapescan](https://shapescan.xyz/address/0x00000000CE5EEBAB4B5C2d6Cc5E73eaafA634DB3) |
+| GenArt721CoreV3_Engine (v3.2.9)          | `0x00000000f10424506961445f935ec76579e0769F` | [Shapescan](https://shapescan.xyz/address/0x00000000f10424506961445f935ec76579e0769F) |
+| GenArt721CoreV3_Engine_Flex (v3.2.10)    | `0x000000000132CFBeC18C143aB0AaD021B1fDEA13` | [Shapescan](https://shapescan.xyz/address/0x000000000132CFBeC18C143aB0AaD021B1fDEA13) |
 
 ```mermaid
 ---
