@@ -17,8 +17,6 @@ The following contracts are deployed to all Art Blocks supported networks and ar
 | Implementation: GenArt721CoreV3_Engine (v3.2.9)       | `0x00000000f10424506961445f935ec76579e0769F` |
 | Implementation: GenArt721CoreV3_Engine_Flex (v3.2.10) | `0x000000000132CFBeC18C143aB0AaD021B1fDEA13` |
 
-**Shape (chain ID 360):** Step 1 unpermissioned contracts are deployed and verified on [Shapescan](https://shapescan.xyz) at the addresses above (cross-chain CREATE2). Deploy log: `deployments/create2-deployments.md`.
-
 ## Permissioned deployments
 
 The following diagrams show the deployment of permissioned infrastructure contracts on Art Blocks supported networks. These contracts are permissioned to be deployed by specific wallets and are used to deploy and index the core contracts.
