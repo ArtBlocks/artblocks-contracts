@@ -313,7 +313,6 @@ export async function getChainId(): Promise<number> {
 
 /**
  * Block explorer URL for a contract address on the given network.
- * Shape uses Shapescan (Blockscout); other networks use Etherscan-family explorers.
  */
 export function getBlockExplorerAddressUrl(
   networkName: string,
@@ -321,11 +320,30 @@ export function getBlockExplorerAddressUrl(
   withCodeHash = true
 ): string {
   const codeSuffix = withCodeHash ? "#code" : "";
-  if (networkName === "shape") {
-    return `https://shapescan.xyz/address/${address}${codeSuffix}`;
+  let host: string;
+  switch (networkName) {
+    case "mainnet":
+      host = "etherscan.io";
+      break;
+    case "sepolia":
+      host = "sepolia.etherscan.io";
+      break;
+    case "base":
+      host = "basescan.org";
+      break;
+    case "arbitrum":
+      host = "arbiscan.io";
+      break;
+    case "shape":
+      host = "shapescan.xyz";
+      break;
+    case "hoodi":
+      host = "eth-hoodi.blockscout.com";
+      break;
+    default:
+      host = `${networkName}.etherscan.io`;
   }
-  const etherscanSubdomain = networkName === "mainnet" ? "" : `${networkName}.`;
-  return `https://${etherscanSubdomain}etherscan.io/address/${address}${codeSuffix}`;
+  return `https://${host}/address/${address}${codeSuffix}`;
 }
 
 export function chunkArray<T>(array: T[], chunkSize: number): T[][] {
