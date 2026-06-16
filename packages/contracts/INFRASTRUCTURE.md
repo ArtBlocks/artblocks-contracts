@@ -122,8 +122,6 @@ erDiagram
     }
 ```
 
-Deployer Safe owns permissioned infra; Admin Safe receives shared suite ACL admin. See `deployments/engine/V3/shape/INFRASTRUCTURE.md` for bootstrap steps (Step 2+).
-
 ### Sepolia (artist staging)
 
 ```mermaid

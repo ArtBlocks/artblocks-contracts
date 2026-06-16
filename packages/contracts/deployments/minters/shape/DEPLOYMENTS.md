@@ -207,3 +207,41 @@ Date: 2026-06-12T20:55:48.459Z
 
 ---
 
+
+# Shared Minter Deployment
+
+Date: 2026-06-16T13:25:14.373Z
+
+## **Network:** shape
+
+## **Environment:** shape-mainnet
+
+**Deployment Input File:** `deployments/minters/shape/shared-minter-deploy-config-minprice.shape.ts`
+
+**MinterMinPriceV0:** https://shapescan.xyz/address/0x345eAF8012D7eDF232E55F115B68d2e348FaF24d#code
+
+**Associated Minter Filter:** 0x6DdDBbd9aE353fCdaCB83a8fb085714bFc7F3f66
+
+**Deployment Args:** 0x6DdDBbd9aE353fCdaCB83a8fb085714bFc7F3f66,1500000000000000
+
+---
+
+
+# Shared Minter Deployment
+
+Date: 2026-06-16T13:26:40.225Z
+
+## **Network:** shape
+
+## **Environment:** shape-mainnet
+
+**Deployment Input File:** `deployments/minters/shape/shared-minter-deploy-config-minprice.shape.ts`
+
+**MinterMinPriceMerkleV0:** https://shapescan.xyz/address/0xa385Ca9dA62C02d714B12843301fAf97253D9DFb#code
+
+**Associated Minter Filter:** 0x6DdDBbd9aE353fCdaCB83a8fb085714bFc7F3f66
+
+**Deployment Args:** 0x6DdDBbd9aE353fCdaCB83a8fb085714bFc7F3f66,0x00000000000076A84feF008CDAbe6409d2FE638B,1500000000000000
+
+---
+

@@ -239,7 +239,7 @@ export const MAIN_CONFIG: T_MAIN_CONFIG = {
       },
     },
   },
-  // Shape mainnet (chain ID 360) — see deployments/engine/V3/shape/INFRASTRUCTURE.md
+  // Shape mainnet (chain ID 360)
   shape: {
     prod: {
       engineFactory: "0x69Ee773e7DC7386581aFAAacd345113e34238806",

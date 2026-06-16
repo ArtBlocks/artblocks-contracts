@@ -7,6 +7,8 @@ const SHAPE_MINTER_FILTER_ADDRESS =
   "0x6DdDBbd9aE353fCdaCB83a8fb085714bFc7F3f66";
 
 const SHARED_MINTERS = [
+  "MinterMinPriceV0",
+  "MinterMinPriceMerkleV0",
   "MinterSetPriceV5",
   "MinterSetPriceERC20V5",
   "MinterSetPriceHolderV5",
@@ -26,4 +28,6 @@ export const deployConfigDetailsArray = SHARED_MINTERS.map((minterName) => ({
   minterName,
   minterFilterAddress: SHAPE_MINTER_FILTER_ADDRESS,
   approveMinterGlobally: true,
+  // Required by shared-minters-deployer.ts for `*MinPrice*` minters.
+  ...(minterName.includes("MinPrice") ? { minMintFeeETH: "0.0015" } : {}),
 }));
