@@ -32,6 +32,13 @@ const ONLY_NON_EMPTY_STRING_ERROR = "Must input non-empty string";
 const ONLY_NON_ZERO_ADDRESS_ERROR = "Must input non-zero address";
 const INDEX_OUT_OF_RANGE_ERROR = "Index out of range";
 
+const CANVAS_TAG = {
+  NoCanvasTag: 0,
+  CanvasBeforeProjectScript: 1,
+  CanvasAfterProjectScript: 2,
+  InvalidCanvasTag: 3, // this is not a valid enum value
+};
+
 interface DependencyRegistryV0TestContext extends Mocha.Context {
   dependencyRegistry: DependencyRegistryV0;
   genArt721Core: GenArt721CoreV3;
@@ -374,6 +381,9 @@ describe(`DependencyRegistryV0`, async function () {
           dependencyWebsite, // dependencyWebsite
           false, // availableOnChain
           0, // scriptCount
+          0, // canvas tag enum
+          false, // loadAsModule
+          "", // projectScriptSpecialType
         ]);
       });
     });
@@ -1950,6 +1960,215 @@ describe(`DependencyRegistryV0`, async function () {
             0
           );
         expect(storedRepository).to.eq("https://bitbucket.com");
+      });
+    });
+
+    describe("updateDependencyCanvasTag", function () {
+      it("does not allow non-admins to update canvas tag", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.user)
+            .updateDependencyCanvasTag(
+              dependencyNameAndVersionBytes,
+              CANVAS_TAG.CanvasAfterProjectScript
+            ),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+
+      it("does not allow updating canvas tag for a dependency that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry.updateDependencyCanvasTag(
+            ethers.utils.formatBytes32String("nonExistentDependencyType"),
+            CANVAS_TAG.CanvasAfterProjectScript
+          ),
+          ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
+        );
+      });
+
+      it("does not allow updating canvas tag to an invalid enum value", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert.unspecified(
+          config.dependencyRegistry.updateDependencyCanvasTag(
+            dependencyNameAndVersionBytes,
+            CANVAS_TAG.InvalidCanvasTag
+          )
+        );
+      });
+
+      it("allows admin to update canvas tag", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyCanvasTag(
+            dependencyNameAndVersionBytes,
+            CANVAS_TAG.CanvasAfterProjectScript
+          );
+
+        const dependencyDetails =
+          await config.dependencyRegistry.getDependencyDetails(
+            dependencyNameAndVersionBytes
+          );
+        expect(dependencyDetails.canvasTag).to.eq(
+          CANVAS_TAG.CanvasAfterProjectScript
+        );
+      });
+
+      it("emits the correct event", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyCanvasTag(
+              dependencyNameAndVersionBytes,
+              CANVAS_TAG.CanvasBeforeProjectScript
+            )
+        )
+          .to.emit(config.dependencyRegistry, "DependencyCanvasTagUpdated")
+          .withArgs(
+            dependencyNameAndVersionBytes,
+            CANVAS_TAG.CanvasBeforeProjectScript
+          );
+      });
+    });
+
+    describe("updateDependencyLoadAsModule", function () {
+      it("does not allow non-admins to update loadAsModule", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.user)
+            .updateDependencyLoadAsModule(dependencyNameAndVersionBytes, true),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+
+      it("does not allow updating loadAsModule for a dependency that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry.updateDependencyLoadAsModule(
+            ethers.utils.formatBytes32String("nonExistentDependencyType"),
+            true
+          ),
+          ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
+        );
+      });
+
+      it("allows admin to update loadAsModule", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyLoadAsModule(dependencyNameAndVersionBytes, true);
+
+        const dependencyDetails =
+          await config.dependencyRegistry.getDependencyDetails(
+            dependencyNameAndVersionBytes
+          );
+        expect(dependencyDetails.loadAsModule).to.eq(true);
+      });
+
+      it("emits the correct event", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyLoadAsModule(dependencyNameAndVersionBytes, true)
+        )
+          .to.emit(config.dependencyRegistry, "DependencyLoadAsModuleUpdated")
+          .withArgs(dependencyNameAndVersionBytes, true);
+      });
+    });
+
+    describe("updateDependencyProjectScriptSpecialType", function () {
+      it("does not allow non-admins to update project script special type", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.user)
+            .updateDependencyProjectScriptSpecialType(
+              dependencyNameAndVersionBytes,
+              "newSpecialType"
+            ),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+
+      it("does not allow updating project script special type for a dependency that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry.updateDependencyProjectScriptSpecialType(
+            ethers.utils.formatBytes32String("nonExistentDependencyType"),
+            "newSpecialType"
+          ),
+          ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
+        );
+      });
+
+      it("allows admin to update project script special type", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyProjectScriptSpecialType(
+            dependencyNameAndVersionBytes,
+            "newSpecialType"
+          );
+
+        const dependencyDetails =
+          await config.dependencyRegistry.getDependencyDetails(
+            dependencyNameAndVersionBytes
+          );
+        expect(dependencyDetails.projectScriptSpecialType).to.eq(
+          "newSpecialType"
+        );
+      });
+
+      it("emits the correct event", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyProjectScriptSpecialType(
+              dependencyNameAndVersionBytes,
+              "newSpecialType"
+            )
+        )
+          .to.emit(
+            config.dependencyRegistry,
+            "DependencyProjectScriptSpecialTypeUpdated"
+          )
+          .withArgs(dependencyNameAndVersionBytes, "newSpecialType");
+      });
+
+      it("allows updating project script special type to empty string", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyProjectScriptSpecialType(
+            dependencyNameAndVersionBytes,
+            ""
+          );
+
+        const dependencyDetails =
+          await config.dependencyRegistry.getDependencyDetails(
+            dependencyNameAndVersionBytes
+          );
+        expect(dependencyDetails.projectScriptSpecialType).to.eq("");
       });
     });
 
