@@ -31,7 +31,9 @@ The following table shows which Minters and MinterFilters are compatible with di
 
 ## Shared Minter Filter Contracts
 
-Below is a table of the shared minter filter contracts that are deployed on mainnet and testnets. Note that each of these contracts has a function available to enumerate all globally approved minter contracts, `getAllGloballyApprovedMinters()`
+Below is a table of the shared minter filter contracts that are deployed on mainnet and testnets. Note that each of these contracts has a function available to enumerate all globally approved minter contracts, `getAllGloballyApprovedMinters()`.
+
+Per-network shared minter contract addresses (including L2s) are recorded in `deployments/minters/<network>/DEPLOYMENTS.md` (e.g. `base`, `arbitrum-mainnet`, `shape`).
 
 | Network                | Shared Minter Filter Contract Address        |
 | ---------------------- | -------------------------------------------- |
@@ -39,6 +41,7 @@ Below is a table of the shared minter filter contracts that are deployed on main
 | Artist Staging Sepolia | `0xa07f47c30C262adcC263A4D44595972c50e04db7` |
 | Base                   | `0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5` |
 | Arbitrum One           | `0x94560abECb897f359ee1A6Ed0E922315Da11752d` |
+| Shape                  | `0x6DdDBbd9aE353fCdaCB83a8fb085714bFc7F3f66` |
 
 ## Flagship
 

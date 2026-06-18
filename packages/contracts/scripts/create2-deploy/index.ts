@@ -32,6 +32,11 @@ const CHAIN_CONFIG: Record<
     network: "base",
     explorer: "https://basescan.org",
   },
+  360: {
+    name: "Shape",
+    network: "shape",
+    explorer: "https://shapescan.xyz",
+  },
   11155111: {
     name: "Sepolia",
     network: "sepolia",

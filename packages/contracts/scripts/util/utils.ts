@@ -296,6 +296,9 @@ export async function getNetworkName() {
   } else if (networkName === "unknown" && network.chainId === 8453) {
     // base rpc doesn't return name, so handle unknown + chainId
     networkName = "base";
+  } else if (networkName === "unknown" && network.chainId === 360) {
+    // shape rpc doesn't return name, so handle unknown + chainId
+    networkName = "shape";
   } else if (networkName === "unknown" && network.chainId === 31337) {
     networkName = "hardhat";
   }
@@ -306,6 +309,41 @@ export async function getNetworkName() {
 export async function getChainId(): Promise<number> {
   const network = await ethers.provider.getNetwork();
   return network.chainId;
+}
+
+/**
+ * Block explorer URL for a contract address on the given network.
+ */
+export function getBlockExplorerAddressUrl(
+  networkName: string,
+  address: string,
+  withCodeHash = true
+): string {
+  const codeSuffix = withCodeHash ? "#code" : "";
+  let host: string;
+  switch (networkName) {
+    case "mainnet":
+      host = "etherscan.io";
+      break;
+    case "sepolia":
+      host = "sepolia.etherscan.io";
+      break;
+    case "base":
+      host = "basescan.org";
+      break;
+    case "arbitrum":
+      host = "arbiscan.io";
+      break;
+    case "shape":
+      host = "shapescan.xyz";
+      break;
+    case "hoodi":
+      host = "eth-hoodi.blockscout.com";
+      break;
+    default:
+      host = `${networkName}.etherscan.io`;
+  }
+  return `https://${host}/address/${address}${codeSuffix}`;
 }
 
 export function chunkArray<T>(array: T[], chunkSize: number): T[][] {
