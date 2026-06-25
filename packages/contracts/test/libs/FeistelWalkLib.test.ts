@@ -528,10 +528,47 @@ describe("FeistelWalkLib", function () {
       it(`should handle N=${N} (non-power of 2)`, async function () {
         const { mock } = await loadFixture(deployFixture);
         const seed = randomSeed();
+
         const result = await mock.fullTraversal(seed, N);
 
         const resultNumbers = result.map((bn) => bn.toNumber());
         expect(coversRange(resultNumbers, N)).to.be.true;
+      });
+    }
+  });
+
+  // Deterministic seed so the bijection is asserted against the exact inputs that
+  // used to break the permutation (the random-seed tests above only catch the bug
+  // probabilistically).
+  function fixedSeed(i: number): string {
+    return ethers.utils.keccak256(
+      ethers.utils.defaultAbiCoder.encode(["uint256"], [i])
+    );
+  }
+
+  describe("Bijection regression: odd-logM bands (sizes just above a power of two)", function () {
+    // For these N, M = nextPow2(N) has an ODD log2. A balanced Feistel split
+    // would span logM+1 bits and permute [0, 2M) instead of [0, M), pushing the
+    // cycle-walk past its cap and triggering the identity fallback -> duplicates /
+    // drops. The unbalanced split keeps the domain at exactly M, so a full
+    // traversal must be a perfect permutation for EVERY seed.
+    //
+    // Bands (N, logM): (257, 9), (1025, 11), (4097, 13).
+    const bands = [257, 1025, 4097];
+    const SEEDS_PER_BAND = 16;
+
+    for (const N of bands) {
+      it(`should be a bijection over [0..${N}) for ${SEEDS_PER_BAND} fixed seeds`, async function () {
+        const { mock } = await loadFixture(deployFixture);
+
+        for (let s = 0; s < SEEDS_PER_BAND; s++) {
+          const result = await mock.fullTraversal(fixedSeed(s), N);
+          const resultNumbers = result.map((bn) => bn.toNumber());
+          expect(
+            coversRange(resultNumbers, N),
+            `seed #${s} broke the permutation at N=${N}`
+          ).to.be.true;
+        }
       });
     }
   });
