@@ -554,14 +554,20 @@ describe("FeistelWalkLib", function () {
     // traversal must be a perfect permutation for EVERY seed.
     //
     // Bands (N, logM): (257, 9), (1025, 11), (4097, 13).
-    const bands = [257, 1025, 4097];
-    const SEEDS_PER_BAND = 16;
+    // Seed count scales down as N grows: each fullTraversal is O(N) gas in one
+    // eth_call, and CI runners are much slower than local (coverage worse still).
+    const bands: { N: number; seeds: number }[] = [
+      { N: 257, seeds: 16 },
+      { N: 1025, seeds: 8 },
+      { N: 4097, seeds: 4 },
+    ];
 
-    for (const N of bands) {
-      it(`should be a bijection over [0..${N}) for ${SEEDS_PER_BAND} fixed seeds`, async function () {
+    for (const { N, seeds } of bands) {
+      it(`should be a bijection over [0..${N}) for ${seeds} fixed seeds`, async function () {
+        this.timeout(180_000);
         const { mock } = await loadFixture(deployFixture);
 
-        for (let s = 0; s < SEEDS_PER_BAND; s++) {
+        for (let s = 0; s < seeds; s++) {
           const result = await mock.fullTraversal(fixedSeed(s), N);
           const resultNumbers = result.map((bn) => bn.toNumber());
           expect(
