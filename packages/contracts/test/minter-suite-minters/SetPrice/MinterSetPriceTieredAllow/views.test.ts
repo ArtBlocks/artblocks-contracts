@@ -216,6 +216,19 @@ runForEach.forEach((params) => {
       });
     });
 
+    describe("projectHashSeedIsUsed", async function () {
+      it("returns false for unused hash seeds", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(
+          await config.minter.projectHashSeedIsUsed(
+            config.projectOne,
+            config.genArt721Core.address,
+            "0x1234567890abcdef12345678"
+          )
+        ).to.equal(false);
+      });
+    });
+
     describe("getYourBalanceOfProjectERC20 / checkYourAllowanceOfProjectERC20", async function () {
       it("reports caller USDC balance and allowance", async function () {
         const config = await loadFixture(_beforeEach);

@@ -29,7 +29,7 @@ import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGu
  * engine contracts.
  * This minter also supports an optional hash seed assignment during purchase,
  * allowing the purchaser to assign a hash seed in the same transaction as the
- * mint via the `purchaseToWithHashSeed` function.
+ * mint via the `purchaseToWithHashSeed` function. Uniqueness not enforced.
  * ----------------------------------------------------------------------------
  * @notice Intended allowlist usage:
  * This minter uses a single, minter-wide allowlist address (typically a
@@ -99,6 +99,12 @@ contract MinterSetPriceTieredAllowV1 is ReentrancyGuard, ISharedMinterV0 {
     /// @notice Mapping of core contract => projectId => allowlist price per token in USDC base units
     mapping(address coreContract => mapping(uint256 projectId => uint256 allowlistPricePerToken))
         private _allowlistPricePerToken;
+
+    /// @notice Mapping of core contract => projectId => hashSeed => whether that
+    /// hash seed has been used for a purchaseWithHashSeed mint.
+    /// @dev Informational only; uniqueness is not enforced.
+    mapping(address coreContract => mapping(uint256 projectId => mapping(bytes12 hashSeed => bool used)))
+        private _projectHashSeedIsUsed;
 
     event AllowlistPricePerTokenUpdated(
         uint256 indexed projectId,
@@ -358,6 +364,23 @@ contract MinterSetPriceTieredAllowV1 is ReentrancyGuard, ISharedMinterV0 {
     }
 
     /**
+     * @notice Returns whether `hashSeed` has already been used for a hash-seed
+     * purchase on project `projectId` of core contract `coreContract`.
+     * @dev Informational only;
+     * @param projectId Project ID to query.
+     * @param coreContract Core contract address to query.
+     * @param hashSeed Hash seed to query.
+     * @return used True if the hash seed has already been used on this project.
+     */
+    function projectHashSeedIsUsed(
+        uint256 projectId,
+        address coreContract,
+        bytes12 hashSeed
+    ) external view returns (bool used) {
+        return _projectHashSeedIsUsed[coreContract][projectId][hashSeed];
+    }
+
+    /**
      * @notice Checks if the specified `coreContract` is a valid engine contract.
      * @dev This function retrieves the cached value of `isEngine` from
      * the `isEngineCache` mapping. If the cached value is already set, it
@@ -446,7 +469,7 @@ contract MinterSetPriceTieredAllowV1 is ReentrancyGuard, ISharedMinterV0 {
         uint256 projectId,
         address coreContract
     ) external view returns (uint256 balance) {
-        // @dev unused; ABI parity with MinterSetPriceERC20V5 (USDC is immutable)
+        // @dev unused; ABI parity with MinterSetPriceERC20V5
         projectId;
         coreContract;
         balance = SplitFundsLib.getERC20Balance({
@@ -768,6 +791,9 @@ contract MinterSetPriceTieredAllowV1 is ReentrancyGuard, ISharedMinterV0 {
         // EFFECTS
         // if hash seed is provided, pre-set it before minting
         if (hashSeed != bytes12(0)) {
+            // @dev track usage for views; uniqueness is not enforced
+            _projectHashSeedIsUsed[coreContract][projectId][hashSeed] = true;
+
             // get current invocations to pre-compute the new token ID
             (uint256 invocations, , , , , ) = IGenArt721CoreContractV3_Base(
                 coreContract

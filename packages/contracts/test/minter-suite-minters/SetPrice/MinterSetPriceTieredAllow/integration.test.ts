@@ -211,6 +211,13 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         await configureHashSeedForProject(config, config.projectOne);
         const hashSeed = "0x1234567890abcdef12345678";
+        expect(
+          await config.minter.projectHashSeedIsUsed(
+            config.projectOne,
+            config.genArt721Core.address,
+            hashSeed
+          )
+        ).to.equal(false);
         await config.ERC20.connect(config.accounts.user).approve(
           config.minter.address,
           config.pricePerTokenInWei
@@ -230,6 +237,13 @@ runForEach.forEach((params) => {
           await config.genArt721Core.balanceOf(config.accounts.user.address)
         ).to.equal(1);
         expect(receipt.status).to.equal(1);
+        expect(
+          await config.minter.projectHashSeedIsUsed(
+            config.projectOne,
+            config.genArt721Core.address,
+            hashSeed
+          )
+        ).to.equal(true);
       });
     });
 
