@@ -507,6 +507,10 @@ contract MinterSetPriceTieredAllowV1 is ReentrancyGuard, ISharedMinterV0 {
                     projectId: projectId,
                     coreContract: coreContract
                 });
+        // @dev Unlike configurable-ERC20 minters (e.g. MinterSetPriceERC20V5), no
+        // `currencyAddress != address(0)` check is needed: USDC is set in the
+        // constructor and always returned via immutable `usdcAddress`, so
+        // `isConfigured` only reflects whether prices have been set.
         isConfigured = setPriceProjectConfig_.priceIsConfigured;
         tokenPriceInWei = setPriceProjectConfig_.pricePerToken;
         currencySymbol = "USDC";
