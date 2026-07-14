@@ -221,7 +221,10 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         const balance = await config.minter
           .connect(config.accounts.user)
-          .getYourBalanceOfProjectERC20();
+          .getYourBalanceOfProjectERC20(
+            config.projectOne,
+            config.genArt721Core.address
+          );
         expect(balance).to.equal(
           await config.ERC20.balanceOf(config.accounts.user.address)
         );
@@ -232,7 +235,10 @@ runForEach.forEach((params) => {
         );
         const allowance = await config.minter
           .connect(config.accounts.user)
-          .checkYourAllowanceOfProjectERC20();
+          .checkYourAllowanceOfProjectERC20(
+            config.projectOne,
+            config.genArt721Core.address
+          );
         expect(allowance).to.equal(config.pricePerTokenInWei);
       });
     });

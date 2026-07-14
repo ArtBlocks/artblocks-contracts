@@ -438,13 +438,17 @@ contract MinterSetPriceTieredAllowV1 is ReentrancyGuard, ISharedMinterV0 {
 
     /**
      * @notice Gets your balance of this minter's fixed USDC token.
+     * @param projectId Project ID to be queried.
+     * @param coreContract The address of the core contract.
      * @return balance Balance of USDC
      */
-    function getYourBalanceOfProjectERC20()
-        external
-        view
-        returns (uint256 balance)
-    {
+    function getYourBalanceOfProjectERC20(
+        uint256 projectId,
+        address coreContract
+    ) external view returns (uint256 balance) {
+        // @dev unused; ABI parity with MinterSetPriceERC20V5 (USDC is immutable)
+        projectId;
+        coreContract;
         balance = SplitFundsLib.getERC20Balance({
             currencyAddress: usdcAddress,
             walletAddress: msg.sender
@@ -455,13 +459,17 @@ contract MinterSetPriceTieredAllowV1 is ReentrancyGuard, ISharedMinterV0 {
     /**
      * @notice Gets your allowance for this minter of this minter's fixed USDC
      * token.
+     * @param projectId Project ID to be queried.
+     * @param coreContract The address of the core contract.
      * @return remaining Remaining allowance of USDC
      */
-    function checkYourAllowanceOfProjectERC20()
-        external
-        view
-        returns (uint256 remaining)
-    {
+    function checkYourAllowanceOfProjectERC20(
+        uint256 projectId,
+        address coreContract
+    ) external view returns (uint256 remaining) {
+        // @dev unused; ABI parity with MinterSetPriceERC20V5 (USDC is immutable)
+        projectId;
+        coreContract;
         remaining = SplitFundsLib.getERC20Allowance({
             currencyAddress: usdcAddress,
             walletAddress: msg.sender,
@@ -507,7 +515,7 @@ contract MinterSetPriceTieredAllowV1 is ReentrancyGuard, ISharedMinterV0 {
                     projectId: projectId,
                     coreContract: coreContract
                 });
-        // @dev Unlike configurable-ERC20 minters (e.g. MinterSetPriceERC20V5), no
+        // @dev Unlike configurable-ERC20 minters, no
         // `currencyAddress != address(0)` check is needed: USDC is set in the
         // constructor and always returned via immutable `usdcAddress`, so
         // `isConfigured` only reflects whether prices have been set.
