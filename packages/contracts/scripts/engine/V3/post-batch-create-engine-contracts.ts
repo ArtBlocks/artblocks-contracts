@@ -17,6 +17,7 @@ import {
   getConfigInputs,
   getNetworkName,
   getChainId,
+  getBlockExplorerAddressUrl,
 } from "../../util/utils";
 import { EXTRA_DELAY_BETWEEN_TX } from "../../util/constants";
 import { syncContractMetadataAfterDeploy } from "../../util/graphql-utils";
@@ -48,7 +49,6 @@ async function main() {
   const networkName = await getNetworkName();
   const chainId = await getChainId();
   const outputSummaryFile = path.join(inputFileDirectory, "DEPLOYMENTS.md");
-  const etherscanSubdomain = networkName === "mainnet" ? "" : `${networkName}.`;
 
   if (!deployNetworkConfiguration?.environment) {
     throw new Error(
@@ -83,13 +83,13 @@ async function main() {
   
   ## **Environment:** ${deployNetworkConfiguration.environment}
   
-  **Engine Implementation:** https://${etherscanSubdomain}etherscan.io/address/${activeEngineImplementationAddress}#code
+  **Engine Implementation:** ${getBlockExplorerAddressUrl(networkName, activeEngineImplementationAddress)}
   
-  **Engine Flex Implementation:** https://${etherscanSubdomain}etherscan.io/address/${activeEngineFlexImplementationAddress}#code
+  **Engine Flex Implementation:** ${getBlockExplorerAddressUrl(networkName, activeEngineFlexImplementationAddress)}
   
-  **Engine Factory:** https://${etherscanSubdomain}etherscan.io/address/${engineFactoryAddress}#code
+  **Engine Factory:** ${getBlockExplorerAddressUrl(networkName, engineFactoryAddress)}
   
-  **Core Registry:** https://${etherscanSubdomain}etherscan.io/address/${coreRegistryAddress}#code
+  **Core Registry:** ${getBlockExplorerAddressUrl(networkName, coreRegistryAddress)}
   
   ---
 
@@ -224,7 +224,7 @@ async function main() {
       outputMd += `
         ## Deployment: ${engineCoreContractType === 0 ? "Engine" : "Engine Flex"} | ${engineContractAddress}
   
-        **Engine Contract:** https://${etherscanSubdomain}etherscan.io/address/${engineContractAddress}#code
+        **Engine Contract:** ${getBlockExplorerAddressUrl(networkName, engineContractAddress)}
         
         **Metadata**
         - **Starting Project Id:** ${startingProjectId}

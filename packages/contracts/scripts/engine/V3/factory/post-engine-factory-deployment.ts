@@ -10,7 +10,12 @@ import { Logger } from "@ethersproject/logger";
 Logger.setLogLevel(Logger.levels.ERROR);
 
 // delay to avoid issues with reorgs and tx failures
-import { delay, getAppPath, getNetworkName } from "../../../util/utils";
+import {
+  delay,
+  getAppPath,
+  getNetworkName,
+  getBlockExplorerAddressUrl,
+} from "../../../util/utils";
 import {
   getActiveCoreRegistry,
   EXTRA_DELAY_BETWEEN_TX,
@@ -84,7 +89,6 @@ async function main() {
     `deployments/engine/V3/studio/${config.environment}`
   );
   const outputSummaryFile = path.join(outputPath, "DEPLOYMENTS.md");
-  const etherscanSubdomain = networkName === "mainnet" ? "" : `${networkName}.`;
   const outputMd = `
 # Engine Factory Deployment
 
@@ -94,13 +98,13 @@ Date: ${new Date().toISOString()}
 
 ## **Environment:** ${config.environment}
 
-**Engine Implementation:** https://${etherscanSubdomain}etherscan.io/address/${activeEngineImplementationAddress}#code
+**Engine Implementation:** ${getBlockExplorerAddressUrl(networkName, activeEngineImplementationAddress)}
 
-**Engine Flex Implementation:** https://${etherscanSubdomain}etherscan.io/address/${activeEngineFlexImplementationAddress}#code
+**Engine Flex Implementation:** ${getBlockExplorerAddressUrl(networkName, activeEngineFlexImplementationAddress)}
 
-**Engine Factory:** https://${etherscanSubdomain}etherscan.io/address/${engineFactoryAddress}#code
+**Engine Factory:** ${getBlockExplorerAddressUrl(networkName, engineFactoryAddress)}
 
-**Core Registry:** https://${etherscanSubdomain}etherscan.io/address/${coreRegistryAddress}#code
+**Core Registry:** ${getBlockExplorerAddressUrl(networkName, coreRegistryAddress)}
 
 Ownership on Core Registry transferred to the Engine Factory
 

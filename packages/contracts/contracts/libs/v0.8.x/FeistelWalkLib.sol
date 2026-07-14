@@ -12,6 +12,12 @@ pragma solidity ^0.8.20;
  *      - Not cryptographic; optimized for gas efficiency with good mixing
  *  Uses 2 Feistel rounds with 64-bit round keys (k0, k1) derived from the seed.
  *  Additional keys (k2, k3) reserved for potential future use.
+ *
+ *  The Feistel domain is exactly 2^logM = M (the next power of two >= N) for both
+ *  even and odd logM, achieved with an UNBALANCED split in `_feistelOnPow2Domain`
+ *  (`a = logM/2`, `b = logM - a`, `a + b = logM`). This keeps M <= 2N, so the
+ *  cycle-walk in-range probability is >= ~0.5 and a full traversal (k = 0..N-1) is
+ *  a true permutation of [0..N) with no duplicates or drops.
  */
 library FeistelWalkLib {
     uint256 private constant MAX_CYCLE_WALKS = 32;
@@ -110,7 +116,18 @@ library FeistelWalkLib {
     }
 
     /// @dev Feistel permutation over [0..M) where M is a power of two.
-    ///      Split into halves and apply round function twice for good mixing.
+    ///      Split into a low half (a bits) and a high half (b bits) with
+    ///      a + b = logM, and apply the round function twice for good mixing.
+    ///      Using an UNBALANCED split (a = logM/2, b = logM - a) keeps the domain
+    ///      exactly 2^logM = M for both even and odd logM. A balanced split
+    ///      (half = (logM + 1) / 2) would span 2*half = logM + 1 bits for odd logM
+    ///      and therefore permute [0, 2M) instead of [0, M); the wider domain pushes
+    ///      the cycle-walk past its cap for N just above a power of two and triggers
+    ///      the identity `return x` fallback, breaking the bijection (duplicate /
+    ///      missing elements). Each round masks its output to the width of the half
+    ///      it writes, so every round is invertible and the whole map is a bijection
+    ///      over [0, M). For even logM, a == b and this is identical to a balanced
+    ///      split.
     function _feistelOnPow2Domain(
         uint256 x,
         uint256 M,
@@ -128,15 +145,18 @@ library FeistelWalkLib {
         // Full assembly for maximum gas efficiency
         uint256 result;
         assembly {
-            // Balanced Feistel: split into two equal (or nearly equal) halves
-            let half := div(add(logM, 1), 2)
-            let mask := sub(shl(half, 1), 1)
+            // Unbalanced Feistel: low half is `a` bits, high half is `b` bits,
+            // with a + b = logM (so the domain is exactly 2^logM = M).
+            let a := div(logM, 2)
+            let b := sub(logM, a)
+            let maskA := sub(shl(a, 1), 1)
+            let maskB := sub(shl(b, 1), 1)
 
-            // Split into L and R
-            let L := and(x, mask)
-            let R := and(shr(half, x), mask)
+            // Split into L (low, a bits) and R (high, b bits)
+            let L := and(x, maskA)
+            let R := and(shr(a, x), maskB)
 
-            // Round 0: Inline round function
+            // Round 0: R (b bits) -> a-bit register
             let F := and(R, 0xFFFFFFFFFFFFFFFF)
             F := xor(F, k0)
             F := xor(F, shl(13, F))
@@ -144,11 +164,11 @@ library FeistelWalkLib {
             F := xor(F, shl(17, F))
             F := xor(F, shr(5, F))
 
-            let newR := and(xor(L, F), mask)
-            L := R
-            R := newR
+            let newR := and(xor(L, F), maskA) // a bits
+            L := R // b bits
+            R := newR // a bits
 
-            // Round 1: Inline round function
+            // Round 1: R (a bits) -> b-bit register
             F := and(R, 0xFFFFFFFFFFFFFFFF)
             F := xor(F, xor(k1, 1))
             F := xor(F, shl(13, F))
@@ -156,12 +176,12 @@ library FeistelWalkLib {
             F := xor(F, shl(17, F))
             F := xor(F, shr(5, F))
 
-            newR := and(xor(L, F), mask)
-            L := R
-            R := newR
+            newR := and(xor(L, F), maskB) // b bits
+            L := R // a bits
+            R := newR // b bits
 
-            // Recombine
-            result := or(shl(half, R), L)
+            // Recombine: R (b bits) high, L (a bits) low => a + b = logM bits
+            result := or(shl(a, R), L)
         }
         return result;
     }

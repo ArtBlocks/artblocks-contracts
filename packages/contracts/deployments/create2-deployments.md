@@ -198,3 +198,94 @@ Canonical append-only deployment log.
 - **Timestamp:** 2026-04-16T19:28:40.112Z
 
 ---
+
+## contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader
+
+- **Chain:** Shape (360)
+- **Address:** [0x000000000016A5A5ff2FA7799C4BEe89bA59B74e](https://shapescan.xyz/address/0x000000000016A5A5ff2FA7799C4BEe89bA59B74e)
+- **Salt:** `0x000000000000000000000000000000000000000095302f97a9caff22f6470680`
+- **TX:** [0x88e32aa8d41e7b4db76d873f5f4f2e9ba6ab909f53a0676736867cfc6bc87be4](https://shapescan.xyz/tx/0x88e32aa8d41e7b4db76d873f5f4f2e9ba6ab909f53a0676736867cfc6bc87be4)
+- **Args:** `[]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x5b72c377ce9e63cda8225ef246d7bc3358e552a84f053bfc98e4df9d6eed1af3`
+- **Timestamp:** 2026-06-12T19:02:38.306Z
+
+---
+
+## V3FlexLib
+
+- **Chain:** Shape (360)
+- **Address:** [0x00000000Db6f2EBe627260e411E6c973B7c48A62](https://shapescan.xyz/address/0x00000000Db6f2EBe627260e411E6c973B7c48A62)
+- **Salt:** `0x0000000000000000000000000000000000000000b96a6dc40db095bb78d30098`
+- **TX:** [0x3ae0f71311fea4f0cf15f8673202efe4324a97d4606a4cd4a6ea0c33498ab1bd](https://shapescan.xyz/tx/0x3ae0f71311fea4f0cf15f8673202efe4324a97d4606a4cd4a6ea0c33498ab1bd)
+- **Args:** `[]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xdf81010d3c0ea3b70c0549dba43244a3f55831827fea56da5a6dd19f84884ea9`
+- **Timestamp:** 2026-06-12T19:11:48.960Z
+
+---
+
+## BytecodeStorageReaderContractV2_Web3Call
+
+- **Chain:** Shape (360)
+- **Address:** [0x000000000005e4192e8789423aEC2FA32E4D52a0](https://shapescan.xyz/address/0x000000000005e4192e8789423aEC2FA32E4D52a0)
+- **Salt:** `0x0000000000000000000000000000000000000000fd73cd4749c72a204b340088`
+- **TX:** [0xcee96de8ed7d91240269fa0764e2f6c174be4cbbfff086543b9bac43f5136791](https://shapescan.xyz/tx/0xcee96de8ed7d91240269fa0764e2f6c174be4cbbfff086543b9bac43f5136791)
+- **Args:** `[]`
+- **Libraries:** `{"contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":"0x000000000016A5A5ff2FA7799C4BEe89bA59B74e"}`
+- **Initcode Hash:** `0xa976d985396df8155eae880ed4620e09c9066e4ee386de6a3e9b47d4c148c5f1`
+- **Timestamp:** 2026-06-12T19:12:07.870Z
+
+---
+
+## SplitProviderV0
+
+- **Chain:** Shape (360)
+- **Address:** [0x00000000CE5EEBAB4B5C2d6Cc5E73eaafA634DB3](https://shapescan.xyz/address/0x00000000CE5EEBAB4B5C2d6Cc5E73eaafA634DB3)
+- **Salt:** `0x0000000000000000000000000000000000000000b06452fc197b69bcaa510080`
+- **TX:** [0xdf914f47da0ad85aa16f966e8448fee18f231c847686b1300e2b4208f6673583](https://shapescan.xyz/tx/0xdf914f47da0ad85aa16f966e8448fee18f231c847686b1300e2b4208f6673583)
+- **Args:** `["0x6B9118074aB15142d7524E8c4ea8f62A3Bdb98f1"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xd9ac9e4c233366ca3a1bd7ac5f1464e159747dbb0e752d25dd06a3f5ee678062`
+- **Timestamp:** 2026-06-12T19:12:25.856Z
+
+---
+
+## GenArt721CoreV3_Engine
+
+- **Chain:** Shape (360)
+- **Address:** [0x00000000f10424506961445f935ec76579e0769F](https://shapescan.xyz/address/0x00000000f10424506961445f935ec76579e0769F)
+- **Salt:** `0x00df4e8d293d57718aac0b18cbfbe128c5d484ef88ab72f9b1808b3ce3000034`
+- **TX:** [0x022311220fdafe991277d6bb7671b9e101d4aa764c41f59d7006629e5ff66d68](https://shapescan.xyz/tx/0x022311220fdafe991277d6bb7671b9e101d4aa764c41f59d7006629e5ff66d68)
+- **Args:** `[]`
+- **Libraries:** `{"contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":"0x000000000016A5A5ff2FA7799C4BEe89bA59B74e"}`
+- **Initcode Hash:** `0xb63a8b14e7937d45f8799b75c0fad6b11872f1f9dc765c55401bf3cc3556238a`
+- **Timestamp:** 2026-06-12T19:12:39.288Z
+
+---
+
+## GenArt721CoreV3_Engine_Flex
+
+- **Chain:** Shape (360)
+- **Address:** [0x000000000132CFBeC18C143aB0AaD021B1fDEA13](https://shapescan.xyz/address/0x000000000132CFBeC18C143aB0AaD021B1fDEA13)
+- **Salt:** `0x00df4e8d293d57718aac0b18cbfbe128c5d484ef7a478182561e84f05622000e`
+- **TX:** [0x3f2041ea5418d2b2514b2e93dc9cfda3f399451bc125efc09bf3dc62c9f67faf](https://shapescan.xyz/tx/0x3f2041ea5418d2b2514b2e93dc9cfda3f399451bc125efc09bf3dc62c9f67faf)
+- **Args:** `[]`
+- **Libraries:** `{"contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":"0x000000000016A5A5ff2FA7799C4BEe89bA59B74e","V3FlexLib":"0x00000000Db6f2EBe627260e411E6c973B7c48A62"}`
+- **Initcode Hash:** `0x3233ee27b2e11478d8406e993099b3c36b342ffa6b1cc6c8a43ad8a4fac4ed41`
+- **Timestamp:** 2026-06-12T19:12:51.448Z
+
+---
+
+## EngineFactoryV0
+
+- **Chain:** Shape (360)
+- **Address:** [0x69Ee773e7DC7386581aFAAacd345113e34238806](https://shapescan.xyz/address/0x69Ee773e7DC7386581aFAAacd345113e34238806)
+- **Salt:** `0x00df4e8d293d57718aac0b18cbfbe128c5d484ef000000000000000000000000`
+- **TX:** [0x1a2cc8f0e3f43a455a863d446dedb91065f2ab3ad0d309c7b4b7f53e68205e8d](https://shapescan.xyz/tx/0x1a2cc8f0e3f43a455a863d446dedb91065f2ab3ad0d309c7b4b7f53e68205e8d)
+- **Args:** `["0x00000000f10424506961445f935ec76579e0769F","0x000000000132CFBeC18C143aB0AaD021B1fDEA13","0x440E1B5A98332BcA7564DbffA4146f976CE75397","0x279c2BEE983b73ba4035Ef5c8aD059CF2d0DB848","https://token.artblocks.io/360/","0x25eFD6E38Bd12f97C997696eEE07f5d587CE1FdA"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xe86440a386ccfee6f71eef20963d342d65c103a2a9ba70162b4a7cc8ecd0bacd`
+- **Timestamp:** 2026-06-12T20:14:58.943Z
+
+---

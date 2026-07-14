@@ -95,6 +95,33 @@ erDiagram
     }
 ```
 
+### Shape
+
+```mermaid
+---
+title: Shape setup (mainnet, chain ID 360)
+---
+erDiagram
+    DeployerMultisig ||--|| EngineFactory : owns
+    EngineFactory ||--|| CoreRegistry : owns
+    EngineFactory ||--|| UniversalBytecodeStorageReader : initializes-cores-with
+    DeployerMultisig {
+        addr _0x279c2BEE983b73ba4035Ef5c8aD059CF2d0DB848
+    }
+    AdminMultisig {
+        addr _0x75EADBfbbc0ac884DBdfBcFc443A561Ce3fa9235
+    }
+    EngineFactory {
+        addr _0x69Ee773e7DC7386581aFAAacd345113e34238806
+    }
+    CoreRegistry {
+        addr _0x440E1B5A98332BcA7564DbffA4146f976CE75397
+    }
+    UniversalBytecodeStorageReader {
+        addr _0x25eFD6E38Bd12f97C997696eEE07f5d587CE1FdA
+    }
+```
+
 ### Sepolia (artist staging)
 
 ```mermaid
@@ -168,14 +195,14 @@ The following contracts were deployed by Art Blocks on various production networ
 
 They are included here for reference purposes.
 
-| Contract/Library (network:Contract)     | Address                                      |
-| --------------------------------------- | -------------------------------------------- |
-| mainnet:EngineFactory (v3.2.4, v3.2.5)  | `0x00000000D0A0E78e243625Dbb4A5B37286Eac629` |
-| arbitrum:EngineFactory (v3.2.4, v3.2.5) | `0x000000D60eeC180eDC00001173dE37ACd269b196` |
-| base:EngineFactory (v3.2.4, v3.2.5)     | `0x0000000005aBb84fF93f599a6309cA71a6DD4e4E` |
+| Contract/Library (network:Contract)            | Address                                      |
+| ---------------------------------------------- | -------------------------------------------- |
+| mainnet:EngineFactory (v3.2.4, v3.2.5)         | `0x00000000D0A0E78e243625Dbb4A5B37286Eac629` |
+| arbitrum:EngineFactory (v3.2.4, v3.2.5)        | `0x000000D60eeC180eDC00001173dE37ACd269b196` |
+| base:EngineFactory (v3.2.4, v3.2.5)            | `0x0000000005aBb84fF93f599a6309cA71a6DD4e4E` |
 | sepolia-staging:EngineFactory (v3.2.4, v3.2.5) | `0x000000ab19F142143f03f96E2Bdf068474E50b7D` |
-| sepolia-dev:EngineFactory (v3.2.4, v3.2.5) | `0x0000000765f79939e1Abb63C266cE983bd5eF5c0` |
-| mainnet:EngineFactory (v3.2.2, v3.2.3)  | `0x000000AB1a0786eE8c71516d9AbB8a36fbdDb7CB` |
-| arbitrum:EngineFactory (v3.2.2, v3.2.3) | `0x000000da9D51CC51a50Dc296246075859b13ab0B` |
-| mainnet:EngineFactory (v3.2.0, v3.2.1)  | `0x00000000F82E4e6D5AB22D63050FCb2bF15eE95d` |
-| arbitrum:EngineFactory (v3.2.0, v3.2.1) | `0x000000bbAA3E36b60C06A92430D8956459c2Fd51` |
+| sepolia-dev:EngineFactory (v3.2.4, v3.2.5)     | `0x0000000765f79939e1Abb63C266cE983bd5eF5c0` |
+| mainnet:EngineFactory (v3.2.2, v3.2.3)         | `0x000000AB1a0786eE8c71516d9AbB8a36fbdDb7CB` |
+| arbitrum:EngineFactory (v3.2.2, v3.2.3)        | `0x000000da9D51CC51a50Dc296246075859b13ab0B` |
+| mainnet:EngineFactory (v3.2.0, v3.2.1)         | `0x00000000F82E4e6D5AB22D63050FCb2bF15eE95d` |
+| arbitrum:EngineFactory (v3.2.0, v3.2.1)        | `0x000000bbAA3E36b60C06A92430D8956459c2Fd51` |
