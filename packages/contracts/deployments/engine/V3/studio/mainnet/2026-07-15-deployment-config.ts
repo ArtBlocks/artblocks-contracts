@@ -35,7 +35,7 @@ export const deployConfigDetailsArray = [
     renderProviderAddress: "0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd",
     // platform provider address should be set to the zero address for Studio deployments
     platformProviderAddress: "0x0000000000000000000000000000000000000000",
-    startingProjectId: 0,
+    startingProjectId: 1,
     // autoApproveArtistSplitProposals should be true for Studio deployments
     autoApproveArtistSplitProposals: true,
     // nullPlatformProvider must be true for Studio deployments
