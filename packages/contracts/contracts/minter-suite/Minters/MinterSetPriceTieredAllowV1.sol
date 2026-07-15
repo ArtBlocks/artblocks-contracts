@@ -7,6 +7,7 @@ pragma solidity 0.8.19;
 
 import {IGenArt721CoreContractV3_Base} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import {ISharedMinterV0} from "../../interfaces/v0.8.x/ISharedMinterV0.sol";
+import {ISharedMinterTieredAllowV0} from "../../interfaces/v0.8.x/ISharedMinterTieredAllowV0.sol";
 import {IMinterFilterV1} from "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
 import {ABHelpers} from "../../libs/v0.8.x/ABHelpers.sol";
@@ -73,7 +74,11 @@ import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGu
  * configured on this minter, but they will not be able to mint tokens due to
  * checks performed by this minter's Minter Filter.
  */
-contract MinterSetPriceTieredAllowV1 is ReentrancyGuard, ISharedMinterV0 {
+contract MinterSetPriceTieredAllowV1 is
+    ReentrancyGuard,
+    ISharedMinterV0,
+    ISharedMinterTieredAllowV0
+{
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
 
