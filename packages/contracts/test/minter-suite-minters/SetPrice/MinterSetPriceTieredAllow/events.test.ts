@@ -67,8 +67,11 @@ runForEach.forEach((params) => {
     });
 
     describe("updatePricesPerTokenInWei", async function () {
-      it("emits PricePerTokenUpdated and AllowlistPricePerTokenUpdated", async function () {
+      it("emits PricePerTokenUpdated and ConfigValueSet for allowlist price", async function () {
         const config = await loadFixture(_beforeEach);
+        const allowlistPriceKey = ethers.utils.formatBytes32String(
+          "allowlistPricePerToken"
+        );
         const tx = config.minter
           .connect(config.accounts.artist)
           .updatePricesPerTokenInWei(
@@ -88,10 +91,17 @@ runForEach.forEach((params) => {
             config.pricePerTokenInWei
           );
         await expect(tx)
-          .to.emit(config.minter, "AllowlistPricePerTokenUpdated")
+          .to.emit(
+            await ethers.getContractAt(
+              "GenericMinterEventsLib",
+              config.minter.address
+            ),
+            "ConfigValueSet(uint256,address,bytes32,uint256)"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
+            allowlistPriceKey,
             config.allowlistPricePerTokenInWei
           );
       });

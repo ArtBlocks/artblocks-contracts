@@ -15,6 +15,7 @@ import {SplitFundsLib} from "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import {MaxInvocationsLib} from "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 import {SetPriceLib} from "../../libs/v0.8.x/minter-libs/SetPriceLib.sol";
 import {PolyptychLib} from "../../libs/v0.8.x/minter-libs/PolyptychLib.sol";
+import {GenericMinterEventsLib} from "../../libs/v0.8.x/minter-libs/GenericMinterEventsLib.sol";
 
 import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 
@@ -106,11 +107,9 @@ contract MinterSetPriceTieredAllowV1 is ReentrancyGuard, ISharedMinterV0 {
     mapping(address coreContract => mapping(uint256 projectId => mapping(bytes12 hashSeed => bool used)))
         private _projectHashSeedIsUsed;
 
-    event AllowlistPricePerTokenUpdated(
-        uint256 indexed projectId,
-        address indexed coreContract,
-        uint256 allowlistPricePerToken
-    );
+    /// @dev key for allowlist price in GenericMinterEventsLib.ConfigValueSet
+    bytes32 private constant CONFIG_ALLOWLIST_PRICE_PER_TOKEN =
+        "allowlistPricePerToken";
 
     event AllowlistAddressUpdated(address indexed allowlistAddress);
 
@@ -230,11 +229,12 @@ contract MinterSetPriceTieredAllowV1 is ReentrancyGuard, ISharedMinterV0 {
         _allowlistPricePerToken[coreContract][
             projectId
         ] = allowlistPricePerTokenInWei;
-        emit AllowlistPricePerTokenUpdated(
-            projectId,
-            coreContract,
-            allowlistPricePerTokenInWei
-        );
+        emit GenericMinterEventsLib.ConfigValueSet({
+            projectId: projectId,
+            coreContract: coreContract,
+            key: CONFIG_ALLOWLIST_PRICE_PER_TOKEN,
+            value: uint256(allowlistPricePerTokenInWei)
+        });
 
         // for convenience, sync local max invocations to the core contract if
         // and only if max invocations have not already been synced.
