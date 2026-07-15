@@ -409,3 +409,8 @@
       [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/github/artblocks-contracts/packages/contracts/deployments/engine/V3/studio/mainnet/2026-07-15-deployment-config.ts
 
     
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2026-07-15T18:08:46.112Z
+      [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/github/artblocks-contracts/packages/contracts/deployments/engine/V3/studio/mainnet/2026-07-15-deployment-config.ts
+
+    
