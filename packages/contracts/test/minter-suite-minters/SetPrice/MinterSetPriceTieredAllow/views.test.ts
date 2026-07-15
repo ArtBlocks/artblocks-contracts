@@ -206,12 +206,26 @@ runForEach.forEach((params) => {
     describe("isAllowlisted", async function () {
       it("returns true only for the privileged allowlist address", async function () {
         const config = await loadFixture(_beforeEach);
-        expect(await config.minter.isAllowlisted(config.accounts.user2.address))
-          .to.be.true;
-        expect(await config.minter.isAllowlisted(config.accounts.user.address))
-          .to.be.false;
         expect(
-          await config.minter.isAllowlisted(config.accounts.artist.address)
+          await config.minter.isAllowlisted(
+            config.projectOne,
+            config.genArt721Core.address,
+            config.accounts.user2.address
+          )
+        ).to.be.true;
+        expect(
+          await config.minter.isAllowlisted(
+            config.projectOne,
+            config.genArt721Core.address,
+            config.accounts.user.address
+          )
+        ).to.be.false;
+        expect(
+          await config.minter.isAllowlisted(
+            config.projectOne,
+            config.genArt721Core.address,
+            config.accounts.artist.address
+          )
         ).to.be.false;
       });
     });

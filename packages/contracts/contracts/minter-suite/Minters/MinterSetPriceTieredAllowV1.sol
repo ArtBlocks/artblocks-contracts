@@ -356,10 +356,22 @@ contract MinterSetPriceTieredAllowV1 is ReentrancyGuard, ISharedMinterV0 {
     /**
      * @notice Returns whether `wallet` is the privileged allowlist address
      * for this minter.
+     * @dev `projectId` and `coreContract` are unused; retained for ABI
+     * consistency with other allowlist minters
+     * This minter uses a single minter-wide allowlist address.
+     * @param projectId Project ID to be queried.
+     * @param coreContract Core contract address for the given project.
      * @param wallet The address to check.
      * @return bool True if the address is the configured allowlist address.
      */
-    function isAllowlisted(address wallet) external view returns (bool) {
+    function isAllowlisted(
+        uint256 projectId,
+        address coreContract,
+        address wallet
+    ) external view returns (bool) {
+        // @dev unused; ABI parity with project-scoped allowlist minters
+        projectId;
+        coreContract;
         return wallet == allowlistAddress;
     }
 
