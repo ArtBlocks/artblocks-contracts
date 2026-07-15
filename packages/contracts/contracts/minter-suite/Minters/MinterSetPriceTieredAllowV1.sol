@@ -6,8 +6,8 @@
 pragma solidity 0.8.19;
 
 import {IGenArt721CoreContractV3_Base} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import {ISharedMinterSimplePurchaseV0} from "../../interfaces/v0.8.x/ISharedMinterSimplePurchaseV0.sol";
 import {ISharedMinterV0} from "../../interfaces/v0.8.x/ISharedMinterV0.sol";
+import {ISharedMinterTieredAllowV0} from "../../interfaces/v0.8.x/ISharedMinterTieredAllowV0.sol";
 import {IMinterFilterV1} from "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
 import {ABHelpers} from "../../libs/v0.8.x/ABHelpers.sol";
@@ -15,28 +15,43 @@ import {AuthLib} from "../../libs/v0.8.x/AuthLib.sol";
 import {SplitFundsLib} from "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import {MaxInvocationsLib} from "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 import {SetPriceLib} from "../../libs/v0.8.x/minter-libs/SetPriceLib.sol";
-import {OnChainAllowlistLib} from "../../libs/v0.8.x/minter-libs/OnChainAllowlistLib.sol";
 import {PolyptychLib} from "../../libs/v0.8.x/minter-libs/PolyptychLib.sol";
+import {GenericMinterEventsLib} from "../../libs/v0.8.x/minter-libs/GenericMinterEventsLib.sol";
 
 import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title Shared, filtered Minter contract that allows tokens to be minted with
- * ETH, with dual pricing for on-chain allowlisted addresses and the general
- * public.
- * Allowlisted addresses mint at the artist-configured allowlist price, while
- * non-allowlisted addresses mint at the artist-configured public price.
+ * USDC (ERC-20), with dual pricing for a single privileged allowlist address
+ * and the general public.
+ * The allowlist address mints at the artist-configured allowlist price, while
+ * all other addresses mint at the artist-configured public price.
+ * USDC is fixed for this minter at construction.
  * This is designed to be used with GenArt721CoreContractV3 flagship or
  * engine contracts.
  * This minter also supports an optional hash seed assignment during purchase,
  * allowing the purchaser to assign a hash seed in the same transaction as the
- * mint via the `purchaseToWithHashSeed` function.
+ * mint via the `purchaseToWithHashSeed` function. Uniqueness not enforced.
+ * ----------------------------------------------------------------------------
+ * @notice Intended allowlist usage:
+ * This minter uses a single, minter-wide allowlist address (typically a
+ * privileged relay/executor used to integrate off-chain payment options),
+ * rather than a general-purpose collector allowlist. The allowlist address is
+ * configured at deploy time and may be updated by the Minter Filter's Admin
+ * ACL. It is not fully featured for many typical allowlist sale scenarios
+ * because it does not support multiple allowlisted wallets or enforce
+ * per-wallet invocation limits. The allowlist address may mint until a
+ * project's max invocations are reached (subject to the configured allowlist
+ * price). Projects that need per-wallet mint caps, multi-address allowlists,
+ * phases, or similar collector allowlist controls should use a different
+ * minter.
+ * ----------------------------------------------------------------------------
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
  * This contract is designed to be managed, with limited powers.
- * Privileged roles and abilities are controlled by the project's artist, which
- * can be modified by the core contract's Admin ACL contract. Both of these
- * roles hold extensive power and can modify minter details.
+ * Privileged roles and abilities are controlled by the project's artist and
+ * the shared Minter Filter's Admin ACL. These roles hold extensive power and
+ * can modify minter details.
  * Care must be taken to ensure that the admin ACL contract and artist
  * addresses are secure behind a multi-sig or other access control mechanism.
  * ----------------------------------------------------------------------------
@@ -44,9 +59,10 @@ import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGu
  * - updatePricesPerTokenInWei
  * - syncProjectMaxInvocationsToCore
  * - manuallyLimitProjectMaxInvocations
- * - addAddressesToAllowlist
- * - removeAddressesFromAllowlist
- * - addAndRemoveAddressesFromAllowlist
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to the shared minter filter's
+ * Admin ACL:
+ * - updateAllowlistAddress
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
@@ -58,10 +74,10 @@ import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGu
  * configured on this minter, but they will not be able to mint tokens due to
  * checks performed by this minter's Minter Filter.
  */
-contract MinterSetPriceTieredOnChainAllowV0 is
+contract MinterSetPriceTieredAllowV1 is
     ReentrancyGuard,
-    ISharedMinterSimplePurchaseV0,
-    ISharedMinterV0
+    ISharedMinterV0,
+    ISharedMinterTieredAllowV0
 {
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
@@ -69,40 +85,73 @@ contract MinterSetPriceTieredOnChainAllowV0 is
     /// Minter filter this minter may interact with.
     IMinterFilterV1 private immutable _minterFilter;
 
+    /// USDC token address for this minter
+    address public immutable usdcAddress;
+
     /// minterType for this minter
-    string public constant minterType = "MinterSetPriceTieredOnChainAllowV0";
+    string public constant minterType = "MinterSetPriceTieredAllowV1";
 
     /// minter version for this minter
-    string public constant minterVersion = "v0.1.0";
+    string public constant minterVersion = "v1.0.0";
+
+    /// @notice Single privileged allowlist address for this minter
+    address public allowlistAddress;
 
     // MODIFIERS
     // @dev contract uses modifier-like internal functions instead of modifiers
     // to reduce contract bytecode size
     // @dev contract uses AuthLib for some modifier-like functions
 
-    // Diamond storage for allowlist price configuration (minter-specific)
-    bytes32 constant ALLOWLIST_PRICE_STORAGE_POSITION =
-        keccak256("mintersetpricetieredonchainallowv0.allowlistprice.storage");
+    /// @notice Mapping of core contract => projectId => allowlist price per token in USDC base units
+    mapping(address coreContract => mapping(uint256 projectId => uint256 allowlistPricePerToken))
+        private _allowlistPricePerToken;
 
-    struct AllowlistPriceStorage {
-        mapping(address coreContract => mapping(uint256 projectId => uint256 allowlistPricePerToken)) prices;
-    }
+    /// @notice Mapping of core contract => projectId => hashSeed => whether that
+    /// hash seed has been used for a purchaseWithHashSeed mint.
+    /// @dev Informational only; uniqueness is not enforced.
+    mapping(address coreContract => mapping(uint256 projectId => mapping(bytes12 hashSeed => bool used)))
+        private _projectHashSeedIsUsed;
 
-    event AllowlistPricePerTokenUpdated(
-        uint256 indexed projectId,
-        address indexed coreContract,
-        uint256 indexed allowlistPricePerToken
-    );
+    /// @dev key for allowlist price in GenericMinterEventsLib.ConfigValueSet
+    bytes32 private constant CONFIG_ALLOWLIST_PRICE_PER_TOKEN =
+        "allowlistPricePerToken";
+
+    event AllowlistAddressUpdated(address indexed allowlistAddress);
 
     /**
      * @notice Initializes contract to be a Filtered Minter for
-     * `minterFilter` minter filter.
+     * `minterFilter` minter filter, with initial allowlist address
+     * `allowlistAddress_` and fixed USDC token `usdcAddress_`.
      * @param minterFilter Minter filter for which this will be a
      * filtered minter.
+     * @param allowlistAddress_ Initial privileged allowlist address.
+     * @param usdcAddress_ Fixed USDC ERC-20 token address for this minter.
      */
-    constructor(address minterFilter) ReentrancyGuard() {
+    constructor(
+        address minterFilter,
+        address allowlistAddress_,
+        address usdcAddress_
+    ) ReentrancyGuard() {
+        require(usdcAddress_ != address(0), "Only non-zero addresses");
         minterFilterAddress = minterFilter;
         _minterFilter = IMinterFilterV1(minterFilter);
+        usdcAddress = usdcAddress_;
+        _setAllowlistAddress(allowlistAddress_);
+    }
+
+    /**
+     * @notice Updates the single privileged allowlist address for this minter.
+     * Restricted to the shared minter filter's Admin ACL.
+     * @param allowlistAddress_ New privileged allowlist address.
+     */
+    function updateAllowlistAddress(address allowlistAddress_) external {
+        AuthLib.onlyMinterFilterAdminACL({
+            minterFilterAddress: minterFilterAddress,
+            sender: msg.sender,
+            contract_: address(this),
+            selector: this.updateAllowlistAddress.selector
+        });
+        _setAllowlistAddress(allowlistAddress_);
     }
 
     /**
@@ -136,15 +185,19 @@ contract MinterSetPriceTieredOnChainAllowV0 is
 
     /**
      * @notice Updates this minter's public and allowlist prices per token of
-     * project `projectId`, in Wei. The public price is paid by
-     * non-allowlisted addresses, and the allowlist price is paid by
-     * allowlisted addresses.
+     * project `projectId`, in USDC base units.
+     * The public price is paid by non-allowlisted addresses, and the allowlist
+     * price is paid by the privileged allowlist address.
+     * Also configures the project's SplitFunds currency to this minter's fixed
+     * USDC token if not already configured.
      * @dev Note that it is intentionally supported here that either configured
      * price may be explicitly set to `0`.
      * @param projectId Project ID to set the prices for.
      * @param coreContract Core contract address for the given project.
-     * @param publicPricePerTokenInWei Public price per token, in Wei.
-     * @param allowlistPricePerTokenInWei Allowlist price per token, in Wei.
+     * @param publicPricePerTokenInWei Public price per token, in USDC base
+     * units.
+     * @param allowlistPricePerTokenInWei Allowlist price per token, in USDC
+     * base units.
      */
     function updatePricesPerTokenInWei(
         uint256 projectId,
@@ -157,19 +210,36 @@ contract MinterSetPriceTieredOnChainAllowV0 is
             coreContract: coreContract,
             sender: msg.sender
         });
+
+        // ensure project's SplitFunds currency is this minter's fixed USDC
+        (address configuredCurrencyAddress, ) = SplitFundsLib
+            .getCurrencyInfoERC20({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+        if (configuredCurrencyAddress != usdcAddress) {
+            SplitFundsLib.updateProjectCurrencyInfoERC20({
+                projectId: projectId,
+                coreContract: coreContract,
+                currencySymbol: "USDC",
+                currencyAddress: usdcAddress
+            });
+        }
+
         SetPriceLib.updatePricePerToken({
             projectId: projectId,
             coreContract: coreContract,
             pricePerToken: publicPricePerTokenInWei
         });
-        _allowlistPriceStorage().prices[coreContract][
+        _allowlistPricePerToken[coreContract][
             projectId
         ] = allowlistPricePerTokenInWei;
-        emit AllowlistPricePerTokenUpdated(
-            projectId,
-            coreContract,
-            allowlistPricePerTokenInWei
-        );
+        emit GenericMinterEventsLib.ConfigValueSet({
+            projectId: projectId,
+            coreContract: coreContract,
+            key: CONFIG_ALLOWLIST_PRICE_PER_TOKEN,
+            value: uint256(allowlistPricePerTokenInWei)
+        });
 
         // for convenience, sync local max invocations to the core contract if
         // and only if max invocations have not already been synced.
@@ -192,123 +262,29 @@ contract MinterSetPriceTieredOnChainAllowV0 is
     }
 
     /**
-     * @notice Adds addresses to the allowlist for project `projectId`.
-     * @param projectId Project ID to add addresses to the allowlist for.
-     * @param coreContract Core contract address for the given project.
-     * @param addresses Array of addresses to add to the allowlist.
-     */
-    function addAddressesToAllowlist(
-        uint256 projectId,
-        address coreContract,
-        address[] calldata addresses
-    ) external {
-        AuthLib.onlyArtist({
-            projectId: projectId,
-            coreContract: coreContract,
-            sender: msg.sender
-        });
-        OnChainAllowlistLib.addAddressesToAllowlist({
-            projectId: projectId,
-            coreContract: coreContract,
-            addresses: addresses
-        });
-    }
-
-    /**
-     * @notice Removes addresses from the allowlist for project `projectId`.
-     * @param projectId Project ID to remove addresses from the allowlist for.
-     * @param coreContract Core contract address for the given project.
-     * @param addresses Array of addresses to remove from the allowlist.
-     */
-    function removeAddressesFromAllowlist(
-        uint256 projectId,
-        address coreContract,
-        address[] calldata addresses
-    ) external {
-        AuthLib.onlyArtist({
-            projectId: projectId,
-            coreContract: coreContract,
-            sender: msg.sender
-        });
-        OnChainAllowlistLib.removeAddressesFromAllowlist({
-            projectId: projectId,
-            coreContract: coreContract,
-            addresses: addresses
-        });
-    }
-
-    /**
-     * @notice Adds and removes addresses from the allowlist for project
-     * `projectId` in a single transaction.
-     * @param projectId Project ID to modify the allowlist for.
-     * @param coreContract Core contract address for the given project.
-     * @param addressesToAdd Array of addresses to add to the allowlist.
-     * @param addressesToRemove Array of addresses to remove from the allowlist.
-     * @dev if an address is included in both add and remove arrays, it will
-     * be removed.
-     */
-    function addAndRemoveAddressesFromAllowlist(
-        uint256 projectId,
-        address coreContract,
-        address[] calldata addressesToAdd,
-        address[] calldata addressesToRemove
-    ) external {
-        AuthLib.onlyArtist({
-            projectId: projectId,
-            coreContract: coreContract,
-            sender: msg.sender
-        });
-        OnChainAllowlistLib.addAddressesToAllowlist({
-            projectId: projectId,
-            coreContract: coreContract,
-            addresses: addressesToAdd
-        });
-        OnChainAllowlistLib.removeAddressesFromAllowlist({
-            projectId: projectId,
-            coreContract: coreContract,
-            addresses: addressesToRemove
-        });
-    }
-
-    /**
      * @notice Purchases a token from project `projectId`.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
+     * @param maxPricePerToken Maximum price of token being allowed by the
+     * purchaser, in USDC base units.
+     * @param currencyAddress Currency address of token. Must equal this
+     * minter's fixed USDC address.
      * @return tokenId Token ID of minted token
      */
     function purchase(
         uint256 projectId,
-        address coreContract
-    ) external payable returns (uint256 tokenId) {
+        address coreContract,
+        uint256 maxPricePerToken,
+        address currencyAddress
+    ) external returns (uint256 tokenId) {
         tokenId = purchaseTo({
             to: msg.sender,
             projectId: projectId,
-            coreContract: coreContract
+            coreContract: coreContract,
+            maxPricePerToken: maxPricePerToken,
+            currencyAddress: currencyAddress
         });
         return tokenId;
-    }
-
-    /**
-     * @notice Purchases `quantity` tokens from project `projectId`.
-     * Validates that msg.value is sufficient for the total cost based on the
-     * caller's price tier. Refunds any excess ETH.
-     * @param projectId Project ID to mint tokens on.
-     * @param coreContract Core contract address for the given project.
-     * @param quantity Number of tokens to purchase. Must be greater than 0.
-     * @return tokenIds Array of token IDs of minted tokens
-     */
-    function purchaseMultiple(
-        uint256 projectId,
-        address coreContract,
-        uint24 quantity
-    ) external payable returns (uint256[] memory tokenIds) {
-        tokenIds = purchaseMultipleTo({
-            to: msg.sender,
-            projectId: projectId,
-            coreContract: coreContract,
-            quantity: quantity
-        });
-        return tokenIds;
     }
 
     /**
@@ -316,18 +292,26 @@ contract MinterSetPriceTieredOnChainAllowV0 is
      * seed to the token in the same transaction.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
+     * @param maxPricePerToken Maximum price of token being allowed by the
+     * purchaser, in USDC base units.
+     * @param currencyAddress Currency address of token. Must equal this
+     * minter's fixed USDC address.
      * @param hashSeed Hash seed to assign to the token. Must be non-zero.
      * @return tokenId Token ID of minted token
      */
     function purchaseWithHashSeed(
         uint256 projectId,
         address coreContract,
+        uint256 maxPricePerToken,
+        address currencyAddress,
         bytes12 hashSeed
-    ) external payable returns (uint256 tokenId) {
+    ) external returns (uint256 tokenId) {
         tokenId = purchaseToWithHashSeed({
             to: msg.sender,
             projectId: projectId,
             coreContract: coreContract,
+            maxPricePerToken: maxPricePerToken,
+            currencyAddress: currencyAddress,
             hashSeed: hashSeed
         });
         return tokenId;
@@ -375,24 +359,42 @@ contract MinterSetPriceTieredOnChainAllowV0 is
     }
 
     /**
-     * @notice Returns whether an address is on the allowlist for a given
-     * project.
-     * @param projectId The ID of the project to check the allowlist for.
+     * @notice Returns whether `wallet` is the privileged allowlist address
+     * for this minter.
+     * @dev `projectId` and `coreContract` are unused; retained for ABI
+     * consistency with other allowlist minters
+     * This minter uses a single minter-wide allowlist address.
+     * @param projectId Project ID to be queried.
      * @param coreContract Core contract address for the given project.
      * @param wallet The address to check.
-     * @return bool True if the address is on the allowlist, false otherwise.
+     * @return bool True if the address is the configured allowlist address.
      */
     function isAllowlisted(
         uint256 projectId,
         address coreContract,
         address wallet
     ) external view returns (bool) {
-        return
-            OnChainAllowlistLib.isAllowlisted({
-                projectId: projectId,
-                coreContract: coreContract,
-                wallet: wallet
-            });
+        // @dev unused; ABI parity with project-scoped allowlist minters
+        projectId;
+        coreContract;
+        return wallet == allowlistAddress;
+    }
+
+    /**
+     * @notice Returns whether `hashSeed` has already been used for a hash-seed
+     * purchase on project `projectId` of core contract `coreContract`.
+     * @dev Informational only;
+     * @param projectId Project ID to query.
+     * @param coreContract Core contract address to query.
+     * @param hashSeed Hash seed to query.
+     * @return used True if the hash seed has already been used on this project.
+     */
+    function projectHashSeedIsUsed(
+        uint256 projectId,
+        address coreContract,
+        bytes12 hashSeed
+    ) external view returns (bool used) {
+        return _projectHashSeedIsUsed[coreContract][projectId][hashSeed];
     }
 
     /**
@@ -475,21 +477,64 @@ contract MinterSetPriceTieredOnChainAllowV0 is
     }
 
     /**
-     * @notice Gets if price of token is configured, price of minting a
+     * @notice Gets your balance of this minter's fixed USDC token.
+     * @param projectId Project ID to be queried.
+     * @param coreContract The address of the core contract.
+     * @return balance Balance of USDC
+     */
+    function getYourBalanceOfProjectERC20(
+        uint256 projectId,
+        address coreContract
+    ) external view returns (uint256 balance) {
+        // @dev unused; ABI parity with MinterSetPriceERC20V5
+        projectId;
+        coreContract;
+        balance = SplitFundsLib.getERC20Balance({
+            currencyAddress: usdcAddress,
+            walletAddress: msg.sender
+        });
+        return balance;
+    }
+
+    /**
+     * @notice Gets your allowance for this minter of this minter's fixed USDC
+     * token.
+     * @param projectId Project ID to be queried.
+     * @param coreContract The address of the core contract.
+     * @return remaining Remaining allowance of USDC
+     */
+    function checkYourAllowanceOfProjectERC20(
+        uint256 projectId,
+        address coreContract
+    ) external view returns (uint256 remaining) {
+        // @dev unused; ABI parity with MinterSetPriceERC20V5 (USDC is immutable)
+        projectId;
+        coreContract;
+        remaining = SplitFundsLib.getERC20Allowance({
+            currencyAddress: usdcAddress,
+            walletAddress: msg.sender,
+            spenderAddress: address(this)
+        });
+        return remaining;
+    }
+
+    /**
+     * @notice Gets if price of token is configured, public price of minting a
      * token on project `projectId`, and currency symbol and address to be
-     * used as payment. Returns the public price.
-     * `isConfigured` is true only if both the public price and the allowlist
-     * price have been configured on this minter.
+     * used as payment.
+     * Note that "tokenPriceInWei" is a misnomer for ERC20 tokens, but is used
+     * here for ABI consistency with the ETH minters. The value returned
+     * represents the price per token in USDC base units.
      * @param projectId Project ID to get price information for
      * @param coreContract Contract address of the core contract
-     * @return isConfigured true only if both public and allowlist prices have
-     * been configured on this minter
-     * @return tokenPriceInWei current public price of token on this minter -
-     * invalid if price has not yet been configured
+     * @return isConfigured true only if prices have been configured on this
+     * minter
+     * @return tokenPriceInWei current public price of token on this minter, in
+     * USDC base units - invalid if price has not yet been configured
      * @return currencySymbol currency symbol for purchases of project on this
-     * minter. This minter always returns "ETH"
+     * minter. This minter always returns "USDC"
      * @return currencyAddress currency address for purchases of project on
-     * this minter. This minter always returns null address, reserved for ether
+     * this minter. This minter always returns its fixed USDC address.
      */
     function getPriceInfo(
         uint256 projectId,
@@ -510,46 +555,44 @@ contract MinterSetPriceTieredOnChainAllowV0 is
                     projectId: projectId,
                     coreContract: coreContract
                 });
+        // @dev Unlike configurable-ERC20 minters, no
+        // `currencyAddress != address(0)` check is needed: USDC is set in the
+        // constructor and always returned via immutable `usdcAddress`, so
+        // `isConfigured` only reflects whether prices have been set.
         isConfigured = setPriceProjectConfig_.priceIsConfigured;
         tokenPriceInWei = setPriceProjectConfig_.pricePerToken;
-        currencySymbol = "ETH";
-        currencyAddress = address(0);
+        currencySymbol = "USDC";
+        currencyAddress = usdcAddress;
     }
 
     /**
-     * @notice Gets the allowlist price for project `projectId`.
+     * @notice Gets if price of token is configured, allowlist price of minting
+     * a token on project `projectId`, and currency symbol and address to be
+     * used as payment.
      * @param projectId Project ID to get allowlist price information for
      * @param coreContract Contract address of the core contract
-     * @return allowlistPricePerTokenInWei current allowlist price per token
-     * on this minter, in Wei. Only valid if prices have been configured
-     * (check via `getPriceInfo`).
+     * @return isConfigured true only if prices have been configured on this
+     * minter
+     * @return tokenPriceInWei current allowlist price of token on this minter,
+     * in USDC base units
+     * @return currencySymbol currency symbol for purchases of project on this
+     * minter.
+     * @return currencyAddress currency address for purchases of project on
+     * this minter.
      */
     function getAllowlistPriceInfo(
         uint256 projectId,
         address coreContract
-    ) external view returns (uint256 allowlistPricePerTokenInWei) {
-        allowlistPricePerTokenInWei = _allowlistPriceStorage().prices[
-            coreContract
-        ][projectId];
-    }
-
-    /**
-     * @notice Returns the effective price for a given wallet address on
-     * project `projectId`. If the wallet is allowlisted, returns the
-     * allowlist price; otherwise returns the public price.
-     * @param projectId Project ID to get price information for
-     * @param coreContract Contract address of the core contract
-     * @param wallet Address to check the effective price for
-     * @return isConfigured true only if prices have been configured for the
-     * project
-     * @return tokenPriceInWei effective price per token for the given wallet,
-     * in Wei
-     */
-    function getPriceInfoForAddress(
-        uint256 projectId,
-        address coreContract,
-        address wallet
-    ) external view returns (bool isConfigured, uint256 tokenPriceInWei) {
+    )
+        external
+        view
+        returns (
+            bool isConfigured,
+            uint256 tokenPriceInWei,
+            string memory currencySymbol,
+            address currencyAddress
+        )
+    {
         SetPriceLib.SetPriceProjectConfig
             storage setPriceProjectConfig_ = SetPriceLib
                 .getSetPriceProjectConfig({
@@ -557,19 +600,55 @@ contract MinterSetPriceTieredOnChainAllowV0 is
                     coreContract: coreContract
                 });
         isConfigured = setPriceProjectConfig_.priceIsConfigured;
-        if (
-            OnChainAllowlistLib.isAllowlisted({
-                projectId: projectId,
-                coreContract: coreContract,
-                wallet: wallet
-            })
-        ) {
-            tokenPriceInWei = _allowlistPriceStorage().prices[coreContract][
-                projectId
-            ];
+        tokenPriceInWei = _allowlistPricePerToken[coreContract][projectId];
+        currencySymbol = "USDC";
+        currencyAddress = usdcAddress;
+    }
+
+    /**
+     * @notice Returns the effective price for a given wallet address on
+     * project `projectId`. If the wallet is the privileged allowlist address,
+     * returns the allowlist price; otherwise returns the public price.
+     * @param projectId Project ID to get price information for
+     * @param coreContract Contract address of the core contract
+     * @param wallet Address to check the effective price for
+     * @return isConfigured true only if prices have been configured for the
+     * project
+     * @return tokenPriceInWei effective price per token for the given wallet,
+     * in USDC base units
+     * @return currencySymbol currency symbol for purchases of project on this
+     * minter.
+     * @return currencyAddress currency address for purchases of project on
+     * this minter.
+     */
+    function getPriceInfoForAddress(
+        uint256 projectId,
+        address coreContract,
+        address wallet
+    )
+        external
+        view
+        returns (
+            bool isConfigured,
+            uint256 tokenPriceInWei,
+            string memory currencySymbol,
+            address currencyAddress
+        )
+    {
+        SetPriceLib.SetPriceProjectConfig
+            storage setPriceProjectConfig_ = SetPriceLib
+                .getSetPriceProjectConfig({
+                    projectId: projectId,
+                    coreContract: coreContract
+                });
+        isConfigured = setPriceProjectConfig_.priceIsConfigured;
+        if (wallet == allowlistAddress) {
+            tokenPriceInWei = _allowlistPricePerToken[coreContract][projectId];
         } else {
             tokenPriceInWei = setPriceProjectConfig_.pricePerToken;
         }
+        currencySymbol = "USDC";
+        currencyAddress = usdcAddress;
     }
 
     /**
@@ -602,17 +681,25 @@ contract MinterSetPriceTieredOnChainAllowV0 is
      * @param to Address to be the new token's owner.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
+     * @param maxPricePerToken Maximum price of token being allowed by the
+     * purchaser, in USDC base units.
+     * @param currencyAddress Currency address of token. Must equal this
+     * minter's fixed USDC address.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
         address to,
         uint256 projectId,
-        address coreContract
-    ) public payable nonReentrant returns (uint256 tokenId) {
+        address coreContract,
+        uint256 maxPricePerToken,
+        address currencyAddress
+    ) public nonReentrant returns (uint256 tokenId) {
         tokenId = _purchaseToInternal({
             to: to,
             projectId: projectId,
             coreContract: coreContract,
+            maxPricePerToken: maxPricePerToken,
+            currencyAddress: currencyAddress,
             hashSeed: bytes12(0)
         });
         return tokenId;
@@ -625,6 +712,10 @@ contract MinterSetPriceTieredOnChainAllowV0 is
      * @param to Address to be the new token's owner.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
+     * @param maxPricePerToken Maximum price of token being allowed by the
+     * purchaser, in USDC base units.
+     * @param currencyAddress Currency address of token. Must equal this
+     * minter's fixed USDC address.
      * @param hashSeed Hash seed to assign to the token. Must be non-zero.
      * @return tokenId Token ID of minted token
      */
@@ -632,13 +723,17 @@ contract MinterSetPriceTieredOnChainAllowV0 is
         address to,
         uint256 projectId,
         address coreContract,
+        uint256 maxPricePerToken,
+        address currencyAddress,
         bytes12 hashSeed
-    ) public payable nonReentrant returns (uint256 tokenId) {
+    ) public nonReentrant returns (uint256 tokenId) {
         require(hashSeed != bytes12(0), "Only non-zero hash seeds");
         tokenId = _purchaseToInternal({
             to: to,
             projectId: projectId,
             coreContract: coreContract,
+            maxPricePerToken: maxPricePerToken,
+            currencyAddress: currencyAddress,
             hashSeed: hashSeed
         });
         return tokenId;
@@ -647,11 +742,15 @@ contract MinterSetPriceTieredOnChainAllowV0 is
     /**
      * @notice Internal function to handle token purchases, with optional hash
      * seed assignment. Determines effective price based on allowlist status:
-     * allowlisted addresses pay the allowlist price, others pay the public
-     * price.
+     * the privileged allowlist address pays the allowlist price, others pay
+     * the public price. Payment is always in this minter's fixed USDC token.
      * @param to Address to be the new token's owner.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
+     * @param maxPricePerToken Maximum price of token being allowed by the
+     * purchaser, in USDC base units.
+     * @param currencyAddress Currency address of token. Must equal this
+     * minter's fixed USDC address.
      * @param hashSeed Hash seed to assign to the token. If bytes12(0), no hash
      * seed assignment is performed.
      * @return tokenId Token ID of minted token
@@ -660,6 +759,8 @@ contract MinterSetPriceTieredOnChainAllowV0 is
         address to,
         uint256 projectId,
         address coreContract,
+        uint256 maxPricePerToken,
+        address currencyAddress,
         bytes12 hashSeed
     ) private returns (uint256 tokenId) {
         // CHECKS
@@ -678,33 +779,38 @@ contract MinterSetPriceTieredOnChainAllowV0 is
         // pre-mint checks for set price lib (reverts if not configured)
         // @dev since both prices are set atomically, this also confirms the
         // allowlist price has been configured
-        uint256 publicPricePerTokenInWei = SetPriceLib
-            .preMintChecksAndGetPrice({
-                projectId: projectId,
-                coreContract: coreContract
-            });
+        uint256 publicPricePerToken = SetPriceLib.preMintChecksAndGetPrice({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+
+        // validate that the currency address matches this minter's fixed USDC
+        require(
+            currencyAddress == usdcAddress,
+            "Currency addresses must match"
+        );
 
         // determine effective price based on allowlist status
-        uint256 pricePerTokenInWei;
-        if (
-            OnChainAllowlistLib.isAllowlisted({
-                projectId: projectId,
-                coreContract: coreContract,
-                wallet: msg.sender
-            })
-        ) {
-            pricePerTokenInWei = _allowlistPriceStorage().prices[coreContract][
-                projectId
-            ];
+        uint256 pricePerToken;
+        if (msg.sender == allowlistAddress) {
+            pricePerToken = _allowlistPricePerToken[coreContract][projectId];
         } else {
-            pricePerTokenInWei = publicPricePerTokenInWei;
+            pricePerToken = publicPricePerToken;
         }
 
-        require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
+        // validate that the specified maximum price is greater than or equal
+        // to the effective price per token
+        require(
+            maxPricePerToken >= pricePerToken,
+            "Only max price gte token price"
+        );
 
         // EFFECTS
         // if hash seed is provided, pre-set it before minting
         if (hashSeed != bytes12(0)) {
+            // @dev track usage for views; uniqueness is not enforced
+            _projectHashSeedIsUsed[coreContract][projectId][hashSeed] = true;
+
             // get current invocations to pre-compute the new token ID
             (uint256 invocations, , , , , ) = IGenArt721CoreContractV3_Base(
                 coreContract
@@ -744,9 +850,9 @@ contract MinterSetPriceTieredOnChainAllowV0 is
         });
 
         // INTERACTIONS
-        SplitFundsLib.splitFundsETHRefundSender({
+        SplitFundsLib.splitFundsERC20({
             projectId: projectId,
-            pricePerTokenInWei: pricePerTokenInWei,
+            pricePerToken: pricePerToken,
             coreContract: coreContract
         });
 
@@ -754,141 +860,12 @@ contract MinterSetPriceTieredOnChainAllowV0 is
     }
 
     /**
-     * @notice Purchases `quantity` tokens from project `projectId` and sets
-     * the tokens' owner to `to`.
-     * Validates that msg.value is sufficient for the total cost based on the
-     * caller's price tier. Refunds any excess ETH.
-     * @param to Address to be the new tokens' owner.
-     * @param projectId Project ID to mint tokens on.
-     * @param coreContract Core contract address for the given project.
-     * @param quantity Number of tokens to purchase. Must be greater than 0.
-     * @return tokenIds Array of token IDs of minted tokens
+     * @notice Sets and emits the privileged allowlist address.
+     * @param allowlistAddress_ New privileged allowlist address.
      */
-    function purchaseMultipleTo(
-        address to,
-        uint256 projectId,
-        address coreContract,
-        uint24 quantity
-    ) public payable nonReentrant returns (uint256[] memory tokenIds) {
-        tokenIds = _purchaseMultipleToInternal({
-            to: to,
-            projectId: projectId,
-            coreContract: coreContract,
-            quantity: quantity
-        });
-        return tokenIds;
-    }
-
-    /**
-     * @notice Internal function to handle batch token purchases. Determines
-     * effective price based on allowlist status, validates total msg.value,
-     * mints all tokens, splits funds per-token, and refunds any excess ETH.
-     * @param to Address to be the new tokens' owner.
-     * @param projectId Project ID to mint tokens on.
-     * @param coreContract Core contract address for the given project.
-     * @param quantity Number of tokens to purchase.
-     * @return tokenIds Array of token IDs of minted tokens
-     */
-    function _purchaseMultipleToInternal(
-        address to,
-        uint256 projectId,
-        address coreContract,
-        uint24 quantity
-    ) private returns (uint256[] memory tokenIds) {
-        require(quantity > 0, "Must mint at least one token");
-
-        // CHECKS
-        MaxInvocationsLib.preMintChecks({
-            projectId: projectId,
-            coreContract: coreContract
-        });
-
-        // pre-mint checks for set price lib (reverts if not configured)
-        // @dev since both prices are set atomically, this also confirms the
-        // allowlist price has been configured
-        uint256 publicPricePerTokenInWei = SetPriceLib
-            .preMintChecksAndGetPrice({
-                projectId: projectId,
-                coreContract: coreContract
-            });
-
-        // determine effective price based on allowlist status
-        uint256 pricePerTokenInWei;
-        if (
-            OnChainAllowlistLib.isAllowlisted({
-                projectId: projectId,
-                coreContract: coreContract,
-                wallet: msg.sender
-            })
-        ) {
-            pricePerTokenInWei = _allowlistPriceStorage().prices[coreContract][
-                projectId
-            ];
-        } else {
-            pricePerTokenInWei = publicPricePerTokenInWei;
-        }
-
-        // @dev overflow automatically reverts in Solidity 0.8.x
-        uint256 totalCost = pricePerTokenInWei * uint256(quantity);
-        require(msg.value >= totalCost, "Min value to mint req.");
-
-        // EFFECTS
-        tokenIds = new uint256[](quantity);
-        for (uint256 i; i < quantity; ) {
-            tokenIds[i] = _minterFilter.mint_joo({
-                to: to,
-                projectId: projectId,
-                coreContract: coreContract,
-                sender: msg.sender
-            });
-
-            MaxInvocationsLib.validateMintEffectsInvocations({
-                tokenId: tokenIds[i],
-                coreContract: coreContract
-            });
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        // INTERACTIONS
-        // split funds for each token individually (revenue splits are
-        // calculated per-token by the core contract)
-        for (uint256 i; i < quantity; ) {
-            SplitFundsLib.splitRevenuesETHNoRefund({
-                projectId: projectId,
-                valueInWei: pricePerTokenInWei,
-                coreContract: coreContract
-            });
-            unchecked {
-                ++i;
-            }
-        }
-
-        // refund any excess ETH
-        uint256 refund = msg.value - totalCost;
-        if (refund > 0) {
-            (bool success_, ) = msg.sender.call{value: refund}("");
-            require(success_, "Refund failed");
-        }
-
-        return tokenIds;
-    }
-
-    /**
-     * @notice Return the storage struct for reading and writing. Uses a
-     * diamond storage pattern for the allowlist price configuration.
-     * @return storageStruct The AllowlistPriceStorage struct.
-     */
-    function _allowlistPriceStorage()
-        private
-        pure
-        returns (AllowlistPriceStorage storage storageStruct)
-    {
-        bytes32 position = ALLOWLIST_PRICE_STORAGE_POSITION;
-        assembly ("memory-safe") {
-            storageStruct.slot := position
-        }
+    function _setAllowlistAddress(address allowlistAddress_) private {
+        require(allowlistAddress_ != address(0), "Only non-zero addresses");
+        allowlistAddress = allowlistAddress_;
+        emit AllowlistAddressUpdated(allowlistAddress_);
     }
 }
