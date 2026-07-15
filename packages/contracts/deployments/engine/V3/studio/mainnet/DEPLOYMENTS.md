@@ -3075,3 +3075,47 @@ Date: 2024-10-03T20:31:48.898Z
         ---
       
         
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2026-07-15T18:08:46.112Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** prod
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000f10424506961445f935ec76579e0769F#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x000000000132CFBeC18C143aB0AaD021B1fDEA13#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x00000067f7CE2C47f295b2DE3485a796d2FC058f#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine Flex | 0xcfa6A2d5bc2a77C0cDd3046E09Da21E45d1dF0F1
+  
+        **Engine Contract:** https://etherscan.io/address/0xcfa6A2d5bc2a77C0cDd3046E09Da21E45d1dF0F1#code
+        
+        **Metadata**
+        - **Starting Project Id:** 1
+        - **Artist Name:** ryley-o.eth
+        - **Token Name:** Art Blocks Studio | 104
+        - **Token Ticker:** ABSTUDIO_104
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x9c1Fb062BC7B6fF88Eb8384e70814957E7f1B482
+        - **Super Admin Address:** 0x2A98FCD155c9Da4A28BdB32acc935836C233882A        
+
+      **Other**
+
+      - **Starting project ID:** 1
+      - **Image Bucket:** abstudio-104-mainnet
+        
+        ---
+      
+        
