@@ -18,6 +18,7 @@ import {ReentrancyGuard} from "@openzeppelin-5.0/contracts/utils/ReentrancyGuard
 import {Web3Call} from "./Web3Call.sol";
 import {ImmutableStringArray} from "../libs/v0.8.x/ImmutableStringArray.sol";
 import {ABHelpers} from "../libs/v0.8.x/ABHelpers.sol";
+import {Bytes32Strings} from "../libs/v0.8.x/Bytes32Strings.sol";
 
 /**
  * @title Project Metadata Parameters (PMP) contract, V1
@@ -57,6 +58,7 @@ contract PMPV1 is IPMPV0, Web3Call, ReentrancyGuard {
     using Strings for uint256;
     using Strings for int256;
     using ImmutableStringArray for ImmutableStringArray.StringArray;
+    using Bytes32Strings for bytes32;
 
     IDelegateRegistry public immutable delegateRegistry;
     bytes32 public constant DELEGATION_REGISTRY_TOKEN_OWNER_RIGHTS =
@@ -123,6 +125,16 @@ contract PMPV1 is IPMPV0, Web3Call, ReentrancyGuard {
     constructor(IDelegateRegistry delegateRegistry_) {
         delegateRegistry = delegateRegistry_;
         emit DelegationRegistryUpdated(address(delegateRegistry_));
+    }
+
+    /**
+     * @notice Returns the type of this PMP contract, e.g. "PMPV1".
+     * @dev Enables on-chain and off-chain consumers to distinguish PMP versions, since
+     * PMPV0 and PMPV1 share the same IPMPV0 ABI but differ in value-lock behavior.
+     * @return The type identifier of this contract as a string.
+     */
+    function pmpType() external pure returns (string memory) {
+        return _TYPE.toString();
     }
 
     /**

@@ -63,6 +63,17 @@ describe("PMPV1_Lock", function () {
     );
   }
 
+  describe("pmpType getter", function () {
+    it("returns the PMPV1 type identifier", async function () {
+      const config = await loadFixture(_beforeEach);
+      // @dev pmpType is a PMPV1-only getter not present on the shared IPMPV0 typing
+      const pmpType = await (config.pmp as unknown as {
+        pmpType: () => Promise<string>;
+      }).pmpType();
+      expect(pmpType).to.equal("PMPV1");
+    });
+  });
+
   describe("value-lock enforcement in _validatePMPInputAndAuth", function () {
     it("allows configuring a value before the lock timestamp", async function () {
       const config = await loadFixture(_beforeEach);
@@ -245,6 +256,173 @@ describe("PMPV1_Lock", function () {
           config.projectZeroTokenZero.toNumber(),
           [boolInput("freeBool", true)]
         );
+    });
+  });
+
+  describe("value-lock applies to String params (both value slots)", function () {
+    it("allows string writes before the lock and reverts after (non-artist + artist slots)", async function () {
+      const config = await loadFixture(_beforeEach);
+      const latest = await time.latest();
+      const lockTime = latest + 1000;
+      // ArtistAndTokenOwner String param so both the artist-string and non-artist-string
+      // slots are exercised through the same locked key.
+      const stringConfig = getPMPInputConfig(
+        "lockedString",
+        PMP_AUTH_ENUM.ArtistAndTokenOwner,
+        PMP_PARAM_TYPE_ENUM.String,
+        lockTime,
+        constants.AddressZero,
+        [],
+        ZERO_BYTES32,
+        ZERO_BYTES32
+      );
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          stringConfig,
+        ]);
+      // token owner writes the non-artist string slot before the lock
+      await config.pmp
+        .connect(config.accounts.user)
+        .configureTokenParams(
+          config.genArt721Core.address,
+          config.projectZeroTokenZero.toNumber(),
+          [
+            getPMPInput(
+              "lockedString",
+              PMP_PARAM_TYPE_ENUM.String,
+              ZERO_BYTES32,
+              false,
+              "before lock"
+            ),
+          ]
+        );
+      const before = await config.pmp.getTokenParams(
+        config.genArt721Core.address,
+        config.projectZeroTokenZero.toNumber()
+      );
+      expect(before[0].value).to.equal("before lock");
+      // advance past the lock
+      await advanceTimeAndBlock(2000);
+      // non-artist string slot is locked
+      await expectRevert(
+        config.pmp
+          .connect(config.accounts.user)
+          .configureTokenParams(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            [
+              getPMPInput(
+                "lockedString",
+                PMP_PARAM_TYPE_ENUM.String,
+                ZERO_BYTES32,
+                false,
+                "after lock"
+              ),
+            ]
+          ),
+        PARAM_LOCKED
+      );
+      // artist string slot is also locked (same key-level gate, before auth/type checks)
+      await expectRevert(
+        config.pmp
+          .connect(config.accounts.artist)
+          .configureTokenParams(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            [
+              getPMPInput(
+                "lockedString",
+                PMP_PARAM_TYPE_ENUM.String,
+                ZERO_BYTES32,
+                true, // artist string slot
+                "artist after lock"
+              ),
+            ]
+          ),
+        PARAM_LOCKED
+      );
+      // value remains cemented at the pre-lock string
+      const after = await config.pmp.getTokenParams(
+        config.genArt721Core.address,
+        config.projectZeroTokenZero.toNumber()
+      );
+      expect(after[0].value).to.equal("before lock");
+    });
+  });
+
+  describe("value-lock applies to delegate and address-auth callers", function () {
+    it("locks a delegate (token-owner delegation) after the lock timestamp", async function () {
+      const config = await loadFixture(_beforeEach);
+      const latest = await time.latest();
+      const lockTime = latest + 1000;
+      await configureLockedBool(config, "lockedBool", lockTime);
+      // token owner (user, owns token 0) delegates all to user2
+      await config.delegateRegistry
+        .connect(config.accounts.user)
+        .delegateAll(config.accounts.user2.address, constants.HashZero, true);
+      // delegate can write before the lock
+      await config.pmp
+        .connect(config.accounts.user2)
+        .configureTokenParams(
+          config.genArt721Core.address,
+          config.projectZeroTokenZero.toNumber(),
+          [boolInput("lockedBool", true)]
+        );
+      // advance past the lock; delegate is now blocked
+      await advanceTimeAndBlock(2000);
+      await expectRevert(
+        config.pmp
+          .connect(config.accounts.user2)
+          .configureTokenParams(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            [boolInput("lockedBool", false)]
+          ),
+        PARAM_LOCKED
+      );
+    });
+
+    it("locks the configured auth address after the lock timestamp", async function () {
+      const config = await loadFixture(_beforeEach);
+      const latest = await time.latest();
+      const lockTime = latest + 1000;
+      // Address-auth param authorizing user2 as the configuring address
+      const addressConfig = getPMPInputConfig(
+        "lockedBool",
+        PMP_AUTH_ENUM.Address,
+        PMP_PARAM_TYPE_ENUM.Bool,
+        lockTime,
+        config.accounts.user2.address,
+        [],
+        ZERO_BYTES32,
+        ZERO_BYTES32
+      );
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          addressConfig,
+        ]);
+      // auth address can write before the lock
+      await config.pmp
+        .connect(config.accounts.user2)
+        .configureTokenParams(
+          config.genArt721Core.address,
+          config.projectZeroTokenZero.toNumber(),
+          [boolInput("lockedBool", true)]
+        );
+      // advance past the lock; auth address is now blocked
+      await advanceTimeAndBlock(2000);
+      await expectRevert(
+        config.pmp
+          .connect(config.accounts.user2)
+          .configureTokenParams(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            [boolInput("lockedBool", false)]
+          ),
+        PARAM_LOCKED
+      );
     });
   });
 
