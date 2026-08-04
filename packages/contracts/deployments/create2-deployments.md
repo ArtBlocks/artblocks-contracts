@@ -289,3 +289,94 @@ Canonical append-only deployment log.
 - **Timestamp:** 2026-06-12T20:14:58.943Z
 
 ---
+
+## PMPV1
+
+- **Chain:** Sepolia (11155111)
+- **Address:** [0x7A347a2D3B13a839b34d0004D44c2580a1bf9E39](https://sepolia.etherscan.io/address/0x7A347a2D3B13a839b34d0004D44c2580a1bf9E39)
+- **Salt:** `0x0000000000000000000000000000000000000000000000000000000000000000`
+- **TX:** [0xd9553ed5d77d8638f496a95daf16b5ef372debe4453d798f43cedd0aec131546](https://sepolia.etherscan.io/tx/0xd9553ed5d77d8638f496a95daf16b5ef372debe4453d798f43cedd0aec131546)
+- **Args:** `["0x00000000000000447e69651d841bd8d104bed493"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xf3ae2894412d3105c111dd2b6bb1d09c91aba015bb5c348ace4bdf34846293c3`
+- **Timestamp:** 2026-08-04T00:03:15.944Z
+
+---
+
+## PMPV1
+
+- **Chain:** Shape (360)
+- **Address:** [0x00000000829C0278FBa4327efd97ab45493364cC](https://shapescan.xyz/address/0x00000000829C0278FBa4327efd97ab45493364cC)
+- **Salt:** `0x00df4e8d293d57718aac0b18cbfbe128c5d484ef433143d2ba53f183c32e0008`
+- **TX:** [0x29812259f16a6e614b193bf6423b9db054972f9a63a6246bd34d2884b9112ff1](https://shapescan.xyz/tx/0x29812259f16a6e614b193bf6423b9db054972f9a63a6246bd34d2884b9112ff1)
+- **Args:** `["0x00000000000000447e69651d841bd8d104bed493"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xf3ae2894412d3105c111dd2b6bb1d09c91aba015bb5c348ace4bdf34846293c3`
+- **Timestamp:** 2026-08-04T00:03:35.820Z
+
+---
+
+## PMPV1
+
+- **Chain:** Base (8453)
+- **Address:** [0x00000000829C0278FBa4327efd97ab45493364cC](https://basescan.org/address/0x00000000829C0278FBa4327efd97ab45493364cC)
+- **Salt:** `0x00df4e8d293d57718aac0b18cbfbe128c5d484ef433143d2ba53f183c32e0008`
+- **TX:** [0x3dd02476b5f8168fb4dc8b3b61427b7921c0cb10fcd747a974bf04e4c9c8c893](https://basescan.org/tx/0x3dd02476b5f8168fb4dc8b3b61427b7921c0cb10fcd747a974bf04e4c9c8c893)
+- **Args:** `["0x00000000000000447e69651d841bd8d104bed493"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xf3ae2894412d3105c111dd2b6bb1d09c91aba015bb5c348ace4bdf34846293c3`
+- **Timestamp:** 2026-08-04T00:03:55.065Z
+
+---
+
+## PMPV1
+
+- **Chain:** Arbitrum One (42161)
+- **Address:** [0x00000000829C0278FBa4327efd97ab45493364cC](https://arbiscan.io/address/0x00000000829C0278FBa4327efd97ab45493364cC)
+- **Salt:** `0x00df4e8d293d57718aac0b18cbfbe128c5d484ef433143d2ba53f183c32e0008`
+- **TX:** [0x599ba28b1f0b760113a8261c692c2b8622b0ddd3f4c77e627c64aa09a37a0e9e](https://arbiscan.io/tx/0x599ba28b1f0b760113a8261c692c2b8622b0ddd3f4c77e627c64aa09a37a0e9e)
+- **Args:** `["0x00000000000000447e69651d841bd8d104bed493"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xf3ae2894412d3105c111dd2b6bb1d09c91aba015bb5c348ace4bdf34846293c3`
+- **Timestamp:** 2026-08-04T00:04:04.189Z
+
+---
+
+## PMPV1
+
+- **Chain:** Ethereum Mainnet (1)
+- **Address:** [0x00000000829C0278FBa4327efd97ab45493364cC](https://etherscan.io/address/0x00000000829C0278FBa4327efd97ab45493364cC)
+- **Salt:** `0x00df4e8d293d57718aac0b18cbfbe128c5d484ef433143d2ba53f183c32e0008`
+- **TX:** [0x54d54f7b419c3df6f6e4a20ef54762fcc6a7024b8055a50c4dd2e7c0831ff610](https://etherscan.io/tx/0x54d54f7b419c3df6f6e4a20ef54762fcc6a7024b8055a50c4dd2e7c0831ff610)
+- **Args:** `["0x00000000000000447e69651d841bd8d104bed493"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xf3ae2894412d3105c111dd2b6bb1d09c91aba015bb5c348ace4bdf34846293c3`
+- **Timestamp:** 2026-08-04T00:04:17.054Z
+
+---
+
+## PMPConfigureLockHook
+
+- **Chain:** Ethereum Mainnet (1)
+- **Address:** [0x2Ca400b8152dE9318fa7c1EF960c5E79a6a3ACf5](https://etherscan.io/address/0x2Ca400b8152dE9318fa7c1EF960c5E79a6a3ACf5)
+- **Salt:** `0x0000000000000000000000000000000000000000000000000000000000000000`
+- **TX:** [0xe16c53162377d4116c4e5623c76ac82cff95efb8093fe4e98369179c75990c9b](https://etherscan.io/tx/0xe16c53162377d4116c4e5623c76ac82cff95efb8093fe4e98369179c75990c9b)
+- **Args:** `[["Print Claimed","Shape Series","Palette","Brush"],[1800000060,1831536060,1831536060,1831536060]]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x67e282522f8b2be791f40f8e43d836fe991932c6955144d825f4044d30b10212`
+- **Timestamp:** 2026-08-04T02:30:03.894Z
+
+---
+
+## PMPConfigureLockHook
+
+- **Chain:** Ethereum Mainnet (1)
+- **Address:** [0x13BFaD75728b6c070bf2585A2fe809Df468Af8Cb](https://etherscan.io/address/0x13BFaD75728b6c070bf2585A2fe809Df468Af8Cb)
+- **Salt:** `0x0000000000000000000000000000000000000000000000000000000000000000`
+- **TX:** [0x842a17cefc1bc13160f86e7f1ad7765c28df115f3e9b6fb3e2c98bc71f5b1c42](https://etherscan.io/tx/0x842a17cefc1bc13160f86e7f1ad7765c28df115f3e9b6fb3e2c98bc71f5b1c42)
+- **Args:** `[["canonYear","canonHour","canonMinute","canonMonth","canonDay"],[1813587000,1813587000,1813587000,1813587000,1813587000]]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x5c48b0e9f68539134f8999f806e97149f21e20c07587d98230180d144e0b2386`
+- **Timestamp:** 2026-08-04T02:30:17.055Z
+
+---

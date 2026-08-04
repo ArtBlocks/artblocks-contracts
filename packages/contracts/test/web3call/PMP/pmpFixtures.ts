@@ -36,6 +36,24 @@ export interface PMPFixtureConfig extends T_Config {
  * and creates test projects and tokens for PMP testing
  */
 export async function setupPMPFixture(): Promise<PMPFixtureConfig> {
+  return setupPMPFixtureForContract("PMPV0");
+}
+
+/**
+ * Sets up the same fixture as setupPMPFixture, but deploys PMPV1 in place of PMPV0.
+ * PMPV1 shares the IPMPV0 ABI, so the returned config is compatible with all PMP tests.
+ */
+export async function setupPMPV1Fixture(): Promise<PMPFixtureConfig> {
+  return setupPMPFixtureForContract("PMPV1");
+}
+
+/**
+ * Shared setup for the PMP fixture, parameterized by the PMP contract name to deploy
+ * (either "PMPV0" or "PMPV1"). Both expose the identical IPMPV0 ABI.
+ */
+async function setupPMPFixtureForContract(
+  pmpContractName: "PMPV0" | "PMPV1"
+): Promise<PMPFixtureConfig> {
   // Get the default config
   const config = await setupConfig();
 
@@ -55,7 +73,7 @@ export async function setupPMPFixture(): Promise<PMPFixtureConfig> {
   // Deploy PMPV0 contract
   // @dev delegate.xyz v2
   const delegateRegistry = await deployAndGet(config, "DelegateRegistry", []);
-  const pmp = (await deployAndGet(config, "PMPV0", [
+  const pmp = (await deployAndGet(config, pmpContractName, [
     delegateRegistry.address,
   ])) as PMPV0;
   // also deploy hook contracts so they are available for testing

@@ -138,6 +138,16 @@ module.exports = {
           browserURL: "https://hoodi.etherscan.io",
         },
       },
+    ],
+  },
+  // @dev Shape's explorer (shapescan.xyz) is a Blockscout instance, not Etherscan.
+  // It must be configured under the `blockscout` provider — placing it under
+  // `etherscan.customChains` makes hardhat-verify route it through the Etherscan V2
+  // API (api.etherscan.io/v2), which does not support Shape (chainId 360) and fails
+  // with "unsupported chainid".
+  blockscout: {
+    enabled: true,
+    customChains: [
       {
         network: "shape",
         chainId: 360,
