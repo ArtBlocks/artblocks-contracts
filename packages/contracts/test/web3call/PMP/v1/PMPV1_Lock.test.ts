@@ -67,9 +67,11 @@ describe("PMPV1_Lock", function () {
     it("returns the PMPV1 type identifier", async function () {
       const config = await loadFixture(_beforeEach);
       // @dev pmpType is a PMPV1-only getter not present on the shared IPMPV0 typing
-      const pmpType = await (config.pmp as unknown as {
-        pmpType: () => Promise<string>;
-      }).pmpType();
+      const pmpType = await (
+        config.pmp as unknown as {
+          pmpType: () => Promise<string>;
+        }
+      ).pmpType();
       expect(pmpType).to.equal("PMPV1");
     });
   });
@@ -510,10 +512,7 @@ describe("PMPV1_Lock", function () {
         config.projectZeroTokenZero.toNumber()
       );
       const asMap = Object.fromEntries(
-        tokenParams.map((p: { key: string; value: string }) => [
-          p.key,
-          p.value,
-        ])
+        tokenParams.map((p: { key: string; value: string }) => [p.key, p.value])
       );
       expect(asMap["palette"]).to.equal("blue");
       expect(asMap["count"]).to.equal("42");

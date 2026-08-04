@@ -61,9 +61,7 @@ describe("PMPConfigureLockHook", function () {
     });
 
     it("reverts on length mismatch", async function () {
-      await expect(
-        deployLockHook(["a"], [1, 2])
-      ).to.be.revertedWithCustomError(
+      await expect(deployLockHook(["a"], [1, 2])).to.be.revertedWithCustomError(
         await ethers.getContractFactory("PMPConfigureLockHook"),
         "LengthMismatch"
       );
@@ -125,7 +123,10 @@ describe("PMPConfigureLockHook", function () {
     });
 
     it("does not revert for a locked key before its deadline", async function () {
-      const hook = await deployLockHook(["a"], [(await time.latest()) + 10_000]);
+      const hook = await deployLockHook(
+        ["a"],
+        [(await time.latest()) + 10_000]
+      );
       await hook.onTokenPMPConfigure(constants.AddressZero, 0, input("a"));
     });
 
@@ -251,10 +252,7 @@ describe("PMPConfigureLockHook", function () {
         config.projectZeroTokenZero.toNumber()
       );
       const asMap = Object.fromEntries(
-        tokenParams.map((p: { key: string; value: string }) => [
-          p.key,
-          p.value,
-        ])
+        tokenParams.map((p: { key: string; value: string }) => [p.key, p.value])
       );
       expect(asMap["canonYear"]).to.equal("2026");
       expect(asMap["mood"]).to.equal("7");

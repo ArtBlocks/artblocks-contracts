@@ -92,8 +92,7 @@ contract PMPConfigureLockHook is AbstractPMPConfigureHook {
         ];
         // @dev keys not in the lock table (lockedAfterTimestamp == 0) are always allowed
         if (
-            lockedAfterTimestamp != 0 &&
-            block.timestamp >= lockedAfterTimestamp
+            lockedAfterTimestamp != 0 && block.timestamp >= lockedAfterTimestamp
         ) {
             revert ParamLocked(pmpInput.key, lockedAfterTimestamp);
         }
