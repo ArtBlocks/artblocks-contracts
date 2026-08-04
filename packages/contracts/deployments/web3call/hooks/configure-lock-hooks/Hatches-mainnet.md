@@ -25,18 +25,47 @@ existing PMPV0 `pmpLockedAfterTimestamp` values (note: two different lock dates)
 `Shape Series`, `Palette` contain spaces/caps — pass them byte-for-byte exactly as configured on
 PMPV0 (the hook hashes the raw key string).
 
-## Init code inputs for `scripts/get-init-code.ts`
+## ⚠️ Artist confirmation required before deploy/registration — `Print Claimed`
+
+`Print Claimed` is an **Artist-auth `Bool`** that locks on **2027-01-15** — a full year before the
+other three params (2028-01-15). On plain PMPV0 today this flag is **not** frozen: the artist can
+still flip it after the lock date. Registering this hook makes that lock real, so **after
+2027-01-15 the artist can no longer set `Print Claimed` on any token**.
+
+If any print-redemption / fulfillment flow writes `Print Claimed` after that date, this hook would
+revert those writes. Before deploying and handing off, explicitly confirm with the artist (Rob Dixon
+/ Radix) that:
+
+1. Freezing `Print Claimed` on 2027-01-15 is intended (the date was set by the artist in the PMPV0
+   config, presumably expecting the Dashboard's "values cemented permanently" semantics), **and**
+2. No print-claim writes need to happen after that date.
+
+If the answer to either is no, adjust the constructor timestamp for `Print Claimed` (or omit the key)
+before deploying — the initcode hash and address below will change accordingly.
+
+## Init code — `scripts/create2-deploy/`
+
+Add to `scripts/create2-deploy/config.ts`, then run `yarn hardhat run scripts/create2-deploy/index.ts`:
 
 ```typescript
-const inputs: T_Inputs = {
-  contractName: "PMPConfigureLockHook",
-  args: [
-    ["Print Claimed", "Shape Series", "Palette", "Brush"],
-    [1800000060, 1831536060, 1831536060, 1831536060],
-  ],
-  libraries: {},
-};
+export const deployConfigs: DeployConfig[] = [
+  {
+    contractName: "PMPConfigureLockHook",
+    args: [
+      ["Print Claimed", "Shape Series", "Palette", "Brush"],
+      [1800000060, 1831536060, 1831536060, 1831536060],
+    ],
+    libraries: {},
+    chainIds: [1], // mainnet only
+  },
+];
 ```
+
+- **initcodeHash:** `0x67e282522f8b2be791f40f8e43d836fe991932c6955144d825f4044d30b10212`
+- Address with all-zero salt: `0x2Ca400b8152dE9318fa7c1EF960c5E79a6a3ACf5`
+
+Vanity is not required for a one-off hook; the all-zero salt address above is a fine deploy target.
+Regenerate the hash if the constructor args change.
 
 ## Artist handoff — registration call
 
@@ -49,7 +78,7 @@ The artist (Rob Dixon / Radix) registers the hook:
 PMPV0.configureProjectHooks(
     0x0000006693e685fcfc54c9d423b5e321b4a15192, // coreContract
     0,                                          // projectId
-    <deployed PMPConfigureLockHook address>,    // tokenPMPPostConfigHook
+    0x2Ca400b8152dE9318fa7c1EF960c5E79a6a3ACf5, // tokenPMPPostConfigHook (deployed)
     address(0)                                  // tokenPMPReadAugmentationHook (none exists)
 );
 ```
@@ -57,11 +86,18 @@ PMPV0.configureProjectHooks(
 Note (residual trust): the lock only holds while this hook stays registered; the artist could later
 unregister it. Communicate this at handoff.
 
-## Results (fill in on deploy)
+> ⏳ Pending: `Print Claimed` lock-date (2027-01-15) confirmation from Rob Dixon. If he wants it
+> changed, the hook must be re-deployed (new constructor args → new address) and re-registered.
 
-salt: `TBD`
-Deploys to address: `TBD`
+## Results
+
+salt: `0x0000000000000000000000000000000000000000000000000000000000000000` (all-zero)
+Deployed to address: [`0x2Ca400b8152dE9318fa7c1EF960c5E79a6a3ACf5`](https://etherscan.io/address/0x2Ca400b8152dE9318fa7c1EF960c5E79a6a3ACf5) — ✅ verified on Etherscan
+initcodeHash: `0x67e282522f8b2be791f40f8e43d836fe991932c6955144d825f4044d30b10212`
+
+On-chain sanity check (post-deploy): `lockedKeysLength() == 4`; `lockedAfter` returns
+`Print Claimed → 1800000060`, `Shape Series/Palette/Brush → 1831536060`; ERC165 OK.
 
 ### Deployment transactions
 
-- mainnet: `TBD`
+- mainnet: [`0xe16c5316…c75990c9b`](https://etherscan.io/tx/0xe16c53162377d4116c4e5623c76ac82cff95efb8093fe4e98369179c75990c9b)
