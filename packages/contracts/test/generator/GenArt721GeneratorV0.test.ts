@@ -90,6 +90,9 @@ describe(`GenArt721GeneratorV0`, async function () {
   const jsNameAndVersion = "js@na";
   const jsNameAndVersionBytes =
     ethers.utils.formatBytes32String(jsNameAndVersion);
+  const customNameAndVersion = "custom@na";
+  const customNameAndVersionBytes =
+    ethers.utils.formatBytes32String(customNameAndVersion);
   const mitLicenseType = "MIT";
   const mitLicenseTypeBytes = ethers.utils.formatBytes32String(mitLicenseType);
   const naLicenseType = "NA";
@@ -163,6 +166,15 @@ describe(`GenArt721GeneratorV0`, async function () {
     // Add js to registry
     await config.dependencyRegistry.addDependency(
       jsNameAndVersionBytes,
+      naLicenseTypeBytes,
+      "",
+      "",
+      ""
+    );
+
+    // Add custom to registry
+    await config.dependencyRegistry.addDependency(
+      customNameAndVersionBytes,
       naLicenseTypeBytes,
       "",
       "",
@@ -1002,6 +1014,163 @@ describe(`GenArt721GeneratorV0`, async function () {
         expect(tokenHtml3).to.include(
           '"externalAssetDependencies":[{"dependency_type":"ONCHAIN","cid":"","data":"#web3call#eyJjR0Z5WVcweCI6IlhVaGhibVJzWlNCVWFHbHpJSHRiTENjaVFDTWtRQ01sUUNNa0pTTWxKQ1U9In0="}]'
         );
+      });
+    });
+
+    describe("custom@na raw HTML injection", function () {
+      // @dev mirrors the shape of real custom@na projects (e.g. Quine, send/receive):
+      // a complete HTML document that itself contains "</script>"
+      const rawHtmlProjectScript = [
+        "<!DOCTYPE html>",
+        "<html><head><style>body{background:#000}</style></head><body>",
+        "<script>const early = tokenData.hash;</script>",
+        "<script>console.log(early);</script>",
+        "</body></html>",
+      ].join("\n");
+
+      // Deploys a V3 core with a single project whose script/type are configurable,
+      // mints token 0, and returns the generator's HTML for it.
+      async function setupProjectAndGetHtml(
+        config: GenArt721GeneratorV0TestConfig,
+        projectScript: string,
+        scriptTypeBytes: string
+      ) {
+        const { genArt721Core: genArt721CoreV3, minterFilter } =
+          await deployCoreWithMinterFilter(
+            config,
+            "GenArt721CoreV3",
+            "MinterFilterV1"
+          );
+
+        const minter = (await deployAndGet(config, "MinterSetPriceV2", [
+          genArt721CoreV3.address,
+          minterFilter.address,
+        ])) as MinterSetPriceV2;
+        await minterFilter
+          .connect(config.accounts.deployer)
+          .addApprovedMinter(minter.address);
+
+        const projectId = await genArt721CoreV3.nextProjectId();
+        await genArt721CoreV3
+          .connect(config.accounts.deployer)
+          .addProject("name", config.accounts.artist.address);
+        await genArt721CoreV3
+          .connect(config.accounts.artist)
+          .addProjectScript(projectId, projectScript);
+        await genArt721CoreV3
+          .connect(config.accounts.artist)
+          .updateProjectScriptType(projectId, scriptTypeBytes);
+
+        await minterFilter
+          .connect(config.accounts.artist)
+          .setMinterForProject(projectId, minter.address);
+        await minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(projectId, 0);
+        await minter.connect(config.accounts.artist).purchase(projectId);
+
+        const tokenId = projectId.mul(ONE_MILLION);
+        await config.coreRegistry
+          ?.connect(config.accounts.deployer)
+          .registerContract(
+            genArt721CoreV3.address,
+            ethers.utils.formatBytes32String("DUMMY_VERSION"),
+            ethers.utils.formatBytes32String("DUMMY_TYPE")
+          );
+
+        return {
+          tokenHtml: await config.genArt721Generator.getTokenHtml(
+            genArt721CoreV3.address,
+            tokenId
+          ),
+          genArt721CoreV3,
+          tokenId,
+        };
+      }
+
+      it("injects the project script verbatim, without a wrapping script tag", async function () {
+        const config = await loadFixture(_beforeEach);
+        const { tokenHtml } = await setupProjectAndGetHtml(
+          config,
+          rawHtmlProjectScript,
+          customNameAndVersionBytes
+        );
+
+        // the document is present byte-for-byte, and is NOT wrapped in a script tag
+        expect(tokenHtml).to.include(rawHtmlProjectScript);
+        expect(tokenHtml).to.not.include(getScriptTag(rawHtmlProjectScript));
+        // the project's own script tags survive as real, parseable tags
+        expect(tokenHtml).to.include(
+          "<script>const early = tokenData.hash;</script>"
+        );
+        // the document is the final element of the body, immediately before </body>
+        expect(tokenHtml).to.include(`${rawHtmlProjectScript}</body></html>`);
+      });
+
+      it("omits the default style reset for raw HTML documents", async function () {
+        const config = await loadFixture(_beforeEach);
+        const { tokenHtml } = await setupProjectAndGetHtml(
+          config,
+          rawHtmlProjectScript,
+          customNameAndVersionBytes
+        );
+
+        expect(tokenHtml).to.not.include(STYLE_TAG);
+        // the generator contributes no styling of its own; the only <style> in the
+        // output is the one belonging to the project's own document
+        const generatorEmitted = tokenHtml.slice(
+          0,
+          tokenHtml.indexOf(rawHtmlProjectScript)
+        );
+        expect(generatorEmitted).to.not.include("<style>");
+      });
+
+      it("still injects tokenData so the raw document can consume it", async function () {
+        const config = await loadFixture(_beforeEach);
+        const { tokenHtml, genArt721CoreV3, tokenId } =
+          await setupProjectAndGetHtml(
+            config,
+            rawHtmlProjectScript,
+            customNameAndVersionBytes
+          );
+
+        const hash = await genArt721CoreV3.tokenIdToHash(tokenId);
+        expect(tokenHtml).to.include(
+          getScriptTag(
+            `let tokenData = JSON.parse(\`{"tokenId":"${tokenId}","hash":"${hash}"}\`, ${REVIVER_SCRIPT};`
+          )
+        );
+        // tokenData must be defined before the raw document runs
+        expect(tokenHtml.indexOf("let tokenData")).to.be.lessThan(
+          tokenHtml.indexOf(rawHtmlProjectScript)
+        );
+      });
+
+      it("does not add a canvas tag for custom@na", async function () {
+        const config = await loadFixture(_beforeEach);
+        const { tokenHtml } = await setupProjectAndGetHtml(
+          config,
+          rawHtmlProjectScript,
+          customNameAndVersionBytes
+        );
+
+        expect(tokenHtml).to.not.include("<canvas id=");
+      });
+
+      it("leaves non-custom@na dependencies wrapped and unescaped", async function () {
+        const config = await loadFixture(_beforeEach);
+        // @dev some live projects (e.g. PRELUDES, Crypt) deliberately close the
+        // wrapping script tag to append their own markup, and must keep working
+        const breakoutScript =
+          "let a = 1;</script><style>body{margin:0}</style><body><canvas></canvas>";
+        const { tokenHtml } = await setupProjectAndGetHtml(
+          config,
+          breakoutScript,
+          p5NameAndVersionBytes
+        );
+
+        expect(tokenHtml).to.include(getScriptTag(breakoutScript));
+        expect(tokenHtml).to.include(STYLE_TAG);
       });
     });
   });
