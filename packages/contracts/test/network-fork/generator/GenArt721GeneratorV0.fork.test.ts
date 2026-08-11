@@ -88,7 +88,9 @@ const STYLE_TAG =
 // eth_call gas cap; these are view calls, so the limit is free to raise
 const CALL_OVERRIDES = { gasLimit: 500_000_000 };
 
-describe("GenArt721GeneratorV0 custom@na fork regression", function () {
+// @dev skipped under coverage: instrumented bytecode plus send/receive's ~700KB of
+// assembled HTML exhausts the coverage runner's memory (CircleCI exit code 129).
+describe("GenArt721GeneratorV0 custom@na fork regression [ @skip-on-coverage ]", function () {
   // forking + a full upgrade is slow relative to the default mocha timeout
   this.timeout(600_000);
 
