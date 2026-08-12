@@ -3,7 +3,7 @@
 
 import hre, { ethers, upgrades } from "hardhat";
 import { GenArt721GeneratorV0 } from "../contracts";
-import { GenArt721GeneratorV0__factory } from "../contracts/factories/generator/GenArt721GeneratorV0__factory";
+import { GenArt721GeneratorV0__factory } from "../contracts/factories/contracts/generator/GenArt721GeneratorV0.sol/GenArt721GeneratorV0__factory";
 import { getNetworkName } from "../util/utils";
 
 const universalBytecodeStorageReaderAddress =

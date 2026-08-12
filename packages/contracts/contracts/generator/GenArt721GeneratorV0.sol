@@ -65,6 +65,8 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         0x6a73406e61000000000000000000000000000000000000000000000000000000; // "js@na"
     bytes32 constant SVG_AT_NA_BYTES32 =
         0x737667406e610000000000000000000000000000000000000000000000000000; // "svg@na"
+    bytes32 constant CUSTOM_AT_NA_BYTES32 =
+        0x637573746f6d406e610000000000000000000000000000000000000000000000; // "custom@na"
 
     function _onlySupportedCoreContract(address coreContract) internal view {
         require(
@@ -873,6 +875,13 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             .getDependencyNameAndVersionForProject(coreContract, projectId)
             .stringToBytes32();
 
+        // @dev Projects declaring the "custom@na" dependency store a complete HTML
+        // document as their project script rather than a JavaScript program. Such a
+        // document must be injected verbatim - wrapping it in a script tag both breaks
+        // HTML parsing (the document's own "</script>" terminates the wrapper early) and
+        // is semantically wrong, since markup inside a script tag is never rendered.
+        bool isRawHtmlDep = dependencyNameAndVersion == CUSTOM_AT_NA_BYTES32;
+
         // Create head tags
         // pre-fetch data to properly allocate memory for HTML tags
         (
@@ -889,10 +898,14 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         HTMLTag[] memory headTags = new HTMLTag[](
             2 + dependencyRegistryAssetNamesAndVersionsLength
         );
-        headTags[0].tagOpen = "<style>";
-        headTags[0]
-            .tagContent = "html{height:100%}body{min-height:100%;margin:0;padding:0}canvas{padding:0;margin:auto;display:block;position:absolute;top:0;bottom:0;left:0;right:0}";
-        headTags[0].tagClose = "</style>";
+        // @dev The default style reset is omitted for raw HTML documents, which supply
+        // their own document-level styling. This matches Art Blocks' hosted generator.
+        if (!isRawHtmlDep) {
+            headTags[0].tagOpen = "<style>";
+            headTags[0]
+                .tagContent = "html{height:100%}body{min-height:100%;margin:0;padding:0}canvas{padding:0;margin:auto;display:block;position:absolute;top:0;bottom:0;left:0;right:0}";
+            headTags[0].tagClose = "</style>";
+        }
 
         // @dev decode any base64 encoded flex data in the browser while parsing the json
         headTags[1].tagContent = abi.encodePacked(
@@ -947,10 +960,12 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         );
 
         HTMLTag memory projectScriptTag = HTMLTag({
-            tagOpen: isProcessingDep
-                ? bytes("<script type='application/processing'>")
-                : bytes("<script>"),
-            tagClose: bytes("</script>"),
+            tagOpen: isRawHtmlDep
+                ? bytes("")
+                : isProcessingDep
+                    ? bytes("<script type='application/processing'>")
+                    : bytes("<script>"),
+            tagClose: isRawHtmlDep ? bytes("") : bytes("</script>"),
             tagType: HTMLTagType.useTagOpenAndClose,
             name: "",
             contractAddress: address(0),

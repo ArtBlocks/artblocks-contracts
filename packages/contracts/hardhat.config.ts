@@ -167,6 +167,7 @@ module.exports = {
       "GenArt721CoreV3_Curated_Flex$",
       "GenArt721CoreV3_Engine$",
       "GenArt721CoreV3_Engine_Flex$",
+      "GenArt721GeneratorV0$",
       "MinterRAM.*",
     ],
   },
