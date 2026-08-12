@@ -84,55 +84,82 @@ All seven projects render with zero JavaScript errors; Quine's output matches it
 
 ## Deployed addresses
 
+The generator exists on mainnet and sepolia only. Arbitrum, Base, Shape, and Hoodi have no
+generator proxy.
+
 | Network | Proxy | ProxyAdmin | ProxyAdmin owner |
 |---|---|---|---|
-| mainnet | `0x953D288708bB771F969FCfD9BA0819eF506Ac718` | `0x5705023921B577e5BAeFF66f1fC7d52f5ccF1232` | `0x52119BB73Ac8bdbE59aF0EEdFd4E4Ee6887Ed2EA` (Safe) |
-| sepolia staging | `0xdC862938cA0a2D8dcabe5733C23e54ac7aAFFF27` | `0xb71b829185159AB5B26D7F0BB7f991D0E17d5a7a` | — |
-| sepolia dev | `0x705E55FCD5CB00eB727213aa777C914B814817Be` | `0xb71b829185159AB5B26D7F0BB7f991D0E17d5a7a` | deployer |
+| mainnet | `0x953D288708bB771F969FCfD9BA0819eF506Ac718` | `0x5705023921B577e5BAeFF66f1fC7d52f5ccF1232` | Safe `0x52119BB73Ac8bdbE59aF0EEdFd4E4Ee6887Ed2EA` (2-of-4) |
+| sepolia staging | `0xdC862938cA0a2D8dcabe5733C23e54ac7aAFFF27` | `0xb71b829185159AB5B26D7F0BB7f991D0E17d5a7a` | Safe `0xbaD99DdBa319639e0e9FB2E42935BfE5b2a1B6a8` (1-of-1) |
+| sepolia dev | `0x705E55FCD5CB00eB727213aa777C914B814817Be` | `0xb71b829185159AB5B26D7F0BB7f991D0E17d5a7a` | same Safe |
+
+**Every** ProxyAdmin is Safe-owned, including on sepolia — a direct EOA call to
+`ProxyAdmin.upgrade` reverts with `Ownable: caller is not the owner`. The sepolia Safe is 1-of-1
+and its sole owner is the dev deployer `0x3c6412fee019f5c50d6f03aa6f5045d99d9748c4`, so one
+signature is enough there, but the call still has to originate from the Safe. Both sepolia proxies
+share a ProxyAdmin and Safe, so they upgrade in a single batch.
 
 ## Upgrade procedure
 
-### 1. Sepolia dev (rehearsal)
+Deployment and the proxy switch are decoupled on every network, because no environment can be
+upgraded by an EOA. The implementation is deployed via CREATE2 with the permissionless all-zero
+salt, so it occupies the same address on both chains despite mainnet and sepolia using different
+deployer EOAs.
 
-Deploys the implementation and switches the proxy in one step, since the deployer controls that
-ProxyAdmin.
+Full instructions live in `scripts/generator-upgrade/README.md`. In short, per network:
 
 ```bash
 cd packages/contracts
-yarn hardhat run --network sepolia scripts/one-off/upgrade-dev-generator.ts
+
+# 1. storage-layout validation against every live proxy; prints the CREATE2 address
+yarn hardhat run --network <network> scripts/generator-upgrade/1_validate-and-prepare.ts
+
+# 2. deploy the implementation (localhost UI at :3000, keep the all-zero salt)
+yarn create2-deploy
+
+# 3. emit the Safe Transaction Builder batch, then upload it to the Safe
+yarn hardhat run --network <network> scripts/generator-upgrade/2_build-upgrade-txs.ts
+
+# 4. confirm the implementation slots and re-check every affected project
+yarn hardhat run --network <network> scripts/generator-upgrade/3_verify-upgrade.ts
+
+# 5. resync .openzeppelin/<network>.json and commit it
+yarn hardhat run --network <network> scripts/generator-upgrade/4_sync-manifest.ts
 ```
 
-### 2. Sepolia staging
+Roll sepolia first (dev and staging land together), confirm, then mainnet.
 
-```bash
-yarn hardhat run --network sepolia scripts/on-chain-generator/2_reference_upgrade-sepolia-on-chain-generator.ts
-```
+## Rollout record
 
-### 3. Mainnet
+Implementation `0x9a786F9A6A738A905597e27c462a1E04ab617435`, at the same address on both
+chains (CREATE2, all-zero salt, initcode hash
+`0x613a39173da47e511aed9c029042d437c5948217b1f2212c467d0e9acc8a7032`).
 
-`prepareUpgrade` only — it deploys and verifies the new implementation but does **not** switch the
-proxy. OpenZeppelin runs storage-layout validation here; it must pass before proceeding.
+| Step | Network | Transaction |
+|---|---|---|
+| implementation deployed | sepolia | [`0x5a8e9e2a…363d`](https://sepolia.etherscan.io/tx/0x5a8e9e2a081602ae46ed15ddd535d4c9fb3d94531c021cc72e3378ea52be363d) |
+| implementation deployed | mainnet | [`0xd8e40a93…5428`](https://etherscan.io/tx/0xd8e40a93e100624938f502eb2ef381f6189af9dc10aa758ae90318711e3f5428) |
+| proxies upgraded (dev + staging) | sepolia | [`0x8ff297e9…bd69`](https://sepolia.etherscan.io/tx/0x8ff297e9847ddaf84a311349d314a6f6dcf175c8f4d2d6f3dec419184ccbbd69) |
+| proxy upgraded | mainnet | [`0x9f5be16d…e015`](https://etherscan.io/tx/0x9f5be16d0eeb38267bc990d80dcebd1e1e7dcefab58be37e7a9d167a503ee015) |
 
-```bash
-yarn hardhat run --network mainnet scripts/on-chain-generator/2_reference_upgrade-mainnet-on-chain-generator.ts
-```
+Post-upgrade verification on mainnet reproduced the fork-preview byte counts exactly —
+Quine 43,480, send/receive 707,787, SpiroFlakes 7,784, Paramecircle 11,315, Overture
+10,254, all injected verbatim, with PRELUDES 39,210 and Crypt 42,504 still wrapped.
 
-Then, from the Safe `0x52119BB73Ac8bdbE59aF0EEdFd4E4Ee6887Ed2EA`, call on ProxyAdmin
-`0x5705023921B577e5BAeFF66f1fC7d52f5ccF1232`:
+Two observations from the sepolia rollout, neither caused by this change:
 
-```
-upgrade(
-  proxy:          0x953D288708bB771F969FCfD9BA0819eF506Ac718,
-  implementation: <address printed by the script>
-)
-```
+- **Sepolia staging cannot render**, before or after the upgrade. It points at ScriptyBuilder
+  `0xb205DFfE32259E2F1c3C0cba855250134147C083` rather than the canonical
+  `0xD7587F110E08F4D120A231bA97d3B577A81Df022` used by dev and mainnet, and
+  `getTokenHtml` reverts. Tracked separately.
+- **Sepolia dev's output grew 233 bytes** on ordinary projects, because it had been running an
+  implementation predating the `#web3call#` `tokenData` reviver. Mainnet already emitted that
+  reviver, so mainnet's only change was the `custom@na` fix.
 
-### 4. Post-upgrade verification
-
-For each of the five projects above, confirm `getTokenHtml` no longer contains
-`<script>` + projectScript + `</script>`, and spot-check a token in the on-chain generator viewer.
-Then confirm a control project (e.g. PRELUDES `0xea698596b6009a622c3ed00dd5a8b5d1cae4fc36`, token
-`5000000`) is unchanged.
+Step 3 refuses to build a batch unless the implementation is already deployed and its runtime
+bytecode matches the local build, so a batch can never point at a stale address. Step 4 asserts
+that each of the five `custom@na` projects is injected verbatim and that PRELUDES and Crypt are
+still wrapped.
 
 ## Notes
 
@@ -140,6 +167,9 @@ Then confirm a control project (e.g. PRELUDES `0xea698596b6009a622c3ed00dd5a8b5d
   pins a block, so refresh `FORK_BLOCK_NUMBER` if core contracts or project scripts change.
 - The fork test raises the `eth_call` gas limit; send/receive assembles ~700 KB of HTML and exceeds
   hardhat's default cap. This affects only the test harness, not the contract.
+- `scripts/one-off/upgrade-dev-generator.ts` was removed. It called `upgrades.upgradeProxy`
+  directly from the deployer EOA, which cannot work now that the sepolia ProxyAdmin is Safe-owned;
+  running it would have burned gas and reverted. `scripts/generator-upgrade/` replaces it.
 - Two Arbitrum projects (`0x47a91457a3a1f700097199fd63c039c4784384ab` projects 27 and 39) also store
   HTML while declaring `three@0.124.0` / `p5@1.0.0`. No generator is deployed on Arbitrum, so they
   are out of scope. If a generator ships there, they will need a dependency override to `custom@na`

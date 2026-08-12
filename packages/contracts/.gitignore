@@ -52,6 +52,9 @@ scripts/.local/
 # CREATE2 deployer temp files
 .create2-deploy-tmp/
 
+# generated Safe Transaction Builder batches — upload and discard
+deployments/generator/safe-txs/
+
 # any local constructor args
 constructor-args.js
 

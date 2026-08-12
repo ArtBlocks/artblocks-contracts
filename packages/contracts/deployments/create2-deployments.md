@@ -380,3 +380,29 @@ Canonical append-only deployment log.
 - **Timestamp:** 2026-08-04T02:30:17.055Z
 
 ---
+
+## GenArt721GeneratorV0
+
+- **Chain:** Sepolia (11155111)
+- **Address:** [0x9a786F9A6A738A905597e27c462a1E04ab617435](https://sepolia.etherscan.io/address/0x9a786F9A6A738A905597e27c462a1E04ab617435)
+- **Salt:** `0x0000000000000000000000000000000000000000000000000000000000000000`
+- **TX:** [0x5a8e9e2a081602ae46ed15ddd535d4c9fb3d94531c021cc72e3378ea52be363d](https://sepolia.etherscan.io/tx/0x5a8e9e2a081602ae46ed15ddd535d4c9fb3d94531c021cc72e3378ea52be363d)
+- **Args:** `[]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x613a39173da47e511aed9c029042d437c5948217b1f2212c467d0e9acc8a7032`
+- **Timestamp:** 2026-08-11T21:50:36.000Z
+
+---
+
+## GenArt721GeneratorV0
+
+- **Chain:** Ethereum Mainnet (1)
+- **Address:** [0x9a786F9A6A738A905597e27c462a1E04ab617435](https://etherscan.io/address/0x9a786F9A6A738A905597e27c462a1E04ab617435)
+- **Salt:** `0x0000000000000000000000000000000000000000000000000000000000000000`
+- **TX:** [0xd8e40a93e100624938f502eb2ef381f6189af9dc10aa758ae90318711e3f5428](https://etherscan.io/tx/0xd8e40a93e100624938f502eb2ef381f6189af9dc10aa758ae90318711e3f5428)
+- **Args:** `[]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x613a39173da47e511aed9c029042d437c5948217b1f2212c467d0e9acc8a7032`
+- **Timestamp:** 2026-08-11T21:54:16.652Z
+
+---
