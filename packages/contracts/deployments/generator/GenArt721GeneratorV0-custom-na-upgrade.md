@@ -63,10 +63,11 @@ all five projects the moment the proxy is upgraded.
 Unit tests (`test/generator/GenArt721GeneratorV0.test.ts`) — 31 passing, including the 26 pre-existing
 tests, which assert exact HTML output and would fail on any change to the wrapped path.
 
-Mainnet-fork regression (`test/network-fork/generator/GenArt721GeneratorV0.fork.test.ts`) — 39
-passing. Forks mainnet, upgrades the real proxy via the impersonated ProxyAdmin owner, and asserts
-that each `custom@na` project is injected verbatim while PRELUDES, Crypt, and Gas Wars produce
-**byte-identical** output before and after.
+Mainnet-fork regression (one-shot pre-upgrade suite, since removed) — 39 passing. Forked mainnet,
+upgraded the real proxy via the impersonated ProxyAdmin owner, and asserted that each `custom@na`
+project was injected verbatim while PRELUDES, Crypt, and Gas Wars produced **byte-identical**
+output before and after. Ongoing coverage is the unit tests above; post-upgrade mainnet output
+matched the fork preview (see rollout record).
 
 Browser rendering — post-upgrade HTML pulled from the forked chain and loaded in headless Chromium.
 All seven projects render with zero JavaScript errors; Quine's output matches its canonical
@@ -163,10 +164,6 @@ still wrapped.
 
 ## Notes
 
-- Running the fork test requires `MAINNET_JSON_RPC_PROVIDER_URL` in `packages/contracts/.env`. It
-  pins a block, so refresh `FORK_BLOCK_NUMBER` if core contracts or project scripts change.
-- The fork test raises the `eth_call` gas limit; send/receive assembles ~700 KB of HTML and exceeds
-  hardhat's default cap. This affects only the test harness, not the contract.
 - `scripts/one-off/upgrade-dev-generator.ts` was removed. It called `upgrades.upgradeProxy`
   directly from the deployer EOA, which cannot work now that the sepolia ProxyAdmin is Safe-owned;
   running it would have burned gas and reverted. `scripts/generator-upgrade/` replaces it.
