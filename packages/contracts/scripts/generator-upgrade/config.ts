@@ -70,9 +70,7 @@ export const GENERATOR_ENVIRONMENTS: GeneratorEnvironment[] = [
 ];
 
 export function getEnvironment(network: string): GeneratorEnvironment {
-  const environment = GENERATOR_ENVIRONMENTS.find(
-    (e) => e.network === network
-  );
+  const environment = GENERATOR_ENVIRONMENTS.find((e) => e.network === network);
   if (!environment) {
     throw new Error(
       `No on-chain generator is deployed on "${network}". Supported: ${GENERATOR_ENVIRONMENTS.map(

@@ -117,7 +117,9 @@ async function main() {
     `Safe:           ${environment.safe.address} (${environment.safe.threshold}-of-${environment.safe.owners})`
   );
   console.log(`ProxyAdmin:     ${environment.proxyAdmin}\n`);
-  console.log(`${transactions.length} transaction(s), each simulated from the Safe:`);
+  console.log(
+    `${transactions.length} transaction(s), each simulated from the Safe:`
+  );
   for (const proxy of environment.proxies) {
     console.log(
       `  upgrade(${proxy.address}, ${implementation})   [${proxy.label}]`
