@@ -1473,7 +1473,9 @@ contract DependencyRegistryV0 is
     )
         public
         view
-        returns (IDependencyRegistryV0.DependencyDetails memory dependencyDetails)
+        returns (
+            IDependencyRegistryV0.DependencyDetails memory dependencyDetails
+        )
     {
         DependencyRegistryStorageLib.Dependency
             storage dependency = DependencyRegistryStorageLib
