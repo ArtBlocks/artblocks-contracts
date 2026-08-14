@@ -87,9 +87,9 @@ interface IDependencyRegistryV0 {
 
     event UniversalBytecodeStorageReaderUpdated(address indexed newReader);
 
-    event DependencyCanvasTagUpdated(
+    event DependencyCanvasTagTypeUpdated(
         bytes32 indexed dependencyNameAndVersion,
-        CanvasTag canvasTag
+        CanvasTagType canvasTagType
     );
 
     event DependencyLoadAsModuleUpdated(
@@ -110,7 +110,7 @@ interface IDependencyRegistryV0 {
      * @dev CanvasBeforeProjectScript adds a canvas tag before the project script.
      * @dev CanvasAfterProjectScript adds a canvas tag after the project script.
      */
-    enum CanvasTag {
+    enum CanvasTagType {
         NoCanvasTag, // default
         CanvasBeforeProjectScript,
         CanvasAfterProjectScript
@@ -163,7 +163,7 @@ interface IDependencyRegistryV0 {
         // project scripts via an import map rather than loaded with a plain `<script src>` tag
         bool loadAsModule;
         // canvas tag requirement for the dependency
-        CanvasTag canvasTag;
+        CanvasTagType canvasTagType;
         // how a project's script must be injected into generated HTML
         ProjectScriptTagType projectScriptTagType;
         // `type` attribute used when projectScriptTagType is SpecialType; empty otherwise

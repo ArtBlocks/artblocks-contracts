@@ -55,7 +55,7 @@ library DependencyRegistryStorageLib {
         // @dev fields below are appended for the generator's rendering directives, and are
         // safe to append because Dependency is only ever used as a mapping value.
         // canvas tag requirement for the dependency
-        IDependencyRegistryV0.CanvasTag canvasTag;
+        IDependencyRegistryV0.CanvasTagType canvasTagType;
         // how a project's script must be injected into generated HTML
         IDependencyRegistryV0.ProjectScriptTagType projectScriptTagType;
         // whether the dependency's own script is an ES module, and therefore must be exposed to

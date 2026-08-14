@@ -53,12 +53,12 @@ deferred the generator cleanup; that PR is superseded by this work.
 Two enums and a details struct:
 
 ```solidity
-enum CanvasTag { NoCanvasTag, CanvasBeforeProjectScript, CanvasAfterProjectScript }
+enum CanvasTagType { NoCanvasTag, CanvasBeforeProjectScript, CanvasAfterProjectScript }
 enum ProjectScriptTagType { ClassicScript, Module, SpecialType, RawHtml }
 ```
 
 `getDependencyDetailsV2` returns a `DependencyDetails` struct carrying the existing fields plus
-`loadAsModule`, `canvasTag`, `projectScriptTagType`, and `projectScriptSpecialType`.
+`loadAsModule`, `canvasTagType`, `projectScriptTagType`, and `projectScriptSpecialType`.
 
 **`getDependencyDetails` and `getDependencyDetailsFromString` keep their original nine-output
 signatures, unchanged.** A function selector derives only from argument types, so a same-named
@@ -75,7 +75,7 @@ slot; the string takes its own.
 ### `contracts/DependencyRegistryV0.sol`
 
 Three admin setters, each guarded by `_onlyAdminACL` / `_onlyExistingDependency` and emitting an
-event: `updateDependencyCanvasTag`, `updateDependencyLoadAsModule`,
+event: `updateDependencyCanvasTagType`, `updateDependencyLoadAsModule`,
 `updateDependencyProjectScriptTagType`.
 
 The last one requires `projectScriptSpecialType` to be non-empty when the tag type is `SpecialType`
@@ -141,12 +141,12 @@ zero-value defaults, which are already correct for them.
 
 | Dependency | Setter | Value |
 |---|---|---|
-| `js@na` | `updateDependencyCanvasTag` | `CanvasBeforeProjectScript` (1) |
-| `babylon@5.0.0` | `updateDependencyCanvasTag` | `CanvasBeforeProjectScript` (1) |
-| `babylon@6.36.0` | `updateDependencyCanvasTag` | `CanvasBeforeProjectScript` (1) |
-| `tone@14.8.15` | `updateDependencyCanvasTag` | `CanvasBeforeProjectScript` (1) |
-| `zdog@1.1.2` | `updateDependencyCanvasTag` | `CanvasBeforeProjectScript` (1) |
-| `processing-js@1.4.6` | `updateDependencyCanvasTag` | `CanvasAfterProjectScript` (2) |
+| `js@na` | `updateDependencyCanvasTagType` | `CanvasBeforeProjectScript` (1) |
+| `babylon@5.0.0` | `updateDependencyCanvasTagType` | `CanvasBeforeProjectScript` (1) |
+| `babylon@6.36.0` | `updateDependencyCanvasTagType` | `CanvasBeforeProjectScript` (1) |
+| `tone@14.8.15` | `updateDependencyCanvasTagType` | `CanvasBeforeProjectScript` (1) |
+| `zdog@1.1.2` | `updateDependencyCanvasTagType` | `CanvasBeforeProjectScript` (1) |
+| `processing-js@1.4.6` | `updateDependencyCanvasTagType` | `CanvasAfterProjectScript` (2) |
 | `processing-js@1.4.6` | `updateDependencyProjectScriptTagType` | `SpecialType` (2), `"application/processing"` |
 | `custom@na` | `updateDependencyProjectScriptTagType` | `RawHtml` (3), `""` |
 | `three@0.167.0` | `updateDependencyProjectScriptTagType` | `Module` (1), `""` |

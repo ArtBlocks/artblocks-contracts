@@ -442,22 +442,25 @@ contract DependencyRegistryV0 is
     /**
      * @notice Updates the canvas tag requirement for dependency `dependencyNameAndVersion`.
      * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
-     * @param canvasTag Whether generated HTML requires a canvas tag, and where it belongs
+     * @param canvasTagType Whether generated HTML requires a canvas tag, and where it belongs
      * relative to the project script.
      */
-    function updateDependencyCanvasTag(
+    function updateDependencyCanvasTagType(
         bytes32 dependencyNameAndVersion,
-        IDependencyRegistryV0.CanvasTag canvasTag
+        IDependencyRegistryV0.CanvasTagType canvasTagType
     ) external {
-        _onlyAdminACL(this.updateDependencyCanvasTag.selector);
+        _onlyAdminACL(this.updateDependencyCanvasTagType.selector);
         _onlyExistingDependency(dependencyNameAndVersion);
 
         DependencyRegistryStorageLib
             .s()
             .dependencyRecords[dependencyNameAndVersion]
-            .canvasTag = canvasTag;
+            .canvasTagType = canvasTagType;
 
-        emit DependencyCanvasTagUpdated(dependencyNameAndVersion, canvasTag);
+        emit DependencyCanvasTagTypeUpdated(
+            dependencyNameAndVersion,
+            canvasTagType
+        );
     }
 
     /**
@@ -1494,7 +1497,7 @@ contract DependencyRegistryV0 is
                 availableOnChain: dependency.scriptCount > 0,
                 scriptCount: dependency.scriptCount,
                 loadAsModule: dependency.loadAsModule,
-                canvasTag: dependency.canvasTag,
+                canvasTagType: dependency.canvasTagType,
                 projectScriptTagType: dependency.projectScriptTagType,
                 projectScriptSpecialType: dependency.projectScriptSpecialType
             });

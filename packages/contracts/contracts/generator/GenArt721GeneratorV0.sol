@@ -973,7 +973,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
 
         HTMLTag memory canvasTag = _createCanvasTagIfNeeded(
             dependencyNameAndVersion,
-            dependencyDetails.canvasTag
+            dependencyDetails.canvasTagType
         );
 
         bytes memory projectScript = _getProjectScriptBytes(
@@ -992,8 +992,8 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         });
 
         if (
-            dependencyDetails.canvasTag ==
-            IDependencyRegistryV0.CanvasTag.CanvasAfterProjectScript
+            dependencyDetails.canvasTagType ==
+            IDependencyRegistryV0.CanvasTagType.CanvasAfterProjectScript
         ) {
             bodyTags[2] = projectScriptTag;
             bodyTags[3] = canvasTag;
@@ -1192,9 +1192,9 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
      */
     function _createCanvasTagIfNeeded(
         bytes32 dependencyNameAndVersion,
-        IDependencyRegistryV0.CanvasTag canvasTagType
+        IDependencyRegistryV0.CanvasTagType canvasTagType
     ) internal pure returns (HTMLTag memory) {
-        if (canvasTagType != IDependencyRegistryV0.CanvasTag.NoCanvasTag) {
+        if (canvasTagType != IDependencyRegistryV0.CanvasTagType.NoCanvasTag) {
             return
                 HTMLTag({
                     tagOpen: abi.encodePacked(
