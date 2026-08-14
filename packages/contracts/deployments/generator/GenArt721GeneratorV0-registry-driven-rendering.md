@@ -176,10 +176,34 @@ different account, so it cannot be folded into the same Safe batch.
 
 ## Verification performed
 
-Unit tests — the registry suite passes 128/128, confirming the retained legacy getters are
-untouched. Generator unit tests require fixture updates for the three behaviors that are now
-registry-driven; those failures are expected and are themselves a useful signal that the fields must
-be set before the generator reads them.
+Unit tests — the registry suite passes 151/151 and the generator suite 43/43.
+
+The registry suite covers each new setter's access control, its rejection of unknown dependencies and
+out-of-range enum values, the requirement that `projectScriptSpecialType` is set if and only if the
+tag type is `SpecialType`, and that `removeDependency` clears the rendering directives so a reused
+name cannot inherit them. It also asserts that `getDependencyDetails` and
+`getDependencyDetailsFromString` still return their original nine-output tuples after the new fields
+are set, which is the property the rollout order depends on.
+
+The generator suite gained a `registry-driven rendering` block covering every value of both enums and
+both values of `loadAsModule`: the four project script wrappers, canvas presence and placement, the
+import map's contents and its position ahead of the module script, and the suppression of a module
+dependency's own script tag. One test changes registry values and re-reads `getTokenHtml` from the
+same deployed generator, which is the claim the whole design rests on. The generator's existing
+fixture now sets `js@na` and `custom@na` to their production values, so the suite exercises the same
+configuration mainnet will have.
+
+Storage layout — OpenZeppelin's `validateUpgrade` passes for both proxies against the implementations
+currently live on mainnet:
+
+| Proxy | Current implementation | Result |
+|---|---|---|
+| `DependencyRegistryV0` `0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF` | `0x00000000A8251c455F2D1AEA1Fd829d98aBb7009` | layout OK |
+| `GenArt721GeneratorV0` `0x953D288708bB771F969FCfD9BA0819eF506Ac718` | — | layout OK |
+
+The registry proxy was not previously registered in `.openzeppelin/mainnet.json`; it has been imported
+with the layout of the implementation that is live today, so this and future registry upgrades are
+checked by the same tooling the generator already uses.
 
 Mainnet fork, block 25,740,000 — captured `getTokenHtml` for fourteen projects on the deployed
 implementation, applied all three rollout steps, and re-captured.
@@ -235,8 +259,11 @@ Registry AdminACL `0x569cDfECFD848a02Ad3e74175a1A4a74484Ef944`, `superAdmin`
 
 ## Open items
 
-- Generator unit test fixtures must set the new fields; three tests fail until then.
 - Backfill tooling (script plus Safe batch generation for step 2) is not yet built.
+- `loadAsModule` does not require a non-empty `preferredCDN`, so an incomplete configuration would
+  emit an import map pointing at an empty URL. A setter-level guard was considered and deliberately
+  skipped: it would force an ordering constraint on admins and could still be sidestepped by later
+  clearing the CDN. The backfill sets both fields together, and the fork test verifies the result.
 - The fork comparison above was run as a one-off script. Formalizing it into
   `test/network-fork/` would let CI enforce the byte-identical regression check, and would fail
   loudly if the generator is ever upgraded ahead of the backfill.

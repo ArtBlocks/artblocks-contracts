@@ -47,6 +47,19 @@ const INVALID_DEPENDENCY_REGISTRY_ERROR =
 
 const ONE_MILLION = 1000000;
 
+const CANVAS_TAG_TYPE = {
+  NoCanvasTag: 0,
+  CanvasBeforeProjectScript: 1,
+  CanvasAfterProjectScript: 2,
+} as const;
+
+const PROJECT_SCRIPT_TAG_TYPE = {
+  ClassicScript: 0,
+  Module: 1,
+  SpecialType: 2,
+  RawHtml: 3,
+} as const;
+
 // Default styles injected by genArt721Generator
 const STYLE_TAG =
   "<style>html{height:100%}body{min-height:100%;margin:0;padding:0}canvas{padding:0;margin:auto;display:block;position:absolute;top:0;bottom:0;left:0;right:0}</style>";
@@ -190,6 +203,19 @@ describe(`GenArt721GeneratorV0`, async function () {
       p5DependencyWebsite
     );
 
+    // Configure rendering directives to match the registry's production state:
+    // js@na projects draw into a canvas the generator provides, and custom@na project
+    // scripts are complete HTML documents that must be injected verbatim.
+    await config.dependencyRegistry.updateDependencyCanvasTagType(
+      jsNameAndVersionBytes,
+      CANVAS_TAG_TYPE.CanvasBeforeProjectScript
+    );
+    await config.dependencyRegistry.updateDependencyProjectScriptTagType(
+      customNameAndVersionBytes,
+      PROJECT_SCRIPT_TAG_TYPE.RawHtml,
+      ""
+    );
+
     // Add compressed dependency script to registry in two parts
     await config.dependencyRegistry.addDependencyScript(
       p5NameAndVersionBytes,
@@ -260,6 +286,66 @@ describe(`GenArt721GeneratorV0`, async function () {
       .updateCoreRegistryAddress(config.coreRegistry.address);
 
     return config as GenArt721GeneratorV0TestConfig;
+  }
+
+  // Deploys a V3 core with a single project whose script/type are configurable,
+  // mints token 0, and returns the generator's HTML for it.
+  async function setupProjectAndGetHtml(
+    config: GenArt721GeneratorV0TestConfig,
+    projectScript: string,
+    scriptTypeBytes: string
+  ) {
+    const { genArt721Core: genArt721CoreV3, minterFilter } =
+      await deployCoreWithMinterFilter(
+        config,
+        "GenArt721CoreV3",
+        "MinterFilterV1"
+      );
+
+    const minter = (await deployAndGet(config, "MinterSetPriceV2", [
+      genArt721CoreV3.address,
+      minterFilter.address,
+    ])) as MinterSetPriceV2;
+    await minterFilter
+      .connect(config.accounts.deployer)
+      .addApprovedMinter(minter.address);
+
+    const projectId = await genArt721CoreV3.nextProjectId();
+    await genArt721CoreV3
+      .connect(config.accounts.deployer)
+      .addProject("name", config.accounts.artist.address);
+    await genArt721CoreV3
+      .connect(config.accounts.artist)
+      .addProjectScript(projectId, projectScript);
+    await genArt721CoreV3
+      .connect(config.accounts.artist)
+      .updateProjectScriptType(projectId, scriptTypeBytes);
+
+    await minterFilter
+      .connect(config.accounts.artist)
+      .setMinterForProject(projectId, minter.address);
+    await minter
+      .connect(config.accounts.artist)
+      .updatePricePerTokenInWei(projectId, 0);
+    await minter.connect(config.accounts.artist).purchase(projectId);
+
+    const tokenId = projectId.mul(ONE_MILLION);
+    await config.coreRegistry
+      ?.connect(config.accounts.deployer)
+      .registerContract(
+        genArt721CoreV3.address,
+        ethers.utils.formatBytes32String("DUMMY_VERSION"),
+        ethers.utils.formatBytes32String("DUMMY_TYPE")
+      );
+
+    return {
+      tokenHtml: await config.genArt721Generator.getTokenHtml(
+        genArt721CoreV3.address,
+        tokenId
+      ),
+      genArt721CoreV3,
+      tokenId,
+    };
   }
 
   describe("getTokenHtml", function () {
@@ -1028,66 +1114,6 @@ describe(`GenArt721GeneratorV0`, async function () {
         "</body></html>",
       ].join("\n");
 
-      // Deploys a V3 core with a single project whose script/type are configurable,
-      // mints token 0, and returns the generator's HTML for it.
-      async function setupProjectAndGetHtml(
-        config: GenArt721GeneratorV0TestConfig,
-        projectScript: string,
-        scriptTypeBytes: string
-      ) {
-        const { genArt721Core: genArt721CoreV3, minterFilter } =
-          await deployCoreWithMinterFilter(
-            config,
-            "GenArt721CoreV3",
-            "MinterFilterV1"
-          );
-
-        const minter = (await deployAndGet(config, "MinterSetPriceV2", [
-          genArt721CoreV3.address,
-          minterFilter.address,
-        ])) as MinterSetPriceV2;
-        await minterFilter
-          .connect(config.accounts.deployer)
-          .addApprovedMinter(minter.address);
-
-        const projectId = await genArt721CoreV3.nextProjectId();
-        await genArt721CoreV3
-          .connect(config.accounts.deployer)
-          .addProject("name", config.accounts.artist.address);
-        await genArt721CoreV3
-          .connect(config.accounts.artist)
-          .addProjectScript(projectId, projectScript);
-        await genArt721CoreV3
-          .connect(config.accounts.artist)
-          .updateProjectScriptType(projectId, scriptTypeBytes);
-
-        await minterFilter
-          .connect(config.accounts.artist)
-          .setMinterForProject(projectId, minter.address);
-        await minter
-          .connect(config.accounts.artist)
-          .updatePricePerTokenInWei(projectId, 0);
-        await minter.connect(config.accounts.artist).purchase(projectId);
-
-        const tokenId = projectId.mul(ONE_MILLION);
-        await config.coreRegistry
-          ?.connect(config.accounts.deployer)
-          .registerContract(
-            genArt721CoreV3.address,
-            ethers.utils.formatBytes32String("DUMMY_VERSION"),
-            ethers.utils.formatBytes32String("DUMMY_TYPE")
-          );
-
-        return {
-          tokenHtml: await config.genArt721Generator.getTokenHtml(
-            genArt721CoreV3.address,
-            tokenId
-          ),
-          genArt721CoreV3,
-          tokenId,
-        };
-      }
-
       it("injects the project script verbatim, without a wrapping script tag", async function () {
         const config = await loadFixture(_beforeEach);
         const { tokenHtml } = await setupProjectAndGetHtml(
@@ -1171,6 +1197,305 @@ describe(`GenArt721GeneratorV0`, async function () {
 
         expect(tokenHtml).to.include(getScriptTag(breakoutScript));
         expect(tokenHtml).to.include(STYLE_TAG);
+      });
+    });
+
+    // @dev these cover the fields that replaced the generator's hardcoded dependency-name
+    // branching. Every rendering decision below is data in the registry, so a dependency
+    // added in the future is supported by configuration rather than a contract upgrade.
+    describe("registry-driven rendering", function () {
+      const moduleNameAndVersion = "three@0.167.0";
+      const moduleNameAndVersionBytes = ethers.utils.formatBytes32String(
+        moduleNameAndVersion
+      );
+      const moduleCDN =
+        "https://unpkg.com/three@0.167.0/build/three.module.min.js";
+      const projectScript = "console.log(tokenData);";
+
+      // Registers a dependency with no on-chain script and all rendering directives
+      // left at their default values.
+      async function addDependency(
+        config: GenArt721GeneratorV0TestConfig,
+        nameAndVersionBytes: string,
+        cdn: string
+      ) {
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addDependency(nameAndVersionBytes, mitLicenseTypeBytes, cdn, "", "");
+      }
+
+      const importMapTag = (name: string, url: string) =>
+        `<script type="importmap">{"imports":{"${name}":"${url}"}}</script>`;
+
+      describe("projectScriptTagType", function () {
+        it("wraps the project script in a classic script tag by default", async function () {
+          const config = await loadFixture(_beforeEach);
+          await addDependency(config, moduleNameAndVersionBytes, moduleCDN);
+
+          const { tokenHtml } = await setupProjectAndGetHtml(
+            config,
+            projectScript,
+            moduleNameAndVersionBytes
+          );
+
+          expect(tokenHtml).to.include(getScriptTag(projectScript));
+        });
+
+        it("wraps the project script in a module script tag when prescribed", async function () {
+          const config = await loadFixture(_beforeEach);
+          await addDependency(config, moduleNameAndVersionBytes, moduleCDN);
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyProjectScriptTagType(
+              moduleNameAndVersionBytes,
+              PROJECT_SCRIPT_TAG_TYPE.Module,
+              ""
+            );
+
+          const { tokenHtml } = await setupProjectAndGetHtml(
+            config,
+            projectScript,
+            moduleNameAndVersionBytes
+          );
+
+          expect(tokenHtml).to.include(
+            `<script type="module">${projectScript}</script>`
+          );
+          expect(tokenHtml).to.not.include(getScriptTag(projectScript));
+        });
+
+        it("uses the dependency's configured type attribute for SpecialType", async function () {
+          const config = await loadFixture(_beforeEach);
+          await addDependency(config, moduleNameAndVersionBytes, moduleCDN);
+          // @dev deliberately not "application/processing" - the generator no longer knows
+          // about any particular special type, it only echoes what the registry stores
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyProjectScriptTagType(
+              moduleNameAndVersionBytes,
+              PROJECT_SCRIPT_TAG_TYPE.SpecialType,
+              "application/x-example"
+            );
+
+          const { tokenHtml } = await setupProjectAndGetHtml(
+            config,
+            projectScript,
+            moduleNameAndVersionBytes
+          );
+
+          expect(tokenHtml).to.include(
+            `<script type='application/x-example'>${projectScript}</script>`
+          );
+        });
+
+        it("injects the project script verbatim for RawHtml", async function () {
+          const config = await loadFixture(_beforeEach);
+          await addDependency(config, moduleNameAndVersionBytes, moduleCDN);
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyProjectScriptTagType(
+              moduleNameAndVersionBytes,
+              PROJECT_SCRIPT_TAG_TYPE.RawHtml,
+              ""
+            );
+
+          const rawDocument = "<html><body>hi</body></html>";
+          const { tokenHtml } = await setupProjectAndGetHtml(
+            config,
+            rawDocument,
+            moduleNameAndVersionBytes
+          );
+
+          expect(tokenHtml).to.include(rawDocument);
+          expect(tokenHtml).to.not.include(getScriptTag(rawDocument));
+          expect(tokenHtml).to.not.include(STYLE_TAG);
+        });
+      });
+
+      describe("loadAsModule", function () {
+        it("emits an import map keyed on the dependency name", async function () {
+          const config = await loadFixture(_beforeEach);
+          await addDependency(config, moduleNameAndVersionBytes, moduleCDN);
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyLoadAsModule(moduleNameAndVersionBytes, true);
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyProjectScriptTagType(
+              moduleNameAndVersionBytes,
+              PROJECT_SCRIPT_TAG_TYPE.Module,
+              ""
+            );
+
+          const { tokenHtml } = await setupProjectAndGetHtml(
+            config,
+            projectScript,
+            moduleNameAndVersionBytes
+          );
+
+          expect(tokenHtml).to.include(importMapTag("three", moduleCDN));
+          // the import map must be parsed before any module is evaluated
+          expect(tokenHtml.indexOf("importmap")).to.be.lessThan(
+            tokenHtml.indexOf('<script type="module">')
+          );
+        });
+
+        it("omits the dependency's own script tag, which the import map replaces", async function () {
+          const config = await loadFixture(_beforeEach);
+          await addDependency(config, moduleNameAndVersionBytes, moduleCDN);
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyLoadAsModule(moduleNameAndVersionBytes, true);
+
+          const { tokenHtml } = await setupProjectAndGetHtml(
+            config,
+            projectScript,
+            moduleNameAndVersionBytes
+          );
+
+          // loading an ES module as a classic script raises a syntax error on its exports
+          expect(tokenHtml).to.not.include(getScriptTagWithSrc(moduleCDN));
+          expect(tokenHtml).to.include(importMapTag("three", moduleCDN));
+        });
+
+        it("omits an on-chain module dependency's script, deferring to its CDN", async function () {
+          const config = await loadFixture(_beforeEach);
+          await addDependency(config, moduleNameAndVersionBytes, moduleCDN);
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addDependencyScript(moduleNameAndVersionBytes, compressedDepScript);
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyLoadAsModule(moduleNameAndVersionBytes, true);
+
+          const { tokenHtml } = await setupProjectAndGetHtml(
+            config,
+            projectScript,
+            moduleNameAndVersionBytes
+          );
+
+          // @dev on-chain ES modules require inflating to a blob URL before the import map
+          // is built, which is not supported yet; the CDN is authoritative for modules
+          expect(tokenHtml).to.not.include(
+            getGzipBase64DataUriScriptTag(compressedDepScript)
+          );
+          expect(tokenHtml).to.include(importMapTag("three", moduleCDN));
+        });
+
+        it("emits no import map for a non-module dependency", async function () {
+          const config = await loadFixture(_beforeEach);
+          await addDependency(config, moduleNameAndVersionBytes, moduleCDN);
+
+          const { tokenHtml } = await setupProjectAndGetHtml(
+            config,
+            projectScript,
+            moduleNameAndVersionBytes
+          );
+
+          expect(tokenHtml).to.not.include("importmap");
+          expect(tokenHtml).to.include(getScriptTagWithSrc(moduleCDN));
+        });
+      });
+
+      describe("canvasTagType", function () {
+        it("emits no canvas by default", async function () {
+          const config = await loadFixture(_beforeEach);
+          await addDependency(config, moduleNameAndVersionBytes, moduleCDN);
+
+          const { tokenHtml } = await setupProjectAndGetHtml(
+            config,
+            projectScript,
+            moduleNameAndVersionBytes
+          );
+
+          expect(tokenHtml).to.not.include("<canvas id=");
+        });
+
+        it("places the canvas before the project script when prescribed", async function () {
+          const config = await loadFixture(_beforeEach);
+          await addDependency(config, moduleNameAndVersionBytes, moduleCDN);
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyCanvasTagType(
+              moduleNameAndVersionBytes,
+              CANVAS_TAG_TYPE.CanvasBeforeProjectScript
+            );
+
+          const { tokenHtml } = await setupProjectAndGetHtml(
+            config,
+            projectScript,
+            moduleNameAndVersionBytes
+          );
+
+          // the canvas is named for the dependency, not the project
+          expect(tokenHtml).to.include("<canvas id='three-canvas'></canvas>");
+          expect(tokenHtml.indexOf("<canvas id='three-canvas'>")).to.be.lessThan(
+            tokenHtml.indexOf(getScriptTag(projectScript))
+          );
+        });
+
+        it("places the canvas after the project script when prescribed", async function () {
+          const config = await loadFixture(_beforeEach);
+          await addDependency(config, moduleNameAndVersionBytes, moduleCDN);
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyCanvasTagType(
+              moduleNameAndVersionBytes,
+              CANVAS_TAG_TYPE.CanvasAfterProjectScript
+            );
+
+          const { tokenHtml } = await setupProjectAndGetHtml(
+            config,
+            projectScript,
+            moduleNameAndVersionBytes
+          );
+
+          expect(
+            tokenHtml.indexOf("<canvas id='three-canvas'>")
+          ).to.be.greaterThan(tokenHtml.indexOf(getScriptTag(projectScript)));
+        });
+      });
+
+      it("changes rendering when the registry changes, with no generator upgrade", async function () {
+        const config = await loadFixture(_beforeEach);
+        await addDependency(config, moduleNameAndVersionBytes, moduleCDN);
+
+        const { tokenHtml, genArt721CoreV3, tokenId } =
+          await setupProjectAndGetHtml(
+            config,
+            projectScript,
+            moduleNameAndVersionBytes
+          );
+        expect(tokenHtml).to.include(getScriptTag(projectScript));
+        expect(tokenHtml).to.not.include("<canvas id=");
+
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyCanvasTagType(
+            moduleNameAndVersionBytes,
+            CANVAS_TAG_TYPE.CanvasBeforeProjectScript
+          );
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyProjectScriptTagType(
+            moduleNameAndVersionBytes,
+            PROJECT_SCRIPT_TAG_TYPE.Module,
+            ""
+          );
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyLoadAsModule(moduleNameAndVersionBytes, true);
+
+        const updatedHtml = await config.genArt721Generator.getTokenHtml(
+          genArt721CoreV3.address,
+          tokenId
+        );
+
+        expect(updatedHtml).to.include(
+          `<script type="module">${projectScript}</script>`
+        );
+        expect(updatedHtml).to.include("<canvas id='three-canvas'></canvas>");
+        expect(updatedHtml).to.include(importMapTag("three", moduleCDN));
       });
     });
   });
@@ -1327,14 +1652,36 @@ describe(`GenArt721GeneratorV0`, async function () {
 
     // Test each dependency that should have a canvas
     const dependenciesToTest = [
-      { name: "js", version: "na", expectedId: "js-canvas", skipAdd: true },
-      { name: "babylon", version: "1.0.0", expectedId: "babylon-canvas" },
-      { name: "tone", version: "1.0.0", expectedId: "tone-canvas" },
-      { name: "zdog", version: "1.0.0", expectedId: "zdog-canvas" },
+      {
+        name: "js",
+        version: "na",
+        expectedId: "js-canvas",
+        skipAdd: true,
+        canvasTagType: CANVAS_TAG_TYPE.CanvasBeforeProjectScript,
+      },
+      {
+        name: "babylon",
+        version: "1.0.0",
+        expectedId: "babylon-canvas",
+        canvasTagType: CANVAS_TAG_TYPE.CanvasBeforeProjectScript,
+      },
+      {
+        name: "tone",
+        version: "1.0.0",
+        expectedId: "tone-canvas",
+        canvasTagType: CANVAS_TAG_TYPE.CanvasBeforeProjectScript,
+      },
+      {
+        name: "zdog",
+        version: "1.0.0",
+        expectedId: "zdog-canvas",
+        canvasTagType: CANVAS_TAG_TYPE.CanvasBeforeProjectScript,
+      },
       {
         name: "processing-js",
         version: "1.4.6",
         expectedId: "processing-js-canvas",
+        canvasTagType: CANVAS_TAG_TYPE.CanvasAfterProjectScript,
       },
     ];
 
@@ -1348,6 +1695,20 @@ describe(`GenArt721GeneratorV0`, async function () {
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
           .addDependency(nameAndVersionBytes, mitLicenseTypeBytes, "", "", "");
+      }
+
+      await config.dependencyRegistry
+        .connect(config.accounts.deployer)
+        .updateDependencyCanvasTagType(nameAndVersionBytes, dep.canvasTagType);
+
+      if (dep.name === "processing-js") {
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyProjectScriptTagType(
+            nameAndVersionBytes,
+            PROJECT_SCRIPT_TAG_TYPE.SpecialType,
+            "application/processing"
+          );
       }
 
       // Update project script type
