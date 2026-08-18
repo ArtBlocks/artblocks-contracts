@@ -245,6 +245,93 @@ module wins. Checked at 20 seconds, `window.Tone` does resolve to an object and 
 element is present — Tone loads, just too late for the code that uses it. The same race exists in the
 hosted generator. Before this change the project rendered nothing at all; it now renders its visuals.
 
+## Sepolia rollout — executed
+
+All three steps are complete on sepolia and verification passes. The three transactions were the
+registry upgrade from the Safe, ten backfill transactions from the EOA `superAdmin`, and one Safe
+batch upgrading both generator proxies.
+
+Because sepolia was already upgraded by the time the results were analyzed, "before" was reproduced
+by forking sepolia at block 11,489,800 — one block range ahead of the registry upgrade — and diffing
+the actual HTML rather than comparing stored hashes. That is stronger evidence than the baseline
+comparison it replaced: it shows *what* changed, not merely *that* something did.
+
+| Dependency | Delta | What the diff shows |
+|---|---|---|
+| `three@0.167.0` | +25 bytes | import map added to `<head>`, project script rewrapped `<script type="module">`, dependency's own classic script tag dropped |
+| `custom@na`, `js@na`, `babylon@6.36.0`, `tone@14.8.15`, `p5@*`, `three@0.124.0`, `three@0.160.0`, `regl@2.1.0`, `svg@na` | 0 | byte-identical |
+| `js@`, `js@1.0.0` | −32 bytes | `<canvas id='js-canvas'></canvas>` no longer emitted — see below |
+
+`p5@1.9.0` and `three@0.124.0` differ in one field of their token data, a `#web3call#` payload that
+encodes the current block height. It is assembled outside anything this rollout touches and differs
+between any two blocks; verification masks it before hashing.
+
+### Dependency strings with no registry record
+
+The −32 byte delta is the one real behavior change beyond ESM, and it is worth understanding before
+mainnet. A project's declared script type is not guaranteed to be a registered dependency. Mainnet
+has three such strings — `js@undefined` (8 projects), `js@n/a` (6), and `js@` (1) — plus
+`p5@1.11.11` (1). The old generator matched on the name before the `@`, so all fifteen `js@*`
+projects received a canvas. The new generator has no record to read and renders them with the
+defaults: classic script, no canvas.
+
+This was checked project by project rather than reasoned about. In all fifteen, `js-canvas` appears
+exactly once in the emitted HTML — the injected element itself — so no project script references it.
+None look the canvas up by tag either, except one (`0x99a9B7c1…` #421), which queries only its own
+`#main-canvas` and `#canvas-gl` elements that it creates and appends itself. The injected canvas is
+empty and transparent, so dropping it is not observable. `p5@1.11.11` is unaffected: `p5` never
+received a canvas.
+
+Fixed in data rather than code. `addProjectDependencyOverride` points those projects at `js@na`,
+which is what they already mean, so they render through the same per-dependency path as everything
+else and keep their canvas. The alternative — teaching the contracts to key canvas rules on the bare
+name, or to fall back from `js@undefined` to `js@na` — reintroduces the name matching this change
+removes, needs another audit and deploy of both contracts, and makes registering any `foo@na`
+retroactively change every misspelled `foo@…` project.
+
+The overrides are part of the backfill, not a step of their own: they are required before the
+generator upgrade for the same reason every other backfill call is, so the ordering guard and the
+verification cover them automatically. They are safe to apply while the old generator is still live
+— `js@na` has no preferred CDN and no on-chain scripts, so the override pulls in nothing new, and
+the old generator still sees the name `js` and still emits the canvas. `plan.ts` asserts that
+property rather than trusting it, and refuses to build the call if the target dependency has a CDN
+or on-chain scripts.
+
+The rule that produces them is narrow by design: it normalizes spellings of *no version* —
+`""`, `n/a`, `none`, `null`, `undefined` — onto `<name>@na`, and only when that dependency is
+registered. It never maps one version onto another. `p5@1.11.11` is therefore left alone, correctly:
+`p5` never received a canvas, so nothing changes for it. Anything not remapped is reported by
+`0_inspect.ts` and flagged `REVIEW` by `5_verify.ts` rather than silently accepted.
+
+Sepolia exercised this first, and shows the rule declining as often as it fires: of five
+unregistered strings there, only `js@` was remapped (11 projects). `p5@` and `three@` are
+no-version spellings whose `@na` dependencies are not registered on that network, and `js@1.0.0`
+carries a real version — all left as-is.
+
+## Mainnet rollout — executed
+
+Complete, in the required order, and verification passes.
+
+| Step | Sender | Transaction | Block |
+|---|---|---|---|
+| Registry upgrade | ProxyAdmin Safe | `0x00b4624d59ca3a7dbe4ff08e06184d61a588c10a62de08c8d6e678b077c756f9` | 25,784,094 |
+| Backfill — 10 dependency calls + 15 project overrides, one batch | `superAdmin` Safe | `0xb3246c70fe74345d1231d5395ec95a424cb25e48c7a3bf6c018cb84d5649b02e` | 25,784,202 |
+| Generator upgrade | ProxyAdmin Safe | `0x063a4b2338745cec362d5c86d09cbd0bb4b32401adefb4fb13e05b6e7de001fe` | 25,784,539 |
+
+The overrides were regenerated with `REFRESH_SCAN=true` immediately before the backfill, so the
+batch reflected project configuration as of that block rather than the earlier scan.
+
+`5_verify.ts` against live mainnet: both implementation slots match the predicted CREATE2
+addresses, no backfill call is outstanding, and all 20 discovered tokens satisfy the structural
+assertions. `three@0.167.0` is +25 bytes — the import map, the `type="module"` wrapper, and the
+dropped classic tag for the dependency's own script. Every other token is byte-identical to its
+pre-upgrade baseline, including the fifteen remapped `js@*` projects, which is the point of the
+overrides: the remap is visible in the registry and invisible in the output. Those rows report
+`REVIEW` rather than `OK` only because the resolved dependency string changed.
+
+`.openzeppelin/mainnet.json` has been synced with `forceImport` so future upgrades validate against
+the deployed layouts.
+
 ## Deployed addresses
 
 The registry and the generator share a ProxyAdmin and Safe on mainnet.
@@ -255,19 +342,88 @@ The registry and the generator share a ProxyAdmin and Safe on mainnet.
 | `DependencyRegistryV0` | `0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF` | `0x5705023921B577e5BAeFF66f1fC7d52f5ccF1232` | same Safe |
 
 Registry AdminACL `0x569cDfECFD848a02Ad3e74175a1A4a74484Ef944`, `superAdmin`
-`0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283` — the sender for all ten backfill transactions.
+`0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283` — a 2-of-5 Safe, and the sender for all ten
+backfill transactions. It is a *different* Safe from the ProxyAdmin owner, which is why the
+backfill cannot be folded into either upgrade batch.
+
+Sepolia carries the same rollout, with two differences found by the tooling rather than assumed:
+
+- Both sepolia generators — dev `0x705E55FCD5CB00eB727213aa777C914B814817Be` and staging
+  `0xdC862938cA0a2D8dcabe5733C23e54ac7aAFFF27` — read the **dev** registry
+  `0x5Fcc415BCFb164C5F826B5305274749BeB684e9b`, not the separate staging registry the deployment
+  records imply. One registry upgrade and one backfill cover both. The staging registry
+  `0xEFA7Ef074A6E90a99fba8bAd4dCf337ef298387f` is read by no generator and is left alone.
+- The sepolia `superAdmin` is an EOA rather than a Safe, so the backfill can be sent directly.
+
+Both sepolia proxies and the mainnet pair share a ProxyAdmin with their generator, so each
+network's registry and generator upgrades go to the same Safe — just not in the same batch,
+since the backfill has to land between them.
+
+## Rollout tooling
+
+`scripts/registry-driven-rendering/` — see its README. Two properties are worth noting for review:
+
+- **The backfill is derived, not listed.** Every dependency in the registry is run through the
+  rules the pre-upgrade generator hardcoded, so the backfill reproduces behavior already live on
+  that network. Run against mainnet it produces exactly the ten transactions tabulated above,
+  which is an independent check on the hand-written table.
+- **The ordering is enforced.** `4_upgrade-generator.ts` refuses to build a batch while any
+  backfill call is outstanding, so the one sequence that visibly breaks live artwork cannot be
+  executed by mistake.
+
+Verification discovers one live token per dependency on the network and asserts the emitted HTML
+against what the registry prescribes — canvas presence and placement, project script wrapper, and
+import map contents and position — comparing to a pre-upgrade baseline captured before step 1.
+
+Baselines are captured. Mainnet covers 20 tokens spanning every dependency that has a live
+project; `aframe@1.5.0`, `babylon@6.36.0`, and `cannon-es@0.20.0` have none, so `babylon@6.36.0` is
+the one backfilled value with no live project behind it. Sepolia covers 16, but has no project on
+`processing-js@1.4.6` or `zdog@1.1.2`, so those two backfilled behaviors can only be confirmed on
+mainnet.
+
+Three of the captured baselines match the fork test exactly — Quine 43,480 bytes, Genesis 21,687,
+dino pals 18,171 — which is an independent confirmation that the fork was measuring live state.
+
+Sepolia's staging generator reverts on `getTokenHtml` today — it points at ScriptyBuilder
+`0xb205DFfE…` rather than the `0xD7587F11…` the dev generator uses. That is pre-existing and
+unrelated; the baseline records the failure so it is not later read as a regression.
 
 ## Open items
 
-- Backfill tooling (script plus Safe batch generation for step 2) is not yet built.
 - `loadAsModule` does not require a non-empty `preferredCDN`, so an incomplete configuration would
   emit an import map pointing at an empty URL. A setter-level guard was considered and deliberately
   skipped: it would force an ordering constraint on admins and could still be sidestepped by later
   clearing the CDN. The backfill sets both fields together, and the fork test verifies the result.
-- The fork comparison above was run as a one-off script. Formalizing it into
-  `test/network-fork/` would let CI enforce the byte-identical regression check, and would fail
-  loudly if the generator is ever upgraded ahead of the backfill.
-- Sepolia carries the same rollout; its registry and generator proxies must be checked for whether
-  they share a ProxyAdmin as mainnet does.
+- Sepolia has no live token for `processing-js@1.4.6` or `zdog@1.1.2`, so those two backfilled
+  behaviors cannot be verified there by rendering. They are covered by the mainnet fork test, the
+  unit suite, and mainnet verification.
+- Sepolia's staging generator is broken today for an unrelated reason (an older ScriptyBuilder).
+  It is upgraded along with dev because they share a ProxyAdmin, but repointing it is out of scope.
 - `getDependencyDetailsV2` is additive, so no off-chain consumer changes are required. Consumers
   wanting the new fields should migrate to it.
+- Fifteen mainnet projects declared a `js@*` script type that is not a registered dependency; the
+  backfill pointed them at `js@na`, so their rendering is unchanged. This is now an ongoing concern
+  rather than a one-time fix: a project configured with an unregistered script type after the
+  rollout renders with the defaults — classic script, no canvas. `0_inspect.ts` with
+  `REFRESH_SCAN=true` reports any that appear, and the remedy is one
+  `addProjectDependencyOverride` call. Registering the dependency the project actually declares is
+  the better fix where the string is a real version.
+- One mainnet project declares `p5@1.11.11`, which is not registered and is not a no-version
+  spelling, so it is left as-is. `p5` never received a canvas, so nothing changes for it.
+- `cannon-es@0.20.0` is an ES module — its on-chain script ends in `export{CANNON}` — but is
+  registered with `loadAsModule` false, so the generator would emit it as a classic script and the
+  export would raise a syntax error. Nothing renders wrong today: no live project uses it, which is
+  also why the rollout's verification never exercised it. It cannot simply be flipped, because
+  `loadAsModule` routes a dependency through the import map, which points at `preferredCDN` — and
+  `cannon-es` is the only module dependency stored on chain (`three@0.167.0` is CDN-only). Flipping
+  it would take an on-chain dependency off chain. Serving an on-chain module to the import map
+  needs a blob or data URL built from the gunzipped script, which the generator does not do today.
+  Worth resolving before a project ships on `cannon-es`, not after. EVENT by Bernar Venet
+  (`0xE034bb2b…` project 1) uses the cannon library but is not affected and is not evidence the
+  registry entry works: it declares `three@0.124.0` and carries its own copy of cannon as six
+  on-chain external asset dependencies, which its project script gunzips and loads as a module
+  through a blob URL it builds itself. Its output is byte-identical across this rollout, confirmed
+  by forking one block before the registry upgrade. It is also a working precedent for the blob-URL
+  approach the generator would need in order to serve an on-chain module through the import map.
+- `aframe@1.5.0`, `babylon@6.36.0`, and `cannon-es@0.20.0` have no live project on either network,
+  so their backfilled values are asserted by the unit suite but never rendered end to end.

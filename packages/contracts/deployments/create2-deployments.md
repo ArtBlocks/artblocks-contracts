@@ -406,3 +406,55 @@ Canonical append-only deployment log.
 - **Timestamp:** 2026-08-11T21:54:16.652Z
 
 ---
+
+## DependencyRegistryV0
+
+- **Chain:** Ethereum Mainnet (1)
+- **Address:** [0xb60Bba03e904eD0625341edBB88D257C1d735E2C](https://etherscan.io/address/0xb60Bba03e904eD0625341edBB88D257C1d735E2C)
+- **Salt:** `0x0000000000000000000000000000000000000000000000000000000000000000`
+- **TX:** [0x9eaf04dd2c9c1d82ff2d683c45301ec0f9e1c24af24182a3454082e3623ec3bc](https://etherscan.io/tx/0x9eaf04dd2c9c1d82ff2d683c45301ec0f9e1c24af24182a3454082e3623ec3bc)
+- **Args:** `[]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x7fa923f888dbdacacbf8dc18ccb319aa371f9d16a46f6c041706f0eee2882e03`
+- **Timestamp:** 2026-08-14T22:53:10.187Z
+
+---
+
+## DependencyRegistryV0
+
+- **Chain:** Sepolia (11155111)
+- **Address:** [0xb60Bba03e904eD0625341edBB88D257C1d735E2C](https://sepolia.etherscan.io/address/0xb60Bba03e904eD0625341edBB88D257C1d735E2C)
+- **Salt:** `0x0000000000000000000000000000000000000000000000000000000000000000`
+- **TX:** [0xff73b2f0fefa27cbc652326cba7148cd64b37cf3f8c63d1a613fe360a19a3d0c](https://sepolia.etherscan.io/tx/0xff73b2f0fefa27cbc652326cba7148cd64b37cf3f8c63d1a613fe360a19a3d0c)
+- **Args:** `[]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x7fa923f888dbdacacbf8dc18ccb319aa371f9d16a46f6c041706f0eee2882e03`
+- **Timestamp:** 2026-08-14T22:53:36.842Z
+
+---
+
+## GenArt721GeneratorV0
+
+- **Chain:** Sepolia (11155111)
+- **Address:** [0x49bd6c064A6dE0AFD58390Ec323ef4f3476A61b2](https://sepolia.etherscan.io/address/0x49bd6c064A6dE0AFD58390Ec323ef4f3476A61b2)
+- **Salt:** `0x0000000000000000000000000000000000000000000000000000000000000000`
+- **TX:** [0x7a4514ed9d53a49eeff4cb832019559656e840b682a127307784ea3ea3fd87c7](https://sepolia.etherscan.io/tx/0x7a4514ed9d53a49eeff4cb832019559656e840b682a127307784ea3ea3fd87c7)
+- **Args:** `[]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xe3b28ffea93417c94b2e3a5690d129cf5f0a7faf7e06b01e01e33641e9f697a8`
+- **Timestamp:** 2026-08-14T22:54:04.219Z
+
+---
+
+## GenArt721GeneratorV0
+
+- **Chain:** Ethereum Mainnet (1)
+- **Address:** [0x49bd6c064A6dE0AFD58390Ec323ef4f3476A61b2](https://etherscan.io/address/0x49bd6c064A6dE0AFD58390Ec323ef4f3476A61b2)
+- **Salt:** `0x0000000000000000000000000000000000000000000000000000000000000000`
+- **TX:** [0xcbf89e4c30286f7b8f43f43effb6c7c84beb6f94fd7b03b5383df877aa9fc558](https://etherscan.io/tx/0xcbf89e4c30286f7b8f43f43effb6c7c84beb6f94fd7b03b5383df877aa9fc558)
+- **Args:** `[]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xe3b28ffea93417c94b2e3a5690d129cf5f0a7faf7e06b01e01e33641e9f697a8`
+- **Timestamp:** 2026-08-14T22:54:18.442Z
+
+---

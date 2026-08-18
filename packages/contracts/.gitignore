@@ -55,6 +55,9 @@ scripts/.local/
 # generated Safe Transaction Builder batches — upload and discard
 deployments/generator/safe-txs/
 
+# rollout verification scratch: discovered check projects and pre-upgrade HTML hashes
+deployments/generator/rollout-baselines/
+
 # any local constructor args
 constructor-args.js
 
