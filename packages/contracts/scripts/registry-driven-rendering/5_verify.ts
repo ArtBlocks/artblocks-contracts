@@ -158,7 +158,10 @@ async function main() {
         html = await generatorContract.getTokenHtml(check.core, check.tokenId);
       } catch (error: any) {
         const reason =
-          error?.reason ?? error?.error?.message ?? error?.message ?? `${error}`;
+          error?.reason ??
+          error?.error?.message ??
+          error?.message ??
+          `${error}`;
         captured[checkKey(check)] = { failed: reason };
         if (capture) {
           console.log(
@@ -202,8 +205,7 @@ async function main() {
         continue;
       }
 
-      const before =
-        previous && !("failed" in previous) ? previous : undefined;
+      const before = previous && !("failed" in previous) ? previous : undefined;
       const delta = before ? html.length - before.length : null;
 
       // Between rollout steps the deployed generator still reads the legacy
@@ -416,7 +418,11 @@ function checkHtml(
     problems.push(`missing expected project script wrapper ${wrapper}`);
   } else {
     const lastOpened = Object.entries(wrappers)
-      .map(([type, tag]) => ({ type: Number(type), tag, at: html.lastIndexOf(tag) }))
+      .map(([type, tag]) => ({
+        type: Number(type),
+        tag,
+        at: html.lastIndexOf(tag),
+      }))
       .filter((candidate) => candidate.at !== -1)
       .sort((a, b) => b.at - a.at)[0];
     if (lastOpened.type !== tagType) {

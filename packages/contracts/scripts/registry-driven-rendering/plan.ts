@@ -118,9 +118,8 @@ export async function buildBackfillPlan(
       loadAsModule: boolean;
     } | null = null;
     try {
-      const details = await registry.getDependencyDetailsV2(
-        nameAndVersionBytes
-      );
+      const details =
+        await registry.getDependencyDetailsV2(nameAndVersionBytes);
       current = {
         preferredCDN: details.preferredCDN,
         canvasTagType: details.canvasTagType,
@@ -149,7 +148,9 @@ export async function buildBackfillPlan(
 
     // Before the registry is upgraded every non-default value is outstanding.
     // After it is, only the values that differ from what is stored are.
-    if (canvasTagType !== (current?.canvasTagType ?? CanvasTagType.NoCanvasTag)) {
+    if (
+      canvasTagType !== (current?.canvasTagType ?? CanvasTagType.NoCanvasTag)
+    ) {
       calls.push({
         kind: "canvasTagType",
         nameAndVersion,

@@ -115,8 +115,7 @@ export async function loadCheckProjects(
     REGISTRY_ABI,
     ethers.provider
   );
-  const dependencies: string[] =
-    await registry.getDependencyNamesAndVersions();
+  const dependencies: string[] = await registry.getDependencyNamesAndVersions();
   const cores: string[] = await registry.getSupportedCoreContracts();
 
   console.log(

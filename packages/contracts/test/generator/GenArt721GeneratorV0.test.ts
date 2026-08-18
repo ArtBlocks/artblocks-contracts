@@ -1205,9 +1205,8 @@ describe(`GenArt721GeneratorV0`, async function () {
     // added in the future is supported by configuration rather than a contract upgrade.
     describe("registry-driven rendering", function () {
       const moduleNameAndVersion = "three@0.167.0";
-      const moduleNameAndVersionBytes = ethers.utils.formatBytes32String(
-        moduleNameAndVersion
-      );
+      const moduleNameAndVersionBytes =
+        ethers.utils.formatBytes32String(moduleNameAndVersion);
       const moduleCDN =
         "https://unpkg.com/three@0.167.0/build/three.module.min.js";
       const projectScript = "console.log(tokenData);";
@@ -1363,7 +1362,10 @@ describe(`GenArt721GeneratorV0`, async function () {
           await addDependency(config, moduleNameAndVersionBytes, moduleCDN);
           await config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .addDependencyScript(moduleNameAndVersionBytes, compressedDepScript);
+            .addDependencyScript(
+              moduleNameAndVersionBytes,
+              compressedDepScript
+            );
           await config.dependencyRegistry
             .connect(config.accounts.deployer)
             .updateDependencyLoadAsModule(moduleNameAndVersionBytes, true);
@@ -1429,9 +1431,9 @@ describe(`GenArt721GeneratorV0`, async function () {
 
           // the canvas is named for the dependency, not the project
           expect(tokenHtml).to.include("<canvas id='three-canvas'></canvas>");
-          expect(tokenHtml.indexOf("<canvas id='three-canvas'>")).to.be.lessThan(
-            tokenHtml.indexOf(getScriptTag(projectScript))
-          );
+          expect(
+            tokenHtml.indexOf("<canvas id='three-canvas'>")
+          ).to.be.lessThan(tokenHtml.indexOf(getScriptTag(projectScript)));
         });
 
         it("places the canvas after the project script when prescribed", async function () {

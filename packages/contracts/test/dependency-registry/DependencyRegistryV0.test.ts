@@ -811,7 +811,10 @@ describe(`DependencyRegistryV0`, async function () {
                 CANVAS_TAG_TYPE.CanvasAfterProjectScript
               )
           )
-            .to.emit(config.dependencyRegistry, "DependencyCanvasTagTypeUpdated")
+            .to.emit(
+              config.dependencyRegistry,
+              "DependencyCanvasTagTypeUpdated"
+            )
             .withArgs(
               dependencyNameAndVersionBytes,
               CANVAS_TAG_TYPE.CanvasAfterProjectScript
@@ -863,7 +866,10 @@ describe(`DependencyRegistryV0`, async function () {
           await expectRevert(
             config.dependencyRegistry
               .connect(config.accounts.user)
-              .updateDependencyLoadAsModule(dependencyNameAndVersionBytes, true),
+              .updateDependencyLoadAsModule(
+                dependencyNameAndVersionBytes,
+                true
+              ),
             ONLY_ADMIN_ACL_ERROR
           );
         });
@@ -1726,7 +1732,10 @@ describe(`DependencyRegistryV0`, async function () {
 
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
-          .addDependencyScript(dependencyNameAndVersionBytes, "on-chain script");
+          .addDependencyScript(
+            dependencyNameAndVersionBytes,
+            "on-chain script"
+          );
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
           .updateDependencyCanvasTagType(

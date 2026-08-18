@@ -133,7 +133,9 @@ export async function buildUpgradeBatch(params: {
       `Skipping ${alreadyUpgraded.map((p) => p.label).join(", ")} — already upgraded.`
     );
   }
-  console.log(`${pending.length} transaction(s), each simulated from the Safe:`);
+  console.log(
+    `${pending.length} transaction(s), each simulated from the Safe:`
+  );
   for (const proxy of pending) {
     console.log(
       `  upgrade(${proxy.address}, ${implementation})   [${proxy.label}]`

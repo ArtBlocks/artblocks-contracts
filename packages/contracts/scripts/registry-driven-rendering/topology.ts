@@ -35,9 +35,7 @@ export async function readImplementation(proxy: string): Promise<string> {
 }
 
 export async function readProxyAdmin(proxy: string): Promise<string> {
-  return addressFromSlot(
-    await ethers.provider.getStorageAt(proxy, ADMIN_SLOT)
-  );
+  return addressFromSlot(await ethers.provider.getStorageAt(proxy, ADMIN_SLOT));
 }
 
 export async function isContract(address: string): Promise<boolean> {
@@ -50,9 +48,7 @@ export type SafeInfo = { threshold: number; owners: number };
  * Safe threshold and owner count, or null if the address is not a Safe. Used to
  * describe a signer in log output rather than to gate anything.
  */
-export async function readSafeInfo(
-  address: string
-): Promise<SafeInfo | null> {
+export async function readSafeInfo(address: string): Promise<SafeInfo | null> {
   const safe = new ethers.Contract(
     address,
     [
