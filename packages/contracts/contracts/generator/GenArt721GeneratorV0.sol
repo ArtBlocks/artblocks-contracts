@@ -65,8 +65,6 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         0x6a73406e61000000000000000000000000000000000000000000000000000000; // "js@na"
     bytes32 constant SVG_AT_NA_BYTES32 =
         0x737667406e610000000000000000000000000000000000000000000000000000; // "svg@na"
-    bytes32 constant CUSTOM_AT_NA_BYTES32 =
-        0x637573746f6d406e610000000000000000000000000000000000000000000000; // "custom@na"
 
     function _onlySupportedCoreContract(address coreContract) internal view {
         require(
@@ -823,17 +821,16 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         HTMLTag memory htmlTag
     ) internal view {
         // Get script count and preferred CDN for the dependency.
-        (
-            ,
-            ,
-            string memory preferredCDN,
-            ,
-            ,
-            ,
-            ,
-            ,
-            uint24 scriptCount
-        ) = dependencyRegistry.getDependencyDetails(dependencyNameAndVersion);
+        string memory preferredCDN;
+        uint24 scriptCount;
+        // @dev block scope to limit stack usage
+        {
+            IDependencyRegistryV0.DependencyDetails
+                memory dependencyDetails = dependencyRegistry
+                    .getDependencyDetailsV2(dependencyNameAndVersion);
+            preferredCDN = dependencyDetails.preferredCDN;
+            scriptCount = dependencyDetails.scriptCount;
+        }
 
         // If no scripts on-chain, load the script from the preferred CDN.
         if (scriptCount == 0) {
@@ -875,12 +872,20 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             .getDependencyNameAndVersionForProject(coreContract, projectId)
             .stringToBytes32();
 
-        // @dev Projects declaring the "custom@na" dependency store a complete HTML
-        // document as their project script rather than a JavaScript program. Such a
-        // document must be injected verbatim - wrapping it in a script tag both breaks
-        // HTML parsing (the document's own "</script>" terminates the wrapper early) and
-        // is semantically wrong, since markup inside a script tag is never rendered.
-        bool isRawHtmlDep = dependencyNameAndVersion == CUSTOM_AT_NA_BYTES32;
+        // @dev All rendering directives are prescribed by the dependency registry, so that
+        // supporting a new kind of dependency is an admin configuration change rather than a
+        // contract upgrade.
+        IDependencyRegistryV0.DependencyDetails
+            memory dependencyDetails = dependencyRegistry
+                .getDependencyDetailsV2(dependencyNameAndVersion);
+
+        // @dev A raw HTML dependency stores a complete HTML document as its project script
+        // rather than a JavaScript program. Such a document must be injected verbatim -
+        // wrapping it in a script tag both breaks HTML parsing (the document's own
+        // "</script>" terminates the wrapper early) and is semantically wrong, since markup
+        // inside a script tag is never rendered.
+        bool isRawHtmlDep = dependencyDetails.projectScriptTagType ==
+            IDependencyRegistryV0.ProjectScriptTagType.RawHtml;
 
         // Create head tags
         // pre-fetch data to properly allocate memory for HTML tags
@@ -894,9 +899,9 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         // @dev memoize length for efficiency
         uint256 dependencyRegistryAssetNamesAndVersionsLength = dependencyRegistryAssetNameAndVersions
                 .length;
-        // @dev length is 2 (style, tokenData) + number of external asset dependencies
+        // @dev length is 3 (style, tokenData, import map) + number of external asset dependencies
         HTMLTag[] memory headTags = new HTMLTag[](
-            2 + dependencyRegistryAssetNamesAndVersionsLength
+            3 + dependencyRegistryAssetNamesAndVersionsLength
         );
         // @dev The default style reset is omitted for raw HTML documents, which supply
         // their own document-level styling. This matches Art Blocks' hosted generator.
@@ -914,6 +919,17 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             '`, (key, value) => key === "data" && value !== null ? value.startsWith("#web3call#") ? Object.entries(JSON.parse(atob(value.slice(10)))).reduce((acc, [k, v]) => ((acc[atob(k)] = atob(v)), acc), {}) : atob(value) : value);'
         );
         headTags[1].tagType = HTMLTagType.script;
+
+        // @dev An ES module dependency cannot be loaded with a plain script tag, and project
+        // scripts import it by bare specifier (e.g. `import * as THREE from "three"`). An
+        // import map maps that specifier to the dependency's URL, and must appear in the head
+        // before any module is loaded.
+        _populateImportMapHtmlTag({
+            dependencyNameAndVersion: dependencyNameAndVersion,
+            dependencyDetails: dependencyDetails,
+            htmlTag: headTags[2]
+        });
+
         for (
             uint256 i = 0;
             i < dependencyRegistryAssetNamesAndVersionsLength;
@@ -927,7 +943,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             // populate head tags with dependency registry scripts
             _populateDependencyScriptHtmlTag(
                 dependencyRegistryAssetNameAndVersions[i],
-                headTags[2 + i]
+                headTags[3 + i]
             );
         }
 
@@ -935,7 +951,15 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         HTMLTag[] memory bodyTags = new HTMLTag[](4);
 
         // Dependency script tag
-        _populateDependencyScriptHtmlTag(dependencyNameAndVersion, bodyTags[0]);
+        // @dev A module dependency is reached through the import map emitted in the head, so
+        // emitting a script tag for it here would load the module as a classic script and
+        // raise a syntax error on its `export` statements.
+        if (!dependencyDetails.loadAsModule) {
+            _populateDependencyScriptHtmlTag(
+                dependencyNameAndVersion,
+                bodyTags[0]
+            );
+        }
 
         // @dev We expect all of our dependencies to be added gzip'd and base64 encoded
         // so we need to include this so we can gunzip them in the browser.
@@ -948,11 +972,9 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         );
 
         HTMLTag memory canvasTag = _createCanvasTagIfNeeded(
-            dependencyNameAndVersion
+            dependencyNameAndVersion,
+            dependencyDetails.canvasTagType
         );
-
-        bool isProcessingDep = dependencyNameAndVersion ==
-            bytes32("processing-js@1.4.6");
 
         bytes memory projectScript = _getProjectScriptBytes(
             coreContract,
@@ -960,11 +982,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         );
 
         HTMLTag memory projectScriptTag = HTMLTag({
-            tagOpen: isRawHtmlDep
-                ? bytes("")
-                : isProcessingDep
-                    ? bytes("<script type='application/processing'>")
-                    : bytes("<script>"),
+            tagOpen: _getProjectScriptTagOpen(dependencyDetails),
             tagClose: isRawHtmlDep ? bytes("") : bytes("</script>"),
             tagType: HTMLTagType.useTagOpenAndClose,
             name: "",
@@ -973,12 +991,15 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             tagContent: projectScript
         });
 
-        if (isProcessingDep) {
+        if (
+            dependencyDetails.canvasTagType ==
+            IDependencyRegistryV0.CanvasTagType.CanvasAfterProjectScript
+        ) {
             bodyTags[2] = projectScriptTag;
             bodyTags[3] = canvasTag;
         } else {
-            bodyTags[3] = projectScriptTag;
             bodyTags[2] = canvasTag;
+            bodyTags[3] = projectScriptTag;
         }
 
         HTMLRequest memory htmlRequest;
@@ -1036,8 +1057,10 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
             return true;
         }
         // query and return result of dependency registry for on-chain status
-        (, , , , , , , availableOnChain, ) = dependencyRegistry
-            .getDependencyDetails(dependencyNameAndVersion);
+        return
+            dependencyRegistry
+                .getDependencyDetailsV2(dependencyNameAndVersion)
+                .availableOnChain;
     }
 
     /**
@@ -1082,13 +1105,13 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     }
 
     /**
-     * @dev Helper function to get a canvas tag or an empty tag depending on the dependency name.
-     * @return The canvas tag or an empty tag.
+     * @dev Helper function to extract the dependency name preceding the "@" separator.
+     * @param dependencyNameAndVersion Dependency identifier of the form "name@version".
+     * @return The dependency name, e.g. "three" for "three@0.167.0".
      */
-    function _createCanvasTagIfNeeded(
+    function _getDependencyName(
         bytes32 dependencyNameAndVersion
-    ) internal pure returns (HTMLTag memory) {
-        // Extract dependency name before @ symbol
+    ) internal pure returns (bytes memory) {
         uint atSignIndex;
         for (uint i = 0; i < dependencyNameAndVersion.length; i++) {
             if (dependencyNameAndVersion[i] == "@") {
@@ -1101,22 +1124,82 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         for (uint i = 0; i < atSignIndex; i++) {
             nameBeforeAt[i] = dependencyNameAndVersion[i];
         }
-        string memory depNameStr = string(nameBeforeAt);
+        return nameBeforeAt;
+    }
 
-        // Check if dependency needs canvas
-        bytes32 nameHash = keccak256(nameBeforeAt);
-        if (
-            nameHash == keccak256(bytes("js")) ||
-            nameHash == keccak256(bytes("babylon")) ||
-            nameHash == keccak256(bytes("tone")) ||
-            nameHash == keccak256(bytes("zdog")) ||
-            nameHash == keccak256(bytes("processing-js"))
-        ) {
+    /**
+     * @dev Helper function to build the opening tag wrapping a project's script.
+     * @param dependencyDetails Details of the project's dependency, prescribing how the
+     * project script must be injected.
+     * @return The opening tag, or an empty value when the script is raw HTML.
+     */
+    function _getProjectScriptTagOpen(
+        IDependencyRegistryV0.DependencyDetails memory dependencyDetails
+    ) internal pure returns (bytes memory) {
+        IDependencyRegistryV0.ProjectScriptTagType tagType = dependencyDetails
+            .projectScriptTagType;
+        if (tagType == IDependencyRegistryV0.ProjectScriptTagType.RawHtml) {
+            return bytes("");
+        }
+        if (tagType == IDependencyRegistryV0.ProjectScriptTagType.Module) {
+            return bytes('<script type="module">');
+        }
+        if (tagType == IDependencyRegistryV0.ProjectScriptTagType.SpecialType) {
+            return
+                abi.encodePacked(
+                    "<script type='",
+                    dependencyDetails.projectScriptSpecialType,
+                    "'>"
+                );
+        }
+        return bytes("<script>");
+    }
+
+    /**
+     * @dev Helper function to populate an import map tag, which maps a module dependency's
+     * bare specifier (its name) to the URL the module is served from. Left empty for
+     * dependencies that are not loaded as modules.
+     * @param dependencyNameAndVersion Dependency identifier of the form "name@version".
+     * @param dependencyDetails Details of the dependency.
+     * @param htmlTag The HTMLTag to populate.
+     */
+    function _populateImportMapHtmlTag(
+        bytes32 dependencyNameAndVersion,
+        IDependencyRegistryV0.DependencyDetails memory dependencyDetails,
+        HTMLTag memory htmlTag
+    ) internal pure {
+        if (!dependencyDetails.loadAsModule) {
+            return;
+        }
+
+        htmlTag.tagType = HTMLTagType.useTagOpenAndClose;
+        htmlTag.tagOpen = abi.encodePacked(
+            '<script type="importmap">{"imports":{"',
+            _getDependencyName(dependencyNameAndVersion),
+            '":"',
+            dependencyDetails.preferredCDN,
+            '"}}'
+        );
+        htmlTag.tagClose = bytes("</script>");
+    }
+
+    /**
+     * @dev Helper function to get a canvas tag or an empty tag, per the dependency's
+     * registry-prescribed canvas requirement.
+     * @param dependencyNameAndVersion Dependency identifier, used to name the canvas element.
+     * @param canvasTagType Whether a canvas is required.
+     * @return The canvas tag or an empty tag.
+     */
+    function _createCanvasTagIfNeeded(
+        bytes32 dependencyNameAndVersion,
+        IDependencyRegistryV0.CanvasTagType canvasTagType
+    ) internal pure returns (HTMLTag memory) {
+        if (canvasTagType != IDependencyRegistryV0.CanvasTagType.NoCanvasTag) {
             return
                 HTMLTag({
                     tagOpen: abi.encodePacked(
                         "<canvas id='",
-                        depNameStr,
+                        _getDependencyName(dependencyNameAndVersion),
                         "-canvas'>"
                     ),
                     tagClose: bytes("</canvas>"),

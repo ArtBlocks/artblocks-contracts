@@ -87,6 +87,89 @@ interface IDependencyRegistryV0 {
 
     event UniversalBytecodeStorageReaderUpdated(address indexed newReader);
 
+    event DependencyCanvasTagTypeUpdated(
+        bytes32 indexed dependencyNameAndVersion,
+        CanvasTagType canvasTagType
+    );
+
+    event DependencyLoadAsModuleUpdated(
+        bytes32 indexed dependencyNameAndVersion,
+        bool loadAsModule
+    );
+
+    event DependencyProjectScriptTagTypeUpdated(
+        bytes32 indexed dependencyNameAndVersion,
+        ProjectScriptTagType projectScriptTagType,
+        string projectScriptSpecialType
+    );
+
+    /**
+     * @notice Enum representing the canvas tag requirements for a dependency.
+     * @dev Conveys whether generated HTML must include a canvas tag, and where.
+     * @dev NoCanvasTag is the default value. No canvas tag is added to the generated HTML.
+     * @dev CanvasBeforeProjectScript adds a canvas tag before the project script.
+     * @dev CanvasAfterProjectScript adds a canvas tag after the project script.
+     */
+    enum CanvasTagType {
+        NoCanvasTag, // default
+        CanvasBeforeProjectScript,
+        CanvasAfterProjectScript
+    }
+
+    /**
+     * @notice Enum representing how a project's script must be injected into generated HTML.
+     * @dev ClassicScript is the default value. The project script is wrapped in a plain
+     * `<script>` tag, which is correct for the majority of dependencies.
+     * @dev Module wraps the project script in `<script type="module">`, for dependencies whose
+     * projects are authored as ES modules (e.g. those importing a bare specifier such as "three").
+     * @dev SpecialType wraps the project script in a `<script>` tag whose `type` attribute is set
+     * to the dependency's `projectScriptSpecialType` (e.g. "application/processing").
+     * @dev RawHtml injects the project script verbatim, with no wrapping tag, for dependencies
+     * whose project scripts are themselves complete HTML documents (e.g. "custom@na"). Generated
+     * HTML also omits the default style reset in this case, because the raw document owns its
+     * own styling.
+     */
+    enum ProjectScriptTagType {
+        ClassicScript, // default
+        Module,
+        SpecialType,
+        RawHtml
+    }
+
+    /**
+     * @notice Struct holding all details describing a dependency, including the fields that
+     * fully prescribe how the generator should render projects using it.
+     */
+    struct DependencyDetails {
+        // name and version of dependency (i.e. "name@version") used to identify dependency
+        string nameAndVersion;
+        // type of license, MIT, GPL, etc.
+        string licenseType;
+        // preferred CDN URL for dependency
+        string preferredCDN;
+        // count of additional CDN URLs for dependency
+        uint24 additionalCDNCount;
+        // preferred code repository URL for dependency
+        string preferredRepository;
+        // count of additional repository URLs for dependency
+        uint24 additionalRepositoryCount;
+        // project website URL for dependency
+        string dependencyWebsite;
+        // whether the dependency is available on chain
+        bool availableOnChain;
+        // count of on-chain scripts for dependency
+        uint24 scriptCount;
+        // whether the dependency's own script is an ES module, and therefore must be exposed to
+        // project scripts via an import map rather than loaded with a plain `<script src>` tag
+        bool loadAsModule;
+        // canvas tag requirement for the dependency
+        CanvasTagType canvasTagType;
+        // how a project's script must be injected into generated HTML
+        ProjectScriptTagType projectScriptTagType;
+        // `type` attribute used when projectScriptTagType is SpecialType; empty otherwise
+        string projectScriptSpecialType;
+    }
+
     /**
      * @notice Returns the count of scripts for dependency `dependencyNameAndVersion`.
      * @param dependencyNameAndVersion Dependency type to be queried.
@@ -116,6 +199,18 @@ interface IDependencyRegistryV0 {
 
     /**
      * @notice Returns details for a given dependency type `dependencyNameAndVersion`.
+     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
+     * @return dependencyDetails Details for the given dependency.
+     */
+    function getDependencyDetailsV2(
+        bytes32 dependencyNameAndVersion
+    ) external view returns (DependencyDetails memory dependencyDetails);
+
+    /**
+     * @notice Returns details for a given dependency type `dependencyNameAndVersion`.
+     * @dev Superseded by `getDependencyDetailsV2`, which additionally returns the fields
+     * prescribing how the generator renders projects using this dependency. Retained with an
+     * unchanged signature so that existing off-chain consumers continue to decode correctly.
      * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
      * @return nameAndVersion String representation of `dependencyNameAndVersion`.
      *                        (e.g. "p5js(atSymbol)1.0.0")

@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import "../../interfaces/v0.8.x/IAdminACLV0.sol";
 import "../../interfaces/v0.8.x/ICoreRegistryV1.sol";
 import "../../interfaces/v0.8.x/IUniversalBytecodeStorageReader.sol";
+import {IDependencyRegistryV0} from "../../interfaces/v0.8.x/IDependencyRegistryV0.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
 
 /**
@@ -51,6 +52,17 @@ library DependencyRegistryStorageLib {
         uint24 additionalRepositoryCount;
         // count of scripts that make up the dependency, if the dependency is available on-chain
         uint24 scriptCount;
+        // @dev fields below are appended for the generator's rendering directives, and are
+        // safe to append because Dependency is only ever used as a mapping value.
+        // canvas tag requirement for the dependency
+        IDependencyRegistryV0.CanvasTagType canvasTagType;
+        // how a project's script must be injected into generated HTML
+        IDependencyRegistryV0.ProjectScriptTagType projectScriptTagType;
+        // whether the dependency's own script is an ES module, and therefore must be exposed to
+        // project scripts via an import map rather than loaded with a plain `<script src>` tag
+        bool loadAsModule;
+        // `type` attribute used when projectScriptTagType is SpecialType; empty otherwise
+        string projectScriptSpecialType;
     }
 
     /**

@@ -440,6 +440,98 @@ contract DependencyRegistryV0 is
     }
 
     /**
+     * @notice Updates the canvas tag requirement for dependency `dependencyNameAndVersion`.
+     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
+     * @param canvasTagType Whether generated HTML requires a canvas tag, and where it belongs
+     * relative to the project script.
+     */
+    function updateDependencyCanvasTagType(
+        bytes32 dependencyNameAndVersion,
+        IDependencyRegistryV0.CanvasTagType canvasTagType
+    ) external {
+        _onlyAdminACL(this.updateDependencyCanvasTagType.selector);
+        _onlyExistingDependency(dependencyNameAndVersion);
+
+        DependencyRegistryStorageLib
+            .s()
+            .dependencyRecords[dependencyNameAndVersion]
+            .canvasTagType = canvasTagType;
+
+        emit DependencyCanvasTagTypeUpdated(
+            dependencyNameAndVersion,
+            canvasTagType
+        );
+    }
+
+    /**
+     * @notice Updates whether dependency `dependencyNameAndVersion` must be loaded as an ES module.
+     * @dev When true, the generator exposes the dependency to project scripts via an import map
+     * keyed on the dependency's name, rather than loading it with a plain `<script src>` tag.
+     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
+     * @param loadAsModule Whether the dependency's script is an ES module.
+     */
+    function updateDependencyLoadAsModule(
+        bytes32 dependencyNameAndVersion,
+        bool loadAsModule
+    ) external {
+        _onlyAdminACL(this.updateDependencyLoadAsModule.selector);
+        _onlyExistingDependency(dependencyNameAndVersion);
+
+        DependencyRegistryStorageLib
+            .s()
+            .dependencyRecords[dependencyNameAndVersion]
+            .loadAsModule = loadAsModule;
+
+        emit DependencyLoadAsModuleUpdated(
+            dependencyNameAndVersion,
+            loadAsModule
+        );
+    }
+
+    /**
+     * @notice Updates how project scripts using `dependencyNameAndVersion` are injected into
+     * generated HTML.
+     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
+     * @param projectScriptTagType How the project script must be wrapped.
+     * @param projectScriptSpecialType `type` attribute to use, required to be non-empty when
+     * `projectScriptTagType` is SpecialType and required to be empty otherwise.
+     */
+    function updateDependencyProjectScriptTagType(
+        bytes32 dependencyNameAndVersion,
+        IDependencyRegistryV0.ProjectScriptTagType projectScriptTagType,
+        string memory projectScriptSpecialType
+    ) external {
+        _onlyAdminACL(this.updateDependencyProjectScriptTagType.selector);
+        _onlyExistingDependency(dependencyNameAndVersion);
+        // @dev keeps the special type and the tag type from drifting out of sync, which would
+        // otherwise silently produce a script tag with a missing or ignored `type` attribute.
+        if (
+            projectScriptTagType ==
+            IDependencyRegistryV0.ProjectScriptTagType.SpecialType
+        ) {
+            _onlyNonEmptyString(projectScriptSpecialType);
+        } else {
+            require(
+                bytes(projectScriptSpecialType).length == 0,
+                "Special type only for SpecialType"
+            );
+        }
+
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
+        dependency.projectScriptTagType = projectScriptTagType;
+        dependency.projectScriptSpecialType = projectScriptSpecialType;
+
+        emit DependencyProjectScriptTagTypeUpdated(
+            dependencyNameAndVersion,
+            projectScriptTagType,
+            projectScriptSpecialType
+        );
+    }
+
+    /**
      * @notice Adds a new CDN url to `dependencyNameAndVersion`.
      * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
      * @param additionalCDN CDN URL to be added. Required to be a non-empty string,
@@ -1377,6 +1469,46 @@ contract DependencyRegistryV0 is
     /**
      * @notice Returns details for a given dependency type `dependencyNameAndVersion`.
      * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
+     * @return dependencyDetails Details for the given dependency.
+     */
+    function getDependencyDetailsV2(
+        bytes32 dependencyNameAndVersion
+    )
+        public
+        view
+        returns (
+            IDependencyRegistryV0.DependencyDetails memory dependencyDetails
+        )
+    {
+        DependencyRegistryStorageLib.Dependency
+            storage dependency = DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion];
+
+        return
+            IDependencyRegistryV0.DependencyDetails({
+                nameAndVersion: dependencyNameAndVersion.toString(),
+                licenseType: dependency.licenseType.toString(),
+                preferredCDN: dependency.preferredCDN,
+                additionalCDNCount: dependency.additionalCDNCount,
+                preferredRepository: dependency.preferredRepository,
+                additionalRepositoryCount: dependency.additionalRepositoryCount,
+                dependencyWebsite: dependency.website,
+                availableOnChain: dependency.scriptCount > 0,
+                scriptCount: dependency.scriptCount,
+                loadAsModule: dependency.loadAsModule,
+                canvasTagType: dependency.canvasTagType,
+                projectScriptTagType: dependency.projectScriptTagType,
+                projectScriptSpecialType: dependency.projectScriptSpecialType
+            });
+    }
+
+    /**
+     * @notice Returns details for a given dependency type `dependencyNameAndVersion`.
+     * @dev Superseded by `getDependencyDetailsV2`, which additionally returns the fields
+     * prescribing how the generator renders projects using this dependency. Retained with an
+     * unchanged signature so that existing off-chain consumers continue to decode correctly.
+     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
      * @return nameAndVersion String representation of `dependencyNameAndVersion`.
      *                        (e.g. "p5js(atSymbol)1.0.0")
      * @return licenseType License type for dependency
@@ -1405,21 +1537,19 @@ contract DependencyRegistryV0 is
             uint24 scriptCount
         )
     {
-        DependencyRegistryStorageLib.Dependency
-            storage dependency = DependencyRegistryStorageLib
-                .s()
-                .dependencyRecords[dependencyNameAndVersion];
+        IDependencyRegistryV0.DependencyDetails
+            memory details = getDependencyDetailsV2(dependencyNameAndVersion);
 
         return (
-            dependencyNameAndVersion.toString(),
-            dependency.licenseType.toString(),
-            dependency.preferredCDN,
-            dependency.additionalCDNCount,
-            dependency.preferredRepository,
-            dependency.additionalRepositoryCount,
-            dependency.website,
-            dependency.scriptCount > 0,
-            dependency.scriptCount
+            details.nameAndVersion,
+            details.licenseType,
+            details.preferredCDN,
+            details.additionalCDNCount,
+            details.preferredRepository,
+            details.additionalRepositoryCount,
+            details.dependencyWebsite,
+            details.availableOnChain,
+            details.scriptCount
         );
     }
 

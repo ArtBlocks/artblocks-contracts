@@ -31,6 +31,21 @@ const ONLY_EXISTING_LICENSE_TYPE_ERROR = "License type does not exist";
 const ONLY_NON_EMPTY_STRING_ERROR = "Must input non-empty string";
 const ONLY_NON_ZERO_ADDRESS_ERROR = "Must input non-zero address";
 const INDEX_OUT_OF_RANGE_ERROR = "Index out of range";
+const SPECIAL_TYPE_ONLY_FOR_SPECIAL_TYPE_ERROR =
+  "Special type only for SpecialType";
+
+const CANVAS_TAG_TYPE = {
+  NoCanvasTag: 0,
+  CanvasBeforeProjectScript: 1,
+  CanvasAfterProjectScript: 2,
+} as const;
+
+const PROJECT_SCRIPT_TAG_TYPE = {
+  ClassicScript: 0,
+  Module: 1,
+  SpecialType: 2,
+  RawHtml: 3,
+} as const;
 
 interface DependencyRegistryV0TestContext extends Mocha.Context {
   dependencyRegistry: DependencyRegistryV0;
@@ -516,6 +531,63 @@ describe(`DependencyRegistryV0`, async function () {
           await config.dependencyRegistry.getDependencyNamesAndVersions();
         expect(dependencyNameAndVersions).to.deep.eq([]);
       });
+
+      // @dev otherwise a name reused for an unrelated dependency would inherit the
+      // rendering directives of the one it replaced
+      it("clears rendering directives, so a re-added dependency starts from defaults", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addDependency(
+            dependencyNameAndVersionBytes,
+            licenseTypeBytes,
+            preferredCDN,
+            preferredRepository,
+            dependencyWebsite
+          );
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyCanvasTagType(
+            dependencyNameAndVersionBytes,
+            CANVAS_TAG_TYPE.CanvasAfterProjectScript
+          );
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyLoadAsModule(dependencyNameAndVersionBytes, true);
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyProjectScriptTagType(
+            dependencyNameAndVersionBytes,
+            PROJECT_SCRIPT_TAG_TYPE.SpecialType,
+            "application/processing"
+          );
+
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .removeDependency(dependencyNameAndVersionBytes);
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addDependency(
+            dependencyNameAndVersionBytes,
+            licenseTypeBytes,
+            preferredCDN,
+            preferredRepository,
+            dependencyWebsite
+          );
+
+        const dependencyDetails =
+          await config.dependencyRegistry.getDependencyDetailsV2(
+            dependencyNameAndVersionBytes
+          );
+        expect(dependencyDetails.canvasTagType).to.eq(
+          CANVAS_TAG_TYPE.NoCanvasTag
+        );
+        expect(dependencyDetails.loadAsModule).to.eq(false);
+        expect(dependencyDetails.projectScriptTagType).to.eq(
+          PROJECT_SCRIPT_TAG_TYPE.ClassicScript
+        );
+        expect(dependencyDetails.projectScriptSpecialType).to.eq("");
+      });
     });
     describe("update", function () {
       beforeEach(async function () {
@@ -692,6 +764,353 @@ describe(`DependencyRegistryV0`, async function () {
           expect(dependencyDetails.dependencyWebsite).to.eq(
             "https://reference.com"
           );
+        });
+      });
+      describe("updateDependencyCanvasTagType", function () {
+        it("does not allow non-admins to update canvas tag type", async function () {
+          const config = this.config;
+          await expectRevert(
+            config.dependencyRegistry
+              .connect(config.accounts.user)
+              .updateDependencyCanvasTagType(
+                dependencyNameAndVersionBytes,
+                CANVAS_TAG_TYPE.CanvasBeforeProjectScript
+              ),
+            ONLY_ADMIN_ACL_ERROR
+          );
+        });
+        it("does not allow updating canvas tag type for a dependency that does not exist", async function () {
+          const config = this.config;
+          await expectRevert(
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
+              .updateDependencyCanvasTagType(
+                ethers.utils.formatBytes32String("nonExistentDependencyType"),
+                CANVAS_TAG_TYPE.CanvasBeforeProjectScript
+              ),
+            ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
+          );
+        });
+        it("defaults to NoCanvasTag", async function () {
+          const config = this.config;
+          const dependencyDetails =
+            await config.dependencyRegistry.getDependencyDetailsV2(
+              dependencyNameAndVersionBytes
+            );
+          expect(dependencyDetails.canvasTagType).to.eq(
+            CANVAS_TAG_TYPE.NoCanvasTag
+          );
+        });
+        it("allows admin to update canvas tag type", async function () {
+          const config = this.config;
+          await expect(
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
+              .updateDependencyCanvasTagType(
+                dependencyNameAndVersionBytes,
+                CANVAS_TAG_TYPE.CanvasAfterProjectScript
+              )
+          )
+            .to.emit(
+              config.dependencyRegistry,
+              "DependencyCanvasTagTypeUpdated"
+            )
+            .withArgs(
+              dependencyNameAndVersionBytes,
+              CANVAS_TAG_TYPE.CanvasAfterProjectScript
+            );
+
+          const dependencyDetails =
+            await config.dependencyRegistry.getDependencyDetailsV2(
+              dependencyNameAndVersionBytes
+            );
+          expect(dependencyDetails.canvasTagType).to.eq(
+            CANVAS_TAG_TYPE.CanvasAfterProjectScript
+          );
+        });
+        it("allows admin to clear a previously set canvas tag type", async function () {
+          const config = this.config;
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyCanvasTagType(
+              dependencyNameAndVersionBytes,
+              CANVAS_TAG_TYPE.CanvasBeforeProjectScript
+            );
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyCanvasTagType(
+              dependencyNameAndVersionBytes,
+              CANVAS_TAG_TYPE.NoCanvasTag
+            );
+
+          const dependencyDetails =
+            await config.dependencyRegistry.getDependencyDetailsV2(
+              dependencyNameAndVersionBytes
+            );
+          expect(dependencyDetails.canvasTagType).to.eq(
+            CANVAS_TAG_TYPE.NoCanvasTag
+          );
+        });
+        it("reverts on an out-of-range canvas tag type", async function () {
+          const config = this.config;
+          await expect(
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
+              .updateDependencyCanvasTagType(dependencyNameAndVersionBytes, 3)
+          ).to.be.reverted;
+        });
+      });
+      describe("updateDependencyLoadAsModule", function () {
+        it("does not allow non-admins to update load as module", async function () {
+          const config = this.config;
+          await expectRevert(
+            config.dependencyRegistry
+              .connect(config.accounts.user)
+              .updateDependencyLoadAsModule(
+                dependencyNameAndVersionBytes,
+                true
+              ),
+            ONLY_ADMIN_ACL_ERROR
+          );
+        });
+        it("does not allow updating load as module for a dependency that does not exist", async function () {
+          const config = this.config;
+          await expectRevert(
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
+              .updateDependencyLoadAsModule(
+                ethers.utils.formatBytes32String("nonExistentDependencyType"),
+                true
+              ),
+            ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
+          );
+        });
+        it("defaults to false", async function () {
+          const config = this.config;
+          const dependencyDetails =
+            await config.dependencyRegistry.getDependencyDetailsV2(
+              dependencyNameAndVersionBytes
+            );
+          expect(dependencyDetails.loadAsModule).to.eq(false);
+        });
+        it("allows admin to set and unset load as module", async function () {
+          const config = this.config;
+          await expect(
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
+              .updateDependencyLoadAsModule(dependencyNameAndVersionBytes, true)
+          )
+            .to.emit(config.dependencyRegistry, "DependencyLoadAsModuleUpdated")
+            .withArgs(dependencyNameAndVersionBytes, true);
+
+          expect(
+            (
+              await config.dependencyRegistry.getDependencyDetailsV2(
+                dependencyNameAndVersionBytes
+              )
+            ).loadAsModule
+          ).to.eq(true);
+
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyLoadAsModule(dependencyNameAndVersionBytes, false);
+
+          expect(
+            (
+              await config.dependencyRegistry.getDependencyDetailsV2(
+                dependencyNameAndVersionBytes
+              )
+            ).loadAsModule
+          ).to.eq(false);
+        });
+      });
+      describe("updateDependencyProjectScriptTagType", function () {
+        it("does not allow non-admins to update project script tag type", async function () {
+          const config = this.config;
+          await expectRevert(
+            config.dependencyRegistry
+              .connect(config.accounts.user)
+              .updateDependencyProjectScriptTagType(
+                dependencyNameAndVersionBytes,
+                PROJECT_SCRIPT_TAG_TYPE.Module,
+                ""
+              ),
+            ONLY_ADMIN_ACL_ERROR
+          );
+        });
+        it("does not allow updating project script tag type for a dependency that does not exist", async function () {
+          const config = this.config;
+          await expectRevert(
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
+              .updateDependencyProjectScriptTagType(
+                ethers.utils.formatBytes32String("nonExistentDependencyType"),
+                PROJECT_SCRIPT_TAG_TYPE.Module,
+                ""
+              ),
+            ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
+          );
+        });
+        it("defaults to ClassicScript with an empty special type", async function () {
+          const config = this.config;
+          const dependencyDetails =
+            await config.dependencyRegistry.getDependencyDetailsV2(
+              dependencyNameAndVersionBytes
+            );
+          expect(dependencyDetails.projectScriptTagType).to.eq(
+            PROJECT_SCRIPT_TAG_TYPE.ClassicScript
+          );
+          expect(dependencyDetails.projectScriptSpecialType).to.eq("");
+        });
+        it("allows admin to set Module", async function () {
+          const config = this.config;
+          await expect(
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
+              .updateDependencyProjectScriptTagType(
+                dependencyNameAndVersionBytes,
+                PROJECT_SCRIPT_TAG_TYPE.Module,
+                ""
+              )
+          )
+            .to.emit(
+              config.dependencyRegistry,
+              "DependencyProjectScriptTagTypeUpdated"
+            )
+            .withArgs(
+              dependencyNameAndVersionBytes,
+              PROJECT_SCRIPT_TAG_TYPE.Module,
+              ""
+            );
+
+          const dependencyDetails =
+            await config.dependencyRegistry.getDependencyDetailsV2(
+              dependencyNameAndVersionBytes
+            );
+          expect(dependencyDetails.projectScriptTagType).to.eq(
+            PROJECT_SCRIPT_TAG_TYPE.Module
+          );
+          expect(dependencyDetails.projectScriptSpecialType).to.eq("");
+        });
+        it("allows admin to set RawHtml", async function () {
+          const config = this.config;
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyProjectScriptTagType(
+              dependencyNameAndVersionBytes,
+              PROJECT_SCRIPT_TAG_TYPE.RawHtml,
+              ""
+            );
+
+          expect(
+            (
+              await config.dependencyRegistry.getDependencyDetailsV2(
+                dependencyNameAndVersionBytes
+              )
+            ).projectScriptTagType
+          ).to.eq(PROJECT_SCRIPT_TAG_TYPE.RawHtml);
+        });
+        it("allows admin to set SpecialType with a type attribute", async function () {
+          const config = this.config;
+          await expect(
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
+              .updateDependencyProjectScriptTagType(
+                dependencyNameAndVersionBytes,
+                PROJECT_SCRIPT_TAG_TYPE.SpecialType,
+                "application/processing"
+              )
+          )
+            .to.emit(
+              config.dependencyRegistry,
+              "DependencyProjectScriptTagTypeUpdated"
+            )
+            .withArgs(
+              dependencyNameAndVersionBytes,
+              PROJECT_SCRIPT_TAG_TYPE.SpecialType,
+              "application/processing"
+            );
+
+          const dependencyDetails =
+            await config.dependencyRegistry.getDependencyDetailsV2(
+              dependencyNameAndVersionBytes
+            );
+          expect(dependencyDetails.projectScriptTagType).to.eq(
+            PROJECT_SCRIPT_TAG_TYPE.SpecialType
+          );
+          expect(dependencyDetails.projectScriptSpecialType).to.eq(
+            "application/processing"
+          );
+        });
+        it("does not allow SpecialType without a type attribute", async function () {
+          const config = this.config;
+          await expectRevert(
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
+              .updateDependencyProjectScriptTagType(
+                dependencyNameAndVersionBytes,
+                PROJECT_SCRIPT_TAG_TYPE.SpecialType,
+                ""
+              ),
+            ONLY_NON_EMPTY_STRING_ERROR
+          );
+        });
+        it("does not allow a type attribute on non-SpecialType tag types", async function () {
+          const config = this.config;
+          for (const tagType of [
+            PROJECT_SCRIPT_TAG_TYPE.ClassicScript,
+            PROJECT_SCRIPT_TAG_TYPE.Module,
+            PROJECT_SCRIPT_TAG_TYPE.RawHtml,
+          ]) {
+            await expectRevert(
+              config.dependencyRegistry
+                .connect(config.accounts.deployer)
+                .updateDependencyProjectScriptTagType(
+                  dependencyNameAndVersionBytes,
+                  tagType,
+                  "application/processing"
+                ),
+              SPECIAL_TYPE_ONLY_FOR_SPECIAL_TYPE_ERROR
+            );
+          }
+        });
+        it("clears the special type when moving away from SpecialType", async function () {
+          const config = this.config;
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyProjectScriptTagType(
+              dependencyNameAndVersionBytes,
+              PROJECT_SCRIPT_TAG_TYPE.SpecialType,
+              "application/processing"
+            );
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyProjectScriptTagType(
+              dependencyNameAndVersionBytes,
+              PROJECT_SCRIPT_TAG_TYPE.ClassicScript,
+              ""
+            );
+
+          const dependencyDetails =
+            await config.dependencyRegistry.getDependencyDetailsV2(
+              dependencyNameAndVersionBytes
+            );
+          expect(dependencyDetails.projectScriptTagType).to.eq(
+            PROJECT_SCRIPT_TAG_TYPE.ClassicScript
+          );
+          expect(dependencyDetails.projectScriptSpecialType).to.eq("");
+        });
+        it("reverts on an out-of-range project script tag type", async function () {
+          const config = this.config;
+          await expect(
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
+              .updateDependencyProjectScriptTagType(
+                dependencyNameAndVersionBytes,
+                4,
+                ""
+              )
+          ).to.be.reverted;
         });
       });
     });
@@ -1305,6 +1724,102 @@ describe(`DependencyRegistryV0`, async function () {
 
         expect(dependencyDetails.scriptCount).to.eq(1);
         expect(dependencyDetails.availableOnChain).to.eq(true);
+      });
+
+      it("getDependencyDetailsV2", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addDependencyScript(
+            dependencyNameAndVersionBytes,
+            "on-chain script"
+          );
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyCanvasTagType(
+            dependencyNameAndVersionBytes,
+            CANVAS_TAG_TYPE.CanvasBeforeProjectScript
+          );
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyLoadAsModule(dependencyNameAndVersionBytes, true);
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyProjectScriptTagType(
+            dependencyNameAndVersionBytes,
+            PROJECT_SCRIPT_TAG_TYPE.SpecialType,
+            "application/processing"
+          );
+
+        const dependencyDetails =
+          await config.dependencyRegistry.getDependencyDetailsV2(
+            dependencyNameAndVersionBytes
+          );
+
+        expect(dependencyDetails).to.deep.eq([
+          dependencyNameAndVersion, // nameAndVersion
+          licenseType, // licenseType
+          preferredCDN, // preferredCDN
+          0, // additionalCDNCount
+          preferredRepository, // preferredRepository
+          0, // additionalRepositoryCount
+          dependencyWebsite, // dependencyWebsite
+          true, // availableOnChain
+          1, // scriptCount
+          true, // loadAsModule
+          CANVAS_TAG_TYPE.CanvasBeforeProjectScript, // canvasTagType
+          PROJECT_SCRIPT_TAG_TYPE.SpecialType, // projectScriptTagType
+          "application/processing", // projectScriptSpecialType
+        ]);
+      });
+
+      // @dev the generator is upgraded after the registry, so the deployed generator
+      // keeps calling the legacy getter while the new fields are being backfilled
+      it("getDependencyDetails keeps its legacy shape once rendering directives are set", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyCanvasTagType(
+            dependencyNameAndVersionBytes,
+            CANVAS_TAG_TYPE.CanvasAfterProjectScript
+          );
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyLoadAsModule(dependencyNameAndVersionBytes, true);
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyProjectScriptTagType(
+            dependencyNameAndVersionBytes,
+            PROJECT_SCRIPT_TAG_TYPE.RawHtml,
+            ""
+          );
+
+        const legacyDetails = [
+          dependencyNameAndVersion,
+          licenseType,
+          preferredCDN,
+          0,
+          preferredRepository,
+          0,
+          dependencyWebsite,
+          false,
+          0,
+        ];
+
+        expect(
+          await config.dependencyRegistry.getDependencyDetails(
+            dependencyNameAndVersionBytes
+          )
+        ).to.deep.eq(legacyDetails);
+        expect(
+          await config.dependencyRegistry.getDependencyDetailsFromString(
+            dependencyNameAndVersion
+          )
+        ).to.deep.eq(legacyDetails);
       });
 
       it("getDependencyScript", async function () {

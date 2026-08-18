@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registry Backfill</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" crossorigin="anonymous"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #1a1a1a;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    header h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+
+    .wallet-section { display: flex; align-items: center; gap: 12px; }
+
+    .mono {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    }
+
+    .wallet-info { font-size: 13px; color: #555; }
+
+    .btn {
+      padding: 7px 14px;
+      border: 1px solid #d0d0d0;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn:hover:not(:disabled) { background: #f0f0f0; }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    .btn-primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+    .btn-sm { padding: 3px 10px; font-size: 12px; }
+
+    main { max-width: 960px; margin: 24px auto; padding: 0 16px; }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+    }
+
+    .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+
+    dl { display: grid; grid-template-columns: 150px 1fr; gap: 6px 16px; font-size: 13px; }
+    dt { color: #666; }
+    dd { word-break: break-all; }
+
+    .banner {
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      display: none;
+    }
+    .banner.show { display: block; }
+    .banner-warn { background: #fef3c7; border: 1px solid #fcd34d; color: #78350f; }
+    .banner-error { background: #fee2e2; border: 1px solid #fca5a5; color: #7f1d1d; }
+    .banner-ok { background: #dcfce7; border: 1px solid #86efac; color: #14532d; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      text-align: left;
+      font-weight: 600;
+      color: #666;
+      padding: 8px 10px;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    td { padding: 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+
+    .call { font-size: 13px; }
+    .call-args { color: #666; font-size: 12px; margin-top: 2px; }
+
+    .status { font-size: 12px; font-weight: 500; white-space: nowrap; }
+    .status-pending { color: #999; }
+    .status-sending { color: #2563eb; }
+    .status-done { color: #16a34a; }
+    .status-failed { color: #dc2626; }
+
+    a { color: #2563eb; }
+
+    footer { max-width: 960px; margin: 0 auto 40px; padding: 0 16px; color: #666; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Dependency registry backfill</h1>
+    <div class="wallet-section">
+      <span class="wallet-info mono" id="wallet">not connected</span>
+      <button class="btn btn-primary" id="connect">Connect wallet</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="banner" id="banner"></div>
+
+    <div class="card">
+      <h2>Target</h2>
+      <dl>
+        <dt>Network</dt><dd id="network"></dd>
+        <dt>Registry</dt><dd class="mono" id="registry"></dd>
+        <dt>Required sender</dt><dd class="mono" id="superAdmin"></dd>
+      </dl>
+    </div>
+
+    <div class="card">
+      <h2>Transactions <span id="count" style="color:#666;font-weight:400"></span></h2>
+      <p style="color:#666;font-size:13px;margin-bottom:14px">
+        Every call below was simulated from the required sender before this page was served.
+        They are independent of one another, so any that fail can be retried on their own.
+      </p>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Call</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div style="margin-top:16px;display:flex;gap:10px;align-items:center">
+        <button class="btn btn-primary" id="sendAll" disabled>Send all</button>
+        <button class="btn" id="refresh">Re-check on-chain state</button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Leave the terminal running — it re-reads the registry after each transaction and reports when the
+    backfill is complete.
+  </footer>
+
+<script>
+  let plan = null;
+  let provider = null;
+  let signer = null;
+  let account = null;
+
+  const el = (id) => document.getElementById(id);
+
+  function banner(kind, message) {
+    const node = el("banner");
+    node.className = `banner show banner-${kind}`;
+    node.textContent = message;
+  }
+
+  function clearBanner() {
+    el("banner").className = "banner";
+  }
+
+  async function loadPlan() {
+    plan = await (await fetch("/api/plan")).json();
+
+    el("network").textContent = `${plan.network} (chain ${plan.chainId})`;
+    el("registry").textContent = plan.registry;
+    el("superAdmin").textContent = plan.superAdmin;
+    el("count").textContent = `— ${plan.calls.length} outstanding`;
+
+    const rows = el("rows");
+    rows.innerHTML = "";
+    plan.calls.forEach((call, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>
+          <div class="call"><strong>${call.method}</strong></div>
+          <div class="call-args mono">${call.summary}</div>
+        </td>
+        <td><span class="status status-pending" id="status-${i}">pending</span></td>
+        <td><button class="btn btn-sm" id="send-${i}" disabled>Send</button></td>
+      `;
+      rows.appendChild(tr);
+      el(`send-${i}`).onclick = () => sendOne(i);
+    });
+
+    if (plan.calls.length === 0) {
+      banner("ok", "Backfill complete — nothing outstanding.");
+    }
+    updateButtons();
+  }
+
+  function setStatus(i, kind, text, hash) {
+    const node = el(`status-${i}`);
+    node.className = `status status-${kind}`;
+    node.innerHTML = hash
+      ? `${text} · <a href="${plan.explorer}/tx/${hash}" target="_blank" rel="noreferrer">tx</a>`
+      : text;
+  }
+
+  function ready() {
+    return (
+      account &&
+      account.toLowerCase() === plan.superAdmin.toLowerCase() &&
+      plan.calls.length > 0
+    );
+  }
+
+  function updateButtons() {
+    const enabled = ready();
+    el("sendAll").disabled = !enabled;
+    plan.calls.forEach((_, i) => {
+      const button = el(`send-${i}`);
+      if (button && !button.dataset.done) button.disabled = !enabled;
+    });
+  }
+
+  async function connect() {
+    if (!window.ethereum) {
+      banner("error", "No injected wallet found.");
+      return;
+    }
+    provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+    await provider.send("eth_requestAccounts", []);
+    signer = provider.getSigner();
+    account = await signer.getAddress();
+
+    const network = await provider.getNetwork();
+    el("wallet").textContent = account;
+
+    if (network.chainId !== plan.chainId) {
+      banner(
+        "error",
+        `Wallet is on chain ${network.chainId}; switch to ${plan.network} (chain ${plan.chainId}).`
+      );
+    } else if (account.toLowerCase() !== plan.superAdmin.toLowerCase()) {
+      banner(
+        "error",
+        `Connected account is not the registry superAdmin. Switch to ${plan.superAdmin}.`
+      );
+    } else if (plan.calls.length > 0) {
+      clearBanner();
+    }
+    updateButtons();
+  }
+
+  async function sendOne(i) {
+    const call = plan.calls[i];
+    const button = el(`send-${i}`);
+    button.disabled = true;
+    setStatus(i, "sending", "confirm in wallet");
+
+    try {
+      const tx = await signer.sendTransaction({ to: plan.registry, data: call.data });
+      setStatus(i, "sending", "pending", tx.hash);
+      const receipt = await tx.wait();
+      if (receipt.status !== 1) throw new Error("transaction reverted");
+      setStatus(i, "done", "confirmed", tx.hash);
+      button.dataset.done = "1";
+      await fetch("/api/sent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ index: i, hash: tx.hash, method: call.method }),
+      });
+    } catch (error) {
+      setStatus(i, "failed", (error && (error.reason || error.message)) || "failed");
+      button.disabled = false;
+    }
+  }
+
+  async function sendAll() {
+    el("sendAll").disabled = true;
+    for (let i = 0; i < plan.calls.length; i++) {
+      if (el(`send-${i}`).dataset.done) continue;
+      await sendOne(i);
+    }
+    await refresh();
+  }
+
+  async function refresh() {
+    const status = await (await fetch("/api/status")).json();
+    if (status.remaining === 0) {
+      banner("ok", "Backfill complete — the registry reports nothing outstanding.");
+    } else {
+      banner("warn", `${status.remaining} call(s) still outstanding on chain.`);
+    }
+  }
+
+  el("connect").onclick = connect;
+  el("sendAll").onclick = sendAll;
+  el("refresh").onclick = refresh;
+
+  if (window.ethereum) {
+    window.ethereum.on("accountsChanged", () => location.reload());
+    window.ethereum.on("chainChanged", () => location.reload());
+  }
+
+  loadPlan();
+</script>
+</body>
+</html>
