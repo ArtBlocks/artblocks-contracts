@@ -42,8 +42,8 @@ export const deployConfigs: DeployConfig[] = [
 
 ### Init code (deterministic — regenerate if the contract changes)
 
-- **initcodeHash:** `0xf3ae2894412d3105c111dd2b6bb1d09c91aba015bb5c348ace4bdf34846293c3`
-- Address with all-zero salt: `0x7A347a2D3B13a839b34d0004D44c2580a1bf9E39`
+- **initcodeHash:** `0xf2a6ba173039b35c4341a69f7b422d7e7e0bc76216d4cbc76ca18aff12346658`
+- Address with all-zero salt: `0xb380B5c5A1d98Ebcc669feF89bCe0B3db1f36292`
 
 ### Salt strategy (mirrors PMPV0)
 
@@ -54,52 +54,44 @@ PMPV0 used two salts:
 - The **all-zero salt** → a distinct address, used on **sepolia-dev** (a separate instance on the
   same Sepolia chain).
 
-Do the same for PMPV1:
+Do the same for PMPV1. The vanity salt's first 20 bytes are **zero** (permissionless on the 0age
+factory — `containsCaller` allows first 20 bytes to equal `msg.sender` or be zero). Anyone can
+deploy the vanity instances. Sepolia-dev uses the all-zero salt (also permissionless).
 
 | Instance                                        | Salt                                                                 | Address                                                             |
 | ----------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| mainnet, arbitrum, base, shape, sepolia-staging | `0x00df4e8d293d57718aac0b18cbfbe128c5d484ef433143d2ba53f183c32e0008` | `0x00000000829C0278FBa4327efd97ab45493364cC` (4 leading zero bytes) |
-| sepolia-dev                                     | `0x00…00` (all-zero)                                                 | `0x7A347a2D3B13a839b34d0004D44c2580a1bf9E39`                        |
-
-The vanity salt's first 20 bytes are **caller-bound** to the deployer wallet
-`0x00df4e8d293d57718aac0b18cbfbe128c5d484ef` (the 0age factory's `containsCaller` check requires the
-first 20 salt bytes to equal `msg.sender` or be zero). Deploy the vanity instances from that wallet
-on every chain to land the same address. Sepolia-dev uses the all-zero salt (permissionless).
+| mainnet, arbitrum, base, shape, sepolia-staging | `0x0000000000000000000000000000000000000000119450434c6eff48ef020040` | `0x00000000B9D3B2461fcFd5D23FCA65227B770f67` (4 leading zero bytes) |
+| sepolia-dev                                     | `0x00…00` (all-zero)                                                 | `0xb380B5c5A1d98Ebcc669feF89bCe0B3db1f36292`                        |
 
 > ⚠️ The initcodeHash changes if PMPV1's bytecode changes. Always regenerate the hash from the
 > current build before mining a salt or deploying.
->
-> The addresses in this file are the **original** V1 bytecode (value-lock only, no locked-key
-> pass-through). This source change requires a new CREATE2 deploy: the existing vanity address
-> cannot be reused. Treat the table below as historical until the new canonical V1 is deployed
-> and these references are updated.
 
 ## Target chains
 
 Deploy to every chain PMPV0 is on: mainnet (1), arbitrum (42161), base (8453), shape (360),
 sepolia-staging (11155111, vanity salt), sepolia-dev (11155111, zero salt).
 
-## Results (fill in on deploy)
+## Results
 
-vanity salt: `0x00df4e8d293d57718aac0b18cbfbe128c5d484ef433143d2ba53f183c32e0008`
-(caller-bound to deployer `0x00df4e8d293d57718aac0b18cbfbe128c5d484ef`;
+vanity salt: `0x0000000000000000000000000000000000000000119450434c6eff48ef020040`
+(first 20 bytes zero / permissionless;
 used for mainnet/arbitrum/base/shape/sepolia-staging)
-vanity address: `0x00000000829C0278FBa4327efd97ab45493364cC` (shared across those chains)
-sepolia-dev (zero salt) address: `0x7A347a2D3B13a839b34d0004D44c2580a1bf9E39`
+vanity address: `0x00000000B9D3B2461fcFd5D23FCA65227B770f67` (shared across those chains)
+sepolia-dev (zero salt) address: `0xb380B5c5A1d98Ebcc669feF89bCe0B3db1f36292`
 
 ### Deployment transactions
 
 All deployed and source-verified (verified `pmpType()` returns `"PMPV1"`; on-chain code identical
-across all vanity instances, ~20,209 bytes).
+across all vanity instances).
 
 | Chain                      | Address                                      | Salt   | Deploy tx                                                                                                                   | Verified                  |
 | -------------------------- | -------------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| mainnet (1)                | `0x00000000829C0278FBa4327efd97ab45493364cC` | vanity | [`0x54d54f7b…31ff610`](https://etherscan.io/tx/0x54d54f7b419c3df6f6e4a20ef54762fcc6a7024b8055a50c4dd2e7c0831ff610)          | ✅ Etherscan              |
-| arbitrum (42161)           | `0x00000000829C0278FBa4327efd97ab45493364cC` | vanity | [`0x599ba28b…a37a0e9e`](https://arbiscan.io/tx/0x599ba28b1f0b760113a8261c692c2b8622b0ddd3f4c77e627c64aa09a37a0e9e)          | ✅ Arbiscan               |
-| base (8453)                | `0x00000000829C0278FBa4327efd97ab45493364cC` | vanity | [`0x3dd02476…c9c8c893`](https://basescan.org/tx/0x3dd02476b5f8168fb4dc8b3b61427b7921c0cb10fcd747a974bf04e4c9c8c893)         | ✅ Basescan               |
-| shape (360)                | `0x00000000829C0278FBa4327efd97ab45493364cC` | vanity | [`0x29812259…b9112ff1`](https://shapescan.xyz/tx/0x29812259f16a6e614b193bf6423b9db054972f9a63a6246bd34d2884b9112ff1)        | ✅ Shapescan (Blockscout) |
-| sepolia-staging (11155111) | `0x00000000829C0278FBa4327efd97ab45493364cC` | vanity | [`0xfa8de5d7…402dbf90`](https://sepolia.etherscan.io/tx/0xfa8de5d7045ac0f4d3eafd5f8a0d59c19a406d9419c2a1e13ca1b532402dbf90) | ✅ Etherscan              |
-| sepolia-dev (11155111)     | `0x7A347a2D3B13a839b34d0004D44c2580a1bf9E39` | zero   | [`0xd9553ed5…ec131546`](https://sepolia.etherscan.io/tx/0xd9553ed5d77d8638f496a95daf16b5ef372debe4453d798f43cedd0aec131546) | ✅ Etherscan              |
+| mainnet (1)                | `0x00000000B9D3B2461fcFd5D23FCA65227B770f67` | vanity | [`0x2f81cef0…20421f26`](https://etherscan.io/tx/0x2f81cef01a7ca7af944e271da99b240f4fe3801be84850caa98817d820421f26)          | ✅ Etherscan              |
+| arbitrum (42161)           | `0x00000000B9D3B2461fcFd5D23FCA65227B770f67` | vanity | [`0xb638d930…6908fcc8`](https://arbiscan.io/tx/0xb638d93064b2ffda4290329a7d5a77afe95aac0bedcb33050fd4b00c6908fcc8)          | ✅ Arbiscan               |
+| base (8453)                | `0x00000000B9D3B2461fcFd5D23FCA65227B770f67` | vanity | [`0x6f45ecf4…783ac7d1`](https://basescan.org/tx/0x6f45ecf411609b352fbec48f2501362553c8392ba3065238f6ec9eee783ac7d1)         | ✅ Basescan               |
+| shape (360)                | `0x00000000B9D3B2461fcFd5D23FCA65227B770f67` | vanity | [`0x652bd490…5bba5232`](https://shapescan.xyz/tx/0x652bd490b178c9c1226fddabb14a79af58cd7b95a941a36838681db05bba5232)        | ✅ Shapescan (Blockscout) |
+| sepolia-staging (11155111) | `0x00000000B9D3B2461fcFd5D23FCA65227B770f67` | vanity | [`0x81261172…84a17aaa`](https://sepolia.etherscan.io/tx/0x8126117259bc89657da72098267d6f8b93f7cb2a443c91d199228b4984a17aaa) | ✅ Etherscan              |
+| sepolia-dev (11155111)     | `0xb380B5c5A1d98Ebcc669feF89bCe0B3db1f36292` | zero   | [`0x809d01a6…09315e10`](https://sepolia.etherscan.io/tx/0x809d01a6d87b7ced5e922074fa57d549f3176fc8e38a31111fd1e89309315e10) | ✅ Etherscan              |
 
 > Shape verification note: `shapescan.xyz` is a **Blockscout** explorer, so it must be verified via
 > the `blockscout` provider in `hardhat.config.ts` (not `etherscan.customChains`, which routes Shape
