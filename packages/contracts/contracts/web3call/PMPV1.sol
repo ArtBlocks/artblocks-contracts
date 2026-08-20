@@ -26,12 +26,16 @@ import {Bytes32Strings} from "../libs/v0.8.x/Bytes32Strings.sol";
  * @notice This contract enables Artists to define and configure project parameters that token
  * owners can set within constraints. This provides a standardized way for projects to expose
  * configurable parameters that can be used by renderers and other contracts.
- * @notice V1 change vs V0: `pmpLockedAfterTimestamp` is interpreted as BOTH a configuration
- * lock (the artist may not re-configure the param definition after the timestamp, unchanged
- * from V0) AND a value lock (no party may configure a token's value for the param after the
- * timestamp). This makes the "Lock Date" behave as advertised in the Creator Dashboard:
- * once the lock timestamp passes, the parameter's value is cemented permanently. In V0, only
- * the configuration was locked and token values remained writable after the timestamp.
+ * @notice V1 changes vs V0:
+ * 1. `pmpLockedAfterTimestamp` is interpreted as BOTH a configuration lock AND a value lock
+ *    (no party may configure a token's value for the param after the timestamp). In V0, only
+ *    the configuration was locked and token values remained writable after the timestamp.
+ * 2. A locked param definition may be restated in a later `configureProject` call if and only
+ *    if every artist-configured field is identical to storage. This lets the artist add or edit
+ *    still-unlocked params without rewriting locked ones. Omitting a locked key remains allowed
+ *    (it drops out of the active key list). Any difference in a restated locked definition
+ *    reverts. Locked definition fields are never written (only `highestConfigNonce` is bumped
+ *    so the key stays in the active config).
  * WARNING: This contract implements an open protocol for parameter configuration, and does not
  * restrict usage to Art Blocks or its affiliates. Use with caution. The contract does assume
  * that the core contract conforms to the IGenArt721CoreContractV3_Base interface for authentication,
@@ -205,8 +209,14 @@ contract PMPV1 is IPMPV0, Web3Call, ReentrancyGuard {
      * @param coreContract The address of the core contract.
      * @param projectId The project ID to configure parameters for.
      * @param pmpInputConfigs Array of parameter configurations defining the available parameters.
+     *        This replaces the project's active key list. Locked keys may be omitted (they drop
+     *        out of the active list). Locked keys that are included must match storage exactly;
+     *        any difference reverts. Unlocked keys are validated and written as usual.
      * @dev Only the project artist can configure project parameters.
-     * @dev Each configuration is validated for proper parameter type and constraints.
+     * @dev Each unlocked configuration is validated for proper parameter type and constraints.
+     * @dev Locked configurations skip `_validatePMPConfig` (their lock timestamp is already in
+     * the past) and are checked with `_pmpConfigsEqual` instead. Matching locked keys are not
+     * written — only `highestConfigNonce` is updated so they remain in the active config.
      * @dev The project's configuration nonce is incremented with each call.
      * @dev Only <= 256 configs are supported.
      * @dev Only <= 255 bytes are supported for pmpKeys.
@@ -223,7 +233,7 @@ contract PMPV1 is IPMPV0, Web3Call, ReentrancyGuard {
             projectId: projectId,
             sender: msg.sender
         });
-        // validate pmpInputConfigs
+        // validate pmpInputConfigs key lengths
         uint256 pmpInputConfigsLength = pmpInputConfigs.length;
         // @dev no coverage on else branch due to test complexity
         require(pmpInputConfigsLength <= 256, "PMP: Only <= 256 configs");
@@ -234,7 +244,6 @@ contract PMPV1 is IPMPV0, Web3Call, ReentrancyGuard {
                 keyLengthBytes > 0 && keyLengthBytes < 256,
                 "PMP: pmpKey cannot be empty or exceed 255 bytes"
             );
-            _validatePMPConfig(pmpInputConfigs[i].pmpConfig);
         }
         // store pmpInputConfigs data in ProjectConfig struct
         // @dev load projectConfig storage pointer
@@ -258,16 +267,25 @@ contract PMPV1 is IPMPV0, Web3Call, ReentrancyGuard {
             // store pmpConfigStorage in ProjectConfig struct's mapping
             PMPConfigStorage storage pmpConfigStorage = projectConfig
                 .pmpConfigsStorage[_getStringHash(pmpKeys[i])];
-            {
-                // validate that any current pmp at this key is not locked
-                uint256 currentPPMLockedAfterTimestamp = pmpConfigStorage
-                    .pmpLockedAfterTimestamp;
+            // locked keys may only be restated if the definition is unchanged.
+            // skip `_validatePMPConfig` (it rejects past lock timestamps) and do not
+            // write any definition fields, including the selectOptions SSTORE2 pointer.
+            if (
+                !_isPMPLockTimestampOpen(
+                    pmpConfigStorage.pmpLockedAfterTimestamp
+                )
+            ) {
                 require(
-                    currentPPMLockedAfterTimestamp == 0 ||
-                        currentPPMLockedAfterTimestamp > block.timestamp,
+                    _pmpConfigsEqual(
+                        pmpConfigStorage,
+                        pmpInputConfigs[i].pmpConfig
+                    ),
                     "PMP: pmp is locked and cannot be updated"
                 );
+                pmpConfigStorage.highestConfigNonce = newConfigNonce;
+                continue;
             }
+            _validatePMPConfig(pmpInputConfigs[i].pmpConfig);
             // update highestConfigNonce
             pmpConfigStorage.highestConfigNonce = newConfigNonce;
             // copy function input pmpConfig data to pmpConfigStorage
@@ -596,6 +614,47 @@ contract PMPV1 is IPMPV0, Web3Call, ReentrancyGuard {
     }
 
     /**
+     * @notice Whether a lock timestamp is still open at the current block.
+     * Zero means never locks. Locks once `block.timestamp >= pmpLockedAfterTimestamp`.
+     * @dev Shared by config-lock, value-lock, and new-config timestamp validation.
+     */
+    function _isPMPLockTimestampOpen(
+        uint256 pmpLockedAfterTimestamp
+    ) internal view returns (bool) {
+        return
+            pmpLockedAfterTimestamp == 0 ||
+            pmpLockedAfterTimestamp > block.timestamp;
+    }
+
+    /**
+     * @notice Exact equality of a stored PMP definition vs an input config.
+     * Compares every artist-configured field: authOption, paramType,
+     * pmpLockedAfterTimestamp, authAddress, minRange, maxRange, and selectOptions
+     * (length metadata plus keccak256 of the ABI-encoded string arrays, which is
+     * order-sensitive). Does not compare highestConfigNonce.
+     */
+    function _pmpConfigsEqual(
+        PMPConfigStorage storage stored,
+        PMPConfig calldata input
+    ) internal view returns (bool) {
+        if (
+            stored.authOption != input.authOption ||
+            stored.paramType != input.paramType ||
+            stored.pmpLockedAfterTimestamp != input.pmpLockedAfterTimestamp ||
+            stored.authAddress != input.authAddress ||
+            stored.minRange != input.minRange ||
+            stored.maxRange != input.maxRange ||
+            uint256(stored.selectOptionsLength) != input.selectOptions.length
+        ) {
+            return false;
+        }
+        // also compare the SSTORE2-backed strings, in case length metadata ever diverged
+        return
+            keccak256(abi.encode(stored.selectOptions.getAll())) ==
+            keccak256(abi.encode(input.selectOptions));
+    }
+
+    /**
      * @notice Validates a PMP configuration. Ensures arbitrary input is valid and intentional.
      * @dev Verifies parameter types, authorization options, and constraints.
      * @param pmpConfig The PMP configuration to validate.
@@ -611,8 +670,7 @@ contract PMPV1 is IPMPV0, Web3Call, ReentrancyGuard {
         );
         // validate locked after timestamp is in the future, or is zero (unlimited)
         require(
-            pmpConfig.pmpLockedAfterTimestamp == 0 ||
-                pmpConfig.pmpLockedAfterTimestamp > block.timestamp,
+            _isPMPLockTimestampOpen(pmpConfig.pmpLockedAfterTimestamp),
             "PMP: pmpLockedAfterTimestamp is in the past and not unlimited (zero)"
         );
         // validate enums are within bounds
@@ -744,18 +802,12 @@ contract PMPV1 is IPMPV0, Web3Call, ReentrancyGuard {
         );
         // @dev V1 value-lock: once the lock timestamp has passed, the param's value is
         // cemented and may not be configured by any party (artist, token owner, or address).
-        // A zero timestamp means the param never locks. Mirrors the config-lock comparison
-        // used in configureProject / _validatePMPConfig (locked once block.timestamp reaches
-        // the lock timestamp).
-        {
-            uint256 pmpLockedAfterTimestamp = pmpConfigStorage
-                .pmpLockedAfterTimestamp;
-            require(
-                pmpLockedAfterTimestamp == 0 ||
-                    pmpLockedAfterTimestamp > block.timestamp,
-                "PMP: param is locked"
-            );
-        }
+        // A zero timestamp means the param never locks. Uses the same timestamp predicate
+        // as configureProject / _validatePMPConfig.
+        require(
+            _isPMPLockTimestampOpen(pmpConfigStorage.pmpLockedAfterTimestamp),
+            "PMP: param is locked"
+        );
         // check that the param type matches and is not unconfigured
         require(
             pmpInput.configuredParamType == pmpConfigStorage.paramType,

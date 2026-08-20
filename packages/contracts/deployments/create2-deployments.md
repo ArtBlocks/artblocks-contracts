@@ -458,3 +458,81 @@ Canonical append-only deployment log.
 - **Timestamp:** 2026-08-14T22:54:18.442Z
 
 ---
+
+## PMPV1
+
+- **Chain:** Sepolia (11155111)
+- **Address:** [0x00000000B9D3B2461fcFd5D23FCA65227B770f67](https://sepolia.etherscan.io/address/0x00000000B9D3B2461fcFd5D23FCA65227B770f67)
+- **Salt:** `0x0000000000000000000000000000000000000000119450434c6eff48ef020040`
+- **TX:** [0x8126117259bc89657da72098267d6f8b93f7cb2a443c91d199228b4984a17aaa](https://sepolia.etherscan.io/tx/0x8126117259bc89657da72098267d6f8b93f7cb2a443c91d199228b4984a17aaa)
+- **Args:** `["0x00000000000000447e69651d841bd8d104bed493"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xf2a6ba173039b35c4341a69f7b422d7e7e0bc76216d4cbc76ca18aff12346658`
+- **Timestamp:** 2026-08-20T19:27:00.585Z
+
+---
+
+## PMPV1
+
+- **Chain:** Base (8453)
+- **Address:** [0x00000000B9D3B2461fcFd5D23FCA65227B770f67](https://basescan.org/address/0x00000000B9D3B2461fcFd5D23FCA65227B770f67)
+- **Salt:** `0x0000000000000000000000000000000000000000119450434c6eff48ef020040`
+- **TX:** [0x6f45ecf411609b352fbec48f2501362553c8392ba3065238f6ec9eee783ac7d1](https://basescan.org/tx/0x6f45ecf411609b352fbec48f2501362553c8392ba3065238f6ec9eee783ac7d1)
+- **Args:** `["0x00000000000000447e69651d841bd8d104bed493"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xf2a6ba173039b35c4341a69f7b422d7e7e0bc76216d4cbc76ca18aff12346658`
+- **Timestamp:** 2026-08-20T19:27:45.770Z
+
+---
+
+## PMPV1
+
+- **Chain:** Arbitrum One (42161)
+- **Address:** [0x00000000B9D3B2461fcFd5D23FCA65227B770f67](https://arbiscan.io/address/0x00000000B9D3B2461fcFd5D23FCA65227B770f67)
+- **Salt:** `0x0000000000000000000000000000000000000000119450434c6eff48ef020040`
+- **TX:** [0xb638d93064b2ffda4290329a7d5a77afe95aac0bedcb33050fd4b00c6908fcc8](https://arbiscan.io/tx/0xb638d93064b2ffda4290329a7d5a77afe95aac0bedcb33050fd4b00c6908fcc8)
+- **Args:** `["0x00000000000000447e69651d841bd8d104bed493"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xf2a6ba173039b35c4341a69f7b422d7e7e0bc76216d4cbc76ca18aff12346658`
+- **Timestamp:** 2026-08-20T19:27:56.274Z
+
+---
+
+## PMPV1
+
+- **Chain:** Shape (360)
+- **Address:** [0x00000000B9D3B2461fcFd5D23FCA65227B770f67](https://shapescan.xyz/address/0x00000000B9D3B2461fcFd5D23FCA65227B770f67)
+- **Salt:** `0x0000000000000000000000000000000000000000119450434c6eff48ef020040`
+- **TX:** [0x652bd490b178c9c1226fddabb14a79af58cd7b95a941a36838681db05bba5232](https://shapescan.xyz/tx/0x652bd490b178c9c1226fddabb14a79af58cd7b95a941a36838681db05bba5232)
+- **Args:** `["0x00000000000000447e69651d841bd8d104bed493"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xf2a6ba173039b35c4341a69f7b422d7e7e0bc76216d4cbc76ca18aff12346658`
+- **Timestamp:** 2026-08-20T19:28:41.282Z
+
+---
+
+## PMPV1
+
+- **Chain:** Ethereum Mainnet (1)
+- **Address:** [0x00000000B9D3B2461fcFd5D23FCA65227B770f67](https://etherscan.io/address/0x00000000B9D3B2461fcFd5D23FCA65227B770f67)
+- **Salt:** `0x0000000000000000000000000000000000000000119450434c6eff48ef020040`
+- **TX:** [0x2f81cef01a7ca7af944e271da99b240f4fe3801be84850caa98817d820421f26](https://etherscan.io/tx/0x2f81cef01a7ca7af944e271da99b240f4fe3801be84850caa98817d820421f26)
+- **Args:** `["0x00000000000000447e69651d841bd8d104bed493"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xf2a6ba173039b35c4341a69f7b422d7e7e0bc76216d4cbc76ca18aff12346658`
+- **Timestamp:** 2026-08-20T19:29:22.382Z
+
+---
+
+## PMPV1
+
+- **Chain:** Sepolia (11155111)
+- **Address:** [0xb380B5c5A1d98Ebcc669feF89bCe0B3db1f36292](https://sepolia.etherscan.io/address/0xb380B5c5A1d98Ebcc669feF89bCe0B3db1f36292)
+- **Salt:** `0x0000000000000000000000000000000000000000000000000000000000000000`
+- **TX:** [0x809d01a6d87b7ced5e922074fa57d549f3176fc8e38a31111fd1e89309315e10](https://sepolia.etherscan.io/tx/0x809d01a6d87b7ced5e922074fa57d549f3176fc8e38a31111fd1e89309315e10)
+- **Args:** `["0x00000000000000447e69651d841bd8d104bed493"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0xf2a6ba173039b35c4341a69f7b422d7e7e0bc76216d4cbc76ca18aff12346658`
+- **Timestamp:** 2026-08-20T19:37:14.845Z
+
+---

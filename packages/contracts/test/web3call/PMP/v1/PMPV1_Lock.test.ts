@@ -429,7 +429,7 @@ describe("PMPV1_Lock", function () {
   });
 
   describe("config-lock behavior retained from PMPV0", function () {
-    it("still prevents the artist from re-configuring a locked param definition", async function () {
+    it("still prevents the artist from changing a locked param definition", async function () {
       const config = await loadFixture(_beforeEach);
       const latest = await time.latest();
       const lockTime = latest + 1000;
@@ -453,6 +453,344 @@ describe("PMPV1_Lock", function () {
           ]),
         "PMP: pmp is locked and cannot be updated"
       );
+    });
+  });
+
+  describe("locked-key pass-through in configureProject", function () {
+    function boolConfig(key: string, lockedAfterTimestamp: number) {
+      return getPMPInputConfig(
+        key,
+        PMP_AUTH_ENUM.TokenOwner,
+        PMP_PARAM_TYPE_ENUM.Bool,
+        lockedAfterTimestamp,
+        constants.AddressZero,
+        [],
+        ZERO_BYTES32,
+        ZERO_BYTES32
+      );
+    }
+
+    function selectConfig(
+      key: string,
+      lockedAfterTimestamp: number,
+      selectOptions: string[]
+    ) {
+      return getPMPInputConfig(
+        key,
+        PMP_AUTH_ENUM.TokenOwner,
+        PMP_PARAM_TYPE_ENUM.Select,
+        lockedAfterTimestamp,
+        constants.AddressZero,
+        selectOptions,
+        ZERO_BYTES32,
+        ZERO_BYTES32
+      );
+    }
+
+    function uintConfig(
+      key: string,
+      lockedAfterTimestamp: number,
+      minRange: string,
+      maxRange: string
+    ) {
+      return getPMPInputConfig(
+        key,
+        PMP_AUTH_ENUM.TokenOwner,
+        PMP_PARAM_TYPE_ENUM.Uint256Range,
+        lockedAfterTimestamp,
+        constants.AddressZero,
+        [],
+        minRange,
+        maxRange
+      );
+    }
+
+    async function snapshotDefinition(config: PMPFixtureConfig, key: string) {
+      const stored = await config.pmp.getProjectPMPConfig(
+        config.genArt721Core.address,
+        config.projectZero,
+        key
+      );
+      return {
+        authOption: stored.authOption,
+        paramType: stored.paramType,
+        pmpLockedAfterTimestamp: stored.pmpLockedAfterTimestamp,
+        authAddress: stored.authAddress,
+        selectOptionsLength: stored.selectOptionsLength,
+        selectOptions: stored.selectOptions,
+        minRange: stored.minRange,
+        maxRange: stored.maxRange,
+      };
+    }
+
+    it("allows restating an identical locked key so unlocked keys can be added", async function () {
+      const config = await loadFixture(_beforeEach);
+      const latest = await time.latest();
+      const lockTime = latest + 1000;
+      const locked = boolConfig("lockedBool", lockTime);
+      const free = boolConfig("freeBool", 0);
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          locked,
+          free,
+        ]);
+      await advanceTimeAndBlock(2000);
+      const beforeLocked = await snapshotDefinition(config, "lockedBool");
+      const beforeProject = await config.pmp.getProjectConfig(
+        config.genArt721Core.address,
+        config.projectZero
+      );
+      expect(beforeProject.configNonce).to.equal(1);
+
+      const newField = boolConfig("newBool", 0);
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          locked,
+          free,
+          newField,
+        ]);
+
+      const afterProject = await config.pmp.getProjectConfig(
+        config.genArt721Core.address,
+        config.projectZero
+      );
+      expect(afterProject.configNonce).to.equal(2);
+      expect(afterProject.pmpKeys).to.deep.equal([
+        "lockedBool",
+        "freeBool",
+        "newBool",
+      ]);
+      const afterLocked = await snapshotDefinition(config, "lockedBool");
+      expect(afterLocked).to.deep.equal(beforeLocked);
+      const afterLockedFull = await config.pmp.getProjectPMPConfig(
+        config.genArt721Core.address,
+        config.projectZero,
+        "lockedBool"
+      );
+      expect(afterLockedFull.highestConfigNonce).to.equal(2);
+      const afterNew = await config.pmp.getProjectPMPConfig(
+        config.genArt721Core.address,
+        config.projectZero,
+        "newBool"
+      );
+      expect(afterNew.highestConfigNonce).to.equal(2);
+      expect(afterNew.paramType).to.equal(PMP_PARAM_TYPE_ENUM.Bool);
+    });
+
+    it("allows restating an identical locked key so a sibling unlocked key can be edited", async function () {
+      const config = await loadFixture(_beforeEach);
+      const latest = await time.latest();
+      const lockTime = latest + 1000;
+      const locked = boolConfig("lockedBool", lockTime);
+      const free = boolConfig("freeBool", 0);
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          locked,
+          free,
+        ]);
+      await advanceTimeAndBlock(2000);
+      const beforeLocked = await snapshotDefinition(config, "lockedBool");
+
+      const editedFree = getPMPInputConfig(
+        "freeBool",
+        PMP_AUTH_ENUM.Artist,
+        PMP_PARAM_TYPE_ENUM.Bool,
+        0,
+        constants.AddressZero,
+        [],
+        ZERO_BYTES32,
+        ZERO_BYTES32
+      );
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          locked,
+          editedFree,
+        ]);
+
+      const afterLocked = await snapshotDefinition(config, "lockedBool");
+      expect(afterLocked).to.deep.equal(beforeLocked);
+      const afterFree = await config.pmp.getProjectPMPConfig(
+        config.genArt721Core.address,
+        config.projectZero,
+        "freeBool"
+      );
+      expect(afterFree.authOption).to.equal(PMP_AUTH_ENUM.Artist);
+      expect(afterFree.highestConfigNonce).to.equal(2);
+    });
+
+    it("allows omitting a locked key (drops it from the active key list)", async function () {
+      const config = await loadFixture(_beforeEach);
+      const latest = await time.latest();
+      const lockTime = latest + 1000;
+      const locked = boolConfig("lockedBool", lockTime);
+      const free = boolConfig("freeBool", 0);
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          locked,
+          free,
+        ]);
+      await advanceTimeAndBlock(2000);
+      const beforeLocked = await snapshotDefinition(config, "lockedBool");
+
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          free,
+        ]);
+
+      const afterProject = await config.pmp.getProjectConfig(
+        config.genArt721Core.address,
+        config.projectZero
+      );
+      expect(afterProject.pmpKeys).to.deep.equal(["freeBool"]);
+      const afterLocked = await snapshotDefinition(config, "lockedBool");
+      expect(afterLocked).to.deep.equal(beforeLocked);
+      const afterLockedFull = await config.pmp.getProjectPMPConfig(
+        config.genArt721Core.address,
+        config.projectZero,
+        "lockedBool"
+      );
+      expect(afterLockedFull.highestConfigNonce).to.equal(1);
+      await expectRevert(
+        config.pmp
+          .connect(config.accounts.user)
+          .configureTokenParams(
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            [boolInput("lockedBool", true)]
+          ),
+        "PMP: param not part of most recently configured PMP params"
+      );
+    });
+
+    it("reverts if any artist-configured field of a locked key differs", async function () {
+      const config = await loadFixture(_beforeEach);
+      const latest = await time.latest();
+      const lockTime = latest + 1000;
+      const lockedSelect = selectConfig("lockedSelect", lockTime, [
+        "red",
+        "green",
+      ]);
+      const lockedUint = uintConfig(
+        "lockedUint",
+        lockTime,
+        uint256ToBytes32(0),
+        uint256ToBytes32(100)
+      );
+      const lockedBool = boolConfig("lockedBool", lockTime);
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          lockedSelect,
+          lockedUint,
+          lockedBool,
+        ]);
+      await advanceTimeAndBlock(2000);
+
+      const mutations = [
+        getPMPInputConfig(
+          "lockedBool",
+          PMP_AUTH_ENUM.Artist, // authOption
+          PMP_PARAM_TYPE_ENUM.Bool,
+          lockTime,
+          constants.AddressZero,
+          [],
+          ZERO_BYTES32,
+          ZERO_BYTES32
+        ),
+        getPMPInputConfig(
+          "lockedBool",
+          PMP_AUTH_ENUM.TokenOwner,
+          PMP_PARAM_TYPE_ENUM.HexColor, // paramType
+          lockTime,
+          constants.AddressZero,
+          [],
+          ZERO_BYTES32,
+          ZERO_BYTES32
+        ),
+        getPMPInputConfig(
+          "lockedBool",
+          PMP_AUTH_ENUM.TokenOwner,
+          PMP_PARAM_TYPE_ENUM.Bool,
+          0, // pmpLockedAfterTimestamp unlock
+          constants.AddressZero,
+          [],
+          ZERO_BYTES32,
+          ZERO_BYTES32
+        ),
+        boolConfig("lockedBool", lockTime + 50_000), // pmpLockedAfterTimestamp relock
+        getPMPInputConfig(
+          "lockedBool",
+          PMP_AUTH_ENUM.Address,
+          PMP_PARAM_TYPE_ENUM.Bool,
+          lockTime,
+          config.accounts.user2.address, // authAddress (with Address auth)
+          [],
+          ZERO_BYTES32,
+          ZERO_BYTES32
+        ),
+        selectConfig("lockedSelect", lockTime, ["red", "blue"]), // option string
+        selectConfig("lockedSelect", lockTime, ["green", "red"]), // option order
+        selectConfig("lockedSelect", lockTime, ["red", "green", "blue"]), // option length
+        uintConfig(
+          "lockedUint",
+          lockTime,
+          uint256ToBytes32(1), // minRange
+          uint256ToBytes32(100)
+        ),
+        uintConfig(
+          "lockedUint",
+          lockTime,
+          uint256ToBytes32(0),
+          uint256ToBytes32(99) // maxRange
+        ),
+      ];
+
+      for (const mutated of mutations) {
+        await expectRevert(
+          config.pmp
+            .connect(config.accounts.artist)
+            .configureProject(
+              config.genArt721Core.address,
+              config.projectZero,
+              [mutated]
+            ),
+          "PMP: pmp is locked and cannot be updated"
+        );
+      }
+    });
+
+    it("allows restating an identical locked Select param (options unchanged)", async function () {
+      const config = await loadFixture(_beforeEach);
+      const latest = await time.latest();
+      const lockTime = latest + 1000;
+      const lockedSelect = selectConfig("lockedSelect", lockTime, [
+        "red",
+        "green",
+      ]);
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          lockedSelect,
+        ]);
+      await advanceTimeAndBlock(2000);
+      const before = await snapshotDefinition(config, "lockedSelect");
+
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          lockedSelect,
+          boolConfig("newBool", 0),
+        ]);
+
+      const after = await snapshotDefinition(config, "lockedSelect");
+      expect(after).to.deep.equal(before);
+      expect(after.selectOptions).to.deep.equal(["red", "green"]);
     });
   });
 
