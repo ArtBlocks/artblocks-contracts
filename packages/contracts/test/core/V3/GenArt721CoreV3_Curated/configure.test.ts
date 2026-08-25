@@ -76,12 +76,20 @@ for (const coreContractName of coreContractsToTest) {
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
+        const v3enginelibFactory = await ethers.getContractFactory(
+          "V3EngineLib"
+        );
+        const v3enginelib = await v3enginelibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
         const curatedFactory = new GenArt721CoreV3_Curated__factory(
           {
             "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
               library.address,
             "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
               v3transferhooklib.address,
+            "contracts/libs/v0.8.x/V3EngineLib.sol:V3EngineLib":
+              v3enginelib.address,
           },
           config.accounts.deployer
         );
@@ -128,12 +136,20 @@ for (const coreContractName of coreContractsToTest) {
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
+        const v3enginelibFactory = await ethers.getContractFactory(
+          "V3EngineLib"
+        );
+        const v3enginelib = await v3enginelibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
         const curatedFactory = new GenArt721CoreV3_Curated__factory(
           {
             "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
               library.address,
             "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
               v3transferhooklib.address,
+            "contracts/libs/v0.8.x/V3EngineLib.sol:V3EngineLib":
+              v3enginelib.address,
           },
           config.accounts.deployer
         );
@@ -180,12 +196,20 @@ for (const coreContractName of coreContractsToTest) {
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
+        const v3enginelibFactory = await ethers.getContractFactory(
+          "V3EngineLib"
+        );
+        const v3enginelib = await v3enginelibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
         const curatedFactory = new GenArt721CoreV3_Curated__factory(
           {
             "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
               library.address,
             "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
               v3transferhooklib.address,
+            "contracts/libs/v0.8.x/V3EngineLib.sol:V3EngineLib":
+              v3enginelib.address,
           },
           config.accounts.deployer
         );
@@ -232,12 +256,20 @@ for (const coreContractName of coreContractsToTest) {
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
+        const v3enginelibFactory = await ethers.getContractFactory(
+          "V3EngineLib"
+        );
+        const v3enginelib = await v3enginelibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
         const curatedFactory = new GenArt721CoreV3_Curated__factory(
           {
             "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
               library.address,
             "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
               v3transferhooklib.address,
+            "contracts/libs/v0.8.x/V3EngineLib.sol:V3EngineLib":
+              v3enginelib.address,
           },
           config.accounts.deployer
         );
@@ -284,12 +316,20 @@ for (const coreContractName of coreContractsToTest) {
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
+        const v3enginelibFactory = await ethers.getContractFactory(
+          "V3EngineLib"
+        );
+        const v3enginelib = await v3enginelibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
         const curatedFactory = new GenArt721CoreV3_Curated__factory(
           {
             "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
               library.address,
             "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
               v3transferhooklib.address,
+            "contracts/libs/v0.8.x/V3EngineLib.sol:V3EngineLib":
+              v3enginelib.address,
           },
           config.accounts.deployer
         );
@@ -335,12 +375,20 @@ for (const coreContractName of coreContractsToTest) {
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
+        const v3enginelibFactory = await ethers.getContractFactory(
+          "V3EngineLib"
+        );
+        const v3enginelib = await v3enginelibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
         const curatedFactory = new GenArt721CoreV3_Curated__factory(
           {
             "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
               library.address,
             "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
               v3transferhooklib.address,
+            "contracts/libs/v0.8.x/V3EngineLib.sol:V3EngineLib":
+              v3enginelib.address,
           },
           config.accounts.deployer
         );
@@ -386,12 +434,20 @@ for (const coreContractName of coreContractsToTest) {
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
+        const v3enginelibFactory = await ethers.getContractFactory(
+          "V3EngineLib"
+        );
+        const v3enginelib = await v3enginelibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
         const curatedFactory = new GenArt721CoreV3_Curated__factory(
           {
             "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
               library.address,
             "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
               v3transferhooklib.address,
+            "contracts/libs/v0.8.x/V3EngineLib.sol:V3EngineLib":
+              v3enginelib.address,
           },
           config.accounts.deployer
         );
@@ -437,12 +493,20 @@ for (const coreContractName of coreContractsToTest) {
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
+        const v3enginelibFactory = await ethers.getContractFactory(
+          "V3EngineLib"
+        );
+        const v3enginelib = await v3enginelibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
         const curatedFactory = new GenArt721CoreV3_Curated__factory(
           {
             "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
               library.address,
             "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
               v3transferhooklib.address,
+            "contracts/libs/v0.8.x/V3EngineLib.sol:V3EngineLib":
+              v3enginelib.address,
           },
           config.accounts.deployer
         );
@@ -488,12 +552,20 @@ for (const coreContractName of coreContractsToTest) {
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
+        const v3enginelibFactory = await ethers.getContractFactory(
+          "V3EngineLib"
+        );
+        const v3enginelib = await v3enginelibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
         const curatedFactory = new GenArt721CoreV3_Curated__factory(
           {
             "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
               library.address,
             "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
               v3transferhooklib.address,
+            "contracts/libs/v0.8.x/V3EngineLib.sol:V3EngineLib":
+              v3enginelib.address,
           },
           config.accounts.deployer
         );

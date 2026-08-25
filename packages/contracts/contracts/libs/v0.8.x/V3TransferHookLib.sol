@@ -10,8 +10,10 @@ import {IGenArt721CoreContractV3_Engine} from "../../interfaces/v0.8.x/IGenArt72
 /**
  * @title Shared transfer-hook helpers for V3 Engine and Engine Flex cores.
  * @author Art Blocks Inc.
- * @notice External library (DELEGATECALL) so Engine Flex stays under the 24KB
- * cap. Cores should SLOAD the hook address themselves and only call `callHook`
+ * @notice External library (DELEGATECALL) used by both `GenArt721CoreV3_Engine`
+ * and `GenArt721CoreV3_Engine_Flex`. Offloading this logic keeps the two cores
+ * consistent while both remain under the 24KB bytecode size limit.
+ * Cores should SLOAD the hook address themselves and only call `callHook`
  * when it is non-zero, so unconfigured transfers do not pay a DELEGATECALL.
  * @dev Reverts use the core's `GenArt721Error` so callers see a single error
  * type. A reverting hook call is intentionally not caught — latent failure
@@ -37,22 +39,31 @@ library V3TransferHookLib {
         bool executing;
     }
 
+    uint256 private constant _FOUR_WEEKS_IN_SECONDS = 2_419_200;
+
     /**
      * @notice Set or clear a project's transfer hook.
      * Reverts if the hook configuration is locked, or if a non-zero `hook`
      * does not ERC-165-advertise `ITransferHook`.
+     * After the four-week project metadata lock, a hook may only be changed
+     * if one is already set. If the hook is `address(0)` when that auto-lock
+     * happens, it can never be assigned.
      * @param layout Core-owned transfer hook storage.
      * @param projectId Project ID.
      * @param hook New hook, or `address(0)` to clear.
+     * @param projectCompletedTimestamp Project `completedTimestamp` (0 if the
+     * project is not complete). Used to apply the four-week auto-lock-at-zero
+     * rule without a transaction at the lock instant.
      */
     function configure(
         Layout storage layout,
         uint256 projectId,
-        ITransferHook hook
+        ITransferHook hook,
+        uint256 projectCompletedTimestamp
     ) external {
         _onlyNotExecuting(layout);
         ProjectTransferHookConfig storage config = layout.configs[projectId];
-        if (config.locked) {
+        if (_isLocked(config, projectCompletedTimestamp)) {
             revert IGenArt721CoreContractV3_Base.GenArt721Error(
                 IGenArt721CoreContractV3_Base.ErrorCodes.TransferHookLocked
             );
@@ -79,14 +90,20 @@ library V3TransferHookLib {
 
     /**
      * @notice One-way lock of the current hook value, including `address(0)`.
-     * Reverts if already locked.
+     * Reverts if already locked, including when the four-week project metadata
+     * lock has already frozen an unset hook.
      * @param layout Core-owned transfer hook storage.
      * @param projectId Project ID.
+     * @param projectCompletedTimestamp Project `completedTimestamp`.
      */
-    function lock(Layout storage layout, uint256 projectId) external {
+    function lock(
+        Layout storage layout,
+        uint256 projectId,
+        uint256 projectCompletedTimestamp
+    ) external {
         _onlyNotExecuting(layout);
         ProjectTransferHookConfig storage config = layout.configs[projectId];
-        if (config.locked) {
+        if (_isLocked(config, projectCompletedTimestamp)) {
             revert IGenArt721CoreContractV3_Base.GenArt721Error(
                 IGenArt721CoreContractV3_Base.ErrorCodes.TransferHookLocked
             );
@@ -151,6 +168,28 @@ library V3TransferHookLib {
                 IGenArt721CoreContractV3_Base.ErrorCodes.TransferHookReentrancy
             );
         }
+    }
+
+    /**
+     * @notice Effective lock: explicit `lockProjectTransferHook`, or the
+     * four-week project metadata auto-lock while the hook is unset.
+     */
+    function _isLocked(
+        ProjectTransferHookConfig storage config,
+        uint256 projectCompletedTimestamp
+    ) private view returns (bool) {
+        if (config.locked) {
+            return true;
+        }
+        if (address(config.hook) != address(0)) {
+            return false;
+        }
+        if (projectCompletedTimestamp == 0) {
+            return false;
+        }
+        return
+            block.timestamp - projectCompletedTimestamp >=
+            _FOUR_WEEKS_IN_SECONDS;
     }
 
     /**

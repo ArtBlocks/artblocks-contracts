@@ -6,8 +6,8 @@ V3 performance metrics are available in [V3_Performance.md](V3_Performance.md)
 
 ## The following changes were made in the Core V3 Engine (3.3.0) contract:
 
-- Add per-project transfer hooks, invoked after ERC-721 ownership updates (after token hash assignment on mint). Artist or Admin ACL may set or clear a hook at any time; the artist may one-way `lockProjectTransferHook`, including locking at `address(0)` to permanently restore today's no-hook transfer security profile. Transfer-hook lock is independent of the four-week project metadata lock. A reverting hook aborts the mint or transfer. Hooks cannot reenter core transfers or hook configuration.
-- New implementations must link `V3TransferHookLib` (Engine and Engine Flex) in addition to existing libraries. Engine Flex omits solc metadata CBOR so the implementation stays under the 24KB cap.
+- Add per-project transfer hooks, invoked after ERC-721 ownership updates (after token hash assignment on mint). Artist or Admin ACL may set or clear a hook until it is locked. If the hook is `address(0)` when the four-week project metadata lock elapses, no hook can ever be assigned later — restoring today's no-hook transfer security profile with no extra action. If a hook is already set at auto-lock, it remains configurable until the artist one-way `lockProjectTransferHook`. A reverting hook aborts the mint or transfer. Hooks cannot reenter core transfers or hook configuration.
+- New implementations must link `V3EngineLib` and `V3TransferHookLib` (Engine and Engine Flex) in addition to existing libraries. Engine Flex also links `V3FlexLib`.
 
 ## The following changes were made in the Core V3 Engine (3.1.0) contract:
 

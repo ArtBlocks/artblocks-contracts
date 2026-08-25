@@ -19,6 +19,7 @@ import {IERC2981} from "@openzeppelin-5.0/contracts/interfaces/IERC2981.sol";
 import "../../libs/v0.8.x/ERC721_PackedHashSeedV1.sol";
 import {BytecodeStorageWriter, BytecodeStorageReader} from "../../libs/v0.8.x/BytecodeStorageV2.sol";
 import "../../libs/v0.8.x/Bytes32Strings.sol";
+import {V3EngineLib} from "../../libs/v0.8.x/V3EngineLib.sol";
 import {V3TransferHookLib} from "../../libs/v0.8.x/V3TransferHookLib.sol";
 
 /**
@@ -80,13 +81,18 @@ import {V3TransferHookLib} from "../../libs/v0.8.x/V3TransferHookLib.sol";
  *   current number of invocations, and less than current project maximum
  *   invocations)
  * - updateProjectBaseURI (controlling the base URI for tokens in the project)
- * - lockProjectTransferHook (one-way; independent of the four-week project
- *   metadata lock. Locking while the hook is address(0) forever forbids
- *   assigning a transfer hook, restoring today's transfer security profile)
+ * - lockProjectTransferHook (one-way. Locking while the hook is address(0)
+ *   forever forbids assigning a transfer hook. If the hook is address(0) when
+ *   the four-week project metadata lock elapses, it is auto-locked at zero —
+ *   restoring today's transfer security profile with no extra action. If a
+ *   hook is already set at auto-lock, it remains configurable until this is
+ *   called.)
  * ----------------------------------------------------------------------------
  * The following functions are restricted to either the Artist address or
- * the Admin ACL contract, and are NOT gated by the four-week project metadata
- * lock (they are gated only by the one-way transfer-hook lock above):
+ * the Admin ACL contract. After the four-week project metadata lock, they
+ * remain available only if a transfer hook is already set; if the hook is
+ * address(0) at auto-lock, it can never be assigned. Independently, the
+ * artist may one-way lockProjectTransferHook at any time:
  * - configureProjectTransferHook (WARNING: a reverting hook bricks transfers
  *   and mints for the project. A non-zero hook may execute arbitrary code on
  *   every transfer. Prefer locking at address(0) if no hook is intended.)
@@ -111,6 +117,9 @@ import {V3TransferHookLib} from "../../libs/v0.8.x/V3TransferHookLib.sol";
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on minters,
  * registries, and other contracts that may interact with this core contract.
+ * @dev External libraries (`V3EngineLib`, `V3TransferHookLib`) are used so
+ * Engine and Engine Flex share one implementation of shared logic while both
+ * remain under the 24KB bytecode size limit.
  */
 contract GenArt721CoreV3_Engine is
     ERC721_PackedHashSeedV1,
@@ -1656,13 +1665,19 @@ contract GenArt721CoreV3_Engine is
 
     /**
      * @notice Set or clear the transfer hook for project `_projectId`.
-     * Artist or Admin ACL. Not gated by the four-week project metadata lock.
-     * Reverts if the project's transfer hook configuration is locked.
+     * Artist or Admin ACL. Reverts if the configuration is locked: either the
+     * artist called `lockProjectTransferHook`, or the four-week project
+     * metadata lock has elapsed while the hook is `address(0)`. After that
+     * auto-lock, a hook that is already set remains configurable until the
+     * artist calls `lockProjectTransferHook`. Clearing to `address(0)` after
+     * auto-lock permanently forbids assigning a hook again.
      * WARNING: A reverting hook bricks transfers and mints for every token in
      * the project. A hook may execute arbitrary code, and a mutable proxy hook
-     * can change behavior after it is set. Artists who do not want a hook
-     * should `lockProjectTransferHook` while the hook is `address(0)` to
-     * restore today's transfer security profile against future assignment.
+     * can change behavior after it is set. Artists who do not want a hook may
+     * leave it unset until auto-lock, or `lockProjectTransferHook` earlier.
+     * @dev Hook configuration is implemented in `V3TransferHookLib` so Engine
+     * and Engine Flex share one implementation while both remain under the
+     * 24KB bytecode size limit.
      * @param _projectId Project ID.
      * @param _hook Hook contract, or `address(0)` to clear.
      */
@@ -1678,15 +1693,19 @@ contract GenArt721CoreV3_Engine is
         V3TransferHookLib.configure({
             layout: _transferHookLayout,
             projectId: _projectId,
-            hook: ITransferHook(_hook)
+            hook: ITransferHook(_hook),
+            projectCompletedTimestamp: projects[_projectId].completedTimestamp
         });
     }
 
     /**
      * @notice Permanently lock the current transfer hook for project
-     * `_projectId`, including `address(0)`. Artist only. Independent of the
-     * four-week project metadata lock. If locked at `address(0)`, a hook can
-     * never be assigned.
+     * `_projectId`, including `address(0)`. Artist only. If locked at
+     * `address(0)`, a hook can never be assigned. Reverts if already locked,
+     * including when the four-week project metadata lock has already frozen
+     * an unset hook.
+     * @dev Implemented in `V3TransferHookLib` so Engine and Engine Flex share
+     * one implementation while both remain under the 24KB bytecode size limit.
      * @param _projectId Project ID.
      */
     function lockProjectTransferHook(uint256 _projectId) external {
@@ -1694,7 +1713,8 @@ contract GenArt721CoreV3_Engine is
         _onlyArtist(_projectId);
         V3TransferHookLib.lock({
             layout: _transferHookLayout,
-            projectId: _projectId
+            projectId: _projectId,
+            projectCompletedTimestamp: projects[_projectId].completedTimestamp
         });
     }
 
@@ -1968,7 +1988,9 @@ contract GenArt721CoreV3_Engine is
      * @notice Transfer hook configuration for project `_projectId`.
      * @param _projectId Project to be queried.
      * @return hook Hook address, or `address(0)` if none is configured.
-     * @return locked True if the configuration is permanently locked.
+     * @return locked True if the artist called `lockProjectTransferHook`, or
+     * if the four-week project metadata lock has elapsed while the hook is
+     * `address(0)`.
      */
     function projectTransferHookConfig(
         uint256 _projectId
@@ -1977,6 +1999,13 @@ contract GenArt721CoreV3_Engine is
             storage config = _transferHookLayout.configs[_projectId];
         hook = address(config.hook);
         locked = config.locked;
+        if (!locked && hook == address(0)) {
+            uint256 completedTimestamp = projects[_projectId]
+                .completedTimestamp;
+            locked =
+                completedTimestamp != 0 &&
+                block.timestamp - completedTimestamp >= FOUR_WEEKS_IN_SECONDS;
+        }
     }
 
     /**
@@ -2024,36 +2053,21 @@ contract GenArt721CoreV3_Engine is
      * @return receiver address that should be sent the royalty payment
      * @return royaltyAmount the royalty payment amount for `_salePrice
      * @dev reverts if invalid _tokenId
+     * @dev Implemented in `V3EngineLib` so Engine and Engine Flex share one
+     * implementation while both remain under the 24KB bytecode size limit.
      */
     function royaltyInfo(
         uint256 _tokenId,
         uint256 _salePrice
     ) external view returns (address receiver, uint256 royaltyAmount) {
         _onlyValidTokenId(_tokenId);
-
-        // populate receiver with project's royalty splitter
-        // @dev royalty splitter created upon project creation, so will always exist
-        // for valid token ID
-        uint256 projectId = tokenIdToProjectId(_tokenId);
-        ProjectFinance storage projectFinance = _projectIdToFinancials[
-            projectId
-        ];
-        receiver = projectFinance.royaltySplitter;
-
-        // populate royaltyAmount with calculated royalty amount
-        // @dev important to cast to uint256 before multiplying to avoid overflow
-        uint256 totalRoyaltyBPS = (100 *
-            uint256(projectFinance.secondaryMarketRoyaltyPercentage)) +
-            projectFinance.platformProviderSecondarySalesBPS +
-            projectFinance.renderProviderSecondarySalesBPS;
-        // @dev totalRoyaltyBPS guaranteed to be <= 10,000,
-        if (totalRoyaltyBPS > 10_000) {
-            revert GenArt721Error(ErrorCodes.OverMaxSumOfBPS);
-        }
-        // @dev overflow automatically checked in solidity 0.8
-        // @dev totalRoyaltyBPS guaranteed to be <= 10_000,
-        // so overflow only possible with unreasonably high _salePrice values near uint256 max
-        royaltyAmount = (_salePrice * totalRoyaltyBPS) / 10_000;
+        return
+            V3EngineLib.royaltyInfo({
+                projectFinance: _projectIdToFinancials[
+                    tokenIdToProjectId(_tokenId)
+                ],
+                salePrice: _salePrice
+            });
     }
 
     /**
@@ -2088,6 +2102,8 @@ contract GenArt721CoreV3_Engine is
      * revenue is zero, the corresponding address will be address(0). It is up
      * to the contract performing the revenue split to handle this
      * appropriately.
+     * @dev Implemented in `V3EngineLib` so Engine and Engine Flex share one
+     * implementation while both remain under the 24KB bytecode size limit.
      */
     function getPrimaryRevenueSplits(
         uint256 _projectId,
@@ -2106,41 +2122,15 @@ contract GenArt721CoreV3_Engine is
             address payable additionalPayeePrimaryAddress_
         )
     {
-        ProjectFinance storage projectFinance = _projectIdToFinancials[
-            _projectId
-        ];
-        // calculate revenues – this is a three-way split between the
-        // render provider, the platform provider, and the artist, and
-        // is safe to perform this given that in the case of loss of
-        // precision Solidity will round down.
-        uint256 projectFunds = _price;
-        renderProviderRevenue_ =
-            (_price * uint256(_renderProviderPrimarySalesPercentage)) /
-            ONE_HUNDRED;
-        // renderProviderRevenue_ percentage is always <=100, so guaranteed to never underflow
-        projectFunds -= renderProviderRevenue_;
-        platformProviderRevenue_ =
-            (_price * uint256(_platformProviderPrimarySalesPercentage)) /
-            ONE_HUNDRED;
-        // platformProviderRevenue_ percentage is always <=100, so guaranteed to never underflow
-        projectFunds -= platformProviderRevenue_;
-        additionalPayeePrimaryRevenue_ =
-            (projectFunds *
-                projectFinance.additionalPayeePrimarySalesPercentage) /
-            ONE_HUNDRED;
-        // projectIdToAdditionalPayeePrimarySalesPercentage is always
-        // <=100, so guaranteed to never underflow
-        artistRevenue_ = projectFunds - additionalPayeePrimaryRevenue_;
-        // set addresses from storage
-        renderProviderAddress_ = renderProviderPrimarySalesAddress;
-        platformProviderAddress_ = platformProviderPrimarySalesAddress;
-        if (artistRevenue_ > 0) {
-            artistAddress_ = projectFinance.artistAddress;
-        }
-        if (additionalPayeePrimaryRevenue_ > 0) {
-            additionalPayeePrimaryAddress_ = projectFinance
-                .additionalPayeePrimarySales;
-        }
+        return
+            V3EngineLib.getPrimaryRevenueSplits({
+                projectFinance: _projectIdToFinancials[_projectId],
+                price: _price,
+                renderProviderPrimarySalesPercentage: _renderProviderPrimarySalesPercentage,
+                platformProviderPrimarySalesPercentage: _platformProviderPrimarySalesPercentage,
+                renderProviderPrimarySalesAddress: renderProviderPrimarySalesAddress,
+                platformProviderPrimarySalesAddress: platformProviderPrimarySalesAddress
+            });
     }
 
     /**
@@ -2443,39 +2433,16 @@ contract GenArt721CoreV3_Engine is
      * financials, so ensure storage has been updated before calling this
      * @dev This function includes a trusted interaction that is entrusted to
      * not reenter this contract.
+     * @dev Implemented in `V3EngineLib` so Engine and Engine Flex share one
+     * implementation while both remain under the 24KB bytecode size limit.
      * @param projectId Project ID to be updated.
      */
     function _assignSplitter(uint256 projectId) internal {
-        ProjectFinance storage projectFinance = _projectIdToFinancials[
+        V3EngineLib.assignSplitter(
+            _projectIdToFinancials[projectId],
+            splitProvider,
             projectId
-        ];
-        // assign project's royalty splitter
-        // @dev loads values from storage, so need to ensure storage has been updated
-        address royaltySplitter = splitProvider.getOrCreateSplitter(
-            ISplitProviderV0.SplitInputs({
-                platformProviderSecondarySalesAddress: projectFinance
-                    .platformProviderSecondarySalesAddress,
-                platformProviderSecondarySalesBPS: projectFinance
-                    .platformProviderSecondarySalesBPS,
-                renderProviderSecondarySalesAddress: projectFinance
-                    .renderProviderSecondarySalesAddress,
-                renderProviderSecondarySalesBPS: projectFinance
-                    .renderProviderSecondarySalesBPS,
-                artistTotalRoyaltyPercentage: projectFinance
-                    .secondaryMarketRoyaltyPercentage,
-                artist: projectFinance.artistAddress,
-                additionalPayee: projectFinance.additionalPayeeSecondarySales,
-                additionalPayeePercentage: projectFinance
-                    .additionalPayeeSecondarySalesPercentage
-            })
         );
-
-        projectFinance.royaltySplitter = royaltySplitter;
-
-        emit ProjectRoyaltySplitterUpdated({
-            projectId: projectId,
-            royaltySplitter: royaltySplitter
-        });
     }
 
     /**

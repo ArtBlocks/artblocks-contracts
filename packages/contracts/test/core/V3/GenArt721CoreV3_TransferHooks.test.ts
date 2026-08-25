@@ -192,7 +192,7 @@ for (const coreContractName of coreContractsToTest) {
           .withArgs(config.projectZero, config.transferHook.address);
       });
 
-      it("is not gated by the four-week project metadata lock", async function () {
+      it("auto-locks at address(0) when the four-week project metadata lock elapses with no hook set", async function () {
         const config = await loadFixture(_beforeEach);
         await mintProjectUntilRemaining(
           config,
@@ -201,12 +201,73 @@ for (const coreContractName of coreContractsToTest) {
           0
         );
         await advanceEVMByTime(FOUR_WEEKS + 1);
-        // project metadata is locked, but transfer hook may still be set
+
+        const hookConfig =
+          await config.genArt721Core.projectTransferHookConfig(
+            config.projectZero
+          );
+        expect(hookConfig.hook).to.equal(constants.ZERO_ADDRESS);
+        expect(hookConfig.locked).to.equal(true);
+
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .configureProjectTransferHook(
+              config.projectZero,
+              config.transferHook.address
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TransferHookLocked);
+
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .lockProjectTransferHook(config.projectZero)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TransferHookLocked);
+      });
+
+      it("remains configurable after the four-week lock if a hook was already set", async function () {
+        const config = await loadFixture(_beforeEach);
         await config.genArt721Core
           .connect(config.accounts.artist)
           .configureProjectTransferHook(
             config.projectZero,
             config.transferHook.address
+          );
+        await mintProjectUntilRemaining(
+          config,
+          config.projectZero,
+          config.accounts.artist,
+          0
+        );
+        await advanceEVMByTime(FOUR_WEEKS + 1);
+
+        const hookConfigBefore =
+          await config.genArt721Core.projectTransferHookConfig(
+            config.projectZero
+          );
+        expect(hookConfigBefore.hook).to.equal(config.transferHook.address);
+        expect(hookConfigBefore.locked).to.equal(false);
+
+        const transferHook2 = await deployAndGet(
+          config,
+          "MockTransferHook",
+          []
+        );
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .configureProjectTransferHook(
+            config.projectZero,
+            transferHook2.address
           );
         expect(
           (
@@ -214,7 +275,34 @@ for (const coreContractName of coreContractsToTest) {
               config.projectZero
             )
           ).hook
-        ).to.equal(config.transferHook.address);
+        ).to.equal(transferHook2.address);
+
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .configureProjectTransferHook(
+            config.projectZero,
+            constants.ZERO_ADDRESS
+          );
+        const hookConfigCleared =
+          await config.genArt721Core.projectTransferHookConfig(
+            config.projectZero
+          );
+        expect(hookConfigCleared.hook).to.equal(constants.ZERO_ADDRESS);
+        expect(hookConfigCleared.locked).to.equal(true);
+
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .configureProjectTransferHook(
+              config.projectZero,
+              config.transferHook.address
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TransferHookLocked);
       });
     });
 
@@ -325,6 +413,49 @@ for (const coreContractName of coreContractsToTest) {
             )
           ).hook
         ).to.equal(constants.ZERO_ADDRESS);
+      });
+
+      it("can still lock a configured hook after the four-week project metadata lock", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .configureProjectTransferHook(
+            config.projectZero,
+            config.transferHook.address
+          );
+        await mintProjectUntilRemaining(
+          config,
+          config.projectZero,
+          config.accounts.artist,
+          0
+        );
+        await advanceEVMByTime(FOUR_WEEKS + 1);
+
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .lockProjectTransferHook(config.projectZero);
+
+        expect(
+          (
+            await config.genArt721Core.projectTransferHookConfig(
+              config.projectZero
+            )
+          ).locked
+        ).to.equal(true);
+
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .configureProjectTransferHook(
+              config.projectZero,
+              constants.ZERO_ADDRESS
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TransferHookLocked);
       });
 
       it("locking a configured hook freezes that hook", async function () {

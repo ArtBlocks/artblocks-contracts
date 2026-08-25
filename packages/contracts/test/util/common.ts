@@ -414,6 +414,12 @@ export async function deployWithStorageLibraryAndGet(
       .connect(config.accounts.deployer)
       .deploy(/* no args for library ever */);
     libraries.libraries.V3TransferHookLib = transferHookLibrary.address;
+    const engineLibraryFactory =
+      await ethers.getContractFactory("V3EngineLib");
+    const engineLibrary = await engineLibraryFactory
+      .connect(config.accounts.deployer)
+      .deploy(/* no args for library ever */);
+    libraries.libraries.V3EngineLib = engineLibrary.address;
 
     const engineContractCoreFactory = await ethers.getContractFactory(
       "GenArt721CoreV3_Engine",
@@ -756,6 +762,10 @@ export async function deployCoreWithMinterFilter<
     const v3transferhooklib = await v3transferhooklibFactory
       .connect(config.accounts.deployer)
       .deploy(/* no args for library ever */);
+    const v3enginelibFactory = await ethers.getContractFactory("V3EngineLib");
+    const v3enginelib = await v3enginelibFactory
+      .connect(config.accounts.deployer)
+      .deploy(/* no args for library ever */);
     const curatedFactory = coreContractName.endsWith("V3_Curated_Flex")
       ? new GenArt721CoreV3_Curated_Flex__factory(
           {
@@ -764,6 +774,8 @@ export async function deployCoreWithMinterFilter<
             "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
             "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
               v3transferhooklib.address,
+            "contracts/libs/v0.8.x/V3EngineLib.sol:V3EngineLib":
+              v3enginelib.address,
           },
           config.accounts.deployer
         )
@@ -773,6 +785,8 @@ export async function deployCoreWithMinterFilter<
               library.address,
             "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
               v3transferhooklib.address,
+            "contracts/libs/v0.8.x/V3EngineLib.sol:V3EngineLib":
+              v3enginelib.address,
           },
           config.accounts.deployer
         );
@@ -857,6 +871,10 @@ export async function deployCoreWithMinterFilter<
     const v3transferhooklib = await v3transferhooklibFactory
       .connect(config.accounts.deployer)
       .deploy(/* no args for library ever */);
+    const v3enginelibFactory = await ethers.getContractFactory("V3EngineLib");
+    const v3enginelib = await v3enginelibFactory
+      .connect(config.accounts.deployer)
+      .deploy(/* no args for library ever */);
     const explorationsFactory = new GenArt721CoreV3_Explorations_Flex__factory(
       {
         "contracts/libs/v0.8.x/BytecodeStorageV2.sol:BytecodeStorageReader":
@@ -864,6 +882,8 @@ export async function deployCoreWithMinterFilter<
         "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib": v3flexlib.address,
         "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
           v3transferhooklib.address,
+        "contracts/libs/v0.8.x/V3EngineLib.sol:V3EngineLib":
+          v3enginelib.address,
       },
       config.accounts.deployer
     );
@@ -1069,6 +1089,11 @@ export async function deployCore<
     .connect(config.accounts.deployer)
     .deploy(/* no args for library ever */);
   libraries.libraries.V3TransferHookLib = transferHookLibrary.address;
+  const engineLibraryFactory = await ethers.getContractFactory("V3EngineLib");
+  const engineLibrary = await engineLibraryFactory
+    .connect(config.accounts.deployer)
+    .deploy(/* no args for library ever */);
+  libraries.libraries.V3EngineLib = engineLibrary.address;
 
   const engineCoreContractFactory = await ethers.getContractFactory(
     "GenArt721CoreV3_Engine",

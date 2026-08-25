@@ -98,6 +98,11 @@ export async function setupEngineFactory() {
     .connect(config.accounts.deployer)
     .deploy(/* no args for library ever */);
   libraries.libraries.V3TransferHookLib = transferHookLibrary.address;
+  const engineLibraryFactory = await ethers.getContractFactory("V3EngineLib");
+  const engineLibrary = await engineLibraryFactory
+    .connect(config.accounts.deployer)
+    .deploy(/* no args for library ever */);
+  libraries.libraries.V3EngineLib = engineLibrary.address;
 
   // deploy Engine implementations
   const engineCoreContractFactory = await ethers.getContractFactory(

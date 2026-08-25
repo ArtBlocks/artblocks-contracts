@@ -161,8 +161,9 @@ interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
     /**
      * @notice Project `_projectId` transfer hook configuration has been
      * permanently locked at `_hook` (which may be `address(0)`).
-     * @dev New event in v3.3. One-way; independent of the four-week project
-     * metadata lock.
+     * @dev New event in v3.3. One-way. Auto-lock at `address(0)` when the
+     * four-week project metadata lock elapses with no hook set does not emit
+     * this event (it is time-based, not a transaction).
      */
     event ProjectTransferHookLocked(
         uint256 indexed _projectId,
@@ -171,9 +172,12 @@ interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
 
     /**
      * @notice Set or clear the transfer hook for project `_projectId`.
-     * @dev New function in v3.3. Artist or Admin ACL. Reverts if the project's
-     * transfer hook configuration is locked. A non-zero hook must ERC-165-
-     * advertise `ITransferHook`. `address(0)` clears the hook.
+     * @dev New function in v3.3. Artist or Admin ACL. Reverts if locked:
+     * either `lockProjectTransferHook` was called, or the four-week project
+     * metadata lock elapsed while the hook is `address(0)`. After auto-lock,
+     * a hook that is already set remains configurable until the artist locks.
+     * A non-zero hook must ERC-165-advertise `ITransferHook`. `address(0)`
+     * clears the hook.
      * @param _projectId Project ID.
      * @param _hook Hook contract, or `address(0)` to clear.
      */
@@ -185,9 +189,10 @@ interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
     /**
      * @notice Permanently lock the current transfer hook for project
      * `_projectId`, including `address(0)`.
-     * @dev New function in v3.3. Artist only. Independent of the four-week
-     * project metadata lock. If locked at `address(0)`, a hook can never be
-     * assigned — restoring today's transfer security profile.
+     * @dev New function in v3.3. Artist only. If locked at `address(0)`, a
+     * hook can never be assigned — restoring today's transfer security
+     * profile. If the four-week project metadata lock elapsed with no hook
+     * set, the configuration is already locked and this reverts.
      * @param _projectId Project ID.
      */
     function lockProjectTransferHook(uint256 _projectId) external;
@@ -195,7 +200,9 @@ interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
     /**
      * @notice Transfer hook configuration for project `_projectId`.
      * @return hook Hook address, or `address(0)` if none is configured.
-     * @return locked True if the configuration is permanently locked.
+     * @return locked True if the artist called `lockProjectTransferHook`, or
+     * if the four-week project metadata lock elapsed while the hook is
+     * `address(0)`.
      */
     function projectTransferHookConfig(
         uint256 _projectId

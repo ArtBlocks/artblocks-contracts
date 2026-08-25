@@ -14,8 +14,10 @@ import {Bytes32Strings} from "./Bytes32Strings.sol";
 /**
  * @title Art Blocks V3 Engine Flex - External Helper Library
  * @notice This library is designed to offload bytecode from the V3 Engine
- * Flex contract. It implements logic that may be accessed via DELEGATECALL for
- * operations related to the V3 Engine Flex contract.
+ * Flex contract. It implements Flex-only logic that may be accessed via
+ * DELEGATECALL (external asset dependencies, gateways, and Flex-sized copies
+ * of artist-split proposal helpers). Shared Engine/Engine Flex project-finance
+ * logic lives in `V3EngineLib` so both cores stay consistent under 24KB.
  * @author Art Blocks Inc.
  */
 
@@ -603,78 +605,6 @@ library V3FlexLib {
             !flexProjectData.externalAssetDependenciesLocked,
             "External dependencies locked"
         );
-    }
-
-    /**
-     * @notice ERC-2981 royalty info. Offloaded from Engine Flex for bytecode.
-     */
-    function royaltyInfo(
-        IGenArt721CoreContractV3_ProjectFinance.ProjectFinance
-            storage projectFinance,
-        uint256 salePrice
-    ) external view returns (address receiver, uint256 royaltyAmount) {
-        receiver = projectFinance.royaltySplitter;
-        uint256 totalRoyaltyBPS = (100 *
-            uint256(projectFinance.secondaryMarketRoyaltyPercentage)) +
-            projectFinance.platformProviderSecondarySalesBPS +
-            projectFinance.renderProviderSecondarySalesBPS;
-        if (totalRoyaltyBPS > 10_000) {
-            revert IGenArt721CoreContractV3_Base.GenArt721Error(
-                IGenArt721CoreContractV3_Base.ErrorCodes.OverMaxSumOfBPS
-            );
-        }
-        royaltyAmount = (salePrice * totalRoyaltyBPS) / 10_000;
-    }
-
-    /**
-     * @notice Primary revenue split view. Offloaded from Engine Flex for
-     * bytecode.
-     */
-    function getPrimaryRevenueSplits(
-        IGenArt721CoreContractV3_ProjectFinance.ProjectFinance
-            storage projectFinance,
-        uint256 price,
-        uint256 renderProviderPrimarySalesPercentage,
-        uint256 platformProviderPrimarySalesPercentage,
-        address payable renderProviderPrimarySalesAddress,
-        address payable platformProviderPrimarySalesAddress
-    )
-        external
-        view
-        returns (
-            uint256 renderProviderRevenue_,
-            address payable renderProviderAddress_,
-            uint256 platformProviderRevenue_,
-            address payable platformProviderAddress_,
-            uint256 artistRevenue_,
-            address payable artistAddress_,
-            uint256 additionalPayeePrimaryRevenue_,
-            address payable additionalPayeePrimaryAddress_
-        )
-    {
-        uint256 projectFunds = price;
-        renderProviderRevenue_ =
-            (price * renderProviderPrimarySalesPercentage) /
-            100;
-        projectFunds -= renderProviderRevenue_;
-        platformProviderRevenue_ =
-            (price * platformProviderPrimarySalesPercentage) /
-            100;
-        projectFunds -= platformProviderRevenue_;
-        additionalPayeePrimaryRevenue_ =
-            (projectFunds *
-                projectFinance.additionalPayeePrimarySalesPercentage) /
-            100;
-        artistRevenue_ = projectFunds - additionalPayeePrimaryRevenue_;
-        renderProviderAddress_ = renderProviderPrimarySalesAddress;
-        platformProviderAddress_ = platformProviderPrimarySalesAddress;
-        if (artistRevenue_ > 0) {
-            artistAddress_ = projectFinance.artistAddress;
-        }
-        if (additionalPayeePrimaryRevenue_ > 0) {
-            additionalPayeePrimaryAddress_ = projectFinance
-                .additionalPayeePrimarySales;
-        }
     }
 
     /**
