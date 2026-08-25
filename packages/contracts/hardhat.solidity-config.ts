@@ -38,4 +38,20 @@ export const solidityConfig = {
       },
     },
   ],
+  // Engine Flex is 48 bytes over the 24KB cap with default metadata CBOR.
+  // Omitting CBOR from this implementation only (clones share this bytecode).
+  overrides: {
+    "contracts/engine/V3/GenArt721CoreV3_Engine_Flex.sol": {
+      version: "0.8.22",
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 10,
+        },
+        metadata: {
+          appendCBOR: false,
+        },
+      },
+    },
+  },
 };

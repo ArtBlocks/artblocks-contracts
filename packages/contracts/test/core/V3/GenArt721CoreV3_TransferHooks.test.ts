@@ -1,0 +1,663 @@
+import { constants } from "@openzeppelin/test-helpers";
+import { expect } from "chai";
+import { ethers } from "hardhat";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+
+import {
+  T_Config,
+  getAccounts,
+  assignDefaultConstants,
+  deployAndGet,
+  deployCoreWithMinterFilter,
+  mintProjectUntilRemaining,
+  advanceEVMByTime,
+  GENART721_ERROR_NAME,
+  GENART721_ERROR_CODES,
+  PROJECT_UPDATED_FIELDS,
+} from "../../util/common";
+import { FOUR_WEEKS } from "../../util/constants";
+
+const coreContractsToTest = [
+  "GenArt721CoreV3_Engine",
+  "GenArt721CoreV3_Engine_Flex",
+];
+
+for (const coreContractName of coreContractsToTest) {
+  describe(`${coreContractName} Transfer Hooks`, async function () {
+    async function _beforeEach() {
+      let config: T_Config = {
+        accounts: await getAccounts(),
+      };
+      config = await assignDefaultConstants(config);
+
+      ({
+        genArt721Core: config.genArt721Core,
+        minterFilter: config.minterFilter,
+        randomizer: config.randomizer,
+        adminACL: config.adminACL,
+      } = await deployCoreWithMinterFilter(
+        config,
+        coreContractName,
+        "MinterFilterV1"
+      ));
+
+      config.minter = await deployAndGet(config, "MinterSetPriceV2", [
+        config.genArt721Core.address,
+        config.minterFilter.address,
+      ]);
+
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .addProject("name", config.accounts.artist.address);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectZero);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectZero, config.maxInvocations);
+
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .addProject("name", config.accounts.artist2.address);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectOne);
+      await config.genArt721Core
+        .connect(config.accounts.artist2)
+        .updateProjectMaxInvocations(config.projectOne, config.maxInvocations);
+
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .addApprovedMinter(config.minter.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(config.projectZero, config.minter.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(config.projectOne, config.minter.address);
+      await config.minter
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(config.projectZero, 0);
+      await config.minter
+        .connect(config.accounts.artist2)
+        .updatePricePerTokenInWei(config.projectOne, 0);
+
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .toggleProjectIsPaused(config.projectZero);
+      await config.genArt721Core
+        .connect(config.accounts.artist2)
+        .toggleProjectIsPaused(config.projectOne);
+
+      config.transferHook = await deployAndGet(config, "MockTransferHook", []);
+      return config;
+    }
+
+    describe("configureProjectTransferHook", function () {
+      it("allows artist or admin to set and clear a hook", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .configureProjectTransferHook(
+            config.projectZero,
+            config.transferHook.address
+          );
+        expect(
+          (
+            await config.genArt721Core.projectTransferHookConfig(
+              config.projectZero
+            )
+          ).hook
+        ).to.equal(config.transferHook.address);
+
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .configureProjectTransferHook(
+            config.projectZero,
+            constants.ZERO_ADDRESS
+          );
+        expect(
+          (
+            await config.genArt721Core.projectTransferHookConfig(
+              config.projectZero
+            )
+          ).hook
+        ).to.equal(constants.ZERO_ADDRESS);
+      });
+
+      it("reverts for non-artist non-admin", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.user)
+            .configureProjectTransferHook(
+              config.projectZero,
+              config.transferHook.address
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtistOrAdminACL);
+      });
+
+      it("reverts for a non-existent project", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .configureProjectTransferHook(999, config.transferHook.address)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.ProjectDoesNotExist);
+      });
+
+      it("reverts when the hook does not implement ITransferHook", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .configureProjectTransferHook(
+              config.projectZero,
+              config.minter.address
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TransferHookInvalidInterface);
+      });
+
+      it("emits ProjectUpdated and ProjectTransferHookUpdated", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .configureProjectTransferHook(
+              config.projectZero,
+              config.transferHook.address
+            )
+        )
+          .to.emit(config.genArt721Core, "ProjectUpdated")
+          .withArgs(
+            config.projectZero,
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_TRANSFER_HOOK
+          )
+          .and.to.emit(config.genArt721Core, "ProjectTransferHookUpdated")
+          .withArgs(config.projectZero, config.transferHook.address);
+      });
+
+      it("is not gated by the four-week project metadata lock", async function () {
+        const config = await loadFixture(_beforeEach);
+        await mintProjectUntilRemaining(
+          config,
+          config.projectZero,
+          config.accounts.artist,
+          0
+        );
+        await advanceEVMByTime(FOUR_WEEKS + 1);
+        // project metadata is locked, but transfer hook may still be set
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .configureProjectTransferHook(
+            config.projectZero,
+            config.transferHook.address
+          );
+        expect(
+          (
+            await config.genArt721Core.projectTransferHookConfig(
+              config.projectZero
+            )
+          ).hook
+        ).to.equal(config.transferHook.address);
+      });
+    });
+
+    describe("lockProjectTransferHook", function () {
+      it("is artist-only and one-way", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .lockProjectTransferHook(config.projectZero)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtist);
+
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.user)
+            .lockProjectTransferHook(config.projectZero)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.OnlyArtist);
+
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .lockProjectTransferHook(config.projectZero);
+        expect(
+          (
+            await config.genArt721Core.projectTransferHookConfig(
+              config.projectZero
+            )
+          ).locked
+        ).to.equal(true);
+
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .lockProjectTransferHook(config.projectZero)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TransferHookLocked);
+      });
+
+      it("locking at address(0) forever forbids assigning a hook", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .lockProjectTransferHook(config.projectZero);
+
+        // transfers remain unhooked — today's security profile
+        await config.minter
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .transferFrom(
+            config.accounts.artist.address,
+            config.accounts.user.address,
+            config.projectZeroTokenZero.toNumber()
+          );
+        expect(
+          await config.genArt721Core.ownerOf(
+            config.projectZeroTokenZero.toNumber()
+          )
+        ).to.equal(config.accounts.user.address);
+        expect(await config.transferHook.callCount()).to.equal(0);
+
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .configureProjectTransferHook(
+              config.projectZero,
+              config.transferHook.address
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TransferHookLocked);
+
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .configureProjectTransferHook(
+              config.projectZero,
+              config.transferHook.address
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TransferHookLocked);
+
+        expect(
+          (
+            await config.genArt721Core.projectTransferHookConfig(
+              config.projectZero
+            )
+          ).hook
+        ).to.equal(constants.ZERO_ADDRESS);
+      });
+
+      it("locking a configured hook freezes that hook", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .configureProjectTransferHook(
+            config.projectZero,
+            config.transferHook.address
+          );
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .lockProjectTransferHook(config.projectZero);
+
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .configureProjectTransferHook(
+              config.projectZero,
+              constants.ZERO_ADDRESS
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TransferHookLocked);
+
+        expect(
+          (
+            await config.genArt721Core.projectTransferHookConfig(
+              config.projectZero
+            )
+          ).hook
+        ).to.equal(config.transferHook.address);
+      });
+
+      it("emits ProjectTransferHookLocked with the frozen hook address", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .configureProjectTransferHook(
+            config.projectZero,
+            config.transferHook.address
+          );
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .lockProjectTransferHook(config.projectZero)
+        )
+          .to.emit(config.genArt721Core, "ProjectUpdated")
+          .withArgs(
+            config.projectZero,
+            PROJECT_UPDATED_FIELDS.FIELD_PROJECT_TRANSFER_HOOK_LOCKED
+          )
+          .and.to.emit(config.genArt721Core, "ProjectTransferHookLocked")
+          .withArgs(config.projectZero, config.transferHook.address);
+      });
+    });
+
+    describe("dispatch", function () {
+      it("does not call a hook when none is configured", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero);
+        expect(await config.transferHook.callCount()).to.equal(0);
+
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .transferFrom(
+            config.accounts.artist.address,
+            config.accounts.user.address,
+            config.projectZeroTokenZero.toNumber()
+          );
+        expect(await config.transferHook.callCount()).to.equal(0);
+      });
+
+      it("calls the hook on mint after hash assignment", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .configureProjectTransferHook(
+            config.projectZero,
+            config.transferHook.address
+          );
+
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero);
+
+        expect(await config.transferHook.callCount()).to.equal(1);
+        expect(await config.transferHook.lastCoreContract()).to.equal(
+          config.genArt721Core.address
+        );
+        expect(await config.transferHook.lastTokenId()).to.equal(
+          config.projectZeroTokenZero.toNumber()
+        );
+        expect(await config.transferHook.lastFrom()).to.equal(
+          constants.ZERO_ADDRESS
+        );
+        expect(await config.transferHook.lastTo()).to.equal(
+          config.accounts.user.address
+        );
+        // mint operator is `_by` (the purchaser), not the minter contract
+        expect(await config.transferHook.lastOperator()).to.equal(
+          config.accounts.user.address
+        );
+        expect(await config.transferHook.lastTokenHash()).to.not.equal(
+          ethers.constants.HashZero
+        );
+      });
+
+      it("calls the hook on transferFrom and safeTransferFrom", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .configureProjectTransferHook(
+            config.projectZero,
+            config.transferHook.address
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero);
+        expect(await config.transferHook.callCount()).to.equal(1);
+
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .transferFrom(
+            config.accounts.artist.address,
+            config.accounts.user.address,
+            config.projectZeroTokenZero.toNumber()
+          );
+        expect(await config.transferHook.callCount()).to.equal(2);
+        expect(await config.transferHook.lastFrom()).to.equal(
+          config.accounts.artist.address
+        );
+        expect(await config.transferHook.lastTo()).to.equal(
+          config.accounts.user.address
+        );
+        expect(await config.transferHook.lastOperator()).to.equal(
+          config.accounts.artist.address
+        );
+
+        await config.genArt721Core
+          .connect(config.accounts.user)
+          [
+            "safeTransferFrom(address,address,uint256)"
+          ](config.accounts.user.address, config.accounts.user2.address, config.projectZeroTokenZero.toNumber());
+        expect(await config.transferHook.callCount()).to.equal(3);
+        expect(await config.transferHook.lastFrom()).to.equal(
+          config.accounts.user.address
+        );
+        expect(await config.transferHook.lastTo()).to.equal(
+          config.accounts.user2.address
+        );
+        expect(await config.transferHook.lastOperator()).to.equal(
+          config.accounts.user.address
+        );
+      });
+
+      it("passes the approved operator as operator", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .configureProjectTransferHook(
+            config.projectZero,
+            config.transferHook.address
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .approve(
+            config.accounts.user.address,
+            config.projectZeroTokenZero.toNumber()
+          );
+        await config.genArt721Core
+          .connect(config.accounts.user)
+          .transferFrom(
+            config.accounts.artist.address,
+            config.accounts.user2.address,
+            config.projectZeroTokenZero.toNumber()
+          );
+        expect(await config.transferHook.lastOperator()).to.equal(
+          config.accounts.user.address
+        );
+      });
+
+      it("does not dispatch a project-zero hook for a project-one token", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .configureProjectTransferHook(
+            config.projectZero,
+            config.transferHook.address
+          );
+        await config.minter
+          .connect(config.accounts.artist2)
+          .purchase(config.projectOne);
+        expect(await config.transferHook.callCount()).to.equal(0);
+      });
+
+      it("reverting hook aborts mint and transfer", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .configureProjectTransferHook(
+            config.projectZero,
+            config.transferHook.address
+          );
+        await config.transferHook.setShouldRevert(true);
+
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .purchase(config.projectZero)
+        ).to.be.revertedWith("MockTransferHook: Intentional revert");
+
+        await config.transferHook.setShouldRevert(false);
+        await config.minter
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero);
+        await config.transferHook.setShouldRevert(true);
+
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .transferFrom(
+              config.accounts.artist.address,
+              config.accounts.user.address,
+              config.projectZeroTokenZero.toNumber()
+            )
+        ).to.be.revertedWith("MockTransferHook: Intentional revert");
+
+        expect(
+          await config.genArt721Core.ownerOf(
+            config.projectZeroTokenZero.toNumber()
+          )
+        ).to.equal(config.accounts.artist.address);
+      });
+    });
+
+    describe("reentrancy", function () {
+      it("reverts if the hook reenters transferFrom", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .configureProjectTransferHook(
+            config.projectZero,
+            config.transferHook.address
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero);
+
+        // transfer to the hook so it is the owner and could otherwise transfer
+        await config.transferHook.setReenterTransfer(
+          true,
+          config.accounts.user.address
+        );
+        await expect(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .transferFrom(
+              config.accounts.artist.address,
+              config.transferHook.address,
+              config.projectZeroTokenZero.toNumber()
+            )
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TransferHookReentrancy);
+      });
+
+      it("reverts if the hook reenters configureProjectTransferHook", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .configureProjectTransferHook(
+            config.projectZero,
+            config.transferHook.address
+          );
+        // hook must be the artist so auth would otherwise pass and the
+        // reentrancy guard is what fails
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateProjectArtistAddress(
+            config.projectZero,
+            config.transferHook.address
+          );
+        await config.transferHook.setReenterConfigure(true);
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .purchase(config.projectZero)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TransferHookReentrancy);
+      });
+
+      it("reverts if the hook reenters lockProjectTransferHook", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .configureProjectTransferHook(
+            config.projectZero,
+            config.transferHook.address
+          );
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateProjectArtistAddress(
+            config.projectZero,
+            config.transferHook.address
+          );
+        await config.transferHook.setReenterLock(true);
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .purchase(config.projectZero)
+        )
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.TransferHookReentrancy);
+      });
+    });
+  });
+}

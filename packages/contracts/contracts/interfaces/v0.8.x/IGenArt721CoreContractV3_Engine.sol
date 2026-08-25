@@ -147,4 +147,57 @@ interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
      * @return The address of the current split provider.
      */
     function splitProvider() external view returns (ISplitProviderV0);
+
+    /**
+     * @notice Project `_projectId` transfer hook updated to `_hook`.
+     * @dev New event in v3.3. `_hook` of `address(0)` means no hook is
+     * configured (today's transfer security profile).
+     */
+    event ProjectTransferHookUpdated(
+        uint256 indexed _projectId,
+        address indexed _hook
+    );
+
+    /**
+     * @notice Project `_projectId` transfer hook configuration has been
+     * permanently locked at `_hook` (which may be `address(0)`).
+     * @dev New event in v3.3. One-way; independent of the four-week project
+     * metadata lock.
+     */
+    event ProjectTransferHookLocked(
+        uint256 indexed _projectId,
+        address indexed _hook
+    );
+
+    /**
+     * @notice Set or clear the transfer hook for project `_projectId`.
+     * @dev New function in v3.3. Artist or Admin ACL. Reverts if the project's
+     * transfer hook configuration is locked. A non-zero hook must ERC-165-
+     * advertise `ITransferHook`. `address(0)` clears the hook.
+     * @param _projectId Project ID.
+     * @param _hook Hook contract, or `address(0)` to clear.
+     */
+    function configureProjectTransferHook(
+        uint256 _projectId,
+        address _hook
+    ) external;
+
+    /**
+     * @notice Permanently lock the current transfer hook for project
+     * `_projectId`, including `address(0)`.
+     * @dev New function in v3.3. Artist only. Independent of the four-week
+     * project metadata lock. If locked at `address(0)`, a hook can never be
+     * assigned — restoring today's transfer security profile.
+     * @param _projectId Project ID.
+     */
+    function lockProjectTransferHook(uint256 _projectId) external;
+
+    /**
+     * @notice Transfer hook configuration for project `_projectId`.
+     * @return hook Hook address, or `address(0)` if none is configured.
+     * @return locked True if the configuration is permanently locked.
+     */
+    function projectTransferHookConfig(
+        uint256 _projectId
+    ) external view returns (address hook, bool locked);
 }

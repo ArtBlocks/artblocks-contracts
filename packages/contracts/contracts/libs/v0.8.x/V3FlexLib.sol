@@ -4,9 +4,12 @@
 pragma solidity ^0.8.0;
 
 import {IGenArt721CoreContractV3_Engine_Flex} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
+import {IGenArt721CoreContractV3_Base} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import {IGenArt721CoreContractV3_ProjectFinance} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_ProjectFinance.sol";
 import {IBytecodeStorageReader_Base} from "../../interfaces/v0.8.x/IBytecodeStorageReader_Base.sol";
 
 import {BytecodeStorageWriter} from "./BytecodeStorageV2.sol";
+import {Bytes32Strings} from "./Bytes32Strings.sol";
 
 /**
  * @title Art Blocks V3 Engine Flex - External Helper Library
@@ -19,6 +22,7 @@ import {BytecodeStorageWriter} from "./BytecodeStorageV2.sol";
 library V3FlexLib {
     using BytecodeStorageWriter for string;
     using BytecodeStorageWriter for bytes;
+    using Bytes32Strings for bytes32;
     // For the purposes of this implementation, due to the limited scope and
     // existing legacy infrastructure, the library emits the events
     // defined in IGenArt721CoreContractV3_Engine_Flex.sol. The events are
@@ -599,5 +603,286 @@ library V3FlexLib {
             !flexProjectData.externalAssetDependenciesLocked,
             "External dependencies locked"
         );
+    }
+
+    /**
+     * @notice ERC-2981 royalty info. Offloaded from Engine Flex for bytecode.
+     */
+    function royaltyInfo(
+        IGenArt721CoreContractV3_ProjectFinance.ProjectFinance
+            storage projectFinance,
+        uint256 salePrice
+    ) external view returns (address receiver, uint256 royaltyAmount) {
+        receiver = projectFinance.royaltySplitter;
+        uint256 totalRoyaltyBPS = (100 *
+            uint256(projectFinance.secondaryMarketRoyaltyPercentage)) +
+            projectFinance.platformProviderSecondarySalesBPS +
+            projectFinance.renderProviderSecondarySalesBPS;
+        if (totalRoyaltyBPS > 10_000) {
+            revert IGenArt721CoreContractV3_Base.GenArt721Error(
+                IGenArt721CoreContractV3_Base.ErrorCodes.OverMaxSumOfBPS
+            );
+        }
+        royaltyAmount = (salePrice * totalRoyaltyBPS) / 10_000;
+    }
+
+    /**
+     * @notice Primary revenue split view. Offloaded from Engine Flex for
+     * bytecode.
+     */
+    function getPrimaryRevenueSplits(
+        IGenArt721CoreContractV3_ProjectFinance.ProjectFinance
+            storage projectFinance,
+        uint256 price,
+        uint256 renderProviderPrimarySalesPercentage,
+        uint256 platformProviderPrimarySalesPercentage,
+        address payable renderProviderPrimarySalesAddress,
+        address payable platformProviderPrimarySalesAddress
+    )
+        external
+        view
+        returns (
+            uint256 renderProviderRevenue_,
+            address payable renderProviderAddress_,
+            uint256 platformProviderRevenue_,
+            address payable platformProviderAddress_,
+            uint256 artistRevenue_,
+            address payable artistAddress_,
+            uint256 additionalPayeePrimaryRevenue_,
+            address payable additionalPayeePrimaryAddress_
+        )
+    {
+        uint256 projectFunds = price;
+        renderProviderRevenue_ =
+            (price * renderProviderPrimarySalesPercentage) /
+            100;
+        projectFunds -= renderProviderRevenue_;
+        platformProviderRevenue_ =
+            (price * platformProviderPrimarySalesPercentage) /
+            100;
+        projectFunds -= platformProviderRevenue_;
+        additionalPayeePrimaryRevenue_ =
+            (projectFunds *
+                projectFinance.additionalPayeePrimarySalesPercentage) /
+            100;
+        artistRevenue_ = projectFunds - additionalPayeePrimaryRevenue_;
+        renderProviderAddress_ = renderProviderPrimarySalesAddress;
+        platformProviderAddress_ = platformProviderPrimarySalesAddress;
+        if (artistRevenue_ > 0) {
+            artistAddress_ = projectFinance.artistAddress;
+        }
+        if (additionalPayeePrimaryRevenue_ > 0) {
+            additionalPayeePrimaryAddress_ = projectFinance
+                .additionalPayeePrimarySales;
+        }
+    }
+
+    /**
+     * @notice Payee fields for artist split proposal / admin accept.
+     */
+    struct ArtistSplitProposal {
+        uint256 projectId;
+        address payable artistAddress;
+        address payable additionalPayeePrimarySales;
+        uint256 additionalPayeePrimarySalesPercentage;
+        address payable additionalPayeeSecondarySales;
+        uint256 additionalPayeeSecondarySalesPercentage;
+    }
+
+    /**
+     * @notice Artist payment proposal. Offloaded from Engine Flex for bytecode.
+     * @return shouldAssignSplitter True if the core should call `_assignSplitter`.
+     */
+    function proposeArtistPaymentAddressesAndSplits(
+        ArtistSplitProposal memory proposal,
+        IGenArt721CoreContractV3_ProjectFinance.ProjectFinance
+            storage projectFinance,
+        mapping(uint256 => bytes32) storage proposedHashes,
+        bool autoApprove
+    ) external returns (bool shouldAssignSplitter) {
+        if (
+            proposal.additionalPayeePrimarySalesPercentage > 100 ||
+            proposal.additionalPayeeSecondarySalesPercentage > 100
+        ) {
+            revert IGenArt721CoreContractV3_Base.GenArt721Error(
+                IGenArt721CoreContractV3_Base.ErrorCodes.MaxOf100Percent
+            );
+        }
+        if (
+            proposal.additionalPayeePrimarySalesPercentage > 0 &&
+            proposal.additionalPayeePrimarySales == address(0)
+        ) {
+            revert IGenArt721CoreContractV3_Base.GenArt721Error(
+                IGenArt721CoreContractV3_Base
+                    .ErrorCodes
+                    .PrimaryPayeeIsZeroAddress
+            );
+        }
+        if (
+            proposal.additionalPayeeSecondarySalesPercentage > 0 &&
+            proposal.additionalPayeeSecondarySales == address(0)
+        ) {
+            revert IGenArt721CoreContractV3_Base.GenArt721Error(
+                IGenArt721CoreContractV3_Base
+                    .ErrorCodes
+                    .SecondaryPayeeIsZeroAddress
+            );
+        }
+        emit IGenArt721CoreContractV3_Base.ProposedArtistAddressesAndSplits(
+            proposal.projectId,
+            proposal.artistAddress,
+            proposal.additionalPayeePrimarySales,
+            proposal.additionalPayeePrimarySalesPercentage,
+            proposal.additionalPayeeSecondarySales,
+            proposal.additionalPayeeSecondarySalesPercentage
+        );
+        bool automaticAccept = autoApprove;
+        if (!automaticAccept) {
+            bool artistUnchanged = proposal.artistAddress ==
+                projectFinance.artistAddress;
+            bool additionalPrimaryUnchangedOrRemoved = (proposal
+                .additionalPayeePrimarySales ==
+                projectFinance.additionalPayeePrimarySales) ||
+                (proposal.additionalPayeePrimarySales == address(0));
+            bool additionalSecondaryUnchangedOrRemoved = (proposal
+                .additionalPayeeSecondarySales ==
+                projectFinance.additionalPayeeSecondarySales) ||
+                (proposal.additionalPayeeSecondarySales == address(0));
+            automaticAccept =
+                artistUnchanged &&
+                additionalPrimaryUnchangedOrRemoved &&
+                additionalSecondaryUnchangedOrRemoved;
+        }
+        if (automaticAccept) {
+            proposedHashes[proposal.projectId] = bytes32(0);
+            projectFinance.artistAddress = proposal.artistAddress;
+            projectFinance.additionalPayeePrimarySales = proposal
+                .additionalPayeePrimarySales;
+            projectFinance.additionalPayeePrimarySalesPercentage = uint8(
+                proposal.additionalPayeePrimarySalesPercentage
+            );
+            projectFinance.additionalPayeeSecondarySales = proposal
+                .additionalPayeeSecondarySales;
+            projectFinance.additionalPayeeSecondarySalesPercentage = uint8(
+                proposal.additionalPayeeSecondarySalesPercentage
+            );
+            emit IGenArt721CoreContractV3_Base.AcceptedArtistAddressesAndSplits(
+                proposal.projectId
+            );
+            return true;
+        }
+        proposedHashes[proposal.projectId] = keccak256(
+            abi.encode(
+                proposal.artistAddress,
+                proposal.additionalPayeePrimarySales,
+                proposal.additionalPayeePrimarySalesPercentage,
+                proposal.additionalPayeeSecondarySales,
+                proposal.additionalPayeeSecondarySalesPercentage
+            )
+        );
+        return false;
+    }
+
+    /**
+     * @notice Admin accept of artist payment proposal. Offloaded from Engine
+     * Flex for bytecode. Caller must assign the splitter after this returns.
+     */
+    function adminAcceptArtistAddressesAndSplits(
+        ArtistSplitProposal memory proposal,
+        IGenArt721CoreContractV3_ProjectFinance.ProjectFinance
+            storage projectFinance,
+        mapping(uint256 => bytes32) storage proposedHashes
+    ) external {
+        if (
+            proposedHashes[proposal.projectId] !=
+            keccak256(
+                abi.encode(
+                    proposal.artistAddress,
+                    proposal.additionalPayeePrimarySales,
+                    proposal.additionalPayeePrimarySalesPercentage,
+                    proposal.additionalPayeeSecondarySales,
+                    proposal.additionalPayeeSecondarySalesPercentage
+                )
+            )
+        ) {
+            revert IGenArt721CoreContractV3_Base.GenArt721Error(
+                IGenArt721CoreContractV3_Base.ErrorCodes.MustMatchArtistProposal
+            );
+        }
+        projectFinance.artistAddress = proposal.artistAddress;
+        projectFinance.additionalPayeePrimarySales = proposal
+            .additionalPayeePrimarySales;
+        projectFinance.additionalPayeePrimarySalesPercentage = uint8(
+            proposal.additionalPayeePrimarySalesPercentage
+        );
+        projectFinance.additionalPayeeSecondarySales = proposal
+            .additionalPayeeSecondarySales;
+        projectFinance.additionalPayeeSecondarySalesPercentage = uint8(
+            proposal.additionalPayeeSecondarySalesPercentage
+        );
+        proposedHashes[proposal.projectId] = bytes32(0);
+        emit IGenArt721CoreContractV3_Base.AcceptedArtistAddressesAndSplits(
+            proposal.projectId
+        );
+    }
+
+    /**
+     * @notice Aspect-ratio string validation. Offloaded from Engine Flex for
+     * bytecode.
+     */
+    function validateAspectRatio(string memory aspectRatio) external pure {
+        bytes memory aspectRatioBytes = bytes(aspectRatio);
+        uint256 bytesLength = aspectRatioBytes.length;
+        if (bytesLength > 11) {
+            revert IGenArt721CoreContractV3_Base.GenArt721Error(
+                IGenArt721CoreContractV3_Base.ErrorCodes.AspectRatioTooLong
+            );
+        }
+        bool hasSeenDecimalSeparator = false;
+        bool hasSeenNumber = false;
+        for (uint256 i; i < bytesLength; i++) {
+            bytes1 character = aspectRatioBytes[i];
+            if (character >= 0x30 && character <= 0x39) {
+                hasSeenNumber = true;
+                continue;
+            }
+            if (character == 0x2E) {
+                if (!hasSeenDecimalSeparator) {
+                    hasSeenDecimalSeparator = true;
+                    continue;
+                }
+            }
+            revert IGenArt721CoreContractV3_Base.GenArt721Error(
+                IGenArt721CoreContractV3_Base
+                    .ErrorCodes
+                    .AspectRatioImproperFormat
+            );
+        }
+        if (!hasSeenNumber) {
+            revert IGenArt721CoreContractV3_Base.GenArt721Error(
+                IGenArt721CoreContractV3_Base.ErrorCodes.AspectRatioNoNumbers
+            );
+        }
+    }
+
+    /**
+     * @notice Script type/version format check (`exactly one @`). Offloaded
+     * from Engine Flex for bytecode.
+     */
+    function validateScriptTypeAndVersion(
+        bytes32 scriptTypeAndVersion
+    ) external pure {
+        if (
+            !scriptTypeAndVersion.containsExactCharacterQty({
+                utf8CharCode: uint8(bytes1("@")),
+                targetQty: uint8(1)
+            })
+        ) {
+            revert IGenArt721CoreContractV3_Base.GenArt721Error(
+                IGenArt721CoreContractV3_Base
+                    .ErrorCodes
+                    .ScriptTypeAndVersionFormat
+            );
+        }
     }
 }

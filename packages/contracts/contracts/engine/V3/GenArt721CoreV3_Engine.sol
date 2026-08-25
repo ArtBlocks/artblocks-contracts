@@ -11,6 +11,7 @@ import "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
 import {ISplitProviderV0} from "../../interfaces/v0.8.x/ISplitProviderV0.sol";
 import {IBytecodeStorageReader_Base} from "../../interfaces/v0.8.x/IBytecodeStorageReader_Base.sol";
+import {ITransferHook} from "../../interfaces/v0.8.x/ITransferHook.sol";
 
 import "@openzeppelin-5.0/contracts/utils/Strings.sol";
 import "@openzeppelin-5.0/contracts/access/Ownable.sol";
@@ -18,6 +19,7 @@ import {IERC2981} from "@openzeppelin-5.0/contracts/interfaces/IERC2981.sol";
 import "../../libs/v0.8.x/ERC721_PackedHashSeedV1.sol";
 import {BytecodeStorageWriter, BytecodeStorageReader} from "../../libs/v0.8.x/BytecodeStorageV2.sol";
 import "../../libs/v0.8.x/Bytes32Strings.sol";
+import {V3TransferHookLib} from "../../libs/v0.8.x/V3TransferHookLib.sol";
 
 /**
  * @title Art Blocks Engine ERC-721 core contract, V3.
@@ -78,6 +80,16 @@ import "../../libs/v0.8.x/Bytes32Strings.sol";
  *   current number of invocations, and less than current project maximum
  *   invocations)
  * - updateProjectBaseURI (controlling the base URI for tokens in the project)
+ * - lockProjectTransferHook (one-way; independent of the four-week project
+ *   metadata lock. Locking while the hook is address(0) forever forbids
+ *   assigning a transfer hook, restoring today's transfer security profile)
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to either the Artist address or
+ * the Admin ACL contract, and are NOT gated by the four-week project metadata
+ * lock (they are gated only by the one-way transfer-hook lock above):
+ * - configureProjectTransferHook (WARNING: a reverting hook bricks transfers
+ *   and mints for the project. A non-zero hook may execute arbitrary code on
+ *   every transfer. Prefer locking at address(0) if no hook is intended.)
  * ----------------------------------------------------------------------------
  * The following function is restricted to either the Admin ACL contract, or
  * the Artist address if the core contract owner has renounced ownership:
@@ -266,8 +278,11 @@ contract GenArt721CoreV3_Engine is
     /// setting this value post-deployment.
     bool public allowArtistProjectActivation;
 
+    /// per-project transfer hook configuration and reentrancy flag
+    V3TransferHookLib.Layout private _transferHookLayout;
+
     /// version & type of this core contract
-    bytes32 constant CORE_VERSION = "v3.2.9";
+    bytes32 constant CORE_VERSION = "v3.3.0";
 
     function coreVersion() external pure virtual returns (string memory) {
         return CORE_VERSION.toString();
@@ -506,6 +521,15 @@ contract GenArt721CoreV3_Engine is
 
         // token hash is updated by the randomizer contract on V3
         randomizerContract.assignTokenHash(thisTokenId);
+
+        // mint transfer hook after hash assignment so the hook can read
+        // tokenIdToHash. `_update` skips mint dispatch (from == address(0)).
+        _dispatchTransferHook({
+            from: address(0),
+            to: _to,
+            tokenId: thisTokenId,
+            operator: _by
+        });
 
         // Do not need to also log `projectId` in event, as the `projectId` for
         // a given token can be derived from the `tokenId` with:
@@ -1631,6 +1655,50 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
+     * @notice Set or clear the transfer hook for project `_projectId`.
+     * Artist or Admin ACL. Not gated by the four-week project metadata lock.
+     * Reverts if the project's transfer hook configuration is locked.
+     * WARNING: A reverting hook bricks transfers and mints for every token in
+     * the project. A hook may execute arbitrary code, and a mutable proxy hook
+     * can change behavior after it is set. Artists who do not want a hook
+     * should `lockProjectTransferHook` while the hook is `address(0)` to
+     * restore today's transfer security profile against future assignment.
+     * @param _projectId Project ID.
+     * @param _hook Hook contract, or `address(0)` to clear.
+     */
+    function configureProjectTransferHook(
+        uint256 _projectId,
+        address _hook
+    ) external {
+        _onlyValidProjectId(_projectId);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.configureProjectTransferHook.selector
+        );
+        V3TransferHookLib.configure({
+            layout: _transferHookLayout,
+            projectId: _projectId,
+            hook: ITransferHook(_hook)
+        });
+    }
+
+    /**
+     * @notice Permanently lock the current transfer hook for project
+     * `_projectId`, including `address(0)`. Artist only. Independent of the
+     * four-week project metadata lock. If locked at `address(0)`, a hook can
+     * never be assigned.
+     * @param _projectId Project ID.
+     */
+    function lockProjectTransferHook(uint256 _projectId) external {
+        _onlyValidProjectId(_projectId);
+        _onlyArtist(_projectId);
+        V3TransferHookLib.lock({
+            layout: _transferHookLayout,
+            projectId: _projectId
+        });
+    }
+
+    /**
      * @notice Updates default base URI to `_defaultBaseURI`. The
      * contract-level defaultBaseURI is only used when initializing new
      * projects. Token URIs are determined by their project's `projectBaseURI`.
@@ -1897,6 +1965,21 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
+     * @notice Transfer hook configuration for project `_projectId`.
+     * @param _projectId Project to be queried.
+     * @return hook Hook address, or `address(0)` if none is configured.
+     * @return locked True if the configuration is permanently locked.
+     */
+    function projectTransferHookConfig(
+        uint256 _projectId
+    ) external view returns (address hook, bool locked) {
+        V3TransferHookLib.ProjectTransferHookConfig
+            storage config = _transferHookLayout.configs[_projectId];
+        hook = address(config.hook);
+        locked = config.locked;
+    }
+
+    /**
      * @notice Backwards-compatible (pre-V3) function returning if `_minter` is
      * minterContract.
      * @param _minter Address to be queried.
@@ -2155,6 +2238,59 @@ contract GenArt721CoreV3_Engine is
         return
             interfaceId == _INTERFACE_ID_ERC2981 ||
             super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev After ownership is written, dispatch the project's transfer hook
+     * for non-mint transfers. Mint dispatch happens in `mint_Ecf` after hash
+     * assignment so the hook can read `tokenIdToHash`.
+     * Reverts if a transfer hook is already executing, blocking reentrant
+     * transfers from a hook.
+     */
+    function _update(
+        address to,
+        uint256 tokenId,
+        address auth
+    ) internal override returns (address) {
+        if (_transferHookLayout.executing) {
+            revert GenArt721Error(ErrorCodes.TransferHookReentrancy);
+        }
+        address from = super._update(to, tokenId, auth);
+        if (from != address(0)) {
+            _dispatchTransferHook({
+                from: from,
+                to: to,
+                tokenId: tokenId,
+                operator: _msgSender()
+            });
+        }
+        return from;
+    }
+
+    /**
+     * @notice Call the project's transfer hook if one is configured.
+     * Unconfigured projects return after a single SLOAD (no DELEGATECALL).
+     */
+    function _dispatchTransferHook(
+        address from,
+        address to,
+        uint256 tokenId,
+        address operator
+    ) internal {
+        ITransferHook hook = _transferHookLayout
+            .configs[tokenId / ONE_MILLION]
+            .hook;
+        if (address(hook) == address(0)) {
+            return;
+        }
+        V3TransferHookLib.callHook({
+            layout: _transferHookLayout,
+            hook: hook,
+            tokenId: tokenId,
+            from: from,
+            to: to,
+            operator: operator
+        });
     }
 
     /**

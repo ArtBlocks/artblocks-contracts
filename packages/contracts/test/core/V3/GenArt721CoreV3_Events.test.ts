@@ -101,6 +101,13 @@ for (const coreContractName of coreContractsToTest) {
             BytecodeStorageReader: library.address,
           },
         };
+        const transferHookLibraryFactory =
+          await ethers.getContractFactory("V3TransferHookLib");
+        const transferHookLibrary = await transferHookLibraryFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        libraries.libraries.V3TransferHookLib = transferHookLibrary.address;
+
         // deploy Engine implementations
         const engineCoreContractFactory = await ethers.getContractFactory(
           "GenArt721CoreV3_Engine",
@@ -203,6 +210,13 @@ for (const coreContractName of coreContractsToTest) {
             BytecodeStorageReader: library.address,
           },
         };
+        const transferHookLibraryFactory =
+          await ethers.getContractFactory("V3TransferHookLib");
+        const transferHookLibrary = await transferHookLibraryFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+        libraries.libraries.V3TransferHookLib = transferHookLibrary.address;
+
         // deploy Engine implementations
         const engineCoreContractFactory = await ethers.getContractFactory(
           "GenArt721CoreV3_Engine",

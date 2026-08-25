@@ -105,3 +105,7 @@ V3 performance metrics are available in [V3_Performance.md](V3_PERFORMANCE.md)
 - Add ability for admin to update artist's name after project is locked. (based on previous requests we have received)
 - General refactoring of events, errors, and use of a Flex external library to reduce contract bytecode size.
 - Contracts updated to be compatible with [ERC-1167](https://eips.ethereum.org/EIPS/eip-1167) minimal proxies to reduce deployment costs and improve assurance of contract integrity.
+
+## The following changes were made in the Core V3 (3.3.0) Engine and Engine Flex contracts:
+
+- Add per-project transfer hooks. See [V3_ENGINE_CHANGELOG.md](V3_ENGINE_CHANGELOG.md).

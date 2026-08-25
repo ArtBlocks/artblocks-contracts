@@ -19,7 +19,7 @@ const coreContractsToTest = [
   "GenArt721CoreV3_Curated_Flex", // V3.2 core Curated Flex contract
 ];
 
-const EXPECTED_CORE_VERSION = "v3.2.7";
+const EXPECTED_CORE_VERSION = "v3.3.0";
 
 const EXPECTED_PREVIOUS_ART_BLOCKS_CONTRACTS = [
   "0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a",

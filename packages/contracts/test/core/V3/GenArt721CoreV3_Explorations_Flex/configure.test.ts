@@ -82,6 +82,12 @@ for (const coreContractName of coreContractsToTest) {
         const v3flexlib = await v3flexlibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
+        const v3transferhooklibFactory = await ethers.getContractFactory(
+          "V3TransferHookLib"
+        );
+        const v3transferhooklib = await v3transferhooklibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
         const explorationsFactory =
           new GenArt721CoreV3_Explorations_Flex__factory(
             {
@@ -89,6 +95,8 @@ for (const coreContractName of coreContractsToTest) {
                 library.address,
               "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib":
                 v3flexlib.address,
+              "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
+                v3transferhooklib.address,
             },
             config.accounts.deployer
           );
@@ -134,6 +142,12 @@ for (const coreContractName of coreContractsToTest) {
         const v3flexlib = await v3flexlibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
+        const v3transferhooklibFactory = await ethers.getContractFactory(
+          "V3TransferHookLib"
+        );
+        const v3transferhooklib = await v3transferhooklibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
         const explorationsFactory =
           new GenArt721CoreV3_Explorations_Flex__factory(
             {
@@ -141,6 +155,8 @@ for (const coreContractName of coreContractsToTest) {
                 library.address,
               "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib":
                 v3flexlib.address,
+              "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
+                v3transferhooklib.address,
             },
             config.accounts.deployer
           );
@@ -186,6 +202,12 @@ for (const coreContractName of coreContractsToTest) {
         const v3flexlib = await v3flexlibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
+        const v3transferhooklibFactory = await ethers.getContractFactory(
+          "V3TransferHookLib"
+        );
+        const v3transferhooklib = await v3transferhooklibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
         const explorationsFactory =
           new GenArt721CoreV3_Explorations_Flex__factory(
             {
@@ -193,6 +215,8 @@ for (const coreContractName of coreContractsToTest) {
                 library.address,
               "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib":
                 v3flexlib.address,
+              "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
+                v3transferhooklib.address,
             },
             config.accounts.deployer
           );
@@ -238,6 +262,12 @@ for (const coreContractName of coreContractsToTest) {
         const v3flexlib = await v3flexlibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
+        const v3transferhooklibFactory = await ethers.getContractFactory(
+          "V3TransferHookLib"
+        );
+        const v3transferhooklib = await v3transferhooklibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
         const explorationsFactory =
           new GenArt721CoreV3_Explorations_Flex__factory(
             {
@@ -245,6 +275,8 @@ for (const coreContractName of coreContractsToTest) {
                 library.address,
               "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib":
                 v3flexlib.address,
+              "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
+                v3transferhooklib.address,
             },
             config.accounts.deployer
           );
@@ -290,6 +322,12 @@ for (const coreContractName of coreContractsToTest) {
         const v3flexlib = await v3flexlibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
+        const v3transferhooklibFactory = await ethers.getContractFactory(
+          "V3TransferHookLib"
+        );
+        const v3transferhooklib = await v3transferhooklibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
         const explorationsFactory =
           new GenArt721CoreV3_Explorations_Flex__factory(
             {
@@ -297,6 +335,8 @@ for (const coreContractName of coreContractsToTest) {
                 library.address,
               "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib":
                 v3flexlib.address,
+              "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
+                v3transferhooklib.address,
             },
             config.accounts.deployer
           );
@@ -341,6 +381,12 @@ for (const coreContractName of coreContractsToTest) {
         const v3flexlib = await v3flexlibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
+        const v3transferhooklibFactory = await ethers.getContractFactory(
+          "V3TransferHookLib"
+        );
+        const v3transferhooklib = await v3transferhooklibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
         const explorationsFactory =
           new GenArt721CoreV3_Explorations_Flex__factory(
             {
@@ -348,6 +394,8 @@ for (const coreContractName of coreContractsToTest) {
                 library.address,
               "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib":
                 v3flexlib.address,
+              "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
+                v3transferhooklib.address,
             },
             config.accounts.deployer
           );
@@ -392,6 +440,12 @@ for (const coreContractName of coreContractsToTest) {
         const v3flexlib = await v3flexlibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
+        const v3transferhooklibFactory = await ethers.getContractFactory(
+          "V3TransferHookLib"
+        );
+        const v3transferhooklib = await v3transferhooklibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
         const explorationsFactory =
           new GenArt721CoreV3_Explorations_Flex__factory(
             {
@@ -399,6 +453,8 @@ for (const coreContractName of coreContractsToTest) {
                 library.address,
               "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib":
                 v3flexlib.address,
+              "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
+                v3transferhooklib.address,
             },
             config.accounts.deployer
           );
@@ -443,6 +499,12 @@ for (const coreContractName of coreContractsToTest) {
         const v3flexlib = await v3flexlibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
+        const v3transferhooklibFactory = await ethers.getContractFactory(
+          "V3TransferHookLib"
+        );
+        const v3transferhooklib = await v3transferhooklibFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
         const explorationsFactory =
           new GenArt721CoreV3_Explorations_Flex__factory(
             {
@@ -450,6 +512,8 @@ for (const coreContractName of coreContractsToTest) {
                 library.address,
               "contracts/libs/v0.8.x/V3FlexLib.sol:V3FlexLib":
                 v3flexlib.address,
+              "contracts/libs/v0.8.x/V3TransferHookLib.sol:V3TransferHookLib":
+                v3transferhooklib.address,
             },
             config.accounts.deployer
           );
