@@ -70,15 +70,13 @@ for (const coreContractName of coreContractsToTest) {
         const library = await bytecodeStorageLibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3transferhooklibFactory = await ethers.getContractFactory(
-          "V3TransferHookLib"
-        );
+        const v3transferhooklibFactory =
+          await ethers.getContractFactory("V3TransferHookLib");
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3enginelibFactory = await ethers.getContractFactory(
-          "V3EngineLib"
-        );
+        const v3enginelibFactory =
+          await ethers.getContractFactory("V3EngineLib");
         const v3enginelib = await v3enginelibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
@@ -130,15 +128,13 @@ for (const coreContractName of coreContractsToTest) {
         const library = await bytecodeStorageLibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3transferhooklibFactory = await ethers.getContractFactory(
-          "V3TransferHookLib"
-        );
+        const v3transferhooklibFactory =
+          await ethers.getContractFactory("V3TransferHookLib");
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3enginelibFactory = await ethers.getContractFactory(
-          "V3EngineLib"
-        );
+        const v3enginelibFactory =
+          await ethers.getContractFactory("V3EngineLib");
         const v3enginelib = await v3enginelibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
@@ -190,15 +186,13 @@ for (const coreContractName of coreContractsToTest) {
         const library = await bytecodeStorageLibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3transferhooklibFactory = await ethers.getContractFactory(
-          "V3TransferHookLib"
-        );
+        const v3transferhooklibFactory =
+          await ethers.getContractFactory("V3TransferHookLib");
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3enginelibFactory = await ethers.getContractFactory(
-          "V3EngineLib"
-        );
+        const v3enginelibFactory =
+          await ethers.getContractFactory("V3EngineLib");
         const v3enginelib = await v3enginelibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
@@ -250,15 +244,13 @@ for (const coreContractName of coreContractsToTest) {
         const library = await bytecodeStorageLibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3transferhooklibFactory = await ethers.getContractFactory(
-          "V3TransferHookLib"
-        );
+        const v3transferhooklibFactory =
+          await ethers.getContractFactory("V3TransferHookLib");
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3enginelibFactory = await ethers.getContractFactory(
-          "V3EngineLib"
-        );
+        const v3enginelibFactory =
+          await ethers.getContractFactory("V3EngineLib");
         const v3enginelib = await v3enginelibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
@@ -310,15 +302,13 @@ for (const coreContractName of coreContractsToTest) {
         const library = await bytecodeStorageLibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3transferhooklibFactory = await ethers.getContractFactory(
-          "V3TransferHookLib"
-        );
+        const v3transferhooklibFactory =
+          await ethers.getContractFactory("V3TransferHookLib");
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3enginelibFactory = await ethers.getContractFactory(
-          "V3EngineLib"
-        );
+        const v3enginelibFactory =
+          await ethers.getContractFactory("V3EngineLib");
         const v3enginelib = await v3enginelibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
@@ -369,15 +359,13 @@ for (const coreContractName of coreContractsToTest) {
         const library = await bytecodeStorageLibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3transferhooklibFactory = await ethers.getContractFactory(
-          "V3TransferHookLib"
-        );
+        const v3transferhooklibFactory =
+          await ethers.getContractFactory("V3TransferHookLib");
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3enginelibFactory = await ethers.getContractFactory(
-          "V3EngineLib"
-        );
+        const v3enginelibFactory =
+          await ethers.getContractFactory("V3EngineLib");
         const v3enginelib = await v3enginelibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
@@ -428,15 +416,13 @@ for (const coreContractName of coreContractsToTest) {
         const library = await bytecodeStorageLibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3transferhooklibFactory = await ethers.getContractFactory(
-          "V3TransferHookLib"
-        );
+        const v3transferhooklibFactory =
+          await ethers.getContractFactory("V3TransferHookLib");
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3enginelibFactory = await ethers.getContractFactory(
-          "V3EngineLib"
-        );
+        const v3enginelibFactory =
+          await ethers.getContractFactory("V3EngineLib");
         const v3enginelib = await v3enginelibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
@@ -487,15 +473,13 @@ for (const coreContractName of coreContractsToTest) {
         const library = await bytecodeStorageLibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3transferhooklibFactory = await ethers.getContractFactory(
-          "V3TransferHookLib"
-        );
+        const v3transferhooklibFactory =
+          await ethers.getContractFactory("V3TransferHookLib");
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3enginelibFactory = await ethers.getContractFactory(
-          "V3EngineLib"
-        );
+        const v3enginelibFactory =
+          await ethers.getContractFactory("V3EngineLib");
         const v3enginelib = await v3enginelibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
@@ -546,15 +530,13 @@ for (const coreContractName of coreContractsToTest) {
         const library = await bytecodeStorageLibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3transferhooklibFactory = await ethers.getContractFactory(
-          "V3TransferHookLib"
-        );
+        const v3transferhooklibFactory =
+          await ethers.getContractFactory("V3TransferHookLib");
         const v3transferhooklib = await v3transferhooklibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);
-        const v3enginelibFactory = await ethers.getContractFactory(
-          "V3EngineLib"
-        );
+        const v3enginelibFactory =
+          await ethers.getContractFactory("V3EngineLib");
         const v3enginelib = await v3enginelibFactory
           .connect(config.accounts.deployer)
           .deploy(/* no args for library ever */);

@@ -202,10 +202,9 @@ for (const coreContractName of coreContractsToTest) {
         );
         await advanceEVMByTime(FOUR_WEEKS + 1);
 
-        const hookConfig =
-          await config.genArt721Core.projectTransferHookConfig(
-            config.projectZero
-          );
+        const hookConfig = await config.genArt721Core.projectTransferHookConfig(
+          config.projectZero
+        );
         expect(hookConfig.hook).to.equal(constants.ZERO_ADDRESS);
         expect(hookConfig.locked).to.equal(true);
 
