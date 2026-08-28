@@ -131,7 +131,8 @@ interface IGenArt721CoreContractV3_Base is IGenArt721CoreProjectScriptV1 {
         ContractInitialized, // 37
         TransferHookLocked, // 38
         TransferHookInvalidInterface, // 39
-        TransferHookReentrancy // 40
+        TransferHookReentrancy, // 40
+        TransferHookUnexpectedHook // 41
     }
 
     /**

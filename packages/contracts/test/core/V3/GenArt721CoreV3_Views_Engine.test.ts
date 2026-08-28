@@ -111,7 +111,10 @@ for (const coreContractName of coreContractsToTest) {
     describe("coreVersion", function () {
       it("returns expected value", async function () {
         const config = await loadFixture(_beforeEach);
-        let targetCoreVersion = "v3.3.0";
+        let targetCoreVersion = "v3.3.0"; // Engine (not flex)
+        if (coreContractName === "GenArt721CoreV3_Engine_Flex") {
+          targetCoreVersion = "v3.3.1";
+        }
         const coreVersion = await config.genArt721Core
           .connect(config.accounts.deployer)
           .coreVersion();

@@ -285,6 +285,7 @@ export const GENART721_ERROR_CODES = {
   TransferHookLocked: 38,
   TransferHookInvalidInterface: 39,
   TransferHookReentrancy: 40,
+  TransferHookUnexpectedHook: 41,
 };
 
 export async function getAccounts(): Promise<TestAccountsArtBlocks> {

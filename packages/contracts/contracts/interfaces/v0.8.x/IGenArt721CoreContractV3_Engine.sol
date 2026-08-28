@@ -176,8 +176,8 @@ interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
      * either `lockProjectTransferHook` was called, or the four-week project
      * metadata lock elapsed while the hook is `address(0)`. After auto-lock,
      * a hook that is already set remains configurable until the artist locks.
-     * A non-zero hook must ERC-165-advertise `ITransferHook`. `address(0)`
-     * clears the hook.
+     * A non-zero hook must ERC-165-advertise `ITransferHook`
+     * (interface ID `0x6344b0e2`). `address(0)` clears the hook.
      * @param _projectId Project ID.
      * @param _hook Hook contract, or `address(0)` to clear.
      */
@@ -187,15 +187,24 @@ interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
     ) external;
 
     /**
-     * @notice Permanently lock the current transfer hook for project
-     * `_projectId`, including `address(0)`.
+     * @notice Permanently lock the transfer hook for project `_projectId` at
+     * `_expectedHook`, which may be `address(0)`.
      * @dev New function in v3.3. Artist only. If locked at `address(0)`, a
      * hook can never be assigned — restoring today's transfer security
      * profile. If the four-week project metadata lock elapsed with no hook
      * set, the configuration is already locked and this reverts.
+     * @dev `_expectedHook` must equal the project's currently configured hook.
+     * Because locking is permanent and the hook may be updated by either the
+     * artist or the Admin ACL, this guards against a `configureProjectTransferHook`
+     * call landing first and causing an unintended hook to be locked in.
      * @param _projectId Project ID.
+     * @param _expectedHook Hook the caller expects to lock in. Reverts with
+     * `TransferHookUnexpectedHook` if it does not match the current hook.
      */
-    function lockProjectTransferHook(uint256 _projectId) external;
+    function lockProjectTransferHook(
+        uint256 _projectId,
+        address _expectedHook
+    ) external;
 
     /**
      * @notice Transfer hook configuration for project `_projectId`.

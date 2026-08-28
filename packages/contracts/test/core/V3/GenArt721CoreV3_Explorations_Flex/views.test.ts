@@ -19,7 +19,7 @@ const coreContractsToTest = [
   "GenArt721CoreV3_Explorations_Flex", // V3.2 core Explorations Flex contract
 ];
 
-const EXPECTED_CORE_VERSION = "v3.3.0";
+const EXPECTED_CORE_VERSION = "v3.3.4";
 
 const EXPECTED_PREVIOUS_ART_BLOCKS_EXPLORATIONS_CONTRACTS = [
   "0x942BC2d3e7a589FE5bd4A5C6eF9727DFd82F5C8a",

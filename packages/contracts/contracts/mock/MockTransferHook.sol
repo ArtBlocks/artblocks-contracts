@@ -10,7 +10,10 @@ import {IERC721} from "@openzeppelin-5.0/contracts/token/ERC721/IERC721.sol";
 /**
  * @title Mock transfer hook for testing V3 Engine transfer hooks.
  * @notice Records hook inputs, optionally reverts, and can attempt reentrancy
- * into transfer / configure / lock on the calling core.
+ * into transfer / mint / configure / lock on the calling core.
+ * @dev Intentionally does NOT restrict which cores it will serve, so a single
+ * instance can be used across the Engine and Engine Flex test suites.
+ * Production hooks must restrict `coreContract`.
  */
 contract MockTransferHook is AbstractTransferHook {
     event TokenTransferred(
@@ -35,6 +38,18 @@ contract MockTransferHook is AbstractTransferHook {
     bool public reenterLock;
     address public reenterTransferTo;
 
+    /// when set, reentrant transfer targets an explicit token rather than the
+    /// token this hook was invoked for (used to test cross-project blocking)
+    bool public reenterCustomToken;
+    address public reenterCustomFrom;
+    uint256 public reenterCustomTokenId;
+
+    /// when set, the hook attempts to purchase through a minter, which
+    /// reenters the core's mint path
+    bool public reenterPurchase;
+    address public reenterPurchaseMinter;
+    uint256 public reenterPurchaseProjectId;
+
     function setShouldRevert(bool _shouldRevert) external {
         shouldRevert = _shouldRevert;
     }
@@ -47,6 +62,26 @@ contract MockTransferHook is AbstractTransferHook {
         reenterTransferTo = _reenterTransferTo;
     }
 
+    function setReenterCustomToken(
+        bool _reenterCustomToken,
+        address _reenterCustomFrom,
+        uint256 _reenterCustomTokenId
+    ) external {
+        reenterCustomToken = _reenterCustomToken;
+        reenterCustomFrom = _reenterCustomFrom;
+        reenterCustomTokenId = _reenterCustomTokenId;
+    }
+
+    function setReenterPurchase(
+        bool _reenterPurchase,
+        address _minter,
+        uint256 _projectId
+    ) external {
+        reenterPurchase = _reenterPurchase;
+        reenterPurchaseMinter = _minter;
+        reenterPurchaseProjectId = _projectId;
+    }
+
     function setReenterConfigure(bool _reenterConfigure) external {
         reenterConfigure = _reenterConfigure;
     }
@@ -55,13 +90,13 @@ contract MockTransferHook is AbstractTransferHook {
         reenterLock = _reenterLock;
     }
 
-    function onTokenTransfer(
+    function _onTokenTransfer(
         address coreContract,
         uint256 tokenId,
         address from,
         address to,
         address operator
-    ) external override {
+    ) internal override {
         lastCoreContract = coreContract;
         lastTokenId = tokenId;
         lastFrom = from;
@@ -80,7 +115,36 @@ contract MockTransferHook is AbstractTransferHook {
         }
 
         if (reenterTransfer) {
-            IERC721(coreContract).transferFrom(to, reenterTransferTo, tokenId);
+            if (reenterCustomToken) {
+                IERC721(coreContract).transferFrom(
+                    reenterCustomFrom,
+                    reenterTransferTo,
+                    reenterCustomTokenId
+                );
+            } else {
+                IERC721(coreContract).transferFrom(
+                    to,
+                    reenterTransferTo,
+                    tokenId
+                );
+            }
+        }
+
+        if (reenterPurchase) {
+            // @dev bubble the revert reason so the core's custom error is
+            // observable by the test, rather than being swallowed here
+            (bool success, bytes memory returnData) = reenterPurchaseMinter
+                .call(
+                    abi.encodeWithSignature(
+                        "purchase(uint256)",
+                        reenterPurchaseProjectId
+                    )
+                );
+            if (!success) {
+                assembly {
+                    revert(add(returnData, 32), mload(returnData))
+                }
+            }
         }
 
         if (reenterConfigure) {
@@ -90,7 +154,7 @@ contract MockTransferHook is AbstractTransferHook {
 
         if (reenterLock) {
             IGenArt721CoreContractV3_Engine(coreContract)
-                .lockProjectTransferHook(tokenId / 1_000_000);
+                .lockProjectTransferHook(tokenId / 1_000_000, address(this));
         }
     }
 }

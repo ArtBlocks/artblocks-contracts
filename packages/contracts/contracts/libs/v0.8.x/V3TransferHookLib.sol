@@ -15,6 +15,10 @@ import {IGenArt721CoreContractV3_Engine} from "../../interfaces/v0.8.x/IGenArt72
  * consistent while both remain under the 24KB bytecode size limit.
  * Cores should SLOAD the hook address themselves and only call `callHook`
  * when it is non-zero, so unconfigured transfers do not pay a DELEGATECALL.
+ * @dev Storage is reached through a `Layout` storage pointer supplied by the
+ * calling core, rather than through the diamond storage pattern used by
+ * `V3FlexLib`. This is intentional: the layout appears in the core's own
+ * storage layout, which keeps it auditable with standard tooling.
  * @dev Reverts use the core's `GenArt721Error` so callers see a single error
  * type. A reverting hook call is intentionally not caught — latent failure
  * would leave ownership updated while hook side effects did not run.
@@ -39,31 +43,29 @@ library V3TransferHookLib {
         bool executing;
     }
 
-    uint256 private constant _FOUR_WEEKS_IN_SECONDS = 2_419_200;
-
     /**
      * @notice Set or clear a project's transfer hook.
      * Reverts if the hook configuration is locked, or if a non-zero `hook`
      * does not ERC-165-advertise `ITransferHook`.
-     * After the four-week project metadata lock, a hook may only be changed
-     * if one is already set. If the hook is `address(0)` when that auto-lock
-     * happens, it can never be assigned.
+     * Once the project is locked (four-week project metadata lock), a hook may
+     * only be changed if one is already set. If the hook is `address(0)` when
+     * that auto-lock happens, it can never be assigned.
      * @param layout Core-owned transfer hook storage.
      * @param projectId Project ID.
      * @param hook New hook, or `address(0)` to clear.
-     * @param projectCompletedTimestamp Project `completedTimestamp` (0 if the
-     * project is not complete). Used to apply the four-week auto-lock-at-zero
-     * rule without a transaction at the lock instant.
+     * @param projectUnlocked Core's `_projectUnlocked(projectId)`. Passed in
+     * so the four-week auto-lock-at-zero rule is evaluated by exactly the same
+     * logic as every other lock on the core.
      */
     function configure(
         Layout storage layout,
         uint256 projectId,
         ITransferHook hook,
-        uint256 projectCompletedTimestamp
+        bool projectUnlocked
     ) external {
         _onlyNotExecuting(layout);
         ProjectTransferHookConfig storage config = layout.configs[projectId];
-        if (_isLocked(config, projectCompletedTimestamp)) {
+        if (_isLocked({config: config, projectUnlocked: projectUnlocked})) {
             revert IGenArt721CoreContractV3_Base.GenArt721Error(
                 IGenArt721CoreContractV3_Base.ErrorCodes.TransferHookLocked
             );
@@ -92,20 +94,36 @@ library V3TransferHookLib {
      * @notice One-way lock of the current hook value, including `address(0)`.
      * Reverts if already locked, including when the four-week project metadata
      * lock has already frozen an unset hook.
+     * @dev `expectedHook` makes the caller's intent explicit and is checked
+     * before locking, because locking is permanent and the hook may be changed
+     * by either the artist or the Admin ACL. Without it, a `configure` call
+     * landing first would cause this call to permanently freeze a hook the
+     * caller never intended to lock.
      * @param layout Core-owned transfer hook storage.
      * @param projectId Project ID.
-     * @param projectCompletedTimestamp Project `completedTimestamp`.
+     * @param expectedHook Hook the caller expects to be locking in. Must equal
+     * the project's currently configured hook, which may be `address(0)`.
+     * @param projectUnlocked Core's `_projectUnlocked(projectId)`.
      */
     function lock(
         Layout storage layout,
         uint256 projectId,
-        uint256 projectCompletedTimestamp
+        address expectedHook,
+        bool projectUnlocked
     ) external {
         _onlyNotExecuting(layout);
         ProjectTransferHookConfig storage config = layout.configs[projectId];
-        if (_isLocked(config, projectCompletedTimestamp)) {
+        if (_isLocked({config: config, projectUnlocked: projectUnlocked})) {
             revert IGenArt721CoreContractV3_Base.GenArt721Error(
                 IGenArt721CoreContractV3_Base.ErrorCodes.TransferHookLocked
+            );
+        }
+        address currentHook = address(config.hook);
+        if (currentHook != expectedHook) {
+            revert IGenArt721CoreContractV3_Base.GenArt721Error(
+                IGenArt721CoreContractV3_Base
+                    .ErrorCodes
+                    .TransferHookUnexpectedHook
             );
         }
         config.locked = true;
@@ -121,7 +139,7 @@ library V3TransferHookLib {
         );
         emit IGenArt721CoreContractV3_Engine.ProjectTransferHookLocked(
             projectId,
-            address(config.hook)
+            currentHook
         );
     }
 
@@ -159,6 +177,22 @@ library V3TransferHookLib {
     }
 
     /**
+     * @notice Effective lock state of a project's transfer hook config.
+     * True if the artist called `lockProjectTransferHook`, or if the project's
+     * four-week metadata lock has elapsed while the hook is `address(0)`.
+     * @dev Shared by `configure`, `lock`, and the cores' public view, so all
+     * three can never disagree.
+     * @param config Project's transfer hook config.
+     * @param projectUnlocked Core's `_projectUnlocked(projectId)`.
+     */
+    function isLocked(
+        ProjectTransferHookConfig storage config,
+        bool projectUnlocked
+    ) external view returns (bool) {
+        return _isLocked({config: config, projectUnlocked: projectUnlocked});
+    }
+
+    /**
      * @notice Revert if a transfer hook is currently executing.
      * @param layout Core-owned transfer hook storage.
      */
@@ -173,10 +207,13 @@ library V3TransferHookLib {
     /**
      * @notice Effective lock: explicit `lockProjectTransferHook`, or the
      * four-week project metadata auto-lock while the hook is unset.
+     * @dev A hook that is already set at auto-lock intentionally remains
+     * configurable, so that auto-lock can never permanently freeze a hook that
+     * later breaks. Freezing a set hook requires an explicit artist call.
      */
     function _isLocked(
         ProjectTransferHookConfig storage config,
-        uint256 projectCompletedTimestamp
+        bool projectUnlocked
     ) private view returns (bool) {
         if (config.locked) {
             return true;
@@ -184,24 +221,21 @@ library V3TransferHookLib {
         if (address(config.hook) != address(0)) {
             return false;
         }
-        if (projectCompletedTimestamp == 0) {
-            return false;
-        }
-        return
-            block.timestamp - projectCompletedTimestamp >=
-            _FOUR_WEEKS_IN_SECONDS;
+        return !projectUnlocked;
     }
 
     /**
      * @notice Minimal ERC-165 check for `ITransferHook`. Intentionally not
      * OpenZeppelin's ERC165Checker, which is too large to inline into the
      * size-constrained Engine Flex core.
+     * @dev A codeless address (EOA) returns success with zero-length
+     * returndata, which the length check below rejects.
      */
     function _requireSupportsTransferHook(address hook) private view {
         (bool success, bytes memory result) = hook.staticcall(
             abi.encodeWithSelector(
                 bytes4(0x01ffc9a7), // IERC165.supportsInterface.selector
-                type(ITransferHook).interfaceId
+                type(ITransferHook).interfaceId // 0x6344b0e2
             )
         );
         if (!success || result.length < 32 || !abi.decode(result, (bool))) {

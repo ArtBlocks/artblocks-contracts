@@ -4,27 +4,21 @@
 pragma solidity ^0.8.0;
 
 import {IGenArt721CoreContractV3_Engine_Flex} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
-import {IGenArt721CoreContractV3_Base} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import {IGenArt721CoreContractV3_ProjectFinance} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_ProjectFinance.sol";
 import {IBytecodeStorageReader_Base} from "../../interfaces/v0.8.x/IBytecodeStorageReader_Base.sol";
 
 import {BytecodeStorageWriter} from "./BytecodeStorageV2.sol";
-import {Bytes32Strings} from "./Bytes32Strings.sol";
 
 /**
  * @title Art Blocks V3 Engine Flex - External Helper Library
  * @notice This library is designed to offload bytecode from the V3 Engine
- * Flex contract. It implements Flex-only logic that may be accessed via
- * DELEGATECALL (external asset dependencies, gateways, and Flex-sized copies
- * of artist-split proposal helpers). Shared Engine/Engine Flex project-finance
- * logic lives in `V3EngineLib` so both cores stay consistent under 24KB.
+ * Flex contract. It implements logic that may be accessed via DELEGATECALL for
+ * operations related to the V3 Engine Flex contract.
  * @author Art Blocks Inc.
  */
 
 library V3FlexLib {
     using BytecodeStorageWriter for string;
     using BytecodeStorageWriter for bytes;
-    using Bytes32Strings for bytes32;
     // For the purposes of this implementation, due to the limited scope and
     // existing legacy infrastructure, the library emits the events
     // defined in IGenArt721CoreContractV3_Engine_Flex.sol. The events are
@@ -605,214 +599,5 @@ library V3FlexLib {
             !flexProjectData.externalAssetDependenciesLocked,
             "External dependencies locked"
         );
-    }
-
-    /**
-     * @notice Payee fields for artist split proposal / admin accept.
-     */
-    struct ArtistSplitProposal {
-        uint256 projectId;
-        address payable artistAddress;
-        address payable additionalPayeePrimarySales;
-        uint256 additionalPayeePrimarySalesPercentage;
-        address payable additionalPayeeSecondarySales;
-        uint256 additionalPayeeSecondarySalesPercentage;
-    }
-
-    /**
-     * @notice Artist payment proposal. Offloaded from Engine Flex for bytecode.
-     * @return shouldAssignSplitter True if the core should call `_assignSplitter`.
-     */
-    function proposeArtistPaymentAddressesAndSplits(
-        ArtistSplitProposal memory proposal,
-        IGenArt721CoreContractV3_ProjectFinance.ProjectFinance
-            storage projectFinance,
-        mapping(uint256 => bytes32) storage proposedHashes,
-        bool autoApprove
-    ) external returns (bool shouldAssignSplitter) {
-        if (
-            proposal.additionalPayeePrimarySalesPercentage > 100 ||
-            proposal.additionalPayeeSecondarySalesPercentage > 100
-        ) {
-            revert IGenArt721CoreContractV3_Base.GenArt721Error(
-                IGenArt721CoreContractV3_Base.ErrorCodes.MaxOf100Percent
-            );
-        }
-        if (
-            proposal.additionalPayeePrimarySalesPercentage > 0 &&
-            proposal.additionalPayeePrimarySales == address(0)
-        ) {
-            revert IGenArt721CoreContractV3_Base.GenArt721Error(
-                IGenArt721CoreContractV3_Base
-                    .ErrorCodes
-                    .PrimaryPayeeIsZeroAddress
-            );
-        }
-        if (
-            proposal.additionalPayeeSecondarySalesPercentage > 0 &&
-            proposal.additionalPayeeSecondarySales == address(0)
-        ) {
-            revert IGenArt721CoreContractV3_Base.GenArt721Error(
-                IGenArt721CoreContractV3_Base
-                    .ErrorCodes
-                    .SecondaryPayeeIsZeroAddress
-            );
-        }
-        emit IGenArt721CoreContractV3_Base.ProposedArtistAddressesAndSplits(
-            proposal.projectId,
-            proposal.artistAddress,
-            proposal.additionalPayeePrimarySales,
-            proposal.additionalPayeePrimarySalesPercentage,
-            proposal.additionalPayeeSecondarySales,
-            proposal.additionalPayeeSecondarySalesPercentage
-        );
-        bool automaticAccept = autoApprove;
-        if (!automaticAccept) {
-            bool artistUnchanged = proposal.artistAddress ==
-                projectFinance.artistAddress;
-            bool additionalPrimaryUnchangedOrRemoved = (proposal
-                .additionalPayeePrimarySales ==
-                projectFinance.additionalPayeePrimarySales) ||
-                (proposal.additionalPayeePrimarySales == address(0));
-            bool additionalSecondaryUnchangedOrRemoved = (proposal
-                .additionalPayeeSecondarySales ==
-                projectFinance.additionalPayeeSecondarySales) ||
-                (proposal.additionalPayeeSecondarySales == address(0));
-            automaticAccept =
-                artistUnchanged &&
-                additionalPrimaryUnchangedOrRemoved &&
-                additionalSecondaryUnchangedOrRemoved;
-        }
-        if (automaticAccept) {
-            proposedHashes[proposal.projectId] = bytes32(0);
-            projectFinance.artistAddress = proposal.artistAddress;
-            projectFinance.additionalPayeePrimarySales = proposal
-                .additionalPayeePrimarySales;
-            projectFinance.additionalPayeePrimarySalesPercentage = uint8(
-                proposal.additionalPayeePrimarySalesPercentage
-            );
-            projectFinance.additionalPayeeSecondarySales = proposal
-                .additionalPayeeSecondarySales;
-            projectFinance.additionalPayeeSecondarySalesPercentage = uint8(
-                proposal.additionalPayeeSecondarySalesPercentage
-            );
-            emit IGenArt721CoreContractV3_Base.AcceptedArtistAddressesAndSplits(
-                proposal.projectId
-            );
-            return true;
-        }
-        proposedHashes[proposal.projectId] = keccak256(
-            abi.encode(
-                proposal.artistAddress,
-                proposal.additionalPayeePrimarySales,
-                proposal.additionalPayeePrimarySalesPercentage,
-                proposal.additionalPayeeSecondarySales,
-                proposal.additionalPayeeSecondarySalesPercentage
-            )
-        );
-        return false;
-    }
-
-    /**
-     * @notice Admin accept of artist payment proposal. Offloaded from Engine
-     * Flex for bytecode. Caller must assign the splitter after this returns.
-     */
-    function adminAcceptArtistAddressesAndSplits(
-        ArtistSplitProposal memory proposal,
-        IGenArt721CoreContractV3_ProjectFinance.ProjectFinance
-            storage projectFinance,
-        mapping(uint256 => bytes32) storage proposedHashes
-    ) external {
-        if (
-            proposedHashes[proposal.projectId] !=
-            keccak256(
-                abi.encode(
-                    proposal.artistAddress,
-                    proposal.additionalPayeePrimarySales,
-                    proposal.additionalPayeePrimarySalesPercentage,
-                    proposal.additionalPayeeSecondarySales,
-                    proposal.additionalPayeeSecondarySalesPercentage
-                )
-            )
-        ) {
-            revert IGenArt721CoreContractV3_Base.GenArt721Error(
-                IGenArt721CoreContractV3_Base.ErrorCodes.MustMatchArtistProposal
-            );
-        }
-        projectFinance.artistAddress = proposal.artistAddress;
-        projectFinance.additionalPayeePrimarySales = proposal
-            .additionalPayeePrimarySales;
-        projectFinance.additionalPayeePrimarySalesPercentage = uint8(
-            proposal.additionalPayeePrimarySalesPercentage
-        );
-        projectFinance.additionalPayeeSecondarySales = proposal
-            .additionalPayeeSecondarySales;
-        projectFinance.additionalPayeeSecondarySalesPercentage = uint8(
-            proposal.additionalPayeeSecondarySalesPercentage
-        );
-        proposedHashes[proposal.projectId] = bytes32(0);
-        emit IGenArt721CoreContractV3_Base.AcceptedArtistAddressesAndSplits(
-            proposal.projectId
-        );
-    }
-
-    /**
-     * @notice Aspect-ratio string validation. Offloaded from Engine Flex for
-     * bytecode.
-     */
-    function validateAspectRatio(string memory aspectRatio) external pure {
-        bytes memory aspectRatioBytes = bytes(aspectRatio);
-        uint256 bytesLength = aspectRatioBytes.length;
-        if (bytesLength > 11) {
-            revert IGenArt721CoreContractV3_Base.GenArt721Error(
-                IGenArt721CoreContractV3_Base.ErrorCodes.AspectRatioTooLong
-            );
-        }
-        bool hasSeenDecimalSeparator = false;
-        bool hasSeenNumber = false;
-        for (uint256 i; i < bytesLength; i++) {
-            bytes1 character = aspectRatioBytes[i];
-            if (character >= 0x30 && character <= 0x39) {
-                hasSeenNumber = true;
-                continue;
-            }
-            if (character == 0x2E) {
-                if (!hasSeenDecimalSeparator) {
-                    hasSeenDecimalSeparator = true;
-                    continue;
-                }
-            }
-            revert IGenArt721CoreContractV3_Base.GenArt721Error(
-                IGenArt721CoreContractV3_Base
-                    .ErrorCodes
-                    .AspectRatioImproperFormat
-            );
-        }
-        if (!hasSeenNumber) {
-            revert IGenArt721CoreContractV3_Base.GenArt721Error(
-                IGenArt721CoreContractV3_Base.ErrorCodes.AspectRatioNoNumbers
-            );
-        }
-    }
-
-    /**
-     * @notice Script type/version format check (`exactly one @`). Offloaded
-     * from Engine Flex for bytecode.
-     */
-    function validateScriptTypeAndVersion(
-        bytes32 scriptTypeAndVersion
-    ) external pure {
-        if (
-            !scriptTypeAndVersion.containsExactCharacterQty({
-                utf8CharCode: uint8(bytes1("@")),
-                targetQty: uint8(1)
-            })
-        ) {
-            revert IGenArt721CoreContractV3_Base.GenArt721Error(
-                IGenArt721CoreContractV3_Base
-                    .ErrorCodes
-                    .ScriptTypeAndVersionFormat
-            );
-        }
     }
 }

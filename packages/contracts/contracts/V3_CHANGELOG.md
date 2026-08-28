@@ -106,6 +106,6 @@ V3 performance metrics are available in [V3_Performance.md](V3_PERFORMANCE.md)
 - General refactoring of events, errors, and use of a Flex external library to reduce contract bytecode size.
 - Contracts updated to be compatible with [ERC-1167](https://eips.ethereum.org/EIPS/eip-1167) minimal proxies to reduce deployment costs and improve assurance of contract integrity.
 
-## The following changes were made in the Core V3 (3.3.0) Engine and Engine Flex contracts:
+## The following changes were made in the Core V3 (3.3.x) Engine, Engine Flex, and flagship contracts:
 
-- Add per-project transfer hooks. See [V3_ENGINE_CHANGELOG.md](V3_ENGINE_CHANGELOG.md).
+- Add per-project transfer hooks, and offload shared logic into `V3EngineLib` and `V3TransferHookLib` to remain under the 24KB bytecode size limit. See [V3_ENGINE_CHANGELOG.md](V3_ENGINE_CHANGELOG.md) for details, including the per-implementation version numbers and which contracts are actually deployed.

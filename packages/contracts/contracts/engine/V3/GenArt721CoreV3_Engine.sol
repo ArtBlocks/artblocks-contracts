@@ -81,7 +81,9 @@ import {V3TransferHookLib} from "../../libs/v0.8.x/V3TransferHookLib.sol";
  *   current number of invocations, and less than current project maximum
  *   invocations)
  * - updateProjectBaseURI (controlling the base URI for tokens in the project)
- * - lockProjectTransferHook (one-way. Locking while the hook is address(0)
+ * - lockProjectTransferHook (one-way. Requires the caller to pass the hook
+ *   they expect to lock in, so a concurrent configure call cannot cause an
+ *   unintended hook to be locked. Locking while the hook is address(0)
  *   forever forbids assigning a transfer hook. If the hook is address(0) when
  *   the four-week project metadata lock elapses, it is auto-locked at zero —
  *   restoring today's transfer security profile with no extra action. If a
@@ -134,12 +136,10 @@ contract GenArt721CoreV3_Engine is
     using BytecodeStorageWriter for bytes;
     using Bytes32Strings for bytes32;
     using Strings for uint256;
-    using Strings for address;
     uint256 constant ONE_HUNDRED = 100;
     uint256 constant ONE_MILLION = 1_000_000;
     uint24 constant ONE_MILLION_UINT24 = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
-    uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
 
     // numeric constants
     uint256 constant MAX_PROVIDER_SECONDARY_SALES_BPS = 10000; // 10_000 BPS = 100%
@@ -287,9 +287,6 @@ contract GenArt721CoreV3_Engine is
     /// setting this value post-deployment.
     bool public allowArtistProjectActivation;
 
-    /// per-project transfer hook configuration and reentrancy flag
-    V3TransferHookLib.Layout private _transferHookLayout;
-
     /// version & type of this core contract
     bytes32 constant CORE_VERSION = "v3.3.0";
 
@@ -315,6 +312,12 @@ contract GenArt721CoreV3_Engine is
 
     // bytecode storage reader contract; may be universal or specific version reader contract
     IBytecodeStorageReader_Base public bytecodeStorageReaderContract;
+
+    /// per-project transfer hook configuration and reentrancy flag
+    /// @dev appended to the end of this contract's storage; new state
+    /// variables must also be appended here, never inserted above, so that
+    /// existing storage slot assignments are never shifted
+    V3TransferHookLib.Layout private _transferHookLayout;
 
     /**
      * @dev This constructor sets the owner to a non-functional address as a formality.
@@ -901,98 +904,20 @@ contract GenArt721CoreV3_Engine is
         _onlyValidProjectId(_projectId);
         _onlyArtist(_projectId);
         _onlyNonZeroAddress(_artistAddress);
-        ProjectFinance storage projectFinance = _projectIdToFinancials[
-            _projectId
-        ];
-        // checks
-        if (
-            _additionalPayeePrimarySalesPercentage > ONE_HUNDRED ||
-            _additionalPayeeSecondarySalesPercentage > ONE_HUNDRED
-        ) {
-            revert GenArt721Error(ErrorCodes.MaxOf100Percent);
-        }
-        if (
-            _additionalPayeePrimarySalesPercentage > 0 &&
-            _additionalPayeePrimarySales == address(0)
-        ) {
-            revert GenArt721Error(ErrorCodes.PrimaryPayeeIsZeroAddress);
-        }
-        if (
-            _additionalPayeeSecondarySalesPercentage > 0 &&
-            _additionalPayeeSecondarySales == address(0)
-        ) {
-            revert GenArt721Error(ErrorCodes.SecondaryPayeeIsZeroAddress);
-        }
-        // effects
-        // emit event for off-chain indexing
-        // note: always emit a proposal event, even in the pathway of
-        // automatic approval, to simplify indexing expectations
-        emit ProposedArtistAddressesAndSplits(
-            _projectId,
-            _artistAddress,
-            _additionalPayeePrimarySales,
-            _additionalPayeePrimarySalesPercentage,
-            _additionalPayeeSecondarySales,
-            _additionalPayeeSecondarySalesPercentage
-        );
-        // automatically accept if no proposed addresses modifications, or if
-        // the proposal only removes payee addresses, or if contract is set to
-        // always auto-approve.
-        // store proposal hash on-chain, only if not automatic accept
-        bool automaticAccept = autoApproveArtistSplitProposals;
-        if (!automaticAccept) {
-            // block scope to avoid stack too deep error
-            bool artistUnchanged = _artistAddress ==
-                projectFinance.artistAddress;
-            bool additionalPrimaryUnchangedOrRemoved = (_additionalPayeePrimarySales ==
-                    projectFinance.additionalPayeePrimarySales) ||
-                    (_additionalPayeePrimarySales == address(0));
-            bool additionalSecondaryUnchangedOrRemoved = (_additionalPayeeSecondarySales ==
-                    projectFinance.additionalPayeeSecondarySales) ||
-                    (_additionalPayeeSecondarySales == address(0));
-            automaticAccept =
-                artistUnchanged &&
-                additionalPrimaryUnchangedOrRemoved &&
-                additionalSecondaryUnchangedOrRemoved;
-        }
-        if (automaticAccept) {
-            // clear any previously proposed values
-            proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
-
-            // update storage
-            // artist address can change during automatic accept if
-            // autoApproveArtistSplitProposals is true
-            projectFinance.artistAddress = _artistAddress;
-            projectFinance
-                .additionalPayeePrimarySales = _additionalPayeePrimarySales;
-            // safe to cast as uint8 as max is 100%, max uint8 is 255
-            projectFinance.additionalPayeePrimarySalesPercentage = uint8(
-                _additionalPayeePrimarySalesPercentage
-            );
-            projectFinance
-                .additionalPayeeSecondarySales = _additionalPayeeSecondarySales;
-            // safe to cast as uint8 as max is 100%, max uint8 is 255
-            projectFinance.additionalPayeeSecondarySalesPercentage = uint8(
-                _additionalPayeeSecondarySalesPercentage
-            );
-
-            // assign project's splitter
-            // @dev only call after all previous storage updates
-            _assignSplitter(_projectId);
-
-            // emit event for off-chain indexing
-            emit AcceptedArtistAddressesAndSplits(_projectId);
-        } else {
-            proposedArtistAddressesAndSplitsHash[_projectId] = keccak256(
-                abi.encode(
-                    _artistAddress,
-                    _additionalPayeePrimarySales,
-                    _additionalPayeePrimarySalesPercentage,
-                    _additionalPayeeSecondarySales,
-                    _additionalPayeeSecondarySalesPercentage
-                )
-            );
-        }
+        V3EngineLib.proposeArtistPaymentAddressesAndSplits({
+            proposal: V3EngineLib.ArtistSplitProposal({
+                projectId: _projectId,
+                artistAddress: _artistAddress,
+                additionalPayeePrimarySales: _additionalPayeePrimarySales,
+                additionalPayeePrimarySalesPercentage: _additionalPayeePrimarySalesPercentage,
+                additionalPayeeSecondarySales: _additionalPayeeSecondarySales,
+                additionalPayeeSecondarySalesPercentage: _additionalPayeeSecondarySalesPercentage
+            }),
+            projectFinance: _projectIdToFinancials[_projectId],
+            proposedHashes: proposedArtistAddressesAndSplitsHash,
+            autoApprove: autoApproveArtistSplitProposals,
+            splitProvider: splitProvider
+        });
     }
 
     /**
@@ -1034,45 +959,19 @@ contract GenArt721CoreV3_Engine is
             this.adminAcceptArtistAddressesAndSplits.selector
         );
         _onlyNonZeroAddress(_artistAddress);
-        // checks
-        if (
-            proposedArtistAddressesAndSplitsHash[_projectId] !=
-            keccak256(
-                abi.encode(
-                    _artistAddress,
-                    _additionalPayeePrimarySales,
-                    _additionalPayeePrimarySalesPercentage,
-                    _additionalPayeeSecondarySales,
-                    _additionalPayeeSecondarySalesPercentage
-                )
-            )
-        ) {
-            revert GenArt721Error(ErrorCodes.MustMatchArtistProposal);
-        }
-        // effects
-        ProjectFinance storage projectFinance = _projectIdToFinancials[
-            _projectId
-        ];
-        projectFinance.artistAddress = _artistAddress;
-        projectFinance
-            .additionalPayeePrimarySales = _additionalPayeePrimarySales;
-        projectFinance.additionalPayeePrimarySalesPercentage = uint8(
-            _additionalPayeePrimarySalesPercentage
-        );
-        projectFinance
-            .additionalPayeeSecondarySales = _additionalPayeeSecondarySales;
-        projectFinance.additionalPayeeSecondarySalesPercentage = uint8(
-            _additionalPayeeSecondarySalesPercentage
-        );
-        // clear proposed values
-        proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
-
-        // assign project's splitter
-        // @dev only call after all previous storage updates
-        _assignSplitter(_projectId);
-
-        // emit event for off-chain indexing
-        emit AcceptedArtistAddressesAndSplits(_projectId);
+        V3EngineLib.adminAcceptArtistAddressesAndSplits({
+            proposal: V3EngineLib.ArtistSplitProposal({
+                projectId: _projectId,
+                artistAddress: _artistAddress,
+                additionalPayeePrimarySales: _additionalPayeePrimarySales,
+                additionalPayeePrimarySalesPercentage: _additionalPayeePrimarySalesPercentage,
+                additionalPayeeSecondarySales: _additionalPayeeSecondarySales,
+                additionalPayeeSecondarySalesPercentage: _additionalPayeeSecondarySalesPercentage
+            }),
+            projectFinance: _projectIdToFinancials[_projectId],
+            proposedHashes: proposedArtistAddressesAndSplitsHash,
+            splitProvider: splitProvider
+        });
     }
 
     /**
@@ -1570,17 +1469,9 @@ contract GenArt721CoreV3_Engine is
             _projectId,
             this.updateProjectScriptType.selector
         );
-        Project storage project = projects[_projectId];
         // require exactly one @ symbol in _scriptTypeAndVersion
-        if (
-            !_scriptTypeAndVersion.containsExactCharacterQty(
-                AT_CHARACTER_CODE,
-                uint8(1)
-            )
-        ) {
-            revert GenArt721Error(ErrorCodes.ScriptTypeAndVersionFormat);
-        }
-        project.scriptTypeAndVersion = _scriptTypeAndVersion;
+        V3EngineLib.validateScriptTypeAndVersion(_scriptTypeAndVersion);
+        projects[_projectId].scriptTypeAndVersion = _scriptTypeAndVersion;
         emit ProjectUpdated(
             _projectId,
             bytes32(uint256(ProjectUpdatedFields.FIELD_PROJECT_SCRIPT_TYPE))
@@ -1605,35 +1496,7 @@ contract GenArt721CoreV3_Engine is
         );
         _onlyNonEmptyString(_aspectRatio);
         // Perform more detailed input validation for aspect ratio.
-        bytes memory aspectRatioBytes = bytes(_aspectRatio);
-        uint256 bytesLength = aspectRatioBytes.length;
-        if (bytesLength > 11) {
-            revert GenArt721Error(ErrorCodes.AspectRatioTooLong);
-        }
-        bool hasSeenDecimalSeparator = false;
-        bool hasSeenNumber = false;
-        for (uint256 i; i < bytesLength; i++) {
-            bytes1 character = aspectRatioBytes[i];
-            // Allow as many #s as desired.
-            if (character >= 0x30 && character <= 0x39) {
-                // 9-0
-                // We need to ensure there is at least 1 `9-0` occurrence.
-                hasSeenNumber = true;
-                continue;
-            }
-            if (character == 0x2E) {
-                // .
-                // Allow no more than 1 `.` occurrence.
-                if (!hasSeenDecimalSeparator) {
-                    hasSeenDecimalSeparator = true;
-                    continue;
-                }
-            }
-            revert GenArt721Error(ErrorCodes.AspectRatioImproperFormat);
-        }
-        if (!hasSeenNumber) {
-            revert GenArt721Error(ErrorCodes.AspectRatioNoNumbers);
-        }
+        V3EngineLib.validateAspectRatio(_aspectRatio);
 
         projects[_projectId].aspectRatio = _aspectRatio;
         emit ProjectUpdated(
@@ -1694,27 +1557,37 @@ contract GenArt721CoreV3_Engine is
             layout: _transferHookLayout,
             projectId: _projectId,
             hook: ITransferHook(_hook),
-            projectCompletedTimestamp: projects[_projectId].completedTimestamp
+            projectUnlocked: _projectUnlocked(_projectId)
         });
     }
 
     /**
-     * @notice Permanently lock the current transfer hook for project
-     * `_projectId`, including `address(0)`. Artist only. If locked at
+     * @notice Permanently lock the transfer hook for project `_projectId` at
+     * `_expectedHook`, which may be `address(0)`. Artist only. If locked at
      * `address(0)`, a hook can never be assigned. Reverts if already locked,
      * including when the four-week project metadata lock has already frozen
      * an unset hook.
+     * @dev `_expectedHook` must match the project's currently configured hook.
+     * Because this lock is permanent and the hook may be updated by either the
+     * artist or the Admin ACL, requiring the expected value prevents a
+     * `configureProjectTransferHook` call landing first from causing an
+     * unintended hook to be permanently locked in.
      * @dev Implemented in `V3TransferHookLib` so Engine and Engine Flex share
      * one implementation while both remain under the 24KB bytecode size limit.
      * @param _projectId Project ID.
+     * @param _expectedHook Hook the caller expects to lock in.
      */
-    function lockProjectTransferHook(uint256 _projectId) external {
+    function lockProjectTransferHook(
+        uint256 _projectId,
+        address _expectedHook
+    ) external {
         _onlyValidProjectId(_projectId);
         _onlyArtist(_projectId);
         V3TransferHookLib.lock({
             layout: _transferHookLayout,
             projectId: _projectId,
-            projectCompletedTimestamp: projects[_projectId].completedTimestamp
+            expectedHook: _expectedHook,
+            projectUnlocked: _projectUnlocked(_projectId)
         });
     }
 
@@ -1986,6 +1859,10 @@ contract GenArt721CoreV3_Engine is
 
     /**
      * @notice Transfer hook configuration for project `_projectId`.
+     * @dev Reverts if `_projectId` is not a valid project on this contract.
+     * @dev The effective lock is evaluated by `V3TransferHookLib` so that this
+     * view, `configureProjectTransferHook`, and `lockProjectTransferHook` can
+     * never disagree about whether a project is locked.
      * @param _projectId Project to be queried.
      * @return hook Hook address, or `address(0)` if none is configured.
      * @return locked True if the artist called `lockProjectTransferHook`, or
@@ -1997,15 +1874,14 @@ contract GenArt721CoreV3_Engine is
     ) external view returns (address hook, bool locked) {
         V3TransferHookLib.ProjectTransferHookConfig
             storage config = _transferHookLayout.configs[_projectId];
-        hook = address(config.hook);
-        locked = config.locked;
-        if (!locked && hook == address(0)) {
-            uint256 completedTimestamp = projects[_projectId]
-                .completedTimestamp;
-            locked =
-                completedTimestamp != 0 &&
-                block.timestamp - completedTimestamp >= FOUR_WEEKS_IN_SECONDS;
-        }
+        // @dev `_projectUnlocked` also enforces that `_projectId` is valid
+        return (
+            address(config.hook),
+            V3TransferHookLib.isLocked({
+                config: config,
+                projectUnlocked: _projectUnlocked(_projectId)
+            })
+        );
     }
 
     /**
@@ -2259,7 +2135,12 @@ contract GenArt721CoreV3_Engine is
 
     /**
      * @notice Call the project's transfer hook if one is configured.
-     * Unconfigured projects return after a single SLOAD (no DELEGATECALL).
+     * @dev Projects with no hook return after a single SLOAD of the project's
+     * config slot, with no DELEGATECALL. Combined with the `executing` SLOAD
+     * in `_update`, a transfer on a contract using no hooks costs roughly
+     * 4,200 gas more than it did prior to v3.3. A transfer that does dispatch
+     * a hook additionally pays a ~20,000 gas SSTORE to set the reentrancy
+     * flag, plus the DELEGATECALL and the hook's own execution.
      */
     function _dispatchTransferHook(
         address from,
@@ -2543,8 +2424,13 @@ contract GenArt721CoreV3_Engine is
         // set AdminACL management contract as owner
         _transferOwnership(adminACLContract_);
         // initialize default base URI
+        // @dev offloaded to V3EngineLib to keep `Strings.toHexString` out of
+        // the size-constrained cores; this runs once, at initialization
         _updateDefaultBaseURI(
-            string.concat(defaultBaseURIHost, address(this).toHexString(), "/")
+            V3EngineLib.buildDefaultBaseURI({
+                host: defaultBaseURIHost,
+                coreContract: address(this)
+            })
         );
         // initialize next project ID
         _nextProjectId = engineConfiguration.startingProjectId;
