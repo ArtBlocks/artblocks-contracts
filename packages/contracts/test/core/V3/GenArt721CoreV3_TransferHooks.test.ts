@@ -1134,7 +1134,7 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("gas", function () {
-      it("adds a bounded amount of gas to an unhooked transfer", async function () {
+      it("adds a bounded amount of gas to an unhooked transfer [@skip-on-coverage]", async function () {
         const config = await loadFixture(_beforeEach);
         await config.minter
           .connect(config.accounts.artist)

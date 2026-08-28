@@ -8,6 +8,8 @@ import {
   getAccounts,
   assignDefaultConstants,
   deployCoreWithMinterFilter,
+  GENART721_ERROR_NAME,
+  GENART721_ERROR_CODES,
 } from "../../../util/common";
 
 interface T_CuratedTestConfig extends T_Config {
@@ -82,6 +84,39 @@ for (const coreContractName of coreContractsToTest) {
       it("returns expected value", async function () {
         const config = await loadFixture(_beforeEach);
         expect(await config.genArt721Core.IS_FLAGSHIP()).to.equal(true);
+      });
+    });
+
+    describe("projectTransferHookConfig", function () {
+      // @dev this contract is deployed with a non-zero startingProjectId, so
+      // this also exercises the `_projectId < startingProjectId` arm of
+      // `_onlyValidProjectId`, which contracts with a zero startingProjectId
+      // cannot reach
+      it("reverts for a project ID below startingProjectId", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(config.genArt721Core.projectTransferHookConfig(0))
+          .to.be.revertedWithCustomError(
+            config.genArt721Core,
+            GENART721_ERROR_NAME
+          )
+          .withArgs(GENART721_ERROR_CODES.ProjectDoesNotExist);
+      });
+
+      it("returns unset, unlocked config for a valid project", async function () {
+        const config = await loadFixture(_beforeEach);
+        // @dev this contract starts at a non-zero project ID, so a project
+        // must be added before a valid project ID exists
+        const startingProjectId =
+          await config.genArt721Core.startingProjectId();
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .addProject("name", config.accounts.artist.address);
+        const hookConfig =
+          await config.genArt721Core.projectTransferHookConfig(
+            startingProjectId
+          );
+        expect(hookConfig.hook).to.equal(constants.ZERO_ADDRESS);
+        expect(hookConfig.locked).to.equal(false);
       });
     });
 

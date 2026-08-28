@@ -1572,6 +1572,11 @@ contract GenArt721CoreV3_Engine is
      * artist or the Admin ACL, requiring the expected value prevents a
      * `configureProjectTransferHook` call landing first from causing an
      * unintended hook to be permanently locked in.
+     * WARNING: locking freezes the hook ADDRESS, not the hook's behavior. If
+     * `_expectedHook` is an upgradeable proxy, its owner may still change what
+     * runs on every transfer, and the project has no way to move away from it.
+     * Locking is only a meaningful guarantee when the hook is immutable, or
+     * when locking at `address(0)`.
      * @dev Implemented in `V3TransferHookLib` so Engine and Engine Flex share
      * one implementation while both remain under the 24KB bytecode size limit.
      * @param _projectId Project ID.

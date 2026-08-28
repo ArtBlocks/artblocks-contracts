@@ -197,6 +197,9 @@ interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
      * Because locking is permanent and the hook may be updated by either the
      * artist or the Admin ACL, this guards against a `configureProjectTransferHook`
      * call landing first and causing an unintended hook to be locked in.
+     * @dev WARNING: locking freezes the hook address, not the hook's behavior.
+     * Locking at an upgradeable proxy leaves its owner able to change what runs
+     * on every transfer, with no way for the project to move away from it.
      * @param _projectId Project ID.
      * @param _expectedHook Hook the caller expects to lock in. Reverts with
      * `TransferHookUnexpectedHook` if it does not match the current hook.

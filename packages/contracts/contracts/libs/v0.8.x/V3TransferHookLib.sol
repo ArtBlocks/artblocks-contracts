@@ -101,6 +101,8 @@ library V3TransferHookLib {
      * caller never intended to lock.
      * @param layout Core-owned transfer hook storage.
      * @param projectId Project ID.
+     * @dev Locking freezes the hook address, not the hook's behavior — locking
+     * at an upgradeable proxy is not a behavioral guarantee.
      * @param expectedHook Hook the caller expects to be locking in. Must equal
      * the project's currently configured hook, which may be `address(0)`.
      * @param projectUnlocked Core's `_projectUnlocked(projectId)`.
