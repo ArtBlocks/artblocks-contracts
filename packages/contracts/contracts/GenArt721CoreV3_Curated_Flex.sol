@@ -27,7 +27,7 @@ contract GenArt721CoreV3_Curated_Flex is GenArt721CoreV3_Engine_Flex {
 
     /// override patch version of this core contract
     // @dev this is a constant value that is used to override the inherited core version CORE_VERSION
-    bytes32 private constant _CORE_VERSION_OVERRIDE = "v3.2.7";
+    bytes32 private constant _CORE_VERSION_OVERRIDE = "v3.3.3";
 
     // @dev overridden core version is returned instead of the inherited core version
     function coreVersion() external pure override returns (string memory) {

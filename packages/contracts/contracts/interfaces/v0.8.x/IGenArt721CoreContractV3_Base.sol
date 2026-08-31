@@ -80,7 +80,9 @@ interface IGenArt721CoreContractV3_Base is IGenArt721CoreProjectScriptV1 {
         FIELD_PROJECT_SCRIPT_TYPE, // 13
         FIELD_PROJECT_ASPECT_RATIO, // 14
         FIELD_PROJECT_BASE_URI, // 15
-        FIELD_PROJECT_PROVIDER_SECONDARY_FINANCIALS // 16
+        FIELD_PROJECT_PROVIDER_SECONDARY_FINANCIALS, // 16
+        FIELD_PROJECT_TRANSFER_HOOK, // 17
+        FIELD_PROJECT_TRANSFER_HOOK_LOCKED // 18
     }
 
     /**
@@ -126,7 +128,11 @@ interface IGenArt721CoreContractV3_Base is IGenArt721CoreProjectScriptV1 {
         AspectRatioNoNumbers, // 34
         AspectRatioImproperFormat, // 35
         OnlyNullPlatformProvider, // 36
-        ContractInitialized // 37
+        ContractInitialized, // 37
+        TransferHookLocked, // 38
+        TransferHookInvalidInterface, // 39
+        TransferHookReentrancy, // 40
+        TransferHookUnexpectedHook // 41
     }
 
     /**
