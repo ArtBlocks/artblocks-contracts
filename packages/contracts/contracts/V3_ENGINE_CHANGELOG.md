@@ -8,18 +8,23 @@ V3 performance metrics are available in [V3_Performance.md](V3_Performance.md)
 
 Version numbers are assigned per-implementation, as in prior releases:
 
-| Contract                            | Core version | Deployed?                                                        |
-| ----------------------------------- | ------------ | ---------------------------------------------------------------- |
-| `GenArt721CoreV3_Engine`            | `v3.3.0`     | yes — new implementation for the Engine Factory                  |
-| `GenArt721CoreV3_Engine_Flex`       | `v3.3.1`     | yes — new implementation for the Engine Factory                  |
-| `GenArt721CoreV3_Curated`           | `v3.3.2`     | **no** — live flagship contract remains `v3.2.6`                 |
-| `GenArt721CoreV3_Curated_Flex`      | `v3.3.3`     | **no** — live flagship contract remains `v3.2.7`                 |
-| `GenArt721CoreV3_Explorations_Flex` | `v3.3.4`     | **no** — live flagship contract remains `v3.2.8`                 |
+| Contract                            | Core version | Deployed?                                        |
+| ----------------------------------- | ------------ | ------------------------------------------------ |
+| `GenArt721CoreV3_Engine`            | `v3.3.0`     | yes — new implementation for the Engine Factory  |
+| `GenArt721CoreV3_Engine_Flex`       | `v3.3.1`     | yes — new implementation for the Engine Factory  |
+| `GenArt721CoreV3_Curated`           | `v3.3.2`     | **no** — live flagship contract remains `v3.2.6` |
+| `GenArt721CoreV3_Curated_Flex`      | `v3.3.3`     | **no** — live flagship contract remains `v3.2.7` |
+| `GenArt721CoreV3_Explorations_Flex` | `v3.3.4`     | **no** — live flagship contract remains `v3.2.8` |
 
 > Note: the three flagship contracts were updated in place (they inherit the Engine and Engine Flex
 > implementations) and are assigned new version numbers, but no flagship contract is being redeployed as
 > part of this release. The currently deployed flagship contracts are immutable and continue to report
 > their prior versions; this repository no longer contains source that reproduces their bytecode.
+
+> Deploying the v3.3 implementations and the `EngineFactoryV0` that clones them is planned in
+> [`deployments/engine/V3/factory-and-implementations/v3.3/ROLLOUT.md`](../deployments/engine/V3/factory-and-implementations/v3.3/ROLLOUT.md).
+> Engine contracts are ERC-1167 clones, so contracts already deployed stay on v3.2.9/v3.2.10
+> permanently and cannot gain transfer hooks; only contracts created by the new factory support them.
 
 ### Transfer hooks
 
@@ -30,6 +35,11 @@ Version numbers are assigned per-implementation, as in prior releases:
 - Locking freezes the hook **address**, not the hook's behavior. Locking at an upgradeable proxy leaves that proxy's owner able to change what runs on every transfer, with no way for the project to move away from it. Locking is only a behavioral guarantee at `address(0)` or at an immutable hook.
 - Transfer hooks are inherited by the flagship contracts listed above, so a future flagship deployment from this source would also support them.
 - Gas: on a contract with no hooks configured, transfers and mints cost approximately 4,200 gas more than in v3.2.x (two additional cold SLOADs). A transfer that dispatches a hook additionally pays a ~20,000 gas SSTORE for the reentrancy flag, plus the hook's own execution.
+
+### Reference transfer hook
+
+- Add `OwnerHistoryTransferHook`, a first-party `ITransferHook` implementation that records every owner a token has had, on chain, readable by other contracts — including an artwork's own script through the on-chain generator. One deployment serves every project on every v3.3+ core on a network; it has no owner and nothing to configure, and rejects any caller that does not have it configured.
+- Gas: measured against an otherwise identical project with no hook, a transfer costs ~48,400 more (62,748 → 111,181) and a mint ~88,800 more, because the first ownership change a token sees writes both the chain's anchor entry and the new owner. ~22,000 of the per-transfer cost is the floor for holding a 20-byte owner in a 32-byte slot; ~17,000 is the core's own reentrancy flag, which any hook pays. A project that wants provenance only for off-chain consumers should index the core's `Transfer` events and configure no hook.
 
 ### Bytecode offload
 

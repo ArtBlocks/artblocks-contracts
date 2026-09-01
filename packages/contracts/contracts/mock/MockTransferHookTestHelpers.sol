@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.22;
 
+import {ITransferHook} from "../interfaces/v0.8.x/ITransferHook.sol";
+
 import {IERC721} from "@openzeppelin-5.0/contracts/token/ERC721/IERC721.sol";
 import {IERC721Receiver} from "@openzeppelin-5.0/contracts/token/ERC721/IERC721Receiver.sol";
 
@@ -53,5 +55,42 @@ contract MockBatchTransferrer {
         for (uint256 i; i < length; i++) {
             IERC721(coreContract).transferFrom(from, to, tokenIds[i]);
         }
+    }
+}
+
+/**
+ * @title Mock core that invokes a transfer hook with arbitrary inputs.
+ * @notice Covers the one caller `AbstractTransferHook` cannot reject: a
+ * contract that passes its own address as `coreContract`. Its answer to
+ * `projectTransferHookConfig` is settable, so both a caller that has not
+ * configured the hook and one that claims it has can be simulated.
+ */
+contract MockSpoofingCore {
+    address public configuredHook;
+
+    function setConfiguredHook(address hook) external {
+        configuredHook = hook;
+    }
+
+    function projectTransferHookConfig(
+        uint256 /* projectId */
+    ) external view returns (address hook, bool locked) {
+        return (configuredHook, false);
+    }
+
+    function callHook(
+        address hook,
+        uint256 tokenId,
+        address from,
+        address to,
+        address operator
+    ) external {
+        ITransferHook(hook).onTokenTransfer({
+            coreContract: address(this),
+            tokenId: tokenId,
+            from: from,
+            to: to,
+            operator: operator
+        });
     }
 }
