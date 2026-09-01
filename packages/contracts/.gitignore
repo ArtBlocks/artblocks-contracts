@@ -54,6 +54,10 @@ scripts/.local/
 
 # generated Safe Transaction Builder batches — upload and discard
 deployments/generator/safe-txs/
+deployments/engine/V3/factory-and-implementations/safe-txs/
+
+# cached outgoing-factory state for the factory-upgrade scripts
+deployments/engine/V3/factory-and-implementations/factory-state/
 
 # rollout verification scratch: discovered check projects and pre-upgrade HTML hashes
 deployments/generator/rollout-baselines/

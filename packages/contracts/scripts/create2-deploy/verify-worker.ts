@@ -1,5 +1,6 @@
-import hre from "hardhat";
 import fs from "fs";
+
+import { runVerification } from "../util/verification";
 
 async function main() {
   const paramsFile = process.env.VERIFY_PARAMS_FILE;
@@ -9,25 +10,20 @@ async function main() {
 
   const params = JSON.parse(fs.readFileSync(paramsFile, "utf-8"));
 
-  const verifyArgs: Record<string, any> = {
-    address: params.address,
-    constructorArguments: params.args || [],
-  };
-
-  if (params.libraries && Object.keys(params.libraries).length > 0) {
-    verifyArgs.libraries = params.libraries;
-  }
-
-  if (params.contract) {
-    verifyArgs.contract = params.contract;
-  }
-
   console.log(
     `Verifying ${params.contractName || "contract"} at ${params.address}...`
   );
 
   try {
-    await hre.run("verify:verify", verifyArgs);
+    await runVerification({
+      address: params.address,
+      constructorArguments: params.args || [],
+      libraries:
+        params.libraries && Object.keys(params.libraries).length > 0
+          ? params.libraries
+          : undefined,
+      contract: params.contract,
+    });
     console.log("VERIFICATION_SUCCESS");
   } catch (error: any) {
     if (error.message?.toLowerCase().includes("already verified")) {

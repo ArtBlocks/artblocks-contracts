@@ -75,6 +75,23 @@ async function main() {
     deployer
   );
 
+  // @dev this script only covers first-time setup of a network, where the
+  // registry is still owned by the deploying EOA. Replacing an existing factory
+  // moves ownership from the outgoing factory, which only its owning Safe can
+  // do, so fail with the path to take rather than sending a tx that reverts.
+  const currentOwner = await coreRegistry.owner();
+  if (currentOwner.toLowerCase() !== deployer.address.toLowerCase()) {
+    const ownerCode = await ethers.provider.getCode(currentOwner);
+    throw new Error(
+      `[ERROR] Core Registry ${coreRegistryAddress} is owned by ${currentOwner}, ` +
+        `not by the deployer ${deployer.address}, so this script cannot transfer it.` +
+        (ownerCode === "0x"
+          ? ` Send transferOwnership from that account.`
+          : ` If that is the outgoing EngineFactoryV0, use ` +
+            `scripts/engine/V3/factory-upgrade/ to build the handoff batch for its owning Safe.`)
+    );
+  }
+
   const tx = await coreRegistry.transferOwnership(engineFactoryAddress);
 
   await tx.wait();
