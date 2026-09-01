@@ -99,7 +99,7 @@ A summary of our deployed infrastructure is available on our [Infrastructure Doc
 
 We use the following keyless create2 factory to deploy standard infrastructure contracts to enable permissionless deployments of infrastructure on any network that supports pre-EIP-155 transactions.
 
-Contracts that are deployed using the keyless create2 factory include the `BytecodeStorageReader` and `V3FlexLib` external library contracts.
+Contracts that are deployed using the keyless create2 factory include the `BytecodeStorageReader`, `V3FlexLib`, `V3EngineLib`, and `V3TransferHookLib` external library contracts, the `GenArt721CoreV3_Engine` and `GenArt721CoreV3_Engine_Flex` implementation contracts and the `EngineFactoryV0` contracts that clone them, and first-party transfer hooks such as `OwnerHistoryTransferHook`.
 
 <table>
     <tr>

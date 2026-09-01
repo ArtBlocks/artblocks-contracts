@@ -13,15 +13,31 @@ The following contracts are deployed to all Art Blocks supported networks and ar
 | Library: BytecodeStorageV2:BytecodeStorageReader      | `0x000000000016A5A5ff2FA7799C4BEe89bA59B74e` |
 | BytecodeStorageReaderContractV2_Web3Call              | `0x000000000005e4192e8789423aEC2FA32E4D52a0` |
 | V3FlexLib (used v3.2.5 - current)                     | `0x00000000Db6f2EBe627260e411E6c973B7c48A62` |
+| V3EngineLib (used v3.3.0 - current)                   | `0x000000001d81F6Ed8c3646293bD485Cef06416db` |
+| V3TransferHookLib (used v3.3.0 - current)             | `0x0000000020458d4C18397517bA13E43B54Baa56C` |
 | SplitProviderV0                                       | `0x00000000CE5EEBAB4B5C2d6Cc5E73eaafA634DB3` |
+| OwnerHistoryTransferHook                              | `0x00000000cb60788043f4F779bfC192F1c5bd09FA` |
+| Implementation: GenArt721CoreV3_Engine (v3.3.0)       | `0x00000000E8227826CB865a4ee37B1300C6b6120E` |
+| Implementation: GenArt721CoreV3_Engine_Flex (v3.3.1)  | `0x00000000824067A9E7fcB6CB084eCcd8f3Cb8399` |
 | Implementation: GenArt721CoreV3_Engine (v3.2.9)       | `0x00000000f10424506961445f935ec76579e0769F` |
 | Implementation: GenArt721CoreV3_Engine_Flex (v3.2.10) | `0x000000000132CFBeC18C143aB0AaD021B1fDEA13` |
+
+> The v3.3 implementations are deployed but **not yet in use**: the Engine Factories in the diagrams
+> below still clone v3.2.9/v3.2.10, and will until each network's Core Registry is handed to its
+> v005 factory. See
+> [the v3.3 rollout](./deployments/engine/V3/factory-and-implementations/v3.3/ROLLOUT.md).
+> `OwnerHistoryTransferHook` is inert until a project opts into it, and only v3.3+ cores can.
 
 ## Permissioned deployments
 
 The following diagrams show the deployment of permissioned infrastructure contracts on Art Blocks supported networks. These contracts are permissioned to be deployed by specific wallets and are used to deploy and index the core contracts.
 
 _Note: these are the most recent set of deployments, and the addresses may change in the future._
+
+_The v005 Engine Factories for core v3.3 are deployed on every network below but are not yet the
+active factory. Each becomes active when its Core Registry's ownership is transferred to it; the
+addresses and the handoff are recorded in
+[the v3.3 rollout](./deployments/engine/V3/factory-and-implementations/v3.3/ROLLOUT.md)._
 
 ### Mainnet
 

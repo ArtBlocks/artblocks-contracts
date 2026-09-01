@@ -21,7 +21,15 @@ export const deployConfigDetailsArray = [
     productClass: "Studio",
     // 0 for Engine, 1 for Engine Flex
     engineCoreContractType: 0,
-    // prod-only: see efficient_addresses...txt in network directories for a list of efficient salts
+    // prod-only: any 32-byte salt. The resulting clone address is
+    // CREATE2(engineFactory, salt, keccak(ERC-1167 initcode for the implementation)),
+    // so a salt only produces a given address for one factory + implementation
+    // pair, and mined salts must be re-mined whenever either changes.
+    // @dev the `_ENGINE_/_FLEX_efficient_addresses_*.txt` files in the network
+    // directories have been emptied: their salts predated the current factory
+    // and no longer produced the addresses they listed. They are re-mined
+    // against the current factory + implementation pair and repopulated
+    // separately.
     salt: "0x0",
     // INCREMENT THESE NUMBERS FOR EACH NEW STUDIO DEPLOYMENT
     tokenName: "Art Blocks Studio | #",
