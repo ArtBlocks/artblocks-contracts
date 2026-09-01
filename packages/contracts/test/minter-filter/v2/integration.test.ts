@@ -8,20 +8,27 @@ import { deployCore, safeAddProject } from "../../util/common";
 const runForEach = [
   {
     core: "GenArt721CoreV3",
+    skipOnCoverage: false,
   },
   {
     core: "GenArt721CoreV3_Explorations",
+    skipOnCoverage: true,
   },
   {
     core: "GenArt721CoreV3_Engine",
+    skipOnCoverage: true,
   },
   {
     core: "GenArt721CoreV3_Engine_Flex",
+    skipOnCoverage: true,
   },
 ];
 
 runForEach.forEach((params) => {
-  describe(`MinterFilterV2 Integration tests w/ core ${params.core}`, async function () {
+  // Extra cores are regression-only under `yarn test`. MinterFilterV2 does not
+  // change by core, and 4x instrumented deploys blow coverage-parallel's 1h budget.
+  const coverageTag = params.skipOnCoverage ? " [ @skip-on-coverage ]" : "";
+  describe(`MinterFilterV2 Integration tests w/ core ${params.core}${coverageTag}`, async function () {
     async function _beforeEach() {
       // load minter filter V2 fixture
       const config = await loadFixture(setupConfigWitMinterFilterV2Suite);
