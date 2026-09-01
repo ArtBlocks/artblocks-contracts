@@ -24,6 +24,12 @@ const runForEach = [
   },
 ];
 
+// Skip on coverage: each `it` re-deploys a full minter-filter + core, and the
+// suite is repeated across 4 cores. That is useful regression coverage in
+// `yarn test`, but under solidity-coverage it dominates a coverage-parallel
+// shard and hits CircleCI's 1h deadline. MinterFilterV2 configure/integration
+// tests still exercise the same contracts on coverage.
+
 // helper functions
 async function deployAndRegisterAdditionalCore(
   config,
@@ -48,7 +54,7 @@ async function deployAndRegisterAdditionalCore(
 }
 
 runForEach.forEach((params) => {
-  describe(`MinterFilterV2 Views w/ core ${params.core}`, async function () {
+  describe(`MinterFilterV2 Views w/ core ${params.core} [ @skip-on-coverage ]`, async function () {
     async function _beforeEach() {
       // load minter filter V2 fixture
       const config = await loadFixture(setupConfigWitMinterFilterV2Suite);
