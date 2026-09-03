@@ -165,6 +165,7 @@ __metadata:
     tsconfig: "npm:*"
     typechain: "npm:^8.3.2"
     typescript: "npm:^5.4.5"
+    undici: "npm:^5.29.0"
     urql: "npm:^4.2.1"
   languageName: unknown
   linkType: soft
@@ -23575,7 +23576,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici@npm:^5.14.0":
+"undici@npm:^5.14.0, undici@npm:^5.29.0":
   version: 5.29.0
   resolution: "undici@npm:5.29.0"
   dependencies:
