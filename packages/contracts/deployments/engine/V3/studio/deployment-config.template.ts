@@ -26,10 +26,10 @@ export const deployConfigDetailsArray = [
     // so a salt only produces a given address for one factory + implementation
     // pair, and mined salts must be re-mined whenever either changes.
     // @dev the `_ENGINE_/_FLEX_efficient_addresses_*.txt` files in the network
-    // directories have been emptied: their salts predated the current factory
-    // and no longer produced the addresses they listed. They are re-mined
-    // against the current factory + implementation pair and repopulated
-    // separately.
+    // directories hold salts mined against the v005 factory and the v3.3
+    // implementations, each landing at an address with at least three leading
+    // zero bytes. Delete each line as it is used, and re-mine the files the
+    // next time the factory or an implementation changes.
     salt: "0x0",
     // INCREMENT THESE NUMBERS FOR EACH NEW STUDIO DEPLOYMENT
     tokenName: "Art Blocks Studio | #",

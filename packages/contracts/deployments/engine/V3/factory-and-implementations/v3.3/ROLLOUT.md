@@ -291,7 +291,7 @@ has changed.
       generates its ABIs from that npm package (`abis/_generate-abis.sh` reads
       `node_modules/@artblocks/contracts`), pinned at `1.3.2`, which predates transfer hooks. No
       downstream indexing work can start until a version carrying the new events is published.
-- [ ] Re-mine the emptied studio salt files against the v005 factory and the v3.3
+- [x] Re-mine the emptied studio salt files against the v005 factory and the v3.3
       implementations, and repopulate them (see below).
 
 ## Gotchas
@@ -309,9 +309,11 @@ every salt in the mainnet files against every salt used in a studio deployment c
 overlap — they had never been used. This rollout would have invalidated them a second time over,
 since both the factory and the implementations change.
 
-The eight files have been emptied and kept in place, to be re-mined against the v005 factory and
-the v3.3 implementations once phase 3 lands, and repopulated in a follow-on PR. Nothing was at
-risk in the meantime — an unrecognized salt still deploys, just not to the advertised address.
+The eight files have been re-mined against the v005 factory and the v3.3 implementations and
+repopulated: 50 salts each, every one landing at an address with at least three leading zero
+bytes. Each was verified locally against `CREATE2(factory, salt, keccak(clone initcode))`, and
+one salt per network was additionally checked against that factory's own
+`predictDeterministicAddress` on chain.
 
 ### Etherscan verification needs the library links
 
