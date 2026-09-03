@@ -1,5 +1,5 @@
 import { Client, cacheExchange, fetchExchange } from "urql/core";
-import fetch from "node-fetch";
+import { fetch as undiciFetch } from "undici";
 
 const getEndpointAndAdminSecret = (): {
   graphqlAPIEndpoint: string;
@@ -32,10 +32,13 @@ export const getClient = (): Client => {
   const { graphqlAPIEndpoint, hasuraAdminSecret } = getEndpointAndAdminSecret();
   const client = new Client({
     url: graphqlAPIEndpoint,
-    fetch: fetch as any,
+    // Hardhat replaces global fetch with node-fetch v2, which throws
+    // ERR_STREAM_PREMATURE_CLOSE on gzipped Hasura Cloud responses.
+    fetch: undiciFetch as unknown as typeof fetch,
     fetchOptions: {
       headers: {
         "x-hasura-admin-secret": hasuraAdminSecret,
+        "accept-encoding": "identity",
       },
     },
     exchanges: [cacheExchange, fetchExchange],

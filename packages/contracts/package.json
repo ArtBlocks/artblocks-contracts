@@ -153,6 +153,7 @@
     "graphql": "^16.8.2",
     "scripty.sol": "2.1.1",
     "solady": "^0.1.26",
+    "undici": "^5.29.0",
     "urql": "^4.2.1"
   },
   "resolutions": {
