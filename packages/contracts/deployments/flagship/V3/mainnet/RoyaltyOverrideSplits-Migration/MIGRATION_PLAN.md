@@ -169,11 +169,14 @@ core contract that reports this AdminACL as its `admin()`.
 - Address: `0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632`
 - Verified on Etherscan
 
-### Phase 2: Configure Royalty Splitters
+### Phase 2: Configure Royalty Splitters — COMPLETED
 
 **Step 2.1** — On `GenArt721RoyaltyOverrideSplits` (`0xF45a3Ee084a56d6A985B8Ba355E27D58398970ff`),
 call `setRoyaltyConfig` for each `(coreContract, projectId)` that requires
-royalty configuration.
+royalty configuration — **DONE**
+
+- Executed via multisig batch (Gnosis Safe TX Builder): `deployments/royalty-registry/mainnet/set-royalty-config-txbuilder.json` (490 `setRoyaltyConfig` calls)
+- Source mapping: `deployments/royalty-registry/mainnet/royalty-config-mapping.tsv`
 
 **490 total projects** across 7 core contracts:
 
@@ -223,7 +226,7 @@ setRoyaltyLookupAddress(
 )
 ```
 
-**Step 3.3** — Pace (V1-era): from AB multisig EOA, call on Royalty Registry proxy:
+**Step 3.3** — Pace (V1-era): from AB multisig EOA, call on Royalty Registry proxy — **DONE**
 ```
 setRoyaltyLookupAddress(
     0x64780CE53f6e966E18a22AF13a2F97369580ec11,  // Art Blocks x Pace
@@ -259,7 +262,7 @@ Therefore, we must migrate each to the new `AdminACLV0RoyaltyRegistry`.
 the correct multisig address (`0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283`).
 Call `superAdmin()` on `0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632`.
 
-**Step 4.2** — From the current AdminACL of each V3 core, call:
+**Step 4.2** — From the current AdminACL of each V3 core, call — **DONE** (all four cores migrated)
 ```
 transferOwnershipOn(
     <V3 core address>,
@@ -267,7 +270,7 @@ transferOwnershipOn(
 )
 ```
 
-Concrete `transferOwnershipOn` calls (all called by superAdmin `0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283`):
+Concrete `transferOwnershipOn` calls (all called by superAdmin `0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283`) — **executed:**
 
 **V3 Flagship** — call on `0x18b18cF97a3D8BCC43f8D1Df282CebA85f717C82`:
 ```
@@ -289,14 +292,14 @@ transferOwnershipOn(0x145789247973c5D612bf121E9E4eef84b63eb707, 0xa102DF42e9cAa7
 transferOwnershipOn(0x942BC2d3e7a589FE5bd4A5C6eF9727DFd82F5C8a, 0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632)
 ```
 
-**CRITICAL SAFETY CHECK after each Step 4.2:**
-- [ ] Verify `owner()` on the V3 core returns the new AdminACL address
-- [ ] Verify `admin()` on the V3 core returns the new AdminACL address
-- [ ] Verify `superAdmin()` on the new AdminACL still returns the multisig
-- [ ] Verify the multisig can still call admin functions on the V3 core
+**CRITICAL SAFETY CHECK after each Step 4.2:** (completed for all four cores)
+- [x] Verify `owner()` on each V3 core returns the new AdminACL address
+- [x] Verify `admin()` on each V3 core returns the new AdminACL address
+- [x] Verify `superAdmin()` on the new AdminACL still returns the multisig
+- [x] Verify the multisig can still call admin functions on each V3 core
 
 **Step 4.3** — From the new `AdminACLV0RoyaltyRegistry`
-(`0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632`) via superAdmin, call for each:
+(`0xa102DF42e9cAa7a7A2aa8b104Bdc8425B6B23632`) via superAdmin, call for each — **DONE** (all four V3 cores)
 ```
 setRoyaltyLookupAddressOn(
     0xaD2184FB5DBcfC05d8f056542fB25b04fa32A95D,  // Royalty Registry proxy
@@ -305,7 +308,7 @@ setRoyaltyLookupAddressOn(
 )
 ```
 
-Concrete calls for each V3 core:
+Concrete calls — **executed** for each V3 core:
 
 **V3 Flagship:**
 ```
@@ -377,18 +380,18 @@ AdminACL:
 |---|---|---|---|---|---|
 | 1.1 | Deployer | — | Deploy GenArt721RoyaltyOverrideSplits(`0xCF00…A283`) | | **DONE** |
 | 1.2 | Deployer | — | Deploy AdminACLV0RoyaltyRegistry(`0xCF00…A283`) | | **DONE** |
-| 2.x | Owner (`0xCF00…A283`) | `0xF45a…70ff` | `setRoyaltyConfig(...)` × 490 projects | | |
+| 2.x | Owner (`0xCF00…A283`) | `0xF45a…70ff` | `setRoyaltyConfig(...)` × 490 projects | | **DONE** |
 | 3.1 | V0 admin EOA | `0xaD21…5DBc` | `setRoyaltyLookupAddress(V0, shim)` | YES | |
 | 3.2 | V1 admin EOA | `0xaD21…5DBc` | `setRoyaltyLookupAddress(V1, shim)` | YES | |
-| 3.3 | AB multisig EOA | `0xaD21…5DBc` | `setRoyaltyLookupAddress(Pace, shim)` | YES | |
-| 4.2a | superAdmin | `0x18b1…c82` | `transferOwnershipOn(V3 Flagship, 0xa102…632)` | **YES** | |
-| 4.2b | superAdmin | `0x4F68…B09C` | `transferOwnershipOn(Pace V3, 0xa102…632)` | **YES** | |
-| 4.2c | superAdmin | `0x4F68…B09C` | `transferOwnershipOn(Bright Moments, 0xa102…632)` | **YES** | |
-| 4.2d | superAdmin | `0x18b1…c82` | `transferOwnershipOn(Collabs, 0xa102…632)` | **YES** | |
-| 4.3a | superAdmin | `0xa102…632` | `setRoyaltyLookupAddressOn(registry, V3 Flagship, shim)` | YES | |
-| 4.3b | superAdmin | `0xa102…632` | `setRoyaltyLookupAddressOn(registry, Pace V3, shim)` | YES | |
-| 4.3c | superAdmin | `0xa102…632` | `setRoyaltyLookupAddressOn(registry, Bright Moments, shim)` | YES | |
-| 4.3d | superAdmin | `0xa102…632` | `setRoyaltyLookupAddressOn(registry, Collabs, shim)` | YES | |
+| 3.3 | AB multisig EOA | `0xaD21…5DBc` | `setRoyaltyLookupAddress(Pace, shim)` | YES | **DONE** |
+| 4.2a | superAdmin | `0x18b1…c82` | `transferOwnershipOn(V3 Flagship, 0xa102…632)` | **YES** | **DONE** |
+| 4.2b | superAdmin | `0x4F68…B09C` | `transferOwnershipOn(Pace V3, 0xa102…632)` | **YES** | **DONE** |
+| 4.2c | superAdmin | `0x4F68…B09C` | `transferOwnershipOn(Bright Moments, 0xa102…632)` | **YES** | **DONE** |
+| 4.2d | superAdmin | `0x18b1…c82` | `transferOwnershipOn(Collabs, 0xa102…632)` | **YES** | **DONE** |
+| 4.3a | superAdmin | `0xa102…632` | `setRoyaltyLookupAddressOn(registry, V3 Flagship, shim)` | YES | **DONE** |
+| 4.3b | superAdmin | `0xa102…632` | `setRoyaltyLookupAddressOn(registry, Pace V3, shim)` | YES | **DONE** |
+| 4.3c | superAdmin | `0xa102…632` | `setRoyaltyLookupAddressOn(registry, Bright Moments, shim)` | YES | **DONE** |
+| 4.3d | superAdmin | `0xa102…632` | `setRoyaltyLookupAddressOn(registry, Collabs, shim)` | YES | **DONE** |
 
 ---
 
