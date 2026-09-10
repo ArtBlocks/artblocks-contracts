@@ -105,20 +105,20 @@ import {IERC165} from "@openzeppelin-5.0/contracts/interfaces/IERC165.sol";
  * Cores do not currently burn; a burn (`to == address(0)`) would count.
  * ----------------------------------------------------------------------------
  * GAS. State is one packed storage slot per token (`uint64` mint timestamp +
- * `uint64` transfer count). Measured against an otherwise identical project
- * with no hook, on a v3.3 Engine core, **without** a PMP write:
+ * `uint64` transfer count). Both sets of figures below are deltas against an
+ * otherwise identical project with no hook, on the same `GenArt721CoreV3_Engine`
+ * core, so they may be compared directly. Without a PMP write:
  *
- * - a mint costs about 40,400 gas more. Most of it is the new storage slot
+ * - a mint costs about 40,500 gas more. Most of it is the new storage slot
  *   plus the core's reentrancy flag, which any hook pays.
- * - a transfer costs about 28,000 gas more — an SSTORE update of the packed
+ * - a transfer costs about 28,100 gas more — an SSTORE update of the packed
  *   count, plus the same reentrancy flag.
  *
  * A successful PMP `configureTokenParams` write on mint or transfer is extra
- * on top of that. Measured the same way with Address-auth `transferCount`
- * writes enabled:
+ * on top of that. With Address-auth `transferCount` writes enabled:
  *
- * - a mint costs about 92,800 gas more
- * - a transfer costs about 78,400 gas more
+ * - a mint costs about 92,700 gas more (about 52,200 for the PMP write)
+ * - a transfer costs about 78,300 gas more (about 50,200 for the PMP write)
  *
  * See the gas tests in `mint-time-and-transfer-count-hooks.test.ts` for the
  * bounds that keep these figures honest.

@@ -1164,6 +1164,7 @@ describe("MintTimeAndTransferCountHooks PMPV1 value lock", function () {
  * The hook's natspec quotes concrete gas figures, because an artist choosing it
  * is choosing that cost for everyone who will ever transfer one of their
  * tokens. Measured here so those figures cannot drift silently.
+ * @dev measured on `GenArt721CoreV3_Engine`, without PMP writes.
  */
 describe("MintTimeAndTransferCountHooks gas", async function () {
   async function _beforeEach() {
@@ -1254,7 +1255,7 @@ describe("MintTimeAndTransferCountHooks gas", async function () {
     // @dev bounds are wide enough to absorb compiler and OpenZeppelin churn,
     // and tight enough that a change of storage layout or an extra SSTORE
     // fails here rather than in production.
-    // measured: mint 40,387 / transfer 28,012
+    // measured on GenArt721CoreV3_Engine: mint 40,460 / transfer 28,071
     expect(transferDelta).to.be.within(23_000, 33_000);
     expect(mintDelta).to.be.within(35_000, 46_000);
   });
@@ -1263,6 +1264,8 @@ describe("MintTimeAndTransferCountHooks gas", async function () {
 /**
  * Production path: transfer hook plus Address-auth `transferCount` PMP writes.
  * Hook-only figures above do not include this cost.
+ * @dev measured on `GenArt721CoreV3_Engine`, the same core as the hook-only
+ * block above, so the two sets of figures may be compared directly.
  */
 describe("MintTimeAndTransferCountHooks gas with PMP writes", async function () {
   async function _beforeEach(withHook: boolean) {
@@ -1277,7 +1280,7 @@ describe("MintTimeAndTransferCountHooks gas with PMP writes", async function () 
       adminACL: config.adminACL,
     } = await deployCoreWithMinterFilter(
       config,
-      "GenArt721CoreV3_Engine_Flex",
+      "GenArt721CoreV3_Engine",
       "MinterFilterV1"
     ));
     config.minter = await deployAndGet(config, "MinterSetPriceV2", [
@@ -1308,12 +1311,6 @@ describe("MintTimeAndTransferCountHooks gas with PMP writes", async function () 
 
     const delegateRegistry = await deployAndGet(config, "DelegateRegistry", []);
     const pmp = await deployAndGet(config, "PMPV0", [delegateRegistry.address]);
-    await config.genArt721Core
-      .connect(config.accounts.artist)
-      .addProjectAssetDependencyOnChainAtAddress(
-        config.projectZero,
-        pmp.address
-      );
 
     config.transferHook = await deployAndGet(
       config,
@@ -1353,8 +1350,21 @@ describe("MintTimeAndTransferCountHooks gas with PMP writes", async function () 
     return config;
   }
 
+  // @dev loadFixture matches snapshots by function identity, so each variant
+  // needs its own named fixture. A `.bind()` result is a new object on every
+  // call and would never hit the cache.
+  async function _beforeEachWithHook() {
+    return _beforeEach(true);
+  }
+
+  async function _beforeEachWithoutHook() {
+    return _beforeEach(false);
+  }
+
   async function measure(withHook: boolean) {
-    const config = await loadFixture(_beforeEach.bind(null, withHook));
+    const config = await loadFixture(
+      withHook ? _beforeEachWithHook : _beforeEachWithoutHook
+    );
     const mint = await (
       await config.minter
         .connect(config.accounts.user)
@@ -1382,7 +1392,7 @@ describe("MintTimeAndTransferCountHooks gas with PMP writes", async function () 
       .toNumber();
     const mintDelta = withHook.mint.sub(withoutHook.mint).toNumber();
 
-    // measured: mint 92,840 / transfer 78,449
+    // measured on GenArt721CoreV3_Engine: mint 92,708 / transfer 78,317
     expect(transferDelta).to.be.within(73_000, 84_000);
     expect(mintDelta).to.be.within(87_000, 99_000);
   });
