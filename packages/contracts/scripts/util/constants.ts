@@ -199,7 +199,7 @@ type T_MAIN_CONFIG = {
 export const MAIN_CONFIG: T_MAIN_CONFIG = {
   mainnet: {
     prod: {
-      engineFactory: "0x00000067f7CE2C47f295b2DE3485a796d2FC058f",
+      engineFactory: "0x00000000a337ce098Bf11265176a2bDDA1f41060",
       sharedMinterFilter: "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b",
       sharedRandomizer: "0x13178A7a8A1A9460dBE39f7eCcEbD91B31752b91",
       universalBytecodeStorageReader:
@@ -214,7 +214,7 @@ export const MAIN_CONFIG: T_MAIN_CONFIG = {
   },
   arbitrum: {
     prod: {
-      engineFactory: "0x000000672BF0ff9F0506ed6206772612dd7A798B",
+      engineFactory: "0x00000000d5dE2813d00C972eB95941196a1FafeC",
       sharedMinterFilter: "0x94560abECb897f359ee1A6Ed0E922315Da11752d",
       sharedRandomizer: "0x6a5976391E708fBf918c3786cd1FcbB88732fbc1",
       universalBytecodeStorageReader:
@@ -227,7 +227,7 @@ export const MAIN_CONFIG: T_MAIN_CONFIG = {
   },
   base: {
     prod: {
-      engineFactory: "0x0000006712ebceb6d73e1f33d70c603b1d090d30",
+      engineFactory: "0x000000003baa376C3d7B7E757e89B195815D8006",
       sharedMinterFilter: "0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5",
       sharedRandomizer: "0x9b2e24Bcb09AaDa3e8EE4F56D77713453aFd8A98",
       universalBytecodeStorageReader:
@@ -242,7 +242,7 @@ export const MAIN_CONFIG: T_MAIN_CONFIG = {
   // Shape mainnet (chain ID 360)
   shape: {
     prod: {
-      engineFactory: "0x69Ee773e7DC7386581aFAAacd345113e34238806",
+      engineFactory: "0x00000000498832081b5827d11AFbBD0ee8C9f2D8",
       sharedMinterFilter: "0x6DdDBbd9aE353fCdaCB83a8fb085714bFc7F3f66",
       sharedRandomizer: "0x5705023921B577e5BAeFF66f1fC7d52f5ccF1232",
       universalBytecodeStorageReader:
@@ -256,7 +256,7 @@ export const MAIN_CONFIG: T_MAIN_CONFIG = {
   },
   sepolia: {
     staging: {
-      engineFactory: "0x00000006741521Ccd80EEd7BfA8bDbe542B425Cf",
+      engineFactory: "0x000000007c4b0a672854cEC09812aE3564aA57a6",
       sharedMinterFilter: "0xa07f47c30C262adcC263A4D44595972c50e04db7",
       sharedRandomizer: "0x28f2D3805652FB5d359486dFfb7D08320D403240",
       universalBytecodeStorageReader:
@@ -265,7 +265,7 @@ export const MAIN_CONFIG: T_MAIN_CONFIG = {
       dependencyRegistry: "0xEFA7Ef074A6E90a99fba8bAd4dCf337ef298387f",
     },
     dev: {
-      engineFactory: "0x004493006600aDB55FA95244ED29000B2D00F200",
+      engineFactory: "0x00000000c031Da9C81530457C5CACdd781Efb689",
       sharedMinterFilter: "0x29e9f09244497503f304FA549d50eFC751D818d2",
       sharedRandomizer: "0xA6F7e62F3B52552f79b2Baa2858a1DB18016c09B",
       universalBytecodeStorageReader:

@@ -267,17 +267,22 @@ Deployment — **complete on all six environments**:
       the new factory field-by-field against the one it replaces and simulated both calls from the
       Safe
 
-Cutover — **not started**, and deliberately after the off-chain work:
+Cutover — repo side prepared, on-chain step pending:
 
-- [ ] Handoff batch executed by the Deployer Safe
-- [ ] `3_verify.ts` passes
-- [ ] `MAIN_CONFIG` in `scripts/util/constants.ts` points at the new factory
-- [ ] `INFRASTRUCTURE.md` diagram updated, outgoing factory moved to the deprecated table, v3.2.9 /
-      v3.2.10 implementations moved to the deprecated table
+- [x] Handoff batches built for all six environments and committed to
+      [`safe-txs/`](./safe-txs), so the exact transactions a Safe will execute are reviewable
+- [ ] Handoff batch executed by each Deployer Safe
+- [ ] `3_verify.ts` passes on each network
+- [x] `MAIN_CONFIG` in `scripts/util/constants.ts` points at the v005 factories
+- [x] `INFRASTRUCTURE.md` diagrams updated, v004 factories and the v3.2.9 / v3.2.10
+      implementations moved to the deprecated tables
 
-Until the handoff, every network still creates Engine contracts from its v004 factory on
-v3.2.9/v3.2.10. The v3.3 contracts are deployed and inert; nothing an artist or collector can see
-has changed.
+**Execute the Safe batches before merging this repo state.** `constants.ts` and the diagrams now
+assert that the v005 factories are active; until each batch executes, its Core Registry is still
+owned by the v004 factory and `batch-create-engine-contracts.ts` will refuse to run — it checks
+that the registry is owned by the factory in `MAIN_CONFIG`. That failure is loud and happens
+before anything is deployed, which is the intended behavior, but it does mean studio deployments
+are blocked for any network whose batch has not executed yet.
 
 ## Repo-wide follow-ups, once every network is done
 
@@ -293,6 +298,57 @@ has changed.
       downstream indexing work can start until a version carrying the new events is published.
 - [x] Re-mine the emptied studio salt files against the v005 factory and the v3.3
       implementations, and repopulate them (see below).
+
+## Executing the handoff
+
+One batch per environment, in [`safe-txs/`](./safe-txs). Each contains exactly two calls against
+the outgoing factory, sent by the Deployer Safe that owns it:
+
+1. `transferCoreRegistryOwnership(<v005 factory>)`
+2. `abandon()` — one-way
+
+Upload the file to the Safe's Transaction Builder app. Every batch was simulated from its Safe
+before being written, and `2_build-handoff-txs.ts` refuses to emit one unless the incoming factory
+carries over the outgoing factory's `owner`, `coreRegistry`, `defaultBaseURIHost` and
+`universalBytecodeStorageReader` unchanged.
+
+Order does not matter between networks, and the switch is reversible: the v005 factory has the same
+Safe as its owner and the same `transferCoreRegistryOwnership`, so ownership can be handed back.
+`abandon()` on the outgoing factory is the only irreversible part, and it is belt-and-braces —
+after step 1 that factory's `createEngineContract` reverts at `registerContract` regardless.
+
+Run `3_verify.ts` against each network afterwards. It checks registry ownership, the factory's
+cached versions, and every deployed contract's bytecode against the local build.
+
+## After the handoff: new projects still land on v3.2 cores
+
+Activating the v005 factories changes what a **newly created contract** clones. It does not change
+which contract a **new project** is added to, and on dev and staging that is a fixed core:
+
+| Environment | Default project-creation contract            | Core                                     |
+| ----------- | -------------------------------------------- | ---------------------------------------- |
+| dev         | `0x4A6d2e4A18E194317025d7a995C705AAB58d3485` | `GenArt721CoreV3_Engine_Flex` **v3.2.5** |
+| staging     | `0x12f976648178b0c37e7b7ab218059b12b29dc78d` | `GenArt721CoreV3_Engine_Flex` **v3.2.5** |
+
+Both are ERC-1167 clones of the v3.2.5 implementation, so neither can ever support transfer hooks —
+a clone's implementation is fixed in its bytecode. Until they are replaced, an artist creating a
+project on dev or staging gets a contract with no transfer hook support, no matter which factory is
+active.
+
+This is **not configured in this repo**. It lives in
+`apps/creator-dashboard-v2/environments/shared.ts` as
+`DEFAULT_AUTO_PROJECT_CREATION_CONTRACT_ADDRESSES`, overridable per deployment by
+`VITE_AUTO_PROJECT_CREATION_CONTRACT_ADDRESS`.
+
+Sequence to fix, after the dev and staging handoffs execute:
+
+1. Deploy a new studio core on sepolia for each of dev and staging, from the v005 factory
+   (`yarn deploy:v3-engine:dev`, `yarn deploy:v3-engine:staging`), which will clone v3.3.1.
+2. Point `DEFAULT_AUTO_PROJECT_CREATION_CONTRACT_ADDRESSES` — or the env override — at the new
+   contracts.
+
+Mainnet and the other production networks are unaffected: they have no auto-project-creation
+default, and new Engine contracts there come from the factory directly.
 
 ## Gotchas
 

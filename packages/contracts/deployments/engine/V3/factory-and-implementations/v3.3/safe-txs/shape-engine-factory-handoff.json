@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "chainId": "360",
+  "createdAt": 1789001558025,
+  "meta": {
+    "name": "Engine Factory handoff to v3.3 (shape)",
+    "description": "Transfer CoreRegistryV1 0x440E1B5A98332BcA7564DbffA4146f976CE75397 from EngineFactoryV0 0x69Ee773e7DC7386581aFAAacd345113e34238806 (v3.2.9/v3.2.10) to 0x00000000498832081b5827d11AFbBD0ee8C9f2D8 (v3.3.0/v3.3.1), so new Engine and Engine Flex contracts are created with transfer hook support. Then permanently abandon the outgoing factory. Abandoning is one-way.",
+    "txBuilderVersion": "1.16.5",
+    "createdFromSafeAddress": "0x279c2BEE983b73ba4035Ef5c8aD059CF2d0DB848",
+    "createdFromOwnerAddress": "",
+    "checksum": "0xd4b2f74c8d9f53ed7958af2e81f1c2970803a1251493d3ff61872e59d2ce235c"
+  },
+  "transactions": [
+    {
+      "to": "0x69Ee773e7DC7386581aFAAacd345113e34238806",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "name": "_owner",
+            "type": "address",
+            "internalType": "address"
+          }
+        ],
+        "name": "transferCoreRegistryOwnership",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_owner": "0x00000000498832081b5827d11AFbBD0ee8C9f2D8"
+      }
+    },
+    {
+      "to": "0x69Ee773e7DC7386581aFAAacd345113e34238806",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [],
+        "name": "abandon",
+        "payable": false
+      },
+      "contractInputsValues": {}
+    }
+  ]
+}
