@@ -1,0 +1,114 @@
+{
+  "version": "1.0",
+  "chainId": "11155111",
+  "createdAt": 1789063762873,
+  "meta": {
+    "name": "Batch Engine Contract Deployment",
+    "description": "Batch deployment of Engine contracts via EngineFactoryV0",
+    "txBuilderVersion": "1.16.5",
+    "createdFromSafeAddress": "0xbaD99DdBa319639e0e9FB2E42935BfE5b2a1B6a8",
+    "createdFromOwnerAddress": "",
+    "checksum": "0x900e01a90f637771be9c69f5e22798e231f07882e049d5f3c846635d5aff3e86"
+  },
+  "transactions": [
+    {
+      "to": "0x00000000c031Da9C81530457C5CACdd781Efb689",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "enum IEngineFactoryV0.EngineCoreType",
+            "name": "engineCoreContractType",
+            "type": "uint8"
+          },
+          {
+            "components": [
+              {
+                "internalType": "string",
+                "name": "tokenName",
+                "type": "string"
+              },
+              {
+                "internalType": "string",
+                "name": "tokenSymbol",
+                "type": "string"
+              },
+              {
+                "internalType": "address",
+                "name": "renderProviderAddress",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "platformProviderAddress",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "newSuperAdminAddress",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "randomizerContract",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "splitProviderAddress",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "minterFilterAddress",
+                "type": "address"
+              },
+              {
+                "internalType": "uint248",
+                "name": "startingProjectId",
+                "type": "uint248"
+              },
+              {
+                "internalType": "bool",
+                "name": "autoApproveArtistSplitProposals",
+                "type": "bool"
+              },
+              {
+                "internalType": "bool",
+                "name": "nullPlatformProvider",
+                "type": "bool"
+              },
+              {
+                "internalType": "bool",
+                "name": "allowArtistProjectActivation",
+                "type": "bool"
+              }
+            ],
+            "internalType": "struct EngineConfiguration",
+            "name": "engineConfiguration",
+            "type": "tuple"
+          },
+          {
+            "internalType": "address",
+            "name": "adminACLContract",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "salt",
+            "type": "bytes32"
+          }
+        ],
+        "name": "createEngineContract",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "engineCoreContractType": "1",
+        "engineConfiguration": "[\"Art Blocks Studio | DEV v3.3\",\"ABSTUDIO_DEV_V3_3\",\"0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4\",\"0x0000000000000000000000000000000000000000\",\"0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4\",\"0xA6F7e62F3B52552f79b2Baa2858a1DB18016c09B\",\"0x00000000CE5EEBAB4B5C2d6Cc5E73eaafA634DB3\",\"0x29e9f09244497503f304FA549d50eFC751D818d2\",0,true,true,true]",
+        "adminACLContract": "0x0000000000000000000000000000000000000000",
+        "salt": "0x0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    }
+  ]
+}

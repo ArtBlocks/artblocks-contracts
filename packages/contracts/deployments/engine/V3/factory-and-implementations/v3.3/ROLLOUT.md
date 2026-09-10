@@ -358,14 +358,26 @@ unchanged. A fresh AdminACL is deployed per the repo's existing pattern; reusing
 AdminACL contract would also work, but the factory rejects supplying both an `adminACLContract` and
 a `newSuperAdminAddress`.
 
+Safe Transaction Builder batches for both are exported and ready to upload:
+
+- `deployments/engine/V3/studio/dev/safe-txs/dev-create-v3.3-studio-core.json`
+- `deployments/engine/V3/studio/staging/safe-txs/staging-create-v3.3-studio-core.json`
+
+Each is a single `createEngineContract` call on that environment's v005 factory, and both were
+simulated from their Safe before being written. Regenerate with
+`yarn deploy:v3-engine:dev:txbuilder` / `:staging:txbuilder`.
+
 Sequence:
 
-1. `yarn deploy:v3-engine:dev` / `yarn deploy:v3-engine:staging`, pointing at the config above.
-   Both queue to the Deployer Safe; add `:txbuilder` to export a batch instead of proposing.
-2. Record the resulting transaction hash in the config, then run
+1. Upload the batch to the Deployer Safe's Transaction Builder app and execute.
+2. Record the resulting transaction hash in the deployment config, then run
    `yarn post-deploy:v3-engine:dev` / `:staging` to create image buckets and sync off-chain data.
 3. Point `DEFAULT_AUTO_PROJECT_CREATION_CONTRACT_ADDRESSES` — or the env override — at the new
    addresses.
+
+@dev the configs use `salt: "0x0"`, so the factory generates a pseudorandom salt and the resulting
+address is **not** knowable in advance. Take it from the execution receipt or the
+`EngineContractCreated` event, not from a simulation.
 
 Mainnet and the other production networks are unaffected: they have no auto-project-creation
 default, and new Engine contracts there come from the factory directly.
