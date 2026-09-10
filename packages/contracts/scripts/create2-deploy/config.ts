@@ -3,6 +3,12 @@ export type DeployConfig = {
   args: any[];
   libraries: Record<string, string>;
   chainIds: number[];
+  /**
+   * Optional CREATE2 salt. The UI pre-fills this on every selected chain.
+   * Must be zero-prefixed (first 20 bytes `0x00`) for permissionless
+   * `ImmutableCreate2Factory` deploys. Defaults to 32 zero bytes.
+   */
+  salt?: string;
   /** When set, the contract is deployed as a UUPS implementation + ERC1967Proxy. */
   proxy?: {
     /** Arguments passed to the implementation's `initialize()` function. */

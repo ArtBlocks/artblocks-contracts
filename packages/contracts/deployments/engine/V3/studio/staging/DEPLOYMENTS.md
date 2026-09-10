@@ -198,3 +198,47 @@ Date: 2024-05-13T22:54:43.153Z
         ---
       
         
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2026-09-10T19:01:07.089Z
+  
+  ## **Network:** sepolia
+  
+  ## **Environment:** staging
+  
+  **Engine Implementation:** https://sepolia.etherscan.io/address/0x00000000E8227826CB865a4ee37B1300C6b6120E#code
+  
+  **Engine Flex Implementation:** https://sepolia.etherscan.io/address/0x00000000824067A9E7fcB6CB084eCcd8f3Cb8399#code
+  
+  **Engine Factory:** https://sepolia.etherscan.io/address/0x000000007c4b0a672854cEC09812aE3564aA57a6#code
+  
+  **Core Registry:** https://sepolia.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+  
+  ---
+
+  
+        ## Deployment: Engine Flex | 0x3747a7C0959177B31dd91D20D00652de304011d9
+  
+        **Engine Contract:** https://sepolia.etherscan.io/address/0x3747a7C0959177B31dd91D20D00652de304011d9#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Infra
+        - **Token Name:** Art Blocks Studio | STAGING v3.3
+        - **Token Ticker:** ABSTUDIO_STAGING_V3_3
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0xf2f7122CBb0aCEF650552915fa840c6aE8806353
+        - **Super Admin Address:** 0xAbaBab074cbD610f70A0809b6c4BA8852d7B93Da        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-staging-v3-3-sepolia
+        
+        ---
+      
+        

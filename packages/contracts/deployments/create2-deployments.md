@@ -939,3 +939,107 @@ Canonical append-only deployment log.
 - **Timestamp:** 2026-09-01T00:19:51.302Z
 
 ---
+
+## MintTimeAndTransferCountHooks
+
+- **Chain:** Base (8453)
+- **Address:** [0x000000002099d6BB23Ebd24aDCbee931ad461a39](https://basescan.org/address/0x000000002099d6BB23Ebd24aDCbee931ad461a39)
+- **Salt:** `0x00000000000000000000000000000000000000001bfe06d15c949defd28b8b0a`
+- **TX:** [0x9d634ed7608a3c8fee8a389c7abdb83d23ba29adf48f3664766dd335b935890f](https://basescan.org/tx/0x9d634ed7608a3c8fee8a389c7abdb83d23ba29adf48f3664766dd335b935890f)
+- **Args:** `["0x00000000B9D3B2461fcFd5D23FCA65227B770f67"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x9555e37544d1898fd2bef9d9f3dbe3d5925304997a7bf6260d829ee9d203ca77`
+- **Timestamp:** 2026-09-10T20:51:49.483Z
+
+---
+
+## MintTimeAndTransferCountHooks
+
+- **Chain:** Arbitrum One (42161)
+- **Address:** [0x000000002099d6BB23Ebd24aDCbee931ad461a39](https://arbiscan.io/address/0x000000002099d6BB23Ebd24aDCbee931ad461a39)
+- **Salt:** `0x00000000000000000000000000000000000000001bfe06d15c949defd28b8b0a`
+- **TX:** [0x0a3975493569d797360d8800a06dd4f28abfed1d5274b9cf369e160ef0ce8727](https://arbiscan.io/tx/0x0a3975493569d797360d8800a06dd4f28abfed1d5274b9cf369e160ef0ce8727)
+- **Args:** `["0x00000000B9D3B2461fcFd5D23FCA65227B770f67"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x9555e37544d1898fd2bef9d9f3dbe3d5925304997a7bf6260d829ee9d203ca77`
+- **Timestamp:** 2026-09-10T20:51:54.890Z
+
+---
+
+## MintTimeAndTransferCountHooks
+
+- **Chain:** Shape (360)
+- **Address:** [0x000000002099d6BB23Ebd24aDCbee931ad461a39](https://shapescan.xyz/address/0x000000002099d6BB23Ebd24aDCbee931ad461a39)
+- **Salt:** `0x00000000000000000000000000000000000000001bfe06d15c949defd28b8b0a`
+- **TX:** [0xf3225801a6120c729e64d76f2bf3a2bd45cddfef64744ae423007189a7100a3b](https://shapescan.xyz/tx/0xf3225801a6120c729e64d76f2bf3a2bd45cddfef64744ae423007189a7100a3b)
+- **Args:** `["0x00000000B9D3B2461fcFd5D23FCA65227B770f67"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x9555e37544d1898fd2bef9d9f3dbe3d5925304997a7bf6260d829ee9d203ca77`
+- **Timestamp:** 2026-09-10T20:52:06.230Z
+
+---
+
+## MintTimeAndTransferCountHooks
+
+- **Chain:** Sepolia (11155111)
+- **Address:** [0x000000002099d6BB23Ebd24aDCbee931ad461a39](https://sepolia.etherscan.io/address/0x000000002099d6BB23Ebd24aDCbee931ad461a39)
+- **Salt:** `0x00000000000000000000000000000000000000001bfe06d15c949defd28b8b0a`
+- **TX:** [0x1e523ccce9971314072791e0e0bf760b75260bde3670ace860d91459c16bee16](https://sepolia.etherscan.io/tx/0x1e523ccce9971314072791e0e0bf760b75260bde3670ace860d91459c16bee16)
+- **Args:** `["0x00000000B9D3B2461fcFd5D23FCA65227B770f67"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x9555e37544d1898fd2bef9d9f3dbe3d5925304997a7bf6260d829ee9d203ca77`
+- **Timestamp:** 2026-09-10T20:52:08.644Z
+
+---
+
+## MintTimeAndTransferCountHooks
+
+- **Chain:** Sepolia (11155111)
+- **Address:** [0x000000002099d6BB23Ebd24aDCbee931ad461a39](https://sepolia.etherscan.io/address/0x000000002099d6BB23Ebd24aDCbee931ad461a39)
+- **Salt:** `0x00000000000000000000000000000000000000001bfe06d15c949defd28b8b0a`
+- **TX:** [0x1e523ccce9971314072791e0e0bf760b75260bde3670ace860d91459c16bee16](https://sepolia.etherscan.io/tx/0x1e523ccce9971314072791e0e0bf760b75260bde3670ace860d91459c16bee16)
+- **Args:** `["0x00000000B9D3B2461fcFd5D23FCA65227B770f67"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x9555e37544d1898fd2bef9d9f3dbe3d5925304997a7bf6260d829ee9d203ca77`
+- **Timestamp:** 2026-09-10T20:52:11.882Z
+
+---
+
+## MintTimeAndTransferCountHooks
+
+- **Chain:** Shape (360)
+- **Address:** [0x000000002099d6BB23Ebd24aDCbee931ad461a39](https://shapescan.xyz/address/0x000000002099d6BB23Ebd24aDCbee931ad461a39)
+- **Salt:** `0x00000000000000000000000000000000000000001bfe06d15c949defd28b8b0a`
+- **TX:** [0xf3225801a6120c729e64d76f2bf3a2bd45cddfef64744ae423007189a7100a3b](https://shapescan.xyz/tx/0xf3225801a6120c729e64d76f2bf3a2bd45cddfef64744ae423007189a7100a3b)
+- **Args:** `["0x00000000B9D3B2461fcFd5D23FCA65227B770f67"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x9555e37544d1898fd2bef9d9f3dbe3d5925304997a7bf6260d829ee9d203ca77`
+- **Timestamp:** 2026-09-10T21:05:46.565Z
+
+---
+
+## MintTimeAndTransferCountHooks
+
+- **Chain:** Ethereum Mainnet (1)
+- **Address:** [0x000000002099d6BB23Ebd24aDCbee931ad461a39](https://etherscan.io/address/0x000000002099d6BB23Ebd24aDCbee931ad461a39)
+- **Salt:** `0x00000000000000000000000000000000000000001bfe06d15c949defd28b8b0a`
+- **TX:** [0x990542d34ac25704ff0bc6ea1346ec570509be728447ddad4b90dc437f6db599](https://etherscan.io/tx/0x990542d34ac25704ff0bc6ea1346ec570509be728447ddad4b90dc437f6db599)
+- **Args:** `["0x00000000B9D3B2461fcFd5D23FCA65227B770f67"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x9555e37544d1898fd2bef9d9f3dbe3d5925304997a7bf6260d829ee9d203ca77`
+- **Timestamp:** 2026-09-10T21:05:55.000Z
+
+---
+
+## MintTimeAndTransferCountHooks
+
+- **Chain:** Sepolia (11155111)
+- **Address:** [0x2B530627ed72e3F77EAC0d1c8b3904E6d8f67c25](https://sepolia.etherscan.io/address/0x2B530627ed72e3F77EAC0d1c8b3904E6d8f67c25)
+- **Salt:** `0x0000000000000000000000000000000000000000000000000000000000000000`
+- **TX:** [0xe7d5825c6167bc44e7c597015456ee865f1a8589119aeee0093157d0affec6bc](https://sepolia.etherscan.io/tx/0xe7d5825c6167bc44e7c597015456ee865f1a8589119aeee0093157d0affec6bc)
+- **Args:** `["0xb380B5c5A1d98Ebcc669feF89bCe0B3db1f36292"]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x8748924f043c1009c953feec4b958b61d3f5e0cd23c1035e151eb3c20b695a98`
+- **Timestamp:** 2026-09-10T21:06:15.031Z
+
+---
