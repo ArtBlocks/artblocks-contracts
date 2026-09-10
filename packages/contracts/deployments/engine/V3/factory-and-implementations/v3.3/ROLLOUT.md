@@ -267,22 +267,23 @@ Deployment — **complete on all six environments**:
       the new factory field-by-field against the one it replaces and simulated both calls from the
       Safe
 
-Cutover — repo side prepared, on-chain step pending:
+Cutover — **complete on all six environments**:
 
-- [x] Handoff batches built for all six environments and committed to
-      [`safe-txs/`](./safe-txs), so the exact transactions a Safe will execute are reviewable
-- [ ] Handoff batch executed by each Deployer Safe
-- [ ] `3_verify.ts` passes on each network
+- [x] Handoff batch executed by each Deployer Safe
+- [x] `3_verify.ts` passes on every network — 15/15 checks each, including that the Core Registry
+      is owned by the v005 factory and that every deployed contract matches the local build
+- [x] Every outgoing v004 factory confirmed `isAbandoned() == true`
 - [x] `MAIN_CONFIG` in `scripts/util/constants.ts` points at the v005 factories
 - [x] `INFRASTRUCTURE.md` diagrams updated, v004 factories and the v3.2.9 / v3.2.10
       implementations moved to the deprecated tables
 
-**Execute the Safe batches before merging this repo state.** `constants.ts` and the diagrams now
-assert that the v005 factories are active; until each batch executes, its Core Registry is still
-owned by the v004 factory and `batch-create-engine-contracts.ts` will refuse to run — it checks
-that the registry is owned by the factory in `MAIN_CONFIG`. That failure is loud and happens
-before anything is deployed, which is the intended behavior, but it does mean studio deployments
-are blocked for any network whose batch has not executed yet.
+New Engine and Engine Flex contracts now clone v3.3.0 / v3.3.1 and support per-project transfer
+hooks. Contracts created before the cutover are unaffected and stay on v3.2.9 / v3.2.10 forever —
+a clone's implementation is fixed in its bytecode.
+
+The executed Safe batches are not kept in the repo: they were a one-time artifact, and
+`2_build-handoff-txs.ts` reproduces them (it now refuses to, correctly, because `MAIN_CONFIG`
+already names the incoming factory).
 
 ## Repo-wide follow-ups, once every network is done
 
@@ -299,26 +300,29 @@ are blocked for any network whose batch has not executed yet.
 - [x] Re-mine the emptied studio salt files against the v005 factory and the v3.3
       implementations, and repopulate them (see below).
 
-## Executing the handoff
+## How the handoff was executed
 
-One batch per environment, in [`safe-txs/`](./safe-txs). Each contains exactly two calls against
-the outgoing factory, sent by the Deployer Safe that owns it:
+One Safe batch per environment, each containing exactly two calls against the outgoing factory,
+sent by the Deployer Safe that owns it:
 
 1. `transferCoreRegistryOwnership(<v005 factory>)`
 2. `abandon()` — one-way
 
-Upload the file to the Safe's Transaction Builder app. Every batch was simulated from its Safe
-before being written, and `2_build-handoff-txs.ts` refuses to emit one unless the incoming factory
-carries over the outgoing factory's `owner`, `coreRegistry`, `defaultBaseURIHost` and
-`universalBytecodeStorageReader` unchanged.
+Each batch was uploaded to the Safe's Transaction Builder app. Every one was simulated from its
+Safe before being written, and `2_build-handoff-txs.ts` refuses to emit one unless the incoming
+factory carries over the outgoing factory's `owner`, `coreRegistry`, `defaultBaseURIHost` and
+`universalBytecodeStorageReader` unchanged. Regenerate a batch for a future upgrade with
+`HANDOFF_OUTPUT_DIR` if the exact JSON is worth committing for review.
 
-Order does not matter between networks, and the switch is reversible: the v005 factory has the same
-Safe as its owner and the same `transferCoreRegistryOwnership`, so ownership can be handed back.
-`abandon()` on the outgoing factory is the only irreversible part, and it is belt-and-braces —
-after step 1 that factory's `createEngineContract` reverts at `registerContract` regardless.
+Order did not matter between networks, and the switch remains reversible: each v005 factory has the
+same Safe as its owner and the same `transferCoreRegistryOwnership`, so ownership can be handed
+back. `abandon()` on the outgoing factories is the only irreversible part, and it is belt-and-braces
+— after step 1 those factories' `createEngineContract` reverts at `registerContract` regardless.
 
-Run `3_verify.ts` against each network afterwards. It checks registry ownership, the factory's
-cached versions, and every deployed contract's bytecode against the local build.
+`3_verify.ts` is the check to re-run against any network at any time. Note it only asserts the
+_outgoing_ factory is abandoned while `MAIN_CONFIG` still names it; once constants are updated that
+check is skipped, so abandonment was confirmed separately by reading `isAbandoned()` on each v004
+factory.
 
 ## After the handoff: new projects still land on v3.2 cores
 
@@ -340,12 +344,28 @@ This is **not configured in this repo**. It lives in
 `DEFAULT_AUTO_PROJECT_CREATION_CONTRACT_ADDRESSES`, overridable per deployment by
 `VITE_AUTO_PROJECT_CREATION_CONTRACT_ADDRESS`.
 
-Sequence to fix, after the dev and staging handoffs execute:
+Deployment configs for the replacements are in this repo and ready to run:
 
-1. Deploy a new studio core on sepolia for each of dev and staging, from the v005 factory
-   (`yarn deploy:v3-engine:dev`, `yarn deploy:v3-engine:staging`), which will clone v3.3.1.
-2. Point `DEFAULT_AUTO_PROJECT_CREATION_CONTRACT_ADDRESSES` — or the env override — at the new
-   contracts.
+| Environment | Config                                                                 | Safe                                         | New AdminACL superAdmin                      |
+| ----------- | ---------------------------------------------------------------------- | -------------------------------------------- | -------------------------------------------- |
+| dev         | `deployments/engine/V3/studio/dev/2026-09-10-deployment-config.ts`     | `0xbaD99DdBa319639e0e9FB2E42935BfE5b2a1B6a8` | `0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4` |
+| staging     | `deployments/engine/V3/studio/staging/2026-09-10-deployment-config.ts` | `0x62DC3F6C7Bf5FA8A834E6B97dee3daB082873600` | `0xAbaBab074cbD610f70A0809b6c4BA8852d7B93Da` |
+
+Both are **Engine Flex**, matching the contracts they replace: dropping to non-Flex would silently
+remove external asset dependency support from every new project. Each superAdmin is the one that
+controls the contract being replaced, read from its live AdminACL, so operational access is
+unchanged. A fresh AdminACL is deployed per the repo's existing pattern; reusing the existing
+AdminACL contract would also work, but the factory rejects supplying both an `adminACLContract` and
+a `newSuperAdminAddress`.
+
+Sequence:
+
+1. `yarn deploy:v3-engine:dev` / `yarn deploy:v3-engine:staging`, pointing at the config above.
+   Both queue to the Deployer Safe; add `:txbuilder` to export a batch instead of proposing.
+2. Record the resulting transaction hash in the config, then run
+   `yarn post-deploy:v3-engine:dev` / `:staging` to create image buckets and sync off-chain data.
+3. Point `DEFAULT_AUTO_PROJECT_CREATION_CONTRACT_ADDRESSES` — or the env override — at the new
+   addresses.
 
 Mainnet and the other production networks are unaffected: they have no auto-project-creation
 default, and new Engine contracts there come from the factory directly.
