@@ -293,10 +293,10 @@ already names the incoming factory).
 - [x] `README.md`: keyless-create2 section names the new libraries and the reference hook.
 - [x] `deployments/libs/`: `V3EngineLib_0.md` and `V3TransferHookLib_0.md`.
 - [x] `deployments/engine/V3/transfer-hooks/OwnerHistoryTransferHook.md`.
-- [ ] Publish `@artblocks/contracts` — the changeset for v3.3 is in `.changeset/`. The subgraph
-      generates its ABIs from that npm package (`abis/_generate-abis.sh` reads
-      `node_modules/@artblocks/contracts`), pinned at `1.3.2`, which predates transfer hooks. No
-      downstream indexing work can start until a version carrying the new events is published.
+- [x] Publish `@artblocks/contracts` — released as `1.4.0`. The subgraph generates its ABIs from
+      that npm package (`abis/_generate-abis.sh` reads `node_modules/@artblocks/contracts`) and was
+      pinned at `1.3.2`, which predates transfer hooks, so no downstream indexing work could start
+      until this landed.
 - [x] Re-mine the emptied studio salt files against the v005 factory and the v3.3
       implementations, and repopulate them (see below).
 
@@ -324,63 +324,39 @@ _outgoing_ factory is abandoned while `MAIN_CONFIG` still names it; once constan
 check is skipped, so abandonment was confirmed separately by reading `isAbandoned()` on each v004
 factory.
 
-## After the handoff: new projects still land on v3.2 cores
+## Dev and staging project-creation contracts
 
-Activating the v005 factories changes what a **newly created contract** clones. It does not change
-which contract a **new project** is added to, and on dev and staging that is a fixed core:
+Activating the v005 factories changed what a newly created **contract** clones. It did not change
+which contract new **projects** are added to, and on dev and staging that is a fixed core. Both were
+clones of the v3.2.5 implementation, so neither could ever support transfer hooks — a clone's
+implementation is fixed in its bytecode. Replacements are deployed:
 
-| Environment | Default project-creation contract            | Core                                     |
-| ----------- | -------------------------------------------- | ---------------------------------------- |
-| dev         | `0x4A6d2e4A18E194317025d7a995C705AAB58d3485` | `GenArt721CoreV3_Engine_Flex` **v3.2.5** |
-| staging     | `0x12f976648178b0c37e7b7ab218059b12b29dc78d` | `GenArt721CoreV3_Engine_Flex` **v3.2.5** |
+| Environment | New core (v3.3.1 Engine Flex)                | Replaces (v3.2.5)                            |
+| ----------- | -------------------------------------------- | -------------------------------------------- |
+| dev         | `0x9Ff4D9598011FAb37599573c79c66187bB12195C` | `0x4A6d2e4A18E194317025d7a995C705AAB58d3485` |
+| staging     | `0x3747a7C0959177B31dd91D20D00652de304011d9` | `0x12f976648178b0c37e7b7ab218059b12b29dc78d` |
 
-Both are ERC-1167 clones of the v3.2.5 implementation, so neither can ever support transfer hooks —
-a clone's implementation is fixed in its bytecode. Until they are replaced, an artist creating a
-project on dev or staging gets a contract with no transfer hook support, no matter which factory is
-active.
+Deployment transactions:
 
-This is **not configured in this repo**. It lives in
-`apps/creator-dashboard-v2/environments/shared.ts` as
-`DEFAULT_AUTO_PROJECT_CREATION_CONTRACT_ADDRESSES`, overridable per deployment by
-`VITE_AUTO_PROJECT_CREATION_CONTRACT_ADDRESS`.
+- dev — `0xb4dc1fea395b2e58b7c12ae63d1b50b0bfb9ea011e6346fc16903330087d1cd5`
+- staging — `0xd3d91feb5452553deb053f07efa966640f0fdd29140b908958aab90f78d41e5a`
 
-Deployment configs for the replacements are in this repo and ready to run:
+Both are Engine Flex, matching what they replace: dropping to non-Flex would have silently removed
+external asset dependency support from new projects. Each carries a fresh AdminACL whose superAdmin
+is the address that controls the contract it replaces — `0x3c64…48c4` for dev and `0xAbaB…93Da` for
+staging, which differ — so operational access is unchanged. Both are registered in their Core
+Registry and wired to the same shared minter filter and randomizer as their predecessors.
 
-| Environment | Config                                                                 | Safe                                         | New AdminACL superAdmin                      |
-| ----------- | ---------------------------------------------------------------------- | -------------------------------------------- | -------------------------------------------- |
-| dev         | `deployments/engine/V3/studio/dev/2026-09-10-deployment-config.ts`     | `0xbaD99DdBa319639e0e9FB2E42935BfE5b2a1B6a8` | `0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4` |
-| staging     | `deployments/engine/V3/studio/staging/2026-09-10-deployment-config.ts` | `0x62DC3F6C7Bf5FA8A834E6B97dee3daB082873600` | `0xAbaBab074cbD610f70A0809b6c4BA8852d7B93Da` |
+Remaining:
 
-Both are **Engine Flex**, matching the contracts they replace: dropping to non-Flex would silently
-remove external asset dependency support from every new project. Each superAdmin is the one that
-controls the contract being replaced, read from its live AdminACL, so operational access is
-unchanged. A fresh AdminACL is deployed per the repo's existing pattern; reusing the existing
-AdminACL contract would also work, but the factory rejects supplying both an `adminACLContract` and
-a `newSuperAdminAddress`.
+- [ ] `yarn post-deploy:v3-engine:dev` / `:staging` — image buckets and off-chain sync
+- [ ] Point `DEFAULT_AUTO_PROJECT_CREATION_CONTRACT_ADDRESSES` in
+      `apps/creator-dashboard-v2/environments/shared.ts` (artblocks repo), or the
+      `VITE_AUTO_PROJECT_CREATION_CONTRACT_ADDRESS` override, at the new addresses
 
-Safe Transaction Builder batches for both are exported and ready to upload:
-
-- `deployments/engine/V3/studio/dev/safe-txs/dev-create-v3.3-studio-core.json`
-- `deployments/engine/V3/studio/staging/safe-txs/staging-create-v3.3-studio-core.json`
-
-Each is a single `createEngineContract` call on that environment's v005 factory, and both were
-simulated from their Safe before being written. Regenerate with
-`yarn deploy:v3-engine:dev:txbuilder` / `:staging:txbuilder`.
-
-Sequence:
-
-1. Upload the batch to the Deployer Safe's Transaction Builder app and execute.
-2. Record the resulting transaction hash in the deployment config, then run
-   `yarn post-deploy:v3-engine:dev` / `:staging` to create image buckets and sync off-chain data.
-3. Point `DEFAULT_AUTO_PROJECT_CREATION_CONTRACT_ADDRESSES` — or the env override — at the new
-   addresses.
-
-@dev the configs use `salt: "0x0"`, so the factory generates a pseudorandom salt and the resulting
-address is **not** knowable in advance. Take it from the execution receipt or the
-`EngineContractCreated` event, not from a simulation.
-
-Mainnet and the other production networks are unaffected: they have no auto-project-creation
-default, and new Engine contracts there come from the factory directly.
+Until that last step lands, artists creating projects on dev and staging still land on the old
+v3.2.5 contracts and see no transfer hook support. Mainnet and the other production networks are
+unaffected: they have no auto-project-creation default.
 
 ## Gotchas
 
