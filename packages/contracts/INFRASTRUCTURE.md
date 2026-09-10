@@ -17,12 +17,20 @@ The following contracts are deployed to all Art Blocks supported networks and ar
 | V3TransferHookLib (used v3.3.0 - current)            | `0x0000000020458d4C18397517bA13E43B54Baa56C` |
 | SplitProviderV0                                      | `0x00000000CE5EEBAB4B5C2d6Cc5E73eaafA634DB3` |
 | OwnerHistoryTransferHook                             | `0x00000000cb60788043f4F779bfC192F1c5bd09FA` |
+| MintTimeAndTransferCountHooks (bound to PMPV1)       | `0x000000002099d6BB23Ebd24aDCbee931ad461a39` |
 | Implementation: GenArt721CoreV3_Engine (v3.3.0)      | `0x00000000E8227826CB865a4ee37B1300C6b6120E` |
 | Implementation: GenArt721CoreV3_Engine_Flex (v3.3.1) | `0x00000000824067A9E7fcB6CB084eCcd8f3Cb8399` |
 
 > `OwnerHistoryTransferHook` is a first-party transfer hook, inert until a project opts into it with
 > `configureProjectTransferHook`. Only v3.3+ cores support hooks at all. See
 > [the v3.3 rollout](./deployments/engine/V3/factory-and-implementations/v3.3/ROLLOUT.md).
+>
+> `MintTimeAndTransferCountHooks` is a first-party combined hook (transfer + PMP augment), bound to
+> the latest PMPV1. The address above is shared on mainnet, arbitrum, base, shape, and
+> sepolia-staging. Sepolia-dev is a distinct instance at
+> `0x2B530627ed72e3F77EAC0d1c8b3904E6d8f67c25` because it is constructor-bound to the sepolia-dev
+> PMPV1. See
+> [the deployment record](./deployments/web3call/hooks/combined-hooks/MintTimeAndTransferCountHooks.md).
 
 ## Permissioned deployments
 
