@@ -51,18 +51,30 @@ import {
 } from "../../../generator-upgrade/safe-tx-builder";
 import { ethCallOrThrow } from "../../../generator-upgrade/eth-call";
 
-const OUTPUT_DIR = path.resolve(
-  __dirname,
-  "..",
-  "..",
-  "..",
-  "..",
-  "deployments",
-  "engine",
-  "V3",
-  "factory-and-implementations",
-  "safe-txs"
-);
+/**
+ * Where the batch is written.
+ *
+ * Defaults to a gitignored scratch directory, because a batch is reproducible
+ * by re-running this script and is normally a throwaway. Set
+ * `HANDOFF_OUTPUT_DIR` to write into a rollout's own directory instead, when
+ * the exact batch is worth committing for review — a permissioned migration is
+ * easier to review as the literal JSON the Safe will execute than as a script
+ * that regenerates it.
+ */
+const OUTPUT_DIR = process.env.HANDOFF_OUTPUT_DIR
+  ? path.resolve(process.cwd(), process.env.HANDOFF_OUTPUT_DIR)
+  : path.resolve(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "..",
+      "deployments",
+      "engine",
+      "V3",
+      "factory-and-implementations",
+      "safe-txs"
+    );
 
 const TRANSFER_CORE_REGISTRY_OWNERSHIP_METHOD: SafeContractMethod = {
   inputs: [{ name: "_owner", type: "address", internalType: "address" }],
@@ -251,9 +263,12 @@ async function main() {
   });
 
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  // @dev the environment label is the discriminator; every v005 factory address
+  // shares a `0x00000000` prefix, so including a slice of it named every file
+  // identically
   const outPath = path.join(
     OUTPUT_DIR,
-    `${environment.label}-engine-factory-handoff-${newFactoryAddress.slice(0, 10)}.json`
+    `${environment.label}-engine-factory-handoff.json`
   );
   fs.writeFileSync(outPath, JSON.stringify(batch, null, 2) + "\n");
 

@@ -8,36 +8,27 @@ Art Blocks has deployed infrastructure on different networks that support our sm
 
 The following contracts are deployed to all Art Blocks supported networks and are not permissioned. They also may be safely deployed by any wallet on any network, thanks to the use of the [keyless create2 factory system of contracts](./README.md#keyless-create2-factory).
 
-| Contract/Library                                      | Address                                      |
-| ----------------------------------------------------- | -------------------------------------------- |
-| Library: BytecodeStorageV2:BytecodeStorageReader      | `0x000000000016A5A5ff2FA7799C4BEe89bA59B74e` |
-| BytecodeStorageReaderContractV2_Web3Call              | `0x000000000005e4192e8789423aEC2FA32E4D52a0` |
-| V3FlexLib (used v3.2.5 - current)                     | `0x00000000Db6f2EBe627260e411E6c973B7c48A62` |
-| V3EngineLib (used v3.3.0 - current)                   | `0x000000001d81F6Ed8c3646293bD485Cef06416db` |
-| V3TransferHookLib (used v3.3.0 - current)             | `0x0000000020458d4C18397517bA13E43B54Baa56C` |
-| SplitProviderV0                                       | `0x00000000CE5EEBAB4B5C2d6Cc5E73eaafA634DB3` |
-| OwnerHistoryTransferHook                              | `0x00000000cb60788043f4F779bfC192F1c5bd09FA` |
-| Implementation: GenArt721CoreV3_Engine (v3.3.0)       | `0x00000000E8227826CB865a4ee37B1300C6b6120E` |
-| Implementation: GenArt721CoreV3_Engine_Flex (v3.3.1)  | `0x00000000824067A9E7fcB6CB084eCcd8f3Cb8399` |
-| Implementation: GenArt721CoreV3_Engine (v3.2.9)       | `0x00000000f10424506961445f935ec76579e0769F` |
-| Implementation: GenArt721CoreV3_Engine_Flex (v3.2.10) | `0x000000000132CFBeC18C143aB0AaD021B1fDEA13` |
+| Contract/Library                                     | Address                                      |
+| ---------------------------------------------------- | -------------------------------------------- |
+| Library: BytecodeStorageV2:BytecodeStorageReader     | `0x000000000016A5A5ff2FA7799C4BEe89bA59B74e` |
+| BytecodeStorageReaderContractV2_Web3Call             | `0x000000000005e4192e8789423aEC2FA32E4D52a0` |
+| V3FlexLib (used v3.2.5 - current)                    | `0x00000000Db6f2EBe627260e411E6c973B7c48A62` |
+| V3EngineLib (used v3.3.0 - current)                  | `0x000000001d81F6Ed8c3646293bD485Cef06416db` |
+| V3TransferHookLib (used v3.3.0 - current)            | `0x0000000020458d4C18397517bA13E43B54Baa56C` |
+| SplitProviderV0                                      | `0x00000000CE5EEBAB4B5C2d6Cc5E73eaafA634DB3` |
+| OwnerHistoryTransferHook                             | `0x00000000cb60788043f4F779bfC192F1c5bd09FA` |
+| Implementation: GenArt721CoreV3_Engine (v3.3.0)      | `0x00000000E8227826CB865a4ee37B1300C6b6120E` |
+| Implementation: GenArt721CoreV3_Engine_Flex (v3.3.1) | `0x00000000824067A9E7fcB6CB084eCcd8f3Cb8399` |
 
-> The v3.3 implementations are deployed but **not yet in use**: the Engine Factories in the diagrams
-> below still clone v3.2.9/v3.2.10, and will until each network's Core Registry is handed to its
-> v005 factory. See
+> `OwnerHistoryTransferHook` is a first-party transfer hook, inert until a project opts into it with
+> `configureProjectTransferHook`. Only v3.3+ cores support hooks at all. See
 > [the v3.3 rollout](./deployments/engine/V3/factory-and-implementations/v3.3/ROLLOUT.md).
-> `OwnerHistoryTransferHook` is inert until a project opts into it, and only v3.3+ cores can.
 
 ## Permissioned deployments
 
 The following diagrams show the deployment of permissioned infrastructure contracts on Art Blocks supported networks. These contracts are permissioned to be deployed by specific wallets and are used to deploy and index the core contracts.
 
 _Note: these are the most recent set of deployments, and the addresses may change in the future._
-
-_The v005 Engine Factories for core v3.3 are deployed on every network below but are not yet the
-active factory. Each becomes active when its Core Registry's ownership is transferred to it; the
-addresses and the handoff are recorded in
-[the v3.3 rollout](./deployments/engine/V3/factory-and-implementations/v3.3/ROLLOUT.md)._
 
 ### Mainnet
 
@@ -53,7 +44,7 @@ erDiagram
         addr _0x52119BB73Ac8bdbE59aF0EEdFd4E4Ee6887Ed2EA
     }
     EngineFactory {
-        addr _0x00000067f7CE2C47f295b2DE3485a796d2FC058f
+        addr _0x00000000a337ce098Bf11265176a2bDDA1f41060
     }
     CoreRegistry {
         addr _0x2eE7B9bB2E038bE7323A119701A191c030A61ec6
@@ -77,7 +68,7 @@ erDiagram
         addr _0xD3bE6e30D901fa2e2Fd7f3Ebd23189f5376a4f9D
     }
     EngineFactory {
-        addr _0x000000672BF0ff9F0506ed6206772612dd7A798B
+        addr _0x00000000d5dE2813d00C972eB95941196a1FafeC
     }
     CoreRegistry {
         addr _0x5D8EFdc20272CD3E24a27DfE7F25795a107c99a2
@@ -101,7 +92,7 @@ erDiagram
         addr _0x62F8fa18C079C20743F45E74925F80658c68f7b3
     }
     EngineFactory {
-        addr _0x0000006712ebceb6d73e1f33d70c603b1d090d30
+        addr _0x000000003baa376C3d7B7E757e89B195815D8006
     }
     CoreRegistry {
         addr _0xe2bC24f74ed326CA4deB75753942731A566ebC83
@@ -128,7 +119,7 @@ erDiagram
         addr _0x75EADBfbbc0ac884DBdfBcFc443A561Ce3fa9235
     }
     EngineFactory {
-        addr _0x69Ee773e7DC7386581aFAAacd345113e34238806
+        addr _0x00000000498832081b5827d11AFbBD0ee8C9f2D8
     }
     CoreRegistry {
         addr _0x440E1B5A98332BcA7564DbffA4146f976CE75397
@@ -152,7 +143,7 @@ erDiagram
         addr _0x62DC3F6C7Bf5FA8A834E6B97dee3daB082873600
     }
     EngineFactory {
-        addr _0x00000006741521Ccd80EEd7BfA8bDbe542B425Cf
+        addr _0x000000007c4b0a672854cEC09812aE3564aA57a6
     }
     CoreRegistry {
         addr _0xdAe755c2944Ec125a0D8D5CB082c22837593441a
@@ -176,7 +167,7 @@ erDiagram
         addr _0xbaD99DdBa319639e0e9FB2E42935BfE5b2a1B6a8
     }
     EngineFactory {
-        addr _0x004493006600aDB55FA95244ED29000B2D00F200
+        addr _0x00000000c031Da9C81530457C5CACdd781Efb689
     }
     CoreRegistry {
         addr _0xfeA4f2f4E45c255ceE626a1A994BB214039c2B9A
@@ -192,18 +183,20 @@ The following contracts were deployed to all Art Blocks supported networks and a
 
 They are included here for reference purposes.
 
-| Contract/Library                                     | Address                                      |
-| ---------------------------------------------------- | -------------------------------------------- |
-| BytecodeStorageReaderContractV2                      | `0x00000000163FA16098800B2B2e4A5F96949F413b` |
-| Implementation: GenArt721CoreV3_Engine (v3.2.4)      | `0x00000000559cA3F3f1279C0ec121c302ed010457` |
-| Implementation: GenArt721CoreV3_Engine_Flex (v3.2.5) | `0x000000008DD9A7CD3f4A267A88082d4a1E2f6553` |
-| V3FlexLib (used v3.2.1 - v3.2.3)                     | `0x0000000006FD94B22fb33164322019750E854f96` |
-| Implementation: GenArt721CoreV3_Engine (v3.2.2)      | `0x000000F74f006CE6480042f001c45c928D1Ae6E7` |
-| Implementation: GenArt721CoreV3_Engine_Flex (v3.2.3) | `0x0066009B13b8DfDabbE07800ee00004b008257D9` |
-| Implementation: GenArt721CoreV3_Engine (v3.2.0)      | `0x00000000AEf91971cc6251936Ec6568B23b55342` |
-| Implementation: GenArt721CoreV3_Engine_Flex (v3.2.1) | `0x00000000af817dFBc2b3006E365D2eFef1953334` |
-| SplitProviderV0 (0xSplits v2 issue)                  | `0x0000000004B100B47f061968a387c82702AFe946` |
-| SplitProviderV0 (0xSplits v2.1 issue)                | `0x000000000ef75C77F6bd0b2Ee166501FbBDb40c8` |
+| Contract/Library                                      | Address                                      |
+| ----------------------------------------------------- | -------------------------------------------- |
+| BytecodeStorageReaderContractV2                       | `0x00000000163FA16098800B2B2e4A5F96949F413b` |
+| Implementation: GenArt721CoreV3_Engine (v3.2.9)       | `0x00000000f10424506961445f935ec76579e0769F` |
+| Implementation: GenArt721CoreV3_Engine_Flex (v3.2.10) | `0x000000000132CFBeC18C143aB0AaD021B1fDEA13` |
+| Implementation: GenArt721CoreV3_Engine (v3.2.4)       | `0x00000000559cA3F3f1279C0ec121c302ed010457` |
+| Implementation: GenArt721CoreV3_Engine_Flex (v3.2.5)  | `0x000000008DD9A7CD3f4A267A88082d4a1E2f6553` |
+| V3FlexLib (used v3.2.1 - v3.2.3)                      | `0x0000000006FD94B22fb33164322019750E854f96` |
+| Implementation: GenArt721CoreV3_Engine (v3.2.2)       | `0x000000F74f006CE6480042f001c45c928D1Ae6E7` |
+| Implementation: GenArt721CoreV3_Engine_Flex (v3.2.3)  | `0x0066009B13b8DfDabbE07800ee00004b008257D9` |
+| Implementation: GenArt721CoreV3_Engine (v3.2.0)       | `0x00000000AEf91971cc6251936Ec6568B23b55342` |
+| Implementation: GenArt721CoreV3_Engine_Flex (v3.2.1)  | `0x00000000af817dFBc2b3006E365D2eFef1953334` |
+| SplitProviderV0 (0xSplits v2 issue)                   | `0x0000000004B100B47f061968a387c82702AFe946` |
+| SplitProviderV0 (0xSplits v2.1 issue)                 | `0x000000000ef75C77F6bd0b2Ee166501FbBDb40c8` |
 
 ## Permissioned deployments, deprecated (all networks)
 
@@ -211,14 +204,20 @@ The following contracts were deployed by Art Blocks on various production networ
 
 They are included here for reference purposes.
 
-| Contract/Library (network:Contract)            | Address                                      |
-| ---------------------------------------------- | -------------------------------------------- |
-| mainnet:EngineFactory (v3.2.4, v3.2.5)         | `0x00000000D0A0E78e243625Dbb4A5B37286Eac629` |
-| arbitrum:EngineFactory (v3.2.4, v3.2.5)        | `0x000000D60eeC180eDC00001173dE37ACd269b196` |
-| base:EngineFactory (v3.2.4, v3.2.5)            | `0x0000000005aBb84fF93f599a6309cA71a6DD4e4E` |
-| sepolia-staging:EngineFactory (v3.2.4, v3.2.5) | `0x000000ab19F142143f03f96E2Bdf068474E50b7D` |
-| sepolia-dev:EngineFactory (v3.2.4, v3.2.5)     | `0x0000000765f79939e1Abb63C266cE983bd5eF5c0` |
-| mainnet:EngineFactory (v3.2.2, v3.2.3)         | `0x000000AB1a0786eE8c71516d9AbB8a36fbdDb7CB` |
-| arbitrum:EngineFactory (v3.2.2, v3.2.3)        | `0x000000da9D51CC51a50Dc296246075859b13ab0B` |
-| mainnet:EngineFactory (v3.2.0, v3.2.1)         | `0x00000000F82E4e6D5AB22D63050FCb2bF15eE95d` |
-| arbitrum:EngineFactory (v3.2.0, v3.2.1)        | `0x000000bbAA3E36b60C06A92430D8956459c2Fd51` |
+| Contract/Library (network:Contract)             | Address                                      |
+| ----------------------------------------------- | -------------------------------------------- |
+| mainnet:EngineFactory (v3.2.9, v3.2.10)         | `0x00000067f7CE2C47f295b2DE3485a796d2FC058f` |
+| arbitrum:EngineFactory (v3.2.9, v3.2.10)        | `0x000000672BF0ff9F0506ed6206772612dd7A798B` |
+| base:EngineFactory (v3.2.9, v3.2.10)            | `0x0000006712ebceb6d73e1f33d70c603b1d090d30` |
+| shape:EngineFactory (v3.2.9, v3.2.10)           | `0x69Ee773e7DC7386581aFAAacd345113e34238806` |
+| sepolia-staging:EngineFactory (v3.2.9, v3.2.10) | `0x00000006741521Ccd80EEd7BfA8bDbe542B425Cf` |
+| sepolia-dev:EngineFactory (v3.2.9, v3.2.10)     | `0x004493006600aDB55FA95244ED29000B2D00F200` |
+| mainnet:EngineFactory (v3.2.4, v3.2.5)          | `0x00000000D0A0E78e243625Dbb4A5B37286Eac629` |
+| arbitrum:EngineFactory (v3.2.4, v3.2.5)         | `0x000000D60eeC180eDC00001173dE37ACd269b196` |
+| base:EngineFactory (v3.2.4, v3.2.5)             | `0x0000000005aBb84fF93f599a6309cA71a6DD4e4E` |
+| sepolia-staging:EngineFactory (v3.2.4, v3.2.5)  | `0x000000ab19F142143f03f96E2Bdf068474E50b7D` |
+| sepolia-dev:EngineFactory (v3.2.4, v3.2.5)      | `0x0000000765f79939e1Abb63C266cE983bd5eF5c0` |
+| mainnet:EngineFactory (v3.2.2, v3.2.3)          | `0x000000AB1a0786eE8c71516d9AbB8a36fbdDb7CB` |
+| arbitrum:EngineFactory (v3.2.2, v3.2.3)         | `0x000000da9D51CC51a50Dc296246075859b13ab0B` |
+| mainnet:EngineFactory (v3.2.0, v3.2.1)          | `0x00000000F82E4e6D5AB22D63050FCb2bF15eE95d` |
+| arbitrum:EngineFactory (v3.2.0, v3.2.1)         | `0x000000bbAA3E36b60C06A92430D8956459c2Fd51` |

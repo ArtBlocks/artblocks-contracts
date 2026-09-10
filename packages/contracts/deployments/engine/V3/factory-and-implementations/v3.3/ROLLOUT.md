@@ -267,17 +267,23 @@ Deployment — **complete on all six environments**:
       the new factory field-by-field against the one it replaces and simulated both calls from the
       Safe
 
-Cutover — **not started**, and deliberately after the off-chain work:
+Cutover — **complete on all six environments**:
 
-- [ ] Handoff batch executed by the Deployer Safe
-- [ ] `3_verify.ts` passes
-- [ ] `MAIN_CONFIG` in `scripts/util/constants.ts` points at the new factory
-- [ ] `INFRASTRUCTURE.md` diagram updated, outgoing factory moved to the deprecated table, v3.2.9 /
-      v3.2.10 implementations moved to the deprecated table
+- [x] Handoff batch executed by each Deployer Safe
+- [x] `3_verify.ts` passes on every network — 15/15 checks each, including that the Core Registry
+      is owned by the v005 factory and that every deployed contract matches the local build
+- [x] Every outgoing v004 factory confirmed `isAbandoned() == true`
+- [x] `MAIN_CONFIG` in `scripts/util/constants.ts` points at the v005 factories
+- [x] `INFRASTRUCTURE.md` diagrams updated, v004 factories and the v3.2.9 / v3.2.10
+      implementations moved to the deprecated tables
 
-Until the handoff, every network still creates Engine contracts from its v004 factory on
-v3.2.9/v3.2.10. The v3.3 contracts are deployed and inert; nothing an artist or collector can see
-has changed.
+New Engine and Engine Flex contracts now clone v3.3.0 / v3.3.1 and support per-project transfer
+hooks. Contracts created before the cutover are unaffected and stay on v3.2.9 / v3.2.10 forever —
+a clone's implementation is fixed in its bytecode.
+
+The executed Safe batches are not kept in the repo: they were a one-time artifact, and
+`2_build-handoff-txs.ts` reproduces them (it now refuses to, correctly, because `MAIN_CONFIG`
+already names the incoming factory).
 
 ## Repo-wide follow-ups, once every network is done
 
@@ -287,12 +293,70 @@ has changed.
 - [x] `README.md`: keyless-create2 section names the new libraries and the reference hook.
 - [x] `deployments/libs/`: `V3EngineLib_0.md` and `V3TransferHookLib_0.md`.
 - [x] `deployments/engine/V3/transfer-hooks/OwnerHistoryTransferHook.md`.
-- [ ] Publish `@artblocks/contracts` — the changeset for v3.3 is in `.changeset/`. The subgraph
-      generates its ABIs from that npm package (`abis/_generate-abis.sh` reads
-      `node_modules/@artblocks/contracts`), pinned at `1.3.2`, which predates transfer hooks. No
-      downstream indexing work can start until a version carrying the new events is published.
+- [x] Publish `@artblocks/contracts` — released as `1.4.0`. The subgraph generates its ABIs from
+      that npm package (`abis/_generate-abis.sh` reads `node_modules/@artblocks/contracts`) and was
+      pinned at `1.3.2`, which predates transfer hooks, so no downstream indexing work could start
+      until this landed.
 - [x] Re-mine the emptied studio salt files against the v005 factory and the v3.3
       implementations, and repopulate them (see below).
+
+## How the handoff was executed
+
+One Safe batch per environment, each containing exactly two calls against the outgoing factory,
+sent by the Deployer Safe that owns it:
+
+1. `transferCoreRegistryOwnership(<v005 factory>)`
+2. `abandon()` — one-way
+
+Each batch was uploaded to the Safe's Transaction Builder app. Every one was simulated from its
+Safe before being written, and `2_build-handoff-txs.ts` refuses to emit one unless the incoming
+factory carries over the outgoing factory's `owner`, `coreRegistry`, `defaultBaseURIHost` and
+`universalBytecodeStorageReader` unchanged. Regenerate a batch for a future upgrade with
+`HANDOFF_OUTPUT_DIR` if the exact JSON is worth committing for review.
+
+Order did not matter between networks, and the switch remains reversible: each v005 factory has the
+same Safe as its owner and the same `transferCoreRegistryOwnership`, so ownership can be handed
+back. `abandon()` on the outgoing factories is the only irreversible part, and it is belt-and-braces
+— after step 1 those factories' `createEngineContract` reverts at `registerContract` regardless.
+
+`3_verify.ts` is the check to re-run against any network at any time. Note it only asserts the
+_outgoing_ factory is abandoned while `MAIN_CONFIG` still names it; once constants are updated that
+check is skipped, so abandonment was confirmed separately by reading `isAbandoned()` on each v004
+factory.
+
+## Dev and staging project-creation contracts
+
+Activating the v005 factories changed what a newly created **contract** clones. It did not change
+which contract new **projects** are added to, and on dev and staging that is a fixed core. Both were
+clones of the v3.2.5 implementation, so neither could ever support transfer hooks — a clone's
+implementation is fixed in its bytecode. Replacements are deployed:
+
+| Environment | New core (v3.3.1 Engine Flex)                | Replaces (v3.2.5)                            |
+| ----------- | -------------------------------------------- | -------------------------------------------- |
+| dev         | `0x9Ff4D9598011FAb37599573c79c66187bB12195C` | `0x4A6d2e4A18E194317025d7a995C705AAB58d3485` |
+| staging     | `0x3747a7C0959177B31dd91D20D00652de304011d9` | `0x12f976648178b0c37e7b7ab218059b12b29dc78d` |
+
+Deployment transactions:
+
+- dev — `0xb4dc1fea395b2e58b7c12ae63d1b50b0bfb9ea011e6346fc16903330087d1cd5`
+- staging — `0xd3d91feb5452553deb053f07efa966640f0fdd29140b908958aab90f78d41e5a`
+
+Both are Engine Flex, matching what they replace: dropping to non-Flex would have silently removed
+external asset dependency support from new projects. Each carries a fresh AdminACL whose superAdmin
+is the address that controls the contract it replaces — `0x3c64…48c4` for dev and `0xAbaB…93Da` for
+staging, which differ — so operational access is unchanged. Both are registered in their Core
+Registry and wired to the same shared minter filter and randomizer as their predecessors.
+
+Remaining:
+
+- [ ] `yarn post-deploy:v3-engine:dev` / `:staging` — image buckets and off-chain sync
+- [ ] Point `DEFAULT_AUTO_PROJECT_CREATION_CONTRACT_ADDRESSES` in
+      `apps/creator-dashboard-v2/environments/shared.ts` (artblocks repo), or the
+      `VITE_AUTO_PROJECT_CREATION_CONTRACT_ADDRESS` override, at the new addresses
+
+Until that last step lands, artists creating projects on dev and staging still land on the old
+v3.2.5 contracts and see no transfer hook support. Mainnet and the other production networks are
+unaffected: they have no auto-project-creation default.
 
 ## Gotchas
 
