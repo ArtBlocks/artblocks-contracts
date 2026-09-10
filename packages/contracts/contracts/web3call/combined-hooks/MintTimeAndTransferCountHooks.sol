@@ -49,8 +49,13 @@ import {IERC165} from "@openzeppelin-5.0/contracts/interfaces/IERC165.sol";
  *    - `minRange`: 0
  *    - `maxRange`: `type(uint256).max` (do not set a small max — a transfer
  *      that would exceed it will skip the PMP write rather than revert)
- *    - `pmpLockedAfterTimestamp`: 0 (do not lock this param)
- *    Do **not** set this contract as `tokenPMPPostConfigHook`.
+ *    - `pmpLockedAfterTimestamp`: 0 (do not lock this param). On PMPV1 a
+ *      passed lock timestamp also freezes token values and later writes are
+ *      skipped; PMPV0 only locks further project-config changes.
+ *    Do **not** set this contract as `tokenPMPPostConfigHook`. An existing
+ *    post-config hook on the project still runs on every `transferCount`
+ *    write; if it reverts, the PMP write is skipped and the mint or transfer
+ *    still succeeds.
  * 3. PMP read-augmentation hook, via `configureProjectHooks` on the same PMP,
  *    passing this address as `tokenPMPReadAugmentationHook`. This injects
  *    `mintTimestamp`, live `secondsSinceMint`, and `transferCount` on read.
@@ -109,9 +114,14 @@ import {IERC165} from "@openzeppelin-5.0/contracts/interfaces/IERC165.sol";
  *   count, plus the same reentrancy flag.
  *
  * A successful PMP `configureTokenParams` write on mint or transfer is extra
- * on top of that (PMP storage + `TokenParamsConfigured`). See the gas test in
- * `mint-time-and-transfer-count-hooks.test.ts` for the bounds that keep the
- * hook-only figures honest.
+ * on top of that. Measured the same way with Address-auth `transferCount`
+ * writes enabled:
+ *
+ * - a mint costs about 92,800 gas more
+ * - a transfer costs about 78,400 gas more
+ *
+ * See the gas tests in `mint-time-and-transfer-count-hooks.test.ts` for the
+ * bounds that keep these figures honest.
  * ----------------------------------------------------------------------------
  * SAFETY. A reverting hook aborts the transfer that invoked it, so a hook that
  * can revert can make a token permanently non-transferable. Local recording

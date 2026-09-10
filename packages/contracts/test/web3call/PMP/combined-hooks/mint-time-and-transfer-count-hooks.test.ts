@@ -15,7 +15,11 @@ import {
   deployAndGet,
   deployCoreWithMinterFilter,
 } from "../../../util/common";
-import { PMPFixtureConfig, setupPMPFixture } from "../pmpFixtures";
+import {
+  PMPFixtureConfig,
+  setupPMPFixture,
+  setupPMPV1Fixture,
+} from "../pmpFixtures";
 import {
   getPMPInput,
   getPMPInputConfig,
@@ -666,17 +670,40 @@ describe("MintTimeAndTransferCountHooks PMP integration", function () {
     return { tokenId, receipt, tx };
   }
 
-  function getTransferCountPmpConfig(authAddress: string) {
+  function getTransferCountPmpConfig(
+    authAddress: string,
+    overrides: { maxRange?: string; pmpLockedAfterTimestamp?: number } = {}
+  ) {
     return getPMPInputConfig(
       PARAM_KEY_TRANSFER_COUNT,
       PMP_AUTH_ENUM.Address,
       PMP_PARAM_TYPE_ENUM.Uint256Range,
-      0,
+      overrides.pmpLockedAfterTimestamp ?? 0,
       authAddress,
       [],
       "0x0000000000000000000000000000000000000000000000000000000000000000",
-      "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      overrides.maxRange ??
+        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
     );
+  }
+
+  async function storedTransferCountWithoutAugment(
+    config: T_ConfigWithHook,
+    tokenId: ReturnType<typeof ethers.BigNumber.from> | number
+  ): Promise<string | undefined> {
+    await config.pmp
+      .connect(config.accounts.artist)
+      .configureProjectHooks(
+        config.genArt721Core.address,
+        config.projectZero,
+        ethersConstants.AddressZero,
+        ethersConstants.AddressZero
+      );
+    const params = await config.pmp.getTokenParams(
+      config.genArt721Core.address,
+      tokenId
+    );
+    return findParam(params, PARAM_KEY_TRANSFER_COUNT)?.value;
   }
 
   it("binds the constructor PMP address", async function () {
@@ -915,6 +942,221 @@ describe("MintTimeAndTransferCountHooks PMP integration", function () {
         .to.emit(config.hook, "TransferCountPMPSyncFailed")
         .withArgs(config.genArt721Core.address, tokenId, 1);
     });
+
+    it("does not backfill mint PMP 0 when a token is first seen on transfer", async function () {
+      const config = await loadFixture(_beforeEach);
+      await configureTransferCountPmp(config);
+      // fixture minted token 0 before this hook was configured as the transfer hook
+      const tokenId = config.projectZeroTokenZero;
+      const core = config.genArt721Core.address;
+      expect(await config.hook.isTrackedFromMint(core, tokenId)).to.be.false;
+
+      await expect(
+        config.genArt721Core
+          .connect(config.accounts.user)
+          .transferFrom(
+            config.accounts.user.address,
+            config.accounts.user2.address,
+            tokenId
+          )
+      ).to.emit(config.pmp, "TokenParamsConfigured");
+
+      expect(await config.hook.mintTimestamp(core, tokenId)).to.equal(0);
+      expect(await config.hook.transferCount(core, tokenId)).to.equal(1);
+      const params = await config.pmp.getTokenParams(core, tokenId);
+      expect(findParam(params, PARAM_KEY_MINT_TIMESTAMP)?.value).to.equal("0");
+      expect(findParam(params, PARAM_KEY_TRANSFER_COUNT)?.value).to.equal("1");
+    });
+
+    it("does not revert when maxRange is exceeded; PMP stays at the last in-range value", async function () {
+      const config = await loadFixture(_beforeEach);
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          getTransferCountPmpConfig(config.hook.address, {
+            maxRange:
+              "0x0000000000000000000000000000000000000000000000000000000000000001",
+          }),
+        ]);
+      const { tokenId } = await mintNextProjectZeroToken(config);
+
+      await config.genArt721Core
+        .connect(config.accounts.user)
+        .transferFrom(
+          config.accounts.user.address,
+          config.accounts.user2.address,
+          tokenId
+        );
+      const tx = await config.genArt721Core
+        .connect(config.accounts.user2)
+        .transferFrom(
+          config.accounts.user2.address,
+          config.accounts.artist.address,
+          tokenId
+        );
+      await expect(tx)
+        .to.emit(config.hook, "TransferCountPMPSyncFailed")
+        .withArgs(config.genArt721Core.address, tokenId, 2);
+
+      expect(
+        await config.hook.transferCount(config.genArt721Core.address, tokenId)
+      ).to.equal(2);
+      expect(await storedTransferCountWithoutAugment(config, tokenId)).to.equal(
+        "1"
+      );
+    });
+
+    it("invokes an existing post-config hook on transferCount writes", async function () {
+      const config = await loadFixture(_beforeEach);
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProjectHooks(
+          config.genArt721Core.address,
+          config.projectZero,
+          config.configureHook.address,
+          config.hook.address
+        );
+      await configureTransferCountPmp(config);
+      const { tokenId, tx } = await mintNextProjectZeroToken(config);
+
+      await expect(tx).to.emit(config.pmp, "TokenParamsConfigured");
+      await expect(tx).to.emit(config.configureHook, "TokenPMPConfigured");
+      expect(await config.configureHook.lastPmpKey()).to.equal(
+        PARAM_KEY_TRANSFER_COUNT
+      );
+      expect(await config.configureHook.lastTokenId()).to.equal(tokenId);
+    });
+
+    it("does not revert mint or transfer when the post-config hook reverts", async function () {
+      const config = await loadFixture(_beforeEach);
+      await config.configureHook.setShouldRevert(true);
+      await config.pmp
+        .connect(config.accounts.artist)
+        .configureProjectHooks(
+          config.genArt721Core.address,
+          config.projectZero,
+          config.configureHook.address,
+          config.hook.address
+        );
+      await configureTransferCountPmp(config);
+      const { tokenId, tx: mintTx } = await mintNextProjectZeroToken(config);
+      await expect(mintTx)
+        .to.emit(config.hook, "TransferCountPMPSyncFailed")
+        .withArgs(config.genArt721Core.address, tokenId, 0);
+
+      const transferTx = await config.genArt721Core
+        .connect(config.accounts.user)
+        .transferFrom(
+          config.accounts.user.address,
+          config.accounts.user2.address,
+          tokenId
+        );
+      await expect(transferTx)
+        .to.emit(config.hook, "TransferCountPMPSyncFailed")
+        .withArgs(config.genArt721Core.address, tokenId, 1);
+      expect(await config.genArt721Core.ownerOf(tokenId)).to.equal(
+        config.accounts.user2.address
+      );
+      expect(
+        await config.hook.transferCount(config.genArt721Core.address, tokenId)
+      ).to.equal(1);
+    });
+  });
+});
+
+describe("MintTimeAndTransferCountHooks PMPV1 value lock", function () {
+  async function _beforeEach(): Promise<T_ConfigWithHook> {
+    const config = await loadFixture(setupPMPV1Fixture);
+    const hook = await deployAndGet(config, "MintTimeAndTransferCountHooks", [
+      config.pmp.address,
+    ]);
+    await config.genArt721Core
+      .connect(config.accounts.artist)
+      .configureProjectTransferHook(config.projectZero, hook.address);
+    await config.pmp
+      .connect(config.accounts.artist)
+      .configureProjectHooks(
+        config.genArt721Core.address,
+        config.projectZero,
+        ethersConstants.AddressZero,
+        hook.address
+      );
+    return {
+      ...config,
+      hook,
+    } as T_ConfigWithHook;
+  }
+
+  async function mintNextProjectZeroToken(config: T_ConfigWithHook) {
+    const minterAddress = await config.minterFilter.getMinterForProject(
+      config.projectZero
+    );
+    const minter = await ethers.getContractAt(
+      "MinterSetPriceV2",
+      minterAddress
+    );
+    const tx = await minter
+      .connect(config.accounts.user)
+      .purchase(config.projectZero, {
+        value: ethers.utils.parseEther("0.1"),
+      });
+    await tx.wait();
+    return { tokenId: config.projectZeroTokenTwo, tx };
+  }
+
+  it("does not revert a transfer after the PMPV1 value lock; PMP stays at the pre-lock count", async function () {
+    const config = await loadFixture(_beforeEach);
+    const lockAt = (await helpers.time.latest()) + 60;
+    await config.pmp
+      .connect(config.accounts.artist)
+      .configureProject(config.genArt721Core.address, config.projectZero, [
+        getPMPInputConfig(
+          PARAM_KEY_TRANSFER_COUNT,
+          PMP_AUTH_ENUM.Address,
+          PMP_PARAM_TYPE_ENUM.Uint256Range,
+          lockAt,
+          config.hook.address,
+          [],
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        ),
+      ]);
+    const { tokenId } = await mintNextProjectZeroToken(config);
+
+    await helpers.time.increase(120);
+
+    const tx = await config.genArt721Core
+      .connect(config.accounts.user)
+      .transferFrom(
+        config.accounts.user.address,
+        config.accounts.user2.address,
+        tokenId
+      );
+    await expect(tx)
+      .to.emit(config.hook, "TransferCountPMPSyncFailed")
+      .withArgs(config.genArt721Core.address, tokenId, 1);
+    await expect(tx).to.not.emit(config.pmp, "TokenParamsConfigured");
+
+    expect(
+      await config.hook.transferCount(config.genArt721Core.address, tokenId)
+    ).to.equal(1);
+    expect(await config.genArt721Core.ownerOf(tokenId)).to.equal(
+      config.accounts.user2.address
+    );
+
+    await config.pmp
+      .connect(config.accounts.artist)
+      .configureProjectHooks(
+        config.genArt721Core.address,
+        config.projectZero,
+        ethersConstants.AddressZero,
+        ethersConstants.AddressZero
+      );
+    const stored = await config.pmp.getTokenParams(
+      config.genArt721Core.address,
+      tokenId
+    );
+    expect(findParam(stored, PARAM_KEY_TRANSFER_COUNT)?.value).to.equal("0");
   });
 });
 
@@ -1015,5 +1257,133 @@ describe("MintTimeAndTransferCountHooks gas", async function () {
     // measured: mint 40,387 / transfer 28,012
     expect(transferDelta).to.be.within(23_000, 33_000);
     expect(mintDelta).to.be.within(35_000, 46_000);
+  });
+});
+
+/**
+ * Production path: transfer hook plus Address-auth `transferCount` PMP writes.
+ * Hook-only figures above do not include this cost.
+ */
+describe("MintTimeAndTransferCountHooks gas with PMP writes", async function () {
+  async function _beforeEach(withHook: boolean) {
+    let config: T_Config = {
+      accounts: await getAccounts(),
+    };
+    config = await assignDefaultConstants(config);
+    ({
+      genArt721Core: config.genArt721Core,
+      minterFilter: config.minterFilter,
+      randomizer: config.randomizer,
+      adminACL: config.adminACL,
+    } = await deployCoreWithMinterFilter(
+      config,
+      "GenArt721CoreV3_Engine_Flex",
+      "MinterFilterV1"
+    ));
+    config.minter = await deployAndGet(config, "MinterSetPriceV2", [
+      config.genArt721Core.address,
+      config.minterFilter.address,
+    ]);
+    await config.minterFilter
+      .connect(config.accounts.deployer)
+      .addApprovedMinter(config.minter.address);
+    await config.genArt721Core
+      .connect(config.accounts.deployer)
+      .addProject("name", config.accounts.artist.address);
+    await config.genArt721Core
+      .connect(config.accounts.deployer)
+      .toggleProjectIsActive(config.projectZero);
+    await config.genArt721Core
+      .connect(config.accounts.artist)
+      .updateProjectMaxInvocations(config.projectZero, config.maxInvocations);
+    await config.minterFilter
+      .connect(config.accounts.deployer)
+      .setMinterForProject(config.projectZero, config.minter.address);
+    await config.minter
+      .connect(config.accounts.artist)
+      .updatePricePerTokenInWei(config.projectZero, 0);
+    await config.genArt721Core
+      .connect(config.accounts.artist)
+      .toggleProjectIsPaused(config.projectZero);
+
+    const delegateRegistry = await deployAndGet(config, "DelegateRegistry", []);
+    const pmp = await deployAndGet(config, "PMPV0", [delegateRegistry.address]);
+    await config.genArt721Core
+      .connect(config.accounts.artist)
+      .addProjectAssetDependencyOnChainAtAddress(
+        config.projectZero,
+        pmp.address
+      );
+
+    config.transferHook = await deployAndGet(
+      config,
+      "MintTimeAndTransferCountHooks",
+      [pmp.address]
+    );
+    if (withHook) {
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .configureProjectTransferHook(
+          config.projectZero,
+          config.transferHook.address
+        );
+      await pmp
+        .connect(config.accounts.artist)
+        .configureProjectHooks(
+          config.genArt721Core.address,
+          config.projectZero,
+          ethersConstants.AddressZero,
+          config.transferHook.address
+        );
+      await pmp
+        .connect(config.accounts.artist)
+        .configureProject(config.genArt721Core.address, config.projectZero, [
+          getPMPInputConfig(
+            PARAM_KEY_TRANSFER_COUNT,
+            PMP_AUTH_ENUM.Address,
+            PMP_PARAM_TYPE_ENUM.Uint256Range,
+            0,
+            config.transferHook.address,
+            [],
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+          ),
+        ]);
+    }
+    return config;
+  }
+
+  async function measure(withHook: boolean) {
+    const config = await loadFixture(_beforeEach.bind(null, withHook));
+    const mint = await (
+      await config.minter
+        .connect(config.accounts.user)
+        .purchase(config.projectZero)
+    ).wait();
+    const tokenId = config.projectZeroTokenZero.toNumber();
+    const transfer = await (
+      await config.genArt721Core
+        .connect(config.accounts.user)
+        .transferFrom(
+          config.accounts.user.address,
+          config.accounts.user2.address,
+          tokenId
+        )
+    ).wait();
+    return { mint: mint.gasUsed, transfer: transfer.gasUsed };
+  }
+
+  it("PMP writes add bounded gas on mint and transfer [@skip-on-coverage]", async function () {
+    const withoutHook = await measure(false);
+    const withHook = await measure(true);
+
+    const transferDelta = withHook.transfer
+      .sub(withoutHook.transfer)
+      .toNumber();
+    const mintDelta = withHook.mint.sub(withoutHook.mint).toNumber();
+
+    // measured: mint 92,840 / transfer 78,449
+    expect(transferDelta).to.be.within(73_000, 84_000);
+    expect(mintDelta).to.be.within(87_000, 99_000);
   });
 });
