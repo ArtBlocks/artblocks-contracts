@@ -347,16 +347,14 @@ is the address that controls the contract it replaces — `0x3c64…48c4` for de
 staging, which differ — so operational access is unchanged. Both are registered in their Core
 Registry and wired to the same shared minter filter and randomizer as their predecessors.
 
-Remaining:
+Both follow-ups are complete:
 
-- [ ] `yarn post-deploy:v3-engine:dev` / `:staging` — image buckets and off-chain sync
-- [ ] Point `DEFAULT_AUTO_PROJECT_CREATION_CONTRACT_ADDRESSES` in
-      `apps/creator-dashboard-v2/environments/shared.ts` (artblocks repo), or the
-      `VITE_AUTO_PROJECT_CREATION_CONTRACT_ADDRESS` override, at the new addresses
+- [x] `yarn post-deploy:v3-engine:dev` / `:staging` — image buckets and off-chain sync
+- [x] The creator tooling that adds projects on dev and staging now targets these cores
 
-Until that last step lands, artists creating projects on dev and staging still land on the old
-v3.2.5 contracts and see no transfer hook support. Mainnet and the other production networks are
-unaffected: they have no auto-project-creation default.
+New projects on dev and staging therefore land on v3.3 cores and can configure transfer hooks.
+Mainnet and the other production networks were never affected: they have no fixed
+project-creation contract.
 
 ## Gotchas
 
