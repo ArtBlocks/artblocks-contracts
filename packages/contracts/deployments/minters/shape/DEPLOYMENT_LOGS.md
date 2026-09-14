@@ -9,3 +9,8 @@
       [INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/minters/shape/shared-minter-deploy-config-minprice.shape.ts
 
     
+      ----------------------------------------
+      [INFO] Datetime of deployment: 2026-09-11T20:25:07.921Z
+      [INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/minters/shape/shared-minter-deploy-config-ram-sea.shape.ts
+
+    
