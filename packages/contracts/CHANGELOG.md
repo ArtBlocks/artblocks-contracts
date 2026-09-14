@@ -1,5 +1,11 @@
 # @artblocks/contracts
 
+## 1.5.0
+
+### Minor Changes
+
+- 0109423: Add `MintTimeAndTransferCountHooks`, a shared reference combined hook that records mint timestamp and post-mint transfer count, injects them (plus live seconds since mint) into PostParams, and optionally writes `transferCount` as an Address-auth PMP so transfers emit `TokenParamsConfigured`.
+
 ## 1.4.0
 
 ### Minor Changes

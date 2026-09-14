@@ -251,7 +251,7 @@
       S.configs.forEach((cfg, ci) => {
         cfg.chainIds.forEach(cid => {
           const k = key(ci, cid);
-          S.salts[k] = '0x' + '0'.repeat(64);
+          S.salts[k] = cfg.salt || ('0x' + '0'.repeat(64));
           S.deploy[k] = { status: 'pending' };
           S.verify[k] = { status: 'idle' };
 
