@@ -245,3 +245,41 @@ Date: 2026-06-16T13:26:40.225Z
 
 ---
 
+
+# Shared Minter Deployment
+
+Date: 2026-09-11T20:27:26.330Z
+
+## **Network:** shape
+
+## **Environment:** shape-mainnet
+
+**Deployment Input File:** `deployments/minters/shape/shared-minter-deploy-config-ram-sea.shape.ts`
+
+**MinterRAMV0:** https://shapescan.xyz/address/0x1a820A0D3edC157ba76757b16750149d717cbC96#code
+
+**Associated Minter Filter:** 0x6DdDBbd9aE353fCdaCB83a8fb085714bFc7F3f66
+
+**Deployment Args:** 0x6DdDBbd9aE353fCdaCB83a8fb085714bFc7F3f66
+
+---
+
+
+# Shared Minter Deployment
+
+Date: 2026-09-11T20:29:38.118Z
+
+## **Network:** shape
+
+## **Environment:** shape-mainnet
+
+**Deployment Input File:** `deployments/minters/shape/shared-minter-deploy-config-ram-sea.shape.ts`
+
+**MinterSEAV1:** https://shapescan.xyz/address/0xAc521EA7A83a3Bc3f9f1e09F8300a6301743fB1f#code
+
+**Associated Minter Filter:** 0x6DdDBbd9aE353fCdaCB83a8fb085714bFc7F3f66
+
+**Deployment Args:** 0x6DdDBbd9aE353fCdaCB83a8fb085714bFc7F3f66
+
+---
+
