@@ -3307,3 +3307,72 @@ Date: 2024-10-03T20:31:48.898Z
         ---
       
         
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2026-09-16T20:41:00.989Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** prod
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000E8227826CB865a4ee37B1300C6b6120E#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x00000000824067A9E7fcB6CB084eCcd8f3Cb8399#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x00000000a337ce098Bf11265176a2bDDA1f41060#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine Flex | 0x00000096DF621F2A8EF2f103B7299b7910d8cD99
+  
+        **Engine Contract:** https://etherscan.io/address/0x00000096DF621F2A8EF2f103B7299b7910d8cD99#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Anna Lucia
+        - **Token Name:** Art Blocks Studio | 111
+        - **Token Ticker:** ABSTUDIO_111
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x6a2B848Ff0AA51b92Df5092d7D41Ac5B5081b1eF
+        - **Super Admin Address:** 0x101419E2d84470d900C41B86974B5912C92f01FE        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-111-mainnet
+        
+        ---
+      
+        
+        ## Deployment: Engine Flex | 0x000000b2723b0B8523C12C286d36852B950b5fA6
+  
+        **Engine Contract:** https://etherscan.io/address/0x000000b2723b0B8523C12C286d36852B950b5fA6#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** James Merrill
+        - **Token Name:** Art Blocks Studio | 112
+        - **Token Ticker:** ABSTUDIO_112
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x4539dF2bDCcde9Fc4B7B4118d86DFA994EEdc420
+        - **Super Admin Address:** 0xB3B212da1F50DE8eCDE59C932e36DF7aFb6319cB        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-112-mainnet
+        
+        ---
+      
+        
