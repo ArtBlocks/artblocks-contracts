@@ -19,6 +19,7 @@ import {IGenArt721CoreContractV3_Base} from "../../interfaces/v0.8.x/IGenArt721C
 import {IGenArt721CoreContractV3_Engine} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine.sol";
 
 import {ABHelpers} from "../../libs/v0.8.x/ABHelpers.sol";
+import {ImmutableStringArray} from "../../libs/v0.8.x/ImmutableStringArray.sol";
 
 import {Strings} from "@openzeppelin-5.0/contracts/utils/Strings.sol";
 import {IERC721} from "@openzeppelin-5.0/contracts/interfaces/IERC721.sol";
@@ -29,9 +30,22 @@ import {IERC165} from "@openzeppelin-5.0/contracts/interfaces/IERC165.sol";
  * @author Art Blocks Inc.
  * @notice Binds one token of a "palette" project to one token of a "form"
  * project. The form project is the artwork whose image depends on the pairing;
- * the palette project supplies something the form's script consumes — in
- * practice, a second token's hash. Both projects are fixed at deployment and
- * this contract has no owner and no mutable configuration.
+ * a palette project supplies the palette its script paints with.
+ *
+ * This contract is also the registry and the resolver for that palette data. A
+ * palette project is registered together with its complete, ordered list of
+ * palette entries, and the contract decides which entry each palette token
+ * resolves to. Both projects' scripts read that answer rather than computing
+ * it, so there is exactly one implementation of the mapping and nothing to keep
+ * in sync across two languages.
+ *
+ * Only the form project is fixed at deployment. Palette projects are
+ * registered afterwards, on any core contract — the form project's own or any
+ * other — so collections released long after the form project can still be
+ * bound and painted. Registering one is the contract's only administrative
+ * operation, it is append-only, and a project's entries are immutable once
+ * written. There is no owner, no removal, and nothing else to configure. Every
+ * other state change is a collector binding or unbinding.
  * ----------------------------------------------------------------------------
  * The pairing is 1:1 and requires common ownership: a palette token may be
  * bound to at most one form token, a form token to at most one palette token,
@@ -44,12 +58,13 @@ import {IERC165} from "@openzeppelin-5.0/contracts/interfaces/IERC165.sol";
  * - The **configure hook** is the only way a collector changes state. It runs
  *   on every write of the form project's binding param and either binds,
  *   unbinds, or reverts.
- * - The **transfer hook** runs on both projects. When a bound token moves, it
- *   clears the pairing directly, then writes the form token's binding param so
- *   the off-chain pipeline re-renders the form token.
- * - The **augment hook** runs on both projects. It reports canonical state on
- *   read, and strips the raw binding param so a stale value can never reach an
- *   artwork script.
+ * - The **transfer hook** runs on the form project and on every palette
+ *   project. When a bound token moves, it clears the pairing directly, then
+ *   writes the form token's binding param so the off-chain pipeline re-renders
+ *   the form token.
+ * - The **augment hook** runs on the form project and on every palette project.
+ *   It reports canonical state on read, resolves palette data, and strips the
+ *   raw binding param so a stale value can never reach an artwork script.
  * ----------------------------------------------------------------------------
  * ONE WRITE, ONE RE-RENDER. `PMPV1.configureTokenParams` is `nonReentrant` and
  * invokes the configure hook inside that call, so a configure hook cannot write
@@ -80,13 +95,67 @@ import {IERC165} from "@openzeppelin-5.0/contracts/interfaces/IERC165.sol";
  * transaction on a wallet that batches, two otherwise. `previewBind` reports
  * which case a front end is in.
  * ----------------------------------------------------------------------------
- * REQUIRED SETUP. Four steps, in this order. Steps 2-4 are independent of each
- * other but all require the deployed hook address from step 1.
+ * PALETTE PROJECTS GROW. A form project is expected to outlive its first
+ * palette collection. `registerPaletteProject` adds another, callable only by
+ * the form project's artist, read live from the core so no owner is stored.
  *
- * 1. Deploy this contract with the PMP contract the projects use, and the
- *    (core, projectId) pair for each side. The palette project ID must not be
- *    `0`, because `UNBOUND_PARAM_VALUE` is `0` and no palette token ID may
- *    collide with it.
+ * Registration is append-only. Deregistration is not offered because it would
+ * strand every pairing already made against that project: the palette holder
+ * has no write path, and only the form token's owner can express an unbind.
+ * Growing the set can never invalidate an existing pairing, which is what makes
+ * appending safe to do at any time.
+ *
+ * Because the palette entries live here and both scripts read `paletteData`,
+ * **neither art script changes when a palette project is added.** The form
+ * project's script can be locked on day one and still paint collections that do
+ * not exist yet. That is the whole reason palette data is on chain rather than
+ * in the script.
+ *
+ * One thing does not happen automatically on registration: **configure this
+ * contract as the new project's transfer hook** on its core. Without it,
+ * binding works but a transfer of one of its tokens does not break the pairing
+ * — the degraded mode described below.
+ *
+ * A palette project may be on any core, including the form project's own. That
+ * is what the packed binding param below buys: nothing here assumes the artist
+ * will still be minting on the same Art Blocks contract in five years.
+ * ----------------------------------------------------------------------------
+ * THE BINDING PARAM VALUE IS A PACKED TOKEN. A PostParam is a `uint256`, so the
+ * value a collector writes has to name a `(coreContract, tokenId)` pair in one
+ * number. It does so by packing them:
+ *
+ *     value = (uint256(uint160(coreContract)) << 96) | paletteTokenId
+ *
+ * An address is 160 bits and an Art Blocks token ID needs at most 96, so the
+ * two fit a `uint256` exactly. Registration rejects a project ID whose tokens
+ * could not fit, which makes the packing lossless rather than merely unlikely
+ * to collide.
+ *
+ * Three properties follow, and each of them is the reason for the choice:
+ *
+ * - The value is derivable and decodable off chain by arithmetic alone. No
+ *   contract call and no contract state are needed to compute what to write,
+ *   though `bindingParamValueFor(coreContract, paletteTokenId)` is provided and
+ *   also answers whether the project is registered.
+ * - A mistyped value fails loudly. A collector who enters a bare token ID
+ *   writes a number far below the core contract's bits, so it unpacks to the
+ *   zero address, which is never a registered project. An encoding whose values
+ *   resembled token IDs could instead have bound a different real token.
+ * - `0` is free to mean unbound, because a registered core is never the zero
+ *   address. Project `0` of any core is registrable, unlike under a bare
+ *   token-ID scheme.
+ *
+ * Everything else in the interface — `boundPaletteOf`, `isPaletteProject`,
+ * `previewBind`, `paletteDataFor`, every event and every error — speaks in
+ * plain `(coreContract, tokenId)` terms. The packed value appears in one other
+ * place, the stored PMP param, and the augment hook strips that before any art
+ * script sees it.
+ * ----------------------------------------------------------------------------
+ * REQUIRED SETUP, ONE TIME. All of it concerns the form project, and steps 2-4
+ * need the address deployed in step 1.
+ *
+ * 1. Deploy with the PMP contract every project here uses and the form
+ *    project's `(core, projectId)`.
  *
  * 2. Configure the binding param on the **form** project, via `configureProject`
  *    on the bound PMP:
@@ -96,70 +165,119 @@ import {IERC165} from "@openzeppelin-5.0/contracts/interfaces/IERC165.sol";
  *    - `authAddress`: this hook. Required — without it the transfer hook cannot
  *      write the unbind that triggers the form token's re-render.
  *    - `minRange`: `0` (`UNBOUND_PARAM_VALUE`)
- *    - `maxRange`: `bindingParamMaxRange` — the highest token ID the palette
- *      project can ever encode (token number 999,999), not its last minted
- *      token. Minted-supply bounds are enforced by this hook's `ownerOf`
- *      check, not by the range.
+ *    - `maxRange`: `BINDING_PARAM_MAX_RANGE` (`type(uint256).max`). Deliberately
+ *      unbounded: the palette project set grows, so any fixed range would need
+ *      widening on every palette drop, and forgetting would surface as an
+ *      opaque PMP range error instead of this hook's own. Which token IDs
+ *      actually bind is decided here, against the registry and `ownerOf`.
  *    - `pmpLockedAfterTimestamp`: `0`. Do not lock. On PMPV1 a passed lock
  *      timestamp freezes the param's value for every party, which would make
- *      existing bindings permanent and unbreakable.
+ *      existing pairings permanent and unbreakable.
  *
  *    Verify these off chain after deployment by reading `getProjectPMPConfig`
  *    on the bound PMP — this contract deliberately does not re-check them, as
  *    nothing on chain branches on the answer.
  *
- * 3. Configure this address on the bound PMP via `configureProjectHooks`:
- *    - form project: as **both** `tokenPMPPostConfigHook` and
- *      `tokenPMPReadAugmentationHook`
- *    - palette project: as `tokenPMPReadAugmentationHook` only. The palette
- *      project has no binding param, so it needs no configure hook.
+ * 3. `configureProjectHooks(formCore, formProjectId, thisHook, thisHook)` on the
+ *    bound PMP — the form project needs this address as **both** the
+ *    post-config hook and the read-augmentation hook.
  *
- * 4. Configure this address as the transfer hook on **both** projects, via
- *    `configureProjectTransferHook` on each core. Required on both: a pairing
- *    must break when either side moves. A project that skips this keeps stale
- *    pairings in storage until the next binding param write.
+ * 4. `configureProjectTransferHook(formProjectId, thisHook)` on `formCore`.
+ * ----------------------------------------------------------------------------
+ * REQUIRED SETUP, PER PALETTE PROJECT. Repeat all three for every palette
+ * collection, the first one included. Each omission breaks the collection in a
+ * different and silent way, named below.
  *
- * The artist must not configure `boundPaletteTokenHash` or `boundFormTokenId`
- * as project params — they are inject-only and are stripped on read.
+ * A. `registerPaletteProject(coreContract, projectId, palettes)` on this
+ *    contract, as the form project's artist. The entries are written once and
+ *    can never be changed, replaced, or grown. Any core and any project ID are
+ *    accepted except the form project itself.
+ *    *Omitted:* `isPaletteProject` stays false, nothing in the collection can
+ *    be bound, and its tokens resolve no palette.
+ *
+ * B. `configureProjectHooks(coreContract, projectId, address(0), thisHook)` on
+ *    the bound PMP — read-augmentation hook only. A palette project carries no
+ *    binding param, so it needs no configure hook.
+ *    *Omitted:* binding still works and form tokens still paint correctly, but
+ *    the collection's own tokens receive no `paletteData` and render whatever
+ *    their script does with nothing.
+ *
+ * C. `configureProjectTransferHook(projectId, thisHook)` on that same core.
+ *    *Omitted:* binding still works, but moving one of its tokens does not
+ *    break the pairing. This is the only one of the three that leaves wrong
+ *    state behind rather than absent state — see the degraded mode below.
+ *
+ * Each palette project also needs the PMP contract registered as an on-chain
+ * flex asset dependency (`addProjectAssetDependencyOnChainAtAddress`), the same
+ * as any project that uses PostParams, or nothing injected here reaches its
+ * script.
+ *
+ * On neither side may the artist configure `boundPaletteCoreContract`,
+ * `boundPaletteTokenHash`, `boundFormTokenId` or `paletteData` as project
+ * params — they are inject-only and are stripped on read.
  * ----------------------------------------------------------------------------
  * POSTPARAMS. On every read this hook copies the input params, drops any entry
- * whose key collides with the three keys below, and appends the ones for that
+ * whose key collides with the five keys below, and appends the ones for that
  * token's side. Values are canonical state, never the raw stored param.
  *
  * On a **form** token:
  * - `boundPaletteTokenId`: decimal token ID of the bound palette token, or the
  *   empty string when unbound.
+ * - `boundPaletteCoreContract`: the core contract that token lives on, as a
+ *   `0x`-prefixed lowercase hex address; empty when unbound. Paired with
+ *   `boundPaletteTokenId` it is the token's full identity, which a token ID
+ *   alone is not once palette projects may live on several contracts. Its
+ *   project ID is `boundPaletteTokenId / 1_000_000` if a script wants to label
+ *   or vary by collection.
  * - `boundPaletteTokenHash`: that palette token's `tokenIdToHash`, always
  *   `0x` + 64 lowercase hex characters, zero-padded. Empty string when unbound.
- *   This matches the conventional padded `tokenData.hash`. Note that the
- *   on-chain `GenArt721GeneratorV0` stringifies hashes with the unpadded
- *   `Strings.toHexString(uint256)`, which drops leading zero bytes on roughly
- *   one hash in 256. A script sharing one derivation between its own
- *   `tokenData.hash` and this key must zero-pad to 32 bytes before deriving, or
- *   those tokens will disagree.
+ *   Provenance and a seed for any extra variation the form script wants to draw
+ *   from the specific palette token it holds. **Do not derive the palette from
+ *   it** — that is what `paletteData` is for, and re-deriving in JavaScript
+ *   reintroduces exactly the second implementation this design removes.
+ *   (For the record, the on-chain `GenArt721GeneratorV0` stringifies hashes
+ *   with the unpadded `Strings.toHexString(uint256)`, dropping leading zero
+ *   bytes on roughly one hash in 256; this key is always padded, so the two
+ *   spellings differ for those tokens.)
+ * - `paletteData`: the registered palette entry the bound palette token
+ *   resolves to. Empty string when unbound.
  *
  * On a **palette** token:
  * - `boundFormTokenId`: decimal token ID of the form token it is bound to, or
  *   the empty string when unbound.
+ * - `paletteData`: the entry that token resolves to, always — a palette token
+ *   carries its own palette whether or not anything is bound to it.
  *
- * Injecting the palette token's hash, rather than derived palette data, is
- * deliberate. The palette project's script already turns that hash into a
- * palette; the form project's script can call the identical function on the
- * identical input. Nothing about the palette needs to be stored on chain,
- * re-implemented in Solidity, or kept in sync across two languages.
+ * `paletteData` is the same key on both sides, and that is the point. The form
+ * script and the palette script read one key and receive one answer, produced
+ * once, here. Neither derives a palette, so there is no second implementation
+ * to drift from and no bit-exactness contract between Solidity and JavaScript.
+ *
+ * Selection is `uint256(tokenIdToHash(paletteToken)) % paletteCount`. Because
+ * this contract is the only thing that computes it, the rule is chosen to be
+ * trivially auditable rather than to reproduce any existing script. Weighted
+ * rarity is expressed by repeating an entry in the registered list.
+ *
+ * The entries themselves are opaque to this contract — JSON, packed hex, a
+ * name, whatever the two scripts agree on. It stores and returns strings.
  * ----------------------------------------------------------------------------
- * ART SCRIPT. Both keys arrive as strings on the web3call flex dependency:
+ * ART SCRIPT. Every injected key arrives as a string on the web3call flex
+ * dependency, and a palette costs one of them:
  *
  *   const params = tokenData.externalAssetDependencies
  *     .find((d) => d.dependency_type === "ONCHAIN")?.data;
- *   const paletteHash = params?.["boundPaletteTokenHash"]; // "" when unbound
- *   const palette = paletteHash
- *     ? paletteFromHash(paletteHash)   // the palette project's own function
- *     : defaultPalette;
+ *   const paletteData = params?.["paletteData"]; // "" when none is in effect
+ *   const palette = paletteData ? JSON.parse(paletteData) : defaultPalette;
  *
- * The form project's script must render something meaningful when unbound:
- * that is the state every form token is in at mint, and the state it returns to
- * on every transfer.
+ * Identical in both projects. The palette project's script reads its own
+ * entry; the form project's script reads the bound token's. Neither holds a
+ * palette list, and neither needs updating when a collection is added, so both
+ * may be locked.
+ *
+ * A form token is unbound at mint and returns to unbound on every transfer, so
+ * the form script must render something meaningful for the empty case. A
+ * palette token's own `paletteData` is never empty once its project is
+ * registered.
  * ----------------------------------------------------------------------------
  * READ-TIME OWNERSHIP BACKSTOP. The augment hook re-checks that both tokens
  * still share an owner before reporting a pairing. In a correctly configured
@@ -175,36 +293,53 @@ import {IERC165} from "@openzeppelin-5.0/contracts/interfaces/IERC165.sol";
  * (`PaletteAlreadyBound`); the palette's new holder has no way to clear it,
  * because only the form token's owner or this hook may write the binding param;
  * and returning the token to its former owner makes the pairing render again,
- * because nothing cleared the mapping. The single repair is the form token's
- * owner writing `UNBOUND_PARAM_VALUE`. Configuring the transfer hook on both
- * projects is what prevents all of it.
+ * because nothing cleared the mapping. The palette token keeps rendering its
+ * own `paletteData` throughout — only the pairing is hidden. The single repair
+ * is the form token's owner writing `UNBOUND_PARAM_VALUE`. Configuring the
+ * transfer hook on the form project and on every palette project is what
+ * prevents all of it.
  * ----------------------------------------------------------------------------
- * SCALING. Every operation is O(1). State is two `uint256` mappings keyed by
- * token ID; no list of tokens, projects, or palettes is ever built or walked,
- * so cost is independent of project size.
+ * SCALING. Every operation on the binding path is O(1). Deciding whether a
+ * token is bindable is one `SLOAD` of `_isPaletteProject[core][projectId]`,
+ * however many palette projects exist, and the pairing itself is two mappings
+ * keyed by the packed value. Converting between a token and its packed value is
+ * arithmetic, not storage. No list of tokens, projects, or palettes is ever
+ * walked on the binding, transfer, or read path; palette projects are
+ * enumerated through `paletteProjectCount` and `paletteProjectAt`, which a
+ * caller pages at its own pace.
  *
- * The mappings are not keyed by core contract. They do not need to be: both
- * cores and both project IDs are immutable, and each mapping is only ever keyed
- * by token IDs of its own side. Two separate cores can host projects with the
- * same ID and therefore numerically identical token IDs; the two mappings still
- * keep them apart, because a form token ID is only ever written to
- * `_formToPalette` and a palette token ID only to `_paletteToForm`.
+ * Palette entries are held in SSTORE2 bytecode, one contract per registered
+ * project, written once at registration. Resolving a token reads that blob and
+ * indexes into it — no unbounded storage array, and registering a collection
+ * costs a fraction of what a Solidity `string[]` would.
+ *
+ * The pairing mappings are not keyed by core contract and do not need to be.
+ * `_formToPalette` is keyed by form token ID, and the form project is a single
+ * immutable `(core, projectId)`. `_paletteToForm` is keyed by the packed value,
+ * which carries the core contract, so two contracts hosting projects with the
+ * same ID cannot collide.
  * ----------------------------------------------------------------------------
  * GAS. Transfer figures are deltas against an identical project with no hook,
  * on `GenArt721CoreV3_Engine_Flex` with PMPV1, so they may be compared
  * directly. Whoever moves the token pays them, on every transfer, forever.
  *
- * - transferring an **unbound** token costs about 20,700 gas more. That is the
+ * - transferring an **unbound** token costs about 20,600 gas more. That is the
  *   core's reentrancy flag, the configuration check, and one cold mapping read
  *   that comes back empty. Any hook pays most of it.
- * - transferring a **bound** token costs about 46,200 gas more — the above plus
- *   clearing two slots and the PMP write that re-renders the form token. The
- *   figure is the same whichever side moves, because either way exactly one
- *   param is written, on the form token.
+ * - transferring a **bound form** token costs about 50,300 gas more — the above
+ *   plus clearing two slots and the PMP write that re-renders the form token.
+ * - transferring a **bound palette** token costs about 52,300 gas more: the
+ *   same work plus the registry lookup that identifies it as a palette token.
  *
- * Binding is about 159,500 gas and unbinding about 67,200, both absolute and
+ * Binding is about 164,500 gas and unbinding about 72,000, both absolute and
  * both paid by the collector. Binding is the expensive direction because it
  * writes three cold slots: the PMP's stored value plus both mappings.
+ *
+ * `registerPaletteProject` is paid once per collection by the artist and is
+ * dominated by the SSTORE2 write of the entries, so it scales with the total
+ * byte length of the palette list: about 198,000 gas for three short entries,
+ * rising roughly 200 gas per additional byte. Reads load that blob, which is
+ * why entries should be as compact as the art scripts can tolerate.
  *
  * See the gas tests in `form-palette-binding-hooks.test.ts` for the bounds that
  * keep these figures honest.
@@ -220,6 +355,11 @@ import {IERC165} from "@openzeppelin-5.0/contracts/interfaces/IERC165.sol";
  * write costs a collector a transaction rather than a collection. It also
  * accepts calls only from the bound PMP — it mutates state, and PMP hooks are
  * otherwise callable by anyone.
+ *
+ * `registerPaletteProject` is the only other state-changing entry point, and it
+ * is restricted to the form project's artist, read live from `formCore` on each
+ * call. Nothing here stores an owner, so the right follows the project: if the
+ * artist address is updated on the core, the new address holds it.
  */
 contract FormPaletteBindingHooks is
     AbstractTransferHook,
@@ -228,11 +368,16 @@ contract FormPaletteBindingHooks is
     IFormPaletteBindingHooks
 {
     using Strings for uint256;
+    using ImmutableStringArray for ImmutableStringArray.StringArray;
 
     /// @notice Binding param on the form project, written by collectors to
     /// bind and unbind, and by this hook to unbind on transfer.
     string public constant PARAM_KEY_BOUND_PALETTE_TOKEN_ID =
         "boundPaletteTokenId";
+    /// @notice Inject-only key on form tokens carrying the core contract of the
+    /// bound palette token. Must not be configured as a project param.
+    string public constant PARAM_KEY_BOUND_PALETTE_CORE_CONTRACT =
+        "boundPaletteCoreContract";
     /// @notice Inject-only key on form tokens carrying the bound palette
     /// token's hash. Must not be configured as a project param.
     string public constant PARAM_KEY_BOUND_PALETTE_TOKEN_HASH =
@@ -240,88 +385,158 @@ contract FormPaletteBindingHooks is
     /// @notice Inject-only key on palette tokens carrying the form token they
     /// are bound to. Must not be configured as a project param.
     string public constant PARAM_KEY_BOUND_FORM_TOKEN_ID = "boundFormTokenId";
+    /// @notice Inject-only key carrying the palette entry in effect for the
+    /// token: on a form token the bound palette's, on a palette token its own.
+    /// Must not be configured as a project param.
+    string public constant PARAM_KEY_PALETTE_DATA = "paletteData";
 
     /**
      * @notice Binding param value meaning "not bound".
-     * @dev `0` is unambiguous because the constructor rejects a palette project
-     * ID of `0`, so no palette token ID can equal it.
+     * @dev Unambiguous by construction: a bindable value carries a non-zero
+     * core contract in its high bits, so it can never be `0`.
      */
     uint256 public constant UNBOUND_PARAM_VALUE = 0;
+
+    /**
+     * @notice Required `maxRange` of the binding param.
+     * @dev Unbounded on purpose. The set of palette projects grows over the
+     * life of the form project, so no fixed range could stay correct without
+     * the artist re-running `configureProject` on every palette drop — a step
+     * that is easy to forget and whose omission surfaces as an opaque PMP
+     * range error. This hook is the sole authority on which values bind.
+     */
+    uint256 public constant BINDING_PARAM_MAX_RANGE = type(uint256).max;
+
+    /// @dev Low bits of the binding param value that hold the token ID. The
+    /// remaining 160 are the core contract, so the two pack exactly.
+    uint256 private constant _TOKEN_ID_BITS = 96;
+    uint256 private constant _TOKEN_ID_MASK = (1 << _TOKEN_ID_BITS) - 1;
 
     // @dev derived from the constants above rather than restated as literals,
     // so a key and its hash cannot drift apart
     bytes32 private constant _HASHED_PARAM_KEY_BOUND_PALETTE_TOKEN_ID =
         keccak256(bytes(PARAM_KEY_BOUND_PALETTE_TOKEN_ID));
+    bytes32 private constant _HASHED_PARAM_KEY_BOUND_PALETTE_CORE_CONTRACT =
+        keccak256(bytes(PARAM_KEY_BOUND_PALETTE_CORE_CONTRACT));
     bytes32 private constant _HASHED_PARAM_KEY_BOUND_PALETTE_TOKEN_HASH =
         keccak256(bytes(PARAM_KEY_BOUND_PALETTE_TOKEN_HASH));
     bytes32 private constant _HASHED_PARAM_KEY_BOUND_FORM_TOKEN_ID =
         keccak256(bytes(PARAM_KEY_BOUND_FORM_TOKEN_ID));
+    bytes32 private constant _HASHED_PARAM_KEY_PALETTE_DATA =
+        keccak256(bytes(PARAM_KEY_PALETTE_DATA));
 
-    /// @notice PMP contract this hook reads config from and writes unbinds to.
+    /// @notice PMP contract this hook writes transfer-driven unbinds to.
     IPMPV0 public immutable pmp;
     /// @notice Core contract hosting the form project.
     address public immutable formCore;
     /// @notice Project ID of the form project on `formCore`.
     uint256 public immutable formProjectId;
-    /// @notice Core contract hosting the palette project.
-    address public immutable paletteCore;
-    /// @notice Project ID of the palette project on `paletteCore`.
-    uint256 public immutable paletteProjectId;
-    /// @notice Required `maxRange` of the binding param: the last token ID of
-    /// the palette project.
-    uint256 public immutable bindingParamMaxRange;
+
+    /// @dev Whether a project's tokens may be bound. The only registration
+    /// check any path needs.
+    mapping(address coreContract => mapping(uint256 projectId => bool))
+        private _isPaletteProject;
+
+    /// @dev Registration order, for enumeration only. Bounded by the number of
+    /// palette drops the artist makes, not by any token count.
+    PaletteProject[] private _paletteProjects;
 
     /**
-     * @notice Canonical state, stored as `tokenId + 1` so that `0` reads as
-     * unbound without reserving a real token ID.
-     * @dev `+ 1` rather than a sentinel token ID keeps token `0` of either
-     * project representable, which matters for the form side: only the palette
-     * project ID is constrained to be non-zero.
+     * @dev Each project's palette entries, written once via SSTORE2 and never
+     * mutable afterwards. Immutability is load-bearing: the entry a token
+     * resolves to is `hash % length`, so a list that could grow would silently
+     * repaint tokens that had already minted.
      */
-    mapping(uint256 formTokenId => uint256 paletteTokenIdPlusOne)
+    mapping(address coreContract => mapping(uint256 projectId => ImmutableStringArray.StringArray))
+        private _palettes;
+
+    /**
+     * @notice Canonical state. Keyed and valued by binding param values, which
+     * are globally unique across cores, so no core needs to appear in the key.
+     * @dev `_formToPalette` needs no offset because a bindable value is never
+     * `0`. `_paletteToForm` stores `formTokenId + 1` because form token `0` is
+     * a real token.
+     */
+    mapping(uint256 formTokenId => uint256 bindingParamValue)
         private _formToPalette;
-    mapping(uint256 paletteTokenId => uint256 formTokenIdPlusOne)
+    mapping(uint256 bindingParamValue => uint256 formTokenIdPlusOne)
         private _paletteToForm;
 
     /**
-     * @param pmp_ PMP contract both projects use. Must be non-zero: this hook
-     * reads project config from it and writes transfer-driven unbinds to it.
+     * @param pmp_ PMP contract every project here uses. Must be non-zero: this
+     * hook writes transfer-driven unbinds to it.
      * @param formCore_ Core contract hosting the form project.
-     * @param formProjectId_ Project ID of the form project. `0` is allowed —
-     * only the palette side carries the sentinel constraint, because a form
-     * token ID is never a binding param *value*, and the mappings store
-     * `tokenId + 1` so form token `0` stays distinguishable from unbound.
-     * @param paletteCore_ Core contract hosting the palette project. May equal
-     * `formCore_`.
-     * @param paletteProjectId_ Project ID of the palette project. Must not be
-     * `0`; see `UNBOUND_PARAM_VALUE`.
+     * @param formProjectId_ Project ID of the form project. `0` is allowed.
+     * @dev No palette projects are registered here. Every registration goes
+     * through `registerPaletteProject`, so there is exactly one code path and
+     * one authorization rule for it. Until the artist registers the first one,
+     * nothing can bind.
      */
-    constructor(
-        address pmp_,
-        address formCore_,
-        uint256 formProjectId_,
-        address paletteCore_,
-        uint256 paletteProjectId_
-    ) {
-        bool sameProject = formCore_ == paletteCore_ &&
-            formProjectId_ == paletteProjectId_;
-        if (
-            pmp_ == address(0) ||
-            formCore_ == address(0) ||
-            paletteCore_ == address(0) ||
-            paletteProjectId_ == 0 ||
-            sameProject
-        ) {
+    constructor(address pmp_, address formCore_, uint256 formProjectId_) {
+        if (pmp_ == address(0) || formCore_ == address(0)) {
             revert InvalidConstructorArgs();
         }
         pmp = IPMPV0(pmp_);
         formCore = formCore_;
         formProjectId = formProjectId_;
-        paletteCore = paletteCore_;
-        paletteProjectId = paletteProjectId_;
-        bindingParamMaxRange = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
-            projectId: paletteProjectId_,
-            tokenNumber: 999_999
+    }
+
+    // ---- palette project registry ----
+
+    /**
+     * @inheritdoc IFormPaletteBindingHooks
+     */
+    function registerPaletteProject(
+        address coreContract,
+        uint256 projectId,
+        string[] calldata palettes
+    ) external {
+        // @dev the form project's artist owns this decision: it changes what
+        // their form tokens may bind to. Read live from the core, so no owner
+        // is stored here and a transferred project carries the right with it.
+        address artist = IGenArt721CoreContractV3_Base(formCore)
+            .projectIdToArtistAddress(formProjectId);
+        if (msg.sender != artist) {
+            revert OnlyFormProjectArtist({caller: msg.sender, artist: artist});
+        }
+        bool isFormProject = coreContract == formCore &&
+            projectId == formProjectId;
+        if (coreContract == address(0) || isFormProject) {
+            revert InvalidPaletteProject({
+                coreContract: coreContract,
+                projectId: projectId
+            });
+        }
+        // @dev the packing below is lossless only while a token ID fits the low
+        // bits; no Art Blocks project comes close, but the encoding depends on
+        // it, so it is enforced rather than assumed
+        bool projectIdFits = projectId <=
+            (_TOKEN_ID_MASK - (ABHelpers.ONE_MILLION - 1)) /
+                ABHelpers.ONE_MILLION;
+        if (!projectIdFits) {
+            revert InvalidPaletteProject({
+                coreContract: coreContract,
+                projectId: projectId
+            });
+        }
+        if (_isPaletteProject[coreContract][projectId]) {
+            revert PaletteProjectAlreadyRegistered({
+                coreContract: coreContract,
+                projectId: projectId
+            });
+        }
+        if (palettes.length == 0) {
+            revert EmptyPaletteList();
+        }
+        _isPaletteProject[coreContract][projectId] = true;
+        _paletteProjects.push(
+            PaletteProject({coreContract: coreContract, projectId: projectId})
+        );
+        _palettes[coreContract][projectId].store(palettes);
+        emit PaletteProjectRegistered({
+            coreContract: coreContract,
+            projectId: projectId,
+            paletteCount: palettes.length
         });
     }
 
@@ -367,7 +582,7 @@ contract FormPaletteBindingHooks is
         }
         _applyBindingParam({
             formTokenId: tokenId,
-            newPaletteTokenId: uint256(pmpInput.configuredValue)
+            newValue: uint256(pmpInput.configuredValue)
         });
     }
 
@@ -409,26 +624,33 @@ contract FormPaletteBindingHooks is
         }
 
         if (coreContract == formCore && projectId == formProjectId) {
-            (bool isBound, uint256 paletteTokenId) = _boundPaletteOf(tokenId);
-            if (!isBound) {
+            uint256 boundValue = _formToPalette[tokenId];
+            if (boundValue == UNBOUND_PARAM_VALUE) {
                 return;
             }
             _clearBinding({
                 formTokenId: tokenId,
-                paletteTokenId: paletteTokenId,
+                paramValue: boundValue,
                 reason: UnbindReason.FormTransferred
             });
             _syncBindingParam({formTokenId: tokenId});
-        } else if (
-            coreContract == paletteCore && projectId == paletteProjectId
-        ) {
-            (bool isBound, uint256 formTokenId) = _boundFormOf(tokenId);
+            return;
+        }
+
+        if (_isPaletteProject[coreContract][projectId]) {
+            uint256 paramValue = _encode({
+                coreContract: coreContract,
+                paletteTokenId: tokenId
+            });
+            (bool isBound, uint256 formTokenId) = _boundFormOf({
+                paramValue: paramValue
+            });
             if (!isBound) {
                 return;
             }
             _clearBinding({
                 formTokenId: formTokenId,
-                paletteTokenId: tokenId,
+                paramValue: paramValue,
                 reason: UnbindReason.PaletteTransferred
             });
             _syncBindingParam({formTokenId: formTokenId});
@@ -442,7 +664,7 @@ contract FormPaletteBindingHooks is
     /**
      * @notice Replace this hook's keys with canonical binding state.
      * @dev Copies the input params, drops any entry whose key collides with one
-     * of this hook's three keys — including the collector's own raw binding
+     * of this hook's five keys — including the collector's own raw binding
      * param, so a value that disagrees with canonical state can never reach an
      * artwork script — then appends the keys for the token's side.
      * @dev This must return all desired tokenParams, not just additional data.
@@ -464,8 +686,7 @@ contract FormPaletteBindingHooks is
         uint256 projectId = ABHelpers.tokenIdToProjectId(tokenId);
         bool isFormToken = coreContract == formCore &&
             projectId == formProjectId;
-        bool isPaletteToken = coreContract == paletteCore &&
-            projectId == paletteProjectId;
+        bool isPaletteToken = _isPaletteProject[coreContract][projectId];
         // @dev configured on a project this hook does not serve: pass through
         // untouched rather than stripping keys that belong to someone else
         if (!isFormToken && !isPaletteToken) {
@@ -473,16 +694,18 @@ contract FormPaletteBindingHooks is
         }
 
         uint256 originalLength = tokenParams.length;
-        // at most originalLength kept entries + 2 injected keys
-        augmentedTokenParams = new IWeb3Call.TokenParam[](originalLength + 2);
+        // at most originalLength kept entries + 4 injected keys
+        augmentedTokenParams = new IWeb3Call.TokenParam[](originalLength + 4);
 
         uint256 j;
         for (uint256 i; i < originalLength; ) {
             bytes32 hashedKey = keccak256(bytes(tokenParams[i].key));
             if (
                 hashedKey != _HASHED_PARAM_KEY_BOUND_PALETTE_TOKEN_ID &&
+                hashedKey != _HASHED_PARAM_KEY_BOUND_PALETTE_CORE_CONTRACT &&
                 hashedKey != _HASHED_PARAM_KEY_BOUND_PALETTE_TOKEN_HASH &&
-                hashedKey != _HASHED_PARAM_KEY_BOUND_FORM_TOKEN_ID
+                hashedKey != _HASHED_PARAM_KEY_BOUND_FORM_TOKEN_ID &&
+                hashedKey != _HASHED_PARAM_KEY_PALETTE_DATA
             ) {
                 augmentedTokenParams[j] = tokenParams[i];
                 unchecked {
@@ -495,35 +718,62 @@ contract FormPaletteBindingHooks is
         }
 
         if (isFormToken) {
-            (bool isBound, uint256 paletteTokenId) = _resolveBoundPalette({
-                formTokenId: tokenId
+            // @dev resolved in one call so the four injected strings are the
+            // only form-side locals this frame has to hold
+            (
+                string memory coreValue,
+                string memory tokenIdValue,
+                string memory hashValue,
+                string memory paletteDataValue
+            ) = _formInjectedValues({formTokenId: tokenId});
+            augmentedTokenParams[j] = IWeb3Call.TokenParam({
+                key: PARAM_KEY_BOUND_PALETTE_CORE_CONTRACT,
+                value: coreValue
             });
+            unchecked {
+                ++j;
+            }
             augmentedTokenParams[j] = IWeb3Call.TokenParam({
                 key: PARAM_KEY_BOUND_PALETTE_TOKEN_ID,
-                value: isBound ? paletteTokenId.toString() : ""
+                value: tokenIdValue
             });
             unchecked {
                 ++j;
             }
             augmentedTokenParams[j] = IWeb3Call.TokenParam({
                 key: PARAM_KEY_BOUND_PALETTE_TOKEN_HASH,
-                value: isBound
-                    ? uint256(
-                        IGenArt721CoreContractV3_Base(paletteCore)
-                            .tokenIdToHash(paletteTokenId)
-                    ).toHexString(32)
-                    : ""
+                value: hashValue
+            });
+            unchecked {
+                ++j;
+            }
+            augmentedTokenParams[j] = IWeb3Call.TokenParam({
+                key: PARAM_KEY_PALETTE_DATA,
+                value: paletteDataValue
             });
             unchecked {
                 ++j;
             }
         } else {
-            (bool isBound, uint256 formTokenId) = _resolveBoundForm({
-                paletteTokenId: tokenId
-            });
+            // @dev extracted for the same reason as the form side: keeps this
+            // frame down to the injected strings
+            (
+                string memory boundFormValue,
+                string memory paletteDataValue
+            ) = _paletteInjectedValues({
+                    coreContract: coreContract,
+                    paletteTokenId: tokenId
+                });
             augmentedTokenParams[j] = IWeb3Call.TokenParam({
                 key: PARAM_KEY_BOUND_FORM_TOKEN_ID,
-                value: isBound ? formTokenId.toString() : ""
+                value: boundFormValue
+            });
+            unchecked {
+                ++j;
+            }
+            augmentedTokenParams[j] = IWeb3Call.TokenParam({
+                key: PARAM_KEY_PALETTE_DATA,
+                value: paletteDataValue
             });
             unchecked {
                 ++j;
@@ -544,17 +794,50 @@ contract FormPaletteBindingHooks is
      */
     function boundPaletteOf(
         uint256 formTokenId
-    ) external view returns (bool isBound, uint256 paletteTokenId) {
-        return _boundPaletteOf({formTokenId: formTokenId});
+    )
+        external
+        view
+        returns (bool isBound, address coreContract, uint256 paletteTokenId)
+    {
+        uint256 paramValue = _formToPalette[formTokenId];
+        if (paramValue == UNBOUND_PARAM_VALUE) {
+            return (false, address(0), 0);
+        }
+        (coreContract, paletteTokenId) = _paletteTokenOf({
+            paramValue: paramValue
+        });
+        isBound = true;
     }
 
     /**
      * @inheritdoc IFormPaletteBindingHooks
      */
     function boundFormOf(
+        address coreContract,
         uint256 paletteTokenId
     ) external view returns (bool isBound, uint256 formTokenId) {
-        return _boundFormOf({paletteTokenId: paletteTokenId});
+        (bool registered, uint256 paramValue) = _bindingParamValue({
+            coreContract: coreContract,
+            paletteTokenId: paletteTokenId
+        });
+        if (!registered) {
+            return (false, 0);
+        }
+        return _boundFormOf({paramValue: paramValue});
+    }
+
+    /**
+     * @inheritdoc IFormPaletteBindingHooks
+     */
+    function bindingParamValueFor(
+        address coreContract,
+        uint256 paletteTokenId
+    ) external view returns (bool registered, uint256 paramValue) {
+        return
+            _bindingParamValue({
+                coreContract: coreContract,
+                paletteTokenId: paletteTokenId
+            });
     }
 
     /**
@@ -562,32 +845,36 @@ contract FormPaletteBindingHooks is
      */
     function previewBind(
         uint256 formTokenId,
+        address paletteCoreContract,
         uint256 paletteTokenId
     ) external view returns (bool allowed, BindBlocker blocker) {
         // @dev checks follow the order `_applyBindingParam` applies them, so the
-        // reported blocker is the condition that would actually fail first.
-        // Conditions rejected before this hook runs at all — a non-form project,
-        // or a value outside the param's range — surface as PMP reverts rather
-        // than as blockers.
+        // reported blocker is the condition that would actually fail first
         if (ABHelpers.tokenIdToProjectId(formTokenId) != formProjectId) {
             return (false, BindBlocker.FormTokenNotInFormProject);
         }
-        (bool formBound, uint256 currentPaletteTokenId) = _boundPaletteOf({
-            formTokenId: formTokenId
+        (bool registered, uint256 paramValue) = _bindingParamValue({
+            coreContract: paletteCoreContract,
+            paletteTokenId: paletteTokenId
         });
+        uint256 currentValue = _formToPalette[formTokenId];
         // @dev re-writing the pairing that already exists is accepted as a
         // no-op, so report it as allowed; a front end that unbound first here
         // would flicker the form token through the unbound state for nothing
-        if (formBound && currentPaletteTokenId == paletteTokenId) {
+        if (
+            registered &&
+            currentValue != UNBOUND_PARAM_VALUE &&
+            currentValue == paramValue
+        ) {
             return (true, BindBlocker.None);
         }
-        if (formBound) {
+        if (currentValue != UNBOUND_PARAM_VALUE) {
             return (false, BindBlocker.FormAlreadyBound);
         }
-        if (ABHelpers.tokenIdToProjectId(paletteTokenId) != paletteProjectId) {
-            return (false, BindBlocker.PaletteTokenNotInPaletteProject);
+        if (!registered) {
+            return (false, BindBlocker.PaletteProjectNotRegistered);
         }
-        (bool paletteBound, ) = _boundFormOf({paletteTokenId: paletteTokenId});
+        (bool paletteBound, ) = _boundFormOf({paramValue: paramValue});
         if (paletteBound) {
             return (false, BindBlocker.PaletteAlreadyBound);
         }
@@ -598,7 +885,7 @@ contract FormPaletteBindingHooks is
             return (false, BindBlocker.FormTokenDoesNotExist);
         }
         address paletteOwner;
-        try IERC721(paletteCore).ownerOf(paletteTokenId) returns (
+        try IERC721(paletteCoreContract).ownerOf(paletteTokenId) returns (
             address owner_
         ) {
             paletteOwner = owner_;
@@ -609,6 +896,78 @@ contract FormPaletteBindingHooks is
             return (false, BindBlocker.OwnerMismatch);
         }
         return (true, BindBlocker.None);
+    }
+
+    /**
+     * @inheritdoc IFormPaletteBindingHooks
+     */
+    function isPaletteProject(
+        address coreContract,
+        uint256 projectId
+    ) external view returns (bool registered) {
+        return _isPaletteProject[coreContract][projectId];
+    }
+
+    /**
+     * @inheritdoc IFormPaletteBindingHooks
+     */
+    function paletteProjectCount() external view returns (uint256 count) {
+        return _paletteProjects.length;
+    }
+
+    /**
+     * @inheritdoc IFormPaletteBindingHooks
+     */
+    function paletteProjectAt(
+        uint256 index
+    ) external view returns (address coreContract, uint256 projectId) {
+        if (index >= _paletteProjects.length) {
+            return (address(0), 0);
+        }
+        PaletteProject memory project = _paletteProjects[index];
+        return (project.coreContract, project.projectId);
+    }
+
+    /**
+     * @inheritdoc IFormPaletteBindingHooks
+     */
+    function paletteCount(
+        address coreContract,
+        uint256 projectId
+    ) external view returns (uint256 count) {
+        return _palettes[coreContract][projectId].length();
+    }
+
+    /**
+     * @inheritdoc IFormPaletteBindingHooks
+     */
+    function paletteAt(
+        address coreContract,
+        uint256 projectId,
+        uint256 index
+    ) external view returns (string memory palette) {
+        return _palettes[coreContract][projectId].get(index);
+    }
+
+    /**
+     * @inheritdoc IFormPaletteBindingHooks
+     */
+    function paletteDataFor(
+        address coreContract,
+        uint256 paletteTokenId
+    ) external view returns (string memory palette) {
+        if (
+            !_isPaletteProject[coreContract][
+                ABHelpers.tokenIdToProjectId(paletteTokenId)
+            ]
+        ) {
+            return "";
+        }
+        return
+            _resolvePaletteData({
+                coreContract: coreContract,
+                paletteTokenId: paletteTokenId
+            });
     }
 
     /**
@@ -646,60 +1005,69 @@ contract FormPaletteBindingHooks is
      * existing pairing is rejected rather than applied, because the other token
      * involved would not be written and so would not re-render.
      * @param formTokenId Form token whose param was written.
-     * @param newPaletteTokenId Written value; `UNBOUND_PARAM_VALUE` to unbind.
+     * @param newValue Written value; `UNBOUND_PARAM_VALUE` to unbind.
      */
-    function _applyBindingParam(
-        uint256 formTokenId,
-        uint256 newPaletteTokenId
-    ) private {
-        (bool currentlyBound, uint256 currentPaletteTokenId) = _boundPaletteOf({
-            formTokenId: formTokenId
-        });
+    function _applyBindingParam(uint256 formTokenId, uint256 newValue) private {
+        uint256 currentValue = _formToPalette[formTokenId];
 
-        if (newPaletteTokenId == UNBOUND_PARAM_VALUE) {
+        if (newValue == UNBOUND_PARAM_VALUE) {
             // @dev idempotent: unbinding an unbound token is a no-op, which is
             // what makes the transfer hook's own write safe to replay
-            if (!currentlyBound) {
+            if (currentValue == UNBOUND_PARAM_VALUE) {
                 return;
             }
             _clearBinding({
                 formTokenId: formTokenId,
-                paletteTokenId: currentPaletteTokenId,
+                paramValue: currentValue,
                 reason: UnbindReason.Configured
             });
             return;
         }
 
         // @dev idempotent: re-writing the current pairing changes nothing
-        if (currentlyBound && currentPaletteTokenId == newPaletteTokenId) {
+        if (currentValue == newValue) {
             return;
         }
-        if (currentlyBound) {
+        if (currentValue != UNBOUND_PARAM_VALUE) {
+            (address boundCore, uint256 boundTokenId) = _paletteTokenOf({
+                paramValue: currentValue
+            });
             revert FormAlreadyBound({
                 formTokenId: formTokenId,
-                paletteTokenId: currentPaletteTokenId
+                paletteCoreContract: boundCore,
+                paletteTokenId: boundTokenId
             });
         }
+        (
+            address paletteCoreContract,
+            uint256 paletteTokenId
+        ) = _paletteTokenOf({paramValue: newValue});
+        // @dev a value that does not unpack to a registered project fails here,
+        // including a bare token ID mistyped into the field: it is far below
+        // the core contract's bits, so it unpacks to the zero address
         if (
-            ABHelpers.tokenIdToProjectId(newPaletteTokenId) != paletteProjectId
+            !_isPaletteProject[paletteCoreContract][
+                ABHelpers.tokenIdToProjectId(paletteTokenId)
+            ]
         ) {
-            revert PaletteTokenNotInPaletteProject({
-                paletteTokenId: newPaletteTokenId
-            });
+            revert UnknownBindingParamValue({bindingParamValue: newValue});
         }
         (bool paletteBound, uint256 boundFormTokenId) = _boundFormOf({
-            paletteTokenId: newPaletteTokenId
+            paramValue: newValue
         });
         if (paletteBound) {
             revert PaletteAlreadyBound({
-                paletteTokenId: newPaletteTokenId,
+                paletteCoreContract: paletteCoreContract,
+                paletteTokenId: paletteTokenId,
                 formTokenId: boundFormTokenId
             });
         }
         // @dev `ownerOf` reverts for a token that does not exist, so this also
         // rejects binding to an unminted palette token
         address formOwner = IERC721(formCore).ownerOf(formTokenId);
-        address paletteOwner = IERC721(paletteCore).ownerOf(newPaletteTokenId);
+        address paletteOwner = IERC721(paletteCoreContract).ownerOf(
+            paletteTokenId
+        );
         if (formOwner != paletteOwner) {
             revert OwnerMismatch({
                 formOwner: formOwner,
@@ -707,14 +1075,17 @@ contract FormPaletteBindingHooks is
             });
         }
 
+        _formToPalette[formTokenId] = newValue;
         unchecked {
-            // @dev `+ 1` cannot overflow: both values are bounded token IDs
-            _formToPalette[formTokenId] = newPaletteTokenId + 1;
-            _paletteToForm[newPaletteTokenId] = formTokenId + 1;
+            // @dev cannot overflow: the `ownerOf` above established that
+            // `formTokenId` is a minted Art Blocks token, so it is nowhere near
+            // `type(uint256).max`
+            _paletteToForm[newValue] = formTokenId + 1;
         }
         emit Bound({
             formTokenId: formTokenId,
-            paletteTokenId: newPaletteTokenId,
+            paletteCoreContract: paletteCoreContract,
+            paletteTokenId: paletteTokenId,
             owner: formOwner
         });
     }
@@ -724,13 +1095,18 @@ contract FormPaletteBindingHooks is
      */
     function _clearBinding(
         uint256 formTokenId,
-        uint256 paletteTokenId,
+        uint256 paramValue,
         UnbindReason reason
     ) private {
         delete _formToPalette[formTokenId];
-        delete _paletteToForm[paletteTokenId];
+        delete _paletteToForm[paramValue];
+        (
+            address paletteCoreContract,
+            uint256 paletteTokenId
+        ) = _paletteTokenOf({paramValue: paramValue});
         emit Unbound({
             formTokenId: formTokenId,
+            paletteCoreContract: paletteCoreContract,
             paletteTokenId: paletteTokenId,
             reason: reason
         });
@@ -761,12 +1137,64 @@ contract FormPaletteBindingHooks is
     }
 
     /**
-     * @notice Canonical pairing for a form token.
+     * @notice The binding param value naming a palette token, if its project is
+     * registered.
      */
-    function _boundPaletteOf(
-        uint256 formTokenId
-    ) private view returns (bool isBound, uint256 paletteTokenId) {
-        uint256 stored = _formToPalette[formTokenId];
+    function _bindingParamValue(
+        address coreContract,
+        uint256 paletteTokenId
+    ) private view returns (bool registered, uint256 paramValue) {
+        if (
+            !_isPaletteProject[coreContract][
+                ABHelpers.tokenIdToProjectId(paletteTokenId)
+            ]
+        ) {
+            return (false, UNBOUND_PARAM_VALUE);
+        }
+        return (
+            true,
+            _encode({
+                coreContract: coreContract,
+                paletteTokenId: paletteTokenId
+            })
+        );
+    }
+
+    /**
+     * @notice The palette token a binding param value names.
+     * @dev Pure unpacking. A value whose project is not registered still
+     * decodes; callers check `_isPaletteProject` on the result.
+     */
+    function _paletteTokenOf(
+        uint256 paramValue
+    ) private pure returns (address coreContract, uint256 paletteTokenId) {
+        return (
+            address(uint160(paramValue >> _TOKEN_ID_BITS)),
+            paramValue & _TOKEN_ID_MASK
+        );
+    }
+
+    /**
+     * @notice Binding param value naming a palette token.
+     * @dev The core contract in the high 160 bits, the token ID in the low 96.
+     * Lossless because registration rejects a project ID whose tokens could not
+     * fit, and never `0` because a registered core is never the zero address.
+     */
+    function _encode(
+        address coreContract,
+        uint256 paletteTokenId
+    ) private pure returns (uint256) {
+        return
+            (uint256(uint160(coreContract)) << _TOKEN_ID_BITS) | paletteTokenId;
+    }
+
+    /**
+     * @notice Canonical pairing for a binding param value.
+     */
+    function _boundFormOf(
+        uint256 paramValue
+    ) private view returns (bool isBound, uint256 formTokenId) {
+        uint256 stored = _paletteToForm[paramValue];
         if (stored == 0) {
             return (false, 0);
         }
@@ -776,18 +1204,105 @@ contract FormPaletteBindingHooks is
     }
 
     /**
-     * @notice Canonical pairing for a palette token.
+     * @notice The palette entry a palette token resolves to.
+     * @dev Caller must have established that the project is registered.
      */
-    function _boundFormOf(
+    function _resolvePaletteData(
+        address coreContract,
         uint256 paletteTokenId
-    ) private view returns (bool isBound, uint256 formTokenId) {
-        uint256 stored = _paletteToForm[paletteTokenId];
-        if (stored == 0) {
-            return (false, 0);
+    ) private view returns (string memory) {
+        ImmutableStringArray.StringArray storage palettes = _palettes[
+            coreContract
+        ][ABHelpers.tokenIdToProjectId(paletteTokenId)];
+        // @dev non-zero for any registered project: registration rejects an
+        // empty list and the entries can never be replaced, so there is no
+        // path to a registered project with nothing to select from
+        uint256 paletteCount_ = palettes.length();
+        bytes32 tokenHash = IGenArt721CoreContractV3_Base(coreContract)
+            .tokenIdToHash(paletteTokenId);
+        return palettes.get(_paletteIndex(tokenHash, paletteCount_));
+    }
+
+    /**
+     * @notice The four values a form token injects, resolved together.
+     * @dev Every one is the empty string when the token is unbound, so an art
+     * script has a single "no palette" case.
+     */
+    function _formInjectedValues(
+        uint256 formTokenId
+    )
+        private
+        view
+        returns (
+            string memory coreValue,
+            string memory tokenIdValue,
+            string memory hashValue,
+            string memory paletteDataValue
+        )
+    {
+        (bool isBound, uint256 paramValue) = _resolveBoundPalette({
+            formTokenId: formTokenId
+        });
+        if (!isBound) {
+            return ("", "", "", "");
         }
-        unchecked {
-            return (true, stored - 1);
-        }
+        (address coreContract, uint256 paletteTokenId) = _paletteTokenOf({
+            paramValue: paramValue
+        });
+        coreValue = uint256(uint160(coreContract)).toHexString(20);
+        tokenIdValue = paletteTokenId.toString();
+        hashValue = uint256(
+            IGenArt721CoreContractV3_Base(coreContract).tokenIdToHash(
+                paletteTokenId
+            )
+        ).toHexString(32);
+        paletteDataValue = _resolvePaletteData({
+            coreContract: coreContract,
+            paletteTokenId: paletteTokenId
+        });
+    }
+
+    /**
+     * @notice The two values a palette token injects, resolved together.
+     * @dev `paletteDataValue` is never empty for a registered project: a palette
+     * token carries its own entry whether or not anything is bound to it. Only
+     * the pairing is subject to the ownership backstop.
+     */
+    function _paletteInjectedValues(
+        address coreContract,
+        uint256 paletteTokenId
+    )
+        private
+        view
+        returns (string memory boundFormValue, string memory paletteDataValue)
+    {
+        (bool isBound, uint256 formTokenId) = _resolveBoundForm({
+            paramValue: _encode({
+                coreContract: coreContract,
+                paletteTokenId: paletteTokenId
+            })
+        });
+        boundFormValue = isBound ? formTokenId.toString() : "";
+        paletteDataValue = _resolvePaletteData({
+            coreContract: coreContract,
+            paletteTokenId: paletteTokenId
+        });
+    }
+
+    /**
+     * @notice Which entry of a `paletteCount_`-long list a hash selects.
+     * @dev This contract is the single definition of that mapping — both the
+     * form and the palette projects read the injected result rather than
+     * deriving it — so the rule is chosen to be trivially auditable rather than
+     * to match any particular script. Modulo bias across a 256-bit hash and a
+     * list of realistic length is not measurable. Weighted rarity is expressed
+     * by repeating an entry in the registered list.
+     */
+    function _paletteIndex(
+        bytes32 tokenHash,
+        uint256 paletteCount_
+    ) private pure returns (uint256) {
+        return uint256(tokenHash) % paletteCount_;
     }
 
     /**
@@ -797,17 +1312,15 @@ contract FormPaletteBindingHooks is
      */
     function _resolveBoundPalette(
         uint256 formTokenId
-    ) private view returns (bool isBound, uint256 paletteTokenId) {
-        (isBound, paletteTokenId) = _boundPaletteOf({formTokenId: formTokenId});
-        if (!isBound) {
-            return (false, 0);
+    ) private view returns (bool isBound, uint256 paramValue) {
+        paramValue = _formToPalette[formTokenId];
+        if (paramValue == UNBOUND_PARAM_VALUE) {
+            return (false, UNBOUND_PARAM_VALUE);
         }
-        if (
-            IERC721(formCore).ownerOf(formTokenId) !=
-            IERC721(paletteCore).ownerOf(paletteTokenId)
-        ) {
-            return (false, 0);
+        if (!_sharesOwner({formTokenId: formTokenId, paramValue: paramValue})) {
+            return (false, UNBOUND_PARAM_VALUE);
         }
+        isBound = true;
     }
 
     /**
@@ -815,18 +1328,30 @@ contract FormPaletteBindingHooks is
      * tokens still share an owner.
      */
     function _resolveBoundForm(
-        uint256 paletteTokenId
+        uint256 paramValue
     ) private view returns (bool isBound, uint256 formTokenId) {
-        (isBound, formTokenId) = _boundFormOf({paletteTokenId: paletteTokenId});
+        (isBound, formTokenId) = _boundFormOf({paramValue: paramValue});
         if (!isBound) {
             return (false, 0);
         }
-        if (
-            IERC721(formCore).ownerOf(formTokenId) !=
-            IERC721(paletteCore).ownerOf(paletteTokenId)
-        ) {
+        if (!_sharesOwner({formTokenId: formTokenId, paramValue: paramValue})) {
             return (false, 0);
         }
+    }
+
+    /// @notice Whether a form token and the palette token a value names are
+    /// still held by one wallet.
+    function _sharesOwner(
+        uint256 formTokenId,
+        uint256 paramValue
+    ) private view returns (bool) {
+        (
+            address paletteCoreContract,
+            uint256 paletteTokenId
+        ) = _paletteTokenOf({paramValue: paramValue});
+        return
+            IERC721(formCore).ownerOf(formTokenId) ==
+            IERC721(paletteCoreContract).ownerOf(paletteTokenId);
     }
 
     /**
@@ -834,8 +1359,8 @@ contract FormPaletteBindingHooks is
      * transfer hook for `projectId`.
      * @dev This is the `ITransferHook` requirement that an implementation
      * verify which cores it serves. A contract impersonating a core could
-     * answer dishonestly, but the immutable core and project IDs checked in
-     * `_onTokenTransfer` confine it to doing nothing.
+     * answer dishonestly, but the immutable form project and the registry
+     * checked in `_onTokenTransfer` confine it to doing nothing.
      */
     function _onlyConfiguredForProject(
         address coreContract,
