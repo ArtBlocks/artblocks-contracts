@@ -56,7 +56,7 @@ Do all of this before the form project mints.
 
    | Field                          | Value                                                                            |
    | ------------------------------ | -------------------------------------------------------------------------------- |
-   | Parameter name                 | `boundPaletteTokenId`                                                            |
+   | Parameter name                 | `boundPaletteRef`                                                                |
    | Parameter type                 | Number                                                                           |
    | Who can change this parameter? | Token owner and Contract address                                                 |
    | Contract address               | the hook's address                                                               |
@@ -127,18 +127,18 @@ Adding palette collections stays open indefinitely.
 
 ## What silently breaks it
 
-Re-running Configure PostParams on the form project without
-`boundPaletteTokenId` in the list. Each submission bumps a nonce, after which
+Re-running Configure PostParams on the form project without `boundPaletteRef`
+in the list. Each submission bumps a nonce, after which
 the hook's writes fail. Pairings still break correctly on chain, but form tokens
 keep stale images. Include the binding parameter every time you touch that form.
 
 Changing the parameter's Contract address or Parameter type has the same effect.
 Setting Lock parameter is permanent.
 
-Configuring `boundPaletteCoreContract`, `boundPaletteTokenId`,
+Configuring `boundPaletteTokenId`, `boundPaletteCoreContract`,
 `boundPaletteTokenHash`, `boundFormTokenId`, or `paletteData` as project
-parameters. The hook injects these and strips anything you configure under those
-names.
+parameters. `boundPaletteRef` is the only key you configure. The hook injects
+the rest and strips anything you configure under those names.
 
 Locking the form project's script is safe. Storing palettes on chain is what
 buys you that. Neither script changes when you add a collection.
@@ -188,21 +188,22 @@ feeding both to one function.
 
 Binding needs both tokens in one wallet, both currently unbound.
 
-| Action                                 | How                                                                                                  | Result                                 |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| Bind                                   | Write the value from `bindingParamValueFor(core, tokenId)` to the form token's `boundPaletteTokenId` | Form token re-renders with the palette |
-| Unbind                                 | Write `0`                                                                                            | Form token re-renders with no palette  |
-| Swap palette on one form token         | One transaction, two inputs: `[0, newValue]`                                                         | Form token re-renders once             |
-| Move a palette between two form tokens | Two writes, clear the first form token then bind the second                                          | Each form token re-renders             |
+| Action                                 | How                                                                                              | Result                                 |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------- |
+| Bind                                   | Write the value from `bindingParamValueFor(core, tokenId)` to the form token's `boundPaletteRef` | Form token re-renders with the palette |
+| Unbind                                 | Write `0`                                                                                        | Form token re-renders with no palette  |
+| Swap palette on one form token         | One transaction, two inputs: `[0, newValue]`                                                     | Form token re-renders once             |
+| Move a palette between two form tokens | Two writes, clear the first form token then bind the second                                      | Each form token re-renders             |
 
 The swap is a single transaction because PMP applies a call's inputs in order
 and the hook never writes back into PMP. Moving a palette between two form
 tokens takes two writes because each `configureTokenParams` call targets one
 token, and only a token that gets written re-renders.
 
-The value written is the palette token's contract address and token ID packed
-into one number, since a PostParam is a single integer and a bare token ID is
-only unique within one contract:
+The parameter is called `boundPaletteRef`, not `...TokenId`, because the value
+written is a reference rather than a token ID. It is the palette token's
+contract address and token ID packed into one number, since a PostParam is a
+single integer and a bare token ID is only unique within one contract:
 
 ```
 value = (BigInt(coreContract) << 96n) | BigInt(paletteTokenId)
@@ -248,7 +249,7 @@ Form project, once:
 
 - [ ] Hook deployed against the right PMP and form project, and verified on the explorer
 - [ ] Enable PostParams
-- [ ] `boundPaletteTokenId` configured, Contract address set to the hook, Lock parameter off
+- [ ] `boundPaletteRef` configured, Contract address set to the hook, Lock parameter off
 - [ ] Post-config hook and Read augmentation hook both set to the hook
 - [ ] Transfer hook set
 - [ ] Form script renders correctly with no palette

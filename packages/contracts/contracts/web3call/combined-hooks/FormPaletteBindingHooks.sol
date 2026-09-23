@@ -148,8 +148,11 @@ import {IERC165} from "@openzeppelin-5.0/contracts/interfaces/IERC165.sol";
  * Everything else in the interface — `boundPaletteOf`, `isPaletteProject`,
  * `previewBind`, `paletteDataFor`, every event and every error — speaks in
  * plain `(coreContract, tokenId)` terms. The packed value appears in one other
- * place, the stored PMP param, and the augment hook strips that before any art
- * script sees it.
+ * place, the stored `boundPaletteRef` param, and the augment hook strips that
+ * before any art script sees it. The injected `boundPaletteTokenId` is the real
+ * token ID, which is why the written key is named `boundPaletteRef` rather than
+ * repeating it: a field called `...TokenId` invites a bare token ID, the exact
+ * mistake this encoding rejects.
  * ----------------------------------------------------------------------------
  * REQUIRED SETUP, ONE TIME. All of it concerns the form project, and steps 2-4
  * need the address deployed in step 1.
@@ -159,7 +162,7 @@ import {IERC165} from "@openzeppelin-5.0/contracts/interfaces/IERC165.sol";
  *
  * 2. Configure the binding param on the **form** project, via `configureProject`
  *    on the bound PMP:
- *    - key: `boundPaletteTokenId` (`PARAM_KEY_BOUND_PALETTE_TOKEN_ID`)
+ *    - key: `boundPaletteRef` (`PARAM_KEY_BOUND_PALETTE_REF`)
  *    - `paramType`: `Uint256Range`
  *    - `authOption`: `TokenOwnerAndAddress`
  *    - `authAddress`: this hook. Required — without it the transfer hook cannot
@@ -212,13 +215,15 @@ import {IERC165} from "@openzeppelin-5.0/contracts/interfaces/IERC165.sol";
  * as any project that uses PostParams, or nothing injected here reaches its
  * script.
  *
- * On neither side may the artist configure `boundPaletteCoreContract`,
- * `boundPaletteTokenHash`, `boundFormTokenId` or `paletteData` as project
- * params — they are inject-only and are stripped on read.
+ * `boundPaletteRef` is the only key the artist configures. On neither side may
+ * they configure `boundPaletteTokenId`, `boundPaletteCoreContract`,
+ * `boundPaletteTokenHash`, `boundFormTokenId` or `paletteData` — those are
+ * inject-only and are stripped on read.
  * ----------------------------------------------------------------------------
- * POSTPARAMS. On every read this hook copies the input params, drops any entry
- * whose key collides with the five keys below, and appends the ones for that
- * token's side. Values are canonical state, never the raw stored param.
+ * POSTPARAMS. On every read this hook copies the input params, drops the
+ * written `boundPaletteRef` along with any entry colliding with the five keys
+ * below, and appends the ones for that token's side. Values are canonical
+ * state, never the raw stored param.
  *
  * On a **form** token:
  * - `boundPaletteTokenId`: decimal token ID of the bound palette token, or the
@@ -371,7 +376,11 @@ contract FormPaletteBindingHooks is
     using ImmutableStringArray for ImmutableStringArray.StringArray;
 
     /// @notice Binding param on the form project, written by collectors to
-    /// bind and unbind, and by this hook to unbind on transfer.
+    /// bind and unbind, and by this hook to unbind on transfer. Its value is a
+    /// packed reference, not a token ID; see `bindingParamValueFor`.
+    string public constant PARAM_KEY_BOUND_PALETTE_REF = "boundPaletteRef";
+    /// @notice Inject-only key on form tokens carrying the bound palette
+    /// token's ID. Must not be configured as a project param.
     string public constant PARAM_KEY_BOUND_PALETTE_TOKEN_ID =
         "boundPaletteTokenId";
     /// @notice Inject-only key on form tokens carrying the core contract of the
@@ -414,6 +423,8 @@ contract FormPaletteBindingHooks is
 
     // @dev derived from the constants above rather than restated as literals,
     // so a key and its hash cannot drift apart
+    bytes32 private constant _HASHED_PARAM_KEY_BOUND_PALETTE_REF =
+        keccak256(bytes(PARAM_KEY_BOUND_PALETTE_REF));
     bytes32 private constant _HASHED_PARAM_KEY_BOUND_PALETTE_TOKEN_ID =
         keccak256(bytes(PARAM_KEY_BOUND_PALETTE_TOKEN_ID));
     bytes32 private constant _HASHED_PARAM_KEY_BOUND_PALETTE_CORE_CONTRACT =
@@ -565,7 +576,7 @@ contract FormPaletteBindingHooks is
         }
         if (
             keccak256(bytes(pmpInput.key)) !=
-            _HASHED_PARAM_KEY_BOUND_PALETTE_TOKEN_ID
+            _HASHED_PARAM_KEY_BOUND_PALETTE_REF
         ) {
             return;
         }
@@ -701,6 +712,7 @@ contract FormPaletteBindingHooks is
         for (uint256 i; i < originalLength; ) {
             bytes32 hashedKey = keccak256(bytes(tokenParams[i].key));
             if (
+                hashedKey != _HASHED_PARAM_KEY_BOUND_PALETTE_REF &&
                 hashedKey != _HASHED_PARAM_KEY_BOUND_PALETTE_TOKEN_ID &&
                 hashedKey != _HASHED_PARAM_KEY_BOUND_PALETTE_CORE_CONTRACT &&
                 hashedKey != _HASHED_PARAM_KEY_BOUND_PALETTE_TOKEN_HASH &&
@@ -1123,7 +1135,7 @@ contract FormPaletteBindingHooks is
     function _syncBindingParam(uint256 formTokenId) private {
         IPMPV0.PMPInput[] memory pmpInputs = new IPMPV0.PMPInput[](1);
         pmpInputs[0] = IPMPV0.PMPInput({
-            key: PARAM_KEY_BOUND_PALETTE_TOKEN_ID,
+            key: PARAM_KEY_BOUND_PALETTE_REF,
             configuredParamType: IPMPV0.ParamType.Uint256Range,
             configuredValue: bytes32(UNBOUND_PARAM_VALUE),
             configuringArtistString: false,

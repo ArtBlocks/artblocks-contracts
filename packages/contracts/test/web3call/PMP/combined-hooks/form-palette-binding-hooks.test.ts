@@ -48,6 +48,9 @@ const IFORM_PALETTE_BINDING_HOOKS_INTERFACE_ID = [
   "0x00000000"
 );
 
+// the key collectors write, holding the packed (core, tokenId) reference
+const PARAM_KEY_BOUND_PALETTE_REF = "boundPaletteRef";
+// inject-only, holding the real token ID
 const PARAM_KEY_BOUND_PALETTE_TOKEN_ID = "boundPaletteTokenId";
 const PARAM_KEY_BOUND_PALETTE_CORE_CONTRACT = "boundPaletteCoreContract";
 const PARAM_KEY_BOUND_PALETTE_TOKEN_HASH = "boundPaletteTokenHash";
@@ -123,7 +126,7 @@ function paramValue(
 
 function bindInput(value: BigNumber | number) {
   return getPMPInput(
-    PARAM_KEY_BOUND_PALETTE_TOKEN_ID,
+    PARAM_KEY_BOUND_PALETTE_REF,
     PMP_PARAM_TYPE_ENUM.Uint256Range,
     toBytes32(value),
     false,
@@ -285,7 +288,7 @@ describe("FormPaletteBindingHooks", async function () {
       .connect(config.accounts.artist)
       .configureProject(config.genArt721Core.address, FORM_PROJECT_ID, [
         getPMPInputConfig(
-          PARAM_KEY_BOUND_PALETTE_TOKEN_ID,
+          PARAM_KEY_BOUND_PALETTE_REF,
           overrides?.authOption ?? PMP_AUTH_ENUM.TokenOwnerAndAddress,
           overrides?.paramType ?? PMP_PARAM_TYPE_ENUM.Uint256Range,
           overrides?.lockedAfter ?? 0,
@@ -803,7 +806,7 @@ describe("FormPaletteBindingHooks", async function () {
       const paramConfig = await config.pmp.getProjectPMPConfig(
         config.genArt721Core.address,
         FORM_PROJECT_ID,
-        PARAM_KEY_BOUND_PALETTE_TOKEN_ID
+        PARAM_KEY_BOUND_PALETTE_REF
       );
       expect(paramConfig.paramType).to.equal(PMP_PARAM_TYPE_ENUM.Uint256Range);
       expect(paramConfig.authOption).to.equal(
@@ -876,7 +879,7 @@ describe("FormPaletteBindingHooks", async function () {
         .connect(config.accounts.artist)
         .configureProject(config.genArt721Core.address, FORM_PROJECT_ID, [
           getPMPInputConfig(
-            PARAM_KEY_BOUND_PALETTE_TOKEN_ID,
+            PARAM_KEY_BOUND_PALETTE_REF,
             PMP_AUTH_ENUM.TokenOwnerAndAddress,
             PMP_PARAM_TYPE_ENUM.Uint256Range,
             0,
@@ -921,7 +924,7 @@ describe("FormPaletteBindingHooks", async function () {
         .connect(config.accounts.artist)
         .configureProject(config.genArt721Core.address, PALETTE_PROJECT_ID, [
           getPMPInputConfig(
-            PARAM_KEY_BOUND_PALETTE_TOKEN_ID,
+            PARAM_KEY_BOUND_PALETTE_REF,
             PMP_AUTH_ENUM.TokenOwnerAndAddress,
             PMP_PARAM_TYPE_ENUM.Uint256Range,
             0,
@@ -971,7 +974,7 @@ describe("FormPaletteBindingHooks", async function () {
         .connect(config.accounts.artist)
         .configureProject(config.coreB.address, PALETTE_ON_CORE_B_PROJECT_ID, [
           getPMPInputConfig(
-            PARAM_KEY_BOUND_PALETTE_TOKEN_ID,
+            PARAM_KEY_BOUND_PALETTE_REF,
             PMP_AUTH_ENUM.TokenOwnerAndAddress,
             PMP_PARAM_TYPE_ENUM.Uint256Range,
             0,
@@ -1509,8 +1512,9 @@ describe("FormPaletteBindingHooks", async function () {
         PALETTE_TOKEN_ZERO
       );
       const params = await getParams(config, FORM_TOKEN_ZERO);
-      // exactly one entry for the key, and it is the injected token ID rather
-      // than the slot-encoded value the PMP actually stores
+      // the written key never reaches a script at all
+      expect(findParam(params, PARAM_KEY_BOUND_PALETTE_REF)).to.be.undefined;
+      // and the injected key carries the real token ID, not the packed value
       const matches = params.filter(
         (p: any) => p.key === PARAM_KEY_BOUND_PALETTE_TOKEN_ID
       );
@@ -1519,7 +1523,7 @@ describe("FormPaletteBindingHooks", async function () {
       const stored = await config.pmp.getTokenPMPStorage(
         config.genArt721Core.address,
         FORM_TOKEN_ZERO,
-        PARAM_KEY_BOUND_PALETTE_TOKEN_ID
+        PARAM_KEY_BOUND_PALETTE_REF
       );
       expect(BigNumber.from(stored.configuredValue)).to.equal(
         paramValue(config.genArt721Core.address, PALETTE_TOKEN_ZERO)
@@ -1532,7 +1536,7 @@ describe("FormPaletteBindingHooks", async function () {
         .connect(config.accounts.artist)
         .configureProject(config.genArt721Core.address, FORM_PROJECT_ID, [
           getPMPInputConfig(
-            PARAM_KEY_BOUND_PALETTE_TOKEN_ID,
+            PARAM_KEY_BOUND_PALETTE_REF,
             PMP_AUTH_ENUM.TokenOwnerAndAddress,
             PMP_PARAM_TYPE_ENUM.Uint256Range,
             0,
@@ -1573,7 +1577,7 @@ describe("FormPaletteBindingHooks", async function () {
     it("passes params through untouched on a project it does not serve", async function () {
       const config = await _withTokens();
       const input = [
-        { key: PARAM_KEY_BOUND_PALETTE_TOKEN_ID, value: "not-stripped" },
+        { key: PARAM_KEY_BOUND_PALETTE_REF, value: "not-stripped" },
         { key: "other", value: "kept" },
       ];
       const result = await config.hook.onTokenPMPReadAugmentation(
@@ -1745,7 +1749,7 @@ describe("FormPaletteBindingHooks", async function () {
       const stored = await config.pmp.getTokenPMPStorage(
         config.genArt721Core.address,
         FORM_TOKEN_ZERO,
-        PARAM_KEY_BOUND_PALETTE_TOKEN_ID
+        PARAM_KEY_BOUND_PALETTE_REF
       );
       expect(stored.configuredValue).to.equal(toBytes32(UNBOUND));
     });
@@ -2111,7 +2115,7 @@ describe("FormPaletteBindingHooks", async function () {
           config.pmp.address,
           config.genArt721Core.address,
           FORM_TOKEN_ONE,
-          PARAM_KEY_BOUND_PALETTE_TOKEN_ID,
+          PARAM_KEY_BOUND_PALETTE_REF,
         ]
       );
       await config.pmp
@@ -2208,7 +2212,7 @@ describe("FormPaletteBindingHooks gas", async function () {
         .connect(config.accounts.artist)
         .configureProject(genArt721Core.address, FORM_PROJECT_ID, [
           getPMPInputConfig(
-            PARAM_KEY_BOUND_PALETTE_TOKEN_ID,
+            PARAM_KEY_BOUND_PALETTE_REF,
             PMP_AUTH_ENUM.TokenOwnerAndAddress,
             PMP_PARAM_TYPE_ENUM.Uint256Range,
             0,
