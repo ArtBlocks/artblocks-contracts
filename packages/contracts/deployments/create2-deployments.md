@@ -1043,3 +1043,16 @@ Canonical append-only deployment log.
 - **Timestamp:** 2026-09-10T21:06:15.031Z
 
 ---
+
+## FormPaletteBindingHooks
+
+- **Chain:** Sepolia (11155111)
+- **Address:** [0xd5C1aaFF09e7E0C246107a3CFeAa66bE4b5088c9](https://sepolia.etherscan.io/address/0xd5C1aaFF09e7E0C246107a3CFeAa66bE4b5088c9)
+- **Salt:** `0x0000000000000000000000000000000000000000000000000000000000000000`
+- **TX:** [0x31f4ea9a86338e015742cafc9d698355582f4dc00b52d277db1b8eb2d78fd71a](https://sepolia.etherscan.io/tx/0x31f4ea9a86338e015742cafc9d698355582f4dc00b52d277db1b8eb2d78fd71a)
+- **Args:** `["0x00000000B9D3B2461fcFd5D23FCA65227B770f67","0x3747a7c0959177b31dd91d20d00652de304011d9",14]`
+- **Libraries:** `{}`
+- **Initcode Hash:** `0x382805bee45e80ef1913469161cca232c6f9b162865561ed0a0ec96771ce162f`
+- **Timestamp:** 2026-09-23T18:56:25.614Z
+
+---

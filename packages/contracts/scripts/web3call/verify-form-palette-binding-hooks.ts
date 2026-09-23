@@ -23,8 +23,12 @@ import { ethers } from "hardhat";
 // CONFIG BEGINS HERE
 //////////////////////////////////////////////////////////////////////////////
 
-/** Deployed FormPaletteBindingHooks address. */
-const HOOK_ADDRESS = "";
+/**
+ * Deployed FormPaletteBindingHooks address.
+ * sepolia-staging, form project 14: 0xd5C1aaFF09e7E0C246107a3CFeAa66bE4b5088c9
+ * (deterministic CREATE2 address for that config; confirm after deploying).
+ */
+const HOOK_ADDRESS = "0xd5C1aaFF09e7E0C246107a3CFeAa66bE4b5088c9";
 
 /** Network this deployment lives on, as hardhat names it. */
 const EXPECTED_NETWORK = "sepolia";
@@ -36,6 +40,7 @@ const EXPECTED_NETWORK = "sepolia";
 const PARAM_KEY_BOUND_PALETTE_REF = "boundPaletteRef";
 
 // IPMPV0.ParamType / AuthOption
+const PARAM_TYPE_UNCONFIGURED = 0;
 const PARAM_TYPE_UINT256_RANGE = 3;
 const AUTH_TOKEN_OWNER_AND_ADDRESS = 5;
 // IGenArt721CoreContractV3_Engine_Flex.ExternalAssetDependencyType
@@ -143,35 +148,42 @@ async function main() {
     formProjectId,
     PARAM_KEY_BOUND_PALETTE_REF
   );
-  check(
-    Number(paramConfig.paramType) === PARAM_TYPE_UINT256_RANGE,
-    `${PARAM_KEY_BOUND_PALETTE_REF} is Uint256Range ("Number")`,
-    `paramType=${paramConfig.paramType}`
-  );
-  check(
-    Number(paramConfig.authOption) === AUTH_TOKEN_OWNER_AND_ADDRESS,
-    "auth is Token owner + Contract address",
-    `authOption=${paramConfig.authOption}`
-  );
-  check(
-    paramConfig.authAddress.toLowerCase() === HOOK_ADDRESS.toLowerCase(),
-    "auth Contract address is the hook",
-    `got ${paramConfig.authAddress}`
-  );
-  check(
-    ethers.BigNumber.from(paramConfig.minRange).eq(0),
-    "min range is 0",
-    `got ${ethers.BigNumber.from(paramConfig.minRange).toString()}`
-  );
-  check(
-    ethers.BigNumber.from(paramConfig.maxRange).eq(maxRange),
-    "max range is the maximum",
-    `got ${ethers.BigNumber.from(paramConfig.maxRange).toString()}`
-  );
-  check(
-    Number(paramConfig.pmpLockedAfterTimestamp) === 0,
-    "no lock date on the binding parameter"
-  );
+  // @dev an unconfigured param reads back as all zeros, which would let the
+  // min-range and lock-date checks pass for a project that has no parameter at
+  // all. Report that as one failure rather than a misleading mix.
+  if (Number(paramConfig.paramType) === PARAM_TYPE_UNCONFIGURED) {
+    check(false, `${PARAM_KEY_BOUND_PALETTE_REF} parameter is configured`);
+  } else {
+    check(
+      Number(paramConfig.paramType) === PARAM_TYPE_UINT256_RANGE,
+      `${PARAM_KEY_BOUND_PALETTE_REF} is Uint256Range ("Number")`,
+      `paramType=${paramConfig.paramType}`
+    );
+    check(
+      Number(paramConfig.authOption) === AUTH_TOKEN_OWNER_AND_ADDRESS,
+      "auth is Token owner + Contract address",
+      `authOption=${paramConfig.authOption}`
+    );
+    check(
+      paramConfig.authAddress.toLowerCase() === HOOK_ADDRESS.toLowerCase(),
+      "auth Contract address is the hook",
+      `got ${paramConfig.authAddress}`
+    );
+    check(
+      ethers.BigNumber.from(paramConfig.minRange).eq(0),
+      "min range is 0",
+      `got ${ethers.BigNumber.from(paramConfig.minRange).toString()}`
+    );
+    check(
+      ethers.BigNumber.from(paramConfig.maxRange).eq(maxRange),
+      "max range is the maximum",
+      `got ${ethers.BigNumber.from(paramConfig.maxRange).toString()}`
+    );
+    check(
+      Number(paramConfig.pmpLockedAfterTimestamp) === 0,
+      "no lock date on the binding parameter"
+    );
+  }
 
   const formHooks = await pmp.getProjectConfig(formCore, formProjectId);
   check(

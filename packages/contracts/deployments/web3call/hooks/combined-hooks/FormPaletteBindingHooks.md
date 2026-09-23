@@ -39,9 +39,9 @@ export const deployConfigs: DeployConfig[] = [
   {
     contractName: "FormPaletteBindingHooks",
     args: [
-      "<PMP address>", // PMPV1 for the target environment
-      "<form core contract>", // core hosting the form project
-      0, // form project ID
+      "0x00000000B9D3B2461fcFd5D23FCA65227B770f67", // PMPV1, sepolia-staging
+      "0x3747a7c0959177b31dd91d20d00652de304011d9", // Engine Flex v3.3.1 core
+      14, // form project ID
     ],
     libraries: {},
     chainIds: [11155111], // sepolia
@@ -49,6 +49,17 @@ export const deployConfigs: DeployConfig[] = [
   },
 ];
 ```
+
+With a zero salt, CREATE2 puts that entry at a deterministic address:
+
+|                   |                                                                      |
+| ----------------- | -------------------------------------------------------------------- |
+| initcode hash     | `0x382805bee45e80ef1913469161cca232c6f9b162865561ed0a0ec96771ce162f` |
+| predicted address | `0xd5C1aaFF09e7E0C246107a3CFeAa66bE4b5088c9`                         |
+
+Confirm the UI reports the same address before broadcasting. A mismatch means the
+initcode changed, so the contract or its constructor arguments are not what this
+document describes.
 
 PMPV1 addresses:
 
@@ -88,8 +99,15 @@ It exits non-zero if anything is missing. Run it before any palette project mint
 
 ## Results
 
-<!-- Fill in per deployment. -->
+| Environment     | Chain ID | Form project                                     | Hook address                                 | Deployment tx                                                                                                                 |
+| --------------- | -------- | ------------------------------------------------ | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| sepolia-staging | 11155111 | `0x3747a7C0959177B31dd91D20D00652de304011d9` #14 | `0xd5C1aaFF09e7E0C246107a3CFeAa66bE4b5088c9` | [`0x31f4ea9a...d78fd71a`](https://sepolia.etherscan.io/tx/0x31f4ea9a86338e015742cafc9d698355582f4dc00b52d277db1b8eb2d78fd71a) |
 
-| Environment | Chain ID | Form project | Hook address | Deployment tx |
-| ----------- | -------- | ------------ | ------------ | ------------- |
-|             |          |              |              |               |
+Staging form project 14 is the Engine Flex v3.3.1 core's project 14, artist
+`0xB3B212da1F50DE8eCDE59C932e36DF7aFb6319cB`. Project 10 on the same core is the
+palette project for the staging run.
+
+Registration and every dashboard step must come from the artist wallet, since
+`registerPaletteProject` reads `projectIdToArtistAddress(formProjectId)` live
+from the core and the PMP and core configuration calls are artist-gated too.
+Deployment itself is permissionless.
