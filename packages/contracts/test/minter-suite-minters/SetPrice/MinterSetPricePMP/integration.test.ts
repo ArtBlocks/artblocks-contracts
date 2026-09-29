@@ -36,6 +36,12 @@ const pmpRevertMessages = {
     "PMP: artist string cannot be configured for non-string params",
 };
 
+// revert messages emitted by RequiredPMPLib
+const requiredPMPRevertMessages = {
+  keyNotSet: "Req PMP key not set",
+  projectRequiresPMPs: "Project requires PMPs",
+};
+
 // project zero's PMP keys, in the order they are configured on the PMP contract
 const PMP_KEY_COLOR = "color";
 const PMP_KEY_SIZE = "size";
@@ -681,6 +687,179 @@ runForEach.forEach((params) => {
             value: config.pricePerTokenInWei.add(1),
           }
         );
+      });
+    });
+
+    describe("required PMP keys", async function () {
+      // sets project zero's required keys to `keys`
+      async function setRequiredKeys(config, keys: string[]) {
+        await config.minter
+          .connect(config.accounts.artist)
+          .setProjectRequiredPMPKeys(
+            config.projectZero,
+            config.genArt721Core.address,
+            keys
+          );
+      }
+
+      it("allows purchase when all required keys are submitted", async function () {
+        const config = await loadFixture(_beforeEach);
+        await setRequiredKeys(config, [PMP_KEY_COLOR, PMP_KEY_SIZE]);
+        await config.minter
+          .connect(config.accounts.user)
+          .purchaseWithPMPs(
+            config.projectZero,
+            config.genArt721Core.address,
+            [colorInput(), sizeInput()],
+            { value: config.pricePerTokenInWei }
+          );
+        const tokenParams = await config.pmp.getTokenParams(
+          config.genArt721Core.address,
+          config.projectZeroTokenZero.toNumber()
+        );
+        expect(tokenParams.length).to.equal(2);
+      });
+
+      it("allows additional non-required keys alongside the required ones", async function () {
+        const config = await loadFixture(_beforeEach);
+        await setRequiredKeys(config, [PMP_KEY_COLOR]);
+        // submits the required `color` plus the non-required `size`
+        await config.minter
+          .connect(config.accounts.user)
+          .purchaseWithPMPs(
+            config.projectZero,
+            config.genArt721Core.address,
+            [colorInput(), sizeInput()],
+            { value: config.pricePerTokenInWei }
+          );
+        const tokenParams = await config.pmp.getTokenParams(
+          config.genArt721Core.address,
+          config.projectZeroTokenZero.toNumber()
+        );
+        expect(tokenParams.length).to.equal(2);
+      });
+
+      it("accepts required keys submitted in any order", async function () {
+        const config = await loadFixture(_beforeEach);
+        await setRequiredKeys(config, [PMP_KEY_COLOR, PMP_KEY_SIZE]);
+        await config.minter
+          .connect(config.accounts.user)
+          .purchaseWithPMPs(
+            config.projectZero,
+            config.genArt721Core.address,
+            [sizeInput(), colorInput()],
+            { value: config.pricePerTokenInWei }
+          );
+        expect(
+          await config.genArt721Core.ownerOf(
+            config.projectZeroTokenZero.toNumber()
+          )
+        ).to.equal(config.accounts.user.address);
+      });
+
+      it("reverts when the only required key is missing", async function () {
+        const config = await loadFixture(_beforeEach);
+        await setRequiredKeys(config, [PMP_KEY_COLOR]);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseWithPMPs(
+              config.projectZero,
+              config.genArt721Core.address,
+              [sizeInput()],
+              { value: config.pricePerTokenInWei }
+            ),
+          requiredPMPRevertMessages.keyNotSet
+        );
+      });
+
+      it("reverts when only some of the required keys are submitted", async function () {
+        const config = await loadFixture(_beforeEach);
+        await setRequiredKeys(config, [PMP_KEY_COLOR, PMP_KEY_SIZE]);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseWithPMPs(
+              config.projectZero,
+              config.genArt721Core.address,
+              [colorInput()],
+              { value: config.pricePerTokenInWei }
+            ),
+          requiredPMPRevertMessages.keyNotSet
+        );
+      });
+
+      it("reverts `purchaseToWithPMPs` when a required key is missing", async function () {
+        const config = await loadFixture(_beforeEach);
+        await setRequiredKeys(config, [PMP_KEY_COLOR]);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseToWithPMPs(
+              config.accounts.additional.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              [sizeInput()],
+              { value: config.pricePerTokenInWei }
+            ),
+          requiredPMPRevertMessages.keyNotSet
+        );
+      });
+
+      it("reverts plain `purchase` while the project has required keys", async function () {
+        const config = await loadFixture(_beforeEach);
+        await setRequiredKeys(config, [PMP_KEY_COLOR]);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address, {
+              value: config.pricePerTokenInWei,
+            }),
+          requiredPMPRevertMessages.projectRequiresPMPs
+        );
+      });
+
+      it("reverts plain `purchaseTo` while the project has required keys", async function () {
+        const config = await loadFixture(_beforeEach);
+        await setRequiredKeys(config, [PMP_KEY_COLOR]);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseTo(
+              config.accounts.additional.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              { value: config.pricePerTokenInWei }
+            ),
+          requiredPMPRevertMessages.projectRequiresPMPs
+        );
+      });
+
+      it("re-allows plain `purchase` once required keys are cleared", async function () {
+        const config = await loadFixture(_beforeEach);
+        await setRequiredKeys(config, [PMP_KEY_COLOR]);
+        await setRequiredKeys(config, []);
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.pricePerTokenInWei,
+          });
+        expect(
+          await config.genArt721Core.ownerOf(
+            config.projectZeroTokenZero.toNumber()
+          )
+        ).to.equal(config.accounts.user.address);
+      });
+
+      it("does not affect other projects on the minter", async function () {
+        const config = await loadFixture(_beforeEach);
+        await setRequiredKeys(config, [PMP_KEY_COLOR]);
+        // project one has no required keys, so plain purchase still works
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectOne, config.genArt721Core.address, {
+            value: config.pricePerTokenInWei,
+          });
       });
     });
 

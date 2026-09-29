@@ -2,9 +2,18 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
 import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
 import { SetPrice_Common_Events } from "../common.events";
+import { expect } from "chai";
 import { ethers } from "hardhat";
+import {
+  PMP_AUTH_ENUM,
+  PMP_PARAM_TYPE_ENUM,
+  getPMPInputConfig,
+  uint256ToBytes32,
+} from "../../../web3call/PMP/pmpTestUtils";
 
 const TARGET_MINTER_NAME = "MinterSetPricePMPV0";
+
+const PMP_KEY_COLOR = "color";
 
 const runForEach = [
   {
@@ -120,6 +129,62 @@ runForEach.forEach((params) => {
 
     describe("Common Set Price Minter Events Tests", async function () {
       await SetPrice_Common_Events(_beforeEach);
+    });
+
+    describe("setProjectRequiredPMPKeys", async function () {
+      it("emits ProjectRequiredPMPKeysUpdated when setting required keys", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure a PMP key that authenticates the minter
+        await config.pmp
+          .connect(config.accounts.artist)
+          .configureProject(config.genArt721Core.address, config.projectZero, [
+            getPMPInputConfig(
+              PMP_KEY_COLOR,
+              PMP_AUTH_ENUM.TokenOwnerAndAddress,
+              PMP_PARAM_TYPE_ENUM.HexColor,
+              0,
+              config.minter.address,
+              [],
+              uint256ToBytes32(0),
+              uint256ToBytes32(0)
+            ),
+          ]);
+
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .setProjectRequiredPMPKeys(
+              config.projectZero,
+              config.genArt721Core.address,
+              [PMP_KEY_COLOR]
+            )
+        )
+          .to.emit(
+            await ethers.getContractAt("RequiredPMPLib", config.minter.address),
+            "ProjectRequiredPMPKeysUpdated"
+          )
+          .withArgs(config.projectZero, config.genArt721Core.address, [
+            PMP_KEY_COLOR,
+          ]);
+      });
+
+      it("emits ProjectRequiredPMPKeysUpdated with an empty array when cleared", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .setProjectRequiredPMPKeys(
+              config.projectZero,
+              config.genArt721Core.address,
+              []
+            )
+        )
+          .to.emit(
+            await ethers.getContractAt("RequiredPMPLib", config.minter.address),
+            "ProjectRequiredPMPKeysUpdated"
+          )
+          .withArgs(config.projectZero, config.genArt721Core.address, []);
+      });
     });
   });
 });

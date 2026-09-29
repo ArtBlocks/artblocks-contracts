@@ -16,6 +16,7 @@ import {AuthLib} from "../../libs/v0.8.x/AuthLib.sol";
 import {SplitFundsLib} from "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import {MaxInvocationsLib} from "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 import {SetPriceLib} from "../../libs/v0.8.x/minter-libs/SetPriceLib.sol";
+import {RequiredPMPLib} from "../../libs/v0.8.x/minter-libs/RequiredPMPLib.sol";
 
 import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 
@@ -34,6 +35,22 @@ import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGu
  * configured in a single purchase, but the PMP-accepting functions require at
  * least one input; use `purchase` or `purchaseTo` to mint without configuring
  * any PMPs.
+ * @notice Required PMP keys:
+ * A project's artist may additionally require that specific PMP keys be
+ * configured during every mint, via `setProjectRequiredPMPKeys`. Each required
+ * key is validated at the time it is set: it must be part of the project's
+ * active PMP config, must authenticate this minter (see below), and must never
+ * lock, because a locked key could no longer be configured and would
+ * permanently halt minting. While a project has required keys, `purchase` and
+ * `purchaseTo` revert, as they would otherwise bypass the requirement, and the
+ * PMP-accepting functions revert unless every required key is present in the
+ * submitted inputs. Additional non-required keys may still be submitted.
+ * @notice WARNING - required keys depend on the project's PMP config:
+ * The validation performed when required keys are set is a setup-time
+ * guardrail, not a durable guarantee - the artist may reconfigure the project
+ * on the PMP contract at any time afterwards. An artist who invalidates a
+ * required key's PMP configuration will halt all minting on the project until
+ * either the PMP configuration or the project's required keys are corrected.
  * @notice IMPORTANT - required artist setup:
  * PMP authenticates the caller of `configureTokenParams`, which is this minter
  * contract (not the purchaser). For a PMP key to be configurable during
@@ -66,6 +83,7 @@ import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGu
  * - updatePricePerTokenInWei
  * - syncProjectMaxInvocationsToCore
  * - manuallyLimitProjectMaxInvocations
+ * - setProjectRequiredPMPKeys
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
@@ -191,6 +209,38 @@ contract MinterSetPricePMPV0 is
     }
 
     /**
+     * @notice Sets the PMP keys that project `projectId` requires to be
+     * configured during every mint, replacing any previously set keys.
+     * @dev Each key must be part of the project's active config on this
+     * minter's PMP contract, must authenticate this minter as a configuring
+     * address, and must never lock. Duplicate keys are rejected.
+     * @dev While a project has required keys, `purchase` and `purchaseTo`
+     * revert, and the PMP-accepting purchase functions require every required
+     * key to be submitted.
+     * @dev Pass an empty array to clear the project's required keys.
+     * @param projectId Project ID to set the required PMP keys for.
+     * @param coreContract Core contract address for the given project.
+     * @param requiredPMPKeys PMP keys to require during mint.
+     */
+    function setProjectRequiredPMPKeys(
+        uint256 projectId,
+        address coreContract,
+        string[] calldata requiredPMPKeys
+    ) external {
+        AuthLib.onlyArtist({
+            projectId: projectId,
+            coreContract: coreContract,
+            sender: msg.sender
+        });
+        RequiredPMPLib.setRequiredPMPKeys({
+            projectId: projectId,
+            coreContract: coreContract,
+            pmpContract: address(pmpContract),
+            requiredPMPKeys: requiredPMPKeys
+        });
+    }
+
+    /**
      * @notice Purchases a token from project `projectId`.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
@@ -268,6 +318,24 @@ contract MinterSetPricePMPV0 is
     ) external view returns (SetPriceLib.SetPriceProjectConfig memory) {
         return
             SetPriceLib.getSetPriceProjectConfig({
+                projectId: projectId,
+                coreContract: coreContract
+            });
+    }
+
+    /**
+     * @notice Gets the PMP keys that project `projectId` requires to be
+     * configured during every mint.
+     * @param projectId The ID of the project whose data needs to be fetched.
+     * @param coreContract The address of the core contract.
+     * @return The project's required PMP keys. Empty if none are required.
+     */
+    function projectRequiredPMPKeys(
+        uint256 projectId,
+        address coreContract
+    ) external view returns (string[] memory) {
+        return
+            RequiredPMPLib.getRequiredPMPKeys({
                 projectId: projectId,
                 coreContract: coreContract
             });
@@ -419,6 +487,8 @@ contract MinterSetPricePMPV0 is
     /**
      * @notice Purchases a token from project `projectId` and sets
      * the token's owner to `to`.
+     * @dev Reverts if the project has required PMP keys, which this function
+     * would otherwise bypass. Use `purchaseToWithPMPs` for such projects.
      * @param to Address to be the new token's owner.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
@@ -429,6 +499,12 @@ contract MinterSetPricePMPV0 is
         uint256 projectId,
         address coreContract
     ) public payable nonReentrant returns (uint256 tokenId) {
+        // CHECKS
+        RequiredPMPLib.requireNoRequiredPMPKeys({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+
         uint256 pricePerTokenInWei;
         (tokenId, pricePerTokenInWei) = _preMintChecksAndMint({
             to: to,
@@ -467,6 +543,13 @@ contract MinterSetPricePMPV0 is
         // CHECKS
         // @dev use `purchase` or `purchaseTo` to mint without configuring PMPs
         require(pmpInputs.length > 0, "No PMP inputs");
+
+        // require every PMP key the project requires at mint to be submitted
+        RequiredPMPLib.preMintChecks({
+            projectId: projectId,
+            coreContract: coreContract,
+            pmpInputs: pmpInputs
+        });
 
         uint256 pricePerTokenInWei;
         (tokenId, pricePerTokenInWei) = _preMintChecksAndMint({
