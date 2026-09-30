@@ -20,13 +20,13 @@ When using `ABI.encodePacked` to concatenate multiple items, beware that if two 
 
 ## Hard-Coded Addresses
 
-Hard-coded addresses in a smart contract should generally be avoided. This is largly because the address of a contract can be different on different networks, resulting in a contract that is not easily reusable. This can lead to unexpected behavior or unnecessary contract version updates. It also makes it harder to test your contract, and can result in using mocked contract responses instead of real ones based on compiling the hard-coded contract from source code in tests.
+Hard-coded addresses in a smart contract should generally be avoided. This is largely because the address of a contract can be different on different networks, resulting in a contract that is not easily reusable. This can lead to unexpected behavior or unnecessary contract version updates. It also makes it harder to test your contract, and can result in using mocked contract responses instead of real ones based on compiling the hard-coded contract from source code in tests.
 
-The preferred pattern is to define what would be a hard-coded address an an immutable variable, and then set it in the constructor. This allows the address to be set at deployment time, and also allows tests to mimic what will be executed in production.
+The preferred pattern is to define what would be a hard-coded address and an immutable variable, and then set it in the constructor. This allows the address to be set at deployment time, and also allows tests to mimic what will be executed in production.
 
 ## Contract Inheritance
 
-While at times useful, complex contract inheritance patterns can lead to code that is difficult to understand and maintain. In general, we want our contracts to be as readible and easy to read as possible. This helps prevent bugs, and also lowers the threhold of Solidity knowledge that a user must have to be able to read our contract before more confidently interacting with it. Therefore, it is best to avoid complex inheritance patterns, and instead at times reuse code.
+While at times useful, complex contract inheritance patterns can lead to code that is difficult to understand and maintain. In general, we want our contracts to be as readable and easy to read as possible. This helps prevent bugs, and also lowers the threshold of Solidity knowledge that a user must have to be able to read our contract before more confidently interacting with it. Therefore, it is best to avoid complex inheritance patterns, and instead at times reuse code.
 
 We do, however, highly recommend using contract interfaces to define the public interface of a contract. This allows us to define the public interface of a contract in a single place, and then use that interface in other contracts. It also enforces that the public interface of a contract is consistent across all contracts that implement it (at the compiler-level). This is especially useful when we have multiple contracts that implement the same interface, and we want to be able to easily swap out one contract for another.
 
@@ -42,7 +42,7 @@ For example, we used to have a `disablePurchaseTo` functionality on our minter c
 
 ## Function Return Values
 
-When a function is called on an external contract, the return values can be decoded via use of interfaces. For example, in the ficticious example below:
+When a function is called on an external contract, the return values can be decoded via use of interfaces. For example, in the fictitious example below:
 
 ```solidity
 interface IERC721Core {
@@ -77,7 +77,7 @@ contract Minter {
 }
 ```
 
-The gotcha come in when a contract is mis-cast as an interface that it is actually not. For example, what if `erc721Core` is actually a contract that returns four payees?
+The gotcha comes in when a contract is mis-cast as an interface that it is actually not. For example, what if `erc721Core` is actually a contract that returns four payees?
 
 ```solidity
 Contract Core {

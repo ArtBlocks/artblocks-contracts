@@ -78,7 +78,7 @@ contract BytecodeStorageReaderContractV2_Web3Call is IBytecodeStorageReaderV2 {
     }
 
     /**
-     * @notice Read a bytes array from the a contract deployed via BytecodeStorage V2 or earlier.
+     * @notice Read a bytes array from the contract deployed via BytecodeStorage V2 or earlier.
      * @param address_ address of contract with valid bytecode to be read
      * @param offset offset to read from in contract bytecode, explicitly provided (not calculated)
      * @return The bytes data stored at the specific address.
