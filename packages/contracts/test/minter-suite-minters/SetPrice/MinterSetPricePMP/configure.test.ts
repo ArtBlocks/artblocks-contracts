@@ -304,6 +304,45 @@ runForEach.forEach((params) => {
         );
       });
 
+      // @dev intentionally not tested at the full cap of 256. The duplicate
+      // check is O(n^2), and instrumenting ~33k loop iterations exhausts
+      // solidity-coverage's heap. 32 keys exercises the same multi-key paths.
+      it("accepts a large set of keys", async function () {
+        const config = await loadFixture(_beforeEach);
+        const maxKeys = Array.from({ length: 32 }, (_, i) => `key${i}`);
+        await config.pmp.connect(config.accounts.artist).configureProject(
+          config.genArt721Core.address,
+          config.projectZero,
+          maxKeys.map((key) =>
+            getPMPInputConfig(
+              key,
+              PMP_AUTH_ENUM.Address,
+              PMP_PARAM_TYPE_ENUM.Bool,
+              0,
+              config.minter.address,
+              [],
+              uint256ToBytes32(0),
+              uint256ToBytes32(0)
+            )
+          )
+        );
+
+        await config.minter
+          .connect(config.accounts.artist)
+          .setProjectRequiredPMPKeys(
+            config.projectZero,
+            config.genArt721Core.address,
+            maxKeys
+          );
+
+        expect(
+          await config.minter.projectRequiredPMPKeys(
+            config.projectZero,
+            config.genArt721Core.address
+          )
+        ).to.deep.equal(maxKeys);
+      });
+
       it("reverts when more than 256 keys are provided", async function () {
         const config = await loadFixture(_beforeEach);
         const tooManyKeys = Array.from({ length: 257 }, (_, i) => `key${i}`);

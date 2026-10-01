@@ -500,13 +500,20 @@ contract MinterSetPricePMPV0 is
         address coreContract
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
+        uint256 pricePerTokenInWei = _preMintChecks({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+
+        // require the project to have no required PMP keys, which this
+        // function would otherwise bypass
         RequiredPMPLib.requireNoRequiredPMPKeys({
             projectId: projectId,
             coreContract: coreContract
         });
 
-        uint256 pricePerTokenInWei;
-        (tokenId, pricePerTokenInWei) = _preMintChecksAndMint({
+        // EFFECTS
+        tokenId = _mintToken({
             to: to,
             projectId: projectId,
             coreContract: coreContract
@@ -544,6 +551,11 @@ contract MinterSetPricePMPV0 is
         // @dev use `purchase` or `purchaseTo` to mint without configuring PMPs
         require(pmpInputs.length > 0, "No PMP inputs");
 
+        uint256 pricePerTokenInWei = _preMintChecks({
+            projectId: projectId,
+            coreContract: coreContract
+        });
+
         // require every PMP key the project requires at mint to be submitted
         RequiredPMPLib.preMintChecks({
             projectId: projectId,
@@ -551,8 +563,8 @@ contract MinterSetPricePMPV0 is
             pmpInputs: pmpInputs
         });
 
-        uint256 pricePerTokenInWei;
-        (tokenId, pricePerTokenInWei) = _preMintChecksAndMint({
+        // EFFECTS
+        tokenId = _mintToken({
             to: to,
             projectId: projectId,
             coreContract: coreContract
@@ -579,21 +591,19 @@ contract MinterSetPricePMPV0 is
     }
 
     /**
-     * @notice Internal function to perform pre-mint checks and mint a token
-     * from project `projectId` to `to`. Does not split funds, which must be
-     * handled by the calling function as a final interaction.
-     * @param to Address to be the new token's owner.
+     * @notice Internal function to perform pre-mint checks for project
+     * `projectId` and return its price per token.
+     * @dev Any additional, minter-specific checks are performed by the calling
+     * function after this one, so that callers of a sold-out or unconfigured
+     * project receive the more relevant revert reason.
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
-     * @return tokenId Token ID of minted token
      * @return pricePerTokenInWei Price per token of the project, in Wei
      */
-    function _preMintChecksAndMint(
-        address to,
+    function _preMintChecks(
         uint256 projectId,
         address coreContract
-    ) private returns (uint256 tokenId, uint256 pricePerTokenInWei) {
-        // CHECKS
+    ) private view returns (uint256 pricePerTokenInWei) {
         // pre-mint MaxInvocationsLib checks
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
@@ -615,7 +625,23 @@ contract MinterSetPricePMPV0 is
 
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
-        // EFFECTS
+        return pricePerTokenInWei;
+    }
+
+    /**
+     * @notice Internal function to mint a token from project `projectId` to
+     * `to`. Does not perform pre-mint checks or split funds, both of which
+     * must be handled by the calling function.
+     * @param to Address to be the new token's owner.
+     * @param projectId Project ID to mint a token on.
+     * @param coreContract Core contract address for the given project.
+     * @return tokenId Token ID of minted token
+     */
+    function _mintToken(
+        address to,
+        uint256 projectId,
+        address coreContract
+    ) private returns (uint256 tokenId) {
         tokenId = _minterFilter.mint_joo({
             to: to,
             projectId: projectId,
@@ -628,6 +654,6 @@ contract MinterSetPricePMPV0 is
             coreContract: coreContract
         });
 
-        return (tokenId, pricePerTokenInWei);
+        return tokenId;
     }
 }

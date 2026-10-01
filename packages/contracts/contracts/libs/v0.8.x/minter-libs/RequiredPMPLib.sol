@@ -140,10 +140,11 @@ library RequiredPMPLib {
     /**
      * @notice Checks that every PMP key required by project `projectId` is
      * present in `pmpInputs`.
-     * @dev Reverts if any required key is missing. Additional non-required keys
-     * in `pmpInputs` are permitted.
-     * @dev Only presence is checked here. The PMP contract validates that each
-     * forwarded input is well-formed and authorized when it is configured.
+     * @dev Reverts if any required key is missing, or if a required string
+     * param is given an empty value, which the PMP contract would record as
+     * unconfigured. Additional non-required keys in `pmpInputs` are permitted.
+     * @dev Beyond the above, the PMP contract validates that each forwarded
+     * input is well-formed and authorized when it is configured.
      * @param projectId Project ID being minted on.
      * @param coreContract Core contract address for the given project.
      * @param pmpInputs PMP inputs submitted with the purchase.
@@ -175,6 +176,19 @@ library RequiredPMPLib {
             bool isPresent = false;
             for (uint256 j = 0; j < numInputs; j++) {
                 if (inputKeyHashes[j] == requiredKeyHash) {
+                    // a required string param must be given a non-empty value.
+                    // The PMP contract accepts an empty string, but then reports
+                    // the param as unconfigured, which would let a required key
+                    // be satisfied without actually being set.
+                    // @dev the input's param type may be relied on here; the PMP
+                    // contract reverts if it does not match the project's config
+                    require(
+                        pmpInputs[j].configuredParamType !=
+                            IPMPV0.ParamType.String ||
+                            bytes(pmpInputs[j].configuredValueString).length >
+                            0,
+                        "Req PMP key empty string"
+                    );
                     isPresent = true;
                     break;
                 }
