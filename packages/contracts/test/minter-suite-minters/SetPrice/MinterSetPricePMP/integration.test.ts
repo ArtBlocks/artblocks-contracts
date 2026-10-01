@@ -51,6 +51,7 @@ const hookRevertMessages = {
 const requiredPMPRevertMessages = {
   keyNotSet: "Req PMP key not set",
   keyEmptyString: "Req PMP key empty string",
+  duplicateInputKey: "Duplicate PMP input key",
   projectRequiresPMPs: "Project requires PMPs",
 };
 
@@ -961,6 +962,44 @@ runForEach.forEach((params) => {
               { value: config.pricePerTokenInWei }
             ),
           requiredPMPRevertMessages.keyEmptyString
+        );
+      });
+
+      it("reverts when a required key is submitted more than once", async function () {
+        const config = await loadFixture(_beforeEach);
+        await setRequiredKeys(config, [PMP_KEY_NOTE]);
+        // @dev the PMP contract applies inputs in order with no duplicate
+        // guard, so a trailing empty duplicate would be the value it persists.
+        // Were duplicates permitted, this would mint a token whose required
+        // param reads back as unconfigured.
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseWithPMPs(
+              config.projectZero,
+              config.genArt721Core.address,
+              [noteInput("hello"), noteInput("")],
+              { value: config.pricePerTokenInWei }
+            ),
+          requiredPMPRevertMessages.duplicateInputKey
+        );
+      });
+
+      it("reverts on duplicate input keys regardless of param type or order", async function () {
+        const config = await loadFixture(_beforeEach);
+        await setRequiredKeys(config, [PMP_KEY_COLOR]);
+        // a duplicate of a non-required key is rejected too, so that presence
+        // and last-write-wins can never diverge
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseWithPMPs(
+              config.projectZero,
+              config.genArt721Core.address,
+              [colorInput(), sizeInput(), sizeInput()],
+              { value: config.pricePerTokenInWei }
+            ),
+          requiredPMPRevertMessages.duplicateInputKey
         );
       });
 

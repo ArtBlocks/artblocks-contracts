@@ -33,8 +33,11 @@ import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGu
  * array of PMP inputs and forward them to the PMP contract configured on this
  * minter, in the same transaction as the mint. Any number of PMPs may be
  * configured in a single purchase, but the PMP-accepting functions require at
- * least one input; use `purchase` or `purchaseTo` to mint without configuring
- * any PMPs.
+ * least one input and reject repeated keys; use `purchase` or `purchaseTo` to
+ * mint without configuring any PMPs.
+ * @dev Repeated keys are rejected because the PMP contract applies inputs in
+ * order with no duplicate guard, so a later input silently overwrites an
+ * earlier one for the same key.
  * @notice Required PMP keys:
  * A project's artist may additionally require that specific PMP keys be
  * configured during every mint, via `setProjectRequiredPMPKeys`. Each required
@@ -264,8 +267,9 @@ contract MinterSetPricePMPV0 is
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
      * @param pmpInputs PMP inputs to configure for the minted token. Must be
-     * non-empty, and each key must be part of the project's active PMP config
-     * and authenticate this minter.
+     * non-empty, must not contain the same key more than once, and each key
+     * must be part of the project's active PMP config and authenticate this
+     * minter.
      * @return tokenId Token ID of minted token
      */
     function purchaseWithPMPs(
@@ -537,8 +541,9 @@ contract MinterSetPricePMPV0 is
      * @param projectId Project ID to mint a token on.
      * @param coreContract Core contract address for the given project.
      * @param pmpInputs PMP inputs to configure for the minted token. Must be
-     * non-empty, and each key must be part of the project's active PMP config
-     * and authenticate this minter.
+     * non-empty, must not contain the same key more than once, and each key
+     * must be part of the project's active PMP config and authenticate this
+     * minter.
      * @return tokenId Token ID of minted token
      */
     function purchaseToWithPMPs(

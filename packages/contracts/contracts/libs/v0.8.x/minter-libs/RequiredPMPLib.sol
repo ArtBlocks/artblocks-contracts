@@ -138,11 +138,12 @@ library RequiredPMPLib {
     }
 
     /**
-     * @notice Checks that every PMP key required by project `projectId` is
-     * present in `pmpInputs`.
-     * @dev Reverts if any required key is missing, or if a required string
-     * param is given an empty value, which the PMP contract would record as
-     * unconfigured. Additional non-required keys in `pmpInputs` are permitted.
+     * @notice Checks that `pmpInputs` contains no duplicate keys and that every
+     * PMP key required by project `projectId` is present in it.
+     * @dev Reverts if `pmpInputs` contains the same key more than once, if any
+     * required key is missing, or if a required string param is given an empty
+     * value, which the PMP contract would record as unconfigured. Additional
+     * non-required keys in `pmpInputs` are permitted.
      * @dev Beyond the above, the PMP contract validates that each forwarded
      * input is well-formed and authorized when it is configured.
      * @param projectId Project ID being minted on.
@@ -154,23 +155,35 @@ library RequiredPMPLib {
         address coreContract,
         IPMPV0.PMPInput[] calldata pmpInputs
     ) internal view {
+        // hash each input key once, for comparison against every required key
+        // @dev done unconditionally, rather than only when the project has
+        // required keys, so that the no-duplicates guarantee below does not
+        // depend on the project's current configuration
+        uint256 numInputs = pmpInputs.length;
+        bytes32[] memory inputKeyHashes = new bytes32[](numInputs);
+        for (uint256 i = 0; i < numInputs; i++) {
+            bytes32 inputKeyHash = keccak256(abi.encode(pmpInputs[i].key));
+            // reject duplicate keys, for every param type. The PMP contract
+            // applies inputs in order with no duplicate guard, so the last
+            // input for a key is the one it persists. Were duplicates allowed,
+            // the checks below could pass on an earlier input while a later
+            // one overwrote it - for example a non-empty required string
+            // followed by the same key with an empty value, which the PMP
+            // contract stores and then reports as unconfigured.
+            for (uint256 j = 0; j < i; j++) {
+                require(
+                    inputKeyHashes[j] != inputKeyHash,
+                    "Duplicate PMP input key"
+                );
+            }
+            inputKeyHashes[i] = inputKeyHash;
+        }
+
         bytes32[] storage requiredKeyHashes = getRequiredPMPProjectConfig({
             projectId: projectId,
             coreContract: coreContract
         }).requiredKeyHashes;
         uint256 numRequired = requiredKeyHashes.length;
-        // no required keys - nothing to enforce
-        if (numRequired == 0) {
-            return;
-        }
-
-        // hash each input key once, for comparison against every required key
-        uint256 numInputs = pmpInputs.length;
-        bytes32[] memory inputKeyHashes = new bytes32[](numInputs);
-        for (uint256 i = 0; i < numInputs; i++) {
-            inputKeyHashes[i] = keccak256(abi.encode(pmpInputs[i].key));
-        }
-
         for (uint256 i = 0; i < numRequired; i++) {
             bytes32 requiredKeyHash = requiredKeyHashes[i];
             bool isPresent = false;
