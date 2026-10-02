@@ -59,3 +59,32 @@ const inputs: T_Inputs = {
   libraries: {},
 };
 ```
+
+## 2026-10-02
+
+### MinterSetPricePMPV0
+
+One-off deploy. Not approved on the staging minter filter.
+
+Deployed via `scripts/create2-deploy` + keyless create2 factory.
+
+Verified: https://sepolia.etherscan.io/address/0x32841b18376144e70647Aa1206D1C74CF35C95C4#code
+
+Transaction: https://sepolia.etherscan.io/tx/0x9903ff4104b9d8c93b06143e40c820e1af97dd3132c4161d1f247d0f556556ae
+
+Salt: `0x0000000000000000000000000000000000000000000000000000000000000000`
+
+Deployment Config:
+
+```
+const inputs: T_Inputs = {
+  address: "0x32841b18376144e70647Aa1206D1C74CF35C95C4",
+  network: "sepolia",
+  contractName: "MinterSetPricePMPV0",
+  args: [
+    "0xa07f47c30C262adcC263A4D44595972c50e04db7", // staging MinterFilterV2
+    "0x00000000B9D3B2461fcFd5D23FCA65227B770f67", // staging PMPV1
+  ],
+  libraries: {},
+};
+```
