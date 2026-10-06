@@ -57,3 +57,32 @@ const inputs: T_Inputs = {
   libraries: {},
 };
 ```
+
+## 2026-10-02
+
+### MinterSetPricePMPV0
+
+One-off deploy. Not approved on the dev minter filter.
+
+Deployed via `scripts/create2-deploy` + keyless create2 factory.
+
+Verified: https://sepolia.etherscan.io/address/0x1C21aC0E5458D2950C85C07C46cD12B247728d41#code
+
+Transaction: https://sepolia.etherscan.io/tx/0xd367d57bdf5d6c36a25be5a4c1b405332a0571927811c8e2d40d7a1eac3bfc4c
+
+Salt: `0x0000000000000000000000000000000000000000000000000000000000000000`
+
+Deployment Config:
+
+```
+const inputs: T_Inputs = {
+  address: "0x1C21aC0E5458D2950C85C07C46cD12B247728d41",
+  network: "sepolia",
+  contractName: "MinterSetPricePMPV0",
+  args: [
+    "0x29e9f09244497503f304FA549d50eFC751D818d2", // dev MinterFilterV2
+    "0xb380B5c5A1d98Ebcc669feF89bCe0B3db1f36292", // dev PMPV1
+  ],
+  libraries: {},
+};
+```
