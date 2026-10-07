@@ -59,3 +59,32 @@ const inputs: T_Inputs = {
   libraries: {},
 };
 ```
+
+## 2026-10-06
+
+### MinterSetPricePMPV0
+
+One-off deploy. Not approved on the mainnet minter filter.
+
+Deployed via `scripts/create2-deploy` + keyless create2 factory.
+
+Verified: https://etherscan.io/address/0xCB084b813116B3799EB4AD261fe6ba69f8277c26#code
+
+Transaction: https://etherscan.io/tx/0x83eff6fdaf633dab18c0ab94949d97f2be839a916d48f86e215c7eac0bc5d938
+
+Salt: `0x0000000000000000000000000000000000000000000000000000000000000000`
+
+Deployment Config:
+
+```
+const inputs: T_Inputs = {
+  address: "0xCB084b813116B3799EB4AD261fe6ba69f8277c26",
+  network: "mainnet",
+  contractName: "MinterSetPricePMPV0",
+  args: [
+    "0xa2ccfE293bc2CDD78D8166a82D1e18cD2148122b", // mainnet MinterFilterV2
+    "0x00000000B9D3B2461fcFd5D23FCA65227B770f67", // PMPV1
+  ],
+  libraries: {},
+};
+```
