@@ -37,6 +37,31 @@ export const iGenArt721CoreContractV3BaseAbi = [
       {
         indexed: true,
         internalType: "address",
+        name: "_to",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "_tokenId",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "bytes32",
+        name: "_tokenHash",
+        type: "bytes32",
+      },
+    ],
+    name: "Mint",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
         name: "_currentMinter",
         type: "address",
       },
