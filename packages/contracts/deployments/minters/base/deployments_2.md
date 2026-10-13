@@ -59,3 +59,32 @@ const inputs: T_Inputs = {
   libraries: {},
 };
 ```
+
+## 2026-10-06
+
+### MinterSetPricePMPV0
+
+One-off deploy. Not approved on the Base minter filter.
+
+Deployed via `scripts/create2-deploy` + keyless create2 factory.
+
+Verified: https://basescan.org/address/0xd3565b304985069078854b74BD0521a1c11A174F#code
+
+Transaction: https://basescan.org/tx/0x5c84fcf47ccd8db788d4dfbe9b050b55bbb1af588adbc6a0736fa9a026c53dff
+
+Salt: `0x0000000000000000000000000000000000000000000000000000000000000000`
+
+Deployment Config:
+
+```
+const inputs: T_Inputs = {
+  address: "0xd3565b304985069078854b74BD0521a1c11A174F",
+  network: "base",
+  contractName: "MinterSetPricePMPV0",
+  args: [
+    "0x1E615ee4C7AC89B525d48AeedF01d76E4e06a2d5", // base MinterFilterV2
+    "0x00000000B9D3B2461fcFd5D23FCA65227B770f67", // PMPV1
+  ],
+  libraries: {},
+};
+```
