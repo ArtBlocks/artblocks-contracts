@@ -3445,3 +3445,47 @@ Date: 2024-10-03T20:31:48.898Z
         ---
       
         
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2026-10-20T14:05:37.822Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** prod
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000E8227826CB865a4ee37B1300C6b6120E#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x00000000824067A9E7fcB6CB084eCcd8f3Cb8399#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x00000000a337ce098Bf11265176a2bDDA1f41060#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine Flex | 0x0000000eB0B2a84710E4d7F1ff4BF6C54b73A143
+  
+        **Engine Contract:** https://etherscan.io/address/0x0000000eB0B2a84710E4d7F1ff4BF6C54b73A143#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Ronen Tanchum
+        - **Token Name:** Art Blocks Studio | 115
+        - **Token Ticker:** ABSTUDIO_115
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x70E88EC52197AF3c88A25626fF8A5755670470BB
+        - **Super Admin Address:** 0xFDd02b8C8BA41C13c5cFb1915c880A8dDF4b8D0D        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-115-mainnet
+        
+        ---
+      
+        
