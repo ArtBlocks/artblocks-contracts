@@ -115,5 +115,5 @@ describe("GenArt721Minter_PBAB", async function () {
     await GenArt721Minter_PBAB_Common(_beforeEach);
   });
 
-  // no additional tests neeeded for config contract
+  // no additional tests needed for config contract
 });
