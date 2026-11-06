@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 
 import {IPMPV0} from "../../../interfaces/v0.8.x/IPMPV0.sol";
 import {IPMPProjectViewsV0} from "../../../interfaces/v0.8.x/IPMPProjectViewsV0.sol";
+import {ISharedMinterRequiredPMPV0} from "../../../interfaces/v0.8.x/ISharedMinterRequiredPMPV0.sol";
 
 import {ImmutableStringArray} from "../ImmutableStringArray.sol";
 
@@ -40,22 +41,6 @@ library RequiredPMPLib {
     // must be a deduplicated subset of the project's configured keys, so in
     // practice the project's key count is the binding constraint.
     uint256 internal constant MAX_REQUIRED_PMP_KEYS = 256;
-
-    /**
-     * @notice The set of PMP keys required to be configured during mint for
-     * project `projectId` was updated to `requiredPMPKeys`.
-     * @dev A dedicated event is used rather than GenericMinterEventsLib, which
-     * intentionally does not support string values.
-     * @param projectId Project ID the required keys were set for
-     * @param coreContract Core contract address that projectId is on
-     * @param requiredPMPKeys The project's new set of required PMP keys. An
-     * empty array indicates the project has no required keys.
-     */
-    event ProjectRequiredPMPKeysUpdated(
-        uint256 indexed projectId,
-        address indexed coreContract,
-        string[] requiredPMPKeys
-    );
 
     struct RequiredPMPProjectConfig {
         // required keys, stored efficiently for introspection
@@ -130,7 +115,7 @@ library RequiredPMPLib {
         );
         requiredPMPProjectConfig.requiredKeyHashes = keyHashes;
 
-        emit ProjectRequiredPMPKeysUpdated({
+        emit ISharedMinterRequiredPMPV0.ProjectRequiredPMPKeysUpdated({
             projectId: projectId,
             coreContract: coreContract,
             requiredPMPKeys: requiredPMPKeys

@@ -160,7 +160,10 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractAt("RequiredPMPLib", config.minter.address),
+            await ethers.getContractAt(
+              "ISharedMinterRequiredPMPV0",
+              config.minter.address
+            ),
             "ProjectRequiredPMPKeysUpdated"
           )
           .withArgs(config.projectZero, config.genArt721Core.address, [
@@ -180,7 +183,10 @@ runForEach.forEach((params) => {
             )
         )
           .to.emit(
-            await ethers.getContractAt("RequiredPMPLib", config.minter.address),
+            await ethers.getContractAt(
+              "ISharedMinterRequiredPMPV0",
+              config.minter.address
+            ),
             "ProjectRequiredPMPKeysUpdated"
           )
           .withArgs(config.projectZero, config.genArt721Core.address, []);
