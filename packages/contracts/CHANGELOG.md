@@ -1,5 +1,12 @@
 # @artblocks/contracts
 
+## 1.6.0
+
+### Minor Changes
+
+- 46dd050: Add `FormPaletteBindingHooks`, a combined transfer hook, PostParams configure hook and PostParams read-augment hook that binds one token of a palette project to one token of a form project, 1:1, while both are held by the same wallet. Either token changing hands breaks the pairing and re-renders the form token. Palette projects are registered by the form project's artist, on any core contract, with an immutable SSTORE2-backed palette list; the hook resolves which entry each palette token receives and injects it as `paletteData` on both sides, so neither art script derives a palette and neither needs updating when a collection is added. Adds the `IFormPaletteBindingHooks` interface, whose `Bound`, `Unbound` and `PaletteProjectRegistered` events downstream indexers need.
+- 3e09f8d: Add `MinterSetPricePMPV0`, a shared set price minter that can configure a token's post-mint params (PMPs) in the same transaction as the mint, and lets a project's artist require specific PMP keys to be configured during every mint via the new `RequiredPMPLib`. Adds the `ISharedMinterRequiredPMPV0` interface, whose `ProjectRequiredPMPKeysUpdated` event downstream indexers need.
+
 ## 1.5.0
 
 ### Minor Changes
