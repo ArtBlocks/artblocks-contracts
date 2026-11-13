@@ -3489,3 +3489,122 @@ Date: 2024-10-03T20:31:48.898Z
         ---
       
         
+  # Batch Engine and Engine Flex Contract Deployments
+  
+  Date: 2026-11-13T22:47:41.773Z
+  
+  ## **Network:** mainnet
+  
+  ## **Environment:** prod
+  
+  **Engine Implementation:** https://etherscan.io/address/0x00000000E8227826CB865a4ee37B1300C6b6120E#code
+  
+  **Engine Flex Implementation:** https://etherscan.io/address/0x00000000824067A9E7fcB6CB084eCcd8f3Cb8399#code
+  
+  **Engine Factory:** https://etherscan.io/address/0x00000000a337ce098Bf11265176a2bDDA1f41060#code
+  
+  **Core Registry:** https://etherscan.io/address/0x2eE7B9bB2E038bE7323A119701A191c030A61ec6#code
+  
+  ---
+
+  
+        ## Deployment: Engine | 0x000000B2e92CaD8769cEba216a338C46Ddd198B8
+  
+        **Engine Contract:** https://etherscan.io/address/0x000000B2e92CaD8769cEba216a338C46Ddd198B8#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Emily Xie
+        - **Token Name:** Art Blocks Studio | 116
+        - **Token Ticker:** ABSTUDIO_116
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x7e318Ea14512B29A145Cd54A72646f726550aAa9
+        - **Super Admin Address:** 0x9f4633b29e89e10c869c8ce2197c63df06eb5355        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-116-mainnet
+        
+        ---
+      
+        
+        ## Deployment: Engine Flex | 0x000000426D1a64712E3Da5d6D796b99665D47c28
+  
+        **Engine Contract:** https://etherscan.io/address/0x000000426D1a64712E3Da5d6D796b99665D47c28#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Takens Theorem
+        - **Token Name:** Art Blocks Studio | 117
+        - **Token Ticker:** ABSTUDIO_117
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0xB85a82C9259d809CB36d636826980B54457c1523
+        - **Super Admin Address:** 0xAeC49C5186708D0B36C47a08fD6615D5a8743e8A        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-117-mainnet
+        
+        ---
+      
+        
+        ## Deployment: Engine Flex | 0x000000410DB924b69d726435e0f627bFA74c884a
+  
+        **Engine Contract:** https://etherscan.io/address/0x000000410DB924b69d726435e0f627bFA74c884a#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** rudxane
+        - **Token Name:** Art Blocks Studio | 118
+        - **Token Ticker:** ABSTUDIO_118
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0x6c06b2b38afE106cfD8BA5Fa7fa72cb1EeF0a19d
+        - **Super Admin Address:** 0xd2Af9f3e3435FFdEf945830fCe4eaB40877E0475        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-118-mainnet
+        
+        ---
+      
+        
+        ## Deployment: Engine Flex | 0x000000E5a12bb65496eaC82af550898AE043aDA5
+  
+        **Engine Contract:** https://etherscan.io/address/0x000000E5a12bb65496eaC82af550898AE043aDA5#code
+        
+        **Metadata**
+        - **Starting Project Id:** 0
+        - **Artist Name:** Satoshi Aizawa
+        - **Token Name:** Art Blocks Studio | 119
+        - **Token Ticker:** ABSTUDIO_119
+        - **Auto Approve Artist Split Proposals:** true
+        - **Render Provider Address, Primary Sales:** 0x036F3D03C1ccdde1878F01607922EA12110Ee9Bd
+        - **Platform Provider Address, Primary Sales:** 0x0000000000000000000000000000000000000000
+        - **Null Platform Provider:** true
+        - **Allow Artist Project Activation:** true
+        - **Admin ACL Contract:** 0xf3E84dcD641737694A5446c488146bb656b031a1
+        - **Super Admin Address:** 0xC347232395C03170A701341CbAD371D8CE95DD94        
+
+      **Other**
+
+      - **Starting project ID:** 0
+      - **Image Bucket:** abstudio-119-mainnet
+        
+        ---
+      
+        
