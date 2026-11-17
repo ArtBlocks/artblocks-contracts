@@ -25,8 +25,8 @@ export const deployConfigDetailsArray = [
     // deploys to 0x000000C7eCaB12c9D6D4fd0616943Bb030DB273E
     salt: "0x0000000000000000000000000000000000000000ae7818730b5f0f1d10000038",
     // INCREMENT THESE NUMBERS FOR EACH NEW STUDIO DEPLOYMENT
-    tokenName: "Art Blocks Studio | 120",
-    tokenTicker: "ABSTUDIO_120",
+    tokenName: "Art Blocks Studio | 2",
+    tokenTicker: "ABSTUDIO_2",
     // optionally define this for improved readability and searchability in the deployment logs
     artistName: "Operator",
     // set to the address you want to transfer the superAdmin role to
