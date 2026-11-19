@@ -26,7 +26,7 @@ The preferred pattern is to define what would be a hard-coded address an an immu
 
 ## Contract Inheritance
 
-While at times useful, complex contract inheritance patterns can lead to code that is difficult to understand and maintain. In general, we want our contracts to be as readible and easy to read as possible. This helps prevent bugs, and also lowers the threhold of Solidity knowledge that a user must have to be able to read our contract before more confidently interacting with it. Therefore, it is best to avoid complex inheritance patterns, and instead at times reuse code.
+While at times useful, complex contract inheritance patterns can lead to code that is difficult to understand and maintain. In general, we want our contracts to be as readable and easy to read as possible. This helps prevent bugs, and also lowers the threshold of Solidity knowledge that a user must have to be able to read our contract before more confidently interacting with it. Therefore, it is best to avoid complex inheritance patterns, and instead at times reuse code.
 
 We do, however, highly recommend using contract interfaces to define the public interface of a contract. This allows us to define the public interface of a contract in a single place, and then use that interface in other contracts. It also enforces that the public interface of a contract is consistent across all contracts that implement it (at the compiler-level). This is especially useful when we have multiple contracts that implement the same interface, and we want to be able to easily swap out one contract for another.
 
@@ -42,7 +42,7 @@ For example, we used to have a `disablePurchaseTo` functionality on our minter c
 
 ## Function Return Values
 
-When a function is called on an external contract, the return values can be decoded via use of interfaces. For example, in the ficticious example below:
+When a function is called on an external contract, the return values can be decoded via use of interfaces. For example, in the fictitious example below:
 
 ```solidity
 interface IERC721Core {
