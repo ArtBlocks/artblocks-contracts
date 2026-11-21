@@ -1748,6 +1748,484 @@ describe(`GenArt721GeneratorV0`, async function () {
     }
   });
 
+  describe("ABX FS dependencies", function () {
+    const abxfsNameAndVersion = "abxlib@1.0.0";
+    const abxfsNameAndVersionBytes =
+      ethers.utils.formatBytes32String(abxfsNameAndVersion);
+    const abxfsCDN = "https://cdn.example/abxlib@1.0.0/abxlib.min.js";
+    const projectScript = "console.log(tokenData);";
+    const GZIP_CODEC = ethers.utils.formatBytes32String("gzip");
+    const ABXFS_CANONICAL_FILE_STORE =
+      "0x8b6077a1d6953D96687005B9408D56A655b4d155";
+    // arbitrary CIDs; the generator treats them as opaque keys into the FileStore
+    const abxfsFileCid = ethers.utils.keccak256(
+      ethers.utils.toUtf8Bytes("abxlib file")
+    );
+    const otherFileCid = ethers.utils.keccak256(
+      ethers.utils.toUtf8Bytes("other file")
+    );
+    // a library large enough that its gzip spans several chunks
+    const abxfsLibrary = `window.abxlibLoaded = true;${Array.from(
+      { length: 40 },
+      (_, i) => `let v${i} = ${i * 7919};`
+    ).join("")}`;
+    const abxfsLibraryGzip = zlib.gzipSync(Buffer.from(abxfsLibrary));
+    const abxfsLibraryGzipBase64 = abxfsLibraryGzip.toString("base64");
+
+    // Splits into chunks of 33, 1 and 32 bytes, then the rest, so the generator's chunk join
+    // exercises partial words, a one-byte chunk and a word-aligned chunk.
+    function toChunks(data: Buffer) {
+      return [
+        data.subarray(0, 33),
+        data.subarray(33, 34),
+        data.subarray(34, 66),
+        data.subarray(66),
+      ];
+    }
+
+    interface AbxfsTestConfig extends GenArt721GeneratorV0TestConfig {
+      abxfsFileStore: Contract;
+    }
+
+    // Deploys a mock ABX FS FileStore holding the library gzip under abxfsFileCid, points the
+    // generator at it, and registers a CDN-hosted dependency with no on-chain scripts.
+    async function _beforeEachAbxfs(): Promise<AbxfsTestConfig> {
+      const config = (await loadFixture(_beforeEach)) as AbxfsTestConfig;
+      config.abxfsFileStore = await deployAndGet(
+        config,
+        "MockAbxfsFileStore",
+        []
+      );
+      await config.abxfsFileStore.setFile(
+        abxfsFileCid,
+        GZIP_CODEC,
+        abxfsLibraryGzip.length,
+        toChunks(abxfsLibraryGzip)
+      );
+      await config.genArt721Generator
+        .connect(config.accounts.deployer)
+        .updateAbxfsFileStore(config.abxfsFileStore.address);
+      await config.dependencyRegistry
+        .connect(config.accounts.deployer)
+        .addDependency(
+          abxfsNameAndVersionBytes,
+          mitLicenseTypeBytes,
+          abxfsCDN,
+          "",
+          ""
+        );
+      return config;
+    }
+
+    async function setAbxfsFileCid(config: AbxfsTestConfig, cid: string) {
+      await config.dependencyRegistry
+        .connect(config.accounts.deployer)
+        .updateDependencyAbxfsFileCid(abxfsNameAndVersionBytes, cid);
+    }
+
+    describe("getTokenHtml", function () {
+      it("loads the dependency from its preferred CDN while no ABX FS file is set", async function () {
+        const config = await _beforeEachAbxfs();
+
+        const { tokenHtml } = await setupProjectAndGetHtml(
+          config,
+          projectScript,
+          abxfsNameAndVersionBytes
+        );
+
+        expect(tokenHtml).to.include(getScriptTagWithSrc(abxfsCDN));
+        expect(tokenHtml).to.not.include(abxfsLibraryGzipBase64);
+      });
+
+      it("inlines the dependency from its ABX FS file, as a gzip data URI script", async function () {
+        const config = await _beforeEachAbxfs();
+        await setAbxfsFileCid(config, abxfsFileCid);
+
+        const { tokenHtml } = await setupProjectAndGetHtml(
+          config,
+          projectScript,
+          abxfsNameAndVersionBytes
+        );
+
+        expect(tokenHtml).to.include(
+          getGzipBase64DataUriScriptTag(abxfsLibraryGzipBase64)
+        );
+        expect(tokenHtml).to.not.include(getScriptTagWithSrc(abxfsCDN));
+        // the existing gunzip script inflates it in the browser
+        expect(tokenHtml).to.include(
+          getScriptBase64DataUriScriptTag(GUNZIP_SCRIPT_BASE64)
+        );
+        expect(tokenHtml).to.include(getScriptTag(projectScript));
+        // the inlined bytes are exactly the library
+        expect(
+          zlib
+            .gunzipSync(Buffer.from(abxfsLibraryGzipBase64, "base64"))
+            .toString()
+        ).to.eq(abxfsLibrary);
+      });
+
+      it("renders byte-identical HTML to the same gzip stored in the registry", async function () {
+        const config = await _beforeEachAbxfs();
+        // store the library in the registry the way registry scripts are stored: base64 text of
+        // the gzip, in chunks
+        const half = Math.floor(abxfsLibraryGzipBase64.length / 2);
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addDependencyScript(
+            abxfsNameAndVersionBytes,
+            abxfsLibraryGzipBase64.slice(0, half)
+          );
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addDependencyScript(
+            abxfsNameAndVersionBytes,
+            abxfsLibraryGzipBase64.slice(half)
+          );
+        const {
+          tokenHtml: registryHtml,
+          genArt721CoreV3,
+          tokenId,
+        } = await setupProjectAndGetHtml(
+          config,
+          projectScript,
+          abxfsNameAndVersionBytes
+        );
+
+        // move the library from the registry to ABX FS
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .removeDependencyLastScript(abxfsNameAndVersionBytes);
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .removeDependencyLastScript(abxfsNameAndVersionBytes);
+        await setAbxfsFileCid(config, abxfsFileCid);
+        const abxfsHtml = await config.genArt721Generator.getTokenHtml(
+          genArt721CoreV3.address,
+          tokenId
+        );
+
+        expect(abxfsHtml).to.eq(registryHtml);
+      });
+
+      it("prefers scripts stored in the registry over the ABX FS file", async function () {
+        const config = await _beforeEachAbxfs();
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addDependencyScript(abxfsNameAndVersionBytes, compressedDepScript);
+        await setAbxfsFileCid(config, abxfsFileCid);
+
+        const { tokenHtml } = await setupProjectAndGetHtml(
+          config,
+          projectScript,
+          abxfsNameAndVersionBytes
+        );
+
+        expect(tokenHtml).to.include(
+          getGzipBase64DataUriScriptTag(compressedDepScript)
+        );
+        expect(tokenHtml).to.not.include(abxfsLibraryGzipBase64);
+      });
+
+      it("returns to the preferred CDN when the ABX FS file is cleared", async function () {
+        const config = await _beforeEachAbxfs();
+        await setAbxfsFileCid(config, abxfsFileCid);
+        const { genArt721CoreV3, tokenId } = await setupProjectAndGetHtml(
+          config,
+          projectScript,
+          abxfsNameAndVersionBytes
+        );
+
+        await setAbxfsFileCid(config, constants.HashZero);
+        const tokenHtml = await config.genArt721Generator.getTokenHtml(
+          genArt721CoreV3.address,
+          tokenId
+        );
+
+        expect(tokenHtml).to.include(getScriptTagWithSrc(abxfsCDN));
+        expect(tokenHtml).to.not.include(abxfsLibraryGzipBase64);
+      });
+
+      it("does not read an ES module dependency from ABX FS", async function () {
+        const config = await _beforeEachAbxfs();
+        await setAbxfsFileCid(config, abxfsFileCid);
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyLoadAsModule(abxfsNameAndVersionBytes, true);
+
+        const { tokenHtml } = await setupProjectAndGetHtml(
+          config,
+          projectScript,
+          abxfsNameAndVersionBytes
+        );
+
+        // a module is reached through the import map; a gzip data URI cannot carry one
+        expect(tokenHtml).to.include(
+          `<script type="importmap">{"imports":{"abxlib":"${abxfsCDN}"}}</script>`
+        );
+        expect(tokenHtml).to.not.include(abxfsLibraryGzipBase64);
+      });
+
+      it("reverts when the ABX FS file is not gzip", async function () {
+        const config = await _beforeEachAbxfs();
+        await config.abxfsFileStore.setFile(
+          otherFileCid,
+          constants.HashZero, // no codec
+          abxfsLibrary.length,
+          [Buffer.from(abxfsLibrary)]
+        );
+        await setAbxfsFileCid(config, otherFileCid);
+
+        await expect(
+          setupProjectAndGetHtml(
+            config,
+            projectScript,
+            abxfsNameAndVersionBytes
+          )
+        ).to.be.revertedWith("ABX FS file missing or not gzip");
+      });
+
+      it("reverts when the ABX FS file does not exist on this chain", async function () {
+        const config = await _beforeEachAbxfs();
+        await setAbxfsFileCid(config, otherFileCid);
+
+        await expect(
+          setupProjectAndGetHtml(
+            config,
+            projectScript,
+            abxfsNameAndVersionBytes
+          )
+        ).to.be.revertedWith("ABX FS file missing or not gzip");
+      });
+
+      it("reverts when the ABX FS chunks disagree with the file size", async function () {
+        const config = await _beforeEachAbxfs();
+        await setAbxfsFileCid(config, otherFileCid);
+
+        // chunks longer than the reported size
+        await config.abxfsFileStore.setFile(
+          otherFileCid,
+          GZIP_CODEC,
+          abxfsLibraryGzip.length - 1,
+          toChunks(abxfsLibraryGzip)
+        );
+        await expect(
+          setupProjectAndGetHtml(
+            config,
+            projectScript,
+            abxfsNameAndVersionBytes
+          )
+        ).to.be.revertedWith("ABX FS chunk exceeds file size");
+
+        // chunks shorter than the reported size
+        await config.abxfsFileStore.setFile(
+          otherFileCid,
+          GZIP_CODEC,
+          abxfsLibraryGzip.length + 1,
+          toChunks(abxfsLibraryGzip)
+        );
+        await expect(
+          setupProjectAndGetHtml(
+            config,
+            projectScript,
+            abxfsNameAndVersionBytes
+          )
+        ).to.be.revertedWith("ABX FS file size mismatch");
+      });
+
+      it("inlines a flex dependency registry asset from its ABX FS file in the head", async function () {
+        const config = await _beforeEachAbxfs();
+        await setAbxfsFileCid(config, abxfsFileCid);
+
+        const { genArt721Core: genArt721CoreV3, minterFilter } =
+          await deployCoreWithMinterFilter(
+            config,
+            "GenArt721CoreV3_Engine_Flex",
+            "MinterFilterV1"
+          );
+        const minter = (await deployAndGet(config, "MinterSetPriceV2", [
+          genArt721CoreV3.address,
+          minterFilter.address,
+        ])) as MinterSetPriceV2;
+        await minterFilter
+          .connect(config.accounts.deployer)
+          .addApprovedMinter(minter.address);
+        const projectId = await genArt721CoreV3.nextProjectId();
+        await genArt721CoreV3
+          .connect(config.accounts.deployer)
+          .addProject("name", config.accounts.artist.address);
+        await genArt721CoreV3
+          .connect(config.accounts.artist)
+          .addProjectScript(projectId, projectScript);
+        await genArt721CoreV3
+          .connect(config.accounts.artist)
+          .updateProjectScriptType(projectId, jsNameAndVersionBytes);
+        await genArt721CoreV3.addProjectExternalAssetDependency(
+          projectId,
+          abxfsNameAndVersion,
+          3 // ART_BLOCKS_DEPENDENCY_REGISTRY
+        );
+        await minterFilter
+          .connect(config.accounts.artist)
+          .setMinterForProject(projectId, minter.address);
+        await minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(projectId, 0);
+        await minter.connect(config.accounts.artist).purchase(projectId);
+        await config.coreRegistry
+          ?.connect(config.accounts.deployer)
+          .registerContract(
+            genArt721CoreV3.address,
+            ethers.utils.formatBytes32String("DUMMY_VERSION"),
+            ethers.utils.formatBytes32String("DUMMY_TYPE")
+          );
+
+        const tokenHtml = await config.genArt721Generator.getTokenHtml(
+          genArt721CoreV3.address,
+          projectId.mul(ONE_MILLION)
+        );
+
+        // @dev index comparison rather than containsSpecificBetween, whose regex would read the
+        // base64 alphabet's "+" as a quantifier
+        const scriptIndex = tokenHtml.indexOf(
+          getGzipBase64DataUriScriptTag(abxfsLibraryGzipBase64)
+        );
+        expect(scriptIndex).to.be.greaterThan(tokenHtml.indexOf("<head>"));
+        expect(scriptIndex).to.be.lessThan(tokenHtml.indexOf("</head>"));
+        expect(tokenHtml).to.not.include(getScriptTagWithSrc(abxfsCDN));
+      });
+    });
+
+    describe("getDependencyScript", function () {
+      it("returns the ABX FS file, gzipped and base64 encoded, when the registry has no scripts", async function () {
+        const config = await _beforeEachAbxfs();
+        expect(
+          await config.genArt721Generator.getDependencyScript(
+            abxfsNameAndVersion
+          )
+        ).to.eq("");
+
+        await setAbxfsFileCid(config, abxfsFileCid);
+
+        expect(
+          await config.genArt721Generator.getDependencyScript(
+            abxfsNameAndVersion
+          )
+        ).to.eq(abxfsLibraryGzipBase64);
+      });
+
+      it("returns the registry's scripts when both are set", async function () {
+        const config = await _beforeEachAbxfs();
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addDependencyScript(abxfsNameAndVersionBytes, compressedDepScript);
+        await setAbxfsFileCid(config, abxfsFileCid);
+
+        expect(
+          await config.genArt721Generator.getDependencyScript(
+            abxfsNameAndVersion
+          )
+        ).to.eq(compressedDepScript);
+      });
+    });
+
+    describe("getOnChainStatus", function () {
+      async function getDependencyFullyOnChain(config: AbxfsTestConfig) {
+        const { genArt721Core: genArt721CoreV3 } =
+          await deployCoreWithMinterFilter(
+            config,
+            "GenArt721CoreV3",
+            "MinterFilterV1"
+          );
+        const projectId = await genArt721CoreV3.nextProjectId();
+        await genArt721CoreV3
+          .connect(config.accounts.deployer)
+          .addProject("name", config.accounts.artist.address);
+        await genArt721CoreV3
+          .connect(config.accounts.artist)
+          .updateProjectScriptType(projectId, abxfsNameAndVersionBytes);
+        await config.coreRegistry
+          ?.connect(config.accounts.deployer)
+          .registerContract(
+            genArt721CoreV3.address,
+            ethers.utils.formatBytes32String("DUMMY_VERSION"),
+            ethers.utils.formatBytes32String("DUMMY_TYPE")
+          );
+        return (
+          await config.genArt721Generator.getOnChainStatus(
+            genArt721CoreV3.address,
+            projectId
+          )
+        ).dependencyFullyOnChain;
+      }
+
+      it("reports a dependency with an ABX FS file as on chain", async function () {
+        const config = await _beforeEachAbxfs();
+        expect(await getDependencyFullyOnChain(config)).to.be.false;
+
+        await setAbxfsFileCid(config, abxfsFileCid);
+
+        expect(await getDependencyFullyOnChain(config)).to.be.true;
+      });
+
+      it("does not report an ES module dependency with an ABX FS file as on chain", async function () {
+        const config = await _beforeEachAbxfs();
+        await setAbxfsFileCid(config, abxfsFileCid);
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyLoadAsModule(abxfsNameAndVersionBytes, true);
+
+        expect(await getDependencyFullyOnChain(config)).to.be.false;
+      });
+    });
+
+    describe("updateAbxfsFileStore", function () {
+      it("defaults to the canonical ABX FS FileStore", async function () {
+        const config = await loadFixture(_beforeEach);
+        expect(await config.genArt721Generator.abxfsFileStore()).to.eq(
+          ABXFS_CANONICAL_FILE_STORE
+        );
+      });
+
+      it("updates the FileStore, and resets to the canonical FileStore with zero", async function () {
+        const config = await loadFixture(_beforeEach);
+        const newFileStore = config.accounts.artist.address;
+
+        await expect(
+          config.genArt721Generator
+            .connect(config.accounts.deployer)
+            .updateAbxfsFileStore(newFileStore)
+        )
+          .to.emit(config.genArt721Generator, "AbxfsFileStoreUpdated")
+          .withArgs(newFileStore);
+        expect(await config.genArt721Generator.abxfsFileStore()).to.eq(
+          newFileStore
+        );
+
+        await expect(
+          config.genArt721Generator
+            .connect(config.accounts.deployer)
+            .updateAbxfsFileStore(constants.AddressZero)
+        )
+          .to.emit(config.genArt721Generator, "AbxfsFileStoreUpdated")
+          .withArgs(ABXFS_CANONICAL_FILE_STORE);
+        expect(await config.genArt721Generator.abxfsFileStore()).to.eq(
+          ABXFS_CANONICAL_FILE_STORE
+        );
+      });
+
+      it("reverts if not called by admin", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        await expectRevert(
+          config.genArt721Generator
+            .connect(config.accounts.artist)
+            .updateAbxfsFileStore(config.accounts.artist.address),
+          ONLY_DEPENDENCY_REGISTRY_ADMIN_ACL_ERROR
+        );
+      });
+    });
+  });
+
   describe("getDependencyScript", function () {
     it("returns dependency script when available", async function () {
       const config = await loadFixture(_beforeEach);

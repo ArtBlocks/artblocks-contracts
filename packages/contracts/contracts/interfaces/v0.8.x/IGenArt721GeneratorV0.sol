@@ -11,4 +11,7 @@ interface IGenArt721GeneratorV0 {
     event UniversalBytecodeStorageReaderUpdated(
         address indexed _universalBytecodeStorageReader
     );
+    // @dev emits the effective FileStore address, which is the canonical ABX FS FileStore when
+    // the configured value is reset to zero
+    event AbxfsFileStoreUpdated(address indexed _abxfsFileStore);
 }

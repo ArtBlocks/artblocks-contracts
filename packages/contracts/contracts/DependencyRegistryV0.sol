@@ -532,6 +532,36 @@ contract DependencyRegistryV0 is
     }
 
     /**
+     * @notice Updates the ABX FS file holding the script for dependency `dependencyNameAndVersion`.
+     * @dev The file must be a gzip-codec ABX FS file whose decoded content is the dependency's
+     * script. The generator reads it only when the dependency has no scripts stored in this
+     * registry, so registry-stored scripts always take precedence. This registry does not read
+     * ABX FS, so the CID is not validated here: verify it on each network before setting it (a
+     * CID that is not a gzip file on that network makes the generator revert for the dependency).
+     * CIDs are content-derived and canonical, so one value is valid on every chain the file has
+     * been uploaded to. Set to zero to clear.
+     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
+     * @param abxfsFileCid ABX FS file CID, or zero to clear.
+     */
+    function updateDependencyAbxfsFileCid(
+        bytes32 dependencyNameAndVersion,
+        bytes32 abxfsFileCid
+    ) external {
+        _onlyAdminACL(this.updateDependencyAbxfsFileCid.selector);
+        _onlyExistingDependency(dependencyNameAndVersion);
+
+        DependencyRegistryStorageLib
+            .s()
+            .dependencyRecords[dependencyNameAndVersion]
+            .abxfsFileCid = abxfsFileCid;
+
+        emit DependencyAbxfsFileCidUpdated(
+            dependencyNameAndVersion,
+            abxfsFileCid
+        );
+    }
+
+    /**
      * @notice Adds a new CDN url to `dependencyNameAndVersion`.
      * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
      * @param additionalCDN CDN URL to be added. Required to be a non-empty string,
@@ -1302,6 +1332,21 @@ contract DependencyRegistryV0 is
     }
 
     /**
+     * @notice Returns the CID of the gzip-codec ABX FS file holding the script for dependency
+     * `dependencyNameAndVersion`, or zero if none is set.
+     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
+     */
+    function getDependencyAbxfsFileCid(
+        bytes32 dependencyNameAndVersion
+    ) external view returns (bytes32) {
+        return
+            DependencyRegistryStorageLib
+                .s()
+                .dependencyRecords[dependencyNameAndVersion]
+                .abxfsFileCid;
+    }
+
+    /**
      * @notice Returns address with bytecode containing script for
      *         dependency `_dependencyTypes` at script index `index`.
      * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
@@ -1499,7 +1544,8 @@ contract DependencyRegistryV0 is
                 loadAsModule: dependency.loadAsModule,
                 canvasTagType: dependency.canvasTagType,
                 projectScriptTagType: dependency.projectScriptTagType,
-                projectScriptSpecialType: dependency.projectScriptSpecialType
+                projectScriptSpecialType: dependency.projectScriptSpecialType,
+                abxfsFileCid: dependency.abxfsFileCid
             });
     }
 

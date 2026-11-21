@@ -103,6 +103,11 @@ interface IDependencyRegistryV0 {
         string projectScriptSpecialType
     );
 
+    event DependencyAbxfsFileCidUpdated(
+        bytes32 indexed dependencyNameAndVersion,
+        bytes32 abxfsFileCid
+    );
+
     /**
      * @notice Enum representing the canvas tag requirements for a dependency.
      * @dev Conveys whether generated HTML must include a canvas tag, and where.
@@ -155,7 +160,8 @@ interface IDependencyRegistryV0 {
         uint24 additionalRepositoryCount;
         // project website URL for dependency
         string dependencyWebsite;
-        // whether the dependency is available on chain
+        // whether the dependency's script is stored in this registry (scriptCount > 0). A
+        // dependency can also be on chain via ABX FS; see abxfsFileCid.
         bool availableOnChain;
         // count of on-chain scripts for dependency
         uint24 scriptCount;
@@ -168,6 +174,10 @@ interface IDependencyRegistryV0 {
         ProjectScriptTagType projectScriptTagType;
         // `type` attribute used when projectScriptTagType is SpecialType; empty otherwise
         string projectScriptSpecialType;
+        // CID of a gzip-codec ABX FS file holding the dependency's script, or zero if none.
+        // @dev Appended last so that callers compiled against the previous struct still decode
+        // the leading fields correctly: ABI decoding ignores trailing return data.
+        bytes32 abxfsFileCid;
     }
 
     /**
@@ -196,6 +206,15 @@ interface IDependencyRegistryV0 {
         bytes32 dependencyNameAndVersion,
         uint256 index
     ) external view returns (string memory);
+
+    /**
+     * @notice Returns the CID of the gzip-codec ABX FS file holding the script for dependency
+     * `dependencyNameAndVersion`, or zero if none is set.
+     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
+     */
+    function getDependencyAbxfsFileCid(
+        bytes32 dependencyNameAndVersion
+    ) external view returns (bytes32);
 
     /**
      * @notice Returns details for a given dependency type `dependencyNameAndVersion`.
