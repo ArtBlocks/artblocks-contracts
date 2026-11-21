@@ -8,8 +8,11 @@ exists on five chains.
 - **Contents:** 13 files, 117 unique chunks, 2,422,127 stored bytes
 - **Uploaded:** 2026-11-21, by `0x8b7C193bdF2295912B3409A43b0384E14981DF65`. The uploader holds no
   role over the content: ABX FS storage is ownerless and immutable.
-- **Status:** content only. No ABX FS org or project token points at it yet, and neither the
-  dependency registry nor the generator reads it yet.
+- **Published as:** project #0, "AB500 libraries", in the ABX FS org "Art Blocks",
+  `0x2380EcC56B74eccb52F6AeAC7590024C9E7Fe8FE`. The org has the same address on all five chains. Its
+  admin, and the project's owner, is `0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef`. See
+  [Org and project](#org-and-project).
+- **Not yet:** neither the dependency registry nor the generator reads this content.
 - **Machine-readable record:** [`ab500-libraries.json`](./ab500-libraries.json). It lists every file
   hash, file CID and transaction hash, plus per-chain gas and fees.
 
@@ -117,11 +120,38 @@ Measured before the upload:
   anyway, so Petro National and World Flag will render on chain only through large-cap RPCs, and
   CDN fallbacks remain.
 
+## Org and project
+
+|              |                                                                               |
+| ------------ | ----------------------------------------------------------------------------- |
+| Org          | "Art Blocks", `0x2380EcC56B74eccb52F6AeAC7590024C9E7Fe8FE` on all five chains |
+| Org admin    | `0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef` (minting: admin only)            |
+| Project      | #0, "AB500 libraries", owned by `0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef`  |
+| Version 1    | root `0x60cdc71765dc6954ebc3dcc4545d92a04d5a09ebd891bb02333d95ba0c39fa2d`     |
+| Presentation | ChainGateway, selection Latest                                                |
+| OrgFactory   | `0xb057b5b6641717EB85E9D8b3Ba23988E0A6d147A`                                  |
+| Salt         | `0x8b7c193bdf2295912b3409a43b0384e14981df65000000000000000000000000`          |
+
+The org was set up on 2026-11-21, in the same order on every chain:
+
+1. The uploader created the org. `createOrg` also mints project #0.
+2. The uploader published the root into project #0 and set its name and presentation. The content
+   was already stored, so nothing was re-uploaded.
+3. The uploader offered the admin role to `0x00df…84Ef` (`transferAdmin`) and transferred project
+   #0 to it.
+4. `0x00df…84Ef` accepted the admin role (`acceptAdmin`) from a browser wallet.
+
+The org address comes from the salt alone, which is why it is the same on every chain. A salt can
+only be used by the address written into its first 20 bytes. Every transaction hash for these steps
+is in `org.txs` in the JSON record.
+
+Project pages, using the org address in lowercase:
+
+- **Token page:** `https://fs.abx.io/projects/<chainId>/0x2380ecc56b74eccb52f6aeac7590024c9e7fe8fe/0`
+- **Live files:** `https://fs.abx.io/g/p/<chainId>/0x2380ecc56b74eccb52f6aeac7590024c9e7fe8fe/0/latest/`
+
 ## Not done yet
 
-- **ABX FS org and project token:** a project named "AB500 libraries" under an Art Blocks org
-  administered by `0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef`, with the `chain-gateway`
-  presentation. The content is already stored, so this only mints and publishes.
 - **Dependency registry and generator:** registry entries pointing at these file CIDs, and a
   generator path that reads them. That includes moving `zdog@1.1.2`'s `preferredCDN` to the pinned
   URL.

@@ -1,6 +1,6 @@
 {
   "name": "AB500 libraries",
-  "description": "JavaScript libraries used by the first 500 Art Blocks Curated projects, stored on ABX FS as one gzip directory. Content only: no ABX FS org or project token yet.",
+  "description": "JavaScript libraries used by the first 500 Art Blocks Curated projects, stored on ABX FS as one gzip directory and published as project #0 \"AB500 libraries\" in the Art Blocks org.",
   "root": {
     "cid": "0x60cdc71765dc6954ebc3dcc4545d92a04d5a09ebd891bb02333d95ba0c39fa2d",
     "kind": "directory",
@@ -610,5 +610,65 @@
         "0x7ef588302c5348c802f3e79c92354da045d70d03d05eaf74c7da2ddb19500264"
       ]
     }
-  ]
+  ],
+  "org": {
+    "name": "Art Blocks",
+    "address": "0x2380EcC56B74eccb52F6AeAC7590024C9E7Fe8FE",
+    "sameAddressOnEveryChain": true,
+    "factory": "0xb057b5b6641717EB85E9D8b3Ba23988E0A6d147A",
+    "salt": "0x8b7c193bdf2295912b3409a43b0384e14981df65000000000000000000000000",
+    "createdBy": "0x8b7c193bdf2295912b3409a43b0384e14981df65",
+    "admin": "0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef",
+    "minting": "admin only",
+    "project": {
+      "tokenId": 0,
+      "name": "AB500 libraries",
+      "owner": "0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef",
+      "version1Root": "0x60cdc71765dc6954ebc3dcc4545d92a04d5a09ebd891bb02333d95ba0c39fa2d",
+      "presentation": "ChainGateway (selection Latest)"
+    },
+    "handover": "The uploader created the org and published project #0, offered the admin role to 0x00df (transferAdmin) and transferred project #0 to it; 0x00df then accepted the admin role (acceptAdmin) from a browser wallet.",
+    "txs": {
+      "1": {
+        "createOrg": "0x9beda76939c3f72caaffcbc52bbb1e03a984ac19b0a7ed38e8761e1d9ecee5d6",
+        "publishV1": "0x1e3083843817a583d0fb4855dc892039ca02545bc4dddfa47775de3582835273",
+        "setName": "0x5a434f73955eb3726208007fad9a0e4c2ce6d248f0fc9dbe049b5f15e466a107",
+        "transferAdmin": "0x66eadd93f954dcb18ad6b4a275347f0e7feb96612bd66730459c9b16a640fa23",
+        "transferProject0": "0x02b8c460119316a90531f1e30fe28b82f45550dc273f2f5f79bd3276ebad6ac0",
+        "acceptAdmin": "0x2178a5ef3ecc1fbf9ff3eb12aaa4359f70472905c766110420ec80abed1496ae"
+      },
+      "4663": {
+        "createOrg": "0xe7420ebaf0d10cb75c8f70bc743c35ed223120c342b49cc682b7ac00e5ece1ae",
+        "publishV1": "0x48537014dcf5f5711d930e4ed49135f5212c6d43634b14368ba54cd5101d0c35",
+        "setName": "0x4437e6f54185bd05e37243cf08d82b8231ed87e7e84651a9e8c4c22945c7a5d2",
+        "transferAdmin": "0x1ce43335a87fdf72333de2fcc5d2ec48dd76dcd76fe8f0bd4ec473201432226a",
+        "transferProject0": "0xc5d489b1185ebefa811e8069682765cba0e9890f3768a8bd4f21d0e172118fba",
+        "acceptAdmin": "0x7402f7a5b7a7e2f697e5bd465f7155daee530031a3ea167c029a1fee5b417456"
+      },
+      "8453": {
+        "createOrg": "0x951040eba8ee96eda10df4fbe7b35e5650371c79b7569d4c477292426306bcb0",
+        "publishV1": "0x7fe021f5a2405e9307bd9210fe6a00739b0bddfef20e4f9ac3f3edbd286ff69a",
+        "setName": "0xacd5bd7a3b9d235817b206d02f17e248d3fda34cc4380011e5cc1704dbd53cdd",
+        "transferAdmin": "0x47acf64be5ce373f86f10de73e790150a3e82fd6f01f3620f092bd8f12c60880",
+        "transferProject0": "0x09dcc2759af11ef12520eaa6bb73848612270905a40b964d7f99157f98a664b7",
+        "acceptAdmin": "0xad1fcbf60a28ff41cfabb07b5bab5b4626325f77814e7f1309fb6bf00da2ee78"
+      },
+      "42161": {
+        "createOrg": "0x4e9b390ad6556c8d24e5157f5d0a1ea6605aaaddcb31170ecce58d7e9d606ca8",
+        "publishV1": "0x1fcef3892cb0b25cb007a7ce753d5a7385e7faa5a0cf39e4e741f65c5e1b75c9",
+        "setName": "0x37254b5839724db782b85df2f0714c495db516f3ccccef8b660d2b612571164f",
+        "transferAdmin": "0x2920adbf15630e5890398933acce91411752b75d61528b619230a0401a3c7bb7",
+        "transferProject0": "0xfa385571e436525b078611832830ba76ff19a5bf3dd4d3f9681e44fdc4043abf",
+        "acceptAdmin": "0xd639cabdd09591c5852491c796cd894d5b7bc02c5f781b7f45eac6e0d4e09f9a"
+      },
+      "84532": {
+        "createOrg": "0x80fee78d5eebcb0de0bf830aefa8c919176277cb74372e4a052134e554c3c5e0",
+        "publishV1": "0xc4ad2769b9e891a2987d83c0f5d625d4520960c6f280aeb4ddea793b5579e3ef",
+        "setName": "0x65f1e72ca5f154586d389a0f7dc60fb1e1c48e046f0e14d08b8e81e926b021d7",
+        "transferAdmin": "0x542cc24626ce5e0181c3ccaeb94e5c970867c204fd77d63278e63a6c2bf20b05",
+        "transferProject0": "0xcfb0603cab318597e55b6e2497cd87a2e0eb2ed4660c0feb97b9e755f6df3f4e",
+        "acceptAdmin": "0x2f2a73349c9dd30fb3b77ab3c40a1cb7e596d8653eb49c7c4686811f2f4f66ea"
+      }
+    }
+  }
 }
