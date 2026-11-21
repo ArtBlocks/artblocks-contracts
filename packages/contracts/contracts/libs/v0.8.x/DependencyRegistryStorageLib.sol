@@ -63,6 +63,11 @@ library DependencyRegistryStorageLib {
         bool loadAsModule;
         // `type` attribute used when projectScriptTagType is SpecialType; empty otherwise
         string projectScriptSpecialType;
+        // @dev appended for ABX FS support, and safe to append for the same reason.
+        // CID of a gzip-codec ABX FS file holding the dependency's script, or zero if none. CIDs
+        // are content-derived and canonical, so one value is valid on every chain the file has
+        // been uploaded to.
+        bytes32 abxfsFileCid;
     }
 
     /**

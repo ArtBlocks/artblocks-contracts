@@ -47,6 +47,11 @@ const PROJECT_SCRIPT_TAG_TYPE = {
   RawHtml: 3,
 } as const;
 
+// arbitrary ABX FS file CID (CIDs are opaque bytes32 values to the registry)
+const ABXFS_FILE_CID = ethers.utils.keccak256(
+  ethers.utils.toUtf8Bytes("abxfs file")
+);
+
 interface DependencyRegistryV0TestContext extends Mocha.Context {
   dependencyRegistry: DependencyRegistryV0;
   genArt721Core: GenArt721CoreV3;
@@ -561,6 +566,12 @@ describe(`DependencyRegistryV0`, async function () {
             PROJECT_SCRIPT_TAG_TYPE.SpecialType,
             "application/processing"
           );
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyAbxfsFileCid(
+            dependencyNameAndVersionBytes,
+            ABXFS_FILE_CID
+          );
 
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
@@ -587,6 +598,12 @@ describe(`DependencyRegistryV0`, async function () {
           PROJECT_SCRIPT_TAG_TYPE.ClassicScript
         );
         expect(dependencyDetails.projectScriptSpecialType).to.eq("");
+        expect(dependencyDetails.abxfsFileCid).to.eq(constants.ZERO_BYTES32);
+        expect(
+          await config.dependencyRegistry.getDependencyAbxfsFileCid(
+            dependencyNameAndVersionBytes
+          )
+        ).to.eq(constants.ZERO_BYTES32);
       });
     });
     describe("update", function () {
@@ -922,6 +939,107 @@ describe(`DependencyRegistryV0`, async function () {
               )
             ).loadAsModule
           ).to.eq(false);
+        });
+      });
+      describe("updateDependencyAbxfsFileCid", function () {
+        it("does not allow non-admins to update the ABX FS file", async function () {
+          const config = this.config;
+          await expectRevert(
+            config.dependencyRegistry
+              .connect(config.accounts.user)
+              .updateDependencyAbxfsFileCid(
+                dependencyNameAndVersionBytes,
+                ABXFS_FILE_CID
+              ),
+            ONLY_ADMIN_ACL_ERROR
+          );
+        });
+        it("does not allow updating the ABX FS file of a dependency that does not exist", async function () {
+          const config = this.config;
+          await expectRevert(
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
+              .updateDependencyAbxfsFileCid(
+                ethers.utils.formatBytes32String("nonExistentDependencyType"),
+                ABXFS_FILE_CID
+              ),
+            ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
+          );
+        });
+        it("defaults to zero", async function () {
+          const config = this.config;
+          expect(
+            await config.dependencyRegistry.getDependencyAbxfsFileCid(
+              dependencyNameAndVersionBytes
+            )
+          ).to.eq(constants.ZERO_BYTES32);
+          expect(
+            (
+              await config.dependencyRegistry.getDependencyDetailsV2(
+                dependencyNameAndVersionBytes
+              )
+            ).abxfsFileCid
+          ).to.eq(constants.ZERO_BYTES32);
+        });
+        it("allows admin to set and clear the ABX FS file", async function () {
+          const config = this.config;
+          await expect(
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
+              .updateDependencyAbxfsFileCid(
+                dependencyNameAndVersionBytes,
+                ABXFS_FILE_CID
+              )
+          )
+            .to.emit(config.dependencyRegistry, "DependencyAbxfsFileCidUpdated")
+            .withArgs(dependencyNameAndVersionBytes, ABXFS_FILE_CID);
+
+          expect(
+            await config.dependencyRegistry.getDependencyAbxfsFileCid(
+              dependencyNameAndVersionBytes
+            )
+          ).to.eq(ABXFS_FILE_CID);
+          expect(
+            (
+              await config.dependencyRegistry.getDependencyDetailsV2(
+                dependencyNameAndVersionBytes
+              )
+            ).abxfsFileCid
+          ).to.eq(ABXFS_FILE_CID);
+
+          await expect(
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
+              .updateDependencyAbxfsFileCid(
+                dependencyNameAndVersionBytes,
+                constants.ZERO_BYTES32
+              )
+          )
+            .to.emit(config.dependencyRegistry, "DependencyAbxfsFileCidUpdated")
+            .withArgs(dependencyNameAndVersionBytes, constants.ZERO_BYTES32);
+
+          expect(
+            await config.dependencyRegistry.getDependencyAbxfsFileCid(
+              dependencyNameAndVersionBytes
+            )
+          ).to.eq(constants.ZERO_BYTES32);
+        });
+        // @dev availableOnChain keeps its meaning (scripts stored in this registry), so legacy
+        // consumers that read scripts by scriptCount are not told scripts exist when none do
+        it("does not change availableOnChain or scriptCount", async function () {
+          const config = this.config;
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyAbxfsFileCid(
+              dependencyNameAndVersionBytes,
+              ABXFS_FILE_CID
+            );
+          const dependencyDetails =
+            await config.dependencyRegistry.getDependencyDetailsV2(
+              dependencyNameAndVersionBytes
+            );
+          expect(dependencyDetails.availableOnChain).to.eq(false);
+          expect(dependencyDetails.scriptCount).to.eq(0);
         });
       });
       describe("updateDependencyProjectScriptTagType", function () {
@@ -1752,6 +1870,12 @@ describe(`DependencyRegistryV0`, async function () {
             PROJECT_SCRIPT_TAG_TYPE.SpecialType,
             "application/processing"
           );
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyAbxfsFileCid(
+            dependencyNameAndVersionBytes,
+            ABXFS_FILE_CID
+          );
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetailsV2(
@@ -1772,7 +1896,62 @@ describe(`DependencyRegistryV0`, async function () {
           CANVAS_TAG_TYPE.CanvasBeforeProjectScript, // canvasTagType
           PROJECT_SCRIPT_TAG_TYPE.SpecialType, // projectScriptTagType
           "application/processing", // projectScriptSpecialType
+          ABXFS_FILE_CID, // abxfsFileCid
         ]);
+      });
+
+      // @dev the registry is upgraded before the generator, and the deployed generator decodes
+      // getDependencyDetailsV2 with the struct as it was before abxfsFileCid was appended
+      it("getDependencyDetailsV2 still decodes with the struct that precedes abxfsFileCid", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addDependencyScript(
+            dependencyNameAndVersionBytes,
+            "on-chain script"
+          );
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyCanvasTagType(
+            dependencyNameAndVersionBytes,
+            CANVAS_TAG_TYPE.CanvasAfterProjectScript
+          );
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyProjectScriptTagType(
+            dependencyNameAndVersionBytes,
+            PROJECT_SCRIPT_TAG_TYPE.SpecialType,
+            "application/processing"
+          );
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyAbxfsFileCid(
+            dependencyNameAndVersionBytes,
+            ABXFS_FILE_CID
+          );
+
+        const legacyReader = await deployAndGet(
+          config,
+          "LegacyDependencyDetailsV2ReaderMock",
+          []
+        );
+        const legacyDetails = await legacyReader.getLegacyDependencyDetailsV2(
+          config.dependencyRegistry.address,
+          dependencyNameAndVersionBytes
+        );
+        const currentDetails =
+          await config.dependencyRegistry.getDependencyDetailsV2(
+            dependencyNameAndVersionBytes
+          );
+
+        // every field the legacy struct knows about decodes to its current value
+        expect(legacyDetails.length).to.eq(13);
+        expect([...legacyDetails]).to.deep.eq([...currentDetails].slice(0, 13));
+        expect(legacyDetails.projectScriptSpecialType).to.eq(
+          "application/processing"
+        );
       });
 
       // @dev the generator is upgraded after the registry, so the deployed generator

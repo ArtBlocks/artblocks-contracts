@@ -15,6 +15,7 @@ import "../libs/v0.8.x/Bytes32Strings.sol";
 import {JsonStatic} from "../libs/v0.8.x/JsonStatic.sol";
 import {ABHelpers} from "../libs/v0.8.x/ABHelpers.sol";
 import {AddressChunks} from "./AddressChunks.sol";
+import {AbxfsGzipFiles} from "./AbxfsGzipFiles.sol";
 
 import {Base64} from "@openzeppelin-5.0/contracts/utils/Base64.sol";
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
@@ -59,12 +60,19 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     IScriptyBuilderV2 public scriptyBuilder;
     address public gunzipScriptBytecodeAddress;
     IUniversalBytecodeStorageReader public universalBytecodeStorageReader;
+    // @dev appended for ABX FS support. Zero (the value after upgrade) means the canonical ABX FS
+    // FileStore; see abxfsFileStore().
+    address internal _abxfsFileStoreOverride;
 
     // @dev contants do not use sequential storage slots, and may be added/removed from upgradeable contracts
     bytes32 constant JS_AT_NA_BYTES32 =
         0x6a73406e61000000000000000000000000000000000000000000000000000000; // "js@na"
     bytes32 constant SVG_AT_NA_BYTES32 =
         0x737667406e610000000000000000000000000000000000000000000000000000; // "svg@na"
+    // @dev the ABX FS FileStore is immutable and deployed by CREATE2 at this address on every
+    // chain ABX FS supports
+    address constant ABXFS_CANONICAL_FILE_STORE =
+        0x8b6077a1d6953D96687005B9408D56A655b4d155;
 
     function _onlySupportedCoreContract(address coreContract) internal view {
         require(
@@ -181,10 +189,35 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     }
 
     /**
+     * @notice Set the ABX FS FileStore that dependencies stored on ABX FS are read from.
+     * @param _abxfsFileStore The address of the ABX FS FileStore, or zero to use the canonical
+     * ABX FS FileStore.
+     * @dev This function is gated to only the DependencyRegistry AdminACL. Configuring it is not
+     * required on chains where ABX FS is deployed at its canonical address.
+     */
+    function updateAbxfsFileStore(address _abxfsFileStore) external {
+        _onlyDependencyRegistryAdminACL(this.updateAbxfsFileStore.selector);
+
+        _abxfsFileStoreOverride = _abxfsFileStore;
+        emit AbxfsFileStoreUpdated(abxfsFileStore());
+    }
+
+    /**
+     * @notice The ABX FS FileStore that dependencies stored on ABX FS are read from: the
+     * configured address, or the canonical ABX FS FileStore if none is configured.
+     */
+    function abxfsFileStore() public view returns (address) {
+        address fileStore = _abxfsFileStoreOverride;
+        return fileStore == address(0) ? ABXFS_CANONICAL_FILE_STORE : fileStore;
+    }
+
+    /**
      * @notice Get the dependency script for a given dependency name and version string.
      * @param dependencyNameAndVersion The name and version of the dependency
      * to retrieve the script for.
-     * @return The dependency script stiched together from all of the script chunks as a string.
+     * @return The dependency script, gzipped and base64 encoded, as a string: stiched together
+     * from the registry's script chunks, or else read from the dependency's ABX FS file, or else
+     * empty.
      * @dev This function will revert if the dependency name and version is not
      * supported by the DependencyRegistry or if the script storage version is
      * not supported.
@@ -192,9 +225,21 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     function getDependencyScript(
         string memory dependencyNameAndVersion
     ) external view returns (string memory) {
+        bytes32 dependencyNameAndVersionBytes = dependencyNameAndVersion
+            .stringToBytes32();
         bytes memory dependencyScript = _getDependencyScriptBytes(
-            dependencyNameAndVersion.stringToBytes32()
+            dependencyNameAndVersionBytes
         );
+        if (dependencyScript.length == 0) {
+            bytes32 abxfsFileCid = _getUsableAbxfsFileCid(
+                dependencyRegistry.getDependencyDetailsV2(
+                    dependencyNameAndVersionBytes
+                )
+            );
+            if (abxfsFileCid != bytes32(0)) {
+                dependencyScript = _getAbxfsDependencyScriptBytes(abxfsFileCid);
+            }
+        }
 
         return string(dependencyScript);
     }
@@ -379,6 +424,40 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                 scriptBytecodeAddresses,
                 address(universalBytecodeStorageReader)
             );
+    }
+
+    /**
+     * @notice Get a dependency script stored on ABX FS, in the same form as scripts stored in
+     * the dependency registry: gzipped and base64 encoded.
+     * @param abxfsFileCid CID of the dependency's gzip-codec ABX FS file.
+     * @return The base64-encoded gzip bytes of the file.
+     * @dev Reverts if `abxfsFileCid` is not a gzip-codec file on this chain's ABX FS. ABX FS
+     * stores the raw gzip bytes, so they are base64 encoded here; the registry stores base64 text.
+     */
+    function _getAbxfsDependencyScriptBytes(
+        bytes32 abxfsFileCid
+    ) internal view returns (bytes memory) {
+        return
+            bytes(
+                Base64.encode(
+                    AbxfsGzipFiles.readGzip(abxfsFileStore(), abxfsFileCid)
+                )
+            );
+    }
+
+    /**
+     * @notice Get the ABX FS file CID the generator reads a dependency's script from, or zero.
+     * @dev An ES module dependency is never read from ABX FS: it is reached through an import
+     * map pointing at its preferred CDN, and a gzipped module cannot be loaded from a data URI.
+     * @param dependencyDetails The dependency's details from the dependency registry.
+     */
+    function _getUsableAbxfsFileCid(
+        IDependencyRegistryV0.DependencyDetails memory dependencyDetails
+    ) internal pure returns (bytes32) {
+        return
+            dependencyDetails.loadAsModule
+                ? bytes32(0)
+                : dependencyDetails.abxfsFileCid;
     }
 
     /**
@@ -811,8 +890,9 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     /**
      * @notice populates an empty HTMLTag with script information for a given dependency.
      * Assumes the dependency is available on the dependencyRegistry.
-     * Populates the script via on-chain information if available, otherwise injects script tag with src
-     * pointing to the preferred CDN.
+     * Populates the script via on-chain information if available - scripts stored in the
+     * dependency registry take precedence, then the dependency's ABX FS file - otherwise injects
+     * script tag with src pointing to the preferred CDN.
      * @param dependencyNameAndVersion The name and version of the dependency to populate the script for.
      * @param htmlTag The HTMLTag to populate with the script information, memory reference; modified in place.
      */
@@ -820,9 +900,10 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         bytes32 dependencyNameAndVersion,
         HTMLTag memory htmlTag
     ) internal view {
-        // Get script count and preferred CDN for the dependency.
+        // Get script count, ABX FS file and preferred CDN for the dependency.
         string memory preferredCDN;
         uint24 scriptCount;
+        bytes32 abxfsFileCid;
         // @dev block scope to limit stack usage
         {
             IDependencyRegistryV0.DependencyDetails
@@ -830,10 +911,11 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                     .getDependencyDetailsV2(dependencyNameAndVersion);
             preferredCDN = dependencyDetails.preferredCDN;
             scriptCount = dependencyDetails.scriptCount;
+            abxfsFileCid = _getUsableAbxfsFileCid(dependencyDetails);
         }
 
         // If no scripts on-chain, load the script from the preferred CDN.
-        if (scriptCount == 0) {
+        if (scriptCount == 0 && abxfsFileCid == bytes32(0)) {
             bool cdnAvailable = bytes(preferredCDN).length > 0;
             // If no CDN is available, we don't need to add any tags.
             // Expected for dependencies like "js@na" and "svg@na".
@@ -846,10 +928,12 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                 : bytes("");
             htmlTag.tagClose = bytes(cdnAvailable ? "</script>" : "");
         } else {
-            bytes memory dependencyScript = _getDependencyScriptBytes(
-                dependencyNameAndVersion
-            );
-            htmlTag.tagContent = dependencyScript;
+            // @dev Both sources yield base64-encoded gzip, so both use the same tag, which the
+            // gunzip script inflates in the browser. Registry scripts take precedence, keeping
+            // the output of every dependency already stored in the registry unchanged.
+            htmlTag.tagContent = scriptCount > 0
+                ? _getDependencyScriptBytes(dependencyNameAndVersion)
+                : _getAbxfsDependencyScriptBytes(abxfsFileCid);
             htmlTag.tagType = HTMLTagType.scriptGZIPBase64DataURI; // <script type="text/javascript+gzip" src="data:text/javascript;base64,[script]"></script>
         }
     }
@@ -1043,7 +1127,8 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     }
 
     /**
-     * @dev Helper function to check if a dependency is on chain.
+     * @dev Helper function to check if a dependency is on chain, either stored in the dependency
+     * registry or as an ABX FS file the generator reads.
      * @param dependencyNameAndVersion The name and version of the dependency to check.
      */
     function _getIsDependencyOnChain(
@@ -1056,11 +1141,13 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         ) {
             return true;
         }
-        // query and return result of dependency registry for on-chain status
+        // query dependency registry for on-chain status
+        IDependencyRegistryV0.DependencyDetails
+            memory dependencyDetails = dependencyRegistry
+                .getDependencyDetailsV2(dependencyNameAndVersion);
         return
-            dependencyRegistry
-                .getDependencyDetailsV2(dependencyNameAndVersion)
-                .availableOnChain;
+            dependencyDetails.availableOnChain ||
+            _getUsableAbxfsFileCid(dependencyDetails) != bytes32(0);
     }
 
     /**
