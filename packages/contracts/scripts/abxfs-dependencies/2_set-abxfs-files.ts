@@ -2,24 +2,26 @@
 // Created By: Art Blocks Inc.
 
 /**
- * Step 2 — build the batch that points registry dependencies at their ABX FS files, from the
- * registry's AdminACL superAdmin. Each call switches one dependency from its CDN to an inlined,
- * on-chain copy (or, where the registry already stores scripts, records the file without
- * changing any output). The batch also pins zdog's floating preferred CDN.
+ * Step 2 — from the registry's AdminACL superAdmin, give each AB500 dependency its ABX FS file
+ * (putting it on chain), pin zdog's floating preferred CDN, and apply any generator configuration
+ * fix listed for the network (sepolia: the staging generator's ScriptyBuilder).
  *
  * Refuses to build anything unless, on the target network:
- *   - every file is present on the ABX FS FileStore the generator reads, gzip-encoded, and
- *     decodes to the library recorded in config.ts;
- *   - the registry has been upgraded (step 1);
+ *   - every file is present on ABX FS, gzip-encoded, and decodes to the library recorded in
+ *     config.ts (the registry refuses absent or non-gzip files itself; the content check is
+ *     this script's);
+ *   - step 1 has executed;
  *   - every call simulates successfully from the superAdmin.
  * Already-applied calls are skipped, so re-running is safe and shows progress.
  *
- *   yarn hardhat run --network mainnet scripts/abxfs-dependencies/2_set-abxfs-files.ts
+ * A Safe superAdmin (mainnet) gets a Transaction Builder batch. An EOA superAdmin (sepolia) gets
+ * the calls as JSON, and with SERVE=true a local page that sends them from a browser wallet, so
+ * no key is ever handed to this repo.
  *
- * On sepolia the AB500 files are not on ABX FS, so this refuses there by design.
+ *   yarn hardhat run --network mainnet scripts/abxfs-dependencies/2_set-abxfs-files.ts
+ *   SERVE=true yarn hardhat run --network sepolia scripts/abxfs-dependencies/2_set-abxfs-files.ts
  */
 
-import { ethers } from "hardhat";
 import fs from "fs";
 import path from "path";
 import { getNetworkName } from "../util/utils";
@@ -33,6 +35,7 @@ import {
 import { AB500_ABXFS_FILES, ABXFS_CANONICAL_FILE_STORE } from "./config";
 import { verifyAbxfsFile } from "./abxfs";
 import { planAbxfsFileCalls } from "./plan";
+import { serveCalls } from "./serve";
 
 const OUTPUT_DIR = path.resolve(
   __dirname,
@@ -43,25 +46,22 @@ const OUTPUT_DIR = path.resolve(
   "safe-txs"
 );
 
-async function readFileStore(generator: string): Promise<string> {
-  try {
-    const value = await new ethers.Contract(
-      generator,
-      ["function abxfsFileStore() view returns (address)"],
-      ethers.provider
-    ).abxfsFileStore();
-    return ethers.utils.getAddress(value);
-  } catch {
-    // generator not upgraded yet; it will default to the canonical FileStore
-    return ABXFS_CANONICAL_FILE_STORE;
-  }
-}
-
 async function main() {
   const networkName = await getNetworkName();
   const environment = getEnvironment(networkName);
   const rollout = await resolveRollout(environment);
   console.log(`Network: ${networkName} (chain ${environment.chainId})\n`);
+
+  console.log(
+    `Verifying files on ABX FS (FileStore ${ABXFS_CANONICAL_FILE_STORE})`
+  );
+  for (const entry of AB500_ABXFS_FILES.filter((e) => e.set)) {
+    const v = await verifyAbxfsFile(ABXFS_CANONICAL_FILE_STORE, entry);
+    console.log(
+      `  ok  ${entry.dependency.padEnd(20)} ${v.chunkCount} chunks, ${v.gzipBytes} B gzip, decodes to ${v.decodedBytes} B`
+    );
+  }
+  console.log("");
 
   for (const registryInfo of rollout.registries) {
     const { superAdmin, superAdminIsContract, superAdminSafe } =
@@ -71,24 +71,11 @@ async function main() {
       `  sender: ${describeSigner(superAdmin, superAdminIsContract, superAdminSafe)}`
     );
 
-    // every generator reading this registry must be able to read every file
-    const fileStores = new Set<string>();
-    for (const g of rollout.generators.filter(
-      (g) => g.registry === registryInfo.address
-    )) {
-      fileStores.add(await readFileStore(g.address));
-    }
-    for (const fileStore of fileStores) {
-      console.log(`  verifying files on ABX FS FileStore ${fileStore}`);
-      for (const entry of AB500_ABXFS_FILES.filter((e) => e.set)) {
-        const v = await verifyAbxfsFile(fileStore, entry);
-        console.log(
-          `    ok  ${entry.dependency.padEnd(20)} ${v.chunkCount} chunks, decodes to ${v.decodedBytes} B`
-        );
-      }
-    }
-
-    const calls = await planAbxfsFileCalls(registryInfo.address, superAdmin);
+    const calls = await planAbxfsFileCalls(
+      networkName,
+      registryInfo.address,
+      superAdmin
+    );
     if (calls.length === 0) {
       console.log("  nothing to do\n");
       continue;
@@ -98,29 +85,65 @@ async function main() {
     );
     calls.forEach((c) => console.log(`    ${c.label}`));
 
+    fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+    const stem = `${networkName}-abxfs-set-files-${registryInfo.label}`;
     if (superAdminSafe) {
       const batch = buildSafeBatch({
         chainId: environment.chainId,
         safeAddress: superAdmin,
-        name: `Set ABX FS files for AB500 dependencies (${registryInfo.label})`,
+        name: `ABX FS dependencies: set ABX FS files (${registryInfo.label})`,
         description:
-          "Points registry dependencies at their gzip ABX FS files, so the generator inlines " +
-          "them on chain instead of loading them from a CDN, and pins zdog's preferred CDN.",
+          "Gives each AB500 dependency its gzip ABX FS file, so the generator inlines it on " +
+          "chain, and pins zdog's preferred CDN.",
         transactions: calls.map((c) => c.safeTransaction),
       });
-      fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-      const outPath = path.join(
-        OUTPUT_DIR,
-        `${networkName}-abxfs-set-files-${registryInfo.label}.json`
-      );
+      const outPath = path.join(OUTPUT_DIR, `${stem}.json`);
       fs.writeFileSync(outPath, JSON.stringify(batch, null, 2) + "\n");
       console.log(`\n  Wrote ${path.relative(process.cwd(), outPath)}`);
       console.log(
         `  Upload it to the Transaction Builder app for Safe ${superAdmin}.\n`
       );
+      continue;
+    }
+
+    const outPath = path.join(OUTPUT_DIR, `${stem}-calls.json`);
+    fs.writeFileSync(
+      outPath,
+      JSON.stringify(
+        {
+          chainId: environment.chainId,
+          from: superAdmin,
+          calls: calls.map((c) => ({ label: c.label, to: c.to, data: c.data })),
+        },
+        null,
+        2
+      ) + "\n"
+    );
+    console.log(`\n  Wrote ${path.relative(process.cwd(), outPath)}`);
+    console.log(
+      `  ${superAdmin} is an externally owned account: send the calls in order.`
+    );
+    if (process.env.SERVE === "true") {
+      await serveCalls({
+        network: networkName,
+        chainId: environment.chainId,
+        explorer: environment.explorer,
+        registry: registryInfo.address,
+        superAdmin,
+        calls,
+        remaining: async () =>
+          (
+            await planAbxfsFileCalls(
+              networkName,
+              registryInfo.address,
+              superAdmin,
+              () => {}
+            )
+          ).length,
+      });
     } else {
       console.log(
-        `\n  ${superAdmin} is an EOA: send the calls above directly, in order.\n`
+        "  Re-run with SERVE=true to send them from a browser wallet.\n"
       );
     }
   }

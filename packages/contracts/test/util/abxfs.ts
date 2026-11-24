@@ -9,7 +9,7 @@ export const ABXFS_FILE_STORE_ADDRESS =
   "0x8b6077a1d6953D96687005B9408D56A655b4d155";
 // the canonical FileDataReader (ABX FS companion), pinned: the generator's ABXFS_FILE_DATA_READER
 export const ABXFS_FILE_DATA_READER_ADDRESS =
-  "0x88A8aF83343116253ba56bfd6bCCF062566612F9";
+  "0xb13D24967aB9B41787E2280D22d1d43a286c197a";
 
 export const GZIP_CODEC = ethers.utils.formatBytes32String("gzip");
 export const BR_CODEC = ethers.utils.formatBytes32String("br");

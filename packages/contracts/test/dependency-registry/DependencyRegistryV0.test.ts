@@ -24,7 +24,9 @@ import {
   BR_CODEC,
   GZIP_CODEC,
   NO_CODEC,
+  ABXFS_FILE_DATA_READER_ADDRESS,
   abxfsCid,
+  installAbxfsFileDataReaderMock,
   installAbxfsFileStoreMock,
   setGzipFile,
 } from "../util/abxfs";
@@ -176,6 +178,7 @@ describe(`DependencyRegistryV0`, async function () {
     // place a mock ABX FS FileStore at the canonical address, holding a gzip file split at
     // uneven chunk boundaries, and files the registry must refuse
     config.abxfsFileStore = await installAbxfsFileStoreMock();
+    await installAbxfsFileDataReaderMock(ABXFS_FILE_DATA_READER_ADDRESS);
     config.abxfsGzip = await setGzipFile(
       config.abxfsFileStore,
       ABXFS_FILE_CID,

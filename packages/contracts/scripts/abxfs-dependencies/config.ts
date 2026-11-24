@@ -4,10 +4,10 @@
 /**
  * The AB500 dependency libraries stored on ABX FS, and the registry dependency each one backs.
  *
- * All 13 files were uploaded as one ABX FS directory (gzip codec, raw chunks) to Ethereum, Base,
- * Arbitrum One, Robinhood and Base Sepolia. ABX FS CIDs are content-derived, so every CID below is
- * identical on each of those chains. The uploads are recorded in
- * `deployments/abxfs/` (companion PR).
+ * All 13 files were uploaded as one ABX FS directory (gzip codec, raw chunks) to Ethereum,
+ * Ethereum Sepolia, Base, Base Sepolia, Arbitrum One and Robinhood. ABX FS CIDs are
+ * content-derived, so every CID below is identical on each of those chains. The uploads are
+ * recorded in `deployments/abxfs/`.
  *
  * `sha256` is the SHA-256 of the decoded (gunzipped) file. Each one was checked against the
  * dependency's preferred CDN URL: all 13 match, zdog against the version-pinned
@@ -17,6 +17,14 @@
 /** ABX FS FileStore: immutable, CREATE2-deployed at this address on every supported chain. */
 export const ABXFS_CANONICAL_FILE_STORE =
   "0x8b6077a1d6953D96687005B9408D56A655b4d155";
+
+/**
+ * ABX FS FileDataReader companion, through which the generator reads dependency files. Stateless,
+ * deployed through the keyless CREATE2 deployer, so its address is the same on every chain.
+ * Must equal the generator's `ABXFS_FILE_DATA_READER`; the scripts check it.
+ */
+export const ABXFS_FILE_DATA_READER =
+  "0xb13D24967aB9B41787E2280D22d1d43a286c197a";
 
 /** The AB500 ABX FS directory holding all 13 files. */
 export const AB500_ABXFS_ROOT =
@@ -33,7 +41,7 @@ export type AbxfsDependencyFile = {
   sha256: string;
   /**
    * Whether the rollout sets this CID on the registry. False only for ES module dependencies,
-   * which the generator never reads from ABX FS.
+   * which the generator never inlines.
    */
   set: boolean;
   note?: string;
@@ -60,7 +68,7 @@ export const AB500_ABXFS_FILES: AbxfsDependencyFile[] = [
     cid: "0xd51a97d197e052299e2ef11718c4185435ea3d14ec04ec3276c807dc5d1654d0",
     sha256: "3e0d5d8be7c1179dd16e1f68651fc5783d71b05cd32c2f7ade571a7350f489ab",
     set: true,
-    note: "registry scripts take precedence; the registry copy differs only in its header comment (v1.0.0 vs the CDN file's v0.10.2)",
+    note: "the file matches the CDN; the registry's former on-chain copy differed only in its header comment (v1.0.0 vs the CDN file's v0.10.2)",
   },
   {
     dependency: "p5@1.9.0",
@@ -96,7 +104,7 @@ export const AB500_ABXFS_FILES: AbxfsDependencyFile[] = [
     cid: "0x9c778204e85837626dd358d1bde277a92b77aa1e0b57907d5c29ab607d2ecdde",
     sha256: "a8a966c3de0bac23630957e8b6ceb1330725bc2889a0b2dad952d710797ba179",
     set: true,
-    note: "registry scripts take precedence; the registry copy lacks the CDN file's trailing newline",
+    note: "the file matches the CDN; the registry's former on-chain copy lacked its trailing newline",
   },
   {
     dependency: "three@0.160.0",
@@ -119,7 +127,7 @@ export const AB500_ABXFS_FILES: AbxfsDependencyFile[] = [
     cid: "0x327cd7e8d6b062e9405d5c5f695818adfb6d0d3f21b03184d9dbefffc23db2cd",
     sha256: "4d7c4cf19549784271e12048a2492326cfddd1f1f769b8e414f683f409d33890",
     set: true,
-    note: "registry scripts take precedence; the registry copy is byte-identical gzip",
+    note: "the registry's former on-chain copy was byte-identical gzip",
   },
   {
     dependency: "twemoji@14.0.2",
@@ -155,15 +163,44 @@ export const PREFERRED_CDN_FIXES: {
 ];
 
 /**
+ * Generator configuration corrected in the same superAdmin batch, keyed by network.
+ * Sepolia's staging generator points at a ScriptyBuilder that reverts every render; the dev
+ * generator's is the working one. The planner only adds the call while the value is `from`.
+ */
+export const GENERATOR_CONFIG_FIXES: Record<
+  string,
+  {
+    label: string;
+    generator: string;
+    scriptyBuilder: { from: string; to: string };
+  }[]
+> = {
+  sepolia: [
+    {
+      label: "staging",
+      generator: "0xdC862938cA0a2D8dcabe5733C23e54ac7aAFFF27",
+      scriptyBuilder: {
+        from: "0xb205DFfE32259E2F1c3C0cba855250134147C083",
+        to: "0xD7587F110E08F4D120A231bA97d3B577A81Df022",
+      },
+    },
+  ],
+  mainnet: [],
+};
+
+export type CheckToken = {
+  /** The dependency the token's project resolves to. */
+  dependency: string;
+  core: string;
+  tokenId: string;
+};
+
+/**
  * One live mainnet token per dependency, from the registry-driven rendering rollout's
  * baseline. The fork check renders each before and after the rollout. Includes controls whose
  * dependency has no ABX FS file, which must stay byte-identical.
  */
-export const MAINNET_CHECK_TOKENS: {
-  dependency: string;
-  core: string;
-  tokenId: string;
-}[] = [
+export const MAINNET_CHECK_TOKENS: CheckToken[] = [
   {
     dependency: "aframe@1.2.0",
     core: "0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270",
@@ -246,3 +283,98 @@ export const MAINNET_CHECK_TOKENS: {
     tokenId: "12000000",
   },
 ];
+
+/**
+ * One live sepolia token per dependency, discovered by the registry-driven rendering rollout
+ * (`deployments/generator/rollout-baselines/sepolia-checks.json`). Sepolia has no project on
+ * aframe, babylon@5.0.0, paper, processing-js, twemoji or zdog; the mainnet fork covers those.
+ * `dependency` is what the project resolves to on sepolia, including spellings that are not
+ * registered there (rendered with defaults) and must not change.
+ */
+export const SEPOLIA_CHECK_TOKENS: CheckToken[] = [
+  {
+    dependency: "babylon@6.36.0",
+    core: "0xd9F14781F6cBA1F4FFB0743BcFd5fC860d1da847",
+    tokenId: "41000000",
+  },
+  {
+    dependency: "custom@na",
+    core: "0x12f976648178b0c37E7b7Ab218059b12b29dc78D",
+    tokenId: "19000000",
+  },
+  {
+    dependency: "js@na",
+    core: "0x12f976648178b0c37E7b7Ab218059b12b29dc78D",
+    tokenId: "119000000",
+  },
+  {
+    dependency: "js@1.0.0",
+    core: "0x8651eFeBA58F94A3785113B6Bc60a50Aa305df4c",
+    tokenId: "24000000",
+  },
+  {
+    dependency: "js@na",
+    core: "0x12f976648178b0c37E7b7Ab218059b12b29dc78D",
+    tokenId: "32000000",
+  },
+  {
+    dependency: "p5@",
+    core: "0xD574E7C79325ac6124EC58ef746ab285d72755a1",
+    tokenId: "129000000",
+  },
+  {
+    dependency: "p5@1.0.0",
+    core: "0x12f976648178b0c37E7b7Ab218059b12b29dc78D",
+    tokenId: "4000000",
+  },
+  {
+    dependency: "p5@1.11.11",
+    core: "0x12f976648178b0c37E7b7Ab218059b12b29dc78D",
+    tokenId: "33000000",
+  },
+  {
+    dependency: "p5@1.9.0",
+    core: "0x12f976648178b0c37E7b7Ab218059b12b29dc78D",
+    tokenId: "0",
+  },
+  {
+    dependency: "regl@2.1.0",
+    core: "0x12f976648178b0c37E7b7Ab218059b12b29dc78D",
+    tokenId: "17000000",
+  },
+  {
+    dependency: "svg@na",
+    core: "0x12f976648178b0c37E7b7Ab218059b12b29dc78D",
+    tokenId: "110000000",
+  },
+  {
+    dependency: "three@",
+    core: "0xD574E7C79325ac6124EC58ef746ab285d72755a1",
+    tokenId: "98000000",
+  },
+  {
+    dependency: "three@0.124.0",
+    core: "0x12f976648178b0c37E7b7Ab218059b12b29dc78D",
+    tokenId: "1000000",
+  },
+  {
+    dependency: "three@0.160.0",
+    core: "0xD574E7C79325ac6124EC58ef746ab285d72755a1",
+    tokenId: "27000000",
+  },
+  {
+    dependency: "three@0.167.0",
+    core: "0x12f976648178b0c37E7b7Ab218059b12b29dc78D",
+    tokenId: "78000000",
+  },
+  {
+    dependency: "tone@14.8.15",
+    core: "0x12f976648178b0c37E7b7Ab218059b12b29dc78D",
+    tokenId: "277000000",
+  },
+];
+
+export const CHECK_TOKENS: Record<string, CheckToken[]> = {
+  mainnet: MAINNET_CHECK_TOKENS,
+  sepolia: SEPOLIA_CHECK_TOKENS,
+};

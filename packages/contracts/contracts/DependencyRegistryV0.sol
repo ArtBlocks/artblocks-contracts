@@ -10,9 +10,9 @@ import "./interfaces/v0.8.x/ICoreRegistryV1.sol";
 import "./interfaces/v0.8.x/IBytecodeStorageReaderV2.sol";
 import "./interfaces/v0.8.x/IUniversalBytecodeStorageReader.sol";
 import {IAbxfsFileStore} from "./interfaces/v0.8.x/IAbxfsFileStore.sol";
+import {IAbxfsFileDataReader} from "./interfaces/v0.8.x/IAbxfsFileDataReader.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
-import "@openzeppelin-4.7/contracts/utils/Base64.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin-4.8/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin-4.8/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -21,6 +21,7 @@ import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
 import "./libs/v0.8.x/DependencyRegistryStorageLib.sol";
 import "./libs/v0.8.x/BytecodeStorageV2.sol";
 import "./libs/v0.8.x/Bytes32Strings.sol";
+import {AbxfsCanonical} from "./libs/v0.8.x/AbxfsCanonical.sol";
 
 /**
  * @title Art Blocks Dependency Registry, V0.
@@ -52,12 +53,10 @@ contract DependencyRegistryV0 is
 
     uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
 
-    // @dev The ABX FS FileStore is immutable and deployed by CREATE2 at this address on every
-    // chain ABX FS supports.
     IAbxfsFileStore constant ABXFS_FILE_STORE =
-        IAbxfsFileStore(0x8b6077a1d6953D96687005B9408D56A655b4d155);
-    // @dev ABX FS file-level codec token for gzip (an IANA content-coding token as bytes32)
-    bytes32 constant ABXFS_GZIP_CODEC = "gzip";
+        IAbxfsFileStore(AbxfsCanonical.FILE_STORE);
+    IAbxfsFileDataReader constant ABXFS_FILE_DATA_READER =
+        IAbxfsFileDataReader(AbxfsCanonical.FILE_DATA_READER);
     // @dev Size of the ABX FS file ranges `getDependencyScript` serves. A multiple of three, so
     // the base64 encodings of consecutive slices concatenate into the encoding of the whole file.
     uint256 constant ABXFS_SCRIPT_SLICE_BYTES = 24_576; // 3 * 8192
@@ -436,7 +435,7 @@ contract DependencyRegistryV0 is
                 abxfsFileCid
             );
             require(
-                info.codec == ABXFS_GZIP_CODEC && info.size != 0,
+                info.codec == AbxfsCanonical.GZIP_CODEC && info.size != 0,
                 "ABX FS file must be gzip"
             );
         }
@@ -1275,10 +1274,15 @@ contract DependencyRegistryV0 is
         if (end > size) {
             end = size;
         }
-        return
-            Base64.encode(
-                _readAbxfsFileRange(abxfsFileCid, start, end - start)
-            );
+        (, , , string memory slice) = ABXFS_FILE_DATA_READER
+            .readFileDataRangeBase64({
+                cid: abxfsFileCid,
+                start: start,
+                length: end - start,
+                maxBytes: type(uint256).max,
+                maxChunks: type(uint256).max
+            });
+        return slice;
     }
 
     /**
@@ -1496,76 +1500,6 @@ contract DependencyRegistryV0 is
         DependencyRegistryStorageLib.s().adminACLContract = IAdminACLV0(
             newOwner
         );
-    }
-
-    /**
-     * @notice Reads bytes `[start, start + length)` of ABX FS file `abxfsFileCid`'s stored data
-     * (its gzip bytes), reading only the chunks the range covers.
-     * @dev ChunkStore checks each chunk against its content hash on read. `length` must be
-     * non-zero and the range within the file.
-     */
-    function _readAbxfsFileRange(
-        bytes32 abxfsFileCid,
-        uint256 start,
-        uint256 length
-    ) internal view returns (bytes memory data) {
-        data = new bytes(length);
-        (uint256 chunkIndex, uint256 chunkStart, , ) = ABXFS_FILE_STORE
-            .locateByte(abxfsFileCid, start);
-        uint256 offsetInChunk = start - chunkStart;
-        uint256 written;
-        while (written < length) {
-            bytes memory chunk = ABXFS_FILE_STORE.readChunk(
-                abxfsFileCid,
-                chunkIndex
-            );
-            uint256 count = chunk.length - offsetInChunk;
-            if (count > length - written) {
-                count = length - written;
-            }
-            _copyBytes(data, written, chunk, offsetInChunk, count);
-            written += count;
-            offsetInChunk = 0;
-            ++chunkIndex;
-        }
-    }
-
-    /**
-     * @notice Copies `length` bytes of `src` from `srcOffset` into `dest` at `destOffset`.
-     * @dev Word copy with a masked final word, which leaves the bytes after the copied range
-     * untouched (the EVM target has no MCOPY).
-     */
-    function _copyBytes(
-        bytes memory dest,
-        uint256 destOffset,
-        bytes memory src,
-        uint256 srcOffset,
-        uint256 length
-    ) internal pure {
-        assembly ("memory-safe") {
-            let d := add(add(dest, 0x20), destOffset)
-            let s := add(add(src, 0x20), srcOffset)
-            let full := and(length, not(0x1f))
-            for {
-                let i := 0
-            } lt(i, full) {
-                i := add(i, 0x20)
-            } {
-                mstore(add(d, i), mload(add(s, i)))
-            }
-            if lt(full, length) {
-                // keep the trailing (32 - remaining) bytes of the destination word
-                let keep := sub(shl(mul(sub(0x20, sub(length, full)), 8), 1), 1)
-                let dp := add(d, full)
-                mstore(
-                    dp,
-                    or(
-                        and(mload(add(s, full)), not(keep)),
-                        and(mload(dp), keep)
-                    )
-                )
-            }
-        }
     }
 
     /**

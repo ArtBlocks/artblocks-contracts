@@ -37,30 +37,4 @@ interface IAbxfsFileStore {
     function getFileInfo(
         bytes32 cid
     ) external view returns (FileInfo memory info);
-
-    /**
-     * @notice Returns the chunk of file `cid` holding data byte `offset`: its index, the offset
-     * of its first byte in the file's data, its chunk id and its size.
-     */
-    function locateByte(
-        bytes32 cid,
-        uint256 offset
-    )
-        external
-        view
-        returns (
-            uint256 index,
-            uint256 chunkStart,
-            bytes32 chunkId,
-            uint256 chunkSize
-        );
-
-    /**
-     * @notice Returns the stored bytes of chunk `index` of file `cid`. ChunkStore checks each
-     * chunk against its content hash on read, so these are exactly the bytes that were uploaded.
-     */
-    function readChunk(
-        bytes32 cid,
-        uint256 index
-    ) external view returns (bytes memory data);
 }

@@ -2,9 +2,11 @@
 // Created By: Art Blocks Inc.
 
 /**
- * Derives the registry calls that apply the ABX FS dependency rollout, from current chain state.
- * Shared by 2_set-abxfs-files.ts, which writes them as a Safe batch, and fork-verify.ts, which
- * sends them on a fork — so the batch builder is the code path the rehearsal exercises.
+ * Derives the superAdmin calls of the ABX FS dependency rollout (step 2) from current chain
+ * state: an ABX FS file for each AB500 dependency, zdog's preferred CDN pin, and any generator
+ * configuration fix listed for the network. Shared by 2_set-abxfs-files.ts, which writes them as
+ * a Safe batch or serves them to a browser wallet, and fork-verify.ts, which sends them on a
+ * fork — so the batch builder is the code path the rehearsal exercises.
  */
 
 import { ethers } from "hardhat";
@@ -15,7 +17,11 @@ import {
   SafeContractMethod,
   SafeTransaction,
 } from "../generator-upgrade/safe-tx-builder";
-import { AB500_ABXFS_FILES, PREFERRED_CDN_FIXES } from "./config";
+import {
+  AB500_ABXFS_FILES,
+  GENERATOR_CONFIG_FIXES,
+  PREFERRED_CDN_FIXES,
+} from "./config";
 
 /**
  * GET a URL's body, following redirects, uncompressed.
@@ -72,6 +78,19 @@ const SET_FILE_METHOD: SafeContractMethod = {
   payable: false,
 };
 
+const GENERATOR_ABI = [
+  "function scriptyBuilder() view returns (address)",
+  "function updateScriptyBuilder(address _scriptyBuilder)",
+];
+
+const SET_SCRIPTY_METHOD: SafeContractMethod = {
+  inputs: [
+    { name: "_scriptyBuilder", type: "address", internalType: "address" },
+  ],
+  name: "updateScriptyBuilder",
+  payable: false,
+};
+
 const SET_CDN_METHOD: SafeContractMethod = {
   inputs: [
     {
@@ -87,6 +106,8 @@ const SET_CDN_METHOD: SafeContractMethod = {
 
 export type PlannedCall = {
   label: string;
+  /** The contract called: the registry, or a generator for a configuration fix. */
+  to: string;
   /** Encoded calldata, for simulation and direct sending. */
   data: string;
   /** The same call for the Safe Transaction Builder, which re-encodes it from the values. */
@@ -94,11 +115,13 @@ export type PlannedCall = {
 };
 
 /**
- * Builds the outstanding calls for `registryAddress` and simulates each from `sender`. Skips
- * calls already applied and dependencies not registered on this network. The files themselves
- * are checked separately, with verifyAbxfsFile.
+ * Builds the outstanding calls for `registryAddress` (and the generator fixes listed for
+ * `networkName`) and simulates each from `sender`. Skips calls already applied and dependencies
+ * not registered on this network. The files' contents are checked separately, with
+ * verifyAbxfsFile; the registry itself refuses a CID that is absent or not gzip.
  */
 export async function planAbxfsFileCalls(
+  networkName: string,
   registryAddress: string,
   sender: string,
   log: (line: string) => void = console.log
@@ -136,6 +159,7 @@ export async function planAbxfsFileCalls(
     }
     calls.push({
       label: `updateDependencyAbxfsFileCid(${entry.dependency}, ${entry.cid})`,
+      to: ethers.utils.getAddress(registryAddress),
       data: iface.encodeFunctionData("updateDependencyAbxfsFileCid", [
         id,
         entry.cid,
@@ -181,6 +205,7 @@ export async function planAbxfsFileCalls(
     }
     calls.push({
       label: `updateDependencyPreferredCDN(${fix.dependency}, ${fix.to})`,
+      to: ethers.utils.getAddress(registryAddress),
       data: iface.encodeFunctionData("updateDependencyPreferredCDN", [
         id,
         fix.to,
@@ -198,12 +223,45 @@ export async function planAbxfsFileCalls(
     });
   }
 
-  for (const call of calls) {
-    await ethCallOrThrow({
-      from: sender,
-      to: registryAddress,
-      data: call.data,
+  for (const fix of GENERATOR_CONFIG_FIXES[networkName] ?? []) {
+    const generator = new ethers.Contract(
+      fix.generator,
+      GENERATOR_ABI,
+      ethers.provider
+    );
+    const current = ethers.utils.getAddress(await generator.scriptyBuilder());
+    const { from, to } = fix.scriptyBuilder;
+    if (current === ethers.utils.getAddress(to)) {
+      log(`  done ${fix.label} generator: ScriptyBuilder already ${to}`);
+      continue;
+    }
+    if (current !== ethers.utils.getAddress(from)) {
+      log(
+        `  skip ${fix.label} generator: ScriptyBuilder is ${current}, not ${from}`
+      );
+      continue;
+    }
+    if ((await ethers.provider.getCode(to)) === "0x") {
+      throw new Error(`No ScriptyBuilder at ${to}`);
+    }
+    calls.push({
+      label: `updateScriptyBuilder(${to}) on the ${fix.label} generator`,
+      to: ethers.utils.getAddress(fix.generator),
+      data: generator.interface.encodeFunctionData("updateScriptyBuilder", [
+        to,
+      ]),
+      safeTransaction: {
+        to: ethers.utils.getAddress(fix.generator),
+        value: "0",
+        data: null,
+        contractMethod: SET_SCRIPTY_METHOD,
+        contractInputsValues: { _scriptyBuilder: to },
+      },
     });
+  }
+
+  for (const call of calls) {
+    await ethCallOrThrow({ from: sender, to: call.to, data: call.data });
   }
   return calls;
 }

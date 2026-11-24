@@ -10,6 +10,7 @@ import "../interfaces/v0.8.x/IGenArt721GeneratorV0.sol";
 import {IGenArt721CoreContractV3_Engine_Flex} from "../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
 import {IUniversalBytecodeStorageReader} from "../interfaces/v0.8.x/IUniversalBytecodeStorageReader.sol";
 import {IAbxfsFileDataReader} from "../interfaces/v0.8.x/IAbxfsFileDataReader.sol";
+import {AbxfsCanonical} from "../libs/v0.8.x/AbxfsCanonical.sol";
 import {IWeb3Call} from "../interfaces/v0.8.x/IWeb3Call.sol";
 
 import "../libs/v0.8.x/Bytes32Strings.sol";
@@ -66,13 +67,10 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         0x6a73406e61000000000000000000000000000000000000000000000000000000; // "js@na"
     bytes32 constant SVG_AT_NA_BYTES32 =
         0x737667406e610000000000000000000000000000000000000000000000000000; // "svg@na"
-    // @dev The ABX FS FileDataReader, through which dependency scripts are read from ABX FS. ABX
-    // FS contracts are stateless or immutable and deployed by CREATE2 through the keyless deployer,
-    // so this address is the same on every chain ABX FS supports.
+    // @dev The ABX FS FileDataReader, through which dependency scripts are read from ABX FS (the
+    // same address on every chain ABX FS supports; see AbxfsCanonical).
     IAbxfsFileDataReader public constant ABXFS_FILE_DATA_READER =
-        IAbxfsFileDataReader(0x88A8aF83343116253ba56bfd6bCCF062566612F9);
-    // @dev ABX FS file-level codec token for gzip (an IANA content-coding token as bytes32)
-    bytes32 constant ABXFS_GZIP_CODEC = "gzip";
+        IAbxfsFileDataReader(AbxfsCanonical.FILE_DATA_READER);
 
     function _onlySupportedCoreContract(address coreContract) internal view {
         require(
@@ -371,7 +369,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                 maxBytes: type(uint256).max,
                 maxChunks: type(uint256).max
             });
-        require(codec == ABXFS_GZIP_CODEC, "ABX FS file not gzip");
+        require(codec == AbxfsCanonical.GZIP_CODEC, "ABX FS file not gzip");
         return base64;
     }
 
