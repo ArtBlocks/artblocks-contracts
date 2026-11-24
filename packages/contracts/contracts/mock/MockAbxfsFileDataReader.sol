@@ -107,9 +107,22 @@ contract MockAbxfsFileDataReader is IAbxfsFileDataReader {
         for (uint256 i = 0; i < info.chunkCount; i++) {
             data = bytes.concat(data, FILE_STORE.readChunk(cid, i));
         }
+        // @dev word copy in assembly: a per-byte Solidity loop over a 25 KB range is too slow
+        // under coverage instrumentation
         bytes memory range = new bytes(length);
-        for (uint256 i = 0; i < length; i++) {
-            range[i] = data[start + i];
+        assembly {
+            let src := add(add(data, 0x20), start)
+            let dst := add(range, 0x20)
+            for {
+                let i := 0
+            } lt(i, length) {
+                i := add(i, 0x20)
+            } {
+                mstore(add(dst, i), mload(add(src, i)))
+            }
+            // clear anything copied past the range's end, then restore the length word
+            mstore(add(dst, length), 0)
+            mstore(range, length)
         }
         return (
             info.mimeType,
