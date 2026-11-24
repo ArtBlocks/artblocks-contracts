@@ -2,14 +2,14 @@
 
 The JavaScript libraries used by the first 500 Art Blocks Curated projects, stored on
 [ABX FS](https://github.com/ArtBlocks/abxfs) as one directory of gzip files. The same content ID
-exists on five chains.
+exists on six chains.
 
 - **Root directory CID:** `0x60cdc71765dc6954ebc3dcc4545d92a04d5a09ebd891bb02333d95ba0c39fa2d`
 - **Contents:** 13 files, 117 unique chunks, 2,422,127 stored bytes
-- **Uploaded:** 2026-11-21, by `0x8b7C193bdF2295912B3409A43b0384E14981DF65`. The uploader holds no
+- **Uploaded:** 2026-11-21 (Ethereum Sepolia 2026-11-24), by `0x8b7C193bdF2295912B3409A43b0384E14981DF65`. The uploader holds no
   role over the content: ABX FS storage is ownerless and immutable.
 - **Published as:** project #0, "AB500 libraries", in the ABX FS org "Art Blocks",
-  `0x2380EcC56B74eccb52F6AeAC7590024C9E7Fe8FE`. The org has the same address on all five chains. Its
+  `0x2380EcC56B74eccb52F6AeAC7590024C9E7Fe8FE`. The org has the same address on all six chains. Its
   admin, and the project's owner, is `0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef`. See
   [Org and project](#org-and-project).
 - **Not yet:** neither the dependency registry nor the generator reads this content.
@@ -47,15 +47,16 @@ Advisory Database and OSV, checked 2026-11-20).
 
 ## Chains
 
-| Chain                | Transactions | Gas used    | Fee (ETH)                   | Blocks              | Time (UTC)  | Gateway                                                                                                   |
-| -------------------- | ------------ | ----------- | --------------------------- | ------------------- | ----------- | --------------------------------------------------------------------------------------------------------- |
-| Base Sepolia (84532) | 60           | 558,532,001 | 0.007546 (0.004195 L1 data) | 61508119–61508420   | 01:11–01:12 | [link](https://fs.abx.io/g/cid/84532/0x60cdc71765dc6954ebc3dcc4545d92a04d5a09ebd891bb02333d95ba0c39fa2d/) |
-| Base (8453)          | 56           | 519,895,488 | 0.003148 (0.000024 L1 data) | 60166977–60167318   | 01:16–01:17 | [link](https://fs.abx.io/g/cid/8453/0x60cdc71765dc6954ebc3dcc4545d92a04d5a09ebd891bb02333d95ba0c39fa2d/)  |
-| Arbitrum One (42161) | 60           | 561,666,028 | 0.011257                    | 526095711–526095981 | 01:16–01:17 | [link](https://fs.abx.io/g/cid/42161/0x60cdc71765dc6954ebc3dcc4545d92a04d5a09ebd891bb02333d95ba0c39fa2d/) |
-| Robinhood (4663)     | 60           | 558,532,001 | 0.011283                    | 119498720–119499157 | 01:16       | [link](https://fs.abx.io/g/cid/4663/0x60cdc71765dc6954ebc3dcc4545d92a04d5a09ebd891bb02333d95ba0c39fa2d/)  |
-| Ethereum (1)         | 60           | 558,532,001 | 0.075191                    | 26460152–26460303   | 01:21–01:51 | [link](https://fs.abx.io/g/cid/1/0x60cdc71765dc6954ebc3dcc4545d92a04d5a09ebd891bb02333d95ba0c39fa2d/)     |
+| Chain                       | Transactions | Gas used      | Fee (ETH)                   | Blocks              | Time (UTC)        | Gateway                                                                                                      |
+| --------------------------- | ------------ | ------------- | --------------------------- | ------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------ |
+| Base Sepolia (84532)        | 60           | 558,532,001   | 0.007546 (0.004195 L1 data) | 61508119–61508420   | 01:11–01:12       | [link](https://fs.abx.io/g/cid/84532/0x60cdc71765dc6954ebc3dcc4545d92a04d5a09ebd891bb02333d95ba0c39fa2d/)    |
+| Base (8453)                 | 56           | 519,895,488   | 0.003148 (0.000024 L1 data) | 60166977–60167318   | 01:16–01:17       | [link](https://fs.abx.io/g/cid/8453/0x60cdc71765dc6954ebc3dcc4545d92a04d5a09ebd891bb02333d95ba0c39fa2d/)     |
+| Arbitrum One (42161)        | 60           | 561,666,028   | 0.011257                    | 526095711–526095981 | 01:16–01:17       | [link](https://fs.abx.io/g/cid/42161/0x60cdc71765dc6954ebc3dcc4545d92a04d5a09ebd891bb02333d95ba0c39fa2d/)    |
+| Robinhood (4663)            | 60           | 558,532,001   | 0.011283                    | 119498720–119499157 | 01:16             | [link](https://fs.abx.io/g/cid/4663/0x60cdc71765dc6954ebc3dcc4545d92a04d5a09ebd891bb02333d95ba0c39fa2d/)     |
+| Ethereum (1)                | 60           | 558,532,001   | 0.075191                    | 26460152–26460303   | 01:21–01:51       | [link](https://fs.abx.io/g/cid/1/0x60cdc71765dc6954ebc3dcc4545d92a04d5a09ebd891bb02333d95ba0c39fa2d/)        |
+| Ethereum Sepolia (11155111) | 117          | 3,847,298,183 | 0.0000000667                | 12205338–12205472   | 11-24 21:57–22:25 | [link](https://fs.abx.io/g/cid/11155111/0x60cdc71765dc6954ebc3dcc4545d92a04d5a09ebd891bb02333d95ba0c39fa2d/) |
 
-All 296 transactions succeeded. Mainnet fees came to 0.100879 ETH.
+All 413 transactions succeeded (296 on 2026-11-21, 117 on Ethereum Sepolia on 2026-11-24). Mainnet fees came to 0.100879 ETH.
 
 - **Base needed 56 transactions, not 60.** 8 of the 117 chunks were already on Base from an earlier,
   byte-identical upload by someone else, and ABX FS reused them. That is content addressing working
@@ -63,7 +64,10 @@ All 296 transactions succeeded. Mainnet fees came to 0.100879 ETH.
 - **Ethereum went out in five runs.** The upload was capped with `ABXFS_MAX_FEE_GWEI` (0.35 gwei,
   then 0.42). The CLI stops rather than overpay, and a re-run skips what is already stored. The
   average price paid was about 0.135 gwei per gas.
-- Ethereum Sepolia was not used. EIP-8037 there makes the same upload cost about 6.8 times the gas.
+- **Ethereum Sepolia took 117 transactions and 6.9 times the gas.** Sepolia runs the EIP-8037
+  (Glamsterdam) gas schedule, which reprices state creation (code costs 1,530 gas a byte instead of
+  200), so each full chunk is a transaction of its own. Sepolia gas was about 17 wei, so the fee was
+  negligible. The root and every file CID are the same as on the other chains.
 
 ## Verification
 
@@ -75,9 +79,10 @@ Done on every chain after its upload:
 4. **On-chain read:** a reader contract, injected with an `eth_call` state override (nothing
    deployed), resolved each file in the directory, read its gzip bytes from the canonical FileStore,
    base64-encoded them, and returned the result. The base64 matched base64 of the local gzip, and
-   gunzip of it matched the original SHA-256, for all 13 files on all five chains.
+   gunzip of it matched the original SHA-256, for all 13 files on the five chains uploaded on
+   2026-11-21. On Ethereum Sepolia, see the note below.
 
-Read gas was identical on all five chains:
+Read gas was identical on those five chains:
 
 | File                        | Via `FileStore.readChunk` | Direct SSTORE2 read | Direct + base64 | Direct + base64 + HTML encode |
 | --------------------------- | ------------------------- | ------------------- | --------------- | ----------------------------- |
@@ -103,6 +108,14 @@ Read gas was identical on all five chains:
   (OpenZeppelin `Base64` plus scripty's `DynamicBuffer.appendSafeBase64`, compiled as the generator
   is: solc 0.8.22, 10 optimizer runs, shanghai).
 
+**Ethereum Sepolia and the per-call gas budget.** Checks 1–3 pass on Ethereum Sepolia. Check 4 passes
+for the six smallest files and fails for the seven largest (aframe, babylon, both p5 builds, all
+three three.js builds): under EIP-8037 a call's execution gas, memory expansion included, is capped
+at 2^24 (16,777,216), and Sepolia nodes apply the cap to `eth_call` as they do to transactions
+(measured on three providers; a mainnet `eth_call` is not capped this way today). Reading those files
+on Sepolia takes more than one call, such as chunk-by-chunk reads. Ethereum mainnet adopts the same
+schedule when it upgrades to Glamsterdam.
+
 ## Generator read budget
 
 Measured before the upload:
@@ -122,17 +135,17 @@ Measured before the upload:
 
 ## Org and project
 
-|              |                                                                               |
-| ------------ | ----------------------------------------------------------------------------- |
-| Org          | "Art Blocks", `0x2380EcC56B74eccb52F6AeAC7590024C9E7Fe8FE` on all five chains |
-| Org admin    | `0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef` (minting: admin only)            |
-| Project      | #0, "AB500 libraries", owned by `0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef`  |
-| Version 1    | root `0x60cdc71765dc6954ebc3dcc4545d92a04d5a09ebd891bb02333d95ba0c39fa2d`     |
-| Presentation | ChainGateway, selection Latest                                                |
-| OrgFactory   | `0xb057b5b6641717EB85E9D8b3Ba23988E0A6d147A`                                  |
-| Salt         | `0x8b7c193bdf2295912b3409a43b0384e14981df65000000000000000000000000`          |
+|              |                                                                              |
+| ------------ | ---------------------------------------------------------------------------- |
+| Org          | "Art Blocks", `0x2380EcC56B74eccb52F6AeAC7590024C9E7Fe8FE` on all six chains |
+| Org admin    | `0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef` (minting: admin only)           |
+| Project      | #0, "AB500 libraries", owned by `0x00df4E8d293d57718aac0B18cBfBE128c5d484Ef` |
+| Version 1    | root `0x60cdc71765dc6954ebc3dcc4545d92a04d5a09ebd891bb02333d95ba0c39fa2d`    |
+| Presentation | ChainGateway, selection Latest                                               |
+| OrgFactory   | `0xb057b5b6641717EB85E9D8b3Ba23988E0A6d147A`                                 |
+| Salt         | `0x8b7c193bdf2295912b3409a43b0384e14981df65000000000000000000000000`         |
 
-The org was set up on 2026-11-21, in the same order on every chain:
+The org was set up on 2026-11-21 (Ethereum Sepolia 2026-11-24), in the same order on every chain:
 
 1. The uploader created the org. `createOrg` also mints project #0.
 2. The uploader published the root into project #0 and set its name and presentation. The content
@@ -143,7 +156,8 @@ The org was set up on 2026-11-21, in the same order on every chain:
 
 The org address comes from the salt alone, which is why it is the same on every chain. A salt can
 only be used by the address written into its first 20 bytes. Every transaction hash for these steps
-is in `org.txs` in the JSON record.
+is in `org.txs` in the JSON record. On Ethereum Sepolia, step 4 is pending: `0x00df…84Ef` has the
+admin offer and owns project #0.
 
 Project pages, using the org address in lowercase:
 
