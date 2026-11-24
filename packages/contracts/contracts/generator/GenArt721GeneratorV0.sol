@@ -356,21 +356,68 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
      * @notice Get a dependency's ABX FS file, base64 encoded: the payload of the gzip data URI
      * the generator inlines.
      * @param abxfsFileCid CID of the dependency's gzip-codec ABX FS file.
-     * @return The base64-encoded gzip bytes of the file.
-     * @dev Reverts if `abxfsFileCid` is not a gzip-codec file on this chain's ABX FS. The
-     * registry checks both when a CID is set; ABX FS content is permanent.
+     * @return base64 The base64-encoded gzip bytes of the file.
+     * @dev Reverts if `abxfsFileCid` is not a gzip-codec file on this chain's ABX FS (the
+     * registry checks both when a CID is set; ABX FS content is permanent), or with the
+     * FileDataReader's own error if the read fails.
+     * @dev The return value is decoded in place. A high-level call copies the returned base64
+     * twice into this frame (returndatacopy, then ABI decoding into new memory), and the
+     * whole token document is assembled in this frame, where memory cost is quadratic: for
+     * Babylon (1.2 MB of base64) the second copy costs about 28M gas, for p5 1.0.0 about 1.4M.
+     * FileDataReader returns canonical `abi.encode(mimeType, codec, outputHash, base64)`: a
+     * four-word head whose fourth word is the offset of `base64`, which is length-prefixed.
+     * The offset and length are bounds-checked against the returned size before use.
      */
     function _getAbxfsFileBase64(
         bytes32 abxfsFileCid
-    ) internal view returns (string memory) {
-        (, bytes32 codec, , string memory base64) = ABXFS_FILE_DATA_READER
-            .readFileDataBase64({
-                cid: abxfsFileCid,
-                maxBytes: type(uint256).max,
-                maxChunks: type(uint256).max
-            });
+    ) internal view returns (string memory base64) {
+        bytes memory callData = abi.encodeCall(
+            IAbxfsFileDataReader.readFileDataBase64,
+            (abxfsFileCid, type(uint256).max, type(uint256).max)
+        );
+        address reader = address(ABXFS_FILE_DATA_READER);
+        bytes32 codec;
+        bool wellFormed;
+        assembly ("memory-safe") {
+            let ptr := mload(0x40)
+            if iszero(
+                staticcall(
+                    gas(),
+                    reader,
+                    add(callData, 0x20),
+                    mload(callData),
+                    0,
+                    0
+                )
+            ) {
+                returndatacopy(ptr, 0, returndatasize())
+                revert(ptr, returndatasize())
+            }
+            let size := returndatasize()
+            returndatacopy(ptr, 0, size)
+            // head: [mimeType offset, codec, outputHash, base64 offset]
+            if gt(size, 0x7f) {
+                codec := mload(add(ptr, 0x20))
+                let offset := mload(add(ptr, 0x60))
+                if lt(offset, sub(size, 0x1f)) {
+                    let length := mload(add(ptr, offset))
+                    if iszero(gt(length, sub(sub(size, offset), 0x20))) {
+                        wellFormed := 1
+                        base64 := add(ptr, offset)
+                        // claim the string's memory, rounded up to a whole word
+                        mstore(
+                            0x40,
+                            add(
+                                add(base64, 0x20),
+                                and(add(length, 0x1f), not(0x1f))
+                            )
+                        )
+                    }
+                }
+            }
+        }
+        require(wellFormed, "ABX FS read malformed");
         require(codec == AbxfsCanonical.GZIP_CODEC, "ABX FS file not gzip");
-        return base64;
     }
 
     /**
