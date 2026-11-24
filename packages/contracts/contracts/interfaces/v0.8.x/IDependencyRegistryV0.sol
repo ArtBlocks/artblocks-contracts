@@ -81,8 +81,6 @@ interface IDependencyRegistryV0 {
         uint256 indexed additionalRepositoryIndex
     );
 
-    event DependencyScriptUpdated(bytes32 indexed dependencyNameAndVersion);
-
     event CoreRegistryAddressUpdated(address indexed coreRegistryAddress);
 
     event UniversalBytecodeStorageReaderUpdated(address indexed newReader);
@@ -160,11 +158,10 @@ interface IDependencyRegistryV0 {
         uint24 additionalRepositoryCount;
         // project website URL for dependency
         string dependencyWebsite;
-        // whether the dependency's script is stored in this registry (scriptCount > 0). A
-        // dependency can also be on chain via ABX FS; see abxfsFileCid.
+        // whether the dependency is on chain: true if and only if it has an ABX FS file
         bool availableOnChain;
-        // count of on-chain scripts for dependency
-        uint24 scriptCount;
+        // CID of the gzip-codec ABX FS file holding the dependency's script, or zero if none
+        bytes32 abxfsFileCid;
         // whether the dependency's own script is an ES module, and therefore must be exposed to
         // project scripts via an import map rather than loaded with a plain `<script src>` tag
         bool loadAsModule;
@@ -174,47 +171,38 @@ interface IDependencyRegistryV0 {
         ProjectScriptTagType projectScriptTagType;
         // `type` attribute used when projectScriptTagType is SpecialType; empty otherwise
         string projectScriptSpecialType;
-        // CID of a gzip-codec ABX FS file holding the dependency's script, or zero if none.
-        // @dev Appended last so that callers compiled against the previous struct still decode
-        // the leading fields correctly: ABI decoding ignores trailing return data.
-        bytes32 abxfsFileCid;
     }
 
     /**
-     * @notice Returns the count of scripts for dependency `dependencyNameAndVersion`.
-     * @param dependencyNameAndVersion Dependency type to be queried.
+     * @notice Returns the CID of the gzip-codec ABX FS file holding the script for dependency
+     * `dependencyNameAndVersion`, or zero if none is set. A dependency is on chain if and only
+     * if this is non-zero.
+     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
+     */
+    function getDependencyAbxfsFileCid(
+        bytes32 dependencyNameAndVersion
+    ) external view returns (bytes32);
+
+    /**
+     * @notice Returns the number of slices `getDependencyScript` serves for dependency
+     * `dependencyNameAndVersion`'s ABX FS file, or zero if it has none.
+     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
      */
     function getDependencyScriptCount(
         bytes32 dependencyNameAndVersion
     ) external view returns (uint256);
 
     /**
-     * @notice Returns address with bytecode containing script for
-     * dependency type `dependencyNameAndVersions` at script index `index`.
-     */
-    function getDependencyScriptBytecodeAddress(
-        bytes32 dependencyNameAndVersion,
-        uint256 index
-    ) external view returns (address);
-
-    /**
-     * @notice Returns script for dependency type `dependencyNameAndVersion` at script index `index`.
-     * @param dependencyNameAndVersion Dependency type to be queried.
-     * @param index Index of script to be queried.
+     * @notice Returns slice `index` of dependency `dependencyNameAndVersion`'s ABX FS file:
+     * the base64 encoding of a fixed-size, three-byte-aligned range of its gzip bytes. The slices
+     * concatenated in order are the base64 encoding of the whole gzip file.
+     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
+     * @param index Index of the slice, less than `getDependencyScriptCount`.
      */
     function getDependencyScript(
         bytes32 dependencyNameAndVersion,
         uint256 index
     ) external view returns (string memory);
-
-    /**
-     * @notice Returns the CID of the gzip-codec ABX FS file holding the script for dependency
-     * `dependencyNameAndVersion`, or zero if none is set.
-     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
-     */
-    function getDependencyAbxfsFileCid(
-        bytes32 dependencyNameAndVersion
-    ) external view returns (bytes32);
 
     /**
      * @notice Returns details for a given dependency type `dependencyNameAndVersion`.
@@ -226,10 +214,11 @@ interface IDependencyRegistryV0 {
     ) external view returns (DependencyDetails memory dependencyDetails);
 
     /**
-     * @notice Returns details for a given dependency type `dependencyNameAndVersion`.
-     * @dev Superseded by `getDependencyDetailsV2`, which additionally returns the fields
-     * prescribing how the generator renders projects using this dependency. Retained with an
-     * unchanged signature so that existing off-chain consumers continue to decode correctly.
+     * @notice Returns details for a given dependency type `dependencyNameAndVersion`, as a
+     * tuple.
+     * @dev `getDependencyDetailsV2` returns every field. This tuple form keeps its signature for
+     * deployed consumers that decode it; `availableOnChain` is whether the dependency has an ABX
+     * FS file, and `scriptCount` is `getDependencyScriptCount`.
      * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
      * @return nameAndVersion String representation of `dependencyNameAndVersion`.
      *                        (e.g. "p5js(atSymbol)1.0.0")
@@ -239,8 +228,8 @@ interface IDependencyRegistryV0 {
      * @return preferredRepository Preferred repository URL for dependency
      * @return additionalRepositoryCount Count of additional repository URLs for dependency
      * @return dependencyWebsite Project website URL for dependency
-     * @return availableOnChain Whether dependency is available on chain
-     * @return scriptCount Count of on-chain scripts for dependency
+     * @return availableOnChain Whether dependency is on chain (has an ABX FS file)
+     * @return scriptCount Number of slices `getDependencyScript` serves for the ABX FS file
      */
     function getDependencyDetails(
         bytes32 dependencyNameAndVersion

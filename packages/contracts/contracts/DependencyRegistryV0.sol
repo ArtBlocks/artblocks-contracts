@@ -9,8 +9,10 @@ import "./interfaces/v0.8.x/IDependencyRegistryV0.sol";
 import "./interfaces/v0.8.x/ICoreRegistryV1.sol";
 import "./interfaces/v0.8.x/IBytecodeStorageReaderV2.sol";
 import "./interfaces/v0.8.x/IUniversalBytecodeStorageReader.sol";
+import {IAbxfsFileStore} from "./interfaces/v0.8.x/IAbxfsFileStore.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
+import "@openzeppelin-4.7/contracts/utils/Base64.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin-4.8/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin-4.8/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -31,6 +33,9 @@ import "./libs/v0.8.x/Bytes32Strings.sol";
  * to our non-upgradeable and immutable ERC-721 conforming core contracts,
  * and has been made upgradeable as we expect its required functionality in
  * relation to the Art Blocks ecosystem to evolve over time.
+ * @notice On-chain scripts: a dependency is on chain if and only if it has an ABX FS file
+ * (`abxfsFileCid`), a gzip-codec file on ABX FS whose decoded content is the dependency's
+ * script. This registry stores no scripts; it records which ABX FS file holds each one.
  */
 contract DependencyRegistryV0 is
     Initializable,
@@ -46,6 +51,16 @@ contract DependencyRegistryV0 is
     using SafeCast for uint24;
 
     uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
+
+    // @dev The ABX FS FileStore is immutable and deployed by CREATE2 at this address on every
+    // chain ABX FS supports.
+    IAbxfsFileStore constant ABXFS_FILE_STORE =
+        IAbxfsFileStore(0x8b6077a1d6953D96687005B9408D56A655b4d155);
+    // @dev ABX FS file-level codec token for gzip (an IANA content-coding token as bytes32)
+    bytes32 constant ABXFS_GZIP_CODEC = "gzip";
+    // @dev Size of the ABX FS file ranges `getDependencyScript` serves. A multiple of three, so
+    // the base64 encodings of consecutive slices concatenate into the encoding of the whole file.
+    uint256 constant ABXFS_SCRIPT_SLICE_BYTES = 24_576; // 3 * 8192
 
     function _onlyNonZeroAddress(address address_) internal pure {
         require(address_ != address(0), "Must input non-zero address");
@@ -222,152 +237,17 @@ contract DependencyRegistryV0 is
 
         require(
             dependency.additionalCDNCount == 0 &&
-                dependency.additionalRepositoryCount == 0 &&
-                dependency.scriptCount == 0,
-            "Cannot remove dependency with additional CDNs, repositories, or scripts"
+                dependency.additionalRepositoryCount == 0,
+            "Cannot remove dependency with additional CDNs or repositories"
         );
 
         ds.dependencyNameVersionIds.remove(dependencyNameAndVersion);
         // @dev all of the arrays in the dependency struct are required to be empty
-        // before this function can be called, so we don't need to delete them here
+        // before this function can be called, so we don't need to delete them here.
+        // Deleting the record also clears its ABX FS file.
         delete ds.dependencyRecords[dependencyNameAndVersion];
 
         emit DependencyRemoved(dependencyNameAndVersion);
-    }
-
-    /**
-     * @notice Adds a script to dependency `dependencyNameAndVersion`, by way of
-     *         providing a string to write to bytecode storage.
-     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
-     * @param script Script to be added. Required to be a non-empty string,
-     *                but no further validation is performed.
-     */
-    function addDependencyScript(
-        bytes32 dependencyNameAndVersion,
-        string memory script
-    ) external {
-        _onlyAdminACL(this.addDependencyScript.selector);
-        _onlyNonEmptyString(script);
-        _onlyExistingDependency(dependencyNameAndVersion);
-
-        DependencyRegistryStorageLib.Dependency
-            storage dependency = DependencyRegistryStorageLib
-                .s()
-                .dependencyRecords[dependencyNameAndVersion];
-        // store script in contract bytecode
-        dependency.scriptBytecodeAddresses[dependency.scriptCount] = script
-            .writeToBytecode();
-        dependency.scriptCount = dependency.scriptCount + 1;
-
-        emit DependencyScriptUpdated(dependencyNameAndVersion);
-    }
-
-    /**
-     * @notice Updates script for dependencyType `dependencyNameAndVersion` at script `index`,
-     *         by way of providing a string to write to bytecode storage.
-     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
-     * @param index The index of a given script, relative to the overall `scriptCount`.
-     * @param script The updated script value. Required to be a non-empty
-     *                string, but no further validation is performed.
-     */
-    function updateDependencyScript(
-        bytes32 dependencyNameAndVersion,
-        uint256 index,
-        string memory script
-    ) external {
-        _onlyAdminACL(this.updateDependencyScript.selector);
-        _onlyNonEmptyString(script);
-        _onlyExistingDependency(dependencyNameAndVersion);
-
-        DependencyRegistryStorageLib.Dependency
-            storage dependency = DependencyRegistryStorageLib
-                .s()
-                .dependencyRecords[dependencyNameAndVersion];
-        _onlyInRangeIndex({index: index, length: dependency.scriptCount});
-        // store script in contract bytecode, replacing reference address from
-        // the contract that no longer exists with the newly created one
-        dependency.scriptBytecodeAddresses[index] = script.writeToBytecode();
-
-        emit DependencyScriptUpdated(dependencyNameAndVersion);
-    }
-
-    /**
-     * @notice Adds a script to dependency `dependencyNameAndVersion`, by way of
-     *         providing an already written chunk of bytecode storage.
-     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
-     * @param scriptPointer Address of script to be added. Required to be a non-zero address,
-     *                       but no further validation is performed.
-     */
-    function addDependencyScriptPointer(
-        bytes32 dependencyNameAndVersion,
-        address scriptPointer
-    ) external {
-        _onlyAdminACL(this.addDependencyScriptPointer.selector);
-        _onlyNonZeroAddress(scriptPointer);
-        _onlyExistingDependency(dependencyNameAndVersion);
-
-        DependencyRegistryStorageLib.Dependency
-            storage dependency = DependencyRegistryStorageLib
-                .s()
-                .dependencyRecords[dependencyNameAndVersion];
-        // store script in contract bytecode
-        dependency.scriptBytecodeAddresses[
-            dependency.scriptCount
-        ] = scriptPointer;
-        dependency.scriptCount = dependency.scriptCount + 1;
-
-        emit DependencyScriptUpdated(dependencyNameAndVersion);
-    }
-
-    /**
-     * @notice Updates script for dependency id `dependencyNameAndVersion` at script `index`,
-     *         by way of providing an already written chunk of bytecode storage.
-     * @param dependencyNameAndVersion Name of dependency (i.e. "name@version") used to identify dependency.
-     * @param index The index of a given script, relative to the overall `scriptCount`.
-     * @param scriptPointer The updated script pointer (address of bytecode storage).
-     *                       Required to be a non-zero address, but no further validation is performed.
-     */
-    function updateDependencyScriptPointer(
-        bytes32 dependencyNameAndVersion,
-        uint256 index,
-        address scriptPointer
-    ) external {
-        _onlyAdminACL(this.updateDependencyScriptPointer.selector);
-        _onlyNonZeroAddress(scriptPointer);
-        _onlyExistingDependency(dependencyNameAndVersion);
-
-        DependencyRegistryStorageLib.Dependency
-            storage dependency = DependencyRegistryStorageLib
-                .s()
-                .dependencyRecords[dependencyNameAndVersion];
-        _onlyInRangeIndex({index: index, length: dependency.scriptCount});
-        dependency.scriptBytecodeAddresses[index] = scriptPointer;
-
-        emit DependencyScriptUpdated(dependencyNameAndVersion);
-    }
-
-    /**
-     * @notice Removes last script from dependency `dependencyNameAndVersion`.
-     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
-     */
-    function removeDependencyLastScript(
-        bytes32 dependencyNameAndVersion
-    ) external {
-        _onlyAdminACL(this.removeDependencyLastScript.selector);
-        _onlyExistingDependency(dependencyNameAndVersion);
-
-        DependencyRegistryStorageLib.Dependency
-            storage dependency = DependencyRegistryStorageLib
-                .s()
-                .dependencyRecords[dependencyNameAndVersion];
-        require(dependency.scriptCount > 0, "there are no scripts to remove");
-        // delete reference to old storage contract address
-        delete dependency.scriptBytecodeAddresses[dependency.scriptCount - 1];
-        unchecked {
-            dependency.scriptCount = dependency.scriptCount - 1;
-        }
-
-        emit DependencyScriptUpdated(dependencyNameAndVersion);
     }
 
     /**
@@ -532,14 +412,12 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Updates the ABX FS file holding the script for dependency `dependencyNameAndVersion`.
-     * @dev The file must be a gzip-codec ABX FS file whose decoded content is the dependency's
-     * script. The generator reads it only when the dependency has no scripts stored in this
-     * registry, so registry-stored scripts always take precedence. This registry does not read
-     * ABX FS, so the CID is not validated here: verify it on each network before setting it (a
-     * CID that is not a gzip file on that network makes the generator revert for the dependency).
-     * CIDs are content-derived and canonical, so one value is valid on every chain the file has
-     * been uploaded to. Set to zero to clear.
+     * @notice Updates the ABX FS file holding the script for dependency
+     * `dependencyNameAndVersion`, which puts the dependency on chain. Set to zero to take it off
+     * chain.
+     * @dev A non-zero CID must be a gzip-codec file on this chain's ABX FS, whose decoded
+     * content is the dependency's script. CIDs are content-derived, so one value is valid on
+     * every chain the file has been uploaded to; this check confirms it is on this one.
      * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
      * @param abxfsFileCid ABX FS file CID, or zero to clear.
      */
@@ -549,6 +427,19 @@ contract DependencyRegistryV0 is
     ) external {
         _onlyAdminACL(this.updateDependencyAbxfsFileCid.selector);
         _onlyExistingDependency(dependencyNameAndVersion);
+        if (abxfsFileCid != bytes32(0)) {
+            require(
+                ABXFS_FILE_STORE.fileExists(abxfsFileCid),
+                "ABX FS file not found"
+            );
+            IAbxfsFileStore.FileInfo memory info = ABXFS_FILE_STORE.getFileInfo(
+                abxfsFileCid
+            );
+            require(
+                info.codec == ABXFS_GZIP_CODEC && info.size != 0,
+                "ABX FS file must be gzip"
+            );
+        }
 
         DependencyRegistryStorageLib
             .s()
@@ -1131,8 +1022,8 @@ contract DependencyRegistryV0 is
      * @return preferredRepository Preferred repository URL for dependency
      * @return additionalRepositoryCount Count of additional repository URLs for dependency
      * @return dependencyWebsite Project website URL for dependency
-     * @return availableOnChain Whether dependency is available on chain
-     * @return scriptCount Count of on-chain scripts for dependency
+     * @return availableOnChain Whether dependency is on chain (has an ABX FS file)
+     * @return scriptCount Number of slices `getDependencyScript` serves for the ABX FS file
      */
     function getDependencyDetailsFromString(
         string memory dependencyNameAndVersion
@@ -1318,22 +1209,9 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Returns the count of scripts for dependency `dependencyNameAndVersion`.
-     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
-     */
-    function getDependencyScriptCount(
-        bytes32 dependencyNameAndVersion
-    ) external view returns (uint256) {
-        return
-            DependencyRegistryStorageLib
-                .s()
-                .dependencyRecords[dependencyNameAndVersion]
-                .scriptCount;
-    }
-
-    /**
      * @notice Returns the CID of the gzip-codec ABX FS file holding the script for dependency
-     * `dependencyNameAndVersion`, or zero if none is set.
+     * `dependencyNameAndVersion`, or zero if none is set. A dependency is on chain if and only
+     * if this is non-zero.
      * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
      */
     function getDependencyAbxfsFileCid(
@@ -1347,78 +1225,60 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Returns address with bytecode containing script for
-     *         dependency `_dependencyTypes` at script index `index`.
+     * @notice Returns the number of slices `getDependencyScript` serves for dependency
+     * `dependencyNameAndVersion`'s ABX FS file, or zero if it has none.
      * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
-     * @param index The index of a given script, relative to the overall `scriptCount`.
-     * @return The address of the bytecode storage for the script at the given index, if it can be determined.
      */
-    function getDependencyScriptBytecodeAddress(
-        bytes32 dependencyNameAndVersion,
-        uint256 index
-    ) external view returns (address) {
-        DependencyRegistryStorageLib.Dependency
-            storage dependency = DependencyRegistryStorageLib
-                .s()
-                .dependencyRecords[dependencyNameAndVersion];
-        _onlyInRangeIndex({index: index, length: dependency.scriptCount});
-        return dependency.scriptBytecodeAddresses[index];
+    function getDependencyScriptCount(
+        bytes32 dependencyNameAndVersion
+    ) public view returns (uint256) {
+        bytes32 abxfsFileCid = DependencyRegistryStorageLib
+            .s()
+            .dependencyRecords[dependencyNameAndVersion]
+            .abxfsFileCid;
+        if (abxfsFileCid == bytes32(0)) {
+            return 0;
+        }
+        uint256 size = ABXFS_FILE_STORE.getFileInfo(abxfsFileCid).size;
+        return (size + ABXFS_SCRIPT_SLICE_BYTES - 1) / ABXFS_SCRIPT_SLICE_BYTES;
     }
 
     /**
-     * @notice Returns the storage library version for
-     *         dependency `_dependencyTypes` at script index `index`.
+     * @notice Returns slice `index` of dependency `dependencyNameAndVersion`'s ABX FS file: the
+     * base64 encoding of its gzip bytes `[index * 24576, min(size, (index + 1) * 24576))`.
+     * The slices concatenated in order are the base64 encoding of the whole gzip file, the form
+     * a `data:text/javascript;base64,` URI with a gzip script type expects.
+     * @dev Serves consumers that read dependency scripts in indexed pieces. Contracts that want
+     * the whole file in one call can read it from ABX FS by `getDependencyAbxfsFileCid`.
      * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
-     * @param index The index of a given script, relative to the overall `scriptCount`.
-     * @return The storage library version for the script at the given index, if it can be determined.
-     * @dev Note that we only expect this to be determinable if the script was written using a version
-     *      of the Art Blocks `BytecodeStorage` library, and in other cases the fallback will be the
-     *      unknown version string, as defined by the `BytecodeStorage` UNKNOWN_VERSION_STRING – this
-     *      is inclusive of the in the case of `SSTORE2` written data blobs, which are an unknown version
-     *      that can be fallback-read optimistically.
-     */
-    function getDependencyScriptBytecodeStorageVersion(
-        bytes32 dependencyNameAndVersion,
-        uint256 index
-    ) external view returns (bytes32) {
-        DependencyRegistryStorageLib.Dependency
-            storage dependency = DependencyRegistryStorageLib
-                .s()
-                .dependencyRecords[dependencyNameAndVersion];
-        _onlyInRangeIndex({index: index, length: dependency.scriptCount});
-        return
-            _getActiveBytecodeStorageReaderContract()
-                .getLibraryVersionForBytecode(
-                    dependency.scriptBytecodeAddresses[index]
-                );
-    }
-
-    /**
-     * @notice Returns script for dependency `dependencyNameAndVersion` at script index `index`.
-     * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
-     * @param index The index of a given script, relative to the overall `scriptCount`.
-     * @return A string containing the script content at the given script chunk index for a given dependency.
-     * @dev This method attempts to introspectively determine which library version of
-     *      `BytecodeStorage` was used to write the stored script string that is being
-     *      read back, in order to use the proper read approach. If the version is
-     *      non-determinate, a fall-back to reading using the assumption that the bytes
-     *      were written with `SSTORE2` is used.
-     *      Also note that in this `SSTORE2` fallback handling, the approach of casting bytes to string
-     *      can cause failure (e.g. unexpected continuation byte).
+     * @param index Index of the slice, less than `getDependencyScriptCount`.
+     * @return The base64-encoded slice.
      */
     function getDependencyScript(
         bytes32 dependencyNameAndVersion,
         uint256 index
     ) external view returns (string memory) {
-        DependencyRegistryStorageLib.Dependency
-            storage dependency = DependencyRegistryStorageLib
-                .s()
-                .dependencyRecords[dependencyNameAndVersion];
-        _onlyInRangeIndex({index: index, length: dependency.scriptCount});
-
-        address scriptAddress = dependency.scriptBytecodeAddresses[index];
-
-        return _readFromBytecodeWithSSTORE2Fallback(scriptAddress);
+        bytes32 abxfsFileCid = DependencyRegistryStorageLib
+            .s()
+            .dependencyRecords[dependencyNameAndVersion]
+            .abxfsFileCid;
+        uint256 size = abxfsFileCid == bytes32(0)
+            ? 0
+            : ABXFS_FILE_STORE.getFileInfo(abxfsFileCid).size;
+        _onlyInRangeIndex({
+            index: index,
+            length: (size + ABXFS_SCRIPT_SLICE_BYTES - 1) /
+                ABXFS_SCRIPT_SLICE_BYTES
+        });
+        uint256 start = index * ABXFS_SCRIPT_SLICE_BYTES;
+        uint256 end = start + ABXFS_SCRIPT_SLICE_BYTES;
+        if (end > size) {
+            end = size;
+        }
+        return
+            Base64.encode(
+                _readAbxfsFileRange(abxfsFileCid, start, end - start)
+            );
     }
 
     /**
@@ -1539,21 +1399,21 @@ contract DependencyRegistryV0 is
                 preferredRepository: dependency.preferredRepository,
                 additionalRepositoryCount: dependency.additionalRepositoryCount,
                 dependencyWebsite: dependency.website,
-                availableOnChain: dependency.scriptCount > 0,
-                scriptCount: dependency.scriptCount,
+                availableOnChain: dependency.abxfsFileCid != bytes32(0),
+                abxfsFileCid: dependency.abxfsFileCid,
                 loadAsModule: dependency.loadAsModule,
                 canvasTagType: dependency.canvasTagType,
                 projectScriptTagType: dependency.projectScriptTagType,
-                projectScriptSpecialType: dependency.projectScriptSpecialType,
-                abxfsFileCid: dependency.abxfsFileCid
+                projectScriptSpecialType: dependency.projectScriptSpecialType
             });
     }
 
     /**
-     * @notice Returns details for a given dependency type `dependencyNameAndVersion`.
-     * @dev Superseded by `getDependencyDetailsV2`, which additionally returns the fields
-     * prescribing how the generator renders projects using this dependency. Retained with an
-     * unchanged signature so that existing off-chain consumers continue to decode correctly.
+     * @notice Returns details for a given dependency type `dependencyNameAndVersion`, as a
+     * tuple.
+     * @dev `getDependencyDetailsV2` returns every field. This tuple form keeps its signature for
+     * deployed consumers that decode it; `availableOnChain` is whether the dependency has an ABX
+     * FS file, and `scriptCount` is `getDependencyScriptCount`.
      * @param dependencyNameAndVersion Name and version of dependency (i.e. "name@version") used to identify dependency.
      * @return nameAndVersion String representation of `dependencyNameAndVersion`.
      *                        (e.g. "p5js(atSymbol)1.0.0")
@@ -1563,8 +1423,8 @@ contract DependencyRegistryV0 is
      * @return preferredRepository Preferred repository URL for dependency
      * @return additionalRepositoryCount Count of additional repository URLs for dependency
      * @return dependencyWebsite Project website URL for dependency
-     * @return availableOnChain Whether dependency is available on chain
-     * @return scriptCount Count of on-chain scripts for dependency
+     * @return availableOnChain Whether dependency is on chain (has an ABX FS file)
+     * @return scriptCount Number of slices `getDependencyScript` serves for the ABX FS file
      */
     function getDependencyDetails(
         bytes32 dependencyNameAndVersion
@@ -1583,20 +1443,20 @@ contract DependencyRegistryV0 is
             uint24 scriptCount
         )
     {
+        // @dev a uint24 slice count covers files up to ~412 GB, far beyond any ABX FS file
+        scriptCount = uint24(
+            getDependencyScriptCount(dependencyNameAndVersion)
+        );
         IDependencyRegistryV0.DependencyDetails
             memory details = getDependencyDetailsV2(dependencyNameAndVersion);
-
-        return (
-            details.nameAndVersion,
-            details.licenseType,
-            details.preferredCDN,
-            details.additionalCDNCount,
-            details.preferredRepository,
-            details.additionalRepositoryCount,
-            details.dependencyWebsite,
-            details.availableOnChain,
-            details.scriptCount
-        );
+        nameAndVersion = details.nameAndVersion;
+        licenseType = details.licenseType;
+        preferredCDN = details.preferredCDN;
+        additionalCDNCount = details.additionalCDNCount;
+        preferredRepository = details.preferredRepository;
+        additionalRepositoryCount = details.additionalRepositoryCount;
+        dependencyWebsite = details.dependencyWebsite;
+        availableOnChain = details.availableOnChain;
     }
 
     /**
@@ -1636,6 +1496,76 @@ contract DependencyRegistryV0 is
         DependencyRegistryStorageLib.s().adminACLContract = IAdminACLV0(
             newOwner
         );
+    }
+
+    /**
+     * @notice Reads bytes `[start, start + length)` of ABX FS file `abxfsFileCid`'s stored data
+     * (its gzip bytes), reading only the chunks the range covers.
+     * @dev ChunkStore checks each chunk against its content hash on read. `length` must be
+     * non-zero and the range within the file.
+     */
+    function _readAbxfsFileRange(
+        bytes32 abxfsFileCid,
+        uint256 start,
+        uint256 length
+    ) internal view returns (bytes memory data) {
+        data = new bytes(length);
+        (uint256 chunkIndex, uint256 chunkStart, , ) = ABXFS_FILE_STORE
+            .locateByte(abxfsFileCid, start);
+        uint256 offsetInChunk = start - chunkStart;
+        uint256 written;
+        while (written < length) {
+            bytes memory chunk = ABXFS_FILE_STORE.readChunk(
+                abxfsFileCid,
+                chunkIndex
+            );
+            uint256 count = chunk.length - offsetInChunk;
+            if (count > length - written) {
+                count = length - written;
+            }
+            _copyBytes(data, written, chunk, offsetInChunk, count);
+            written += count;
+            offsetInChunk = 0;
+            ++chunkIndex;
+        }
+    }
+
+    /**
+     * @notice Copies `length` bytes of `src` from `srcOffset` into `dest` at `destOffset`.
+     * @dev Word copy with a masked final word, which leaves the bytes after the copied range
+     * untouched (the EVM target has no MCOPY).
+     */
+    function _copyBytes(
+        bytes memory dest,
+        uint256 destOffset,
+        bytes memory src,
+        uint256 srcOffset,
+        uint256 length
+    ) internal pure {
+        assembly ("memory-safe") {
+            let d := add(add(dest, 0x20), destOffset)
+            let s := add(add(src, 0x20), srcOffset)
+            let full := and(length, not(0x1f))
+            for {
+                let i := 0
+            } lt(i, full) {
+                i := add(i, 0x20)
+            } {
+                mstore(add(d, i), mload(add(s, i)))
+            }
+            if lt(full, length) {
+                // keep the trailing (32 - remaining) bytes of the destination word
+                let keep := sub(shl(mul(sub(0x20, sub(length, full)), 8), 1), 1)
+                let dp := add(d, full)
+                mstore(
+                    dp,
+                    or(
+                        and(mload(add(s, full)), not(keep)),
+                        and(mload(dp), keep)
+                    )
+                )
+            }
+        }
     }
 
     /**

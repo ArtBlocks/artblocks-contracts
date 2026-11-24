@@ -11,8 +11,6 @@ import {
   DependencyRegistryV0,
   GenArt721CoreV1,
   GenArt721CoreV3,
-  BytecodeV1TextCR_DMock,
-  SSTORE2Mock,
 } from "../../scripts/contracts";
 
 import {
@@ -20,10 +18,17 @@ import {
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
-  deployWithStorageLibraryAndGet,
   deployCoreWithMinterFilter,
 } from "../util/common";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import {
+  BR_CODEC,
+  GZIP_CODEC,
+  NO_CODEC,
+  abxfsCid,
+  installAbxfsFileStoreMock,
+  setGzipFile,
+} from "../util/abxfs";
+import { randomBytes } from "crypto";
 
 const ONLY_ADMIN_ACL_ERROR = "Only Admin ACL allowed";
 const ONLY_EXISTING_DEPENDENCY_TYPE_ERROR = "Dependency does not exist";
@@ -47,10 +52,16 @@ const PROJECT_SCRIPT_TAG_TYPE = {
   RawHtml: 3,
 } as const;
 
-// arbitrary ABX FS file CID (CIDs are opaque bytes32 values to the registry)
-const ABXFS_FILE_CID = ethers.utils.keccak256(
-  ethers.utils.toUtf8Bytes("abxfs file")
-);
+// ABX FS file CIDs, stored in the mock FileStore placed at the canonical address
+const ABXFS_FILE_CID = abxfsCid("abxfs gzip file");
+const ABXFS_MISSING_CID = abxfsCid("not on this chain");
+const ABXFS_RAW_CID = abxfsCid("abxfs file without codec");
+const ABXFS_BROTLI_CID = abxfsCid("abxfs brotli file");
+const ABXFS_EMPTY_GZIP_CID = abxfsCid("abxfs empty gzip file");
+const ABXFS_FILE_NOT_FOUND_ERROR = "ABX FS file not found";
+const ABXFS_FILE_NOT_GZIP_ERROR = "ABX FS file must be gzip";
+// size of the ABX FS file slices getDependencyScript serves
+const SCRIPT_SLICE_BYTES = 24_576;
 
 interface DependencyRegistryV0TestContext extends Mocha.Context {
   dependencyRegistry: DependencyRegistryV0;
@@ -74,42 +85,6 @@ describe(`DependencyRegistryV0`, async function () {
     "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/p5.min.js";
   const preferredRepository = "https://github.com/processing/p5.js";
   const dependencyWebsite = "https://p5js.org/";
-
-  // Helper that retrieves writes content to blockchain bytecode storage using SSTORE2,
-  // and returns the address of that content.
-  async function writeContentWithSSTORE2(
-    content: string,
-    sstore2Mock: Contract,
-    writer: SignerWithAddress
-  ) {
-    // write
-    await sstore2Mock.connect(writer).createText(content);
-
-    const nextTextSlotId = await sstore2Mock.nextTextSlotId();
-    // decrement from `nextTextSlotId` to get last updated slot
-    const textSlotId = nextTextSlotId - 1;
-    const textBytecodeAddress =
-      await sstore2Mock.storedTextBytecodeAddresses(textSlotId);
-    return textBytecodeAddress;
-  }
-
-  // Helper that retrieves the address of the most recently deployed contract
-  // containing bytecode for storage, from the V0 ByteCode storage library.
-  async function writeContentWithBytecodeStorageV1(
-    content: string,
-    bytecodeV1TextCR_DMock: Contract,
-    writer: SignerWithAddress
-  ) {
-    // write
-    await bytecodeV1TextCR_DMock.connect(writer).createText(content);
-
-    const nextTextSlotId = await bytecodeV1TextCR_DMock.nextTextSlotId();
-    // decrement from `nextTextSlotId` to get last updated slot
-    const textSlotId = nextTextSlotId - 1;
-    const textBytecodeAddress =
-      await bytecodeV1TextCR_DMock.storedTextBytecodeAddresses(textSlotId);
-    return textBytecodeAddress;
-  }
 
   async function _beforeEach() {
     let config: T_Config = {
@@ -198,18 +173,26 @@ describe(`DependencyRegistryV0`, async function () {
       .connect(config.accounts.artist)
       .updatePricePerTokenInWei(config.projectZero, 0);
 
-    // set up library mocks
-    // deploy the V1 library mock
-    config.bytecodeV1TextCR_DMock = await deployWithStorageLibraryAndGet(
-      config,
-      "BytecodeV1TextCR_DMock",
-      [] // no deployment args
+    // place a mock ABX FS FileStore at the canonical address, holding a gzip file split at
+    // uneven chunk boundaries, and files the registry must refuse
+    config.abxfsFileStore = await installAbxfsFileStoreMock();
+    config.abxfsGzip = await setGzipFile(
+      config.abxfsFileStore,
+      ABXFS_FILE_CID,
+      "abxfs dependency script",
+      [7, 1, 3]
     );
-    // deploy the SSTORE2 library mock
-    config.sstore2Mock = await deployAndGet(
-      config,
-      "SSTORE2Mock",
-      [] // no deployment args
+    await config.abxfsFileStore.setFile(ABXFS_RAW_CID, NO_CODEC, 3, [
+      "0x010203",
+    ]);
+    await config.abxfsFileStore.setFile(ABXFS_BROTLI_CID, BR_CODEC, 3, [
+      "0x010203",
+    ]);
+    await config.abxfsFileStore.setFile(
+      ABXFS_EMPTY_GZIP_CID,
+      GZIP_CODEC,
+      0,
+      []
     );
 
     // add MIT license type
@@ -431,10 +414,10 @@ describe(`DependencyRegistryV0`, async function () {
         );
       });
 
-      it("does not allow removal of a dependency with additional CDNs, repositories, or scripts", async function () {
+      it("does not allow removal of a dependency with additional CDNs or repositories", async function () {
         const config = await loadFixture(_beforeEach);
         const noAssociatedDataError =
-          "Cannot remove dependency with additional CDNs, repositories, or scripts";
+          "Cannot remove dependency with additional CDNs or repositories";
 
         // Add dependency
         await config.dependencyRegistry
@@ -485,24 +468,11 @@ describe(`DependencyRegistryV0`, async function () {
           0
         );
 
-        // Cannot remove with scripts
-        await config.dependencyRegistry.addDependencyScript(
+        // An ABX FS file does not block removal: removing the record clears it
+        await config.dependencyRegistry.updateDependencyAbxfsFileCid(
           dependencyNameAndVersionBytes,
-          "on-chain script"
+          ABXFS_FILE_CID
         );
-
-        await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.deployer)
-            .removeDependency(dependencyNameAndVersionBytes),
-          noAssociatedDataError
-        );
-
-        // Remove scripts
-        await config.dependencyRegistry.removeDependencyLastScript(
-          dependencyNameAndVersionBytes
-        );
-
         await config.dependencyRegistry.removeDependency(
           dependencyNameAndVersionBytes
         );
@@ -1024,9 +994,37 @@ describe(`DependencyRegistryV0`, async function () {
             )
           ).to.eq(constants.ZERO_BYTES32);
         });
-        // @dev availableOnChain keeps its meaning (scripts stored in this registry), so legacy
-        // consumers that read scripts by scriptCount are not told scripts exist when none do
-        it("does not change availableOnChain or scriptCount", async function () {
+        it("does not allow a CID that is not a file on this chain's ABX FS", async function () {
+          const config = this.config;
+          await expectRevert(
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
+              .updateDependencyAbxfsFileCid(
+                dependencyNameAndVersionBytes,
+                ABXFS_MISSING_CID
+              ),
+            ABXFS_FILE_NOT_FOUND_ERROR
+          );
+        });
+        it("does not allow a file that is not gzip", async function () {
+          const config = this.config;
+          for (const cid of [
+            ABXFS_RAW_CID,
+            ABXFS_BROTLI_CID,
+            ABXFS_EMPTY_GZIP_CID,
+          ]) {
+            await expectRevert(
+              config.dependencyRegistry
+                .connect(config.accounts.deployer)
+                .updateDependencyAbxfsFileCid(
+                  dependencyNameAndVersionBytes,
+                  cid
+                ),
+              ABXFS_FILE_NOT_GZIP_ERROR
+            );
+          }
+        });
+        it("puts the dependency on chain, and clearing it takes it off", async function () {
           const config = this.config;
           await config.dependencyRegistry
             .connect(config.accounts.deployer)
@@ -1034,12 +1032,37 @@ describe(`DependencyRegistryV0`, async function () {
               dependencyNameAndVersionBytes,
               ABXFS_FILE_CID
             );
-          const dependencyDetails =
-            await config.dependencyRegistry.getDependencyDetailsV2(
-              dependencyNameAndVersionBytes
+          expect(
+            (
+              await config.dependencyRegistry.getDependencyDetailsV2(
+                dependencyNameAndVersionBytes
+              )
+            ).availableOnChain
+          ).to.eq(true);
+          const tuple = await config.dependencyRegistry.getDependencyDetails(
+            dependencyNameAndVersionBytes
+          );
+          expect(tuple.availableOnChain).to.eq(true);
+          expect(tuple.scriptCount).to.eq(1);
+
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyAbxfsFileCid(
+              dependencyNameAndVersionBytes,
+              constants.ZERO_BYTES32
             );
-          expect(dependencyDetails.availableOnChain).to.eq(false);
-          expect(dependencyDetails.scriptCount).to.eq(0);
+          expect(
+            (
+              await config.dependencyRegistry.getDependencyDetailsV2(
+                dependencyNameAndVersionBytes
+              )
+            ).availableOnChain
+          ).to.eq(false);
+          const cleared = await config.dependencyRegistry.getDependencyDetails(
+            dependencyNameAndVersionBytes
+          );
+          expect(cleared.availableOnChain).to.eq(false);
+          expect(cleared.scriptCount).to.eq(0);
         });
       });
       describe("updateDependencyProjectScriptTagType", function () {
@@ -1233,7 +1256,7 @@ describe(`DependencyRegistryV0`, async function () {
       });
     });
   });
-  describe("dependency scripts", function () {
+  describe("ABX FS dependency scripts", function () {
     beforeEach(async function () {
       const config = await loadFixture(_beforeEach);
       await config.dependencyRegistry
@@ -1249,147 +1272,47 @@ describe(`DependencyRegistryV0`, async function () {
       this.config = config;
     });
 
-    describe("addDependencyScript", function () {
-      it("does not allow non-admins to add a script", async function () {
-        // get config from beforeEach
+    // a gzip file spanning two slices, its chunk boundaries uneven and not aligned to them
+    // (incompressible content, so the gzip is a little larger than its input)
+    async function setLargeGzipFile(config: T_Config) {
+      const cid = abxfsCid("abxfs large gzip file");
+      const gzip = await setGzipFile(
+        config.abxfsFileStore,
+        cid,
+        randomBytes(25_000),
+        [33, 1, 32, 24_480, 31]
+      );
+      await config.dependencyRegistry
+        .connect(config.accounts.deployer)
+        .updateDependencyAbxfsFileCid(dependencyNameAndVersionBytes, cid);
+      return gzip;
+    }
+
+    describe("getDependencyScriptCount", function () {
+      it("is zero without an ABX FS file", async function () {
         const config = this.config;
-        await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.user)
-            .addDependencyScript(
-              dependencyNameAndVersionBytes,
-              "on-chain script"
-            ),
-          ONLY_ADMIN_ACL_ERROR
-        );
-      });
-
-      it("does not allow adding a script to a dependency that does not exist", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.deployer)
-            .addDependencyScript(
-              ethers.utils.formatBytes32String("nonExistentDependencyType"),
-              "on-chain script"
-            ),
-          ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
-        );
-      });
-
-      it("does not allow adding an empty string as a script", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.deployer)
-            .addDependencyScript(dependencyNameAndVersionBytes, ""),
-          ONLY_NON_EMPTY_STRING_ERROR
-        );
-      });
-
-      it("allows admin to add a script", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        const script = "on-chain script";
-        await expect(
-          config.dependencyRegistry.addDependencyScript(
-            dependencyNameAndVersionBytes,
-            script
-          )
-        )
-          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
-          .withArgs(dependencyNameAndVersionBytes);
-
-        const dependencyDetails =
-          await config.dependencyRegistry.getDependencyDetails(
-            dependencyNameAndVersionBytes
-          );
-
-        expect(dependencyDetails.scriptCount).to.eq(1);
-
-        const scriptCount =
+        expect(
           await config.dependencyRegistry.getDependencyScriptCount(
             dependencyNameAndVersionBytes
-          );
-        expect(scriptCount).to.eq(1);
+          )
+        ).to.eq(0);
+      });
 
-        const storedScript =
-          await config.dependencyRegistry.getDependencyScript(
-            dependencyNameAndVersionBytes,
-            0
-          );
-        expect(storedScript).to.eq(script);
+      it("counts the file's slices", async function () {
+        const config = this.config;
+        const gzip = await setLargeGzipFile(config);
+        expect(gzip.length).to.be.gt(SCRIPT_SLICE_BYTES);
+        expect(
+          await config.dependencyRegistry.getDependencyScriptCount(
+            dependencyNameAndVersionBytes
+          )
+        ).to.eq(Math.ceil(gzip.length / SCRIPT_SLICE_BYTES));
       });
     });
 
-    describe("removeDependencyLastScript", function () {
-      it("does not allow non-admins to remove a script", async function () {
-        // get config from beforeEach
+    describe("getDependencyScript", function () {
+      it("reverts without an ABX FS file", async function () {
         const config = this.config;
-        await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.user)
-            .removeDependencyLastScript(dependencyNameAndVersionBytes),
-          ONLY_ADMIN_ACL_ERROR
-        );
-      });
-
-      it("does not allow removing a script from a dependency that does not exist", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.deployer)
-            .removeDependency(
-              ethers.utils.formatBytes32String("nonExistentDependencyType")
-            ),
-          ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
-        );
-      });
-
-      it("does not allow removing the last script if non-existent", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.deployer)
-            .removeDependencyLastScript(dependencyNameAndVersionBytes),
-          "there are no scripts to remove"
-        );
-      });
-
-      it("allows admin to remove last script", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        const script = "on-chain script";
-
-        await config.dependencyRegistry
-          .connect(config.accounts.deployer)
-          .addDependencyScript(dependencyNameAndVersionBytes, script);
-
-        await expect(
-          config.dependencyRegistry
-            .connect(config.accounts.deployer)
-            .removeDependencyLastScript(dependencyNameAndVersionBytes)
-        )
-          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
-          .withArgs(dependencyNameAndVersionBytes);
-
-        const dependencyDetails =
-          await config.dependencyRegistry.getDependencyDetails(
-            dependencyNameAndVersionBytes
-          );
-
-        expect(dependencyDetails.scriptCount).to.eq(0);
-
-        const scriptCount =
-          await config.dependencyRegistry.getDependencyScriptCount(
-            dependencyNameAndVersionBytes
-          );
-        expect(scriptCount).to.eq(0);
-
         await expectRevert(
           config.dependencyRegistry.getDependencyScript(
             dependencyNameAndVersionBytes,
@@ -1398,462 +1321,103 @@ describe(`DependencyRegistryV0`, async function () {
           INDEX_OUT_OF_RANGE_ERROR
         );
       });
-    });
 
-    describe("updateDependencyScript", function () {
-      it("does not allow non-admins to update a script", async function () {
-        // get config from beforeEach
+      it("serves a single-slice file as the base64 of its gzip", async function () {
         const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .updateDependencyAbxfsFileCid(
+            dependencyNameAndVersionBytes,
+            ABXFS_FILE_CID
+          );
+        expect(
+          await config.dependencyRegistry.getDependencyScript(
+            dependencyNameAndVersionBytes,
+            0
+          )
+        ).to.eq(config.abxfsGzip.toString("base64"));
         await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.user)
-            .updateDependencyScript(
-              dependencyNameAndVersionBytes,
-              0,
-              "on-chain script"
-            ),
-          ONLY_ADMIN_ACL_ERROR
-        );
-      });
-
-      it("does not allow updating a script for a dependency that does not exist", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.deployer)
-            .updateDependencyScript(
-              ethers.utils.formatBytes32String("nonExistentDependencyType"),
-              0,
-              "on-chain script"
-            ),
-          ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
-        );
-      });
-
-      it("does not allow updating a script that does not exist", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.deployer)
-            .updateDependencyScript(
-              dependencyNameAndVersionBytes,
-              0,
-              "on-chain script"
-            ),
+          config.dependencyRegistry.getDependencyScript(
+            dependencyNameAndVersionBytes,
+            1
+          ),
           INDEX_OUT_OF_RANGE_ERROR
         );
       });
 
-      it("does not allow updating an empty string as a script", async function () {
-        // get config from beforeEach
+      it("serves slices that concatenate into the base64 of the whole gzip", async function () {
         const config = this.config;
-        const script = "on-chain script";
-
-        await config.dependencyRegistry
-          .connect(config.accounts.deployer)
-          .addDependencyScript(dependencyNameAndVersionBytes, script);
-
-        await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.deployer)
-            .updateDependencyScript(dependencyNameAndVersionBytes, 0, ""),
-          ONLY_NON_EMPTY_STRING_ERROR
-        );
-      });
-
-      it("allows admin to update a script", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        const script = "on-chain script";
-
-        await config.dependencyRegistry
-          .connect(config.accounts.deployer)
-          .addDependencyScript(dependencyNameAndVersionBytes, script);
-
-        const updatedScript = "updated on-chain script";
-
-        await expect(
-          config.dependencyRegistry
-            .connect(config.accounts.deployer)
-            .updateDependencyScript(
+        const gzip = await setLargeGzipFile(config);
+        const count = (
+          await config.dependencyRegistry.getDependencyScriptCount(
+            dependencyNameAndVersionBytes
+          )
+        ).toNumber();
+        const slices: string[] = [];
+        for (let i = 0; i < count; i++) {
+          slices.push(
+            await config.dependencyRegistry.getDependencyScript(
               dependencyNameAndVersionBytes,
-              0,
-              updatedScript
+              i
             )
-        )
-          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
-          .withArgs(dependencyNameAndVersionBytes);
-
-        const dependencyDetails =
-          await config.dependencyRegistry.getDependencyDetails(
-            dependencyNameAndVersionBytes
           );
-
-        expect(dependencyDetails.scriptCount).to.eq(1);
-
-        const scriptCount =
-          await config.dependencyRegistry.getDependencyScriptCount(
-            dependencyNameAndVersionBytes
-          );
-        expect(scriptCount).to.eq(1);
-
-        const storedScript =
-          await config.dependencyRegistry.getDependencyScript(
-            dependencyNameAndVersionBytes,
-            0
-          );
-        expect(storedScript).to.eq(updatedScript);
-      });
-    });
-
-    describe("addDependencyScriptPointer", function () {
-      it("does not allow non-admins to add a script pointer", async function () {
-        // get config from beforeEach
-        const config = this.config;
-
-        const contentAddress = writeContentWithBytecodeStorageV1(
-          "on-chain script",
-          config.bytecodeV1TextCR_DMock,
-          config.accounts.deployer
-        );
-
-        await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.user)
-            .addDependencyScriptPointer(
-              dependencyNameAndVersionBytes,
-              contentAddress
-            ),
-          ONLY_ADMIN_ACL_ERROR
-        );
-      });
-
-      it("does not allow adding a script to a dependency that does not exist", async function () {
-        // get config from beforeEach
-        const config = this.config;
-
-        const contentAddress = writeContentWithBytecodeStorageV1(
-          "on-chain script",
-          config.bytecodeV1TextCR_DMock,
-          config.accounts.deployer
-        );
-
-        await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.deployer)
-            .addDependencyScriptPointer(
-              ethers.utils.formatBytes32String("nonExistentDependencyType"),
-              contentAddress
-            ),
-          ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
-        );
-      });
-
-      it("does not allow specifying zero address as script pointer", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.deployer)
-            .addDependencyScriptPointer(
-              dependencyNameAndVersionBytes,
-              constants.ZERO_ADDRESS
-            ),
-          ONLY_NON_ZERO_ADDRESS_ERROR
-        );
-      });
-
-      it("supports BytecodeStorageV1 reads/writes", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        const script = "on-chain script";
-        const contentAddress = writeContentWithBytecodeStorageV1(
-          script,
-          config.bytecodeV1TextCR_DMock,
-          config.accounts.deployer
-        );
-
-        await expect(
-          config.dependencyRegistry.addDependencyScriptPointer(
-            dependencyNameAndVersionBytes,
-            contentAddress
+        }
+        // every slice but the last encodes exactly SCRIPT_SLICE_BYTES bytes, with no padding
+        for (const slice of slices.slice(0, -1)) {
+          expect(slice.length).to.eq((SCRIPT_SLICE_BYTES / 3) * 4);
+        }
+        expect(slices.join("")).to.eq(gzip.toString("base64"));
+        expect(
+          Buffer.from(slices[1], "base64").equals(
+            gzip.subarray(SCRIPT_SLICE_BYTES, 2 * SCRIPT_SLICE_BYTES)
           )
-        )
-          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
-          .withArgs(dependencyNameAndVersionBytes);
-
-        const dependencyDetails =
-          await config.dependencyRegistry.getDependencyDetails(
-            dependencyNameAndVersionBytes
-          );
-
-        expect(dependencyDetails.scriptCount).to.eq(1);
-
-        const scriptCount =
-          await config.dependencyRegistry.getDependencyScriptCount(
-            dependencyNameAndVersionBytes
-          );
-        expect(scriptCount).to.eq(1);
-
-        const storedScript =
-          await config.dependencyRegistry.getDependencyScript(
-            dependencyNameAndVersionBytes,
-            0
-          );
-        expect(storedScript).to.eq(script);
-      });
-
-      it("supports SSTORE2 reads/writes", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        const script = "on-chain script";
-        const contentAddress = writeContentWithSSTORE2(
-          script,
-          config.sstore2Mock,
-          config.accounts.deployer
-        );
-
-        await expect(
-          config.dependencyRegistry.addDependencyScriptPointer(
-            dependencyNameAndVersionBytes,
-            contentAddress
-          )
-        )
-          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
-          .withArgs(dependencyNameAndVersionBytes);
-
-        const dependencyDetails =
-          await config.dependencyRegistry.getDependencyDetails(
-            dependencyNameAndVersionBytes
-          );
-
-        expect(dependencyDetails.scriptCount).to.eq(1);
-
-        const scriptCount =
-          await config.dependencyRegistry.getDependencyScriptCount(
-            dependencyNameAndVersionBytes
-          );
-        expect(scriptCount).to.eq(1);
-
-        const storedScript =
-          await config.dependencyRegistry.getDependencyScript(
-            dependencyNameAndVersionBytes,
-            0
-          );
-        expect(storedScript).to.eq(script);
-      });
-    });
-
-    describe("updateDependencyScriptPointer", function () {
-      it("does not allow non-admins to update a script pointer", async function () {
-        // get config from beforeEach
-        const config = this.config;
-
-        const contentAddress = writeContentWithBytecodeStorageV1(
-          "on-chain script",
-          config.bytecodeV1TextCR_DMock,
-          config.accounts.deployer
-        );
-
+        ).to.eq(true);
         await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.user)
-            .updateDependencyScriptPointer(
-              dependencyNameAndVersionBytes,
-              0,
-              contentAddress
-            ),
-          ONLY_ADMIN_ACL_ERROR
-        );
-      });
-
-      it("does not allow update a script for a dependency that does not exist", async function () {
-        // get config from beforeEach
-        const config = this.config;
-
-        const contentAddress = writeContentWithBytecodeStorageV1(
-          "on-chain script",
-          config.bytecodeV1TextCR_DMock,
-          config.accounts.deployer
-        );
-
-        await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.deployer)
-            .updateDependencyScriptPointer(
-              ethers.utils.formatBytes32String("nonExistentDependencyType"),
-              0,
-              contentAddress
-            ),
-          ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
-        );
-      });
-
-      it("does not allow updating a script that is out of range", async function () {
-        // get config from beforeEach
-        const config = this.config;
-
-        const contentAddress = writeContentWithBytecodeStorageV1(
-          "on-chain script",
-          config.bytecodeV1TextCR_DMock,
-          config.accounts.deployer
-        );
-
-        await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.deployer)
-            .updateDependencyScriptPointer(
-              dependencyNameAndVersionBytes,
-              0,
-              contentAddress
-            ),
+          config.dependencyRegistry.getDependencyScript(
+            dependencyNameAndVersionBytes,
+            count
+          ),
           INDEX_OUT_OF_RANGE_ERROR
         );
-      });
-
-      it("does not allow specifying zero address as script pointer", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.deployer)
-            .updateDependencyScriptPointer(
-              dependencyNameAndVersionBytes,
-              0,
-              constants.ZERO_ADDRESS
-            ),
-          ONLY_NON_ZERO_ADDRESS_ERROR
-        );
-      });
-
-      it("supports BytecodeStorageV1 reads/writes", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        const script = "on-chain script";
-        const contentAddress = writeContentWithBytecodeStorageV1(
-          script,
-          config.bytecodeV1TextCR_DMock,
-          config.accounts.deployer
-        );
-
-        // add modified script first, before then updating it
-        const garbledScript = script.split("").reverse().join("");
-        await config.dependencyRegistry
-          .connect(config.accounts.deployer)
-          .addDependencyScript(dependencyNameAndVersionBytes, garbledScript);
-
-        await expect(
-          config.dependencyRegistry.updateDependencyScriptPointer(
-            dependencyNameAndVersionBytes,
-            0,
-            contentAddress
-          )
-        )
-          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
-          .withArgs(dependencyNameAndVersionBytes);
-
-        const dependencyDetails =
-          await config.dependencyRegistry.getDependencyDetails(
-            dependencyNameAndVersionBytes
-          );
-
-        expect(dependencyDetails.scriptCount).to.eq(1);
-
-        const scriptCount =
-          await config.dependencyRegistry.getDependencyScriptCount(
-            dependencyNameAndVersionBytes
-          );
-        expect(scriptCount).to.eq(1);
-
-        const storedScript =
-          await config.dependencyRegistry.getDependencyScript(
-            dependencyNameAndVersionBytes,
-            0
-          );
-        expect(storedScript).to.eq(script);
-        expect(garbledScript).to.not.eq(script);
-      });
-
-      it("supports SSTORE2 reads/writes", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        const script = "on-chain script";
-        const contentAddress = writeContentWithSSTORE2(
-          script,
-          config.sstore2Mock,
-          config.accounts.deployer
-        );
-
-        // add modified script first, before then updating it
-        const garbledScript = script.split("").reverse().join("");
-        await config.dependencyRegistry
-          .connect(config.accounts.deployer)
-          .addDependencyScript(dependencyNameAndVersionBytes, garbledScript);
-
-        await expect(
-          config.dependencyRegistry.updateDependencyScriptPointer(
-            dependencyNameAndVersionBytes,
-            0,
-            contentAddress
-          )
-        )
-          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
-          .withArgs(dependencyNameAndVersionBytes);
-
-        const dependencyDetails =
-          await config.dependencyRegistry.getDependencyDetails(
-            dependencyNameAndVersionBytes
-          );
-
-        expect(dependencyDetails.scriptCount).to.eq(1);
-
-        const scriptCount =
-          await config.dependencyRegistry.getDependencyScriptCount(
-            dependencyNameAndVersionBytes
-          );
-        expect(scriptCount).to.eq(1);
-
-        const storedScript =
-          await config.dependencyRegistry.getDependencyScript(
-            dependencyNameAndVersionBytes,
-            0
-          );
-        expect(storedScript).to.eq(script);
-        expect(garbledScript).to.not.eq(script);
       });
     });
 
     describe("views", function () {
       it("getDependencyDetails", async function () {
-        // get config from beforeEach
         const config = this.config;
-        const script = "on-chain script";
-
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
-          .addDependencyScript(dependencyNameAndVersionBytes, script);
+          .updateDependencyAbxfsFileCid(
+            dependencyNameAndVersionBytes,
+            ABXFS_FILE_CID
+          );
 
         const dependencyDetails =
           await config.dependencyRegistry.getDependencyDetails(
             dependencyNameAndVersionBytes
           );
 
-        expect(dependencyDetails.scriptCount).to.eq(1);
-        expect(dependencyDetails.availableOnChain).to.eq(true);
+        expect(dependencyDetails).to.deep.eq([
+          dependencyNameAndVersion, // nameAndVersion
+          licenseType, // licenseType
+          preferredCDN, // preferredCDN
+          0, // additionalCDNCount
+          preferredRepository, // preferredRepository
+          0, // additionalRepositoryCount
+          dependencyWebsite, // dependencyWebsite
+          true, // availableOnChain
+          1, // scriptCount (slices of the ABX FS file)
+        ]);
+        expect(
+          await config.dependencyRegistry.getDependencyDetailsFromString(
+            dependencyNameAndVersion
+          )
+        ).to.deep.eq(dependencyDetails);
       });
 
       it("getDependencyDetailsV2", async function () {
-        // get config from beforeEach
         const config = this.config;
 
-        await config.dependencyRegistry
-          .connect(config.accounts.deployer)
-          .addDependencyScript(
-            dependencyNameAndVersionBytes,
-            "on-chain script"
-          );
         await config.dependencyRegistry
           .connect(config.accounts.deployer)
           .updateDependencyCanvasTagType(
@@ -1891,211 +1455,41 @@ describe(`DependencyRegistryV0`, async function () {
           0, // additionalRepositoryCount
           dependencyWebsite, // dependencyWebsite
           true, // availableOnChain
-          1, // scriptCount
+          ABXFS_FILE_CID, // abxfsFileCid
           true, // loadAsModule
           CANVAS_TAG_TYPE.CanvasBeforeProjectScript, // canvasTagType
           PROJECT_SCRIPT_TAG_TYPE.SpecialType, // projectScriptTagType
           "application/processing", // projectScriptSpecialType
-          ABXFS_FILE_CID, // abxfsFileCid
         ]);
       });
 
-      // @dev the registry is upgraded before the generator, and the deployed generator decodes
-      // getDependencyDetailsV2 with the struct as it was before abxfsFileCid was appended
-      it("getDependencyDetailsV2 still decodes with the struct that precedes abxfsFileCid", async function () {
-        // get config from beforeEach
+      it("has no functions that store scripts in the registry", async function () {
         const config = this.config;
-
-        await config.dependencyRegistry
-          .connect(config.accounts.deployer)
-          .addDependencyScript(
-            dependencyNameAndVersionBytes,
-            "on-chain script"
-          );
-        await config.dependencyRegistry
-          .connect(config.accounts.deployer)
-          .updateDependencyCanvasTagType(
-            dependencyNameAndVersionBytes,
-            CANVAS_TAG_TYPE.CanvasAfterProjectScript
-          );
-        await config.dependencyRegistry
-          .connect(config.accounts.deployer)
-          .updateDependencyProjectScriptTagType(
-            dependencyNameAndVersionBytes,
-            PROJECT_SCRIPT_TAG_TYPE.SpecialType,
-            "application/processing"
-          );
-        await config.dependencyRegistry
-          .connect(config.accounts.deployer)
-          .updateDependencyAbxfsFileCid(
-            dependencyNameAndVersionBytes,
-            ABXFS_FILE_CID
-          );
-
-        const legacyReader = await deployAndGet(
-          config,
-          "LegacyDependencyDetailsV2ReaderMock",
-          []
+        const code = await ethers.provider.getCode(
+          config.dependencyRegistry.address
         );
-        const legacyDetails = await legacyReader.getLegacyDependencyDetailsV2(
-          config.dependencyRegistry.address,
-          dependencyNameAndVersionBytes
-        );
-        const currentDetails =
-          await config.dependencyRegistry.getDependencyDetailsV2(
-            dependencyNameAndVersionBytes
-          );
-
-        // every field the legacy struct knows about decodes to its current value
-        expect(legacyDetails.length).to.eq(13);
-        expect([...legacyDetails]).to.deep.eq([...currentDetails].slice(0, 13));
-        expect(legacyDetails.projectScriptSpecialType).to.eq(
-          "application/processing"
-        );
-      });
-
-      // @dev the generator is upgraded after the registry, so the deployed generator
-      // keeps calling the legacy getter while the new fields are being backfilled
-      it("getDependencyDetails keeps its legacy shape once rendering directives are set", async function () {
-        // get config from beforeEach
-        const config = this.config;
-
-        await config.dependencyRegistry
-          .connect(config.accounts.deployer)
-          .updateDependencyCanvasTagType(
-            dependencyNameAndVersionBytes,
-            CANVAS_TAG_TYPE.CanvasAfterProjectScript
-          );
-        await config.dependencyRegistry
-          .connect(config.accounts.deployer)
-          .updateDependencyLoadAsModule(dependencyNameAndVersionBytes, true);
-        await config.dependencyRegistry
-          .connect(config.accounts.deployer)
-          .updateDependencyProjectScriptTagType(
-            dependencyNameAndVersionBytes,
-            PROJECT_SCRIPT_TAG_TYPE.RawHtml,
-            ""
-          );
-
-        const legacyDetails = [
-          dependencyNameAndVersion,
-          licenseType,
-          preferredCDN,
-          0,
-          preferredRepository,
-          0,
-          dependencyWebsite,
-          false,
-          0,
-        ];
-
-        expect(
-          await config.dependencyRegistry.getDependencyDetails(
-            dependencyNameAndVersionBytes
+        for (const fragment of [
+          "addDependencyScript(bytes32,string)",
+          "updateDependencyScript(bytes32,uint256,string)",
+          "addDependencyScriptPointer(bytes32,address)",
+          "updateDependencyScriptPointer(bytes32,uint256,address)",
+          "removeDependencyLastScript(bytes32)",
+          "getDependencyScriptBytecodeAddress(bytes32,uint256)",
+          "getDependencyScriptBytecodeStorageVersion(bytes32,uint256)",
+        ]) {
+          expect(
+            () => config.dependencyRegistry.interface.getFunction(fragment),
+            fragment
+          ).to.throw();
+          // the dispatcher pushes every selector the contract implements
+          const selector = ethers.utils.id(fragment).slice(2, 10);
+          expect(code.includes(selector), fragment).to.eq(false);
+        }
+        expect(() =>
+          config.dependencyRegistry.interface.getEvent(
+            "DependencyScriptUpdated"
           )
-        ).to.deep.eq(legacyDetails);
-        expect(
-          await config.dependencyRegistry.getDependencyDetailsFromString(
-            dependencyNameAndVersion
-          )
-        ).to.deep.eq(legacyDetails);
-      });
-
-      it("getDependencyScript", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        const script = "on-chain script";
-
-        await config.dependencyRegistry
-          .connect(config.accounts.deployer)
-          .addDependencyScript(dependencyNameAndVersionBytes, script);
-
-        const storedScript =
-          await config.dependencyRegistry.getDependencyScript(
-            dependencyNameAndVersionBytes,
-            0
-          );
-        expect(storedScript).to.eq(script);
-      });
-
-      it("getDependencyScriptBytecodeAddress", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        const script = "on-chain script";
-
-        await config.dependencyRegistry
-          .connect(config.accounts.deployer)
-          .addDependencyScript(dependencyNameAndVersionBytes, script);
-
-        const storedScriptByteCodeAddress =
-          await config.dependencyRegistry.getDependencyScriptBytecodeAddress(
-            dependencyNameAndVersionBytes,
-            0
-          );
-
-        const scriptBytecode = await ethers.provider.getCode(
-          storedScriptByteCodeAddress
-        );
-        expect(scriptBytecode).to.contain(
-          ethers.utils.hexlify(ethers.utils.toUtf8Bytes(script)).substring(2)
-        );
-      });
-
-      it("getDependencyScriptBytecodeStorageVersion (BytecodeStorageV1)", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        const script = "on-chain script";
-        const contentAddress = writeContentWithBytecodeStorageV1(
-          script,
-          config.bytecodeV1TextCR_DMock,
-          config.accounts.deployer
-        );
-
-        await config.dependencyRegistry.addDependencyScriptPointer(
-          dependencyNameAndVersionBytes,
-          contentAddress
-        );
-
-        const bytecodeStorageVersionBytes =
-          await config.dependencyRegistry.getDependencyScriptBytecodeStorageVersion(
-            dependencyNameAndVersionBytes,
-            0
-          );
-        let bytecodeStorageVersionUTF8 = ethers.utils.toUtf8String(
-          bytecodeStorageVersionBytes
-        );
-        expect(bytecodeStorageVersionUTF8).to.eq(
-          "BytecodeStorage_V1.0.0_________ "
-        );
-      });
-
-      it("getDependencyScriptBytecodeStorageVersion (SSTORE2)", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        const script = "on-chain script";
-        const contentAddress = writeContentWithSSTORE2(
-          script,
-          config.sstore2Mock,
-          config.accounts.deployer
-        );
-
-        await config.dependencyRegistry.addDependencyScriptPointer(
-          dependencyNameAndVersionBytes,
-          contentAddress
-        );
-
-        const bytecodeStorageVersionBytes =
-          await config.dependencyRegistry.getDependencyScriptBytecodeStorageVersion(
-            dependencyNameAndVersionBytes,
-            0
-          );
-
-        let bytecodeStorageVersionUTF8 = ethers.utils.toUtf8String(
-          bytecodeStorageVersionBytes
-        );
-        expect(bytecodeStorageVersionUTF8).to.eq(
-          "UNKNOWN_VERSION_STRING_________ "
-        );
+        ).to.throw();
       });
     });
   });

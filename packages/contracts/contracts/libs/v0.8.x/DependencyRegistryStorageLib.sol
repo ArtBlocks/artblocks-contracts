@@ -44,14 +44,16 @@ library DependencyRegistryStorageLib {
         mapping(uint256 additionalRepositoryIndex => string additionalRepositoryUrl) additionalRepositories;
         // Website URL for dependency (e.g. https://p5js.org/ for p5)
         string website;
-        // mapping from script index to address storing script in bytecode
-        mapping(uint256 scriptIndex => address bytecodeAddress) scriptBytecodeAddresses;
+        // @dev Vestigial: scripts are no longer stored in this registry (a dependency's on-chain
+        // script is its ABX FS file, see abxfsFileCid). Never read or written. Cannot be removed
+        // due to storage layout requirements in upgradeable contracts.
+        mapping(uint256 scriptIndex => address bytecodeAddress) DEPRECATED_scriptBytecodeAddresses;
         // count of additional CDN urls where the dependency can be found
         uint24 additionalCDNCount;
         // count of additional code repository urls for the dependency
         uint24 additionalRepositoryCount;
-        // count of scripts that make up the dependency, if the dependency is available on-chain
-        uint24 scriptCount;
+        // @dev Vestigial, as DEPRECATED_scriptBytecodeAddresses above. Never read or written.
+        uint24 DEPRECATED_scriptCount;
         // @dev fields below are appended for the generator's rendering directives, and are
         // safe to append because Dependency is only ever used as a mapping value.
         // canvas tag requirement for the dependency
@@ -64,9 +66,8 @@ library DependencyRegistryStorageLib {
         // `type` attribute used when projectScriptTagType is SpecialType; empty otherwise
         string projectScriptSpecialType;
         // @dev appended for ABX FS support, and safe to append for the same reason.
-        // CID of a gzip-codec ABX FS file holding the dependency's script, or zero if none. CIDs
-        // are content-derived and canonical, so one value is valid on every chain the file has
-        // been uploaded to.
+        // CID of the gzip-codec ABX FS file holding the dependency's script, or zero if none. A
+        // dependency is on chain if and only if this is set.
         bytes32 abxfsFileCid;
     }
 

@@ -8,7 +8,7 @@ pragma solidity ^0.8.17;
  * files. FileStore is immutable and deployed by CREATE2 at the same address on every supported
  * chain, and a file's CID is derived from its content, so a CID is valid on every chain the file
  * has been uploaded to.
- * @dev Mirrors the subset of ABX FS `IFileStore` read by the generator. See
+ * @dev Mirrors the subset of ABX FS `IFileStore` read by the dependency registry. See
  * https://github.com/ArtBlocks/abxfs (packages/contracts-core/src/interfaces/IFileStore.sol).
  * A file's "data" is its stored bytes (chunks joined); when `codec` is non-zero (e.g. "gzip"),
  * the file's content is `decode(codec, data)` and is decoded off chain.
@@ -26,12 +26,34 @@ interface IAbxfsFileStore {
     }
 
     /**
-     * @notice Returns the metadata of file `cid`. Returns a zero-valued struct, rather than
-     * reverting, for a CID that is not a file on this chain.
+     * @notice Returns whether `cid` is a file on this chain.
+     */
+    function fileExists(bytes32 cid) external view returns (bool);
+
+    /**
+     * @notice Returns the metadata of file `cid`. Reverts for a CID that is not a file on this
+     * chain.
      */
     function getFileInfo(
         bytes32 cid
     ) external view returns (FileInfo memory info);
+
+    /**
+     * @notice Returns the chunk of file `cid` holding data byte `offset`: its index, the offset
+     * of its first byte in the file's data, its chunk id and its size.
+     */
+    function locateByte(
+        bytes32 cid,
+        uint256 offset
+    )
+        external
+        view
+        returns (
+            uint256 index,
+            uint256 chunkStart,
+            bytes32 chunkId,
+            uint256 chunkSize
+        );
 
     /**
      * @notice Returns the stored bytes of chunk `index` of file `cid`. ChunkStore checks each
