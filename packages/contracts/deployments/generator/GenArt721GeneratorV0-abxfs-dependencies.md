@@ -163,8 +163,137 @@ Each file was checked three ways:
 `https://unpkg.com/zdog@1.1.2/dist/zdog.dist.min.js`, which serves the exact file on ABX FS. The
 planner checks the SHA-256 before adding the call.
 
-<!-- GAS -->
+## Gas and the 2^24 `eth_call` execution cap
 
-<!-- VERIFICATION -->
+Inlining from ABX FS costs gas in the `eth_call` that renders a token, never in transaction fees.
+The numbers below were measured on a mainnet fork at block 26,487,988, one live token per
+dependency. Gas is execution gas inside the call: a view creates no state, so this is what
+EIP-8037 counts. ✓/✗ marks whether the call succeeds with a 16,777,216 gas limit.
 
-<!-- OPEN -->
+| Dependency | gzip bytes | `getTokenHtml` today → after | data URI today → after |
+| --- | --- | --- | --- |
+| `babylon@5.0.0` | 904,335 | 0.9M ✓ → 143.7M ✗ | 2.4M ✓ → 282.8M ✗ |
+| `aframe@1.2.0` | 344,012 | 3.1M ✓ → 40.0M ✗ | 5.3M ✓ → 79.9M ✗ |
+| `three@0.160.0` | 167,719 | 22.8M ✗ → 43.1M ✗ | 41.5M ✗ → 82.4M ✗ |
+| `p5@1.9.0` | 243,275 | 3.2M ✓ → 27.2M ✗ | 6.3M ✓ → 55.5M ✗ |
+| `p5@1.0.0` | 163,587 | 9.5M ✓ → 15.3M ✓ | 25.4M ✗ → 31.3M ✗ |
+| `three@0.124.0` | 159,859 | 9.2M ✓ → 14.8M ✓ | 24.7M ✗ → 30.3M ✗ |
+| `tone@14.8.15` | 79,558 | 6.5M ✓ → 9.3M ✓ | 15.4M ✓ → 18.2M ✗ |
+| `paper@0.12.15` | 83,273 | 0.7M ✓ → 7.2M ✓ | 1.2M ✓ → 14.9M ✓ |
+| `processing-js@1.4.6` | 66,156 | 1.8M ✓ → 7.0M ✓ | 3.1M ✓ → 14.0M ✓ |
+| `regl@2.1.0` | 28,736 | 1.1M ✓ → 3.2M ✓ | 1.9M ✓ → 6.4M ✓ |
+| `twemoji@14.0.2` | 4,196 | 2.0M ✓ → 2.3M ✓ | 5.6M ✓ → 6.4M ✓ |
+| `zdog@1.1.2` | 7,258 | 1.4M ✓ → 2.0M ✓ | 2.5M ✓ → 3.7M ✓ |
+
+**Where the gas goes.** Reading the bytes is cheap: FileDataReader reads all of Babylon in 10.9M,
+against 28.4M through `FileStore.readChunk`. Base64-encoding them costs about 50–60 gas per gzip
+byte. After that, the generator copies the document several times in one frame whose memory cost
+is quadratic:
+
+- the dependency's base64 into the HTML request;
+- ScriptyBuilder's assembly;
+- for the data URI, the whole HTML base64-encoded again.
+
+Registry-stored dependencies cost more than before (p5@1.0.0 went from 9.5M to 15.3M). The
+registry held their scripts already base64-encoded, while ABX FS holds the gzip bytes, which each
+render encodes.
+
+**The read path.** Three alternatives were measured on the same fork against this PR's path; full
+numbers are in the PR. This PR is cheapest on every token:
+
+| | Read path | Babylon `getTokenHtml` | Compared with this PR |
+| --- | --- | --- | --- |
+| this PR | one call to FileDataReader, its return value decoded in place | 143.7M | — |
+| first draft of this PR | `FileStore.readChunk` per chunk | 242.3M | — |
+| alternative | the same SSTORE2 read inlined in the generator | — | 2–23% dearer on every render |
+| alternative | a plain high-level call to FileDataReader | — | up to 28M more (Babylon) |
+
+The reader base64-encodes in its own call frame, away from the generator's growing memory.
+
+**RPC limits.**
+
+- **Today on mainnet** the binding limit is the RPC's `eth_call` gas cap. Alchemy documents 550M.
+  publicnode and drpc allow about 50M.
+- **EIP-8037** (Glamsterdam) bounds one call's execution gas at 2^24 = 16,777,216. It is live on
+  Sepolia, where every RPC tried (Alchemy, publicnode, Tenderly) enforces it. Mainnet gets it at
+  Glamsterdam.
+
+Under that cap, a light project's `getTokenHtml` fits up to about 180 KB of inlined gzip, and its
+data URI up to about 90 KB. Both limits shrink by the project script's own cost.
+
+- `babylon@5.0.0`, `aframe@1.2.0`, `p5@1.9.0` and `three@0.160.0` therefore do not render in one
+  call on Sepolia. On mainnet they stop rendering at Glamsterdam. `three@0.160.0` does not fit the
+  cap even today, from its project script alone.
+- The registry's indexed slices (`getDependencyScript`) and FileDataReader's range reads page any
+  file in calls that each fit the cap.
+- A paged render API for whole tokens is a separate decision (see "Open items").
+
+
+## Verification
+
+**Unit tests:**
+
+- `test/dependency-registry/DependencyRegistryV0.test.ts`: 135 passing.
+- `test/generator/GenArt721GeneratorV0.test.ts`: 55 passing.
+
+Mock ABX FS contracts are placed at their canonical addresses with `hardhat_setCode`. The FileStore
+mock keeps its chunks as SSTORE2 code, and the FileDataReader mock implements whole-file and range
+base64 reads.
+
+The registry suite covers:
+
+- the setter's ACL;
+- refusal of a CID that is absent, carries no codec, is brotli, or is an empty gzip file;
+- set and clear, and their events;
+- `availableOnChain` in both getters;
+- slice counts, and slices across uneven chunk boundaries that join to the file's base64;
+- out-of-range slices;
+- removal clearing the file;
+- the absence of every removed selector from the deployed bytecode.
+
+The generator suite covers:
+
+- ABX FS inlining that gunzips to the library;
+- the CDN fallback;
+- ES module exclusion;
+- flex `ART_BLOCKS_DEPENDENCY_REGISTRY` assets;
+- `getDependencyScript` and `getOnChainStatus`;
+- the codec guard and propagation of read failures;
+- the pinned `ABXFS_FILE_DATA_READER`.
+
+**Fork rehearsals** (`scripts/abxfs-dependencies/fork-verify.ts`, on Sepolia and on mainnet):
+
+- OpenZeppelin `validateUpgrade` passes for the registry and every generator, against
+  `.openzeppelin/<network>.json`.
+- All 13 files are present, gzip, and decode to their SHA-256 on both networks' ABX FS.
+- FileDataReader deploys through the keyless deployer at its canonical address.
+- The full rollout is then rendered and checked token by token, as described in the script's header
+  and the PR.
+
+**`eth_call` cap method.** The method was checked against live Sepolia. The dev generator's
+p5@1.0.0 token renders `getTokenHtml` and reverts on the data URI, both live and on the fork with a
+16,777,216 limit.
+
+
+## Open items
+
+- **The `eth_call` execution cap (EIP-8037).**
+  - Inlined tokens over 2^24 do not render in one call on Sepolia, and will not on mainnet after
+    Glamsterdam: babylon, aframe, p5@1.9.0 and three@0.160.0, plus most data URIs.
+  - A paged or multi-call render API, or pre-encoded base64 files, are decisions this PR does not
+    make. The registry's indexed slices and FileDataReader's range reads already page any file.
+- **FileDataReader must be deployed** on each network before step 1. Deploying it on mainnet is an
+  ABX FS maintainer's go-ahead. Its address is compiled into both contracts, through
+  `AbxfsCanonical`, so a new FileDataReader means new implementations.
+- **ABX's `AbxGenerator`** will start inlining AB500 libraries named through the Art Blocks
+  registry, because `getDependencyScript` now serves them. Its own render gas then follows the
+  table above. ABX tooling reads `availableOnChain && scriptCount > 0`, which this keeps consistent.
+- **`cannon-es@0.20.0`** (and `fixed_cannon-es@0.20.0` on Sepolia) had registry scripts but no ABX
+  FS file, so it loads from its CDN. No live project uses it, and it is an ES module the generator
+  could not run on chain anyway.
+- **Sepolia's staging registry** `0xEFA7Ef07…387f` is not upgraded: no generator reads it. The
+  staging subgraph indexes it; repointing that subgraph at the dev registry is in the subgraph PR.
+- **Browser check.** Render the babylon, three@0.160.0, regl and twemoji fork output in a desktop
+  browser before the mainnet step 2. Headless Chrome could not run these, even from the CDN.
+  `DUMP_DIR` writes the HTML.
+
