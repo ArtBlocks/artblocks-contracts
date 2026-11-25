@@ -108,13 +108,16 @@ Read gas was identical on those five chains:
   (OpenZeppelin `Base64` plus scripty's `DynamicBuffer.appendSafeBase64`, compiled as the generator
   is: solc 0.8.22, 10 optimizer runs, shanghai).
 
-**Ethereum Sepolia and the per-call gas budget.** Checks 1–3 pass on Ethereum Sepolia. Check 4 passes
-for the six smallest files and fails for the seven largest (aframe, babylon, both p5 builds, all
-three three.js builds): under EIP-8037 a call's execution gas, memory expansion included, is capped
-at 2^24 (16,777,216), and Sepolia nodes apply the cap to `eth_call` as they do to transactions
-(measured on three providers; a mainnet `eth_call` is not capped this way today). Reading those files
-on Sepolia takes more than one call, such as chunk-by-chunk reads. Ethereum mainnet adopts the same
-schedule when it upgrades to Glamsterdam.
+**Ethereum Sepolia and the RPC endpoints' 2^24 cap.** Checks 1–3 pass on Ethereum Sepolia. Check 4,
+run on 2026-11-24 through Alchemy, passes for the six smallest files and fails for the seven largest
+(aframe, babylon, both p5 builds, all three three.js builds). Those Sepolia endpoints refuse any
+`eth_call` above 2^24 (16,777,216) of execution gas. That is not a protocol rule: EIP-8037 bounds a
+*transaction's* execution gas at 2^24 and says nothing about `eth_call`. Some clients applied it to
+`eth_call` too after Amsterdam, and each fixed that as a bug: geth in v1.17.8, erigon, and reth in a
+fix merged 2026-11-18 and not yet released. Alchemy and publicnode run reth on Sepolia, and Tenderly
+caps the same way. A geth v1.17.8 Sepolia node (`rpc.sepolia.ethpandaops.io`) runs a 24.7M-gas
+`eth_call` to completion. The 2^24 budget does still bind any contract that reads these files inside
+a transaction on an EIP-8037 chain.
 
 ## Generator read budget
 
