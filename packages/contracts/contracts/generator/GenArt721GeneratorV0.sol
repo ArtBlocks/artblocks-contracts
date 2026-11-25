@@ -9,6 +9,8 @@ import "../interfaces/v0.8.x/IGenArt721CoreTokenHashProviderV1.sol";
 import "../interfaces/v0.8.x/IGenArt721GeneratorV0.sol";
 import {IGenArt721CoreContractV3_Engine_Flex} from "../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
 import {IUniversalBytecodeStorageReader} from "../interfaces/v0.8.x/IUniversalBytecodeStorageReader.sol";
+import {IAbxfsFileDataReader} from "../interfaces/v0.8.x/IAbxfsFileDataReader.sol";
+import {AbxfsCanonical} from "../libs/v0.8.x/AbxfsCanonical.sol";
 import {IWeb3Call} from "../interfaces/v0.8.x/IWeb3Call.sol";
 
 import "../libs/v0.8.x/Bytes32Strings.sol";
@@ -65,6 +67,10 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         0x6a73406e61000000000000000000000000000000000000000000000000000000; // "js@na"
     bytes32 constant SVG_AT_NA_BYTES32 =
         0x737667406e610000000000000000000000000000000000000000000000000000; // "svg@na"
+    // @dev The ABX FS FileDataReader, through which dependency scripts are read from ABX FS (the
+    // same address on every chain ABX FS supports; see AbxfsCanonical).
+    IAbxfsFileDataReader public constant ABXFS_FILE_DATA_READER =
+        IAbxfsFileDataReader(AbxfsCanonical.FILE_DATA_READER);
 
     function _onlySupportedCoreContract(address coreContract) internal view {
         require(
@@ -181,22 +187,26 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     }
 
     /**
-     * @notice Get the dependency script for a given dependency name and version string.
+     * @notice Get the dependency script for a given dependency name and version string, as the
+     * generator inlines it.
      * @param dependencyNameAndVersion The name and version of the dependency
      * to retrieve the script for.
-     * @return The dependency script stiched together from all of the script chunks as a string.
-     * @dev This function will revert if the dependency name and version is not
-     * supported by the DependencyRegistry or if the script storage version is
-     * not supported.
+     * @return The dependency's ABX FS file (its gzip bytes), base64 encoded, or empty if the
+     * generator does not inline the dependency (no ABX FS file, or an ES module dependency).
+     * @dev Reverts if the dependency's ABX FS file is not a gzip file on this chain's ABX FS.
      */
     function getDependencyScript(
         string memory dependencyNameAndVersion
     ) external view returns (string memory) {
-        bytes memory dependencyScript = _getDependencyScriptBytes(
-            dependencyNameAndVersion.stringToBytes32()
+        bytes32 abxfsFileCid = _getInlinedAbxfsFileCid(
+            dependencyRegistry.getDependencyDetailsV2(
+                dependencyNameAndVersion.stringToBytes32()
+            )
         );
-
-        return string(dependencyScript);
+        if (abxfsFileCid == bytes32(0)) {
+            return "";
+        }
+        return _getAbxfsFileBase64(abxfsFileCid);
     }
 
     /**
@@ -343,42 +353,86 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     }
 
     /**
-     * @notice Get the dependency script for a given dependency name and version.
-     * @param dependencyNameAndVersion The name and version of the dependency
-     * to retrieve the script for.
-     * @return The dependency script stiched together from all of the script chunks.
-     * @dev This function will revert if the dependency name and version is not
-     * supported by the DependencyRegistry or if the script storage version is
-     * not supported.
+     * @notice Get a dependency's ABX FS file, base64 encoded: the payload of the gzip data URI
+     * the generator inlines.
+     * @param abxfsFileCid CID of the dependency's gzip-codec ABX FS file.
+     * @return base64 The base64-encoded gzip bytes of the file.
+     * @dev Reverts if `abxfsFileCid` is not a gzip-codec file on this chain's ABX FS (the
+     * registry checks both when a CID is set; ABX FS content is permanent), or with the
+     * FileDataReader's own error if the read fails.
+     * @dev The return value is decoded in place. A high-level call copies the returned base64
+     * twice into this frame (returndatacopy, then ABI decoding into new memory), and the
+     * whole token document is assembled in this frame, where memory cost is quadratic: for
+     * Babylon (1.2 MB of base64) the second copy costs about 28M gas, for p5 1.0.0 about 1.4M.
+     * FileDataReader returns canonical `abi.encode(mimeType, codec, outputHash, base64)`: a
+     * four-word head whose fourth word is the offset of `base64`, which is length-prefixed.
+     * The offset and length are bounds-checked against the returned size before use.
      */
-    function _getDependencyScriptBytes(
-        bytes32 dependencyNameAndVersion
-    ) internal view returns (bytes memory) {
-        uint256 scriptCount = dependencyRegistry.getDependencyScriptCount(
-            dependencyNameAndVersion
+    function _getAbxfsFileBase64(
+        bytes32 abxfsFileCid
+    ) internal view returns (string memory base64) {
+        bytes memory callData = abi.encodeCall(
+            IAbxfsFileDataReader.readFileDataBase64,
+            (abxfsFileCid, type(uint256).max, type(uint256).max)
         );
-
-        if (scriptCount == 0) {
-            return "";
+        address reader = address(ABXFS_FILE_DATA_READER);
+        bytes32 codec;
+        bool wellFormed;
+        assembly ("memory-safe") {
+            let ptr := mload(0x40)
+            if iszero(
+                staticcall(
+                    gas(),
+                    reader,
+                    add(callData, 0x20),
+                    mload(callData),
+                    0,
+                    0
+                )
+            ) {
+                returndatacopy(ptr, 0, returndatasize())
+                revert(ptr, returndatasize())
+            }
+            let size := returndatasize()
+            returndatacopy(ptr, 0, size)
+            // head: [mimeType offset, codec, outputHash, base64 offset]
+            if gt(size, 0x7f) {
+                codec := mload(add(ptr, 0x20))
+                let offset := mload(add(ptr, 0x60))
+                if lt(offset, sub(size, 0x1f)) {
+                    let length := mload(add(ptr, offset))
+                    if iszero(gt(length, sub(sub(size, offset), 0x20))) {
+                        wellFormed := 1
+                        base64 := add(ptr, offset)
+                        // claim the string's memory, rounded up to a whole word
+                        mstore(
+                            0x40,
+                            add(
+                                add(base64, 0x20),
+                                and(add(length, 0x1f), not(0x1f))
+                            )
+                        )
+                    }
+                }
+            }
         }
+        require(wellFormed, "ABX FS read malformed");
+        require(codec == AbxfsCanonical.GZIP_CODEC, "ABX FS file not gzip");
+    }
 
-        address[] memory scriptBytecodeAddresses = new address[](scriptCount);
-
-        for (uint256 i = 0; i < scriptCount; i++) {
-            scriptBytecodeAddresses[i] = dependencyRegistry
-                .getDependencyScriptBytecodeAddress(
-                    dependencyNameAndVersion,
-                    i
-                );
-        }
-
-        // @dev We concatenate the script chunks together with assembly
-        // in AddressChunks for gas efficiency.
+    /**
+     * @notice Get the ABX FS file CID the generator inlines a dependency's script from, or zero.
+     * @dev An ES module dependency is never inlined: it is reached through an import map
+     * pointing at its preferred CDN, and a gzipped module cannot be loaded from a data URI.
+     * @param dependencyDetails The dependency's details from the dependency registry.
+     */
+    function _getInlinedAbxfsFileCid(
+        IDependencyRegistryV0.DependencyDetails memory dependencyDetails
+    ) internal pure returns (bytes32) {
         return
-            AddressChunks.mergeChunks(
-                scriptBytecodeAddresses,
-                address(universalBytecodeStorageReader)
-            );
+            dependencyDetails.loadAsModule
+                ? bytes32(0)
+                : dependencyDetails.abxfsFileCid;
     }
 
     /**
@@ -811,7 +865,7 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     /**
      * @notice populates an empty HTMLTag with script information for a given dependency.
      * Assumes the dependency is available on the dependencyRegistry.
-     * Populates the script via on-chain information if available, otherwise injects script tag with src
+     * Inlines the dependency's ABX FS file if it has one - otherwise injects script tag with src
      * pointing to the preferred CDN.
      * @param dependencyNameAndVersion The name and version of the dependency to populate the script for.
      * @param htmlTag The HTMLTag to populate with the script information, memory reference; modified in place.
@@ -820,20 +874,15 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         bytes32 dependencyNameAndVersion,
         HTMLTag memory htmlTag
     ) internal view {
-        // Get script count and preferred CDN for the dependency.
-        string memory preferredCDN;
-        uint24 scriptCount;
-        // @dev block scope to limit stack usage
-        {
-            IDependencyRegistryV0.DependencyDetails
-                memory dependencyDetails = dependencyRegistry
-                    .getDependencyDetailsV2(dependencyNameAndVersion);
-            preferredCDN = dependencyDetails.preferredCDN;
-            scriptCount = dependencyDetails.scriptCount;
-        }
+        // Get ABX FS file and preferred CDN for the dependency.
+        IDependencyRegistryV0.DependencyDetails
+            memory dependencyDetails = dependencyRegistry
+                .getDependencyDetailsV2(dependencyNameAndVersion);
+        string memory preferredCDN = dependencyDetails.preferredCDN;
+        bytes32 abxfsFileCid = _getInlinedAbxfsFileCid(dependencyDetails);
 
-        // If no scripts on-chain, load the script from the preferred CDN.
-        if (scriptCount == 0) {
+        // If not on chain, load the script from the preferred CDN.
+        if (abxfsFileCid == bytes32(0)) {
             bool cdnAvailable = bytes(preferredCDN).length > 0;
             // If no CDN is available, we don't need to add any tags.
             // Expected for dependencies like "js@na" and "svg@na".
@@ -846,10 +895,8 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
                 : bytes("");
             htmlTag.tagClose = bytes(cdnAvailable ? "</script>" : "");
         } else {
-            bytes memory dependencyScript = _getDependencyScriptBytes(
-                dependencyNameAndVersion
-            );
-            htmlTag.tagContent = dependencyScript;
+            // @dev the gunzip script inflates the gzip data URI in the browser
+            htmlTag.tagContent = bytes(_getAbxfsFileBase64(abxfsFileCid));
             htmlTag.tagType = HTMLTagType.scriptGZIPBase64DataURI; // <script type="text/javascript+gzip" src="data:text/javascript;base64,[script]"></script>
         }
     }
@@ -1043,7 +1090,8 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
     }
 
     /**
-     * @dev Helper function to check if a dependency is on chain.
+     * @dev Helper function to check if a dependency is on chain: it has an ABX FS file, which the
+     * generator inlines (ES module dependencies are loaded from their CDN, so are not on chain).
      * @param dependencyNameAndVersion The name and version of the dependency to check.
      */
     function _getIsDependencyOnChain(
@@ -1056,11 +1104,11 @@ contract GenArt721GeneratorV0 is Initializable, IGenArt721GeneratorV0 {
         ) {
             return true;
         }
-        // query and return result of dependency registry for on-chain status
-        return
-            dependencyRegistry
-                .getDependencyDetailsV2(dependencyNameAndVersion)
-                .availableOnChain;
+        // query dependency registry for on-chain status
+        IDependencyRegistryV0.DependencyDetails
+            memory dependencyDetails = dependencyRegistry
+                .getDependencyDetailsV2(dependencyNameAndVersion);
+        return _getInlinedAbxfsFileCid(dependencyDetails) != bytes32(0);
     }
 
     /**

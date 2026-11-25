@@ -136,6 +136,10 @@ export type T_Config = {
   ERC20?: Contract;
   weth?: Contract;
   transferHook?: Contract;
+  // ABX FS mocks (dependency registry and generator tests)
+  abxfsFileStore?: Contract;
+  abxfsFileDataReader?: Contract;
+  abxfsGzip?: Buffer;
 };
 
 // type of arguments for V3PaymentProposal, V3 Engine
