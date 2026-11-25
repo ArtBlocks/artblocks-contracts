@@ -84,7 +84,7 @@ become available to them on chain.
 plus the `gzip` codec token:
 
 - `FileStore` `0x8b6077a1d6953D96687005B9408D56A655b4d155`;
-- `FileDataReader` `0x7B724AbEA53398e71C06BE8560ac87cE5DC9c7DC`.
+- `FileDataReader` `0x8571A75695efAF94c7b91e5Ec3fc636Ce026cF05`.
 
 ABX FS contracts are immutable or stateless and deployed through the keyless CREATE2 deployer, so
 each address is the same on every chain. That is why they are constants, not settings. A different

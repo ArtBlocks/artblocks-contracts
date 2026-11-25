@@ -19,12 +19,19 @@ export const ABXFS_CANONICAL_FILE_STORE =
   "0x8b6077a1d6953D96687005B9408D56A655b4d155";
 
 /**
+ * ABX FS raw SSTORE2 backend: immutable, CREATE2-deployed at this address on every supported chain.
+ * Every chunk of a dependency file must be stored here (see `verifyAbxfsFile`).
+ */
+export const ABXFS_CANONICAL_SSTORE2_BACKEND =
+  "0x3C3AE36F5d8Aff2Dd60c37cA9103D93803c4c844";
+
+/**
  * ABX FS FileDataReader companion, through which the generator reads dependency files. Stateless,
  * deployed through the keyless CREATE2 deployer, so its address is the same on every chain.
  * Must equal the generator's `ABXFS_FILE_DATA_READER`; the scripts check it.
  */
 export const ABXFS_FILE_DATA_READER =
-  "0x7B724AbEA53398e71C06BE8560ac87cE5DC9c7DC";
+  "0x8571A75695efAF94c7b91e5Ec3fc636Ce026cF05";
 
 /** The AB500 ABX FS directory holding all 13 files. */
 export const AB500_ABXFS_ROOT =
