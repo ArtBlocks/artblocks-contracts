@@ -81,6 +81,9 @@ interface IDependencyRegistryV0 {
         uint256 indexed additionalRepositoryIndex
     );
 
+    /// @notice No longer emitted. Declared so indexers keep decoding the events already on chain.
+    event DependencyScriptUpdated(bytes32 indexed dependencyNameAndVersion);
+
     event CoreRegistryAddressUpdated(address indexed coreRegistryAddress);
 
     event UniversalBytecodeStorageReaderUpdated(address indexed newReader);

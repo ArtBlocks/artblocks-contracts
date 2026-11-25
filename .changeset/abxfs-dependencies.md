@@ -1,14 +1,14 @@
 ---
-"@artblocks/contracts": major
+"@artblocks/contracts": minor
 ---
 
 ABX FS-only dependency registry. A dependency is on chain if and only if it has an ABX FS file: `DependencyRegistryV0` stores no scripts, and `GenArt721GeneratorV0` inlines each dependency's gzip ABX FS file, read through the ABX FS FileDataReader.
 
-Breaking ABI changes:
+ABI changes:
 
-- Removed from `IDependencyRegistryV0` / `DependencyRegistryV0`: `addDependencyScript`, `updateDependencyScript`, `addDependencyScriptPointer`, `updateDependencyScriptPointer`, `removeDependencyLastScript`, `getDependencyScriptBytecodeAddress`, `getDependencyScriptBytecodeStorageVersion`, and the `DependencyScriptUpdated` event.
+- Removed from `IDependencyRegistryV0` / `DependencyRegistryV0`: `addDependencyScript`, `updateDependencyScript`, `addDependencyScriptPointer`, `updateDependencyScriptPointer`, `removeDependencyLastScript`, `getDependencyScriptBytecodeAddress` and `getDependencyScriptBytecodeStorageVersion`.
+- `DependencyScriptUpdated` stays declared, so indexers keep decoding the events already on chain; nothing emits it.
 - `getDependencyDetailsV2`'s `DependencyDetails` replaces `scriptCount` with `abxfsFileCid`; `availableOnChain` means the dependency has an ABX FS file.
-- Removed from `GenArt721GeneratorV0`: `abxfsFileStore`, `updateAbxfsFileStore` and the `AbxfsFileStoreUpdated` event (never deployed).
 
 Added: `updateDependencyAbxfsFileCid` (refuses a CID that is not a gzip file on the chain's ABX FS), `getDependencyAbxfsFileCid`, the `DependencyAbxfsFileCidUpdated` event, `GenArt721GeneratorV0.ABXFS_FILE_DATA_READER`, and the `IAbxfsFileStore` and `IAbxfsFileDataReader` interfaces.
 

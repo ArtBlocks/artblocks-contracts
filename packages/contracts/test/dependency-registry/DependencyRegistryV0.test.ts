@@ -1488,11 +1488,12 @@ describe(`DependencyRegistryV0`, async function () {
           const selector = ethers.utils.id(fragment).slice(2, 10);
           expect(code.includes(selector), fragment).to.eq(false);
         }
+        // still declared, so indexers keep decoding the events already on chain
         expect(() =>
           config.dependencyRegistry.interface.getEvent(
             "DependencyScriptUpdated"
           )
-        ).to.throw();
+        ).to.not.throw();
       });
     });
   });

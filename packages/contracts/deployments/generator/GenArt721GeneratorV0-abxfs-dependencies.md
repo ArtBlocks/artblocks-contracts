@@ -38,8 +38,9 @@ On-chain availability:
 
 Removed: `addDependencyScript`, `updateDependencyScript`, `addDependencyScriptPointer`,
 `updateDependencyScriptPointer`, `removeDependencyLastScript`,
-`getDependencyScriptBytecodeAddress`, `getDependencyScriptBytecodeStorageVersion` and the
-`DependencyScriptUpdated` event. `removeDependency` no longer checks a script count; deleting the
+`getDependencyScriptBytecodeAddress` and `getDependencyScriptBytecodeStorageVersion`.
+`DependencyScriptUpdated` stays declared, so indexers keep decoding the events already on chain;
+nothing emits it. `removeDependency` no longer checks a script count; deleting the
 record clears its ABX FS file. `scripts/propose-add-dependency-script-transactions.ts`, the upload
 tool, is deleted.
 
