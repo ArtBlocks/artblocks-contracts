@@ -83,7 +83,7 @@ become available to them on chain.
 plus the `gzip` codec token:
 
 - `FileStore` `0x8b6077a1d6953D96687005B9408D56A655b4d155`;
-- `FileDataReader` `0xb13D24967aB9B41787E2280D22d1d43a286c197a`.
+- `FileDataReader` `0x7B724AbEA53398e71C06BE8560ac87cE5DC9c7DC`.
 
 ABX FS contracts are immutable or stateless and deployed through the keyless CREATE2 deployer, so
 each address is the same on every chain. That is why they are constants, not settings. A different
@@ -97,10 +97,10 @@ therefore skips the FileStore → ChunkStore → backend call chain, and its cop
 
 ## Storage
 
-| Contract | Change | Why it is safe |
-| --- | --- | --- |
+| Contract               | Change                                                                                                                                         | Why it is safe                                                                                                                                                             |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `DependencyRegistryV0` | `Dependency.scriptBytecodeAddresses` → `DEPRECATED_scriptBytecodeAddresses`, `scriptCount` → `DEPRECATED_scriptCount`; `abxfsFileCid` appended | renames in place, nothing reordered (the `DEPRECATED_supportedCoreContracts` precedent); `Dependency` is only ever a mapping value. Old values stay in storage, never read |
-| `GenArt721GeneratorV0` | none | the ABX FS addresses are constants |
+| `GenArt721GeneratorV0` | none                                                                                                                                           | the ABX FS addresses are constants                                                                                                                                         |
 
 OpenZeppelin's `validateUpgrade` passes for the registry and both generators on each network,
 against `.openzeppelin/<network>.json`.
@@ -113,25 +113,27 @@ Tooling: `scripts/abxfs-dependencies/` (see its README).
    otherwise. It is deployed from the ABX FS repo by any account, through the keyless deployer.
 1. **One ProxyAdmin Safe batch** upgrades every registry and generator proxy together
    (`1_upgrade.ts`). Neither upgrade works alone:
+
    - the new generator reads the new registry's details and FileDataReader;
    - the deployed generator reads script chunks the new registry no longer serves.
 
    Until step 2, no dependency has an ABX FS file, so the dependencies inlined until now render
    from their preferred CDN. Every one of them has a CDN; the script checks this. The rehearsal
    shows that this one tag is the only change.
+
 2. **superAdmin calls** (`2_set-abxfs-files.ts`):
    - one `updateDependencyAbxfsFileCid` per AB500 dependency (12; not the ES module);
    - zdog's preferred CDN pinned to `zdog@1.1.2`;
    - on Sepolia, the staging generator's `updateScriptyBuilder` fix.
 
-| Network | Step 1 signer | Step 2 signer |
-| --- | --- | --- |
+| Network                                                                                                       | Step 1 signer                                                                               | Step 2 signer                                                                                   |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | Sepolia: dev registry `0x5Fcc415B…4e9b`, dev generator `0x705E55FC…17Be`, staging generator `0xdC862938…FF27` | ProxyAdmin `0xb71b8291…5a7a` owner Safe `0xbaD99DdB…B6a8` (1-of-1, owner `0x3c6412FE…48c4`) | superAdmin `0x3c6412FE…48c4` (EOA with an EIP-7702 delegation): browser wallet via `SERVE=true` |
-| Mainnet: registry `0x37861f95…DdAF`, generator `0x953D2887…c718` | ProxyAdmin `0x57050239…1232` owner Safe `0x52119BB7…D2EA` (2-of-4) | superAdmin Safe `0xCF00eC2B…A283` (2-of-5) |
+| Mainnet: registry `0x37861f95…DdAF`, generator `0x953D2887…c718`                                              | ProxyAdmin `0x57050239…1232` owner Safe `0x52119BB7…D2EA` (2-of-4)                          | superAdmin Safe `0xCF00eC2B…A283` (2-of-5)                                                      |
 
 On Sepolia both generators read the dev registry, so one registry upgrade and one set of CIDs
-covers both. The separate staging registry `0xEFA7Ef07…387f` is read by no generator, but the
-staging subgraph indexes it; see "Open items".
+covers both. The separate staging registry `0xEFA7Ef07…387f` is read by no generator and is not
+upgraded.
 
 ## CIDs
 
@@ -143,21 +145,21 @@ Each file was checked three ways:
 
 `2_set-abxfs-files.ts` re-checks the content on the target network before planning.
 
-| Dependency | File | ABX FS file CID | gzip bytes | Set |
-| --- | --- | --- | --- | --- |
-| `aframe@1.2.0` | `aframe-1.2.0.min.js` | `0x4b19abdc4864b0fcc271f96dd32d4a95cd7431d5353cf39eca32c014ec42344a` | 344,012 | yes |
-| `babylon@5.0.0` | `babylon-5.0.0.min.js` | `0xf8ca7bcb6f5409c87668a00b6e3781a5c2bfc5d584b6956770872bf46c444dea` | 904,335 | yes |
-| `p5@1.0.0` | `p5-1.0.0.min.js` | `0xd51a97d197e052299e2ef11718c4185435ea3d14ec04ec3276c807dc5d1654d0` | 163,587 | yes |
-| `p5@1.9.0` | `p5-1.9.0.min.js` | `0x844bec3f01d7c791ff6a3fde5fb5abcde35d9e615abbe0560df62ca0d7fe9578` | 243,275 | yes |
-| `paper@0.12.15` | `paper-0.12.15.min.js` | `0x0d5097971b2cd7c7dc59d2213bd442d2526e45f50fe3e8ca1d6ae0cc9d439826` | 83,273 | yes |
-| `processing-js@1.4.6` | `processing-1.4.6.min.js` | `0xa33cd228c16aba9b2a86b472f597b94337c4dd5518b5c118ea64046be9fbf35a` | 66,156 | yes |
-| `regl@2.1.0` | `regl-2.1.0.min.js` | `0xbf30a9ec155317aa59f566a10586e806aedb8fd4c81d8b3e03daed11f2446ec1` | 28,736 | yes |
-| `three@0.124.0` | `three-0.124.0.min.js` | `0x9c778204e85837626dd358d1bde277a92b77aa1e0b57907d5c29ab607d2ecdde` | 159,859 | yes |
-| `three@0.160.0` | `three-0.160.0.min.js` | `0xb365a3d2493703623eeaa3ed28d0bdacbc12ee85e0b68027e3466f8a4a34ffd8` | 167,719 | yes |
-| `three@0.167.0` | `three-0.167.0.module.min.js` | `0x46fe31692681614abe4d030fbc978b11e87c651605a1da9180dc1806da1447a5` | 170,163 | **no**, ES module |
-| `tone@14.8.15` | `tone-14.8.15.js` | `0x327cd7e8d6b062e9405d5c5f695818adfb6d0d3f21b03184d9dbefffc23db2cd` | 79,558 | yes |
-| `twemoji@14.0.2` | `twemoji-14.0.2.min.js` | `0x30ab39eed50b480765c45231a9e0ea677847de7a3c07f482c5e6b7c7ff3cda23` | 4,196 | yes |
-| `zdog@1.1.2` | `zdog-1.1.2.min.js` | `0x5ce0603da3175336e4c7a1e92d23065245f8e80e4ed6808591f94d4bb4d25890` | 7,258 | yes |
+| Dependency            | File                          | ABX FS file CID                                                      | gzip bytes | Set               |
+| --------------------- | ----------------------------- | -------------------------------------------------------------------- | ---------- | ----------------- |
+| `aframe@1.2.0`        | `aframe-1.2.0.min.js`         | `0x4b19abdc4864b0fcc271f96dd32d4a95cd7431d5353cf39eca32c014ec42344a` | 344,012    | yes               |
+| `babylon@5.0.0`       | `babylon-5.0.0.min.js`        | `0xf8ca7bcb6f5409c87668a00b6e3781a5c2bfc5d584b6956770872bf46c444dea` | 904,335    | yes               |
+| `p5@1.0.0`            | `p5-1.0.0.min.js`             | `0xd51a97d197e052299e2ef11718c4185435ea3d14ec04ec3276c807dc5d1654d0` | 163,587    | yes               |
+| `p5@1.9.0`            | `p5-1.9.0.min.js`             | `0x844bec3f01d7c791ff6a3fde5fb5abcde35d9e615abbe0560df62ca0d7fe9578` | 243,275    | yes               |
+| `paper@0.12.15`       | `paper-0.12.15.min.js`        | `0x0d5097971b2cd7c7dc59d2213bd442d2526e45f50fe3e8ca1d6ae0cc9d439826` | 83,273     | yes               |
+| `processing-js@1.4.6` | `processing-1.4.6.min.js`     | `0xa33cd228c16aba9b2a86b472f597b94337c4dd5518b5c118ea64046be9fbf35a` | 66,156     | yes               |
+| `regl@2.1.0`          | `regl-2.1.0.min.js`           | `0xbf30a9ec155317aa59f566a10586e806aedb8fd4c81d8b3e03daed11f2446ec1` | 28,736     | yes               |
+| `three@0.124.0`       | `three-0.124.0.min.js`        | `0x9c778204e85837626dd358d1bde277a92b77aa1e0b57907d5c29ab607d2ecdde` | 159,859    | yes               |
+| `three@0.160.0`       | `three-0.160.0.min.js`        | `0xb365a3d2493703623eeaa3ed28d0bdacbc12ee85e0b68027e3466f8a4a34ffd8` | 167,719    | yes               |
+| `three@0.167.0`       | `three-0.167.0.module.min.js` | `0x46fe31692681614abe4d030fbc978b11e87c651605a1da9180dc1806da1447a5` | 170,163    | **no**, ES module |
+| `tone@14.8.15`        | `tone-14.8.15.js`             | `0x327cd7e8d6b062e9405d5c5f695818adfb6d0d3f21b03184d9dbefffc23db2cd` | 79,558     | yes               |
+| `twemoji@14.0.2`      | `twemoji-14.0.2.min.js`       | `0x30ab39eed50b480765c45231a9e0ea677847de7a3c07f482c5e6b7c7ff3cda23` | 4,196      | yes               |
+| `zdog@1.1.2`          | `zdog-1.1.2.min.js`           | `0x5ce0603da3175336e4c7a1e92d23065245f8e80e4ed6808591f94d4bb4d25890` | 7,258      | yes               |
 
 `zdog@1.1.2`'s `preferredCDN` floats on `zdog@1` and now serves 1.1.3. Step 2 pins it to
 `https://unpkg.com/zdog@1.1.2/dist/zdog.dist.min.js`, which serves the exact file on ABX FS. The
@@ -171,20 +173,20 @@ dependency. Gas is execution gas inside the call: a view creates no state, so al
 count against EIP-8037's 2^24 transaction budget. ✓/✗ marks whether the call succeeds with a
 16,777,216 gas limit (see "RPC limits" for when that limit applies).
 
-| Dependency | gzip bytes | `getTokenHtml` today → after | data URI today → after |
-| --- | --- | --- | --- |
-| `babylon@5.0.0` | 904,335 | 0.9M ✓ → 143.7M ✗ | 2.4M ✓ → 282.8M ✗ |
-| `aframe@1.2.0` | 344,012 | 3.1M ✓ → 40.0M ✗ | 5.3M ✓ → 79.9M ✗ |
-| `three@0.160.0` | 167,719 | 22.8M ✗ → 43.1M ✗ | 41.5M ✗ → 82.4M ✗ |
-| `p5@1.9.0` | 243,275 | 3.2M ✓ → 27.2M ✗ | 6.3M ✓ → 55.5M ✗ |
-| `p5@1.0.0` | 163,587 | 9.5M ✓ → 15.3M ✓ | 25.4M ✗ → 31.3M ✗ |
-| `three@0.124.0` | 159,859 | 9.2M ✓ → 14.8M ✓ | 24.7M ✗ → 30.3M ✗ |
-| `tone@14.8.15` | 79,558 | 6.5M ✓ → 9.3M ✓ | 15.4M ✓ → 18.2M ✗ |
-| `paper@0.12.15` | 83,273 | 0.7M ✓ → 7.2M ✓ | 1.2M ✓ → 14.9M ✓ |
-| `processing-js@1.4.6` | 66,156 | 1.8M ✓ → 7.0M ✓ | 3.1M ✓ → 14.0M ✓ |
-| `regl@2.1.0` | 28,736 | 1.1M ✓ → 3.2M ✓ | 1.9M ✓ → 6.4M ✓ |
-| `twemoji@14.0.2` | 4,196 | 2.0M ✓ → 2.3M ✓ | 5.6M ✓ → 6.4M ✓ |
-| `zdog@1.1.2` | 7,258 | 1.4M ✓ → 2.0M ✓ | 2.5M ✓ → 3.7M ✓ |
+| Dependency            | gzip bytes | `getTokenHtml` today → after | data URI today → after |
+| --------------------- | ---------- | ---------------------------- | ---------------------- |
+| `babylon@5.0.0`       | 904,335    | 0.9M ✓ → 143.7M ✗            | 2.4M ✓ → 282.8M ✗      |
+| `aframe@1.2.0`        | 344,012    | 3.1M ✓ → 40.0M ✗             | 5.3M ✓ → 79.9M ✗       |
+| `three@0.160.0`       | 167,719    | 22.8M ✗ → 43.1M ✗            | 41.5M ✗ → 82.4M ✗      |
+| `p5@1.9.0`            | 243,275    | 3.2M ✓ → 27.2M ✗             | 6.3M ✓ → 55.5M ✗       |
+| `p5@1.0.0`            | 163,587    | 9.5M ✓ → 15.3M ✓             | 25.4M ✗ → 31.3M ✗      |
+| `three@0.124.0`       | 159,859    | 9.2M ✓ → 14.8M ✓             | 24.7M ✗ → 30.3M ✗      |
+| `tone@14.8.15`        | 79,558     | 6.5M ✓ → 9.3M ✓              | 15.4M ✓ → 18.2M ✗      |
+| `paper@0.12.15`       | 83,273     | 0.7M ✓ → 7.2M ✓              | 1.2M ✓ → 14.9M ✓       |
+| `processing-js@1.4.6` | 66,156     | 1.8M ✓ → 7.0M ✓              | 3.1M ✓ → 14.0M ✓       |
+| `regl@2.1.0`          | 28,736     | 1.1M ✓ → 3.2M ✓              | 1.9M ✓ → 6.4M ✓        |
+| `twemoji@14.0.2`      | 4,196      | 2.0M ✓ → 2.3M ✓              | 5.6M ✓ → 6.4M ✓        |
+| `zdog@1.1.2`          | 7,258      | 1.4M ✓ → 2.0M ✓              | 2.5M ✓ → 3.7M ✓        |
 
 **Where the gas goes.** Reading the bytes is cheap: FileDataReader reads all of Babylon in 10.9M,
 against 28.4M through `FileStore.readChunk`. Base64-encoding them costs about 50–60 gas per gzip
@@ -202,12 +204,12 @@ render encodes.
 **The read path.** Three alternatives were measured on the same fork against this PR's path; full
 numbers are in the PR. This PR is cheapest on every token:
 
-| | Read path | Babylon `getTokenHtml` | Compared with this PR |
-| --- | --- | --- | --- |
-| this PR | one call to FileDataReader, its return value decoded in place | 143.7M | — |
-| first draft of this PR | `FileStore.readChunk` per chunk | 242.3M | — |
-| alternative | the same SSTORE2 read inlined in the generator | — | 2–23% dearer on every render |
-| alternative | a plain high-level call to FileDataReader | — | up to 28M more (Babylon) |
+|                        | Read path                                                     | Babylon `getTokenHtml` | Compared with this PR        |
+| ---------------------- | ------------------------------------------------------------- | ---------------------- | ---------------------------- |
+| this PR                | one call to FileDataReader, its return value decoded in place | 143.7M                 | —                            |
+| first draft of this PR | `FileStore.readChunk` per chunk                               | 242.3M                 | —                            |
+| alternative            | the same SSTORE2 read inlined in the generator                | —                      | 2–23% dearer on every render |
+| alternative            | a plain high-level call to FileDataReader                     | —                      | up to 28M more (Babylon)     |
 
 The reader base64-encodes in its own call frame, away from the generator's growing memory.
 
@@ -215,7 +217,7 @@ The reader base64-encodes in its own call frame, away from the generator's growi
 
 - **Today on mainnet** the binding limit is the RPC's `eth_call` gas cap. Alchemy documents 550M.
   publicnode and drpc allow about 50M.
-- **EIP-8037** (Glamsterdam; live on Sepolia, mainnet at Glamsterdam) bounds a *transaction's*
+- **EIP-8037** (Glamsterdam; live on Sepolia, mainnet at Glamsterdam) bounds a _transaction's_
   execution gas at 2^24 = 16,777,216. It says nothing about `eth_call`, which stays bounded by the
   RPC's own cap. The 2^24 budget binds a contract that renders a token inside a transaction.
 - **Sepolia RPCs on unfixed clients.** After Amsterdam, some clients' RPC applied 2^24 to `eth_call`
@@ -234,7 +236,6 @@ data URI up to about 90 KB. Both limits shrink by the project script's own cost.
 - The registry's indexed slices (`getDependencyScript`) and FileDataReader's range reads page any
   file in calls that each fit 2^24, for in-transaction callers and low-cap RPCs.
 - A paged render API for whole tokens is a separate decision (see "Open items").
-
 
 ## Verification
 
@@ -282,7 +283,6 @@ renders `getTokenHtml` and reverts on the data URI, both through Alchemy (reth, 
 2^24 to `eth_call`) and on the fork with a 16,777,216 limit. A geth v1.17.8 Sepolia node renders
 the same data URI.
 
-
 ## Open items
 
 - **Renders over 2^24.** Babylon, aframe, p5@1.9.0 and three@0.160.0 tokens, plus most data URIs,
@@ -300,9 +300,6 @@ the same data URI.
 - **`cannon-es@0.20.0`** (and `fixed_cannon-es@0.20.0` on Sepolia) had registry scripts but no ABX
   FS file, so it loads from its CDN. No live project uses it, and it is an ES module the generator
   could not run on chain anyway.
-- **Sepolia's staging registry** `0xEFA7Ef07…387f` is not upgraded: no generator reads it. The
-  staging subgraph indexes it; repointing that subgraph at the dev registry is in the subgraph PR.
 - **Browser check.** Render the babylon, three@0.160.0, regl and twemoji fork output in a desktop
   browser before the mainnet step 2. Headless Chrome could not run these, even from the CDN.
   `DUMP_DIR` writes the HTML.
-

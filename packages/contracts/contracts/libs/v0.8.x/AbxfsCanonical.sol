@@ -17,7 +17,7 @@ library AbxfsCanonical {
     /// @notice ABX FS FileDataReader companion: a file's stored data, whole or by range, raw or
     /// base64-encoded, every chunk checked against its recorded content hash.
     address internal constant FILE_DATA_READER =
-        0xb13D24967aB9B41787E2280D22d1d43a286c197a;
+        0x7B724AbEA53398e71C06BE8560ac87cE5DC9c7DC;
     /// @notice ABX FS file-level codec token for gzip (an IANA content-coding token as bytes32).
     bytes32 internal constant GZIP_CODEC = "gzip";
 }

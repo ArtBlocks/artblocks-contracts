@@ -24,7 +24,7 @@ export const ABXFS_CANONICAL_FILE_STORE =
  * Must equal the generator's `ABXFS_FILE_DATA_READER`; the scripts check it.
  */
 export const ABXFS_FILE_DATA_READER =
-  "0xb13D24967aB9B41787E2280D22d1d43a286c197a";
+  "0x7B724AbEA53398e71C06BE8560ac87cE5DC9c7DC";
 
 /** The AB500 ABX FS directory holding all 13 files. */
 export const AB500_ABXFS_ROOT =
