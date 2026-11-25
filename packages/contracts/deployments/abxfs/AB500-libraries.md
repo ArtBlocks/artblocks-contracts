@@ -159,8 +159,7 @@ The org was set up on 2026-11-21 (Ethereum Sepolia 2026-11-24), in the same orde
 
 The org address comes from the salt alone, which is why it is the same on every chain. A salt can
 only be used by the address written into its first 20 bytes. Every transaction hash for these steps
-is in `org.txs` in the JSON record. On Ethereum Sepolia, step 4 is pending: `0x00df…84Ef` has the
-admin offer and owns project #0.
+is in `org.txs` in the JSON record.
 
 Project pages, using the org address in lowercase:
 

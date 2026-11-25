@@ -304,7 +304,7 @@
       "gasUsed": 519895488,
       "feeWei": "3148258512756227",
       "feeEth": 0.003148258512756227,
-      "l1DataFeeEth": 0.000023930567488238,
+      "l1DataFeeEth": 2.3930567488238e-5,
       "firstBlock": 60166977,
       "lastBlock": 60167318,
       "firstBlockTime": "2026-11-21T01:16:11.000Z",
@@ -813,7 +813,7 @@
         "setName": "0x3022d205fd7560a4e01d6d404e8d3e3c5b34a5ac449c3d100033a573cc3269fb",
         "transferAdmin": "0x72d71c690b66b59fa046e342e0bb21e5505b612c37fadc759749bd80e1b31714",
         "transferProject0": "0xa10013a6423275e88be3fb0c37e22bf6dca6cbd839546595c6a97ad04314d7a8",
-        "acceptAdmin": null
+        "acceptAdmin": "0xc22123aa3caf67b1780dcf83eaf4a8fc239b042ac586b8bb30ca8164340975f6"
       }
     }
   }
