@@ -163,12 +163,13 @@ Each file was checked three ways:
 `https://unpkg.com/zdog@1.1.2/dist/zdog.dist.min.js`, which serves the exact file on ABX FS. The
 planner checks the SHA-256 before adding the call.
 
-## Gas and the 2^24 `eth_call` execution cap
+## Gas, RPC caps and the 2^24 execution budget
 
 Inlining from ABX FS costs gas in the `eth_call` that renders a token, never in transaction fees.
 The numbers below were measured on a mainnet fork at block 26,487,988, one live token per
-dependency. Gas is execution gas inside the call: a view creates no state, so this is what
-EIP-8037 counts. ✓/✗ marks whether the call succeeds with a 16,777,216 gas limit.
+dependency. Gas is execution gas inside the call: a view creates no state, so all of it would
+count against EIP-8037's 2^24 transaction budget. ✓/✗ marks whether the call succeeds with a
+16,777,216 gas limit (see "RPC limits" for when that limit applies).
 
 | Dependency | gzip bytes | `getTokenHtml` today → after | data URI today → after |
 | --- | --- | --- | --- |
@@ -214,18 +215,24 @@ The reader base64-encodes in its own call frame, away from the generator's growi
 
 - **Today on mainnet** the binding limit is the RPC's `eth_call` gas cap. Alchemy documents 550M.
   publicnode and drpc allow about 50M.
-- **EIP-8037** (Glamsterdam) bounds one call's execution gas at 2^24 = 16,777,216. It is live on
-  Sepolia, where every RPC tried (Alchemy, publicnode, Tenderly) enforces it. Mainnet gets it at
-  Glamsterdam.
+- **EIP-8037** (Glamsterdam; live on Sepolia, mainnet at Glamsterdam) bounds a *transaction's*
+  execution gas at 2^24 = 16,777,216. It says nothing about `eth_call`, which stays bounded by the
+  RPC's own cap. The 2^24 budget binds a contract that renders a token inside a transaction.
+- **Sepolia RPCs on unfixed clients.** After Amsterdam, some clients' RPC applied 2^24 to `eth_call`
+  too. Each fixed that as a bug: geth in v1.17.8 (go-ethereum#35845), erigon (#24519), and reth
+  (#28583, merged 2026-11-18, not yet released). On 2026-11-24 Alchemy and publicnode (both reth)
+  and Tenderly still refused Sepolia `eth_call`s past 2^24, while a geth v1.17.8 node
+  (`rpc.sepolia.ethpandaops.io`) ran the 24.7M-gas p5@1.0.0 data URI below.
 
-Under that cap, a light project's `getTokenHtml` fits up to about 180 KB of inlined gzip, and its
+Within 2^24, a light project's `getTokenHtml` fits up to about 180 KB of inlined gzip, and its
 data URI up to about 90 KB. Both limits shrink by the project script's own cost.
 
 - `babylon@5.0.0`, `aframe@1.2.0`, `p5@1.9.0` and `three@0.160.0` therefore do not render in one
-  call on Sepolia. On mainnet they stop rendering at Glamsterdam. `three@0.160.0` does not fit the
-  cap even today, from its project script alone.
+  `eth_call` on a Sepolia RPC that still applies 2^24; they do on a fixed one. On mainnet the
+  binding limit stays the RPC's cap. `three@0.160.0` does not fit 2^24 even today, from its
+  project script alone.
 - The registry's indexed slices (`getDependencyScript`) and FileDataReader's range reads page any
-  file in calls that each fit the cap.
+  file in calls that each fit 2^24, for in-transaction callers and low-cap RPCs.
 - A paged render API for whole tokens is a separate decision (see "Open items").
 
 
@@ -270,16 +277,18 @@ The generator suite covers:
 - The full rollout is then rendered and checked token by token, as described in the script's header
   and the PR.
 
-**`eth_call` cap method.** The method was checked against live Sepolia. The dev generator's
-p5@1.0.0 token renders `getTokenHtml` and reverts on the data URI, both live and on the fork with a
-16,777,216 limit.
+**2^24 method.** The method was checked against live Sepolia. The dev generator's p5@1.0.0 token
+renders `getTokenHtml` and reverts on the data URI, both through Alchemy (reth, which still applies
+2^24 to `eth_call`) and on the fork with a 16,777,216 limit. A geth v1.17.8 Sepolia node renders
+the same data URI.
 
 
 ## Open items
 
-- **The `eth_call` execution cap (EIP-8037).**
-  - Inlined tokens over 2^24 do not render in one call on Sepolia, and will not on mainnet after
-    Glamsterdam: babylon, aframe, p5@1.9.0 and three@0.160.0, plus most data URIs.
+- **Renders over 2^24.** Babylon, aframe, p5@1.9.0 and three@0.160.0 tokens, plus most data URIs,
+  do not fit EIP-8037's transaction budget, and fail as `eth_call`s on Sepolia RPCs whose client
+  still applies it (reth until its fix ships, Tenderly). Off-chain renders through a fixed RPC are
+  bounded by its own cap, as on mainnet today.
   - A paged or multi-call render API, or pre-encoded base64 files, are decisions this PR does not
     make. The registry's indexed slices and FileDataReader's range reads already page any file.
 - **FileDataReader must be deployed** on each network before step 1. Deploying it on mainnet is an

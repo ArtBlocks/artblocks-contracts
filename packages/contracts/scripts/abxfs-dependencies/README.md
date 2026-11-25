@@ -45,9 +45,11 @@ It also checks that:
 - the repaired staging generator (sepolia) renders exactly what the dev generator does;
 - the registry's indexed slices of the largest file decode to it.
 
-Each render is classified against the 2^24 execution gas cap that EIP-8037 places on `eth_call`,
-which is live on sepolia and comes to mainnet at Glamsterdam. The fork repeats each call with a
-16,777,216 gas limit, which is the same budget, because a view creates no state. `DUMP_DIR` writes
+Each render is classified against 2^24 of execution gas: EIP-8037's transaction budget (live on
+sepolia, mainnet at Glamsterdam), which binds a render inside a transaction, and the limit that
+Sepolia RPCs on clients without the eth_call fix (reth until it ships) still apply to `eth_call`.
+The fork repeats each call with a 16,777,216 gas limit, which is the same budget, because a view
+creates no state. `DUMP_DIR` writes
 each token's HTML before and after, to open in a browser.
 
 ## 1. Upgrade every registry and generator proxy, in one batch

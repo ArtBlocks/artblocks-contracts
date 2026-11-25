@@ -29,9 +29,10 @@
  *      On sepolia the repaired staging generator must render exactly what the dev generator does.
  *   7. The registry's indexed slices of the largest file concatenate to its base64.
  *
- * Every render is also classified against the 2^24 execution gas cap that EIP-8037 places on
- * eth_call (live on sepolia; mainnet at Glamsterdam): the call is repeated with a 16,777,216 gas
- * limit, which on a legacy-gas fork is the same budget, since a view creates no state.
+ * Every render is also classified against 2^24 of execution gas: EIP-8037's transaction budget
+ * (live on sepolia; mainnet at Glamsterdam), which Sepolia RPCs on clients without the eth_call fix
+ * (reth until it ships) also apply to eth_call. The call is repeated with a 16,777,216 gas limit,
+ * which on a legacy-gas fork is the same budget, since a view creates no state.
  */
 
 import { ethers, network, upgrades } from "hardhat";
@@ -581,7 +582,7 @@ async function main() {
     })
   );
   console.log(
-    "| Generator | Dependency | Token | Gas before (html / data URI) | Gas after (html / data URI) | Fits 2^24 after (html / data URI) | Under the EIP-8037 cap | Result |"
+    "| Generator | Dependency | Token | Gas before (html / data URI) | Gas after (html / data URI) | Fits 2^24 after (html / data URI) | Within 2^24 | Result |"
   );
   console.log("|---|---|---|---|---|---|---|---|");
   rows.forEach((r) => console.log(r));
