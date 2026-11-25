@@ -112,7 +112,7 @@ Read gas was identical on those five chains:
 run on 2026-11-24 through Alchemy, passes for the six smallest files and fails for the seven largest
 (aframe, babylon, both p5 builds, all three three.js builds). Those Sepolia endpoints refuse any
 `eth_call` above 2^24 (16,777,216) of execution gas. That is not a protocol rule: EIP-8037 bounds a
-*transaction's* execution gas at 2^24 and says nothing about `eth_call`. Some clients applied it to
+_transaction's_ execution gas at 2^24 and says nothing about `eth_call`. Some clients applied it to
 `eth_call` too after Amsterdam, and each fixed that as a bug: geth in v1.17.8, erigon, and reth in a
 fix merged 2026-11-18 and not yet released. Alchemy and publicnode run reth on Sepolia, and Tenderly
 caps the same way. A geth v1.17.8 Sepolia node (`rpc.sepolia.ethpandaops.io`) runs a 24.7M-gas
